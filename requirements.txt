@@ -1,3 +1,5 @@
 click
+elasticsearch
 flask
 requests
+pyyaml
