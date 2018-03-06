@@ -32,25 +32,29 @@
 from pygeoapi.config import settings
 
 
-def describe_collections():
-    fcm = {
-        'collections': []
-    }
+def describe_collections(f='json'):
+    # TODO allow other file return formats
+    if f.upper() == 'JSON':
+        fcm = {
+            'collections': []
+        }
 
-    for k, v in settings['datasets'].items():
-        collection = {'links': [], 'crs': []}
-        collection['collectionId'] = k
-        collection['title'] = v['title']
-        collection['description'] = v['abstract']
-        for crs in v['crs']:
-            collection['crs'].append(
-                'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
-        collection['extent'] = v['extents']['spatial']['bbox']
+        for k, v in settings['datasets'].items():
+            collection = {'links': [], 'crs': []}
+            collection['collectionId'] = k
+            collection['title'] = v['title']
+            collection['description'] = v['abstract']
+            for crs in v['crs']:
+                collection['crs'].append(
+                    'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
+            collection['extent'] = v['extents']['spatial']['bbox']
 
-        for link in v['links']:
-            lnk = {'rel': link['type'], 'href': link['url']}
-            collection['links'].append(lnk)
+            for link in v['links']:
+                lnk = {'rel': link['type'], 'href': link['url']}
+                collection['links'].append(lnk)
 
-        fcm['collections'].append(collection)
+            fcm['collections'].append(collection)
 
-    return {'collections' : collection}
+        return {'collections' : collection}
+    else:
+        return f'"{f}" not supported as a query parameter.', 400
