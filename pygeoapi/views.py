@@ -28,9 +28,8 @@
 # =================================================================
 
 from flask import url_for
-from elasticsearch import Elasticsearch
 
-ES = Elasticsearch()
+from pygeoapi.provider import load_provider
 
 
 def get_feature_collection_metadata(config):
@@ -67,10 +66,13 @@ def get_feature_collection_metadata(config):
     ]
 
     for k, v in config['datasets'].items():
-        collection = {'links': []}
+        collection = {'links': [], 'crs': []}
         collection['collectionId'] = k
         collection['title'] = v['title']
         collection['description'] = v['abstract']
+        for crs in v['crs']:
+            collection['crs'].append(
+                'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
         collection['extent'] = v['extents']['spatial']['bbox']
 
         for link in v['links']:
@@ -86,36 +88,22 @@ def get_feature_collection(config, dataset):
     if dataset not in config['datasets'].keys():
         return None
 
-    print(dataset)
-    feature_collection = {
-        'type': 'FeatureCollection',
-        'features': []
-    }
+    p = load_provider(config['datasets'][dataset]['data'])
 
-    index_name = get_es_index(config['datasets'][dataset]['data']['url'])
+    results = p.query()
 
-    es_results = ES.search(index=index_name)
-
-    print(es_results)
-    for feature in es_results['hits']['hits']:
-        feature_collection['features'].append(feature['_source'])
-
-    return feature_collection
+    return results
 
 
 def get_feature(config, dataset, identifier):
     if dataset not in config['datasets'].keys():
         return None
 
-    index_name = get_es_index(config['datasets'][dataset]['data']['url'])
-    type_name = get_es_type(config['datasets'][dataset]['data']['url'])
+    p = load_provider(config['datasets'][dataset]['data'])
 
-    try:
-        es_results = ES.get(index_name, doc_type=type_name, id=identifier)
-    except Exception:
-        return None
+    results = p.get(identifier)
 
-    return es_results['_source']
+    return results
 
 
 def get_api_conformance_json():
