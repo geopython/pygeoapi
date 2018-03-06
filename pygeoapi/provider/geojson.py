@@ -96,9 +96,22 @@ class GeoJSONProvider(BaseProvider):
         collection = EMPTY_COLLECTION.copy()
 
         all_data = self._load()
-        for feature in all_data['features']:
-            if feature[self.id_field]:
-                collection['features'].append(feature)
+
+        if self.id_field:
+            # Use id field
+            for feature in all_data['features']:
+                if feature[self.id_field] == identifier:
+                    collection['features'].append(feature)
+        else:
+            # Use enumeration, zero-indexed
+            for i, feature in enumerate(all_data['features']):
+                if i == identifier:
+                    collection['features'].append(feature)
+
+        # assert that one and only one feature returned
+        n_features = len(collection['features'])
+        if n_features != 1:
+            raise RuntimeError('Expected 1 feature, got {}'.format(n_features))
 
         return collection
 
