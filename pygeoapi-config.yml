@@ -73,7 +73,8 @@ datasets:
         title: my dataset
         abstract: my dataset
         keywords: kw1,kw2
-        crs: 4326
+        crs:
+            - CRS84
         links:
             - type: information
               url: http://example.org/dataset/index.html
