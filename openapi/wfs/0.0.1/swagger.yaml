@@ -41,7 +41,7 @@ info:
     url: 'https://creativecommons.org/licenses/by/4.0/'
 schemes:
   - http
-host: data.example.org
+host: {{host}}
 basePath: /
 paths:
   /:

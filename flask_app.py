@@ -34,5 +34,5 @@ from pygeoapi.config import settings
 
 if __name__ == '__main__':
     app = connexion.FlaskApp(__name__, port=int(settings['server']['port']), specification_dir='.')
-    app.add_api('local.swagger.yaml', debug=True, strict_validation=True)
+    app.add_api('local.swagger.yaml', debug=True, strict_validation=True,  arguments={'host': f'{settings["server"]["host"]}:{settings["server"]["port"]}'})
     app.run()
