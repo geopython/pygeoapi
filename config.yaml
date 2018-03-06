@@ -1,18 +1,18 @@
 server:
     port: 5000
 datasets:
-    landsat-aws:
+    lakes:
         type: Polygon
-        title: my dataset
-        abstract: my dataset
-        keywords: kw1,kw2
+        title: Large Lakes
+        abstract: lakes of the world, public domain
+        keywords: lakes
         crs:
             - CRS84
         links:
             - type: information
-              url: http://example.org/dataset/index.html
+              url: http://www.naturalearthdata.com/
             - type: download
-              url: http://example.org/dataset/data.tgz
+              url: http://www.naturalearthdata.com/
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -20,6 +20,6 @@ datasets:
                 begin: 2011-11-11
                 end: now  # or empty
         data:
-            type: Elasticsearch
-            url: http://localhost:9200/index/type
-            id_field: id_
+            type: GeoJSON
+            url: file://data/ne_110m_lakes.geojson
+            id_field: null  # null indicates use feature enumeration
