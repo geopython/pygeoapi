@@ -30,7 +30,8 @@
 import importlib
 
 PROVIDERS = {
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch.ElasticsearchProvider'
+    'Elasticsearch': 'pygeoapi.provider.elasticsearch.ElasticsearchProvider',
+    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider'
 }
 
 
