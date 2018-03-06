@@ -33,10 +33,6 @@ import json
 from pygeoapi.provider.base import BaseProvider
 
 
-EMPTY_COLLECTION = {
-    'type': 'FeatureCollection',
-    'features': []
-}
 
 
 class GeoJSONProvider(BaseProvider):
@@ -69,7 +65,10 @@ class GeoJSONProvider(BaseProvider):
                 assert data['type'] == 'FeatureCollection'
         else:
             with open(path, 'w') as dst:
-                dst.write(json.dumps(EMPTY_COLLECTION))
+                empty = {
+                    'type': 'FeatureCollection',
+                    'features': []}
+                dst.write(json.dumps(empty))
 
     def _load(self):
         with open(self.path) as src:
@@ -93,7 +92,9 @@ class GeoJSONProvider(BaseProvider):
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
         """
-        collection = EMPTY_COLLECTION.copy()
+        collection = {
+            'type': 'FeatureCollection',
+            'features': []}
 
         all_data = self._load()
 
@@ -105,7 +106,8 @@ class GeoJSONProvider(BaseProvider):
         else:
             # Use enumeration, zero-indexed
             for i, feature in enumerate(all_data['features']):
-                if i == identifier:
+                # TODO assumes identifier is always a string
+                if str(i) == identifier:
                     collection['features'].append(feature)
 
         # assert that one and only one feature returned
