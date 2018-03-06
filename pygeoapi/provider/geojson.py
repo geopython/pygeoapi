@@ -33,10 +33,6 @@ import json
 from pygeoapi.provider.base import BaseProvider
 
 
-EMPTY_COLLECTION = {
-    'type': 'FeatureCollection',
-    'features': []
-}
 
 
 class GeoJSONProvider(BaseProvider):
@@ -69,7 +65,10 @@ class GeoJSONProvider(BaseProvider):
                 assert data['type'] == 'FeatureCollection'
         else:
             with open(path, 'w') as dst:
-                dst.write(json.dumps(EMPTY_COLLECTION))
+                empty = {
+                    'type': 'FeatureCollection',
+                    'features': []}
+                dst.write(json.dumps(empty))
 
     def _load(self):
         with open(self.path) as src:
@@ -93,12 +92,28 @@ class GeoJSONProvider(BaseProvider):
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
         """
-        collection = EMPTY_COLLECTION.copy()
+        collection = {
+            'type': 'FeatureCollection',
+            'features': []}
 
         all_data = self._load()
-        for feature in all_data['features']:
-            if feature[self.id_field]:
-                collection['features'].append(feature)
+
+        if self.id_field:
+            # Use id field
+            for feature in all_data['features']:
+                if feature[self.id_field] == identifier:
+                    collection['features'].append(feature)
+        else:
+            # Use enumeration, zero-indexed
+            for i, feature in enumerate(all_data['features']):
+                # TODO assumes identifier is always a string
+                if str(i) == identifier:
+                    collection['features'].append(feature)
+
+        # assert that one and only one feature returned
+        n_features = len(collection['features'])
+        if n_features != 1:
+            raise RuntimeError('Expected 1 feature, got {}'.format(n_features))
 
         return collection
 
