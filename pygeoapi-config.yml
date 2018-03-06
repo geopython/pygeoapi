@@ -90,3 +90,25 @@ datasets:
             type: Elasticsearch
             url: http://localhost:9200/index/type
             id_field: id_
+    lakes:
+        type: Polygon
+        title: Large Lakes
+        abstract: lakes of the world, public domain
+        keywords: lakes
+        crs:
+            - CRS84
+        links:
+            - type: information
+              url: http://www.naturalearthdata.com/
+            - type: download
+              url: http://www.naturalearthdata.com/
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: 2011-11-11
+                end: now  # or empty
+        data:
+            type: GeoJSON
+            url: file://data/ne_110m_lakes.geojson
+            id_field: null  # null indicates use feature enumeration
