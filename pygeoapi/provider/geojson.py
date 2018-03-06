@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Matthew Perry <perrygeo@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2018 Matthew Perry
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -81,7 +81,8 @@ class GeoJSONProvider(BaseProvider):
         query the provider
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
-        TODO yield GeoJSON features
+
+        TODO yield GeoJSON features?
         """
         return self._load()
 
