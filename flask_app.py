@@ -1,7 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
-#          Norman Barker <norman.barker@gmail.com>
+#        : Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -28,29 +28,10 @@
 #
 # =================================================================
 
-
+import connexion
 from pygeoapi.config import settings
 
-
-def describe_collections():
-    fcm = {
-        'collections': []
-    }
-
-    for k, v in settings['datasets'].items():
-        collection = {'links': [], 'crs': []}
-        collection['collectionId'] = k
-        collection['title'] = v['title']
-        collection['description'] = v['abstract']
-        for crs in v['crs']:
-            collection['crs'].append(
-                'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
-        collection['extent'] = v['extents']['spatial']['bbox']
-
-        for link in v['links']:
-            lnk = {'rel': link['type'], 'href': link['url']}
-            collection['links'].append(lnk)
-
-        fcm['collections'].append(collection)
-
-    return {'collections' : collection}
+if __name__ == '__main__':
+    app = connexion.FlaskApp(__name__, port=int(settings['server']['port']), specification_dir='.')
+    app.add_api('local.swagger.yaml', debug=True)
+    app.run()

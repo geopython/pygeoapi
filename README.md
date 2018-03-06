@@ -12,23 +12,16 @@ cd pygeoapi
 git checkout flask-app
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
-cp pygeoapi-config.yml local.yml
-vi local.yml
-# update server.url
-# add ES dataset(s) to datasets section
-export PYGEOAPI_CONFIG=`pwd`/local.yml
-python pygeoapi/app.py
+cp openapi/wfs/0.0.1/swagger.yaml local.swagger.yaml
+cp config.yaml local.config.yaml
+python flask_app.py
 ```
+
+Edit `local.config.yaml` and `local.swagger.yml`
 
 ## Example requests
 
 ```bash
 # feature collection metadata
 curl http://localhost:5000/
-# conformance
-curl http://localhost:5000/api/conformance
-# feature collection
-curl http://localhost:5000/my-dataset
-# feature
-curl http://localhost:5000/my-dataset/featureid
 ```
