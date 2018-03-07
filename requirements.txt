@@ -2,5 +2,6 @@ click
 elasticsearch
 flask
 flask_cors
-requests
 pyyaml
+requests
+shapely

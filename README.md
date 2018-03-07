@@ -9,15 +9,15 @@ cd pygeoapi
 . bin/activate
 git clone https://github.com/geopython/pygeoapi.git
 cd pygeoapi
-pip3 install -r requirements.txt
-pip3 install -r requirements-dev.txt
-pip3 install -e .
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pip install -e .
 cp pygeoapi-config.yml local.yml
 vi local.yml
 # update server.url
 # add ES dataset(s) to datasets section
 export PYGEOAPI_CONFIG=`pwd`/local.yml
-python3 pygeoapi/app.py
+python pygeoapi/app.py
 ```
 
 ## Example requests
