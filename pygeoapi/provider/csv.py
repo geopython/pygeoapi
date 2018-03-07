@@ -52,16 +52,21 @@ class CSVProvider(BaseProvider):
         }
         with open(self.url) as ff:
             data = csv.DictReader(ff)
+            feat = None
             for row in data:
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
                 feature['properties'] = row
                 if identifier is not None and feature['ID'] == identifier:
-                    return feature
-                feature_collection['features'].append(feature)
+                    feat = feature
+                    break
 
-        return feature_collection
+                feature_collection['features'].append(feature)
+        if identifier is not None:
+            return feat
+        else:
+            return feature_collection
 
     def query(self):
         """

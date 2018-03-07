@@ -64,6 +64,97 @@ paths:
           description: An error occured.
           schema:
             $ref: '#/definitions/exception'
+  /api:
+    get:
+      summary: the API description - this document
+      operationId: pygeoapi.views.get_specification
+      tags:
+        - Capabilities
+      parameters:
+        - $ref: '#/parameters/f'
+      produces:
+        - application/openapi+json;version=2.0
+        - text/html
+      responses:
+        '200':
+          description: >-
+            The formal documentation of this API according to the OpenAPI
+            specification, version 3.0. I.e., this document.
+          schema:
+            type: object
+        default:
+          description: An error occured.
+          schema:
+            $ref: '#/definitions/exception'
+
+## START OF DATASET DEFINITION - TO BE REPLACED BY CLI TOOLING in the local swagger file
+  /obs:
+    get:
+      summary: retrieve observation features
+      description: >-
+        Sample observations
+      operationId: pygeoapi.views.getFeatures
+      tags:
+        - Features
+      parameters:
+        - name: ds # constant parameter
+          in: query
+          type: string
+          enum:
+            - obs
+          default: obs
+        - $ref: '#/parameters/startIndex'
+        - $ref: '#/parameters/count'
+        - $ref: '#/parameters/resultType'
+        - $ref: '#/parameters/bbox'
+        - $ref: '#/parameters/f'
+      produces:
+        - application/geo+json
+        - text/html
+      responses:
+        '200':
+          description: >-
+            Information about the feature collection plus the first features
+            matching the selection parameters.
+          schema:
+            $ref: '#/definitions/featureCollection'
+        default:
+          description: An error occured.
+          schema:
+            $ref: '#/definitions/exception'
+  '/obs/{id}':
+    get:
+      summary: retrieve a feature
+      operationId: pygeoapi.views.getFeature
+      tags:
+        - Features
+      parameters:
+        - name: ds # constant parameter
+          in: query
+          type: string
+          enum:
+            - obs
+          default: obs
+        - $ref: '#/parameters/id'
+        - $ref: '#/parameters/f'
+      produces:
+        - application/geo+json
+        - text/html
+      responses:
+        '200':
+          description: A feature.
+          schema:
+            $ref: '#/definitions/observation'
+        '404':
+          description: 'The feature with id {id} does not exist.'
+          schema:
+            $ref: '#/definitions/exception'
+        default:
+          description: An error occured.
+          schema:
+            $ref: '#/definitions/exception'
+## END OF DATASET DEFINITION
+
 parameters:
   f:
     name: f
@@ -80,7 +171,7 @@ parameters:
       - json
       - html
   startIndex:
-    name: startIndex
+    name: start_index
     in: query
     description: >-
       The optional startIndex parameter indicates the index within the result
@@ -132,7 +223,7 @@ parameters:
       maximum: 180
     collectionFormat: csv
   resultType:
-    name: resultType
+    name: result_type
     in: query
     description: >-
       This service will respond to a query in one of two ways (excluding an
@@ -158,18 +249,6 @@ parameters:
       - hits
       - results
     default: results
-  function:
-    name: function
-    in: query
-    description: |-
-      Only return buildings of a particular function.\
-
-      Default = return all buildings.
-    type: string
-    enum:
-      - residential
-      - commercial
-      - public use
   id:
     name: id
     in: path
@@ -241,9 +320,9 @@ definitions:
         items:
           $ref: '#/definitions/link'
         example:
-          - href: 'http://data.example.com/buildings'
+          - href: 'http://data.example.com/observations'
             rel: item
-          - href: 'http://example.com/concepts/buildings.html'
+          - href: 'http://example.com/concepts/observations.html'
             rel: describedBy
             type: text/html
       extent:
@@ -282,8 +361,8 @@ definitions:
       features:
         type: array
         items:
-          $ref: '#/definitions/building'
-  Polygon:
+          $ref: '#/definitions/observation'
+  Point:
     type: object
     required:
       - type
@@ -291,18 +370,13 @@ definitions:
       type:
         type: string
         enum:
-          - Polygon
+          - Point
       coordinates:
         type: array
         items:
-          type: array
-          items:
-            type: array
-            minItems: 4
-            items:
-              type: number
-              minItems: 2
-  building:
+          type: number
+          minItems: 2
+  observation:
     type: object
     required:
       - id
@@ -315,23 +389,18 @@ definitions:
         enum:
           - Feature
       geometry:
-        $ref: '#/definitions/Polygon'
+        $ref: '#/definitions/Point'
       id:
         type: string
       properties:
         type: object
         properties:
-          name:
+          stn_id:
             type: string
-          function:
+          datetime:
             type: string
-            enum:
-              - residential
-              - commercial
-              - public use
-          floors:
-            type: integer
-            minimum: 1
+          value:
+            type: number
 tags:
   - name: Capabilities
     description: >-

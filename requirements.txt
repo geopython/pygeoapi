@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 asn1crypto==0.24.0
 certifi==2018.1.18
 cffi==1.11.5

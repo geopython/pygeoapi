@@ -2,25 +2,27 @@ server:
     host: localhost
     port: 5000
 datasets:
-    lakes:
-        type: Polygon
-        title: Large Lakes
-        abstract: lakes of the world, public domain
-        keywords: lakes
+    obs:
+        type: Point
+        title: Observations
+        abstract: Observations
+        keywords:
+            - observations
+            - monitoring
         crs:
             - CRS84
         links:
             - type: information
-              url: http://www.naturalearthdata.com/
+              url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
             - type: download
-              url: http://www.naturalearthdata.com/
+              url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
             temporal:
-                begin: 2011-11-11
-                end: now  # or empty
+                begin: 2000-10-30T18:24:39Z
+                end: 2007-10-30T08:57:29Z
         data:
-            type: GeoJSON
-            url: file://data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
+            type: CSV
+            url: ./tests/data/obs.csv
+            id_field: id

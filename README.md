@@ -1,4 +1,5 @@
 # pygeoapi
+
 pygeoapi provides an API to geospatial data
 
 ## Installation
@@ -21,7 +22,14 @@ Edit `local.config.yml` and `local.swagger.yml`
 
 ## Example requests
 
+Try the swagger ui at `http://localhost:5000/ui`
+
+or
+
 ```bash
 # feature collection metadata
 curl http://localhost:5000/
+curl http://localhost:5000/api
+curl http://localhost:5000/obs
+curl http://localhost:5000/obs/371
 ```

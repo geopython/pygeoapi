@@ -30,7 +30,7 @@
 
 
 from pygeoapi.config import settings
-
+from pygeoapi.provider import load_provider
 
 def describe_collections(f='json'):
     # TODO allow other file return formats
@@ -58,3 +58,27 @@ def describe_collections(f='json'):
         return {'collections' : collection}
     else:
         return f'"{f}" not supported as a query parameter.', 400
+
+def get_specification(f='json'):
+    if f.upper() == 'JSON':
+        return settings['api']
+    else:
+        return  f'"{f}" not supported as a query parameter.', 400
+
+def getFeatures(ds, start_index, count, result_type, bbox=None, f='json'):
+    if ds not in settings['datasets'].keys():
+        return f'dataset {ds} not found.', 400
+    else:
+        p = load_provider(settings['datasets'][ds]['data'])
+        return p.query()
+
+def getFeature(ds, id, f='json'):
+    if ds not in settings['datasets'].keys():
+        return f'dataset {ds} not found.', 400
+    else:
+        p = load_provider(settings['datasets'][ds]['data'])
+        feat = p.get(id)
+        if feat is None:
+            return f'feature "{id}" not found', 404
+        else:
+            return feat
