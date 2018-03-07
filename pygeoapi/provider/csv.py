@@ -77,7 +77,7 @@ class CSVProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
 
-        return self._load(startindex, count, resulttype)
+        return self._load()
 
     def get(self, identifier):
         """
