@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 asn1crypto==0.24.0
 certifi==2018.1.18
 cffi==1.11.5
@@ -33,6 +34,7 @@ python-mimeparse==1.6.0
 PyYAML==3.12
 requests==2.18.4
 requests-toolbelt==0.8.0
+shapely
 six==1.11.0
 style==1.1.0
 swagger-spec-validator==2.1.0
