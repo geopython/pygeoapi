@@ -47,27 +47,28 @@ class CSVProvider(BaseProvider):
         with open(self.url) as ff:
             self.data = csv.DictReader(ff)
 
-    def _load(self, startindex=0, count=10, resulttype='results',
-              identifier=None):
+    def _load(self, identifier=None):
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
         with open(self.url) as ff:
             data = csv.DictReader(ff)
-            if resulttype == 'hits':
-                feature_collection['numberMatched'] = len(list(data))
-                return feature_collection
-            for row in itertools.islice(data, startindex, startindex+count):
+            feat = None
+            for row in data:
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
                 feature['properties'] = row
                 if identifier is not None and feature['ID'] == identifier:
-                    return feature
-                feature_collection['features'].append(feature)
+                    feat = feature
+                    break
 
-        return feature_collection
+                feature_collection['features'].append(feature)
+        if identifier is not None:
+            return feat
+        else:
+            return feature_collection
 
     def query(self, startindex=0, count=10, resulttype='results'):
         """
@@ -76,7 +77,7 @@ class CSVProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
 
-        return self._load(startindex, count, resulttype)
+        return self._load()
 
     def get(self, identifier):
         """

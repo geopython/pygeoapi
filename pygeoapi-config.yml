@@ -1,71 +1,6 @@
-##############################################################################
-#
-# The MIT License (MIT)
-# Copyright (c) 2018 Tom Kralidis
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-# OR OTHER DEALINGS IN THE SOFTWARE.
-#
-##############################################################################
-
 server:
-    url: http://localhost:5000/
-    mimetype: application/json; charset=UTF-8
-    encoding: utf-8
-    language: en-US
-    cors: true
-    pretty_print: true
-    limit: 10
-
-logging:
-    level: INFO
-    #logfile: /tmp/pygeoapi.log
-
-metadata:
-    identification:
-        title: pygeoapi
-        abstract:  pygeoapi provides an API to geospatial data
-        keywords:
-            - geospatial
-            - data
-            - api
-        keywords_type: theme
-        fees: None
-        accessconstraints: None
-    provider:
-        name: Organization Name
-        url: https://github.com/geopython/pygeoapi
-    contact:
-        name: Lastname, Firstname
-        position: Position Title
-        address: Mailing Address
-        city: City
-        stateorprovince: Administrative Area
-        postalcode: Zip or Postal Code
-        country: Country
-        phone: +xx-xxx-xxx-xxxx
-        fax: +xx-xxx-xxx-xxxx
-        email: you@example.org
-        url: Contact URL
-        hours: Hours of Service
-        instructions: During hours of service.  Off on weekends.
-        role: pointOfContact
-
+    host: localhost
+    port: 5000
 datasets:
     obs:
         type: Point
@@ -89,52 +24,5 @@ datasets:
                 end: 2007-10-30T08:57:29Z
         data:
             type: CSV
-            url: file:///tests/data/obs.csv
+            url: ./tests/data/obs.csv
             id_field: id
-    landsat-aws:
-        type: Polygon
-        title: my dataset
-        abstract: my dataset
-        keywords:
-            - kw1
-            - kw2
-        crs:
-            - CRS84
-        links:
-            - type: information
-              url: http://example.org/dataset/index.html
-            - type: download
-              url: http://example.org/dataset/data.tgz
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-            temporal:
-                begin: 2011-11-11
-                end: now  # or empty
-        data:
-            type: Elasticsearch
-            url: http://localhost:9200/index/type
-            id_field: id_
-    lakes:
-        type: Polygon
-        title: Large Lakes
-        abstract: lakes of the world, public domain
-        keywords:
-            - lakes
-        crs:
-            - CRS84
-        links:
-            - type: information
-              url: http://www.naturalearthdata.com/
-            - type: download
-              url: http://www.naturalearthdata.com/
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-            temporal:
-                begin: 2011-11-11
-                end: now  # or empty
-        data:
-            type: GeoJSON
-            url: file:///tests/data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
