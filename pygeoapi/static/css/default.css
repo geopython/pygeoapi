@@ -1,0 +1,39 @@
+body {
+    background-color: #ffffff;
+    font-family: arial, verdana, sans-serif;
+    text-align: left;
+    float: left;
+}
+.flat {
+    border: 0px;
+}
+header {
+    display: inline-block;
+}
+table {
+    border-width: 2px;
+    border-spacing: 0px;
+    border-style: solid;
+    border-color: black;
+    border-collapse: collapse;
+    background-color: white;
+}
+    table th {
+    border-width: 4px;
+    padding: 5px;
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
+}
+    table td {
+    border-width: 4px;
+    padding: 5px;
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
+}
+.header-img {
+    float: left;
+    margin: 0px 15px 15px 0px;
+    border: 0;
+}
