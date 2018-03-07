@@ -48,18 +48,28 @@ class GeoJSONProvider(BaseProvider):
     This implementation uses the feature 'id' heavily
     and will override any 'id' provided in the original data.
     The feature 'properties' will be preserved.
+
+    TODO
+    - query method should take bbox
+    - instead of methods returning FeatureCollections,
+      we should be yielding Features and aggregating in the view
+    - there are strict id semantics; all features in the input GeoJSON file
+      must be present and be unique strings. Otherwise it will break.
+    - How to raise errors in the provider implementation such that
+      appropriate HTTP responses will be raised
     """
 
     def __init__(self, definition):
         """initializer"""
-
         BaseProvider.__init__(self, definition)
-
         self.path = self.url.replace("file://", '')
 
     def _load(self):
         """Load and validate the source GeoJSON file
         at self.path
+
+        Yes loading from disk, deserializing and validation
+        happens on every request. This is not efficient.
         """
         if os.path.exists(self.path):
             with open(self.path) as src:
@@ -69,21 +79,21 @@ class GeoJSONProvider(BaseProvider):
                 'type': 'FeatureCollection',
                 'features': []}
 
+        # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
-
-        # All features must have an id
+        # All features must have ids, TODO must be unique strings
         assert all(f.get('id') for f in data['features'])
 
         return data
 
-    def query(self):
+    def query(self, bbox=None):
         """
         query the provider
 
+        :param bbox: Bounding Box in [W, S, E, N] order
         :returns: FeatureCollection dict of 0..n GeoJSON features
-
-        TODO yield GeoJSON features?
         """
+        # TODO filter by bbox without resorting to third-party libs
         return self._load()
 
     def get(self, identifier):
@@ -110,7 +120,7 @@ class GeoJSONProvider(BaseProvider):
         """
         all_data = self._load()
 
-        # Hijack the feature id and make sure its unique
+        # Hijack the feature id and make sure it's unique
         new_feature['id'] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
