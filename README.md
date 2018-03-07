@@ -15,7 +15,7 @@ pip install -e .
 cp pygeoapi-config.yml local.yml
 vi local.yml
 # update server.url
-# add ES dataset(s) to datasets section
+# add dataset(s) to datasets section
 export PYGEOAPI_CONFIG=`pwd`/local.yml
 python pygeoapi/app.py
 ```
@@ -28,7 +28,7 @@ curl http://localhost:5000/
 # conformance
 curl http://localhost:5000/api/conformance
 # feature collection
-curl http://localhost:5000/my-dataset
+curl http://localhost:5000/obs
 # feature
-curl http://localhost:5000/my-dataset/featureid
+curl http://localhost:5000/obs/371
 ```

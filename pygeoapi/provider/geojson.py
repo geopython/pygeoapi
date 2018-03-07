@@ -67,12 +67,18 @@ class GeoJSONProvider(BaseProvider):
                     'features': []}
                 dst.write(json.dumps(empty))
 
-    def _load(self):
+    def _load(self, startindex=0, count=10, resulttype='results'):
         with open(self.url) as src:
             data = json.loads(src.read())
+
+        if resulttype == 'hits':
+            data['numberMatched'] = len(data['features'])
+            data['features'] = []
+        else:
+            data['features'] = data['features'][startindex:startindex + count]
         return data
 
-    def query(self):
+    def query(self, startindex=0, count=10, resulttype='results'):
         """
         query the provider
 
@@ -80,7 +86,7 @@ class GeoJSONProvider(BaseProvider):
 
         TODO yield GeoJSON features?
         """
-        return self._load()
+        return self._load(startindex, count, resulttype)
 
     def get(self, identifier):
         """
