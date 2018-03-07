@@ -27,19 +27,33 @@
 #
 # =================================================================
 
+import logging
+
 from flask import url_for
 
 from pygeoapi.provider import load_provider
 
+LOGGER = logging.getLogger(__name__)
+
 
 def get_feature_collection_metadata(config):
+    """
+    Provide feature collection metadata
+
+    :param config: configuration object
+
+    :returns: dict of feature collection metadata
+    """
     fcm = {
         'links': [],
         'collections': []
     }
 
+    LOGGER.debug('Stripping trailing slash from {}'.format(
+        config['server']['url'].rstrip('/')))
     url = config['server']['url'].rstrip('/')
 
+    LOGGER.debug('Creating links')
     fcm['links'] = [{
           'rel': 'self',
           'type': 'application/json',
@@ -63,9 +77,10 @@ def get_feature_collection_metadata(config):
         }
     ]
 
+    LOGGER.debug('Creating collections')
     for k, v in config['datasets'].items():
         collection = {'links': [], 'crs': []}
-        collection['collectionId'] = k
+        collection['name'] = k
         collection['title'] = v['title']
         collection['description'] = v['abstract']
         for crs in v['crs']:
@@ -84,11 +99,29 @@ def get_feature_collection_metadata(config):
 
 def get_feature_collection(config, dataset, startindex=0, count=10,
                            resulttype='results'):
+    """
+    Queries feature collection
+
+    :param config: configuration object
+    :param dataset: dataset to query
+    :param startindex: starting record to return (default 0)
+    :param count: number of records to return (default 10)
+    :param resulttype: return results or hit count (default results)
+
+    :returns: dict of GeoJSON FeatureCollection
+    """
+
     if dataset not in config['datasets'].keys():
+        LOGGER.error('Collection {} not found'.format(dataset))
         return None
 
+    LOGGER.debug('Loading provider')
     p = load_provider(config['datasets'][dataset]['data'])
 
+    LOGGER.debug('Querying provider')
+    LOGGER.debug('startindex: {}'.format(startindex))
+    LOGGER.debug('count: {}'.format(count))
+    LOGGER.debug('resulttype: {}'.format(resulttype))
     results = p.query(startindex=startindex, count=count,
                       resulttype=resulttype)
 
@@ -96,17 +129,35 @@ def get_feature_collection(config, dataset, startindex=0, count=10,
 
 
 def get_feature(config, dataset, identifier):
+    """
+    Get a single feature
+
+    :param config: configuration object
+    :param dataset: dataset to query
+    :param identifier: feature identifier
+
+    :returns: dict of GeoJSON Feature
+    """
+
     if dataset not in config['datasets'].keys():
         return None
 
+    LOGGER.debug('Loading provider')
     p = load_provider(config['datasets'][dataset]['data'])
 
+    LOGGER.debug('Fetching identifier {}'.format(identifier))
     results = p.get(identifier)
 
     return results
 
 
 def get_api_conformance_json():
+    """
+    Generate API conformance to WFS 3.0
+
+    :returns: dict of API conformance
+    """
+
     return {
         'conformsTo': [
             'http://www.opengis.net/spec/wfs-1/3.0/req/core',
@@ -115,18 +166,3 @@ def get_api_conformance_json():
             'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
         ]
     }
-
-
-def get_es_index(url):
-    return split_es_url(url)[-2]
-
-
-def get_es_type(url):
-    return split_es_url(url)[-1]
-
-
-def split_es_url(url):
-    """splits ES URL into host index, type"""
-
-    tokens = url.split('/')
-    return tokens

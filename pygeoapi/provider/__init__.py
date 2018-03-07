@@ -28,6 +28,9 @@
 # =================================================================
 
 import importlib
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 PROVIDERS = {
     'CSV': 'pygeoapi.provider.csv.CSVProvider',
@@ -45,11 +48,16 @@ def load_provider(provider_obj):
     :returns: provider object
     """
 
+    LOGGER.debug('Providers: {}'.format(PROVIDERS))
     provider_name = provider_obj['type']
     if provider_name not in PROVIDERS.keys():
-        raise InvalidProviderError('provider not found')
+        msg = 'Provider not found'
+        LOGGER.exception(msg)
+        raise InvalidProviderError(msg)
 
     packagename, classname = PROVIDERS[provider_name].rsplit('.', 1)
+    LOGGER.debug('package name: {}'.format(packagename))
+    LOGGER.debug('class name: {}'.format(classname))
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
