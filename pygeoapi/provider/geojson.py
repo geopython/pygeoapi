@@ -29,20 +29,25 @@
 
 import os
 import json
+import uuid
 
 from pygeoapi.provider.base import BaseProvider
-
-
 
 
 class GeoJSONProvider(BaseProvider):
     """Provider class backed by local GeoJSON files
 
     This is meant to be simple
-    (no external services, no schema)
+    (no external services, no dependencies, no schema)
 
     at the expense of performance
     (no indexing, full serialization roundtrip on each request)
+
+    Not thread safe, a single server process is assumed
+
+    This implementation uses the feature 'id' heavily
+    and will override any 'id' provided in the original data.
+    The feature 'properties' will be preserved.
     """
 
     def __init__(self, definition):
@@ -50,29 +55,25 @@ class GeoJSONProvider(BaseProvider):
 
         BaseProvider.__init__(self, definition)
 
-        # url is a file path, TODO use urlparse or support local paths
         self.path = self.url.replace("file://", '')
-        self._validate_or_create(self.path)
-
-    @classmethod
-    def _validate_or_create(self, path):
-        """Validate that the path exists and that
-        it is a geojson feature collection
-        """
-        if os.path.exists(path):
-            with open(path) as src:
-                data = json.loads(src.read())
-                assert data['type'] == 'FeatureCollection'
-        else:
-            with open(path, 'w') as dst:
-                empty = {
-                    'type': 'FeatureCollection',
-                    'features': []}
-                dst.write(json.dumps(empty))
 
     def _load(self):
-        with open(self.path) as src:
-            data = json.loads(src.read())
+        """Load and validate the source GeoJSON file
+        at self.path
+        """
+        if os.path.exists(self.path):
+            with open(self.path) as src:
+                data = json.loads(src.read())
+        else:
+            data = {
+                'type': 'FeatureCollection',
+                'features': []}
+
+        assert data['type'] == 'FeatureCollection'
+
+        # All features must have an id
+        assert all(f.get('id') for f in data['features'])
+
         return data
 
     def query(self):
@@ -92,30 +93,61 @@ class GeoJSONProvider(BaseProvider):
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
         """
-        collection = {
-            'type': 'FeatureCollection',
-            'features': []}
+        all_data = self._load()
+        for feature in all_data['features']:
+            if feature['id'] == identifier:
+                return {
+                    'type': 'FeatureCollection',
+                    'features': [feature]}
 
+        # default, no match
+        raise RuntimeError("Should be a 404 error")
+
+    def create(self, new_feature):
+        """Create a new feature
+
+        :param new_feature: new GeoJSON feature dictionary
+        """
         all_data = self._load()
 
-        if self.id_field:
-            # Use id field
-            for feature in all_data['features']:
-                if feature[self.id_field] == identifier:
-                    collection['features'].append(feature)
-        else:
-            # Use enumeration, zero-indexed
-            for i, feature in enumerate(all_data['features']):
-                # TODO assumes identifier is always a string
-                if str(i) == identifier:
-                    collection['features'].append(feature)
+        # Hijack the feature id and make sure its unique
+        new_feature['id'] = str(uuid.uuid4())
 
-        # assert that one and only one feature returned
-        n_features = len(collection['features'])
-        if n_features != 1:
-            raise RuntimeError('Expected 1 feature, got {}'.format(n_features))
+        all_data['features'].append(new_feature)
 
-        return collection
+        with open(self.path, 'w') as dst:
+            dst.write(json.dumps(all_data))
+
+    def update(self, identifier, new_feature):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
+        :param new_feature: new GeoJSON feature dictionary
+        """
+        all_data = self._load()
+        for i, feature in enumerate(all_data['features']):
+            if feature['id'] == identifier:
+                # ensure new_feature retains id
+                new_feature['id'] = identifier
+                all_data['features'][i] = new_feature
+                break
+
+        with open(self.path, 'w') as dst:
+            dst.write(json.dumps(all_data))
+
+    def delete(self, identifier):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
+        """
+        all_data = self._load()
+        for i, feature in enumerate(all_data['features']):
+            if feature['id'] == identifier:
+                all_data['features'].pop(i)
+                break
+
+        with open(self.path, 'w') as dst:
+            dst.write(json.dumps(all_data))
 
     def __repr__(self):
         return '<GeoJSONProvider> {}'.format(self.url)

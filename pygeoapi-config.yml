@@ -111,4 +111,4 @@ datasets:
         data:
             type: GeoJSON
             url: file://data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
+            id_field: null
