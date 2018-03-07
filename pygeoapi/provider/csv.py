@@ -28,6 +28,8 @@
 # =================================================================
 
 import csv
+import itertools
+
 from shapely import wkt
 from shapely.geometry import mapping
 
@@ -45,14 +47,18 @@ class CSVProvider(BaseProvider):
         with open(self.url) as ff:
             self.data = csv.DictReader(ff)
 
-    def _load(self, identifier=None):
+    def _load(self, startindex=0, count=10, resulttype='results',
+              identifier=None):
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
         with open(self.url) as ff:
             data = csv.DictReader(ff)
-            for row in data:
+            if resulttype == 'hits':
+                feature_collection['numberMatched'] = len(list(data))
+                return feature_collection
+            for row in itertools.islice(data, startindex, startindex+count):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
@@ -63,14 +69,14 @@ class CSVProvider(BaseProvider):
 
         return feature_collection
 
-    def query(self):
+    def query(self, startindex=0, count=10, resulttype='results'):
         """
         CSV query
 
         :returns: dict of 0..n GeoJSON features
         """
 
-        return self._load()
+        return self._load(startindex, count, resulttype)
 
     def get(self, identifier):
         """

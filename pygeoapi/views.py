@@ -38,30 +38,28 @@ def get_feature_collection_metadata(config):
         'collections': []
     }
 
+    url = config['server']['url'].rstrip('/')
+
     fcm['links'] = [{
           'rel': 'self',
           'type': 'application/json',
           'title': 'this document',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('index_json')),
+          'href': '{}{}'.format(url, url_for('index_json')),
         }, {
           'rel': 'self',
           'type': 'text/html',
           'title': 'this document as HTML',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('index_html')),
+          'href': '{}{}'.format(url, url_for('index_html')),
         }, {
           'rel': 'self',
           'type': 'application/openapi+json;version=3.0',
           'title': 'the OpenAPI definition as JSON',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('api_json')),
+          'href': '{}{}'.format(url, url_for('api_json')),
         }, {
           'rel': 'self',
           'type': 'text/html',
           'title': 'the OpenAPI definition as HTML',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('api_html')),
+          'href': '{}{}'.format(url, url_for('api_html')),
         }
     ]
 
@@ -84,13 +82,15 @@ def get_feature_collection_metadata(config):
     return fcm
 
 
-def get_feature_collection(config, dataset):
+def get_feature_collection(config, dataset, startindex=0, count=10,
+                           resulttype='results'):
     if dataset not in config['datasets'].keys():
         return None
 
     p = load_provider(config['datasets'][dataset]['data'])
 
-    results = p.query()
+    results = p.query(startindex=startindex, count=count,
+                      resulttype=resulttype)
 
     return results
 
