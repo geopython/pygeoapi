@@ -27,69 +27,66 @@
 #
 # =================================================================
 
-from elasticsearch import Elasticsearch
+import csv
+import itertools
+
+from shapely import wkt
+from shapely.geometry import mapping
 
 from pygeoapi.provider.base import BaseProvider
 
 
-class ElasticsearchProvider(BaseProvider):
-    """Elasticsearch Provider"""
+class CSVProvider(BaseProvider):
+    """CSV provider"""
 
     def __init__(self, definition):
         """initializer"""
 
         BaseProvider.__init__(self, definition)
 
-        url_tokens = self.url.split('/')
+        with open(self.url) as ff:
+            self.data = csv.DictReader(ff)
 
-        self.index_name = url_tokens[-2]
-        self.type_name = url_tokens[-1]
-        self.es_host = url_tokens[2]
-
-        self.es = Elasticsearch(self.es_host)
-
-    def query(self, startindex=0, count=10, resulttype='results'):
-        """
-        query ES
-
-        :returns: dict of 0..n GeoJSON features
-        """
-
+    def _load(self, startindex=0, count=10, resulttype='results',
+              identifier=None):
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
-
-        results = self.es.search(index=self.index_name, from_=startindex,
-                                 size=count)
-        if resulttype == 'hits':
-            feature_collection['numberMatched'] = results['hits']['total']
-            return feature_collection
-
-        for feature in results['hits']['hits']:
-            id_ = feature['_source']['properties']['identifier']
-            feature['_source']['ID'] = id_
-            feature_collection['features'].append(feature['_source'])
+        with open(self.url) as ff:
+            data = csv.DictReader(ff)
+            if resulttype == 'hits':
+                feature_collection['numberMatched'] = len(list(data))
+                return feature_collection
+            for row in itertools.islice(data, startindex, startindex+count):
+                feature = {'type': 'Feature'}
+                feature['ID'] = row.pop('id')
+                feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
+                feature['properties'] = row
+                if identifier is not None and feature['ID'] == identifier:
+                    return feature
+                feature_collection['features'].append(feature)
 
         return feature_collection
 
+    def query(self, startindex=0, count=10, resulttype='results'):
+        """
+        CSV query
+
+        :returns: dict of 0..n GeoJSON features
+        """
+
+        return self._load(startindex, count, resulttype)
+
     def get(self, identifier):
         """
-        Get ES document by id
+        query CSV id
 
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
         """
 
-        try:
-            result = self.es.get(self.index_name, doc_type=self.type_name,
-                                 id=identifier)
-            id_ = result['_source']['properties']['identifier']
-            result['_source']['ID'] = id_
-        except Exception as err:
-            return None
-
-        return result['_source']
+        return self._load(identifier)
 
     def __repr__(self):
-        return '<ElasticsearchProvider> {}'.format(self.url)
+        return '<CSVProvider> {}'.format(self.url)

@@ -86,7 +86,7 @@ class GeoJSONProvider(BaseProvider):
 
         return data
 
-    def query(self, bbox=None):
+    def query(self, startindex=0, count=10, resulttype='results'):
         """
         query the provider
 
@@ -94,7 +94,15 @@ class GeoJSONProvider(BaseProvider):
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
         # TODO filter by bbox without resorting to third-party libs
-        return self._load()
+        data = self._load()
+
+        if resulttype == 'hits':
+            data['numberMatched'] = len(data['features'])
+            data['features'] = []
+        else:
+            data['features'] = data['features'][startindex:startindex + count]
+
+        return data
 
     def get(self, identifier):
         """
