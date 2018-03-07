@@ -12,12 +12,12 @@ cd pygeoapi
 pip3 install -r requirements.txt
 pip3 install -r requirements-dev.txt
 pip3 install -e .
-cp openapi/wfs/0.0.1/swagger.yaml local.swagger.yaml
-cp config.yaml local.config.yaml
+cp openapi/wfs/0.0.1/pygeoapi-openapi.yml local.swagger.yml
+cp pygeoapi-config.yml local.config.yml
 python flask_app.py
 ```
 
-Edit `local.config.yaml` and `local.swagger.yml`
+Edit `local.config.yml` and `local.swagger.yml`
 
 ## Example requests
 

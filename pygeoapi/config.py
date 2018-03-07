@@ -1,4 +1,4 @@
 import yaml
 
-with open('local.config.yaml', 'r') as ymlfile:
+with open('local.config.yml', 'r') as ymlfile:
     settings = yaml.load(ymlfile)
