@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -27,106 +28,57 @@
 #
 # =================================================================
 
-from flask import url_for
 
+from pygeoapi.config import settings
 from pygeoapi.provider import load_provider
 
-
-def get_feature_collection_metadata(config):
-    fcm = {
-        'links': [],
-        'collections': []
-    }
-
-    url = config['server']['url'].rstrip('/')
-
-    fcm['links'] = [{
-          'rel': 'self',
-          'type': 'application/json',
-          'title': 'this document',
-          'href': '{}{}'.format(url, url_for('index_json')),
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'this document as HTML',
-          'href': '{}{}'.format(url, url_for('index_html')),
-        }, {
-          'rel': 'self',
-          'type': 'application/openapi+json;version=3.0',
-          'title': 'the OpenAPI definition as JSON',
-          'href': '{}{}'.format(url, url_for('api_json')),
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'the OpenAPI definition as HTML',
-          'href': '{}{}'.format(url, url_for('api_html')),
+def describe_collections(f='json'):
+    # TODO allow other file return formats
+    if f.upper() == 'JSON':
+        fcm = {
+            'collections': []
         }
-    ]
 
-    for k, v in config['datasets'].items():
-        collection = {'links': [], 'crs': []}
-        collection['collectionId'] = k
-        collection['title'] = v['title']
-        collection['description'] = v['abstract']
-        for crs in v['crs']:
-            collection['crs'].append(
-                'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
-        collection['extent'] = v['extents']['spatial']['bbox']
+        for k, v in settings['datasets'].items():
+            collection = {'links': [], 'crs': []}
+            collection['collectionId'] = k
+            collection['title'] = v['title']
+            collection['description'] = v['abstract']
+            for crs in v['crs']:
+                collection['crs'].append(
+                    'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
+            collection['extent'] = v['extents']['spatial']['bbox']
 
-        for link in v['links']:
-            lnk = {'rel': link['type'], 'href': link['url']}
-            collection['links'].append(lnk)
+            for link in v['links']:
+                lnk = {'rel': link['type'], 'href': link['url']}
+                collection['links'].append(lnk)
 
-        fcm['collections'].append(collection)
+            fcm['collections'].append(collection)
 
-    return fcm
+        return {'collections' : collection}
+    else:
+        return f'"{f}" not supported as a query parameter.', 400
 
+def get_specification(f='json'):
+    if f.upper() == 'JSON':
+        return settings['api']
+    else:
+        return  f'"{f}" not supported as a query parameter.', 400
 
-def get_feature_collection(config, dataset, startindex=0, count=10,
-                           resulttype='results'):
-    if dataset not in config['datasets'].keys():
-        return None
+def getFeatures(ds, start_index, count, result_type, bbox=None, f='json'):
+    if ds not in settings['datasets'].keys():
+        return f'dataset {ds} not found.', 400
+    else:
+        p = load_provider(settings['datasets'][ds]['data'])
+        return p.query()
 
-    p = load_provider(config['datasets'][dataset]['data'])
-
-    results = p.query(startindex=startindex, count=count,
-                      resulttype=resulttype)
-
-    return results
-
-
-def get_feature(config, dataset, identifier):
-    if dataset not in config['datasets'].keys():
-        return None
-
-    p = load_provider(config['datasets'][dataset]['data'])
-
-    results = p.get(identifier)
-
-    return results
-
-
-def get_api_conformance_json():
-    return {
-        'conformsTo': [
-            'http://www.opengis.net/spec/wfs-1/3.0/req/core',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/oas30',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/html',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
-        ]
-    }
-
-
-def get_es_index(url):
-    return split_es_url(url)[-2]
-
-
-def get_es_type(url):
-    return split_es_url(url)[-1]
-
-
-def split_es_url(url):
-    """splits ES URL into host index, type"""
-
-    tokens = url.split('/')
-    return tokens
+def getFeature(ds, id, f='json'):
+    if ds not in settings['datasets'].keys():
+        return f'dataset {ds} not found.', 400
+    else:
+        p = load_provider(settings['datasets'][ds]['data'])
+        feat = p.get(id)
+        if feat is None:
+            return f'feature "{id}" not found', 404
+        else:
+            return feat

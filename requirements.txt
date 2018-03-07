@@ -1,7 +1,8 @@
+connexion
 click
 elasticsearch
 flask
 flask_cors
-pyyaml
 requests
 shapely
+pyyaml

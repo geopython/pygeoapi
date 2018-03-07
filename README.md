@@ -1,4 +1,5 @@
 # pygeoapi
+
 pygeoapi provides an API to geospatial data
 
 ## Installation
@@ -9,26 +10,27 @@ cd pygeoapi
 . bin/activate
 git clone https://github.com/geopython/pygeoapi.git
 cd pygeoapi
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-pip install -e .
-cp pygeoapi-config.yml local.yml
-vi local.yml
-# update server.url
-# add dataset(s) to datasets section
-export PYGEOAPI_CONFIG=`pwd`/local.yml
-python pygeoapi/app.py
+pip3 install -r requirements.txt
+pip3 install -r requirements-dev.txt
+pip3 install -e .
+cp openapi/wfs/0.0.1/pygeoapi-openapi.yml local.swagger.yml
+cp pygeoapi-config.yml local.config.yml
+python flask_app.py
+
 ```
 
+Edit `local.config.yml` and `local.swagger.yml`
+
 ## Example requests
+
+Try the swagger ui at `http://localhost:5000/ui`
+
+or
 
 ```bash
 # feature collection metadata
 curl http://localhost:5000/
-# conformance
-curl http://localhost:5000/api/conformance
-# feature collection
+curl http://localhost:5000/api
 curl http://localhost:5000/obs
-# feature
 curl http://localhost:5000/obs/371
 ```
