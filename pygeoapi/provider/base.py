@@ -27,6 +27,8 @@
 #
 # =================================================================
 
+from urllib.request import urlparse
+
 
 class BaseProvider(object):
     """generic Provider ABC"""
@@ -35,8 +37,14 @@ class BaseProvider(object):
         """initializer"""
 
         self.type = definition['type']
-        self.url = definition['url']
         self.id_field = definition['id_field']
+
+        parsed_url = urlparse(definition['url'])
+
+        if parsed_url.scheme == 'file':
+            self.url = parsed_url.path
+        else:
+            self.url = definition['url']
 
     def query(self):
         """
