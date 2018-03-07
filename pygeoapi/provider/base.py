@@ -57,5 +57,28 @@ class BaseProvider(object):
 
         raise NotImplementedError()
 
+    def create(self, new_feature):
+        """Create a new feature
+        """
+
+        raise NotImplementedError()
+
+    def update(self, identifier, new_feature):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
+        :param new_feature: new GeoJSON feature dictionary
+        """
+
+        raise NotImplementedError()
+
+    def delete(self, identifier):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
+        """
+
+        raise NotImplementedError()
+
     def __repr__(self):
         return '<BaseProvider> {}'.format(self.type)
