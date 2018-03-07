@@ -24,8 +24,7 @@
 ##############################################################################
 
 server:
-    openapi_def: /path/to/basedir
-    url: http://localhost:5000/wfs
+    url: http://localhost:5000/
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -68,11 +67,37 @@ metadata:
         role: pointOfContact
 
 datasets:
+    obs:
+        type: Point
+        title: Observations
+        abstract: Observations
+        keywords:
+            - observations
+            - monitoring
+        crs:
+            - CRS84
+        links:
+            - type: information
+              url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
+            - type: download
+              url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: 2000-10-30T18:24:39Z
+                end: 2007-10-30T08:57:29Z
+        data:
+            type: CSV
+            url: file:///tests/data/obs.csv
+            id_field: id
     landsat-aws:
         type: Polygon
         title: my dataset
         abstract: my dataset
-        keywords: kw1,kw2
+        keywords:
+            - kw1
+            - kw2
         crs:
             - CRS84
         links:
@@ -94,7 +119,8 @@ datasets:
         type: Polygon
         title: Large Lakes
         abstract: lakes of the world, public domain
-        keywords: lakes
+        keywords:
+            - lakes
         crs:
             - CRS84
         links:
@@ -110,5 +136,5 @@ datasets:
                 end: now  # or empty
         data:
             type: GeoJSON
-            url: file://data/ne_110m_lakes.geojson
-            id_field: null
+            url: file:///tests/data/ne_110m_lakes.geojson
+            id_field: null  # null indicates use feature enumeration
