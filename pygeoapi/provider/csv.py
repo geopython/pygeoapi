@@ -29,35 +29,54 @@
 
 import csv
 import itertools
+import logging
 
 from shapely import wkt
 from shapely.geometry import mapping
 
 from pygeoapi.provider.base import BaseProvider
 
+LOGGER = logging.getLogger(__name__)
+
 
 class CSVProvider(BaseProvider):
     """CSV provider"""
 
     def __init__(self, definition):
-        """initializer"""
+        """
+        Initialize object
+
+        :param definition: dict of dataset data definition
+
+        :returns: pygeoapi.providers.csv.CSVProvider
+        """
 
         BaseProvider.__init__(self, definition)
 
-        with open(self.url) as ff:
-            self.data = csv.DictReader(ff)
-
     def _load(self, startindex=0, count=10, resulttype='results',
               identifier=None):
+        """
+        Load CSV data
+
+        :param startindex: starting record to return (default 0)
+        :param count: number of records to return (default 10)
+        :param resulttype: return results or hit count (default results)
+
+        :returns: dict of GeoJSON FeatureCollection
+        """
+
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
         with open(self.url) as ff:
+            LOGGER.debug('Serializing DictReader')
             data = csv.DictReader(ff)
             if resulttype == 'hits':
+                LOGGER('Retrurning hits only')
                 feature_collection['numberMatched'] = len(list(data))
                 return feature_collection
+            LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data, startindex, startindex+count):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
@@ -73,7 +92,11 @@ class CSVProvider(BaseProvider):
         """
         CSV query
 
-        :returns: dict of 0..n GeoJSON features
+        :param startindex: starting record to return (default 0)
+        :param count: number of records to return (default 10)
+        :param resulttype: return results or hit count (default results)
+
+        :returns: dict of GeoJSON FeatureCollection
         """
 
         return self._load(startindex, count, resulttype)
@@ -83,6 +106,7 @@ class CSVProvider(BaseProvider):
         query CSV id
 
         :param identifier: feature id
+
         :returns: dict of single GeoJSON feature
         """
 

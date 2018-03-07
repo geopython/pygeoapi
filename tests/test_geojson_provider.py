@@ -114,7 +114,6 @@ def test_update_safe_id(fixture, config):
     assert 'Null' in results['features'][0]['properties']['name']
 
 
-
 """
     def __init__(self, definition):
         BaseProvider.__init__(self, definition)

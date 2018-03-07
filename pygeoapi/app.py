@@ -36,7 +36,7 @@ from flask_cors import CORS
 
 import yaml
 
-from pygeoapi import __version__
+from pygeoapi import __version__, setup_logger
 from pygeoapi import views
 
 app = Flask(__name__)
@@ -139,4 +139,5 @@ def dataset(feature_collection, feature=None):
 
 
 if __name__ == '__main__':
+    setup_logger(config)
     app.run(debug=True)

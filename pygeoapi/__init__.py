@@ -27,9 +27,53 @@
 #
 # =================================================================
 
+import logging
+import sys
+
 import click
 
 __version__ = '0.1.dev0'
+
+LOGGER = logging.getLogger(__name__)
+
+
+def setup_logger(config):
+    """
+    Setup configuration
+
+    :param config: configuration object
+
+    :returns: void (creates logging instance)
+    """
+
+    log_format = \
+        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+
+    loglevels = {
+        'CRITICAL': logging.CRITICAL,
+        'ERROR': logging.ERROR,
+        'WARNING': logging.WARNING,
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'NOTSET': logging.NOTSET,
+    }
+    formatter = logging.Formatter(log_format)
+
+    log_handler = logging.NullHandler()
+
+    if 'level' in config['logging']:
+        loglevel = loglevels[config['logging']['level']]
+        log_handler = logging.StreamHandler(sys.stdout)
+
+    if 'logfile' in config['logging']:
+        log_handler = logging.FileHandler(config['logging']['logfile'])
+
+    log_handler.setLevel(loglevel)
+    log_handler.setFormatter(formatter)
+
+    LOGGER.addHandler(log_handler)
+    LOGGER.debug('Logging initialized')
+    return
 
 
 @click.group()
