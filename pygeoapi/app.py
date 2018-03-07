@@ -31,7 +31,7 @@ import os
 from urllib.parse import urlparse
 
 from flask import (abort, Flask, jsonify, make_response,
-                   render_template)
+                   render_template, request)
 from flask_cors import CORS
 
 import yaml
@@ -115,8 +115,20 @@ def index_html():
 def dataset(feature_collection, feature=None):
     """get feature from a feature collection"""
 
+    startindex = 0
+    count = 10
+    resulttype = 'results'
+
+    if 'startIndex' in request.args:
+        startindex = int(request.args.get('startIndex'))
+    if 'count' in request.args:
+        count = int(request.args.get('count'))
+    if 'resultType' in request.args:
+        resulttype = request.args.get('resultType')
+
     if feature is None:
-        response = views.get_feature_collection(config, feature_collection)
+        response = views.get_feature_collection(config, feature_collection,
+                                                startindex, count, resulttype)
     else:
         response = views.get_feature(config, feature_collection, feature)
 
