@@ -33,8 +33,6 @@ import json
 from pygeoapi.provider.base import BaseProvider
 
 
-
-
 class GeoJSONProvider(BaseProvider):
     """Provider class backed by local GeoJSON files
 
@@ -51,8 +49,7 @@ class GeoJSONProvider(BaseProvider):
         BaseProvider.__init__(self, definition)
 
         # url is a file path, TODO use urlparse or support local paths
-        self.path = self.url.replace("file://", '')
-        self._validate_or_create(self.path)
+        self._validate_or_create(self.url)
 
     @classmethod
     def _validate_or_create(self, path):
@@ -71,7 +68,7 @@ class GeoJSONProvider(BaseProvider):
                 dst.write(json.dumps(empty))
 
     def _load(self):
-        with open(self.path) as src:
+        with open(self.url) as src:
             data = json.loads(src.read())
         return data
 
