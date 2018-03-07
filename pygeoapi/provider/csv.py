@@ -28,6 +28,8 @@
 # =================================================================
 
 import csv
+import itertools
+
 from shapely import wkt
 from shapely.geometry import mapping
 
@@ -68,14 +70,14 @@ class CSVProvider(BaseProvider):
         else:
             return feature_collection
 
-    def query(self):
+    def query(self, startindex=0, count=10, resulttype='results'):
         """
         CSV query
 
         :returns: dict of 0..n GeoJSON features
         """
 
-        return self._load()
+        return self._load(startindex, count, resulttype)
 
     def get(self, identifier):
         """

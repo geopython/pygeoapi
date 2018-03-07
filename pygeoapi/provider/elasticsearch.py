@@ -48,7 +48,7 @@ class ElasticsearchProvider(BaseProvider):
 
         self.es = Elasticsearch(self.es_host)
 
-    def query(self):
+    def query(self, startindex=0, count=10, resulttype='results'):
         """
         query ES
 
@@ -60,7 +60,11 @@ class ElasticsearchProvider(BaseProvider):
             'features': []
         }
 
-        results = self.es.search(index=self.index_name)
+        results = self.es.search(index=self.index_name, from_=startindex,
+                                 size=count)
+        if resulttype == 'hits':
+            feature_collection['numberMatched'] = results['hits']['total']
+            return feature_collection
 
         for feature in results['hits']['hits']:
             id_ = feature['_source']['properties']['identifier']

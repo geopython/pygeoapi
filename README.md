@@ -16,6 +16,7 @@ pip3 install -e .
 cp openapi/wfs/0.0.1/pygeoapi-openapi.yml local.swagger.yml
 cp pygeoapi-config.yml local.config.yml
 python flask_app.py
+
 ```
 
 Edit `local.config.yml` and `local.swagger.yml`
