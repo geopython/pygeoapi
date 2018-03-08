@@ -29,6 +29,8 @@
 
 import click
 
+from pygeoapi.flask_app import serve
+
 __version__ = '0.1.dev0'
 
 
@@ -36,3 +38,6 @@ __version__ = '0.1.dev0'
 @click.version_option(version=__version__)
 def cli():
     pass
+
+
+cli.add_command(serve)

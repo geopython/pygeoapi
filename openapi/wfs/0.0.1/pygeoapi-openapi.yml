@@ -22,6 +22,7 @@
 # OR OTHER DEALINGS IN THE SOFTWARE.
 #
 ##############################################################################
+
 swagger: '2.0'
 info:
   title: A sample API conforming to the OGC Web Feature Service standard
@@ -93,11 +94,11 @@ paths:
       summary: retrieve observation features
       description: >-
         Sample observations
-      operationId: pygeoapi.views.getFeatures
+      operationId: pygeoapi.views.get_features
       tags:
         - Features
       parameters:
-        - name: ds # constant parameter
+        - name: dataset # constant parameter
           in: query
           type: string
           enum:
@@ -125,11 +126,11 @@ paths:
   '/obs/{id}':
     get:
       summary: retrieve a feature
-      operationId: pygeoapi.views.getFeature
+      operationId: pygeoapi.views.get_feature
       tags:
         - Features
       parameters:
-        - name: ds # constant parameter
+        - name: dataset # constant parameter
           in: query
           type: string
           enum:
