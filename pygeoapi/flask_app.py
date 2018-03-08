@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -27,45 +28,38 @@
 #
 # =================================================================
 
-import importlib
-import logging
+import click
+import connexion
 
-LOGGER = logging.getLogger(__name__)
-
-PROVIDERS = {
-    'CSV': 'pygeoapi.provider.csv.CSVProvider',
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch.ElasticsearchProvider',
-    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider'
-}
+from pygeoapi.log import setup_logger
+from pygeoapi.config import settings
 
 
-def load_provider(provider_obj):
-    """
-    loads provider by name
+@click.command()
+@click.pass_context
+@click.option('--host', '-h', default='localhost', help='Hostname')
+@click.option('--port', '-p', default=5000, help='port')
+@click.option('--debug', '-d', default=False, is_flag=True, help='debug')
+def serve(ctx, host, port, debug=False):
+    """Serve pygeoapi via Flask"""
 
-    :param provider_obj: provider definition dictionary
+    if port is not None:
+        port_ = port
+    else:
+        port_ = settings['server']['port']
+    if host is not None:
+        host_ = host
+    else:
+        host_ = settings['server']['host']
 
-    :returns: provider object
-    """
+    app = connexion.FlaskApp(__name__, port=port_, specification_dir='.')
 
-    LOGGER.debug('Providers: {}'.format(PROVIDERS))
-    provider_name = provider_obj['type']
-    if provider_name not in PROVIDERS.keys():
-        msg = 'Provider {} not found'.format(provider_name)
-        LOGGER.exception(msg)
-        raise InvalidProviderError(msg)
+    hostport = '{}:{}'.format(host_, port_)
 
-    packagename, classname = PROVIDERS[provider_name].rsplit('.', 1)
-    LOGGER.debug('package name: {}'.format(packagename))
-    LOGGER.debug('class name: {}'.format(classname))
+    api = app.add_api(settings['swagger'], debug=debug, strict_validation=True,
+                      arguments={'host': hostport})
 
-    module = importlib.import_module(packagename)
-    class_ = getattr(module, classname)
-    provider = class_(provider_obj)
-    return provider
+    settings['api'] = api.specification
 
-
-class InvalidProviderError(Exception):
-    """invalid provider"""
-
-    pass
+    setup_logger()
+    app.run()

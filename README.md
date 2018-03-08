@@ -15,11 +15,14 @@ pip3 install -r requirements-dev.txt
 pip3 install -e .
 cp openapi/wfs/0.0.1/pygeoapi-openapi.yml local.swagger.yml
 cp pygeoapi-config.yml local.config.yml
-python flask_app.py
-
+vi local.config.yml
+# TODO: what is most important to edit?
+vi local.swagger.yml
+# TODO: what is most important to edit?
+export PYGEOAPI_CONFIG=/path/to/local.config.yml
+export PYGEOAPI_SWAGGER=/path/to/local.swagger.yml
+pygeoapi serve
 ```
-
-Edit `local.config.yml` and `local.swagger.yml`
 
 ## Example requests
 
@@ -30,7 +33,10 @@ or
 ```bash
 # feature collection metadata
 curl http://localhost:5000/
-curl http://localhost:5000/api
+# conformance
+curl http://localhost:5000/api/conformance
+# feature collection
 curl http://localhost:5000/obs
+# feature
 curl http://localhost:5000/obs/371
 ```

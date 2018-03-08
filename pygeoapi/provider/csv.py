@@ -29,65 +29,88 @@
 
 import csv
 import itertools
+import logging
 
 from shapely import wkt
 from shapely.geometry import mapping
 
 from pygeoapi.provider.base import BaseProvider
 
+LOGGER = logging.getLogger(__name__)
+
 
 class CSVProvider(BaseProvider):
     """CSV provider"""
 
     def __init__(self, definition):
-        """initializer"""
+        """
+        Initialize object
+
+        :param definition: dict of dataset data definition
+
+        :returns: pygeoapi.providers.csv.CSVProvider
+        """
 
         BaseProvider.__init__(self, definition)
 
-        with open(self.url) as ff:
-            self.data = csv.DictReader(ff)
+    def _load(self, startindex=0, count=10, resulttype='results',
+              identifier=None):
+        """
+        Load CSV data
 
-    def _load(self, identifier=None):
+        :param startindex: starting record to return (default 0)
+        :param count: number of records to return (default 10)
+        :param resulttype: return results or hit count (default results)
+
+        :returns: dict of GeoJSON FeatureCollection
+        """
+
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
         with open(self.url) as ff:
+            LOGGER.debug('Serializing DictReader')
             data = csv.DictReader(ff)
-            feat = None
-            for row in data:
+            if resulttype == 'hits':
+                LOGGER('Retrurning hits only')
+                feature_collection['numberMatched'] = len(list(data))
+                return feature_collection
+            LOGGER.debug('Slicing CSV rows')
+            for row in itertools.islice(data, startindex, startindex+count):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
                 feature['properties'] = row
                 if identifier is not None and feature['ID'] == identifier:
-                    feat = feature
-                    break
-
+                    return feature
                 feature_collection['features'].append(feature)
-        if identifier is not None:
-            return feat
-        else:
-            return feature_collection
+
+        return feature_collection
 
     def query(self, startindex=0, count=10, resulttype='results'):
         """
         CSV query
 
-        :returns: dict of 0..n GeoJSON features
+        :param startindex: starting record to return (default 0)
+        :param count: number of records to return (default 10)
+        :param resulttype: return results or hit count (default results)
+
+        :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load()
+        return self._load(startindex, count, resulttype)
 
     def get(self, identifier):
         """
         query CSV id
 
         :param identifier: feature id
+
         :returns: dict of single GeoJSON feature
         """
 
-        return self._load(identifier)
+        return self._load(identifier=identifier)
 
     def __repr__(self):
         return '<CSVProvider> {}'.format(self.url)

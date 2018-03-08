@@ -1,7 +1,6 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
-#        : Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -28,12 +27,46 @@
 #
 # =================================================================
 
-import connexion
+import logging
+import sys
+
 from pygeoapi.config import settings
 
+LOGGER = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-    app = connexion.FlaskApp(__name__, port=int(settings['server']['port']), specification_dir='.')
-    api = app.add_api('local.swagger.yml', debug=True, strict_validation=True,  arguments={'host': f'{settings["server"]["host"]}:{settings["server"]["port"]}'})
-    settings['api'] = api.specification
-    app.run()
+
+def setup_logger():
+    """
+    Setup configuration
+
+    :returns: void (creates logging instance)
+    """
+
+    log_format = \
+        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+
+    loglevels = {
+        'CRITICAL': logging.CRITICAL,
+        'ERROR': logging.ERROR,
+        'WARNING': logging.WARNING,
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'NOTSET': logging.NOTSET,
+    }
+    formatter = logging.Formatter(log_format)
+
+    log_handler = logging.NullHandler()
+
+    if 'level' in settings['logging']:
+        loglevel = loglevels[settings['logging']['level']]
+        log_handler = logging.StreamHandler(sys.stdout)
+
+    if 'logfile' in settings['logging']:
+        log_handler = logging.FileHandler(settings['logging']['logfile'])
+
+    log_handler.setLevel(loglevel)
+    log_handler.setFormatter(formatter)
+
+    LOGGER.addHandler(log_handler)
+    LOGGER.debug('Logging initialized')
+    return
