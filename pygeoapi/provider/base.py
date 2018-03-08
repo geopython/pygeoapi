@@ -27,23 +27,35 @@
 #
 # =================================================================
 
+import logging
 from urllib.request import urlparse
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BaseProvider(object):
     """generic Provider ABC"""
 
     def __init__(self, definition):
-        """initializer"""
+        """
+        Initialize object
+
+        :param definition: dict of dataset data definition
+
+        :returns: pygeoapi.providers.base.BaseProvider
+        """
 
         self.type = definition['type']
         self.id_field = definition['id_field']
 
         parsed_url = urlparse(definition['url'])
+        LOGGER.debug('Parsed URL: {}'.format(parsed_url))
 
         if parsed_url.scheme == 'file':
+            LOGGER.debug('URL is a file')
             self.url = parsed_url.path
         else:
+            LOGGER.debug('URL is really a URL')
             self.url = definition['url']
 
     def query(self):

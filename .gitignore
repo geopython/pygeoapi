@@ -99,3 +99,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# pygeoapi artifacts
+local.config.yml
+local.swagger.yml
