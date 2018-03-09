@@ -59,10 +59,9 @@ class GeoJSONProvider(BaseProvider):
       appropriate HTTP responses will be raised
     """
 
-    def __init__(self, definition):
+    def __init__(self, name, data, id_field):
         """initializer"""
-        BaseProvider.__init__(self, definition)
-        self.path = self.url.replace("file://", '')
+        BaseProvider.__init__(self, name, data, id_field)
 
     def _load(self):
         """Load and validate the source GeoJSON file

@@ -33,23 +33,25 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 PROVIDERS = {
-    'CSV': 'pygeoapi.provider.csv.CSVProvider',
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch.ElasticsearchProvider',
+    'CSV': 'pygeoapi.provider.csv_.CSVProvider',
+    'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
     'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider'
 }
 
 
-def load_provider(provider_obj):
+def load_provider(name, data, id_field):
     """
     loads provider by name
 
-    :param provider_obj: provider definition dictionary
+    :param name: provider name
+    :param data: file path or URL to data/service
+    :param id_field: field/property/column of identifier
 
     :returns: provider object
     """
 
     LOGGER.debug('Providers: {}'.format(PROVIDERS))
-    provider_name = provider_obj['type']
+    provider_name = name
     if provider_name not in PROVIDERS.keys():
         msg = 'Provider {} not found'.format(provider_name)
         LOGGER.exception(msg)
@@ -61,7 +63,7 @@ def load_provider(provider_obj):
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    provider = class_(provider_obj)
+    provider = class_(name, data, id_field)
     return provider
 
 
