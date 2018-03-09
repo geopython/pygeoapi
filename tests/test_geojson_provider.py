@@ -28,9 +28,10 @@ def fixture():
 @pytest.fixture()
 def config():
     return {
-            'type': 'GeoJSON',
-            'url': 'file://' + path,
-            'id_field': None}
+            'provider': 'GeoJSON',
+            'name': path,
+            'id_field': None
+    }
 
 
 def test_query(fixture, config):

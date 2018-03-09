@@ -42,16 +42,18 @@ LOGGER = logging.getLogger(__name__)
 class CSVProvider(BaseProvider):
     """CSV provider"""
 
-    def __init__(self, definition):
+    def __init__(self, name, data, id_field):
         """
         Initialize object
 
-        :param definition: dict of dataset data definition
+        :param name: provider name
+        :param data: file path or URL to data/service
+        :param id_field: field/property/column of identifier
 
         :returns: pygeoapi.providers.csv.CSVProvider
         """
 
-        BaseProvider.__init__(self, definition)
+        BaseProvider.__init__(self, name, data, id_field)
 
     def _load(self, startindex=0, count=10, resulttype='results',
               identifier=None):
@@ -69,15 +71,15 @@ class CSVProvider(BaseProvider):
             'type': 'FeatureCollection',
             'features': []
         }
-        with open(self.url) as ff:
+        with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
-            data = csv.DictReader(ff)
+            data_ = csv.DictReader(ff)
             if resulttype == 'hits':
                 LOGGER('Retrurning hits only')
-                feature_collection['numberMatched'] = len(list(data))
+                feature_collection['numberMatched'] = len(list(data_))
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data, startindex, startindex+count):
+            for row in itertools.islice(data_, startindex, startindex+count):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
@@ -113,4 +115,4 @@ class CSVProvider(BaseProvider):
         return self._load(identifier=identifier)
 
     def __repr__(self):
-        return '<CSVProvider> {}'.format(self.url)
+        return '<CSVProvider> {}'.format(self.data)

@@ -45,6 +45,8 @@ metadata:
 datasets:
     obs:
         type: Point
+        provider: CSV
+        id_field: id
         title: Observations
         abstract: Observations
         keywords:
@@ -63,12 +65,11 @@ datasets:
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
-        data:
-            type: CSV
-            url: file:///tests/data/obs.csv
-            id_field: id
+        data: tests/data/obs.csv
     landsat-aws:
         type: Polygon
+        provider: Elasticsearch
+        id_field: id_
         title: my dataset
         abstract: my dataset
         keywords:
@@ -87,12 +88,11 @@ datasets:
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty
-        data:
-            type: Elasticsearch
-            url: http://localhost:9200/index/type
-            id_field: id_
+        data: http://localhost:9200/index/type
     lakes:
         type: Polygon
+        provider: GeoJSON
+        id_field: null  # null indicates use feature enumeration
         title: Large Lakes
         abstract: lakes of the world, public domain
         keywords:
@@ -110,7 +110,4 @@ datasets:
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty
-        data:
-            type: GeoJSON
-            url: file:///tests/data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
+        data: tests/data/ne_110m_lakes.geojson

@@ -39,18 +39,20 @@ LOGGER = logging.getLogger(__name__)
 class ElasticsearchProvider(BaseProvider):
     """Elasticsearch Provider"""
 
-    def __init__(self, definition):
+    def __init__(self, name, data, id_field):
         """
         Initialize object
 
-        :param definition: dict of dataset data definition
+        :param name: provider name
+        :param data: file path or URL to data/service
+        :param id_field: field/property/column of identifier
 
         :returns: pygeoapi.providers.elasticsearch.ElasticsearchProvider
         """
 
-        BaseProvider.__init__(self, definition)
+        BaseProvider.__init__(self, name, data, id_field)
 
-        url_tokens = self.url.split('/')
+        url_tokens = self.data.split('/')
 
         LOGGER.debug('Setting Elasticsearch properties')
         self.es_host = url_tokens[2]
@@ -121,4 +123,4 @@ class ElasticsearchProvider(BaseProvider):
         return result['_source']
 
     def __repr__(self):
-        return '<ElasticsearchProvider> {}'.format(self.url)
+        return '<ElasticsearchProvider> {}'.format(self.data)

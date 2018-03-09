@@ -135,7 +135,9 @@ def get_features(dataset, startindex=0, count=10, resulttype='results',
         return msg, 400
     else:
         LOGGER.debug('Loading provider')
-        p = load_provider(settings['datasets'][dataset]['data'])
+        p = load_provider(settings['datasets'][dataset]['provider'],
+                          settings['datasets'][dataset]['data'],
+                          settings['datasets'][dataset]['id_field'])
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('count: {}'.format(count))
@@ -163,8 +165,9 @@ def get_feature(dataset, id, f='json'):
         return msg, 400
 
     LOGGER.debug('Loading provider')
-    p = load_provider(settings['datasets'][dataset]['data'])
-
+    p = load_provider(settings['datasets'][dataset]['provider'],
+                      settings['datasets'][dataset]['data'],
+                      settings['datasets'][dataset]['id_field'])
     LOGGER.debug('Fetching id {}'.format(id))
     feature = p.get(id)
     if feature is None:
