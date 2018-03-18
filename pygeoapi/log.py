@@ -27,17 +27,46 @@
 #
 # =================================================================
 
-import click
+import logging
+import sys
 
-from pygeoapi.flask_app import serve
+from pygeoapi.config import settings
 
-__version__ = '0.1.dev0'
-
-
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+LOGGER = logging.getLogger(__name__)
 
 
-cli.add_command(serve)
+def setup_logger():
+    """
+    Setup configuration
+
+    :returns: void (creates logging instance)
+    """
+
+    log_format = \
+        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+
+    loglevels = {
+        'CRITICAL': logging.CRITICAL,
+        'ERROR': logging.ERROR,
+        'WARNING': logging.WARNING,
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'NOTSET': logging.NOTSET,
+    }
+    formatter = logging.Formatter(log_format)
+
+    log_handler = logging.NullHandler()
+
+    if 'level' in settings['logging']:
+        loglevel = loglevels[settings['logging']['level']]
+        log_handler = logging.StreamHandler(sys.stdout)
+
+    if 'logfile' in settings['logging']:
+        log_handler = logging.FileHandler(settings['logging']['logfile'])
+
+    log_handler.setLevel(loglevel)
+    log_handler.setFormatter(formatter)
+
+    LOGGER.addHandler(log_handler)
+    LOGGER.debug('Logging initialized')
+    return

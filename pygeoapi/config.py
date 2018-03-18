@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -27,17 +28,11 @@
 #
 # =================================================================
 
-import click
+import os
 
-from pygeoapi.flask_app import serve
+import yaml
 
-__version__ = '0.1.dev0'
+with open(os.environ.get('PYGEOAPI_CONFIG')) as ff:
+    settings = yaml.load(ff)
 
-
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
-
-
-cli.add_command(serve)
+settings['swagger'] = os.environ.get('PYGEOAPI_SWAGGER')

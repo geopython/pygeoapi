@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -27,47 +28,69 @@
 #
 # =================================================================
 
-from flask import url_for
+import logging
 
+from flask import request
+# from flask import request, url_for
+
+from pygeoapi.config import settings
 from pygeoapi.provider import load_provider
 
+LOGGER = logging.getLogger(__name__)
 
-def get_feature_collection_metadata(config):
+
+def describe_collections(f='json'):
+    """
+    Provide feature collection metadata
+
+    :param f: response format (default JSON)
+
+    :returns: dict of feature collection metadata
+    """
+
+    # TODO allow other file return formats
+    if f.upper() != 'JSON':
+        msg = 'Unsupported format: {}'.format(f)
+        LOGGER.error(msg)
+        return msg, 400
+
     fcm = {
         'links': [],
         'collections': []
     }
 
-    fcm['links'] = [{
-          'rel': 'self',
-          'type': 'application/json',
-          'title': 'this document',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('index_json')),
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'this document as HTML',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('index_html')),
-        }, {
-          'rel': 'self',
-          'type': 'application/openapi+json;version=3.0',
-          'title': 'the OpenAPI definition as JSON',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('api_json')),
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'the OpenAPI definition as HTML',
-          'href': '{}{}'.format(config['server']['url'],
-                                url_for('api_html')),
-        }
-    ]
+    url = '{}://{}'.format(request.scheme, settings['server']['host'])
+    if settings['server']['port'] not in [80, 443]:
+        url = '{}:{}'.format(url, settings['server']['port'])
 
-    for k, v in config['datasets'].items():
+#    LOGGER.debug('Creating links')
+#    fcm['links'] = [{
+#          'rel': 'self',
+#          'type': 'application/json',
+#          'title': 'this document',
+#          'href': '{}{}'.format(url, url_for('index_json')),
+#        }, {
+#          'rel': 'self',
+#          'type': 'text/html',
+#          'title': 'this document as HTML',
+#          'href': '{}{}'.format(url, url_for('index_html')),
+#        }, {
+#          'rel': 'self',
+#          'type': 'application/openapi+json;version=3.0',
+#          'title': 'the OpenAPI definition as JSON',
+#          'href': '{}{}'.format(url, url_for('api_json')),
+#        }, {
+#          'rel': 'self',
+#          'type': 'text/html',
+#          'title': 'the OpenAPI definition as HTML',
+#          'href': '{}{}'.format(url, url_for('api_html')),
+#        }
+#    ]
+
+    LOGGER.debug('Creating collections')
+    for k, v in settings['datasets'].items():
         collection = {'links': [], 'crs': []}
-        collection['collectionId'] = k
+        collection['name'] = k
         collection['title'] = v['title']
         collection['description'] = v['abstract']
         for crs in v['crs']:
@@ -84,49 +107,72 @@ def get_feature_collection_metadata(config):
     return fcm
 
 
-def get_feature_collection(config, dataset):
-    if dataset not in config['datasets'].keys():
-        return None
-
-    p = load_provider(config['datasets'][dataset]['data'])
-
-    results = p.query()
-
-    return results
+def get_specification(f='json'):
+    if f.upper() == 'JSON':
+        return settings['api']
+    else:
+        return '{} not supported as a query parameter'.format(f), 400
 
 
-def get_feature(config, dataset, identifier):
-    if dataset not in config['datasets'].keys():
-        return None
+def get_features(dataset, startindex=0, count=10, resulttype='results',
+                 bbox=None, f='json'):
+    """
+    Queries feature collection
 
-    p = load_provider(config['datasets'][dataset]['data'])
+    :param dataset: dataset to query
+    :param startindex: starting record to return (default 0)
+    :param count: number of records to return (default 10)
+    :param resulttype: return results or hit count (default results)
+    :param bbox: list of minx,miny,maxx,maxy
+    :param f: responase format (default GeoJSON)
 
-    results = p.get(identifier)
+    :returns: dict of GeoJSON FeatureCollection
 
-    return results
+    """
+    if dataset not in settings['datasets'].keys():
+        msg = 'dataset {} not found'.format(dataset)
+        LOGGER.error(msg)
+        return msg, 400
+    else:
+        LOGGER.debug('Loading provider')
+        p = load_provider(settings['datasets'][dataset]['provider'],
+                          settings['datasets'][dataset]['data'],
+                          settings['datasets'][dataset]['id_field'])
+        LOGGER.debug('Querying provider')
+        LOGGER.debug('startindex: {}'.format(startindex))
+        LOGGER.debug('count: {}'.format(count))
+        LOGGER.debug('resulttype: {}'.format(resulttype))
+        results = p.query(startindex=int(startindex), count=int(count),
+                          resulttype=resulttype)
 
-
-def get_api_conformance_json():
-    return {
-        'conformsTo': [
-            'http://www.opengis.net/spec/wfs-1/3.0/req/core',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/oas30',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/html',
-            'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
-        ]
-    }
-
-
-def get_es_index(url):
-    return split_es_url(url)[-2]
-
-
-def get_es_type(url):
-    return split_es_url(url)[-1]
+        return results
 
 
-def split_es_url(url):
-    """splits ES URL into host index, type"""
+def get_feature(dataset, id, f='json'):
+    """
+    Get a single feature
 
-    tokens = url.split('/')
-    return tokens
+    :param dataset: dataset to query
+    :param id: feature identifier
+    :param f: responase format (default GeoJSON)
+
+    :returns: dict of GeoJSON Feature
+
+    """
+    if dataset not in settings['datasets'].keys():
+        msg = 'dataset {} not found'.format(dataset)
+        LOGGER.error(msg)
+        return msg, 400
+
+    LOGGER.debug('Loading provider')
+    p = load_provider(settings['datasets'][dataset]['provider'],
+                      settings['datasets'][dataset]['data'],
+                      settings['datasets'][dataset]['id_field'])
+    LOGGER.debug('Fetching id {}'.format(id))
+    feature = p.get(id)
+    if feature is None:
+        msg = 'feature {} not found'.format(id)
+        LOGGER.warning(msg)
+        return msg, 404
+
+    return feature

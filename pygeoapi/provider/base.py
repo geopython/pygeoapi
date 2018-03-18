@@ -27,16 +27,28 @@
 #
 # =================================================================
 
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
 
 class BaseProvider(object):
     """generic Provider ABC"""
 
-    def __init__(self, definition):
-        """initializer"""
+    def __init__(self, name, data, id_field):
+        """
+        Initialize object
 
-        self.type = definition['type']
-        self.url = definition['url']
-        self.id_field = definition['id_field']
+        :param name: provider name
+        :param data: file path or URL to data/service
+        :param id_field: field/property/column of identifier
+
+        :returns: pygeoapi.providers.base.BaseProvider
+        """
+
+        self.name = name
+        self.data = data
+        self.id_field = id_field
 
     def query(self):
         """
@@ -53,6 +65,29 @@ class BaseProvider(object):
 
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
+        """
+
+        raise NotImplementedError()
+
+    def create(self, new_feature):
+        """Create a new feature
+        """
+
+        raise NotImplementedError()
+
+    def update(self, identifier, new_feature):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
+        :param new_feature: new GeoJSON feature dictionary
+        """
+
+        raise NotImplementedError()
+
+    def delete(self, identifier):
+        """Updates an existing feature id with new_feature
+
+        :param identifier: feature id
         """
 
         raise NotImplementedError()

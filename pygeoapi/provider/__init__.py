@@ -28,31 +28,42 @@
 # =================================================================
 
 import importlib
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 PROVIDERS = {
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch.ElasticsearchProvider',
+    'CSV': 'pygeoapi.provider.csv_.CSVProvider',
+    'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
     'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider'
 }
 
 
-def load_provider(provider_obj):
+def load_provider(name, data, id_field):
     """
     loads provider by name
 
-    :param name: name of provider
+    :param name: provider name
+    :param data: file path or URL to data/service
+    :param id_field: field/property/column of identifier
 
     :returns: provider object
     """
 
-    provider_name = provider_obj['type']
+    LOGGER.debug('Providers: {}'.format(PROVIDERS))
+    provider_name = name
     if provider_name not in PROVIDERS.keys():
-        raise InvalidProviderError('provider not found')
+        msg = 'Provider {} not found'.format(provider_name)
+        LOGGER.exception(msg)
+        raise InvalidProviderError(msg)
 
     packagename, classname = PROVIDERS[provider_name].rsplit('.', 1)
+    LOGGER.debug('package name: {}'.format(packagename))
+    LOGGER.debug('class name: {}'.format(classname))
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    provider = class_(provider_obj)
+    provider = class_(name, data, id_field)
     return provider
 
 

@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Norman Barker <norman.barker@gmail.com>
 #
 # Copyright (c) 2018 Tom Kralidis
 #
@@ -28,16 +29,37 @@
 # =================================================================
 
 import click
+import connexion
 
-from pygeoapi.flask_app import serve
-
-__version__ = '0.1.dev0'
-
-
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+from pygeoapi.log import setup_logger
+from pygeoapi.config import settings
 
 
-cli.add_command(serve)
+@click.command()
+@click.pass_context
+@click.option('--host', '-h', default='localhost', help='Hostname')
+@click.option('--port', '-p', default=5000, help='port')
+@click.option('--debug', '-d', default=False, is_flag=True, help='debug')
+def serve(ctx, host, port, debug=False):
+    """Serve pygeoapi via Flask"""
+
+    if port is not None:
+        port_ = port
+    else:
+        port_ = settings['server']['port']
+    if host is not None:
+        host_ = host
+    else:
+        host_ = settings['server']['host']
+
+    app = connexion.FlaskApp(__name__, port=port_, specification_dir='.')
+
+    hostport = '{}:{}'.format(host_, port_)
+
+    api = app.add_api(settings['swagger'], debug=debug, strict_validation=True,
+                      arguments={'host': hostport})
+
+    settings['api'] = api.specification
+
+    setup_logger()
+    app.run()

@@ -1,31 +1,6 @@
-##############################################################################
-#
-# The MIT License (MIT)
-# Copyright (c) 2018 Tom Kralidis
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-# OR OTHER DEALINGS IN THE SOFTWARE.
-#
-##############################################################################
-
 server:
-    openapi_def: /path/to/basedir
-    url: http://localhost:5000/wfs
+    host: localhost
+    port: 5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -68,11 +43,38 @@ metadata:
         role: pointOfContact
 
 datasets:
+    obs:
+        type: Point
+        provider: CSV
+        id_field: id
+        title: Observations
+        abstract: Observations
+        keywords:
+            - observations
+            - monitoring
+        crs:
+            - CRS84
+        links:
+            - type: information
+              url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
+            - type: download
+              url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: 2000-10-30T18:24:39Z
+                end: 2007-10-30T08:57:29Z
+        data: tests/data/obs.csv
     landsat-aws:
         type: Polygon
+        provider: Elasticsearch
+        id_field: id_
         title: my dataset
         abstract: my dataset
-        keywords: kw1,kw2
+        keywords:
+            - kw1
+            - kw2
         crs:
             - CRS84
         links:
@@ -86,15 +88,15 @@ datasets:
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty
-        data:
-            type: Elasticsearch
-            url: http://localhost:9200/index/type
-            id_field: id_
+        data: http://localhost:9200/index/type
     lakes:
         type: Polygon
+        provider: GeoJSON
+        id_field: null  # null indicates use feature enumeration
         title: Large Lakes
         abstract: lakes of the world, public domain
-        keywords: lakes
+        keywords:
+            - lakes
         crs:
             - CRS84
         links:
@@ -108,7 +110,4 @@ datasets:
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty
-        data:
-            type: GeoJSON
-            url: file://data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
+        data: tests/data/ne_110m_lakes.geojson
