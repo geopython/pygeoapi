@@ -39,6 +39,24 @@ from pygeoapi.provider import load_provider
 LOGGER = logging.getLogger(__name__)
 
 
+def api_conformance(f='json'):
+    """
+    Provide conformance definition
+
+    :param f: response format (default JSON)
+
+    :returns: dict of conformance
+    """
+
+    return {
+        'conformsTo': [
+            'http://www.opengis.net/spec/wfs-1/3.0/req/core',
+            'http://www.opengis.net/spec/wfs-1/3.0/req/oas30',
+            'http://www.opengis.net/spec/wfs-1/3.0/req/html',
+            'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
+        ]
+    }
+
 def describe_collections(f='json'):
     """
     Provide feature collection metadata
@@ -92,7 +110,7 @@ def describe_collections(f='json'):
         collection = {'links': [], 'crs': []}
         collection['name'] = k
         collection['title'] = v['title']
-        collection['description'] = v['abstract']
+        collection['description'] = v['description']
         for crs in v['crs']:
             collection['crs'].append(
                 'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
