@@ -103,3 +103,6 @@ ENV/
 # pygeoapi artifacts
 local.config.yml
 local.swagger.yml
+
+# misc
+*.swp

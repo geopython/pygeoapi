@@ -65,13 +65,13 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
 
-    def query(self, startindex=0, count=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results'):
         """
         query Elasticsearch index
 
         :param startindex: starting record to return (default 0)
-        :param count: number of records to return (default 10)
-        :param resulttype: return results or hit count (default results)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -84,9 +84,9 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Querying Elasticsearch')
         if resulttype == 'hits':
             LOGGER.debug('hits only specified')
-            count = 0
+            limit = 0
         results = self.es.search(index=self.index_name, from_=startindex,
-                                 size=count)
+                                 size=limit)
         if resulttype == 'hits':
             feature_collection['numberMatched'] = results['hits']['total']
             return feature_collection

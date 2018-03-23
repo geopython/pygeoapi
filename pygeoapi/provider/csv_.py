@@ -55,53 +55,61 @@ class CSVProvider(BaseProvider):
 
         BaseProvider.__init__(self, name, data, id_field)
 
-    def _load(self, startindex=0, count=10, resulttype='results',
+    def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None):
         """
         Load CSV data
 
         :param startindex: starting record to return (default 0)
-        :param count: number of records to return (default 10)
-        :param resulttype: return results or hit count (default results)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
 
         :returns: dict of GeoJSON FeatureCollection
         """
 
+        found = False
+        result = None
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
+
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             if resulttype == 'hits':
-                LOGGER('Retrurning hits only')
+                LOGGER('Returning hits only')
                 feature_collection['numberMatched'] = len(list(data_))
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_, startindex, startindex+count):
+            for row in itertools.islice(data_, startindex, startindex+limit):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
                 feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
                 feature['properties'] = row
                 if identifier is not None and feature['ID'] == identifier:
-                    return feature
+                    found = True
+                    result = feature
                 feature_collection['features'].append(feature)
 
+        if identifier is not None and not found:
+            return None
+        elif identifier is not None and found:
+            return result
         return feature_collection
 
-    def query(self, startindex=0, count=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results'):
         """
         CSV query
 
         :param startindex: starting record to return (default 0)
-        :param count: number of records to return (default 10)
-        :param resulttype: return results or hit count (default results)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
 
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, count, resulttype)
+        return self._load(startindex, limit, resulttype)
 
     def get(self, identifier):
         """
