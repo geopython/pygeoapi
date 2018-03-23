@@ -28,27 +28,54 @@
 #
 # =================================================================
 
+import json
 import logging
+import os
 
-from flask import request
-# from flask import request, url_for
+from jinja2 import Environment, FileSystemLoader
 
 from pygeoapi.config import settings
 from pygeoapi.provider import load_provider
 
 LOGGER = logging.getLogger(__name__)
 
+TEMPLATES = '{}{}templates'.format(os.path.dirname(
+    os.path.realpath(__file__)), os.sep)
 
-def api_conformance(f='json'):
+
+def api(headers, args, openapi):
+    """
+    Provide OpenAPI document
+
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
+    :param openapi: dict of OpenAPI definition
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    return headers_, 200, json.dumps(openapi)
+
+
+def api_conformance(headers, args):
     """
     Provide conformance definition
 
-    :param f: response format (default JSON)
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
 
-    :returns: dict of conformance
+    :returns: tuple of headers, status code, content
     """
 
-    return {
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    conformance = {
         'conformsTo': [
             'http://www.opengis.net/spec/wfs-1/3.0/req/core',
             'http://www.opengis.net/spec/wfs-1/3.0/req/oas30',
@@ -57,53 +84,63 @@ def api_conformance(f='json'):
         ]
     }
 
-def describe_collections(f='json'):
+    return headers_, 200, json.dumps(conformance)
+
+
+def describe_collections(headers, args, baseurl):
     """
     Provide feature collection metadata
 
-    :param f: response format (default JSON)
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
+    :param baseurl: baseurl of the server
 
-    :returns: dict of feature collection metadata
+    :returns: tuple of headers, status code, content
     """
 
-    # TODO allow other file return formats
-    if f.upper() != 'JSON':
-        msg = 'Unsupported format: {}'.format(f)
-        LOGGER.error(msg)
-        return msg, 400
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    formats = ['json', 'html']
+
+    format_ = args.get('f')
+    if format_ is not None and format_ not in formats:
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'Invalid format'
+        }
+        LOGGER.error(exception)
+        return headers_, 400, json.dumps(exception)
 
     fcm = {
         'links': [],
         'collections': []
     }
 
-    url = '{}://{}'.format(request.scheme, settings['server']['host'])
-    if settings['server']['port'] not in [80, 443]:
-        url = '{}:{}'.format(url, settings['server']['port'])
-
-#    LOGGER.debug('Creating links')
-#    fcm['links'] = [{
-#          'rel': 'self',
-#          'type': 'application/json',
-#          'title': 'this document',
-#          'href': '{}{}'.format(url, url_for('index_json')),
-#        }, {
-#          'rel': 'self',
-#          'type': 'text/html',
-#          'title': 'this document as HTML',
-#          'href': '{}{}'.format(url, url_for('index_html')),
-#        }, {
-#          'rel': 'self',
-#          'type': 'application/openapi+json;version=3.0',
-#          'title': 'the OpenAPI definition as JSON',
-#          'href': '{}{}'.format(url, url_for('api_json')),
-#        }, {
-#          'rel': 'self',
-#          'type': 'text/html',
-#          'title': 'the OpenAPI definition as HTML',
-#          'href': '{}{}'.format(url, url_for('api_html')),
-#        }
-#    ]
+    LOGGER.debug('Creating links')
+    fcm['links'] = [{
+          'rel': 'self',
+          'type': 'application/json',
+          'title': 'this document',
+          'href': baseurl
+        }, {
+          'rel': 'self',
+          'type': 'text/html',
+          'title': 'this document as HTML',
+          'href': '{}?f=html'.format(baseurl)
+        }, {
+          'rel': 'self',
+          'type': 'application/openapi+json;version=3.0',
+          'title': 'the OpenAPI definition as JSON',
+          'href': '{}api'.format(baseurl)
+        }, {
+          'rel': 'self',
+          'type': 'text/html',
+          'title': 'the OpenAPI definition as HTML',
+          'href': '{}?f=html'.format(baseurl)
+        }
+    ]
 
     LOGGER.debug('Creating collections')
     for k, v in settings['datasets'].items():
@@ -122,75 +159,110 @@ def describe_collections(f='json'):
 
         fcm['collections'].append(collection)
 
-    return fcm
+    if format_ == 'html':  # render
+        headers_['Content-type'] = 'text/html'
+        content = _render_j2_template(settings, 'service.html', fcm)
+
+        return headers_, 200, content
+
+    return headers_, 200, json.dumps(fcm)
 
 
-def get_specification(f='json'):
-    if f.upper() == 'JSON':
-        return settings['api']
-    else:
-        return '{} not supported as a query parameter'.format(f), 400
-
-
-def get_features(dataset, startindex=0, count=10, resulttype='results',
-                 bbox=None, f='json'):
+def get_features(headers, args, dataset):
     """
     Queries feature collection
 
-    :param dataset: dataset to query
-    :param startindex: starting record to return (default 0)
-    :param count: number of records to return (default 10)
-    :param resulttype: return results or hit count (default results)
-    :param bbox: list of minx,miny,maxx,maxy
-    :param f: responase format (default GeoJSON)
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
+    :param dataset: dataset name
 
-    :returns: dict of GeoJSON FeatureCollection
-
+    :returns: tuple of headers, status code, content
     """
+
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    startindex = args.get('startindex') or 0
+    limit = args.get('limit') or settings['server']['limit']
+    resulttype = args.get('resulttype') or 'results'
+
     if dataset not in settings['datasets'].keys():
-        msg = 'dataset {} not found'.format(dataset)
-        LOGGER.error(msg)
-        return msg, 400
-    else:
-        LOGGER.debug('Loading provider')
-        p = load_provider(settings['datasets'][dataset]['provider'],
-                          settings['datasets'][dataset]['data'],
-                          settings['datasets'][dataset]['id_field'])
-        LOGGER.debug('Querying provider')
-        LOGGER.debug('startindex: {}'.format(startindex))
-        LOGGER.debug('count: {}'.format(count))
-        LOGGER.debug('resulttype: {}'.format(resulttype))
-        results = p.query(startindex=int(startindex), count=int(count),
-                          resulttype=resulttype)
-
-        return results
-
-
-def get_feature(dataset, id, f='json'):
-    """
-    Get a single feature
-
-    :param dataset: dataset to query
-    :param id: feature identifier
-    :param f: responase format (default GeoJSON)
-
-    :returns: dict of GeoJSON Feature
-
-    """
-    if dataset not in settings['datasets'].keys():
-        msg = 'dataset {} not found'.format(dataset)
-        LOGGER.error(msg)
-        return msg, 400
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'Invalid feature collection'
+        }
+        LOGGER.error(exception)
+        return headers_, 400, json.dumps(exception)
 
     LOGGER.debug('Loading provider')
     p = load_provider(settings['datasets'][dataset]['provider'],
                       settings['datasets'][dataset]['data'],
                       settings['datasets'][dataset]['id_field'])
-    LOGGER.debug('Fetching id {}'.format(id))
-    feature = p.get(id)
-    if feature is None:
-        msg = 'feature {} not found'.format(id)
-        LOGGER.warning(msg)
-        return msg, 404
+    LOGGER.debug('Querying provider')
+    LOGGER.debug('startindex: {}'.format(startindex))
+    LOGGER.debug('limit: {}'.format(limit))
+    LOGGER.debug('resulttype: {}'.format(resulttype))
+    content = p.query(startindex=int(startindex), limit=int(limit),
+                      resulttype=resulttype)
 
-    return feature
+    return headers_, 200, json.dumps(content)
+
+
+def get_feature(headers, args, dataset, identifier):
+    """
+    Get a single feature
+
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
+    :param dataset: dataset name
+    :param identifier: feature identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    if dataset not in settings['datasets'].keys():
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'Invalid feature collection'
+        }
+        LOGGER.error(exception)
+        return headers_, 400, json.dumps(exception)
+
+    LOGGER.debug('Loading provider')
+    p = load_provider(settings['datasets'][dataset]['provider'],
+                      settings['datasets'][dataset]['data'],
+                      settings['datasets'][dataset]['id_field'])
+
+    LOGGER.debug('Fetching id {}'.format(identifier))
+    content = p.get(identifier)
+
+    if content is None:
+        exception = {
+            'code': 'NotFound',
+            'description': 'Feature not found'
+        }
+        LOGGER.error(exception)
+        return headers_, 404, json.dumps(exception)
+
+    return headers_, 200, json.dumps(content)
+
+
+def _render_j2_template(config, template, data):
+    """
+    render Jinja2 template
+
+    :param config: dict of configuration
+    :param template: template (relative path)
+    :param data: dict of data
+
+    :returns: string of rendered template
+    """
+
+    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    template = env.get_template(template)
+    return template.render(config=config, data=data)

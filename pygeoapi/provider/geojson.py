@@ -70,8 +70,8 @@ class GeoJSONProvider(BaseProvider):
         Yes loading from disk, deserializing and validation
         happens on every request. This is not efficient.
         """
-        if os.path.exists(self.path):
-            with open(self.path) as src:
+        if os.path.exists(self.data):
+            with open(self.data) as src:
                 data = json.loads(src.read())
         else:
             data = {
@@ -85,7 +85,7 @@ class GeoJSONProvider(BaseProvider):
 
         return data
 
-    def query(self, startindex=0, count=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results'):
         """
         query the provider
 
@@ -99,7 +99,7 @@ class GeoJSONProvider(BaseProvider):
             data['numberMatched'] = len(data['features'])
             data['features'] = []
         else:
-            data['features'] = data['features'][startindex:startindex + count]
+            data['features'] = data['features'][startindex:startindex+limit]
 
         return data
 
