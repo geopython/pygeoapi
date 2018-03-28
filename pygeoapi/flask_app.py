@@ -34,6 +34,7 @@ import yaml
 import click
 
 from flask import Flask, make_response, request
+from flask_cors import CORS
 
 from pygeoapi import views
 from pygeoapi.config import settings
@@ -108,6 +109,9 @@ def serve(ctx, debug=False):
 
     if not settings['server']['pretty_print']:
         APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+
+    if settings['server']['cors']:
+        CORS(APP)
 
     setup_logger()
     # TODO: get scheme
