@@ -150,7 +150,7 @@ def api_conformance(headers, args):
     return headers_, 200, json.dumps(conformance)
 
 
-def describe_collections(headers, args):
+def describe_collections(headers, args, name=None):
     """
     Provide feature collection metadata
 
@@ -193,6 +193,9 @@ def describe_collections(headers, args):
         for link in v['links']:
             lnk = {'rel': link['type'], 'href': link['url']}
             collection['links'].append(lnk)
+
+        if name is not None and k == name:
+            return headers_, 200, json.dumps(collection)
 
         fcm['collections'].append(collection)
 

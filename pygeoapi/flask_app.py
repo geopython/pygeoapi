@@ -84,9 +84,10 @@ def api_conformance():
 
 
 @APP.route('/collections')
-def describe_collections():
+@APP.route('/collections/<name>')
+def describe_collections(name=None):
     headers, status_code, content = views.describe_collections(
-        request.headers, request.args)
+        request.headers, request.args, name)
 
     response = make_response(content, status_code)
     if headers:
@@ -95,8 +96,8 @@ def describe_collections():
     return response
 
 
-@APP.route('/collections/<feature_collection>/')
-@APP.route('/collections/<feature_collection>/<feature>')
+@APP.route('/collections/<feature_collection>/items')
+@APP.route('/collections/<feature_collection>/items/<feature>')
 def dataset(feature_collection, feature=None):
     if feature is None:
         headers, status_code, content = views.get_features(

@@ -149,8 +149,29 @@ def get_oas_30(cfg):
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
                 break
+
         oas['tags'].append(tag)
+
         paths['/collections/{}'.format(k)] = {
+            'get': {
+                'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
+                'description': v['description'],
+                'tags': [k],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    }
+                }
+            }
+        }
+
+        paths['/collections/{}/items'.format(k)] = {
             'get': {
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
