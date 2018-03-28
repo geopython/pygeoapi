@@ -43,6 +43,69 @@ TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
 
+def root(headers, args, baseurl):
+    """
+    Provide API
+
+    :param headers: dict of HTTP headers
+    :param args: dict of HTTP request parameters
+    :param baseurl: baseurl of the server
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers_ = {
+        'Content-type': 'application/json'
+    }
+
+    formats = ['json', 'html']
+
+    format_ = args.get('f')
+    if format_ is not None and format_ not in formats:
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'Invalid format'
+        }
+        LOGGER.error(exception)
+        return headers_, 400, json.dumps(exception)
+
+    fcm = {
+        'links': [],
+    }
+
+    LOGGER.debug('Creating links')
+    fcm['links'] = [{
+          'rel': 'self',
+          'type': 'application/json',
+          'title': 'this document',
+          'href': baseurl
+        }, {
+          'rel': 'self',
+          'type': 'text/html',
+          'title': 'this document as HTML',
+          'href': '{}?f=html'.format(baseurl)
+        }, {
+          'rel': 'self',
+          'type': 'application/openapi+json;version=3.0',
+          'title': 'the OpenAPI definition as JSON',
+          'href': '{}api'.format(baseurl)
+        }, {
+          'rel': 'self',
+          'type': 'text/html',
+          'title': 'the OpenAPI definition as HTML',
+          'href': '{}?f=html'.format(baseurl)
+        }
+    ]
+
+    if format_ == 'html':  # render
+        headers_['Content-type'] = 'text/html'
+        content = _render_j2_template(settings, 'service.html', fcm)
+
+        return headers_, 200, content
+
+    return headers_, 200, json.dumps(fcm)
+
+
 def api(headers, args, openapi):
     """
     Provide OpenAPI document
@@ -87,13 +150,12 @@ def api_conformance(headers, args):
     return headers_, 200, json.dumps(conformance)
 
 
-def describe_collections(headers, args, baseurl):
+def describe_collections(headers, args):
     """
     Provide feature collection metadata
 
     :param headers: dict of HTTP headers
     :param args: dict of HTTP request parameters
-    :param baseurl: baseurl of the server
 
     :returns: tuple of headers, status code, content
     """
@@ -114,33 +176,8 @@ def describe_collections(headers, args, baseurl):
         return headers_, 400, json.dumps(exception)
 
     fcm = {
-        'links': [],
         'collections': []
     }
-
-    LOGGER.debug('Creating links')
-    fcm['links'] = [{
-          'rel': 'self',
-          'type': 'application/json',
-          'title': 'this document',
-          'href': baseurl
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'this document as HTML',
-          'href': '{}?f=html'.format(baseurl)
-        }, {
-          'rel': 'self',
-          'type': 'application/openapi+json;version=3.0',
-          'title': 'the OpenAPI definition as JSON',
-          'href': '{}api'.format(baseurl)
-        }, {
-          'rel': 'self',
-          'type': 'text/html',
-          'title': 'the OpenAPI definition as HTML',
-          'href': '{}?f=html'.format(baseurl)
-        }
-    ]
 
     LOGGER.debug('Creating collections')
     for k, v in settings['datasets'].items():
