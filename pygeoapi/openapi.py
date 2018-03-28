@@ -79,8 +79,8 @@ def get_oas_30(cfg):
 
     paths['/'] = {
         'get': {
-            'summary': 'Feature Collections',
-            'descriptions': 'Feature Collections',
+            'summary': 'API',
+            'description': 'API',
             'tags': ['server'],
             'responses': {
                 200: {
@@ -89,6 +89,7 @@ def get_oas_30(cfg):
             }
         }
     }
+
     paths['/api'] = {
         'get': {
             'summary': 'This document',
@@ -101,7 +102,8 @@ def get_oas_30(cfg):
             }
         }
     }
-    paths['/api/conformance'] = {
+
+    paths['/conformance'] = {
         'get': {
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
@@ -113,6 +115,20 @@ def get_oas_30(cfg):
             }
         }
     }
+
+    paths['/collections'] = {
+        'get': {
+            'summary': 'Feature Collections',
+            'descriptions': 'Feature Collections',
+            'tags': ['server'],
+            'responses': {
+                200: {
+                    'description': 'successful operation'
+                }
+            }
+        }
+    }
+
     oas['tags'].append({
         'name': 'server',
         'description': cfg['metadata']['identification']['description'],
@@ -134,7 +150,7 @@ def get_oas_30(cfg):
                 tag['externalDocs']['url'] = link['url']
                 break
         oas['tags'].append(tag)
-        paths['/{}'.format(k)] = {
+        paths['/collections/{}'.format(k)] = {
             'get': {
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],

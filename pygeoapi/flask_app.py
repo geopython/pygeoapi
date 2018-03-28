@@ -45,8 +45,8 @@ APP = Flask(__name__)
 
 
 @APP.route('/')
-def describe_collections():
-    headers, status_code, content = views.describe_collections(
+def root():
+    headers, status_code, content = views.root(
         request.headers, request.args, APP.config['PYGEOAPI_BASEURL'])
 
     response = make_response(content, status_code)
@@ -71,7 +71,7 @@ def api():
     return response
 
 
-@APP.route('/api/conformance')
+@APP.route('/conformance')
 def api_conformance():
     headers, status_code, content = views.api_conformance(request.headers,
                                                           request.args)
@@ -83,8 +83,20 @@ def api_conformance():
     return response
 
 
-@APP.route('/<feature_collection>/')
-@APP.route('/<feature_collection>/<feature>')
+@APP.route('/collections')
+def describe_collections():
+    headers, status_code, content = views.describe_collections(
+        request.headers, request.args)
+
+    response = make_response(content, status_code)
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<feature_collection>/')
+@APP.route('/collections/<feature_collection>/<feature>')
 def dataset(feature_collection, feature=None):
     if feature is None:
         headers, status_code, content = views.get_features(
