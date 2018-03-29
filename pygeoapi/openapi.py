@@ -176,6 +176,9 @@ def get_oas_30(cfg):
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
+                'parameters': [
+                    {'$ref': '#/components/parameters/limit'}
+                ],
                 'responses': {
                     200: {
                         'description': 'successful operation'
@@ -190,7 +193,63 @@ def get_oas_30(cfg):
             }
         }
 
+        paths['/collections/{}/items/{{id}}'.format(k)] = {
+            'get': {
+                'summary': 'Get {} feature by ID'.format(v['title']),
+                'description': v['description'],
+                'tags': [k],
+                'parameters': [
+                    {'$ref': '#/components/parameters/id'}
+                ],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    }
+                }
+            }
+        }
     oas['paths'] = paths
+
+    oas['components'] = {
+        'parameters': {
+            'id': {
+                'name': 'id',
+                'in': 'path',
+                'description': 'The id of a feature',
+                'required': True,
+                'type': 'string'
+            },
+            'limit': {
+                'name': 'limit',
+                'in': 'query',
+                'description': ('The optional limit parameter limits the',
+                                ' number of items that are presented in the',
+                                ' response document. Only items are counted',
+                                ' that are on the first level of the',
+                                ' collection in the response document. Nested',
+                                ' objects contained within the explicitly',
+                                ' requested items shall not be counted.',
+                                ' Minimum = 1. Maximum = 10000.',
+                                ' Default = {}.'.format(
+                                    cfg['server']['limit'])),
+                'required': False,
+                'schema': {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 10000,
+                    'default': cfg['server']['limit']
+                },
+                'style': 'form',
+                'explode': False
+            }
+        }
+    }
 
     return oas
 
