@@ -191,7 +191,11 @@ def describe_collections(headers, args, name=None):
         collection['extent'] = v['extents']['spatial']['bbox']
 
         for link in v['links']:
-            lnk = {'rel': link['type'], 'href': link['url']}
+            lnk = {
+                'rel': 'alternate',
+                'type': link['type'],
+                'href': link['url']
+            }
             collection['links'].append(lnk)
 
         if name is not None and k == name:
@@ -246,6 +250,23 @@ def get_features(headers, args, dataset):
     content = p.query(startindex=int(startindex), limit=int(limit),
                       resulttype=resulttype)
 
+    next_ = startindex + settings['server']['limit']
+
+    content['links'] = [{
+        'rel': 'self',
+        'type': 'application/json',
+        'href': '/collections/{}/items'.format(dataset)
+        }, {
+        'rel': 'next',
+        'type': 'application/json',
+        'href': '/collections/{}/items/?startindex={}'.format(dataset, next_)
+        }, {
+        'rel': 'collection',
+        'type': 'application/json',
+        'href': '/collections/{}'.format(dataset)
+        }
+    ]
+
     return headers_, 200, json.dumps(content)
 
 
@@ -281,10 +302,21 @@ def get_feature(headers, args, dataset, identifier):
     LOGGER.debug('Fetching id {}'.format(identifier))
     content = p.get(identifier)
 
+    content['links'] = [{
+        'rel': 'self',
+        'type': 'application/json',
+        'href': '/collections/{}/items/{}'.format(dataset, identifier)
+        }, {
+        'rel': 'collection',
+        'type': 'application/json',
+        'href': '/collections/{}'.format(dataset)
+        }
+    ]
+
     if content is None:
         exception = {
             'code': 'NotFound',
-            'description': 'Feature not found'
+            'description': 'identifier not found'
         }
         LOGGER.error(exception)
         return headers_, 404, json.dumps(exception)
