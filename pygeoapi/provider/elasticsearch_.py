@@ -93,7 +93,7 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('serializing features')
         for feature in results['hits']['hits']:
-            id_ = feature['_source']['properties']['identifier']
+            id_ = feature['_source']['properties'][self.id_field]
             LOGGER.debug('serializing id {}'.format(id_))
             feature['_source']['ID'] = id_
             feature_collection['features'].append(feature['_source'])
