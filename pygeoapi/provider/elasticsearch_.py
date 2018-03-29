@@ -114,7 +114,7 @@ class ElasticsearchProvider(BaseProvider):
             result = self.es.get(self.index_name, doc_type=self.type_name,
                                  id=identifier)
             LOGGER.debug('Serializing feature')
-            id_ = result['_source']['properties']['identifier']
+            id_ = result['_source']['properties'][self.id_field]
             result['_source']['ID'] = id_
         except Exception as err:
             LOGGER.error(err)

@@ -42,6 +42,7 @@ from pygeoapi.log import setup_logger
 from pygeoapi.util import get_url
 
 APP = Flask(__name__)
+APP.url_map.strict_slashes = False
 
 
 @APP.route('/')
@@ -132,4 +133,4 @@ def serve(ctx, debug=False):
                       settings['server']['port'],
                       settings['server']['basepath'])
     APP.config['PYGEOAPI_BASEURL'] = BASEURL
-    APP.run(debug=True)
+    APP.run(debug=True, host='0.0.0.0', port=settings['server']['port'])
