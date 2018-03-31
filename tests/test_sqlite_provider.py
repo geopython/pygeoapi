@@ -1,12 +1,12 @@
 #Needs to be run like: pytest -s test_sqlite_provider.py
-import pytest
+#In eclipse we need to set PYGEOAPI_CONFIG, Run>Debug Configurations> (Arguments as py.test and set external variables to the correct config path)
 import sqlite3
+import pytest
 import os
+import geojson
 from pygeoapi.provider.sqlite import SQLiteProvider
 
-
-
-db_path="/home/jorge/Projects/pygeoapi/tests/data/ne_110m_lakes.sqlite"
+db_path="./tests/data/ne_110m_lakes.sqlite"
 
 @pytest.fixture()
 def config():
@@ -18,9 +18,17 @@ def config():
 
 
 def test_query(config):
-   p = SQLiteProvider(**config)
-   results =p.query()
+    """Testing query for a valid JSON object with geometry"""
+    p = SQLiteProvider(**config)
+    feature_collection = p.query()
+    assert feature_collection.get('type',None) == "FeatureCollection"
+    features = feature_collection.get('features',None) 
+    assert features is not None
+    feature = features[0]
+    properties = feature.get("properties",None)
+    assert properties is not None
+    geometry = feature.get("geometry",None)
+    assert geometry is not None
 
-   assert len(results['features']) == 1
-   assert results['features'][0]['id'] == '123-456'
-   print(results)
+
+
