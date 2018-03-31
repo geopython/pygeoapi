@@ -57,7 +57,7 @@ def serve(ctx, host, port, debug=False):
     hostport = '{}:{}'.format(host_, port_)
 
     api = app.add_api(settings['swagger'], debug=debug, strict_validation=True,
-                      arguments={'host': hostport})
+                      arguments={'host': hostport, 'config': settings})
 
     settings['api'] = api.specification
 
