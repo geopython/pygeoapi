@@ -65,16 +65,15 @@ class SQLiteProvider(object):
            
         result = cursor.fetchall()
         try:
-            #for item in result:
-            #    print(dict(item))
-            #TODO: Check if there is a mandatory primary key
-            assert len(result) # Check that we have a table
-            assert len([item for item in result if item['pk'] == 1]) #check for pk:1 in at leaset a column
-            assert len([item for item in result if self.id_field in item]) # check id the id_field is present
-            assert len([item for item in result if 'GEOMETRY' in item]) #check for geometry
+           
+            #TODO: Better exceptions
+            assert len(result), "Table not found"
+            assert len([item for item in result if item['pk'] == 1]), "Primary key not found"
+            assert len([item for item in result if self.id_field in item]), "id_field not present"
+            assert len([item for item in result if 'GEOMETRY' in item]), "GEOMETRY column not found"
             
-        except:
-            raise InvalidProviderError
+        except InvalidProviderError as error:
+            raise
 
         self.columns = [item[1] for item in result if item[1] != 'GEOMETRY']
         #data = cursor.execute('select * from {};'.format(self.table))

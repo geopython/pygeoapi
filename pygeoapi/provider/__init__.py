@@ -36,7 +36,7 @@ PROVIDERS = {
     'CSV': 'pygeoapi.provider.csv_.CSVProvider',
     'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
     'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-#    'Sqlite': 'pygeoapi.provider.sqlite.SQLiteProvider',
+    'Sqlite': 'pygeoapi.provider.sqlite.SQLiteProvider',
 
 }
 
@@ -71,5 +71,4 @@ def load_provider(name, data, id_field):
 
 class InvalidProviderError(Exception):
     """invalid provider"""
-
     pass
