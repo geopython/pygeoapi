@@ -1,6 +1,7 @@
 server:
     host: localhost
     port: 5000
+    basepath: /
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -14,15 +15,18 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi
-        abstract:  pygeoapi provides an API to geospatial data
+        title: pygeoapi default instance
+        description: pygeoapi provides an API to geospatial data
         keywords:
             - geospatial
             - data
             - api
         keywords_type: theme
-        fees: None
-        accessconstraints: None
+        terms_of_service: None
+        url: http://example.org
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
     provider:
         name: GeoPython
         url: https://github.com/geopython/pygeoapi
@@ -55,9 +59,11 @@ datasets:
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/csv
+              description: data
               url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
-            - type: download
+            - type: text/csv
+              description: data
               url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
         extents:
             spatial:
@@ -104,9 +110,11 @@ datasets:
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/html
+              description: information
               url: http://example.org/dataset/index.html
-            - type: download
+            - type: application/gzip
+              description: download
               url: http://example.org/dataset/data.tgz
         extents:
             spatial:
@@ -126,9 +134,11 @@ datasets:
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/html
+              description: information
               url: http://www.naturalearthdata.com/
-            - type: download
+            - type: text/html
+              description: download
               url: http://www.naturalearthdata.com/
         extents:
             spatial:

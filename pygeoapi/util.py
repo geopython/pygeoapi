@@ -27,19 +27,23 @@
 #
 # =================================================================
 
-import click
+import logging
 
-from pygeoapi.flask_app import serve
-from pygeoapi.openapi import generate_openapi_document
-
-__version__ = '0.1.dev0'
+LOGGER = logging.getLogger(__name__)
 
 
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+def get_url(scheme, host, port, basepath):
+    """
+    Provides URL of instance
 
+    :returns: string of complete baseurl
+    """
 
-cli.add_command(serve)
-cli.add_command(generate_openapi_document)
+    url = '{}://{}'.format(scheme, host)
+
+    if port not in [80, 443]:
+        url = '{}:{}'.format(url, port)
+
+    url = '{}{}'.format(url, basepath)
+
+    return url

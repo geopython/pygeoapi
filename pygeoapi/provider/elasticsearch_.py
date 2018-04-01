@@ -65,13 +65,13 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
 
-    def query(self, startindex=0, count=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results'):
         """
         query Elasticsearch index
 
         :param startindex: starting record to return (default 0)
-        :param count: number of records to return (default 10)
-        :param resulttype: return results or hit count (default results)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -84,16 +84,16 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Querying Elasticsearch')
         if resulttype == 'hits':
             LOGGER.debug('hits only specified')
-            count = 0
+            limit = 0
         results = self.es.search(index=self.index_name, from_=startindex,
-                                 size=count)
+                                 size=limit)
         if resulttype == 'hits':
             feature_collection['numberMatched'] = results['hits']['total']
             return feature_collection
 
         LOGGER.debug('serializing features')
         for feature in results['hits']['hits']:
-            id_ = feature['_source']['properties']['identifier']
+            id_ = feature['_source']['properties'][self.id_field]
             LOGGER.debug('serializing id {}'.format(id_))
             feature['_source']['ID'] = id_
             feature_collection['features'].append(feature['_source'])
@@ -114,7 +114,7 @@ class ElasticsearchProvider(BaseProvider):
             result = self.es.get(self.index_name, doc_type=self.type_name,
                                  id=identifier)
             LOGGER.debug('Serializing feature')
-            id_ = result['_source']['properties']['identifier']
+            id_ = result['_source']['properties'][self.id_field]
             result['_source']['ID'] = id_
         except Exception as err:
             LOGGER.error(err)
