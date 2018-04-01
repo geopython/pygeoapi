@@ -95,10 +95,12 @@ class GeoJSONProvider(BaseProvider):
         # TODO filter by bbox without resorting to third-party libs
         data = self._load()
 
+        data['numberMatched'] = len(data['features'])
+
         if resulttype == 'hits':
-            data['numberMatched'] = len(data['features'])
             data['features'] = []
         else:
+            data['numberReturned'] = limit
             data['features'] = data['features'][startindex:startindex+limit]
 
         return data
