@@ -87,9 +87,13 @@ class ElasticsearchProvider(BaseProvider):
             limit = 0
         results = self.es.search(index=self.index_name, from_=startindex,
                                  size=limit)
+
+        feature_collection['numberMatched'] = results['hits']['total']
+
         if resulttype == 'hits':
-            feature_collection['numberMatched'] = results['hits']['total']
             return feature_collection
+
+        feature_collection['numberReturned'] = limit
 
         LOGGER.debug('serializing features')
         for feature in results['hits']['hits']:
