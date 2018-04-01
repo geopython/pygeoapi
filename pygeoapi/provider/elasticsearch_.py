@@ -39,18 +39,16 @@ LOGGER = logging.getLogger(__name__)
 class ElasticsearchProvider(BaseProvider):
     """Elasticsearch Provider"""
 
-    def __init__(self, name, data, id_field):
+    def __init__(self, provider_def):
         """
         Initialize object
 
-        :param name: provider name
-        :param data: file path or URL to data/service
-        :param id_field: field/property/column of identifier
+        :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.elasticsearch.ElasticsearchProvider
+        :returns: pygeoapi.providers.elasticsearch_.ElasticsearchProvider
         """
 
-        BaseProvider.__init__(self, name, data, id_field)
+        BaseProvider.__init__(self, provider_def)
 
         url_tokens = self.data.split('/')
 
@@ -87,9 +85,13 @@ class ElasticsearchProvider(BaseProvider):
             limit = 0
         results = self.es.search(index=self.index_name, from_=startindex,
                                  size=limit)
+
+        feature_collection['numberMatched'] = results['hits']['total']
+
         if resulttype == 'hits':
-            feature_collection['numberMatched'] = results['hits']['total']
             return feature_collection
+
+        feature_collection['numberReturned'] = limit
 
         LOGGER.debug('serializing features')
         for feature in results['hits']['hits']:

@@ -41,31 +41,31 @@ PROVIDERS = {
 }
 
 
-def load_provider(name, data, id_field):
+def load_provider(provider_def):
     """
     loads provider by name
 
-    :param name: provider name
-    :param data: file path or URL to data/service
-    :param id_field: field/property/column of identifier
+    :param provider_def: provider definition
 
     :returns: provider object
     """
 
     LOGGER.debug('Providers: {}'.format(PROVIDERS))
-    provider_name = name
-    if provider_name not in PROVIDERS.keys():
-        msg = 'Provider {} not found'.format(provider_name)
+
+    name = provider_def['name']
+
+    if name not in PROVIDERS.keys():
+        msg = 'Provider {} not found'.format(name)
         LOGGER.exception(msg)
         raise InvalidProviderError(msg)
 
-    packagename, classname = PROVIDERS[provider_name].rsplit('.', 1)
+    packagename, classname = PROVIDERS[name].rsplit('.', 1)
     LOGGER.debug('package name: {}'.format(packagename))
     LOGGER.debug('class name: {}'.format(classname))
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    provider = class_(name, data, id_field)
+    provider = class_(provider_def)
     return provider
 
 

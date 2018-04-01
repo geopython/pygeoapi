@@ -59,9 +59,9 @@ class GeoJSONProvider(BaseProvider):
       appropriate HTTP responses will be raised
     """
 
-    def __init__(self, name, data, id_field):
+    def __init__(self, provider_def):
         """initializer"""
-        BaseProvider.__init__(self, name, data, id_field)
+        BaseProvider.__init__(self, provider_def)
 
     def _load(self):
         """Load and validate the source GeoJSON file
@@ -95,10 +95,12 @@ class GeoJSONProvider(BaseProvider):
         # TODO filter by bbox without resorting to third-party libs
         data = self._load()
 
+        data['numberMatched'] = len(data['features'])
+
         if resulttype == 'hits':
-            data['numberMatched'] = len(data['features'])
             data['features'] = []
         else:
+            data['numberReturned'] = limit
             data['features'] = data['features'][startindex:startindex+limit]
 
         return data
