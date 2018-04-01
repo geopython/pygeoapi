@@ -8,7 +8,7 @@
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
     <meta name="keywords" content="{{ config['metadata']['identification']['keywords']|join(',') }}">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/default.css') }}">
+    <link rel="stylesheet" href="static/css/default.css">
 
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
@@ -17,7 +17,7 @@
   <body>
     <header>
       <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}">{{ config['metadata']['identification']['title'] }}</a></h1>
-      <span itemprop="description">{{ config['metadata']['identification']['abstract'] }}</span>
+      <span itemprop="description">{{ config['metadata']['identification']['description'] }}</span>
     </header>
     <section id="service-metadata">
       <h2>Service Metadata</h2>
@@ -30,9 +30,11 @@
     </section>
     <section id="datasets">
       <h2>Datasets</h2>
+      <ul>
       {% for k, v in config['datasets'].items()%}
-          <span><a title="{{ v['title'] }}" href="{{ config['server']['url'] }}{{ url_for('dataset', dataset_name=k) }}">{{ v['title'] }}</a></span>
+          <li><a title="{{ v['title'] }}" href="{{ config['server']['url'] }}{{ k }}">{{ v['title'] }}</a></li>
       {% endfor %}
+      </ul>
     </section>
     <hr/>
     <footer>Powered by <a title="pygeoapi" href="https://github.com/geopython/pygeoapi">pygeoapi</a> {{ version }}</footer>

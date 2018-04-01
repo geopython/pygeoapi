@@ -1,6 +1,7 @@
 server:
     host: localhost
     port: 5000
+    basepath: /
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -14,15 +15,18 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi
-        abstract:  pygeoapi provides an API to geospatial data
+        title: pygeoapi default instance
+        description: pygeoapi provides an API to geospatial data
         keywords:
             - geospatial
             - data
             - api
         keywords_type: theme
-        fees: None
-        accessconstraints: None
+        terms_of_service: None
+        url: http://example.org
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
     provider:
         name: Organization Name
         url: https://github.com/geopython/pygeoapi
@@ -48,16 +52,18 @@ datasets:
         provider: CSV
         id_field: id
         title: Observations
-        abstract: Observations
+        description: Observations
         keywords:
             - observations
             - monitoring
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/csv
+              description: data
               url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
-            - type: download
+            - type: text/csv
+              description: data
               url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
         extents:
             spatial:
@@ -66,21 +72,24 @@ datasets:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
         data: tests/data/obs.csv
+
     landsat-aws:
         type: Polygon
         provider: Elasticsearch
         id_field: id_
         title: my dataset
-        abstract: my dataset
+        description: my dataset
         keywords:
             - kw1
             - kw2
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/html
+              description: information
               url: http://example.org/dataset/index.html
-            - type: download
+            - type: application/gzip
+              description: download
               url: http://example.org/dataset/data.tgz
         extents:
             spatial:
@@ -94,15 +103,17 @@ datasets:
         provider: GeoJSON
         id_field: null  # null indicates use feature enumeration
         title: Large Lakes
-        abstract: lakes of the world, public domain
+        description: lakes of the world, public domain
         keywords:
             - lakes
         crs:
             - CRS84
         links:
-            - type: information
+            - type: text/html
+              description: information
               url: http://www.naturalearthdata.com/
-            - type: download
+            - type: text/html
+              description: download
               url: http://www.naturalearthdata.com/
         extents:
             spatial:
