@@ -249,9 +249,7 @@ def get_features(headers, args, dataset):
         return headers_, 400, json.dumps(exception)
 
     LOGGER.debug('Loading provider')
-    p = load_provider(settings['datasets'][dataset]['provider'],
-                      settings['datasets'][dataset]['data'],
-                      settings['datasets'][dataset]['id_field'])
+    p = load_provider(settings['datasets'][dataset]['provider'])
     LOGGER.debug('Querying provider')
     LOGGER.debug('startindex: {}'.format(startindex))
     LOGGER.debug('limit: {}'.format(limit))
@@ -306,9 +304,7 @@ def get_feature(headers, args, dataset, identifier):
         return headers_, 400, json.dumps(exception)
 
     LOGGER.debug('Loading provider')
-    p = load_provider(settings['datasets'][dataset]['provider'],
-                      settings['datasets'][dataset]['data'],
-                      settings['datasets'][dataset]['id_field'])
+    p = load_provider(settings['datasets'][dataset]['provider'])
 
     LOGGER.debug('Fetching id {}'.format(identifier))
     content = p.get(identifier)
