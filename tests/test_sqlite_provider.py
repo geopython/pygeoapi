@@ -19,6 +19,7 @@ def config():
 
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
+    
     p = SQLiteProvider(**config)
     feature_collection = p.query()
     assert feature_collection.get('type',None) == "FeatureCollection"
