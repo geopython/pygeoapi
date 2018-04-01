@@ -10,11 +10,11 @@ from pygeoapi.provider import InvalidProviderError
 class SQLiteProvider(object):
     """Generic provide for SQLITE using sqlite3 module """
 
-    def __init__(self,name, data, id_field,table):
+    def __init__(self,name, data, id_field):
         
         """
         :param name: provider name
-        :param data: file path or URL to data/service
+        :param data: file path or URL to data/service assuming that string after :  is table name
         :param id_field: field/property/column of identifier
         :param table: sqlite table
         
@@ -26,32 +26,16 @@ class SQLiteProvider(object):
         #                  settings['datasets'][dataset]['data'],
         #                  settings['datasets'][dataset]['id_field'])
 
-        self.data =  self.data #  file:///./tests/data/ne_110m_lakes.sqlite
-    
+        self.data =  data.split(":")[0] #  file:///./tests/data/ne_110m_lakes.sqlite
         self.name = name
         self.id_field = id_field
-        self.table = table
+        self.table = data.split(":")[1] if (len(data.split(":")) > 1) else None
 
-    def dict_factory(cursor, row):
-        """
-        Function to return sqlite3 row as a dictionary
-        :param cursor: sqlite3.Cursor
-        :param row: sqlite3.Row
-        
-        :returns: dict
-        
-        """ 
-        
-        d = {} 
-        for idx, col in enumerate(cursor.description): 
-            d[col[0]] = row[idx] 
-        return d 
 
     def _load(self):
         """
         Private method for loading spatiallite, get the table structure and dump geometry
         """
-        
         if (os.path.exists(self.data)):
             conn = sqlite3.connect(self.data)
         else:
@@ -59,13 +43,16 @@ class SQLiteProvider(object):
 
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
         cursor.execute("SELECT load_extension('mod_spatialite')")
+        f1=open("/tmp/tmp.tmp","w")
+        f1.write(str(self.table))
+        f1.close()
         cursor.execute("PRAGMA table_info({})".format(self.table))
            
         result = cursor.fetchall()
         try:
-           
+        
+            
             #TODO: Better exceptions
             assert len(result), "Table not found"
             assert len([item for item in result if item['pk'] == 1]), "Primary key not found"
@@ -80,7 +67,7 @@ class SQLiteProvider(object):
         return cursor
 
 
-    def query(self):
+    def query(self,startindex=0, limit=10, resulttype='results'):
         """
         Query the provider for all the content 
 

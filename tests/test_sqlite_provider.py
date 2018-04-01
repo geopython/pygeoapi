@@ -6,15 +6,14 @@ import os
 import geojson
 from pygeoapi.provider.sqlite import SQLiteProvider
 
-db_path="./tests/data/ne_110m_admin_0_countries.sqlite"
+db_path="./tests/data/ne_110m_admin_0_countries.sqlite:ne_110m_admin_0_countries"
 
 @pytest.fixture()
 def config():
     return {
             'name': 'Sqlite',
             'data': db_path,
-            'id_field': "ogc_fid",
-            'table': 'ne_110m_admin_0_countries'}
+            'id_field': "ogc_fid"}
 
 
 def test_query(config):

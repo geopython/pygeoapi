@@ -19,7 +19,7 @@ vi local.config.yml
 export PYGEOAPI_CONFIG=/path/to/local.config.yml
 # generate OpenAPI Document
 pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
-export PYGEOAPI_SWAGGER=/path/to/openapi.yml
+export PYGEOAPI_OPENAPI=/path/to/openapi.yml
 pygeoapi serve
 ```
 

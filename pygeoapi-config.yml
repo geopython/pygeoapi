@@ -28,7 +28,7 @@ metadata:
         name: CC-BY 4.0 license
         url: https://creativecommons.org/licenses/by/4.0/
     provider:
-        name: GeoPython
+        name: Organization Name
         url: https://github.com/geopython/pygeoapi
     contact:
         name: Lastname, Firstname
@@ -52,7 +52,7 @@ datasets:
         provider: CSV
         id_field: id
         title: Observations
-        abstract: Observations
+        description: Observations
         keywords:
             - observations
             - monitoring
@@ -72,38 +72,13 @@ datasets:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
         data: tests/data/obs.csv
-        
-    countries:
-        type: Polygons
-        provider: Sqlite
-        id_field: ogc_fid
-        title: Natural Earth Countries
-        abstract: Country data and information from Natural Earth dataset
-        keywords:
-            - country
-            - countries
-            - natural earth
-        crs:
-            - CRS84
-        links:
-            - type: information
-              url: http://www.naturalearthdata.com/forums/topic/metadata-for-admin-o-countries-and-their-boundaries/
-            - type: download
-              url: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-            temporal:
-                begin: 2000-10-30T18:24:39Z
-                end: 2018-04-01T08:39:29Z
-        data: tests/data/ne_110m_admin_0_countries.sqlite
-    
+
     landsat-aws:
         type: Polygon
         provider: Elasticsearch
         id_field: id_
         title: my dataset
-        abstract: my dataset
+        description: my dataset
         keywords:
             - kw1
             - kw2
@@ -128,7 +103,7 @@ datasets:
         provider: GeoJSON
         id_field: null  # null indicates use feature enumeration
         title: Large Lakes
-        abstract: lakes of the world, public domain
+        description: lakes of the world, public domain
         keywords:
             - lakes
         crs:
@@ -147,3 +122,30 @@ datasets:
                 begin: 2011-11-11
                 end: now  # or empty
         data: tests/data/ne_110m_lakes.geojson
+ 
+    countries:
+        type: Polygon
+        provider: Sqlite
+        id_field: ogc_fid  # null indicates use feature enumeration
+        title: Countries
+        description: Countries of the world
+        keywords:
+            - countries
+            - natural eart
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              description: information
+              url: http://www.naturalearthdata.com/
+            - type: text/html
+              description: download
+              url: http://www.naturalearthdata.com/
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: None
+                end: now  # or empty
+        data: tests/data/ne_110m_admin_0_countries.sqlite:ne_110m_admin_0_countries
+        
