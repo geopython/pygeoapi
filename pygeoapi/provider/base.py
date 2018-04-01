@@ -35,20 +35,18 @@ LOGGER = logging.getLogger(__name__)
 class BaseProvider(object):
     """generic Provider ABC"""
 
-    def __init__(self, name, data, id_field):
+    def __init__(self, provider_def):
         """
         Initialize object
 
-        :param name: provider name
-        :param data: file path or URL to data/service
-        :param id_field: field/property/column of identifier
+        :param provider_def: provider definition
 
         :returns: pygeoapi.providers.base.BaseProvider
         """
 
-        self.name = name
-        self.data = data
-        self.id_field = id_field
+        self.name = provider_def['name']
+        self.data = provider_def['data']
+        self.id_field = provider_def['id_field']
 
     def query(self):
         """

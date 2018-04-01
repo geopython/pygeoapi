@@ -42,18 +42,16 @@ LOGGER = logging.getLogger(__name__)
 class CSVProvider(BaseProvider):
     """CSV provider"""
 
-    def __init__(self, name, data, id_field):
+    def __init__(self, provider_def):
         """
         Initialize object
 
-        :param name: provider name
-        :param data: file path or URL to data/service
-        :param id_field: field/property/column of identifier
+        :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.csv.CSVProvider
+        :returns: pygeoapi.providers.csv_.CSVProvider
         """
 
-        BaseProvider.__init__(self, name, data, id_field)
+        BaseProvider.__init__(self, provider_def)
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None):
@@ -96,6 +94,8 @@ class CSVProvider(BaseProvider):
             return None
         elif identifier is not None and found:
             return result
+
+        feature_collection['numberReturned'] = limit
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results'):
