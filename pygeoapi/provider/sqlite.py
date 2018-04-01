@@ -8,24 +8,21 @@ from pygeoapi.provider import InvalidProviderError
 LOGGER = logging.getLogger(__name__)
 
 class SQLiteProvider(object):
-    """Generic provide for SQLITE using sqlite3 module """
+    """Generic provide for SQLITE using sqlite3 module. This module requires install of libsqlite3-mod-spatialite """
 
-    def __init__(self,name, data, id_field):
-        
+    def __init__(self,provider_def):
         """
-        :param name: provider name
-        :param data: file path or URL to data/service assuming that string after :  is table name
-        :param id_field: field/property/column of identifier
-        :param table: sqlite table
+        SQLiteProvider Class constructor
+         
+        :param privider_def: provider definitions from yml pygeoapi-config. 
+        data,id_field, name set in parent class
         
         :returns: pygeoapi.providers.base.SQLiteProvider
         """
-        BaseProvider.__init__(self, name,data,id_field)
+        BaseProvider.__init__(self, provider_def)
         
-        self.data =  data.split(":")[0] #  file:///./tests/data/ne_110m_lakes.sqlite
-        self.name = name
-        self.id_field = id_field
-        self.table = data.split(":")[1] if (len(data.split(":")) > 1) else None
+        self.table = provider_def['table']
+        
         self.dataDB = None
         
         LOGGER.debug('Setting Sqlite propreties:')
@@ -36,7 +33,10 @@ class SQLiteProvider(object):
         
         
     def __response_feature_collection(self):
-        """Assembles GeoJSON output from DB query"""
+        """Assembles GeoJSON output from DB query
+        
+        :returns: GeoJSON FeaturesCollection
+        """
         
         feature_list = list()
         for row_data in self.dataDB:
@@ -51,15 +51,20 @@ class SQLiteProvider(object):
         return feature_collection
     
     def __response_feature_hits(self,hits):
-        """Assembles GeoJSON/Feature number"""
+        """Assembles GeoJSON/Feature number
+        
+        :returns: GeoJSON FeaturesCollection
+        """
+        
         feature_collection = geojson.FeatureCollection([])
         feature_collection['numberMatched'] = str(hits)
         return feature_collection
 
     def __load(self):
-        
         """
         Private method for loading spatiallite, get the table structure and dump geometry
+        
+        :returns: sqlite3.Cursor
         """
         
         if (os.path.exists(self.data)):
@@ -85,23 +90,27 @@ class SQLiteProvider(object):
 
         self.columns = [item[1] for item in result if item[1] != 'GEOMETRY']
         self.columns = ",".join(self.columns)+",AsGeoJSON(geometry)"
-        #data = cursor.execute('select * from {};'.format(self.table))
+        
         return cursor
 
 
     def query(self,startindex=0, limit=10, resulttype='results'):
         """
         Query Sqlite for all the content. 
-        e,g: http://localhost:5000/collections/countries/items?limit=1&type=results
+        e,g: http://localhost:5000/collections/countries/items?limit=1&resulttype=results
+        
         
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results) 
 
-        :returns: dict of 0..n GeoJSON features
+        :returns: GeoJSON FeaturesCollection
         """
+        LOGGER.debug('Querying Sqlite')
         
         cursor = self.__load() 
+        
+        LOGGER.debug('Got cursor from DB')
         
         if resulttype == 'hits':
             res = cursor.execute("select count(*) as hits from {};".format(self.table))
@@ -111,8 +120,13 @@ class SQLiteProvider(object):
         
         end_index = startindex+limit
         #http://localhost:5000/collections/countries/items/?startindex=10 Not working
+        sql_query = "select {} from {} where rowid >= ? and rowid <= ?;".format(self.columns,self.table)
         
-        self.dataDB = cursor.execute('select {} from {} where rowid >= {} and rowid <={};'.format(self.columns,self.table,startindex,end_index)) # SQL injection
+        LOGGER.debug('SQL Query:{}'.format(sql_query))
+        LOGGER.debug('Start Index:{}'.format(startindex))
+        LOGGER.debug('End Index'.format(end_index))
+        
+        self.dataDB = cursor.execute(sql_query, (startindex,end_index,))        
         
         feature_collection = self.__response_feature_collection()
         return feature_collection
@@ -124,16 +138,26 @@ class SQLiteProvider(object):
 
         :param identifier: feature id
         
-        :returns: dict of single GeoJSON feature
+        :returns: GeoJSON FeaturesCollection
         """
 	    
+        LOGGER.debug('Get item from  Sqlite')
+        
         cursor = self.__load()
-        self.dataDB = cursor.execute('select {} from {} where {}=={};'.format(self.columns,self.table,self.id_field,identifier)) # SQL injection
+        
+        LOGGER.debug('Got cursor from DB')
+        
+        sql_query = "select {} from {} where {}==?;".format(self.columns,self.table,self.id_field)
+        
+        LOGGER.debug('SQL Query:{}'.format(sql_query))
+        LOGGER.debug('Identifier:{}'.format(identifier))
+        
+        self.dataDB = cursor.execute(sql_query,(identifier,))
         
         feature_collection = self.__response_feature_collection()
         return feature_collection
         
 
     def __repr__(self):
-        return '<SQliteProvider> {}'.format(self.data)
+        return '<SQliteProvider> {},{}'.format(self.data,self.table)
 
