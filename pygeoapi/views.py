@@ -28,6 +28,7 @@
 #
 # =================================================================
 
+from datetime import datetime
 import json
 import logging
 import os
@@ -150,7 +151,7 @@ def api_conformance(headers, args):
     return headers_, 200, json.dumps(conformance)
 
 
-def describe_collections(headers, args, name=None):
+def describe_collections(headers, args, dataset=None):
     """
     Provide feature collection metadata
 
@@ -179,6 +180,14 @@ def describe_collections(headers, args, name=None):
         'collections': []
     }
 
+    if dataset is not None and dataset not in settings['datasets'].keys():
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'Invalid feature collection'
+        }
+        LOGGER.error(exception)
+        return headers_, 400, json.dumps(exception)
+
     LOGGER.debug('Creating collections')
     for k, v in settings['datasets'].items():
         collection = {'links': [], 'crs': []}
@@ -198,7 +207,7 @@ def describe_collections(headers, args, name=None):
             }
             collection['links'].append(lnk)
 
-        if name is not None and k == name:
+        if dataset is not None and k == dataset:
             return headers_, 200, json.dumps(collection)
 
         fcm['collections'].append(collection)
@@ -266,6 +275,8 @@ def get_features(headers, args, dataset):
         'href': '/collections/{}'.format(dataset)
         }
     ]
+
+    content['timeStamp'] = datetime.utcnow().isoformat()
 
     return headers_, 200, json.dumps(content)
 
