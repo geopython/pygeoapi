@@ -47,7 +47,7 @@ curl http://localhost:5000/collections/countries/items?resulttype=hits
 
 ```
 
-## Testing against Swagger UI
+## Exploring with Swagger UI
 
 ```bash
 docker pull swaggerapi/swagger-ui
