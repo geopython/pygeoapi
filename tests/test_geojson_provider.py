@@ -28,9 +28,9 @@ def fixture():
 @pytest.fixture()
 def config():
     return {
-            'provider': 'GeoJSON',
-            'name': path,
-            'id_field': None
+        'name': 'GeoJSON',
+        'data': path,
+        'id_field': None
     }
 
 

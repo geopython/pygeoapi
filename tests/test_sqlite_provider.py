@@ -9,10 +9,11 @@ from pygeoapi.provider.sqlite import SQLiteProvider
 @pytest.fixture()
 def config():
     return {
-            'name': 'Sqlite',
-            'data': './tests/data/ne_110m_admin_0_countries.sqlite',
-            'id_field': "ogc_fid",
-            'table': 'ne_110m_admin_0_countries'}
+        'name': 'Sqlite',
+        'data': './tests/data/ne_110m_admin_0_countries.sqlite',
+        'id_field': "ogc_fid",
+        'table': 'ne_110m_admin_0_countries'
+    }
 
 
 def test_query(config):

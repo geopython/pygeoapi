@@ -65,7 +65,7 @@ class GeoJSONProvider(BaseProvider):
 
     def _load(self):
         """Load and validate the source GeoJSON file
-        at self.path
+        at self.data
 
         Yes loading from disk, deserializing and validation
         happens on every request. This is not efficient.
@@ -134,7 +134,7 @@ class GeoJSONProvider(BaseProvider):
 
         all_data['features'].append(new_feature)
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def update(self, identifier, new_feature):
@@ -151,7 +151,7 @@ class GeoJSONProvider(BaseProvider):
                 all_data['features'][i] = new_feature
                 break
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def delete(self, identifier):
@@ -165,7 +165,7 @@ class GeoJSONProvider(BaseProvider):
                 all_data['features'].pop(i)
                 break
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def __repr__(self):
