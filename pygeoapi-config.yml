@@ -1,7 +1,8 @@
 server:
-    host: localhost
-    port: 5000
-    basepath: /
+    bind:
+        host: localhost
+        port: 5000
+    url: http://geo.kralidis.ca/pygeoapi
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
