@@ -33,11 +33,16 @@ or
 # feature collection metadata
 curl http://localhost:5000/
 # conformance
-curl http://localhost:5000/api/conformance
+curl http://localhost:5000/conformance
 # feature collection
-curl http://localhost:5000/obs
+curl http://localhost:5000/collections/countries
+# feacture colleciion limit 100
+curl http://localhost:5000/collections/countries/items?limit=100
 # feature
-curl http://localhost:5000/obs/371
+curl http://localhost:5000/collections/countries/items/1
+# nummer hits
+curl http://localhost:5000/collections/countries/items?resulttype=hits
+
 ```
 
 ## Testing against Swagger UI
