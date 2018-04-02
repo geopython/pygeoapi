@@ -37,6 +37,7 @@ def config():
 def test_query(fixture, config):
     p = GeoJSONProvider(config)
     results = p.query()
+    print(result)
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '123-456'
 

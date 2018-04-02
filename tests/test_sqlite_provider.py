@@ -1,11 +1,8 @@
-#Needs to be run like: pytest -s test_sqlite_provider.py
-#In eclipse we need to set PYGEOAPI_CONFIG, Run>Debug Configurations> 
-#(Arguments as py.test and set external variables to the correct config path)
+# Needs to be run like: pytest -s test_sqlite_provider.py
+# In eclipse we need to set PYGEOAPI_CONFIG, Run>Debug Configurations>
+# (Arguments as py.test and set external variables to the correct config path)
 
-import sqlite3
 import pytest
-import os
-import geojson
 from pygeoapi.provider.sqlite import SQLiteProvider
 
 
@@ -20,16 +17,16 @@ def config():
 
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
-    
+
     p = SQLiteProvider(config)
     feature_collection = p.query()
-    assert feature_collection.get('type',None) == "FeatureCollection"
-    features = feature_collection.get('features',None) 
+    assert feature_collection.get('type', None) == "FeatureCollection"
+    features = feature_collection.get('features', None)
     assert features is not None
     feature = features[0]
-    properties = feature.get("properties",None)
+    properties = feature.get("properties", None)
     assert properties is not None
-    geometry = feature.get("geometry",None)
+    geometry = feature.get("geometry", None)
     assert geometry is not None
 
 
@@ -38,7 +35,3 @@ def test_get(config):
     results = p.get(118)
     assert len(results['features']) == 1
     assert "Netherlands" in results['features'][0]['properties']['admin']
-    
-
-
-
