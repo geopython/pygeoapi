@@ -37,7 +37,7 @@ from pygeoapi.provider import InvalidProviderError
 LOGGER = logging.getLogger(__name__)
 
 
-class SQLiteProvider(object):
+class SQLiteProvider(BaseProvider):
     """Generic provide for SQLITE using sqlite3 module.
     This module requires install of libsqlite3-mod-spatialite
     TODO: DELETE, UPDATE, CREATE
@@ -47,8 +47,8 @@ class SQLiteProvider(object):
         """
         SQLiteProvider Class constructor
 
-        :param privider_def: provider definitions from yml pygeoapi-config.
-        data,id_field, name set in parent class
+        :param provider_def: provider definitions from yml pygeoapi-config.
+                             data,id_field, name set in parent class
 
         :returns: pygeoapi.providers.base.SQLiteProvider
         """
