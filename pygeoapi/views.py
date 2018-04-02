@@ -309,6 +309,14 @@ def get_feature(headers, args, dataset, identifier):
     LOGGER.debug('Fetching id {}'.format(identifier))
     content = p.get(identifier)
 
+    if content is None:
+        exception = {
+            'code': 'NotFound',
+            'description': 'identifier not found'
+        }
+        LOGGER.error(exception)
+        return headers_, 404, json.dumps(exception)
+
     content['links'] = [{
         'rel': 'self',
         'type': 'application/json',
@@ -319,14 +327,6 @@ def get_feature(headers, args, dataset, identifier):
         'href': '/collections/{}'.format(dataset)
         }
     ]
-
-    if content is None:
-        exception = {
-            'code': 'NotFound',
-            'description': 'identifier not found'
-        }
-        LOGGER.error(exception)
-        return headers_, 404, json.dumps(exception)
 
     return headers_, 200, json.dumps(content)
 
