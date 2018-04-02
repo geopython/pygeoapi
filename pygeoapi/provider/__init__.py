@@ -35,7 +35,9 @@ LOGGER = logging.getLogger(__name__)
 PROVIDERS = {
     'CSV': 'pygeoapi.provider.csv_.CSVProvider',
     'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
-    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider'
+    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
+    'SQlite': 'pygeoapi.provider.sqlite.SQLiteProvider',
+
 }
 
 
@@ -69,5 +71,4 @@ def load_provider(provider_def):
 
 class InvalidProviderError(Exception):
     """invalid provider"""
-
     pass

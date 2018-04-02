@@ -69,11 +69,8 @@ def get_oas_30(cfg):
     }
     oas['info'] = info
 
-    url = 'http://{}'.format(cfg['server']['host'])
-    if cfg['server']['port'] not in [80, 443]:
-        url = '{}:{}'.format(url, cfg['server']['port'])
     oas['servers'] = [{
-        'url': url,
+        'url': cfg['server']['url'],
         'description': cfg['metadata']['identification']['description']
     }]
 

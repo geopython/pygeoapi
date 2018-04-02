@@ -39,7 +39,6 @@ from flask_cors import CORS
 from pygeoapi import views
 from pygeoapi.config import settings
 from pygeoapi.log import setup_logger
-from pygeoapi.util import get_url
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -129,8 +128,7 @@ def serve(ctx, debug=False):
 
     setup_logger()
     # TODO: get scheme
-    BASEURL = get_url('http', settings['server']['host'],
-                      settings['server']['port'],
-                      settings['server']['basepath'])
+    BASEURL = settings['server']['url']
     APP.config['PYGEOAPI_BASEURL'] = BASEURL
-    APP.run(debug=True, host='0.0.0.0', port=settings['server']['port'])
+    APP.run(debug=True, host='0.0.0.0',
+            port=settings['server']['bind']['port'])
