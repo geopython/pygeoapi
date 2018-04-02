@@ -150,7 +150,7 @@ datasets:
                 begin: None
                 end: now  # or empty
         provider: 
-            name: Sqlite
+            name: SQlite
             data: tests/data/ne_110m_admin_0_countries.sqlite
             id_field: ogc_fid
             table: ne_110m_admin_0_countries

@@ -36,11 +36,11 @@ curl http://localhost:5000/
 curl http://localhost:5000/conformance
 # feature collection
 curl http://localhost:5000/collections/countries
-# feacture colleciion limit 100
+# feature collection limit 100
 curl http://localhost:5000/collections/countries/items?limit=100
 # feature
 curl http://localhost:5000/collections/countries/items/1
-# nummer hits
+# nummer of hits
 curl http://localhost:5000/collections/countries/items?resulttype=hits
 
 ```
