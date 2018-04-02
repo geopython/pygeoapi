@@ -19,7 +19,7 @@ vi local.config.yml
 export PYGEOAPI_CONFIG=/path/to/local.config.yml
 # generate OpenAPI Document
 pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
-export PYGEOAPI_SWAGGER=/path/to/openapi.yml
+export PYGEOAPI_OPENAPI=/path/to/openapi.yml
 pygeoapi serve
 ```
 
@@ -33,11 +33,16 @@ or
 # feature collection metadata
 curl http://localhost:5000/
 # conformance
-curl http://localhost:5000/api/conformance
+curl http://localhost:5000/conformance
 # feature collection
-curl http://localhost:5000/obs
+curl http://localhost:5000/collections/countries
+# feature collection limit 100
+curl http://localhost:5000/collections/countries/items?limit=100
 # feature
-curl http://localhost:5000/obs/371
+curl http://localhost:5000/collections/countries/items/1
+# nummer of hits
+curl http://localhost:5000/collections/countries/items?resulttype=hits
+
 ```
 
 ## Testing against Swagger UI
