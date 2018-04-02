@@ -1,12 +1,11 @@
-coverage
-docutils
-flake8
-pypandoc
-twine
-wheel
-
+coverage==4.5.1
+docutils==0.14
+flake8==3.5.0
+twine==1.11.0
+wheel==0.31.0
+pytest==3.5.0
 # the packages below are used to handle HTTP/SSL
 # errors when uploading to PyPI (https://github.com/pypa/twine/issues/273)
-pyOpenSSL
-ndg-httpsclient
-pyasn1
+pyOpenSSL==17.5.0
+ndg-httpsclient==0.4.4
+pyasn1==0.4.2
