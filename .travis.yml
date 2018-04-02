@@ -1,0 +1,28 @@
+language: python
+
+addons:
+  apt:
+    packages:
+      - pandoc
+      - libsqlite3-mod-spatialite
+
+python:
+  - "2.7"
+  - "3.4"
+#  - "3.6"
+
+install:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+  - python setup.py install
+
+before_script:
+  - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
+
+script:
+  - pytest --cov=pygeoapi
+  - find . -type f -name "*.py" | xargs flake8
+  - python setup.py --long-description | rst2html5.py
+
+after_success:
+  - python setup.py sdist bdist_wheel --universal
