@@ -29,9 +29,9 @@
 
 import logging
 
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, exceptions
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,8 +83,13 @@ class ElasticsearchProvider(BaseProvider):
         if resulttype == 'hits':
             LOGGER.debug('hits only specified')
             limit = 0
-        results = self.es.search(index=self.index_name, from_=startindex,
-                                 size=limit)
+
+        try:
+            results = self.es.search(index=self.index_name, from_=startindex,
+                                     size=limit)
+        except exceptions.ConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError()
 
         feature_collection['numberMatched'] = results['hits']['total']
 
