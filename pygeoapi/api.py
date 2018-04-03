@@ -57,6 +57,7 @@ class API(object):
         """
 
         self.config = config
+        self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
     def root(self, headers, args):
         """
@@ -102,12 +103,12 @@ class API(object):
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
               'title': 'the OpenAPI definition as JSON',
-              'href': '{}api'.format(self.config['server']['url'])
+              'href': '{}/api'.format(self.config['server']['url'])
             }, {
               'rel': 'self',
               'type': 'text/html',
               'title': 'the OpenAPI definition as HTML',
-              'href': '{}api?f=html'.format(self.config['server']['url'])
+              'href': '{}/api?f=html'.format(self.config['server']['url'])
             }
         ]
 
