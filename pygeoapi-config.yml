@@ -49,7 +49,6 @@ metadata:
 
 datasets:
     obs:
-        type: Point
         title: Observations
         description: Observations
         keywords:
@@ -75,34 +74,31 @@ datasets:
             data: tests/data/obs.csv
             id_field: id
 
-    landsat-aws:
-        type: Polygon
-        title: my dataset
-        description: my dataset
+    ne_110m_populated_places_simple
+        title: Populated Places
+        description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
         keywords:
-            - kw1
-            - kw2
+            - populated places
+            - cities
+            - towns
         crs:
             - CRS84
         links:
             - type: text/html
               description: information
-              url: http://example.org/dataset/index.html
+              url: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
             - type: application/gzip
               description: download
-              url: http://example.org/dataset/data.tgz
+              url: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
-            temporal:
-                begin: 2011-11-11
-                end: now  # or empty
         provider:
             name: Elasticsearch
-            data: http://localhost:9200/index/type
-            id_field: id_
+            data: http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection
+            id_field: geonameid
+
     lakes:
-        type: Polygon
         title: Large Lakes
         description: lakes of the world, public domain
         keywords:
@@ -128,7 +124,6 @@ datasets:
             id_field: null  # null indicates use feature enumeration
      
     countries:
-        type: Polygon
         id_field: ogc_fid  # null indicates use feature enumeration
         title: Countries in the world
         description: Countries of the world
