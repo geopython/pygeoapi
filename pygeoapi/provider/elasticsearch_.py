@@ -31,7 +31,8 @@ import logging
 
 from elasticsearch import Elasticsearch, exceptions
 
-from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
+from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
+                                    ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,33 +64,82 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=None, time=None):
         """
         query Elasticsearch index
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box (minx,miny,maxx,maxy)
+        :param time: temporal (datestamp or extent)
 
         :returns: dict of 0..n GeoJSON features
         """
+
+        query = {'query': {'bool': {'filter': []}}}
+        filter_ = []
 
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
 
-        LOGGER.debug('Querying Elasticsearch')
         if resulttype == 'hits':
             LOGGER.debug('hits only specified')
             limit = 0
 
+        if bbox is not None:
+            LOGGER.debug('processing bbox parameter')
+            minx, miny, maxx, maxy = bbox.split(',')
+            bbox_filter = {
+                'geo_shape': {
+                    'geometry': {
+                        'shape': {
+                            'type': 'envelope',
+                            'coordinates': [[minx, miny], [maxx, maxy]]
+                        },
+                        'relation': 'intersects'
+                    }
+                }
+            }
+
+            query['query']['bool']['filter'].append(bbox_filter)
+
+        if time is not None:
+            LOGGER.debug('processing time parameter')
+            if self.time_field is None:
+                LOGGER.error('time_field not enabled for collection')
+                raise ProviderQueryError()
+
+            time_field = 'properties.{}'.format(self.time_field)
+
+            if '/' in time:  # envelope
+                range_ = {'range': time_field}
+                time_begin, time_end = time.split('/')
+
+                if time_begin == '':  # until
+                    range_['range'][time_field]['lte'] = time_end
+                if time_end == '':  # from
+                    range_['range'][time_field]['gte'] = time_begin
+                filter_.append(range_)
+
+            else:  # time instant
+                filter_.append({'match': {time_field: time}})
+
+            query['query']['bool']['filter'].append(filter_)
+
         try:
+            LOGGER.debug('Querying Elasticsearch')
             results = self.es.search(index=self.index_name, from_=startindex,
-                                     size=limit)
+                                     size=limit, body=query)
         except exceptions.ConnectionError as err:
             LOGGER.error(err)
             raise ProviderConnectionError()
+        except exceptions.RequestError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError()
 
         feature_collection['numberMatched'] = results['hits']['total']
 

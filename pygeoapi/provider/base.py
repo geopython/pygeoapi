@@ -47,6 +47,7 @@ class BaseProvider(object):
         self.name = provider_def['name']
         self.data = provider_def['data']
         self.id_field = provider_def['id_field']
+        self.time_field = provider_def.get('time_field')
 
     def query(self):
         """
@@ -95,5 +96,10 @@ class BaseProvider(object):
 
 
 class ProviderConnectionError(Exception):
+    """query / backend error"""
+    pass
+
+
+class ProviderQueryError(Exception):
     """query / backend error"""
     pass

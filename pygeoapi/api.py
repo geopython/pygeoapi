@@ -34,8 +34,9 @@ import os
 
 from jinja2 import Environment, FileSystemLoader
 
+from pygeoapi import __version__
 from pygeoapi.provider import load_provider
-from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,14 +107,13 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'the OpenAPI definition as HTML',
-              'href': '{}?f=html'.format(self.config['server']['url'])
+              'href': '{}api?f=html'.format(self.config['server']['url'])
             }
         ]
 
         if format_ == 'html':  # render
             headers_['Content-type'] = 'text/html'
-            content = _render_j2_template(self.config, 'service.html', fcm)
-
+            content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
 
         return headers_, 200, json.dumps(fcm)
@@ -149,6 +149,17 @@ class API(object):
             'Content-type': 'application/json'
         }
 
+        formats = ['json', 'html']
+
+        format_ = args.get('f')
+        if format_ is not None and format_ not in formats:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         conformance = {
             'conformsTo': [
                 'http://www.opengis.net/spec/wfs-1/3.0/req/core',
@@ -157,6 +168,12 @@ class API(object):
                 'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
             ]
         }
+
+        if format_ == 'html':  # render
+            headers_['Content-type'] = 'text/html'
+            content = _render_j2_template(self.config, 'conformance.html',
+                                          conformance)
+            return headers_, 200, content
 
         return headers_, 200, json.dumps(conformance)
 
@@ -219,13 +236,19 @@ class API(object):
                 collection['links'].append(lnk)
 
             if dataset is not None and k == dataset:
-                return headers_, 200, json.dumps(collection)
+                fcm = collection
+                break
 
             fcm['collections'].append(collection)
 
         if format_ == 'html':  # render
             headers_['Content-type'] = 'text/html'
-            content = _render_j2_template(self.config, 'service.html', fcm)
+            if dataset is not None:
+                content = _render_j2_template(self.config, 'collection.html',
+                                              fcm)
+            else:
+                content = _render_j2_template(self.config, 'collections.html',
+                                              fcm)
 
             return headers_, 200, content
 
@@ -242,10 +265,12 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
+        print(args)
         headers_ = {
             'Content-type': 'application/json'
         }
 
+        LOGGER.debug('Processing query parameters')
         try:
             startindex = int(args.get('startindex'))
         except TypeError:
@@ -256,6 +281,8 @@ class API(object):
             limit = self.config['server']['limit']
 
         resulttype = args.get('resulttype') or 'results'
+        bbox = args.get('bbox')
+        time = args.get('time')
 
         if dataset not in self.config['datasets'].keys():
             exception = {
@@ -274,8 +301,15 @@ class API(object):
 
         try:
             content = p.query(startindex=int(startindex), limit=int(limit),
-                              resulttype=resulttype)
+                              resulttype=resulttype, bbox=bbox, time=time)
         except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
@@ -371,4 +405,4 @@ def _render_j2_template(config, template, data):
     env = Environment(loader=FileSystemLoader(TEMPLATES))
     print(TEMPLATES)
     template = env.get_template(template)
-    return template.render(config=config, data=data)
+    return template.render(config=config, data=data, version=__version__)
