@@ -30,14 +30,14 @@
 import logging
 import sys
 
-from pygeoapi.config import settings
-
 LOGGER = logging.getLogger(__name__)
 
 
-def setup_logger():
+def setup_logger(logging_config):
     """
     Setup configuration
+
+    :param logging_config: logging specific configuration
 
     :returns: void (creates logging instance)
     """
@@ -57,12 +57,12 @@ def setup_logger():
 
     log_handler = logging.NullHandler()
 
-    if 'level' in settings['logging']:
-        loglevel = loglevels[settings['logging']['level']]
+    if 'level' in logging_config:
+        loglevel = loglevels[logging_config['level']]
         log_handler = logging.StreamHandler(sys.stdout)
 
-    if 'logfile' in settings['logging']:
-        log_handler = logging.FileHandler(settings['logging']['logfile'])
+    if 'logfile' in logging_config:
+        log_handler = logging.FileHandler(logging_config['logfile'])
 
     log_handler.setLevel(loglevel)
     log_handler.setFormatter(formatter)

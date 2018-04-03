@@ -30,24 +30,32 @@
 
 import os
 
-import yaml
 import click
+import yaml
 
 from flask import Flask, make_response, request
 from flask_cors import CORS
 
-from pygeoapi import views
-from pygeoapi.config import settings
+from pygeoapi.api import API
 from pygeoapi.log import setup_logger
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
 
+CONFIG = None
+
+if 'PYGEOAPI_CONFIG' not in os.environ:
+    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+
+with open(os.environ.get('PYGEOAPI_CONFIG')) as fh:
+    CONFIG = yaml.load(fh)
+
+api_ = API(CONFIG)
+
 
 @APP.route('/')
 def root():
-    headers, status_code, content = views.root(
-        request.headers, request.args, APP.config['PYGEOAPI_BASEURL'])
+    headers, status_code, content = api_.root(request.headers, request.args)
 
     response = make_response(content, status_code)
     if headers:
@@ -61,8 +69,8 @@ def api():
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml.load(ff)
 
-    headers, status_code, content = views.api(request.headers, request.args,
-                                              openapi)
+    headers, status_code, content = api_.api(request.headers, request.args,
+                                             openapi)
 
     response = make_response(content, status_code)
     if headers:
@@ -73,8 +81,8 @@ def api():
 
 @APP.route('/conformance')
 def api_conformance():
-    headers, status_code, content = views.api_conformance(request.headers,
-                                                          request.args)
+    headers, status_code, content = api_.api_conformance(request.headers,
+                                                         request.args)
 
     response = make_response(content, status_code)
     if headers:
@@ -86,7 +94,7 @@ def api_conformance():
 @APP.route('/collections')
 @APP.route('/collections/<name>')
 def describe_collections(name=None):
-    headers, status_code, content = views.describe_collections(
+    headers, status_code, content = api_.describe_collections(
         request.headers, request.args, name)
 
     response = make_response(content, status_code)
@@ -100,10 +108,10 @@ def describe_collections(name=None):
 @APP.route('/collections/<feature_collection>/items/<feature>')
 def dataset(feature_collection, feature=None):
     if feature is None:
-        headers, status_code, content = views.get_features(
+        headers, status_code, content = api_.get_features(
             request.headers, request.args, feature_collection)
     else:
-        headers, status_code, content = views.get_feature(
+        headers, status_code, content = api_.get_feature(
             request.headers, request.args, feature_collection, feature)
 
     response = make_response(content, status_code)
@@ -120,15 +128,12 @@ def dataset(feature_collection, feature=None):
 def serve(ctx, debug=False):
     """Serve pygeoapi via Flask"""
 
-    if not settings['server']['pretty_print']:
+    if not api_.config['server']['pretty_print']:
         APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
-    if settings['server']['cors']:
+    if api_.config['server']['cors']:
         CORS(APP)
 
-    setup_logger()
-    # TODO: get scheme
-    BASEURL = settings['server']['url']
-    APP.config['PYGEOAPI_BASEURL'] = BASEURL
-    APP.run(debug=True, host='0.0.0.0',
-            port=settings['server']['bind']['port'])
+    setup_logger(CONFIG['logging'])
+    APP.run(debug=True, host=api_.config['server']['bind']['host'],
+            port=api_.config['server']['bind']['port'])
