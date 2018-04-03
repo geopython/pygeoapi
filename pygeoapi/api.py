@@ -246,8 +246,15 @@ class API(object):
             'Content-type': 'application/json'
         }
 
-        startindex = args.get('startindex') or 0
-        limit = args.get('limit') or self.config['server']['limit']
+        try:
+            startindex = int(args.get('startindex'))
+        except TypeError:
+            startindex = 0
+        try:
+            limit = int(args.get('limit'))
+        except TypeError:
+            limit = self.config['server']['limit']
+
         resulttype = args.get('resulttype') or 'results'
 
         if dataset not in self.config['datasets'].keys():
