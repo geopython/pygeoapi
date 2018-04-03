@@ -74,7 +74,7 @@ datasets:
             data: tests/data/obs.csv
             id_field: id
 
-    ne_110m_populated_places_simple
+    ne_110m_populated_places_simple:
         title: Populated Places
         description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
         keywords:
