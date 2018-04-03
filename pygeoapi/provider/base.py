@@ -92,3 +92,8 @@ class BaseProvider(object):
 
     def __repr__(self):
         return '<BaseProvider> {}'.format(self.type)
+
+
+class ProviderConnectionError(Exception):
+    """query / backend error"""
+    pass
