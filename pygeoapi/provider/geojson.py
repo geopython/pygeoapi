@@ -85,7 +85,8 @@ class GeoJSONProvider(BaseProvider):
 
         return data
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], time=None):
         """
         query the provider
 

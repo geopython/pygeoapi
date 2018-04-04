@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block extrahead %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <style>
+      #items {
+        width: 80%;
+      }
+      #items-map {
+        width: 600px;
+        height: 400px;
+      }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <section id="items">
+      <h2>{{ data['title'] }}</h2>
+      <span>{{ data['description'] }}</span>
+      <h2>Features</h2>
+      <table>
+          <tr>
+            <td>
+      <ul>
+      {% for feature in data['features'] %}
+          <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}">{{ feature['ID'] }}</a></li>
+      {% endfor %}
+      </ul>
+           </td>
+           <td>
+        <div id="items-map"></div>
+           </td>
+         </tr>
+       </table>
+    </section>
+{% endblock %}
+
+{% block extrafoot %}
+    <script>
+    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
+    map.addLayer(new L.TileLayer(
+        'http://tile.osm.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            subdomains: '1234'
+        }
+    ));
+    {% for feature in data['features'] %}
+    L.marker([{{ feature['geometry']['coordinates'][1] }}, {{ feature['geometry']['coordinates'][0] }}]).addTo(map).bindPopup('{{ feature['ID'] }} ')
+    {% endfor %}
+    </script>
+{% endblock %}

@@ -65,14 +65,14 @@ class ElasticsearchProvider(BaseProvider):
         self.es = Elasticsearch(self.es_host)
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=None, time=None):
+              bbox=[], time=None):
         """
         query Elasticsearch index
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
-        :param bbox: bounding box (minx,miny,maxx,maxy)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
 
         :returns: dict of 0..n GeoJSON features
@@ -90,9 +90,9 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.debug('hits only specified')
             limit = 0
 
-        if bbox is not None:
+        if bbox:
             LOGGER.debug('processing bbox parameter')
-            minx, miny, maxx, maxy = bbox.split(',')
+            minx, miny, maxx, maxy = bbox
             bbox_filter = {
                 'geo_shape': {
                     'geometry': {
@@ -138,6 +138,9 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderConnectionError()
         except exceptions.RequestError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError()
+        except exceptions.NotFoundError as err:
             LOGGER.error(err)
             raise ProviderQueryError()
 
