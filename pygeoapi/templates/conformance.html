@@ -2,7 +2,7 @@
 {% block title %}{{ super() }} Conformance {% endblock %}
 {% block body %}
     <section id="conformance">
-      <h2>Conformance</h2>
+      <h2>Conformance <a title="JSON" href="{{ config['server']['url'] }}/conformance"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <ul>
       {% for link in data['conformsTo'] %}
           <li><a title="{{ link }}" href="{{ link }}">{{ link }}</a></li>

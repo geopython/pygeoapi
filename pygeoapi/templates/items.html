@@ -8,7 +8,7 @@
         width: 80%;
       }
       #items-map {
-        width: 600px;
+        width: 400px;
         height: 400px;
       }
     </style>
@@ -18,7 +18,7 @@
     <section id="items">
       <h2>{{ data['title'] }}</h2>
       <span>{{ data['description'] }}</span>
-      <h2>Features</h2>
+      <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <table>
           <tr>
             <td>
