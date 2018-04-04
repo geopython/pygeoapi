@@ -98,7 +98,7 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'this document as HTML',
-              'href': '{}?f=html'.format(self.config['server']['url'])
+              'href': '{}/?f=html'.format(self.config['server']['url'])
             }, {
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
@@ -266,10 +266,20 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        print(args)
         headers_ = {
             'Content-type': 'application/json'
         }
+
+        formats = ['json', 'html']
+
+        format_ = args.get('f')
+        if format_ is not None and format_ not in formats:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing query parameters')
         try:
@@ -282,7 +292,12 @@ class API(object):
             limit = self.config['server']['limit']
 
         resulttype = args.get('resulttype') or 'results'
-        bbox = args.get('bbox')
+
+        try:
+            bbox = args.get('bbox').split(',')
+        except AttributeError:
+            bbox = []
+
         time = args.get('time')
 
         if dataset not in self.config['datasets'].keys():
@@ -337,6 +352,12 @@ class API(object):
         ]
 
         content['timeStamp'] = datetime.utcnow().isoformat()
+
+        if format_ == 'html':  # render
+            headers_['Content-type'] = 'text/html'
+            content = _render_j2_template(self.config, 'items.html',
+                                          content)
+            return headers_, 200, content
 
         return headers_, 200, json.dumps(content)
 
