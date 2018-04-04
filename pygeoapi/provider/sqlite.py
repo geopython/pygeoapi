@@ -130,7 +130,8 @@ class SQLiteProvider(BaseProvider):
 
         return cursor
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], time=None):
         """
         Query Sqlite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
