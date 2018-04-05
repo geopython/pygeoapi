@@ -116,18 +116,25 @@ class ElasticsearchProvider(BaseProvider):
             time_field = 'properties.{}'.format(self.time_field)
 
             if '/' in time:  # envelope
-                range_ = {'range': time_field}
+                LOGGER.debug('detected time range')
                 time_begin, time_end = time.split('/')
 
-                if time_begin == '':  # until
-                    range_['range'][time_field]['lte'] = time_end
-                if time_end == '':  # from
-                    range_['range'][time_field]['gte'] = time_begin
+                range_ = {
+                    'range': {
+                        time_field: {
+                            'gte': time_begin,
+                            'lte': time_end,
+                        }
+                    }
+                }
+
                 filter_.append(range_)
 
             else:  # time instant
+                LOGGER.debug('detected time instant')
                 filter_.append({'match': {time_field: time}})
 
+            LOGGER.debug(filter_)
             query['query']['bool']['filter'].append(filter_)
 
         try:
