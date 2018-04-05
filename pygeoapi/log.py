@@ -44,6 +44,7 @@ def setup_logger(logging_config):
 
     log_format = \
         '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+    date_format = '%Y-%m-%dT%H:%M:%SZ'
 
     loglevels = {
         'CRITICAL': logging.CRITICAL,
@@ -53,20 +54,15 @@ def setup_logger(logging_config):
         'DEBUG': logging.DEBUG,
         'NOTSET': logging.NOTSET,
     }
-    formatter = logging.Formatter(log_format)
 
-    log_handler = logging.NullHandler()
-
-    if 'level' in logging_config:
-        loglevel = loglevels[logging_config['level']]
-        log_handler = logging.StreamHandler(sys.stdout)
+    loglevel = loglevels[logging_config['level']]
 
     if 'logfile' in logging_config:
-        log_handler = logging.FileHandler(logging_config['logfile'])
+        logging.basicConfig(level=loglevel, datefmt=date_format,
+                            format=log_format, filename=logging_config['logfile'])
+    else:
+        logging.basicConfig(level=loglevel, datefmt=date_format,
+                            format=log_format, stream=sys.stdout)
 
-    log_handler.setLevel(loglevel)
-    log_handler.setFormatter(formatter)
-
-    LOGGER.addHandler(log_handler)
     LOGGER.debug('Logging initialized')
     return

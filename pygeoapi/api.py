@@ -35,6 +35,7 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 from pygeoapi import __version__
+from pygeoapi.log import setup_logger
 from pygeoapi.provider import load_provider
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
@@ -58,6 +59,8 @@ class API(object):
 
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+
+        setup_logger(config['logging'])
 
     def root(self, headers, args):
         """
@@ -131,7 +134,7 @@ class API(object):
         """
 
         headers_ = {
-            'Content-type': 'application/json'
+            'Content-type': 'application/openapi+json;version=3.0'
         }
 
         return headers_, 200, json.dumps(openapi)
@@ -230,9 +233,10 @@ class API(object):
 
             for link in v['links']:
                 lnk = {
-                    'rel': 'alternate',
                     'type': link['type'],
-                    'href': link['url']
+                    'rel': link['rel'],
+                    'title': link['title'],
+                    'href': link['href']
                 }
                 collection['links'].append(lnk)
 
@@ -295,6 +299,13 @@ class API(object):
 
         try:
             bbox = args.get('bbox').split(',')
+            if len(bbox) != 4:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'bbox values should be minx,miny,maxx,maxy'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except AttributeError:
             bbox = []
 
@@ -333,20 +344,30 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
+        prev = startindex - self.config['server']['limit']
         next_ = startindex + self.config['server']['limit']
 
         content['links'] = [{
-            'rel': 'self',
             'type': 'application/json',
+            'rel': 'self',
+            'title': 'Collection items',
             'href': '/collections/{}/items'.format(dataset)
             }, {
-            'rel': 'next',
             'type': 'application/json',
+            'rel': 'prev',
+            'title': 'items (prev)',
+            'href': '/collections/{}/items/?startindex={}'.format(dataset,
+                                                                  prev)
+            }, {
+            'type': 'application/json',
+            'rel': 'next',
+            'title': 'items (next)',
             'href': '/collections/{}/items/?startindex={}'.format(dataset,
                                                                   next_)
             }, {
-            'rel': 'collection',
             'type': 'application/json',
+            'title': 'Collection',
+            'rel': 'collection',
             'href': '/collections/{}'.format(dataset)
             }
         ]
@@ -425,6 +446,5 @@ def _render_j2_template(config, template, data):
     """
 
     env = Environment(loader=FileSystemLoader(TEMPLATES))
-    print(TEMPLATES)
     template = env.get_template(template)
     return template.render(config=config, data=data, version=__version__)

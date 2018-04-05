@@ -58,11 +58,13 @@ datasets:
             - CRS84
         links:
             - type: text/csv
-              description: data
-              url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
+              rel: canonical
+              title: data
+              href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
             - type: text/csv
-              description: data
-              url: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+              rel: alternate
+              title: data
+              href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -85,11 +87,13 @@ datasets:
             - CRS84
         links:
             - type: text/html
-              description: information
-              url: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
             - type: application/gzip
-              description: download
-              url: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
+              rel: canonical
+              title: download
+              href: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -107,11 +111,9 @@ datasets:
             - CRS84
         links:
             - type: text/html
-              description: information
-              url: http://www.naturalearthdata.com/
-            - type: text/html
-              description: download
-              url: http://www.naturalearthdata.com/
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -134,11 +136,9 @@ datasets:
             - CRS84
         links:
             - type: text/html
-              description: information
-              url: http://www.naturalearthdata.com/
-            - type: text/html
-              description: download
-              url: http://www.naturalearthdata.com/
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
