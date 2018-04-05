@@ -14,13 +14,17 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
 
+    {% for link in data['links'] %}
+        <link rel="{{ link['rel'] }}" type="{{ link['type'] }}" title="{{ link['title'] }}" href="{{ link['href'] }}"/>
+    {% endfor %}
+
     {% block extrahead %}
     {% endblock %}
 
   </head>
   <body>
     <header>
-      <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}?f=html">{{ config['metadata']['identification']['title'] }}</a><a title="JSON" href="{{ config['server']['url'] }}"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
+      <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}/?f=html">{{ config['metadata']['identification']['title'] }}</a><a title="JSON" href="{{ config['server']['url'] }}/"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
       <span itemprop="description">{{ config['metadata']['identification']['description'] }}</span>
     </header>
 
