@@ -200,4 +200,4 @@ class SQLiteProvider(BaseProvider):
         return feature_collection
 
     def __repr__(self):
-        return '<SQliteProvider> {},{}'.format(self.data, self.table)
+        return '<SQLiteProvider> {},{}'.format(self.data, self.table)
