@@ -36,7 +36,7 @@ PROVIDERS = {
     'CSV': 'pygeoapi.provider.csv_.CSVProvider',
     'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
     'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-    'SQlite': 'pygeoapi.provider.sqlite.SQLiteProvider',
+    'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider',
 
 }
 
