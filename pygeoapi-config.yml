@@ -1,6 +1,6 @@
 server:
     bind:
-        host: localhost
+        host: 0.0.0.0
         port: 5000
     url: http://geo.kralidis.ca/pygeoapi
     mimetype: application/json; charset=UTF-8
