@@ -59,7 +59,8 @@ def setup_logger(logging_config):
 
     if 'logfile' in logging_config:
         logging.basicConfig(level=loglevel, datefmt=date_format,
-                            format=log_format, filename=logging_config['logfile'])
+                            format=log_format,
+                            filename=logging_config['logfile'])
     else:
         logging.basicConfig(level=loglevel, datefmt=date_format,
                             format=log_format, stream=sys.stdout)

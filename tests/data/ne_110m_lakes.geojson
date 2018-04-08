@@ -4,8 +4,9 @@
     {
       "type": "Feature",
       "properties": {
+        "id": 0,
         "scalerank": 0,
-        "name": "Lake\rBaikal",
+        "name": "Lake Baikal",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -172,14 +173,14 @@
             ]
           ]
         ]
-      },
-      "id": "0"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 1,
         "scalerank": 0,
-        "name": "Lake\rWinnipeg",
+        "name": "Lake Winnipeg",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -238,14 +239,14 @@
             ]
           ]
         ]
-      },
-      "id": "1"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 2,
         "scalerank": 0,
-        "name": "Great\rSlave Lake",
+        "name": "Great Slave Lake",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -356,12 +357,12 @@
             ]
           ]
         ]
-      },
-      "id": "2"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 3,
         "scalerank": 0,
         "name": "L. Ontario",
         "name_alt": null,
@@ -442,12 +443,12 @@
             ]
           ]
         ]
-      },
-      "id": "3"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 4,
         "scalerank": 0,
         "name": "L. Erie",
         "name_alt": null,
@@ -536,12 +537,12 @@
             ]
           ]
         ]
-      },
-      "id": "4"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 5,
         "scalerank": 0,
         "name": "Lake Superior",
         "name_alt": null,
@@ -678,14 +679,14 @@
             ]
           ]
         ]
-      },
-      "id": "5"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 6,
         "scalerank": 0,
-        "name": "Lake\rVictoria",
+        "name": "Lake Victoria",
         "name_alt": null,
         "admin": "admin-0",
         "featureclass": "Lake"
@@ -772,14 +773,14 @@
             ]
           ]
         ]
-      },
-      "id": "6"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 7,
         "scalerank": 0,
-        "name": "Lake\rLadoga",
+        "name": "Lake Ladoga",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -850,12 +851,12 @@
             ]
           ]
         ]
-      },
-      "id": "7"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 8,
         "scalerank": 0,
         "name": "Balqash K\u00f6li",
         "name_alt": "Lake\rBalkhash",
@@ -972,14 +973,14 @@
             ]
           ]
         ]
-      },
-      "id": "8"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 9,
         "scalerank": 0,
-        "name": "Lake\rTanganyika",
+        "name": "Lake Tanganyika",
         "name_alt": null,
         "admin": "admin-0",
         "featureclass": "Lake"
@@ -1078,12 +1079,12 @@
             ]
           ]
         ]
-      },
-      "id": "9"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 10,
         "scalerank": 0,
         "name": "Lake Malawi",
         "name_alt": "Lake Nyasa",
@@ -1176,14 +1177,14 @@
             ]
           ]
         ]
-      },
-      "id": "10"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 11,
         "scalerank": 0,
-        "name": "Aral\rSea",
+        "name": "Aral Sea",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -1290,12 +1291,12 @@
             ]
           ]
         ]
-      },
-      "id": "11"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 12,
         "scalerank": 1,
         "name": "V\u00e4nern",
         "name_alt": null,
@@ -1364,12 +1365,12 @@
             ]
           ]
         ]
-      },
-      "id": "12"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 13,
         "scalerank": 1,
         "name": "Lake Okeechobee",
         "name_alt": null,
@@ -1406,14 +1407,14 @@
             ]
           ]
         ]
-      },
-      "id": "13"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 14,
         "scalerank": 1,
-        "name": "Lago de\rNicaragua",
+        "name": "Lago de Nicaragua",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -1456,12 +1457,12 @@
             ]
           ]
         ]
-      },
-      "id": "14"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 15,
         "scalerank": 1,
         "name": "Lake Tana",
         "name_alt": null,
@@ -1506,12 +1507,12 @@
             ]
           ]
         ]
-      },
-      "id": "15"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 16,
         "scalerank": 1,
         "name": "Lago Titicaca",
         "name_alt": null,
@@ -1592,14 +1593,14 @@
             ]
           ]
         ]
-      },
-      "id": "16"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 17,
         "scalerank": 1,
-        "name": "Lake\rWinnipegosis",
+        "name": "Lake Winnipegosis",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -1690,14 +1691,14 @@
             ]
           ]
         ]
-      },
-      "id": "17"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 18,
         "scalerank": 1,
-        "name": "Lake\rOnega",
+        "name": "Lake Onega",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -1804,12 +1805,12 @@
             ]
           ]
         ]
-      },
-      "id": "18"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 19,
         "scalerank": 1,
         "name": "Great Salt Lake",
         "name_alt": null,
@@ -1862,14 +1863,14 @@
             ]
           ]
         ]
-      },
-      "id": "19"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 20,
         "scalerank": 1,
-        "name": "Great\rBear Lake",
+        "name": "Great Bear Lake",
         "name_alt": null,
         "admin": null,
         "featureclass": "Lake"
@@ -1980,12 +1981,12 @@
             ]
           ]
         ]
-      },
-      "id": "20"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 21,
         "scalerank": 1,
         "name": "Lake Athabasca",
         "name_alt": null,
@@ -2034,12 +2035,12 @@
             ]
           ]
         ]
-      },
-      "id": "21"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 22,
         "scalerank": 1,
         "name": "Reindeer\rLake",
         "name_alt": null,
@@ -2112,12 +2113,12 @@
             ]
           ]
         ]
-      },
-      "id": "22"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 23,
         "scalerank": 0,
         "name": "Lake\rHuron",
         "name_alt": null,
@@ -2258,12 +2259,12 @@
             ]
           ]
         ]
-      },
-      "id": "23"
+      }
     },
     {
       "type": "Feature",
       "properties": {
+        "id": 24,
         "scalerank": 0,
         "name": "Lake\rMichigan",
         "name_alt": null,
@@ -2404,8 +2405,7 @@
             ]
           ]
         ]
-      },
-      "id": "24"
+      }
     }
   ]
 }
