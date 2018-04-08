@@ -27,12 +27,11 @@
 #
 # =================================================================
 
-import click
+__version__ = '0.1.dev0'
 
+import click
 from pygeoapi.flask_app import serve
 from pygeoapi.openapi import generate_openapi_document
-
-__version__ = '0.1.dev0'
 
 
 @click.group()

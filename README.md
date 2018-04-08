@@ -1,5 +1,7 @@
 # pygeoapi
 
+[![Build Status](https://travis-ci.org/geopython/pygeoapi.png)](https://travis-ci.org/geopython/pygeoapi)
+
 pygeoapi provides an API to geospatial data
 
 ## Installation
@@ -40,12 +42,12 @@ curl http://localhost:5000/collections/countries
 curl http://localhost:5000/collections/countries/items?limit=100
 # feature
 curl http://localhost:5000/collections/countries/items/1
-# nummer of hits
+# number of hits
 curl http://localhost:5000/collections/countries/items?resulttype=hits
 
 ```
 
-## Testing against Swagger UI
+## Exploring with Swagger UI
 
 ```bash
 docker pull swaggerapi/swagger-ui

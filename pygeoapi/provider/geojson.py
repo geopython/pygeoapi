@@ -27,11 +27,14 @@
 #
 # =================================================================
 
-import os
 import json
+import logging
+import os
 import uuid
 
 from pygeoapi.provider.base import BaseProvider
+
+LOGGER = logging.getLogger(__name__)
 
 
 class GeoJSONProvider(BaseProvider):
@@ -65,7 +68,7 @@ class GeoJSONProvider(BaseProvider):
 
     def _load(self):
         """Load and validate the source GeoJSON file
-        at self.path
+        at self.data
 
         Yes loading from disk, deserializing and validation
         happens on every request. This is not efficient.
@@ -81,11 +84,13 @@ class GeoJSONProvider(BaseProvider):
         # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
-        assert all(f.get('id') for f in data['features'])
+        for i in data['features']:
+            i['ID'] = i['properties'][self.id_field]
 
         return data
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], time=None):
         """
         query the provider
 
@@ -114,13 +119,12 @@ class GeoJSONProvider(BaseProvider):
         """
         all_data = self._load()
         for feature in all_data['features']:
-            if feature['id'] == identifier:
-                return {
-                    'type': 'FeatureCollection',
-                    'features': [feature]}
+            if str(feature['properties'][self.id_field]) == identifier:
+                return feature
 
         # default, no match
-        raise RuntimeError("Should be a 404 error")
+        LOGGER.error('feature {} not found'.format(identifier))
+        return None
 
     def create(self, new_feature):
         """Create a new feature
@@ -130,11 +134,11 @@ class GeoJSONProvider(BaseProvider):
         all_data = self._load()
 
         # Hijack the feature id and make sure it's unique
-        new_feature['id'] = str(uuid.uuid4())
+        new_feature['properties']['id'] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def update(self, identifier, new_feature):
@@ -145,13 +149,13 @@ class GeoJSONProvider(BaseProvider):
         """
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['id'] == identifier:
+            if feature['properties']['id'] == identifier:
                 # ensure new_feature retains id
-                new_feature['id'] = identifier
+                new_feature['properties']['id'] = identifier
                 all_data['features'][i] = new_feature
                 break
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def delete(self, identifier):
@@ -161,11 +165,11 @@ class GeoJSONProvider(BaseProvider):
         """
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['id'] == identifier:
+            if feature['properties']['id'] == identifier:
                 all_data['features'].pop(i)
                 break
 
-        with open(self.path, 'w') as dst:
+        with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def __repr__(self):

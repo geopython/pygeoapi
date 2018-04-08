@@ -54,7 +54,7 @@ class CSVProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None):
+              identifier=None, bbox=[], time=None):
         """
         Load CSV data
 
@@ -98,7 +98,8 @@ class CSVProvider(BaseProvider):
         feature_collection['numberReturned'] = limit
         return feature_collection
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], time=None):
         """
         CSV query
 

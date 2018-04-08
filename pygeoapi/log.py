@@ -30,20 +30,21 @@
 import logging
 import sys
 
-from pygeoapi.config import settings
-
 LOGGER = logging.getLogger(__name__)
 
 
-def setup_logger():
+def setup_logger(logging_config):
     """
     Setup configuration
+
+    :param logging_config: logging specific configuration
 
     :returns: void (creates logging instance)
     """
 
     log_format = \
         '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+    date_format = '%Y-%m-%dT%H:%M:%SZ'
 
     loglevels = {
         'CRITICAL': logging.CRITICAL,
@@ -53,20 +54,16 @@ def setup_logger():
         'DEBUG': logging.DEBUG,
         'NOTSET': logging.NOTSET,
     }
-    formatter = logging.Formatter(log_format)
 
-    log_handler = logging.NullHandler()
+    loglevel = loglevels[logging_config['level']]
 
-    if 'level' in settings['logging']:
-        loglevel = loglevels[settings['logging']['level']]
-        log_handler = logging.StreamHandler(sys.stdout)
+    if 'logfile' in logging_config:
+        logging.basicConfig(level=loglevel, datefmt=date_format,
+                            format=log_format,
+                            filename=logging_config['logfile'])
+    else:
+        logging.basicConfig(level=loglevel, datefmt=date_format,
+                            format=log_format, stream=sys.stdout)
 
-    if 'logfile' in settings['logging']:
-        log_handler = logging.FileHandler(settings['logging']['logfile'])
-
-    log_handler.setLevel(loglevel)
-    log_handler.setFormatter(formatter)
-
-    LOGGER.addHandler(log_handler)
     LOGGER.debug('Logging initialized')
     return

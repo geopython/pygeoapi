@@ -25,7 +25,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-#
+# =================================================================
 
 import sqlite3
 import logging
@@ -76,6 +76,7 @@ class SQLiteProvider(BaseProvider):
             geom = geojson.loads(row_data['AsGeoJSON(geometry)'])
             del row_data['AsGeoJSON(geometry)']
             feature = geojson.Feature(geometry=geom, properties=row_data)
+            feature['ID'] = feature['properties'][self.id_field]
             feature_list.append(feature)
 
         feature_collection = geojson.FeatureCollection(feature_list)
@@ -130,7 +131,8 @@ class SQLiteProvider(BaseProvider):
 
         return cursor
 
-    def query(self, startindex=0, limit=10, resulttype='results'):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], time=None):
         """
         Query Sqlite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -199,4 +201,4 @@ class SQLiteProvider(BaseProvider):
         return feature_collection
 
     def __repr__(self):
-        return '<SQliteProvider> {},{}'.format(self.data, self.table)
+        return '<SQLiteProvider> {},{}'.format(self.data, self.table)
