@@ -123,10 +123,9 @@ datasets:
         provider:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
-            id_field: null  # null indicates use feature enumeration
+            id_field: id
      
     countries:
-        id_field: ogc_fid  # null indicates use feature enumeration
         title: Countries in the world
         description: Countries of the world
         keywords:

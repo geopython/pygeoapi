@@ -434,6 +434,18 @@ class API(object):
         return headers_, 200, json.dumps(content)
 
 
+def to_json(dict_):
+    """
+    serialize dict to json
+
+    :param dict_: dict_
+
+    :returns: JSON string representation
+    """
+    import json
+    return json.dumps(dict_)
+
+
 def _render_j2_template(config, template, data):
     """
     render Jinja2 template
@@ -446,5 +458,8 @@ def _render_j2_template(config, template, data):
     """
 
     env = Environment(loader=FileSystemLoader(TEMPLATES))
+    env.filters['to_json'] = to_json
+    env.globals.update(to_json=to_json)
+
     template = env.get_template(template)
     return template.render(config=config, data=data, version=__version__)

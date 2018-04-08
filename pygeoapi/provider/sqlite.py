@@ -76,6 +76,7 @@ class SQLiteProvider(BaseProvider):
             geom = geojson.loads(row_data['AsGeoJSON(geometry)'])
             del row_data['AsGeoJSON(geometry)']
             feature = geojson.Feature(geometry=geom, properties=row_data)
+            feature['ID'] = feature['properties'][self.id_field]
             feature_list.append(feature)
 
         feature_collection = geojson.FeatureCollection(feature_list)

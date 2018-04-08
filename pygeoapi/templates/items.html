@@ -45,8 +45,15 @@
             subdomains: '1234'
         }
     ));
-    {% for feature in data['features'] %}
-    L.marker([{{ feature['geometry']['coordinates'][1] }}, {{ feature['geometry']['coordinates'][0] }}]).addTo(map).bindPopup('{{ feature['ID'] }} ')
-    {% endfor %}
+    var geojson_data = {{ data['features'] |to_json }};
+    var items = new L.GeoJSON(geojson_data, {
+        onEachFeature: function (feature, layer) {
+            var html_ = '<span><a href="./items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
+            layer.bindPopup(html_);
+        }
+    });
+
+    map.addLayer(items);
+    map.fitBounds(items.getBounds());
     </script>
 {% endblock %}
