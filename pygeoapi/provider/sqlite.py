@@ -107,8 +107,9 @@ class SQLiteProvider(BaseProvider):
             raise InvalidProviderError
 
         conn.row_factory = sqlite3.Row
+        conn.enable_load_extension(True)
         cursor = conn.cursor()
-        cursor.execute("SELECT load_extension('mod_spatialite')")
+        cursor.execute("SELECT load_extension('mod_spatialite.so')")
         cursor.execute("PRAGMA table_info({})".format(self.table))
 
         result = cursor.fetchall()
