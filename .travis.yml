@@ -1,20 +1,23 @@
 language: python
 
-addons:
-  apt:
-    packages:
-      - pandoc
-      - libsqlite3-mod-spatialite
+dist: xenial
 
 python:
   - "2.7"
   - "3.4"
 #  - "3.6"
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libsqlite3-mod-spatialite pandoc
+
 install:
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
   - python setup.py install
+
+env:
+  - PYGEOAPI_CONFIG=pygeoapi-config.yml
 
 before_script:
   - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
