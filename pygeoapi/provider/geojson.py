@@ -173,4 +173,4 @@ class GeoJSONProvider(BaseProvider):
             dst.write(json.dumps(all_data))
 
     def __repr__(self):
-        return '<GeoJSONProvider> {}'.format(self.url)
+        return '<GeoJSONProvider> {}'.format(self.data)
