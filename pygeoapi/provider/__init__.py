@@ -52,14 +52,18 @@ def load_provider(provider_def):
 
     LOGGER.debug('Providers: {}'.format(PROVIDERS))
 
-    name = provider_def['name']
+    pname = provider_def['name']
 
-    if name not in PROVIDERS.keys():
-        msg = 'Provider {} not found'.format(name)
+    if '.' not in pname and pname not in PROVIDERS.keys():
+        msg = 'Provider {} not found'.format(pname)
         LOGGER.exception(msg)
         raise InvalidProviderError(msg)
 
-    packagename, classname = PROVIDERS[name].rsplit('.', 1)
+    if '.' in pname:  # dotted path
+        packagename, classname = pname.rsplit('.', 1)
+    else:  # core provider
+        packagename, classname = PROVIDERS[pname].rsplit('.', 1)
+
     LOGGER.debug('package name: {}'.format(packagename))
     LOGGER.debug('class name: {}'.format(classname))
 
