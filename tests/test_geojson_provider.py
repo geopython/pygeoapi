@@ -13,7 +13,7 @@ def fixture():
         'type': 'FeatureCollection',
         'features': [{
             'type': 'Feature',
-            'id': '123-456',
+            'ID': '123-456',
             'geometry': {
                 'type': 'Point',
                 'coordinates': [125.6, 10.1]},
@@ -38,7 +38,7 @@ def test_query(fixture, config):
     p = GeoJSONProvider(config)
     results = p.query()
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '123-456'
+    assert results['features'][0]['ID'] == '123-456'
 
 
 def test_get(fixture, config):
@@ -60,7 +60,7 @@ def test_create(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': '123-456',
+        'ID': '123-456',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
@@ -79,7 +79,7 @@ def test_update(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': '123-456',
+        'ID': '123-456',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
@@ -97,7 +97,7 @@ def test_update_safe_id(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': 'SOMETHING DIFFERENT',
+        'ID': 'SOMETHING DIFFERENT',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
