@@ -13,11 +13,11 @@ def fixture():
         'type': 'FeatureCollection',
         'features': [{
             'type': 'Feature',
-            'ID': '123-456',
             'geometry': {
                 'type': 'Point',
                 'coordinates': [125.6, 10.1]},
             'properties': {
+                'id': '123-456',
                 'name': 'Dinagat Islands'}}]}
 
     with open(path, 'w') as fh:
@@ -30,7 +30,7 @@ def config():
     return {
         'name': 'GeoJSON',
         'data': path,
-        'id_field': None
+        'id_field': 'id'
     }
 
 
@@ -38,14 +38,14 @@ def test_query(fixture, config):
     p = GeoJSONProvider(config)
     results = p.query()
     assert len(results['features']) == 1
-    assert results['features'][0]['ID'] == '123-456'
+    assert results['features'][0]['properties']['id'] == '123-456'
 
 
 def test_get(fixture, config):
     p = GeoJSONProvider(config)
     results = p.get('123-456')
-    assert len(results['features']) == 1
-    assert 'Dinagat' in results['features'][0]['properties']['name']
+    assert isinstance(results, dict)
+    assert 'Dinagat' in results['properties']['name']
 
 
 def test_delete(fixture, config):
@@ -79,40 +79,39 @@ def test_update(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'ID': '123-456',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
         'properties': {
+            'id': '123-456',
             'name': 'Null Island'}}
 
     p.update('123-456', new_feature)
 
     # Should be changed
     results = p.get('123-456')
-    assert 'Null' in results['features'][0]['properties']['name']
+    assert 'Null' in results['properties']['name']
 
 
 def test_update_safe_id(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'ID': 'SOMETHING DIFFERENT',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
         'properties': {
+            'id': 'SOMETHING DIFFERENT',
             'name': 'Null Island'}}
 
     p.update('123-456', new_feature)
 
     # Don't let the id change, should not exist
-    with pytest.raises(Exception):
-        p.get('SOMETHING DIFFERENT')
+    assert p.get('SOMETHING DIFFERENT') is None
 
     # Should still be at the old id
     results = p.get('123-456')
-    assert 'Null' in results['features'][0]['properties']['name']
+    assert 'Null' in results['properties']['name']
 
 
 """
