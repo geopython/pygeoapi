@@ -27,52 +27,45 @@
 #
 # =================================================================
 
-import importlib
-import logging
+import json
+import os
+import sys
 
-LOGGER = logging.getLogger(__name__)
+from elasticsearch import Elasticsearch
+es = Elasticsearch()
 
-PROVIDERS = {
-    'CSV': 'pygeoapi.provider.csv_.CSVProvider',
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
-    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-    'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider',
+index_name = 'ne_110m_populated_places_simple'
+type_name = 'FeatureCollection'
 
+if (sys.argv) == 1:
+    print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
+    sys.exit(1)
+
+index_name = os.path.splitext(os.path.basename(sys.argv[1]))[0]
+
+if es.indices.exists(index_name):
+    es.indices.delete(index_name)
+
+# index settings
+settings = {
+    'mappings': {
+        'FeatureCollection': {
+            'properties': {
+                'geometry': {
+                    'type': 'geo_shape'
+                }
+            }
+        }
+    }
 }
 
+# create index
+es.indices.create(index=index_name, body=settings)
 
-def load_provider(provider_def):
-    """
-    loads provider by name
+with open(sys.argv[1]) as fh:
+    d = json.load(fh)
 
-    :param provider_def: provider definition
-
-    :returns: provider object
-    """
-
-    LOGGER.debug('Providers: {}'.format(PROVIDERS))
-
-    pname = provider_def['name']
-
-    if '.' not in pname and pname not in PROVIDERS.keys():
-        msg = 'Provider {} not found'.format(pname)
-        LOGGER.exception(msg)
-        raise InvalidProviderError(msg)
-
-    if '.' in pname:  # dotted path
-        packagename, classname = pname.rsplit('.', 1)
-    else:  # core provider
-        packagename, classname = PROVIDERS[pname].rsplit('.', 1)
-
-    LOGGER.debug('package name: {}'.format(packagename))
-    LOGGER.debug('class name: {}'.format(classname))
-
-    module = importlib.import_module(packagename)
-    class_ = getattr(module, classname)
-    provider = class_(provider_def)
-    return provider
-
-
-class InvalidProviderError(Exception):
-    """invalid provider"""
-    pass
+for f in d['features']:
+    f['properties']['geonameid'] = int(f['properties']['geonameid'])
+    res = es.index(index=index_name, doc_type=type_name,
+                   id=f['properties']['geonameid'], body=f)
