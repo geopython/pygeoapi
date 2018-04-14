@@ -89,6 +89,8 @@ class CSVProvider(BaseProvider):
                     found = True
                     result = feature
                 feature_collection['features'].append(feature)
+                feature_collection['numberMatched'] = \
+                    len(feature_collection['features'])
 
         if identifier is not None and not found:
             return None
