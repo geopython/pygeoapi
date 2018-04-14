@@ -9,7 +9,7 @@ COPY docker-entrypoint.sh  /docker-entrypoint.sh
 COPY wait-for-it.sh bin/wait-for-it.sh
 COPY add_data.sh /add_data.sh
 #/usr/share/elasticsearch/data
-COPY ne_110m_populated_places_simple.geojson / 
+RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/data/ne_110m_populated_places_simple.geojson -O /ne_110m_populated_places_simple.geojson  
 #RUN chmod +x bin/wait-for-it.sh /docker-entrypoint.sh 
 # Cant get the variables to work :( from -e they are visible but is not taking them in
 RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml

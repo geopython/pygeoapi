@@ -1,5 +1,7 @@
 FROM alpine:edge
 
+LABEL maintainer="jorge.dejesus@geocat.net"
+
 ENV GITHUB https://github.com/GeoCat/pygeoapi.git
 ENV PYGEOAPI_CONFIG /pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI /pygeoapi/openapi.yml
@@ -41,7 +43,8 @@ WORKDIR /pygeoapi
 RUN pip3 install -r requirements.txt
 RUN pip3 install -r requirements-dev.txt
 RUN pip3 install -e .
-RUN cp pygeoapi-config.yml local.config.yml
+
+COPY docker.config.yml local.config.yml
 #export PYGEOAPI_CONFIG=`pwd`/local.yml
 RUN pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
 
