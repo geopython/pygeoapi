@@ -11,6 +11,11 @@ until $(curl -sSf -XGET --insecure 'http://localhost:9200/_cluster/health?wait_f
     printf 'No status yellow from ES, trying again in 10 seconds \n'
     sleep 10
 done
-echo "SEEMS TO BE WORKING - LETS INJECT DATA"
+echo "Adding ne_110m_populated_places_simple.geojson to ES"
+
+python /load_es_data.py /usr/share/elasticsearch/data/ne_110m_populated_places_simple.geojson
+
+echo "Seems that data was loaded"
+
 # create a new index with the settings in es_index_config.json
 #curl -v --insecure --user elastic:changeme -XPUT '0.0.0.0:9200/test?pretty' -H 'Content-Type: application/json' -d @es_index_config.json
