@@ -55,3 +55,33 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # go to http://localhost
 # enter http://localhost:5000/api and click 'Explore'
 ```
+
+
+## Docker
+
+Docker folder contains a docker-composition necessary to build a minimal pygeoapi using the current providers. Composition is only for development and testing in local environment:
+
+#### ES
+
+- oficial elasticsearch:**5.6.8** on **CentosOS 7**
+- ports **9300** and **9200**
+
+Elastic search requires the host system to have its virtual memory parameter (**max_map_count**) [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
+
+```  
+sudo sysctl -w vm.max_map_count=262144
+```
+
+#### pygeoapi
+- alpine edge OS
+- spatialite compilation 4.3.0a
+- port **5000**
+
+
+#### Building and Running composition:
+```
+cd docker
+sudo sysctl -w vm.max_map_count=262144
+docker-compose build
+docker-compose up 
+``` 
