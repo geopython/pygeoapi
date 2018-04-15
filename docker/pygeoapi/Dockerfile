@@ -2,16 +2,14 @@ FROM alpine:edge
 
 LABEL maintainer="jorge.dejesus@geocat.net"
 
-ENV GITHUB https://github.com/GeoCat/pygeoapi.git
+ENV GITHUB https://github.com/geopython/pygeoapi.git
 ENV PYGEOAPI_CONFIG /pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI /pygeoapi/openapi.yml
 
 ARG FREEXL=freexl-1.0.5.tar.gz
 ARG LIBSPATIALITE=libspatialite-4.3.0a.tar.gz
-#RUN echo "@edge http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-RUN echo "@edge-testing http://nl.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-#RUN apk update
 
+RUN echo "@edge-testing http://nl.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 
 RUN apk update && apk add --no-cache \
    git \
@@ -31,13 +29,13 @@ RUN apk update && apk add --no-cache \
 RUN wget "http://www.gaia-gis.it/gaia-sins/${FREEXL}" && \
           tar zxvf "${FREEXL}" && cd "${FREEXL%.*.*}" $ && \
            ./configure && make -j 4 && make install
- 
+RUN ldconfig /usr/local/lib 
 RUN wget "http://www.gaia-gis.it/gaia-sins/${LIBSPATIALITE}" && \ 
            tar zxvf "${LIBSPATIALITE}" && cd "${LIBSPATIALITE%.*.*}" && \ 
            ./configure && make -j 4 && make install
-
-  
-RUN git clone -b docker ${GITHUB}
+RUN ldconfig /usr/local/lib
+#RUN git clone -b docker ${GITHUB}
+RUN git clone $GITHUB
 
 WORKDIR /pygeoapi
 RUN pip3 install -r requirements.txt
