@@ -114,8 +114,13 @@ class SQLiteProvider(BaseProvider):
 
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT load_extension('mod_spatialite')")
-        cursor.execute("PRAGMA table_info({})".format(self.table))
+
+        try:
+            cursor.execute("SELECT load_extension('mod_spatialite')")
+            cursor.execute("PRAGMA table_info({})".format(self.table))
+        except sqlite3.OperationalError as err:
+            LOGGER.error('Extension loading error: {}'.format(err))
+            raise ProviderConnectionError()
 
         result = cursor.fetchall()
         try:
