@@ -398,6 +398,19 @@ class API(object):
             'Content-type': 'application/json'
         }
 
+        formats = ['json', 'html']
+
+        format_ = args.get('f')
+        if format_ is not None and format_ not in formats:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Processing query parameters')
+
         if dataset not in self.config['datasets'].keys():
             exception = {
                 'code': 'InvalidParameterValue',
@@ -431,6 +444,12 @@ class API(object):
             }
         ]
 
+        if format_ == 'html':  # render
+            headers_['Content-type'] = 'text/html'
+            content = _render_j2_template(self.config, 'item.html',
+                                          content)
+            return headers_, 200, content
+
         return headers_, 200, json.dumps(content)
 
 
@@ -442,7 +461,7 @@ def to_json(dict_):
 
     :returns: JSON string representation
     """
-    import json
+
     return json.dumps(dict_)
 
 
