@@ -274,7 +274,18 @@ class API(object):
             'Content-type': 'application/json'
         }
 
+        properties = []
+        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+                               'resulttype', 'time']
         formats = ['json', 'html']
+
+        if dataset not in self.config['datasets'].keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid feature collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         format_ = args.get('f')
         if format_ is not None and format_ not in formats:
@@ -311,16 +322,21 @@ class API(object):
 
         time = args.get('time')
 
-        if dataset not in self.config['datasets'].keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid feature collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
-
         LOGGER.debug('Loading provider')
         p = load_provider(self.config['datasets'][dataset]['provider'])
+
+        LOGGER.debug('processing property parameters')
+        for k, v in args.items():
+            if k not in reserved_fieldnames:
+                if k not in p.fields.keys():
+                    exception = {
+                        'code': 'InvalidParameterValue',
+                        'description': 'invalid property'
+                    }
+                    LOGGER.error('invalid property: {}'.format(k))
+                    return headers_, 400, json.dumps(exception)
+                properties.append((k, v))
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
@@ -328,7 +344,8 @@ class API(object):
 
         try:
             content = p.query(startindex=int(startindex), limit=int(limit),
-                              resulttype=resulttype, bbox=bbox, time=time)
+                              resulttype=resulttype, bbox=bbox, time=time,
+                              properties=properties)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
