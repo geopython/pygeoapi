@@ -32,6 +32,8 @@ import logging
 import click
 import yaml
 
+from pygeoapi.provider import load_provider
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -116,7 +118,7 @@ def get_oas_30(cfg):
     paths['/collections'] = {
         'get': {
             'summary': 'Feature Collections',
-            'descriptions': 'Feature Collections',
+            'description': 'Feature Collections',
             'tags': ['server'],
             'responses': {
                 200: {
@@ -136,6 +138,7 @@ def get_oas_30(cfg):
     )
     LOGGER.debug('setting up datasets')
     for k, v in cfg['datasets'].items():
+        collection_name_path = '/collections/{}'.format(k)
         tag = {
             'name': k,
             'description': v['description'],
@@ -146,10 +149,12 @@ def get_oas_30(cfg):
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
                 break
+        if len(tag['externalDocs']) == 0:
+            del tag['externalDocs']
 
         oas['tags'].append(tag)
 
-        paths['/collections/{}'.format(k)] = {
+        paths[collection_name_path] = {
             'get': {
                 'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
@@ -168,7 +173,7 @@ def get_oas_30(cfg):
             }
         }
 
-        paths['/collections/{}/items'.format(k)] = {
+        paths['{}/items'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
@@ -190,7 +195,22 @@ def get_oas_30(cfg):
             }
         }
 
-        paths['/collections/{}/items/{{id}}'.format(k)] = {
+        p = load_provider(cfg['datasets'][k]['provider'])
+
+        for k2, v2 in p.fields.items():
+            path_ = '{}/items'.format(collection_name_path)
+            paths['{}/items'.format(path_)]['get']['parameters'].append({
+                'name': k2,
+                'in': 'query',
+                'required': False,
+                'schema': {
+                    'type': v2['type'],
+                },
+                'style': 'form',
+                'explode': False
+            })
+
+        paths['{}/items/{{id}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} feature by ID'.format(v['title']),
                 'description': v['description'],
@@ -220,21 +240,14 @@ def get_oas_30(cfg):
                 'in': 'path',
                 'description': 'The id of a feature',
                 'required': True,
-                'type': 'string'
+                'schema': {
+                    'type': 'string'
+                }
             },
             'limit': {
                 'name': 'limit',
                 'in': 'query',
-                'description': ('The optional limit parameter limits the',
-                                ' number of items that are presented in the',
-                                ' response document. Only items are counted',
-                                ' that are on the first level of the',
-                                ' collection in the response document. Nested',
-                                ' objects contained within the explicitly',
-                                ' requested items shall not be counted.',
-                                ' Minimum = 1. Maximum = 10000.',
-                                ' Default = {}.'.format(
-                                    cfg['server']['limit'])),
+                'description': 'The optional limit parameter limits the number of items that are presented in the response document. Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted. Minimum = 1. Maximum = 10000. Default = {}.'.format(cfg['server']['limit']),  # noqa
                 'required': False,
                 'schema': {
                     'type': 'integer',
@@ -277,4 +290,4 @@ def generate_openapi_document(ctx, config_file):
         raise click.ClickException('--config/-c required')
     with open(config_file) as ff:
         s = yaml.load(ff)
-        click.echo(yaml.dump(get_oas(s), default_flow_style=False))
+        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))

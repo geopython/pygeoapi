@@ -48,6 +48,16 @@ class BaseProvider(object):
         self.data = provider_def['data']
         self.id_field = provider_def['id_field']
         self.time_field = provider_def.get('time_field')
+        self.fields = {}
+
+    def get_fields(self):
+        """
+        Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        raise NotImplementedError()
 
     def query(self):
         """
