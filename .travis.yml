@@ -3,13 +3,11 @@ language: python
 dist: xenial
 
 python:
-  - "2.7"
   - "3.5"
-#  - "3.6"
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y libsqlite3-mod-spatialite pandoc
+  - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
 
 install:
   - pip install -r requirements.txt
@@ -29,3 +27,4 @@ script:
 
 after_success:
   - python setup.py sdist bdist_wheel --universal
+  - debuild -b -uc -us

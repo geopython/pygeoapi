@@ -31,7 +31,7 @@ import sqlite3
 import logging
 import os
 import geojson
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 from pygeoapi.provider import InvalidProviderError
 
 LOGGER = logging.getLogger(__name__)
@@ -106,11 +106,21 @@ class SQLiteProvider(BaseProvider):
         else:
             raise InvalidProviderError
 
-        conn.enable_load_extension(True)
+        try:
+            conn.enable_load_extension(True)
+        except AttributeError as err:
+            LOGGER.error('Extension loading not enabled: {}'.format(err))
+            raise ProviderConnectionError()
+
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT load_extension('mod_spatialite')")
-        cursor.execute("PRAGMA table_info({})".format(self.table))
+
+        try:
+            cursor.execute("SELECT load_extension('mod_spatialite')")
+            cursor.execute("PRAGMA table_info({})".format(self.table))
+        except sqlite3.OperationalError as err:
+            LOGGER.error('Extension loading error: {}'.format(err))
+            raise ProviderConnectionError()
 
         result = cursor.fetchall()
         try:

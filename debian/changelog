@@ -1,0 +1,5 @@
+python-pygeoapi (0.1.0) trusty; urgency=medium
+
+  * initial Debian packaging
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Sat, 31 Mar 2018 12:02:03 +0000
