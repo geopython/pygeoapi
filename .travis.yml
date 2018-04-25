@@ -1,6 +1,6 @@
 language: python
 
-dist: xenial
+#dist: xenial
 
 python:
   - "3.5"
