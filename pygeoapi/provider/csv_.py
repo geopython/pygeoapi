@@ -54,13 +54,14 @@ class CSVProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], time=None):
+              identifier=None, bbox=[], time=None, properties=[]):
         """
         Load CSV data
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
+        :param properties: list of tuples (name, value)
 
         :returns: dict of GeoJSON FeatureCollection
         """
@@ -101,13 +102,16 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None):
+              bbox=[], time=None, properties=[]):
         """
         CSV query
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param time: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
 
         :returns: dict of GeoJSON FeatureCollection
         """

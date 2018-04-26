@@ -90,11 +90,17 @@ class GeoJSONProvider(BaseProvider):
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None):
+              bbox=[], time=None, properties=[]):
         """
         query the provider
 
-        :param bbox: Bounding Box in [W, S, E, N] order
+        :param startindex: starting record to return (default 0)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param time: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
+
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
         # TODO filter by bbox without resorting to third-party libs

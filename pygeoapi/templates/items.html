@@ -18,13 +18,13 @@
     <section id="items">
       <h2>{{ data['title'] }}</h2>
       <span>{{ data['description'] }}</span>
-      <h2>Features <a title="JSON" href="./"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
+      <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <table>
           <tr>
             <td>
       <ul>
       {% for feature in data['features'] %}
-          <li><a title="{{ feature['ID'] }}" href="./{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
+          <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
       {% endfor %}
       </ul>
            </td>
@@ -48,7 +48,7 @@
     var geojson_data = {{ data['features'] |to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
-            var html_ = '<span><a href="./' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
+            var html_ = '<span><a href="./items' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
             layer.bindPopup(html_);
         }
     });
