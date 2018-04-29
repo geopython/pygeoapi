@@ -18,13 +18,13 @@
     <section id="items">
       <h2>{{ data['title'] }}</h2>
       <span>{{ data['description'] }}</span>
-      <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
+      <h2>Feature {{ data['ID'] }} <a title="JSON" href="./{{ data['ID']  }}"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <table>
           <tr>
-            <td>
+            <td><h3>Properties</h3>
       <ul>
-      {% for feature in data['features'] %}
-          <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
+      {% for k, v in data['properties'].items() %}
+          <li>{{ k }}: {{ v }}</li>
       {% endfor %}
       </ul>
            </td>
@@ -38,22 +38,17 @@
 
 {% block extrafoot %}
     <script>
-    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
+    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
     map.addLayer(new L.TileLayer(
         'http://tile.osm.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             subdomains: '1234'
         }
     ));
-    var geojson_data = {{ data['features'] |to_json }};
-    var items = new L.GeoJSON(geojson_data, {
-        onEachFeature: function (feature, layer) {
-            var html_ = '<span><a href="./items' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
-            layer.bindPopup(html_);
-        }
-    });
+    var geojson_data = {{ data |to_json }};
+    var items = new L.GeoJSON(geojson_data);
 
     map.addLayer(items);
-    map.fitBounds(items.getBounds());
+    map.fitBounds(items.getBounds(), {maxZoom: 10});
     </script>
 {% endblock %}

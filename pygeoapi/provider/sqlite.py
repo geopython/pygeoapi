@@ -30,8 +30,8 @@
 import sqlite3
 import logging
 import os
-import geojson
-from pygeoapi.provider.base import BaseProvider
+import json
+from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 from pygeoapi.provider import InvalidProviderError
 
 LOGGER = logging.getLogger(__name__)
@@ -73,13 +73,18 @@ class SQLiteProvider(BaseProvider):
         feature_list = list()
         for row_data in self.dataDB:
             row_data = dict(row_data)  # sqlite3.Row is doesnt support pop
-            geom = geojson.loads(row_data['AsGeoJSON(geometry)'])
-            del row_data['AsGeoJSON(geometry)']
-            feature = geojson.Feature(geometry=geom, properties=row_data)
-            feature['ID'] = feature['properties'][self.id_field]
+            feature = {}
+            feature["geometry"] = json.loads(
+                row_data.pop('AsGeoJSON(geometry)')
+                )
+            feature['properties'] = row_data
+            feature['id'] = feature['properties'].pop(self.id_field)
             feature_list.append(feature)
 
-        feature_collection = geojson.FeatureCollection(feature_list)
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'features': feature_list
+        }
 
         return feature_collection
 
@@ -89,8 +94,10 @@ class SQLiteProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        feature_collection = geojson.FeatureCollection([])
+        feature_collection = {"features": [],
+                              "type": "FeatureCollection"}
         feature_collection['numberMatched'] = str(hits)
+
         return feature_collection
 
     def __load(self):
@@ -106,13 +113,21 @@ class SQLiteProvider(BaseProvider):
         else:
             raise InvalidProviderError
 
-        conn.enable_load_extension(True)
+        try:
+            conn.enable_load_extension(True)
+        except AttributeError as err:
+            LOGGER.error('Extension loading not enabled: {}'.format(err))
+            raise ProviderConnectionError()
+
         conn.row_factory = sqlite3.Row
         conn.enable_load_extension(True)
         cursor = conn.cursor()
-        cursor.execute("SELECT load_extension('mod_spatialite.so')")
-        cursor.execute("PRAGMA table_info({})".format(self.table))
-
+        try:
+            cursor.execute("SELECT load_extension('mod_spatialite')")
+            cursor.execute("PRAGMA table_info({})".format(self.table))
+        except sqlite3.OperationalError as err:
+            LOGGER.error('Extension loading error: {}'.format(err))
+            raise ProviderConnectionError()
         result = cursor.fetchall()
         try:
             # TODO: Better exceptions declaring
@@ -134,7 +149,7 @@ class SQLiteProvider(BaseProvider):
         return cursor
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None):
+              bbox=[], time=None, properties=[]):
         """
         Query Sqlite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -143,6 +158,9 @@ class SQLiteProvider(BaseProvider):
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param time: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
 
         :returns: GeoJSON FeaturesCollection
         """

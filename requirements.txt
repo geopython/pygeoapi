@@ -1,7 +1,6 @@
-elasticsearch==6.2.0
-click==6.7
-Flask==0.12.2
-Shapely==1.5.7
-Flask_Cors==3.0.3
-PyYAML==3.12
-geojson==2.3.0
+click
+elasticsearch
+Flask
+Flask_Cors
+PyYAML
+Shapely
