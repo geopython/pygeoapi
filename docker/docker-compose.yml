@@ -9,6 +9,9 @@ services:
         - pygeoapi_data:/pygeoapi/tests/data
     links:
         - elastic_search
+    depends_on:
+        - elastic_search
+
   elastic_search:
     build: ./ES
     ports:

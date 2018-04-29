@@ -56,10 +56,18 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # enter http://localhost:5000/api and click 'Explore'
 ```
 
-
 ## Docker
 
-Docker folder contains a docker-composition necessary to build a minimal pygeoapi using the current providers. Composition is only for development and testing in local environment:
+To pull and run pygeoapi without ES.
+
+```
+docker pull geopython/pygeoapi
+docker run -d -p 5000:5000 geopython/pygeoapi
+```
+
+## Docker (composition) 
+
+Docker folder contains a docker-composition necessary to build a minimal pygeoapi using the complete set of providers providers (ES needs to be run as a separated service). Composition is only for development and testing in local environment:
 
 #### ES
 
