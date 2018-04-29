@@ -199,7 +199,7 @@ def get_oas_30(cfg):
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)
-            paths['{}/items'.format(path_)]['get']['parameters'].append({
+            paths['{}'.format(path_)]['get']['parameters'].append({
                 'name': k2,
                 'in': 'query',
                 'required': False,

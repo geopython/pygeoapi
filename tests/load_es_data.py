@@ -34,7 +34,6 @@ import sys
 from elasticsearch import Elasticsearch
 es = Elasticsearch()
 
-index_name = 'ne_110m_populated_places_simple'
 type_name = 'FeatureCollection'
 
 if (sys.argv) == 1:
