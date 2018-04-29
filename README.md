@@ -80,6 +80,12 @@ Elastic search requires the host system to have its virtual memory parameter (**
 sudo sysctl -w vm.max_map_count=262144
 ```
 
+If the docker composition fails with the following error:
+```
+docker_elastic_search_1 exited with code 78
+```
+it is very likely that you forgot to setup the sysctl
+
 #### pygeoapi
 - alpine edge OS
 - spatialite compilation 4.3.0a
