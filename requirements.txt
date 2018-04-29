@@ -4,4 +4,4 @@ Flask
 Shapely
 Flask_Cors
 PyYAML
-geojson
+json
