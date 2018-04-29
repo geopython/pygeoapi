@@ -1,7 +1,6 @@
-elasticsearch
 click
+elasticsearch
 Flask
-Shapely
 Flask_Cors
 PyYAML
-json
+Shapely
