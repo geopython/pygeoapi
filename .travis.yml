@@ -5,6 +5,9 @@ dist: xenial
 python:
   - "3.5"
 
+services:
+  = elasticsearch
+
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
@@ -17,11 +20,12 @@ install:
 env:
   - PYGEOAPI_CONFIG=pygeoapi-config.yml
 
-#before_script:
-#  - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
+before_script:
+  - sleep 10
+  - python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
+  - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
 
 script:
-  - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
   - pytest --cov=pygeoapi
   - find . -type f -name "*.py" | xargs flake8
   - python setup.py --long-description | rst2html5.py
