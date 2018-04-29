@@ -30,27 +30,26 @@ RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 
 #Check we have ElasticSearch
 #RUN ogrinfo --formats | grep "ElasticSearch"
-=======
 ARG DATA_FOLDER=/usr/share/elasticsearch/data
 
 COPY docker-entrypoint.sh  /docker-entrypoint.sh
 COPY wait-for-it.sh bin/wait-for-it.sh
 COPY add_data.sh /add_data.sh
-COPY load_es_data.py /load_es_data.py
 
+#COPY load_es_data.py /load_es_data.py
 #/usr/share/elasticsearch/data
 RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/data/ne_110m_populated_places_simple.geojson -O $DATA_FOLDER/ne_110m_populated_places_simple.geojson  
 
+
 RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml
 RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
-
 
 USER root
 RUN yum -y install python-setuptools \
 	&& easy_install elasticsearch \
 	&& yum clean packages
 
-#USER elasticsearch
+USER elasticsearch
 CMD ["/usr/share/elasticsearch/bin/elasticsearch"]
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

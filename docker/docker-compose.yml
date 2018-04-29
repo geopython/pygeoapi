@@ -1,0 +1,26 @@
+version: '3.3'
+
+services:
+  pygeoapi:
+    build: ./pygeoapi
+    ports:
+        - "5000:5000"
+    volumes:
+        - pygeoapi_data:/pygeoapi/tests/data
+    links:
+        - elastic_search
+    depends_on:
+        - elastic_search
+
+  elastic_search:
+    build: ./ES
+    ports:
+        - 9300:9300
+        - 9200:9200 
+    volumes:
+    - elastic_search_data:/usr/share/elasticsearch/data
+
+volumes:
+  pygeoapi_data: {}
+  elastic_search_data: {}
+  

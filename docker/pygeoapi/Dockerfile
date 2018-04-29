@@ -43,8 +43,9 @@ RUN pip3 install -r requirements-dev.txt
 RUN pip3 install -e .
 
 COPY docker.config.yml local.config.yml
-#export PYGEOAPI_CONFIG=`pwd`/local.yml
-RUN pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
+COPY openapi.yml openapi.yml
+#TODO: openapi.yml requires ES to be active
+#RUN pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
 
 ENTRYPOINT ["pygeoapi", "serve"]
 
