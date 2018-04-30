@@ -98,7 +98,9 @@ class CSVProvider(BaseProvider):
         elif identifier is not None and found:
             return result
 
-        feature_collection['numberReturned'] = limit
+        feature_collection['numberReturned'] = len(
+            feature_collection['features'])
+
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',

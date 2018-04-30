@@ -62,6 +62,8 @@ def test_query(fixture, config):
     p = CSVProvider(config)
     results = p.query()
     assert len(results['features']) == 5
+    assert results['numberMatched'] == 5
+    assert results['numberReturned'] == 5
     assert results['features'][0]['ID'] == '371'
     assert results['features'][0]['properties']['value'] == '89.9'
 

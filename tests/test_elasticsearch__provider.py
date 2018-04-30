@@ -45,8 +45,15 @@ def test_query(config):
     p = ElasticsearchProvider(config)
     results = p.query()
     assert len(results['features']) == 10
+    assert results['numberMatched'] == 242
+    assert results['numberReturned'] == 10
     assert results['features'][0]['ID'] == 6691831
     assert results['features'][0]['properties']['nameascii'] == 'Vatican City'
+
+    results = p.query(properties=[('nameascii', 'Vatican City')])
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
