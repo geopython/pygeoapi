@@ -355,30 +355,35 @@ class API(object):
             return headers_, 500, json.dumps(exception)
 
         prev = startindex - self.config['server']['limit']
+        if prev < 0:
+            prev = 0
+
         next_ = startindex + self.config['server']['limit']
 
         content['links'] = [{
             'type': 'application/json',
             'rel': 'self',
             'title': 'Collection items',
-            'href': '/collections/{}/items'.format(dataset)
+            'href': '{}collections/{}/items'.format(
+                self.config['server']['url'], dataset)
             }, {
             'type': 'application/json',
             'rel': 'prev',
             'title': 'items (prev)',
-            'href': '/collections/{}/items/?startindex={}'.format(dataset,
-                                                                  prev)
+            'href': '{}/collections/{}/items/?startindex={}'.format(
+                self.config['server']['url'], dataset, prev)
             }, {
             'type': 'application/json',
             'rel': 'next',
             'title': 'items (next)',
-            'href': '/collections/{}/items/?startindex={}'.format(dataset,
-                                                                  next_)
+            'href': '{}/collections/{}/items/?startindex={}'.format(
+                self.config['server']['url'], dataset, next_)
             }, {
             'type': 'application/json',
             'title': 'Collection',
             'rel': 'collection',
-            'href': '/collections/{}'.format(dataset)
+            'href': '{}/collections/{}'.format(
+                self.config['server']['url'], dataset)
             }
         ]
 
@@ -446,11 +451,13 @@ class API(object):
         content['links'] = [{
             'rel': 'self',
             'type': 'application/json',
-            'href': '/collections/{}/items/{}'.format(dataset, identifier)
+            'href': '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier)
             }, {
             'rel': 'collection',
             'type': 'application/json',
-            'href': '/collections/{}'.format(dataset)
+            'href': '{}/collections/{}'.format(
+                self.config['server']['url'], dataset)
             }
         ]
 
