@@ -48,7 +48,7 @@
     var geojson_data = {{ data['features'] |to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
-            var html_ = '<span><a href="./items' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
+            var html_ = '<span><a href="./items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
             layer.bindPopup(html_);
         }
     });

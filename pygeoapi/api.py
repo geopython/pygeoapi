@@ -327,7 +327,7 @@ class API(object):
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
-            if k in reserved_fieldnames:
+            if k not in reserved_fieldnames:
                 properties.append((k, v))
 
         LOGGER.debug('Querying provider')
