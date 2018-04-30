@@ -20,19 +20,26 @@
       <span>{{ data['description'] }}</span>
       <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <table>
-          <tr>
-            <td>
-      <ul>
-      {% for feature in data['features'] %}
-          <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
+        <tr>
+          <td>
+            <ul>
+            {% for feature in data['features'] %}
+              <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
+            {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <div id="items-map"></div>
+          </td>
+        </tr>
+      </table>
+      {% for link in data['links'] %}
+        {% if link['rel'] == 'prev' %}
+        <a href="{{ link['href'] }}&f=html">Prev</a>
+        {% elif link['rel'] == 'next' %}
+        <a href="{{ link['href'] }}&f=html">Next</a>
+        {% endif %}
       {% endfor %}
-      </ul>
-           </td>
-           <td>
-        <div id="items-map"></div>
-           </td>
-         </tr>
-       </table>
     </section>
 {% endblock %}
 
