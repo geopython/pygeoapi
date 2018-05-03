@@ -10,7 +10,7 @@ Vcs-Git: https://github.com/geopython/pygeoapi.git
 Package: python-pygeoapi
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-pkg-resources, python-click, python-flask, python-yaml
-Suggests: python-elasticsearch, python-geojson, python-shapely
+Suggests: python-elasticsearch, python-geojson
 Homepage: https://github.com/geopython/pygeoapi
 Description: pygeoapi provides an API to geospatial
  data
