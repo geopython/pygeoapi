@@ -1,6 +1,5 @@
 click
 elasticsearch
 Flask
-Flask_Cors
 PyYAML
 Shapely
