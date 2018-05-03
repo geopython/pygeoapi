@@ -9,6 +9,7 @@ server:
     cors: true
     pretty_print: true
     limit: 10
+    # templates: /path/to/templates
 
 logging:
     level: ERROR
