@@ -96,7 +96,7 @@ class SQLiteProvider(BaseProvider):
 
         feature_collection = {"features": [],
                               "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = str(hits)
+        feature_collection['numberMatched'] = hits
 
         return feature_collection
 
