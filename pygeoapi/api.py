@@ -104,7 +104,8 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'this document as HTML',
-              'href': '{}/?f=html'.format(self.config['server']['url'])
+              'href': '{}/?f=html'.format(self.config['server']['url']),
+              'hreflang': self.config['server']['language']
             }, {
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
@@ -114,7 +115,8 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'the OpenAPI definition as HTML',
-              'href': '{}/api?f=html'.format(self.config['server']['url'])
+              'href': '{}/api?f=html'.format(self.config['server']['url']),
+              'hreflang': self.config['server']['language']
             }
         ]
 
@@ -241,6 +243,9 @@ class API(object):
                     'title': link['title'],
                     'href': link['href']
                 }
+                if 'hreflang' in link:
+                    lnk['hreflang'] = link['hreflang']
+
                 collection['links'].append(lnk)
 
             if dataset is not None and k == dataset:
