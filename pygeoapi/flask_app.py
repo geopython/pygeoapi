@@ -34,7 +34,6 @@ import click
 import yaml
 
 from flask import Flask, make_response, request
-from flask_cors import CORS
 
 from pygeoapi.api import API
 
@@ -130,7 +129,8 @@ def serve(ctx, debug=False):
     if not api_.config['server']['pretty_print']:
         APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
-    if api_.config['server']['cors']:
+    if 'cors' in api_.config['server'] and api_.config['server']['cors']:
+        from flask_cors import CORS
         CORS(APP)
 
 #    setup_logger(CONFIG['logging'])
