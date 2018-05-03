@@ -78,6 +78,9 @@ datasets:
             name: CSV
             data: tests/data/obs.csv
             id_field: id
+            geometry:
+                x_field: long
+                y_field: long
 
     ne_110m_populated_places_simple:
         title: Populated Places

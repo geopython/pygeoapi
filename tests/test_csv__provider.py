@@ -37,12 +37,12 @@ path = '/tmp/pygeoapi-test.csv'
 
 @pytest.fixture()
 def fixture():
-    data = """id,stn_id,datetime,value,geom
-371,35,"2001-10-30T14:24:55Z",89.9,POINT(-75 45)
-377,35,"2002-10-30T18:31:38Z",93.9,POINT(-75 45)
-238,2147,"2007-10-30T08:57:29Z",103.5,POINT(-79 43)
-297,2147,"2003-10-30T07:37:29Z",93.5,POINT(-79 43)
-964,604,"2000-10-30T18:24:39Z",99.9,POINT(-122 49)
+    data = """id,stn_id,datetime,value,lat,long
+371,35,"2001-10-30T14:24:55Z",89.9,45,-75
+377,35,"2002-10-30T18:31:38Z",93.9,45,-75
+238,2147,"2007-10-30T08:57:29Z",103.5,43,-79
+297,2147,"2003-10-30T07:37:29Z",93.5,43,-79
+964,604,"2000-10-30T18:24:39Z",99.9,49,-122
 """
     with open(path, 'w') as fh:
         fh.write(data)
@@ -54,7 +54,11 @@ def config():
     return {
         'name': 'CSV',
         'data': path,
-        'id_field': 'id'
+        'id_field': 'id',
+        'geometry': {
+            'x_field': 'long',
+            'y_field': 'lat'
+        }
     }
 
 
