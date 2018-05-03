@@ -60,7 +60,10 @@ class API(object):
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
-        setup_logger(config['logging'])
+        if 'templates' not in self.config['server']:
+            self.config['server']['templates'] = TEMPLATES
+
+        setup_logger(self.config['logging'])
 
     def root(self, headers, args):
         """
