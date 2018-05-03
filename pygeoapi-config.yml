@@ -62,10 +62,12 @@ datasets:
               rel: canonical
               title: data
               href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
+              hreflang: en-US
             - type: text/csv
               rel: alternate
               title: data
               href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -91,10 +93,12 @@ datasets:
               rel: canonical
               title: information
               href: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
+              hreflang: en-US
             - type: application/gzip
               rel: canonical
               title: download
               href: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -115,6 +119,7 @@ datasets:
               rel: canonical
               title: information
               href: http://www.naturalearthdata.com/
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -139,6 +144,7 @@ datasets:
               rel: canonical
               title: information
               href: http://www.naturalearthdata.com/
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
