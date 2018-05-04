@@ -8,8 +8,8 @@
         width: 80%;
       }
       #items-map {
-        width: 400px;
-        height: 400px;
+        width: 100%;
+        height: 600px;
       }
     </style>
 {% endblock %}
@@ -19,20 +19,6 @@
       <h2>{{ data['title'] }}</h2>
       <span>{{ data['description'] }}</span>
       <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
-      <table>
-        <tr>
-          <td>
-            <ul>
-            {% for feature in data['features'] %}
-              <li><a title="{{ feature['ID'] }}" href="./items/{{ feature['ID'] }}?f=html">{{ feature['ID'] }}</a></li>
-            {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <div id="items-map"></div>
-          </td>
-        </tr>
-      </table>
       {% for link in data['links'] %}
         {% if link['rel'] == 'prev' %}
         <a href="{{ link['href'] }}&f=html">Prev</a>
@@ -40,6 +26,7 @@
         <a href="{{ link['href'] }}&f=html">Next</a>
         {% endif %}
       {% endfor %}
+      <div id="items-map"></div>
     </section>
 {% endblock %}
 
@@ -55,7 +42,7 @@
     var geojson_data = {{ data['features'] |to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
-            var html_ = '<span><a href="./items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
+            var html_ = '<span><a target="_blank" href="items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
             layer.bindPopup(html_);
         }
     });
