@@ -44,10 +44,7 @@ RUN pip3 install -r requirements.txt
 RUN pip3 install -r requirements-dev.txt
 RUN pip3 install -e .
 
-COPY docker.config.yml local.config.yml
-#COPY openapi.yml openapi.yml
-#RUN pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
-
-#ENTRYPOINT ["pygeoapi", "serve"]
+#COPY docker.config.yml local.config.yml
 ENTRYPOINT ["/entrypoint.sh"]
+#Run using
 #docker run -p5000:5000 pygeoapi:latest
