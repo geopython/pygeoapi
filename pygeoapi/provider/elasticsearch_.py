@@ -30,6 +30,7 @@
 import logging
 
 from elasticsearch import Elasticsearch, exceptions
+from elasticsearch.client.indices import IndicesClient
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
@@ -63,9 +64,32 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
+        LOGGER.debug('Grabbing field information')
+        self.fields = self.get_fields()
+
+    def get_fields(self):
+        """
+         Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        fields_ = {}
+        ic = IndicesClient(self.es)
+        ii = ic.get(self.index_name)
+        p = ii[self.index_name]['mappings'][self.type_name]['properties']['properties']  # noqa
+
+        for k, v in p['properties'].items():
+            if v['type'] == 'text':
+                type_ = 'string'
+            else:
+                type_ = v['type']
+            fields_[k] = {'type': type_}
+
+        return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None):
+              bbox=[], time=None, properties=[]):
         """
         query Elasticsearch index
 
@@ -74,6 +98,7 @@ class ElasticsearchProvider(BaseProvider):
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -137,8 +162,18 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.debug(filter_)
             query['query']['bool']['filter'].append(filter_)
 
+        if properties:
+            LOGGER.debug('processing properties')
+            for prop in properties:
+                pf = {
+                    'match': {
+                        'properties.{}'.format(prop[0]): prop[1]
+                    }
+                }
+                query['query']['bool']['filter'].append(pf)
+
         try:
-            LOGGER.debug('Querying Elasticsearch')
+            LOGGER.debug('querying Elasticsearch')
             results = self.es.search(index=self.index_name, from_=startindex,
                                      size=limit, body=query)
         except exceptions.ConnectionError as err:

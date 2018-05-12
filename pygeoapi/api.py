@@ -274,7 +274,18 @@ class API(object):
             'Content-type': 'application/json'
         }
 
+        properties = []
+        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+                               'resulttype', 'time']
         formats = ['json', 'html']
+
+        if dataset not in self.config['datasets'].keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid feature collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         format_ = args.get('f')
         if format_ is not None and format_ not in formats:
@@ -311,16 +322,14 @@ class API(object):
 
         time = args.get('time')
 
-        if dataset not in self.config['datasets'].keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid feature collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
-
         LOGGER.debug('Loading provider')
         p = load_provider(self.config['datasets'][dataset]['provider'])
+
+        LOGGER.debug('processing property parameters')
+        for k, v in args.items():
+            if k in reserved_fieldnames:
+                properties.append((k, v))
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
@@ -328,7 +337,8 @@ class API(object):
 
         try:
             content = p.query(startindex=int(startindex), limit=int(limit),
-                              resulttype=resulttype, bbox=bbox, time=time)
+                              resulttype=resulttype, bbox=bbox, time=time,
+                              properties=properties)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -398,6 +408,19 @@ class API(object):
             'Content-type': 'application/json'
         }
 
+        formats = ['json', 'html']
+
+        format_ = args.get('f')
+        if format_ is not None and format_ not in formats:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Processing query parameters')
+
         if dataset not in self.config['datasets'].keys():
             exception = {
                 'code': 'InvalidParameterValue',
@@ -431,6 +454,12 @@ class API(object):
             }
         ]
 
+        if format_ == 'html':  # render
+            headers_['Content-type'] = 'text/html'
+            content = _render_j2_template(self.config, 'item.html',
+                                          content)
+            return headers_, 200, content
+
         return headers_, 200, json.dumps(content)
 
 
@@ -442,7 +471,7 @@ def to_json(dict_):
 
     :returns: JSON string representation
     """
-    import json
+
     return json.dumps(dict_)
 
 

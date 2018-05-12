@@ -27,44 +27,41 @@
 #
 # =================================================================
 
-import json
-import os
-import sys
+import pytest
 
-from elasticsearch import Elasticsearch
-es = Elasticsearch()
+from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 
-type_name = 'FeatureCollection'
 
-if (sys.argv) == 1:
-    print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
-    sys.exit(1)
-
-index_name = os.path.splitext(os.path.basename(sys.argv[1]))[0]
-
-if es.indices.exists(index_name):
-    es.indices.delete(index_name)
-
-# index settings
-settings = {
-    'mappings': {
-        'FeatureCollection': {
-            'properties': {
-                'geometry': {
-                    'type': 'geo_shape'
-                }
-            }
-        }
+@pytest.fixture()
+def config():
+    return {
+        'name': 'Elasticsearch',
+        'data': 'http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection',  # noqa
+        'id_field': 'geonameid'
     }
-}
 
-# create index
-es.indices.create(index=index_name, body=settings)
 
-with open(sys.argv[1]) as fh:
-    d = json.load(fh)
+def test_query(config):
+    p = ElasticsearchProvider(config)
+    results = p.query()
+    assert len(results['features']) == 10
+    assert results['features'][0]['ID'] == 6691831
+    assert results['features'][0]['properties']['nameascii'] == 'Vatican City'
 
-for f in d['features']:
-    f['properties']['geonameid'] = int(f['properties']['geonameid'])
-    res = es.index(index=index_name, doc_type=type_name,
-                   id=f['properties']['geonameid'], body=f)
+    results = p.query(limit=1)
+    assert len(results['features']) == 1
+    assert results['features'][0]['ID'] == 6691831
+
+    results = p.query(startindex=2, limit=1)
+    assert len(results['features']) == 1
+    assert results['features'][0]['ID'] == 1559804
+
+
+def test_get(config):
+    p = ElasticsearchProvider(config)
+    results = p.get('404')
+    assert results is None
+
+    result = p.get('3413829')
+    assert result['ID'] == 3413829
+    assert result['properties']['ls_name'] == 'Reykjavik'
