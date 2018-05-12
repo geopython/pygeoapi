@@ -37,7 +37,12 @@ RUN ldconfig /usr/local/lib
 #RUN git clone -b docker ${GITHUB}
 RUN git clone $GITHUB
 
-COPY entrypoint.sh /entrypoint.sh
+
+RUN wget https://raw.githubusercontent.com/eficode/wait-for/master/wait-for -O /wait-for
+RUN chmod +x /wait-for 
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY run_pygeoapi.sh /run_pygeoapi.sh
 
 WORKDIR /pygeoapi
 RUN pip3 install -r requirements.txt
@@ -46,7 +51,7 @@ RUN pip3 install -e .
 
 COPY docker.config.yml local.config.yml
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 #Run using
 #docker run -p5000:5000 pygeoapi:latest
