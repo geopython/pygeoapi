@@ -37,16 +37,17 @@ RUN ldconfig /usr/local/lib
 #RUN git clone -b docker ${GITHUB}
 RUN git clone $GITHUB
 
+COPY entrypoint.sh /entrypoint.sh
+
 WORKDIR /pygeoapi
 RUN pip3 install -r requirements.txt
 RUN pip3 install -r requirements-dev.txt
 RUN pip3 install -e .
 
 COPY docker.config.yml local.config.yml
-COPY openapi.yml openapi.yml
-#TODO: openapi.yml requires ES to be active
+#COPY openapi.yml openapi.yml
 #RUN pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
 
-ENTRYPOINT ["pygeoapi", "serve"]
-
+#ENTRYPOINT ["pygeoapi", "serve"]
+ENTRYPOINT ["/entrypoint.sh"]
 #docker run -p5000:5000 pygeoapi:latest
