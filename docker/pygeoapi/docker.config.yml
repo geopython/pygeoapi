@@ -1,0 +1,152 @@
+server:
+    bind:
+        host: 0.0.0.0
+        port: 5000
+    url: http://localhost:5000/
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    pretty_print: true
+    limit: 10
+
+logging:
+    level: ERROR
+    #logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: pygeoapi default instance
+        description: pygeoapi provides an API to geospatial data
+        keywords:
+            - geospatial
+            - data
+            - api
+        keywords_type: theme
+        terms_of_service: None
+        url: http://example.org
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: Organization Name
+        url: https://github.com/geopython/pygeoapi
+    contact:
+        name: Lastname, Firstname
+        position: Position Title
+        address: Mailing Address
+        city: City
+        stateorprovince: Administrative Area
+        postalcode: Zip or Postal Code
+        country: Country
+        phone: +xx-xxx-xxx-xxxx
+        fax: +xx-xxx-xxx-xxxx
+        email: you@example.org
+        url: Contact URL
+        hours: Hours of Service
+        instructions: During hours of service.  Off on weekends.
+        role: pointOfContact
+
+datasets:
+    obs:
+        title: Observations
+        description: Observations
+        keywords:
+            - observations
+            - monitoring
+        crs:
+            - CRS84
+        links:
+            - type: text/csv
+              rel: canonical
+              title: data
+              href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
+            - type: text/csv
+              rel: alternate
+              title: data
+              href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: 2000-10-30T18:24:39Z
+                end: 2007-10-30T08:57:29Z
+        provider:
+            name: CSV
+            data: tests/data/obs.csv
+            id_field: id
+
+    ne_110m_populated_places_simple:
+        title: Populated Places
+        description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
+        keywords:
+            - populated places
+            - cities
+            - towns
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+        provider:
+            name: Elasticsearch
+            #Note elastic_search is the docker container of ES the name is defined in the docker-compose.yml
+            data: http://elastic_search:9200/ne_110m_populated_places_simple/FeatureCollection
+            id_field: geonameid
+
+    lakes:
+        title: Large Lakes
+        description: lakes of the world, public domain
+        keywords:
+            - lakes
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: 2011-11-11
+                end: now  # or empty
+        provider:
+            name: GeoJSON
+            data: tests/data/ne_110m_lakes.geojson
+            id_field: id
+     
+    countries:
+        title: Countries in the world
+        description: Countries of the world
+        keywords:
+            - countries
+            - natural eart
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider: 
+            name: SQLite
+            data: tests/data/ne_110m_admin_0_countries.sqlite
+            id_field: ogc_fid
+            table: ne_110m_admin_0_countries

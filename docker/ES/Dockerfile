@@ -1,6 +1,7 @@
 
 FROM docker.elastic.co/elasticsearch/elasticsearch:5.6.8
 
+<<<<<<< HEAD
 <<<<<<< ecf775f8d7177a9720d07dcf03a1a42d75085903
 #ARG GDAL_VERSION=2.2.4
 #ARG PROCESSOR_N=6
@@ -30,6 +31,7 @@ RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 
 #Check we have ElasticSearch
 #RUN ogrinfo --formats | grep "ElasticSearch"
+
 ARG DATA_FOLDER=/usr/share/elasticsearch/data
 
 COPY docker-entrypoint.sh  /docker-entrypoint.sh
@@ -49,7 +51,11 @@ RUN yum -y install python-setuptools \
 	&& easy_install elasticsearch \
 	&& yum clean packages
 
+
+RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/load_es_data.py -O /load_es_data.py
 USER elasticsearch
+
+
 CMD ["/usr/share/elasticsearch/bin/elasticsearch"]
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

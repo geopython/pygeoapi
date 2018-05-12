@@ -128,7 +128,6 @@ class SQLiteProvider(BaseProvider):
         except sqlite3.OperationalError as err:
             LOGGER.error('Extension loading error: {}'.format(err))
             raise ProviderConnectionError()
-
         result = cursor.fetchall()
         try:
             # TODO: Better exceptions declaring
