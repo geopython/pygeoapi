@@ -1,7 +1,3 @@
-elasticsearch
 click
 Flask
-Shapely
-Flask_Cors
 PyYAML
-geojson

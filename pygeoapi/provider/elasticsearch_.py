@@ -191,7 +191,7 @@ class ElasticsearchProvider(BaseProvider):
         if resulttype == 'hits':
             return feature_collection
 
-        feature_collection['numberReturned'] = limit
+        feature_collection['numberReturned'] = len(results['hits']['hits'])
 
         LOGGER.debug('serializing features')
         for feature in results['hits']['hits']:

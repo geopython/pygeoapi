@@ -30,7 +30,7 @@
 import sqlite3
 import logging
 import os
-import geojson
+import json
 from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 from pygeoapi.provider import InvalidProviderError
 
@@ -73,13 +73,18 @@ class SQLiteProvider(BaseProvider):
         feature_list = list()
         for row_data in self.dataDB:
             row_data = dict(row_data)  # sqlite3.Row is doesnt support pop
-            geom = geojson.loads(row_data['AsGeoJSON(geometry)'])
-            del row_data['AsGeoJSON(geometry)']
-            feature = geojson.Feature(geometry=geom, properties=row_data)
-            feature['ID'] = feature['properties'][self.id_field]
+            feature = {}
+            feature["geometry"] = json.loads(
+                row_data.pop('AsGeoJSON(geometry)')
+                )
+            feature['properties'] = row_data
+            feature['id'] = feature['properties'].pop(self.id_field)
             feature_list.append(feature)
 
-        feature_collection = geojson.FeatureCollection(feature_list)
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'features': feature_list
+        }
 
         return feature_collection
 
@@ -89,8 +94,10 @@ class SQLiteProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        feature_collection = geojson.FeatureCollection([])
-        feature_collection['numberMatched'] = str(hits)
+        feature_collection = {"features": [],
+                              "type": "FeatureCollection"}
+        feature_collection['numberMatched'] = hits
+
         return feature_collection
 
     def __load(self):

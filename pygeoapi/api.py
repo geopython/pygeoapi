@@ -60,7 +60,10 @@ class API(object):
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
-        setup_logger(config['logging'])
+        if 'templates' not in self.config['server']:
+            self.config['server']['templates'] = TEMPLATES
+
+        setup_logger(self.config['logging'])
 
     def root(self, headers, args):
         """
@@ -101,7 +104,8 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'this document as HTML',
-              'href': '{}/?f=html'.format(self.config['server']['url'])
+              'href': '{}/?f=html'.format(self.config['server']['url']),
+              'hreflang': self.config['server']['language']
             }, {
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
@@ -111,7 +115,8 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'the OpenAPI definition as HTML',
-              'href': '{}/api?f=html'.format(self.config['server']['url'])
+              'href': '{}/api?f=html'.format(self.config['server']['url']),
+              'hreflang': self.config['server']['language']
             }
         ]
 
@@ -238,6 +243,9 @@ class API(object):
                     'title': link['title'],
                     'href': link['href']
                 }
+                if 'hreflang' in link:
+                    lnk['hreflang'] = link['hreflang']
+
                 collection['links'].append(lnk)
 
             if dataset is not None and k == dataset:
@@ -327,7 +335,7 @@ class API(object):
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
-            if k in reserved_fieldnames:
+            if k not in reserved_fieldnames and k in p.fields.keys():
                 properties.append((k, v))
 
         LOGGER.debug('Querying provider')
@@ -355,30 +363,35 @@ class API(object):
             return headers_, 500, json.dumps(exception)
 
         prev = startindex - self.config['server']['limit']
+        if prev < 0:
+            prev = 0
+
         next_ = startindex + self.config['server']['limit']
 
         content['links'] = [{
             'type': 'application/json',
             'rel': 'self',
             'title': 'Collection items',
-            'href': '/collections/{}/items'.format(dataset)
+            'href': '{}collections/{}/items'.format(
+                self.config['server']['url'], dataset)
             }, {
             'type': 'application/json',
             'rel': 'prev',
             'title': 'items (prev)',
-            'href': '/collections/{}/items/?startindex={}'.format(dataset,
-                                                                  prev)
+            'href': '{}/collections/{}/items/?startindex={}'.format(
+                self.config['server']['url'], dataset, prev)
             }, {
             'type': 'application/json',
             'rel': 'next',
             'title': 'items (next)',
-            'href': '/collections/{}/items/?startindex={}'.format(dataset,
-                                                                  next_)
+            'href': '{}/collections/{}/items/?startindex={}'.format(
+                self.config['server']['url'], dataset, next_)
             }, {
             'type': 'application/json',
             'title': 'Collection',
             'rel': 'collection',
-            'href': '/collections/{}'.format(dataset)
+            'href': '{}/collections/{}'.format(
+                self.config['server']['url'], dataset)
             }
         ]
 
@@ -446,11 +459,13 @@ class API(object):
         content['links'] = [{
             'rel': 'self',
             'type': 'application/json',
-            'href': '/collections/{}/items/{}'.format(dataset, identifier)
+            'href': '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier)
             }, {
             'rel': 'collection',
             'type': 'application/json',
-            'href': '/collections/{}'.format(dataset)
+            'href': '{}/collections/{}'.format(
+                self.config['server']['url'], dataset)
             }
         ]
 

@@ -20,19 +20,22 @@
       <span>{{ data['description'] }}</span>
       <h2>Feature {{ data['ID'] }} <a title="JSON" href="./{{ data['ID']  }}"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
       <table>
-          <tr>
-            <td><h3>Properties</h3>
-      <ul>
-      {% for k, v in data['properties'].items() %}
-          <li>{{ k }}: {{ v }}</li>
-      {% endfor %}
-      </ul>
-           </td>
-           <td>
-        <div id="items-map"></div>
-           </td>
-         </tr>
-       </table>
+        <tr>
+          <td><h3>Properties</h3>
+            <table>
+              {% for k, v in data['properties'].items() %}
+              <tr>
+                <th>{{ k }}</th>
+                <td>{{ v }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+          <td>
+            <div id="items-map"></div>
+          </td>
+        </tr>
+      </table>
     </section>
 {% endblock %}
 

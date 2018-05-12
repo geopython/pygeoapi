@@ -31,9 +31,6 @@ import csv
 import itertools
 import logging
 
-from shapely import wkt
-from shapely.geometry import mapping
-
 from pygeoapi.provider.base import BaseProvider
 
 LOGGER = logging.getLogger(__name__)
@@ -52,6 +49,8 @@ class CSVProvider(BaseProvider):
         """
 
         BaseProvider.__init__(self, provider_def)
+        self.geometry_x = provider_def['geometry']['x_field']
+        self.geometry_y = provider_def['geometry']['y_field']
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], time=None, properties=[]):
@@ -84,7 +83,13 @@ class CSVProvider(BaseProvider):
             for row in itertools.islice(data_, startindex, startindex+limit):
                 feature = {'type': 'Feature'}
                 feature['ID'] = row.pop('id')
-                feature['geometry'] = mapping(wkt.loads(row.pop('geom')))
+                feature['geometry'] = {
+                    'type': 'Point',
+                    'coordinates': [
+                        row.pop(self.geometry_x),
+                        row.pop(self.geometry_y)
+                    ]
+                }
                 feature['properties'] = row
                 if identifier is not None and feature['ID'] == identifier:
                     found = True
@@ -98,7 +103,9 @@ class CSVProvider(BaseProvider):
         elif identifier is not None and found:
             return result
 
-        feature_collection['numberReturned'] = limit
+        feature_collection['numberReturned'] = len(
+            feature_collection['features'])
+
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',

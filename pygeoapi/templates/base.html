@@ -3,39 +3,30 @@
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
     <title>{% block title %}{{ config['metadata']['identification']['title'] }} -{% endblock %}</title>
-
     <meta name="language" content="{{ config['server']['language'] }}">
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
     <meta name="keywords" content="{{ config['metadata']['identification']['keywords']|join(',') }}">
-
     <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/default.css">
-
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
-
     {% for link in data['links'] %}
-        <link rel="{{ link['rel'] }}" type="{{ link['type'] }}" title="{{ link['title'] }}" href="{{ link['href'] }}"/>
+      <link rel="{{ link['rel'] }}" type="{{ link['type'] }}" title="{{ link['title'] }}" href="{{ link['href'] }}"/>
     {% endfor %}
-
     {% block extrahead %}
     {% endblock %}
-
   </head>
   <body>
     <header>
       <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}/?f=html">{{ config['metadata']['identification']['title'] }}</a><a title="JSON" href="{{ config['server']['url'] }}/"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
       <span itemprop="description">{{ config['metadata']['identification']['description'] }}</span>
     </header>
-
+    <hr/>
     {% block body %}
     {% endblock %}
-
     <hr/>
     <footer>Powered by <a title="pygeoapi" href="https://github.com/geopython/pygeoapi">pygeoapi</a> {{ version }}</footer>
-
     {% block extrafoot %}
     {% endblock %}
-
   </body>
 </html>

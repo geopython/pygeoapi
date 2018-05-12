@@ -111,8 +111,8 @@ class GeoJSONProvider(BaseProvider):
         if resulttype == 'hits':
             data['features'] = []
         else:
-            data['numberReturned'] = limit
             data['features'] = data['features'][startindex:startindex+limit]
+            data['numberReturned'] = len(data['features'])
 
         return data
 
