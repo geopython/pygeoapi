@@ -123,7 +123,7 @@ class SQLiteProvider(BaseProvider):
         conn.enable_load_extension(True)
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT load_extension('mod_spatialite')")
+            cursor.execute("SELECT load_extension('mod_spatialite.so')")
             cursor.execute("PRAGMA table_info({})".format(self.table))
         except sqlite3.OperationalError as err:
             LOGGER.error('Extension loading error: {}'.format(err))
