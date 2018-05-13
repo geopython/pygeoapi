@@ -1,7 +1,6 @@
 #!/bin/sh
-
-# Wait for ES to be activally running to the opeapi generation 
-
+set +e
+ 
 echo  "Waiting for the ES to be up to generate openapi yml"
 /wait-for elastic_search:9200  -- /run_pygeoapi.sh 
 
