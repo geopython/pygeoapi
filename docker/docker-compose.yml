@@ -24,3 +24,5 @@ volumes:
   pygeoapi_data: {}
   elastic_search_data: {}
   
+#NOTE: Host requires changes in configuration to run ES
+#sudo sysctl -w vm.max_map_count=262144
