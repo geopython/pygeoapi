@@ -71,6 +71,9 @@ def test_query(fixture, config):
     assert results['features'][0]['ID'] == '371'
     assert results['features'][0]['properties']['value'] == '89.9'
 
+    assert results['features'][0]['geometry']['coordinates'][0] == -75.0
+    assert results['features'][0]['geometry']['coordinates'][1] == 45.0
+
     results = p.query(limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['ID'] == '371'
