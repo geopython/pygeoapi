@@ -86,8 +86,8 @@ class CSVProvider(BaseProvider):
                 feature['geometry'] = {
                     'type': 'Point',
                     'coordinates': [
-                        row.pop(self.geometry_x),
-                        row.pop(self.geometry_y)
+                        float(row.pop(self.geometry_x)),
+                        float(row.pop(self.geometry_y))
                     ]
                 }
                 feature['properties'] = row
