@@ -73,7 +73,9 @@ class SQLiteProvider(BaseProvider):
         feature_list = list()
         for row_data in self.dataDB:
             row_data = dict(row_data)  # sqlite3.Row is doesnt support pop
-            feature = {}
+            feature = {
+                'type': 'Feature'
+            }
             feature["geometry"] = json.loads(
                 row_data.pop('AsGeoJSON(geometry)')
                 )
