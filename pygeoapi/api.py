@@ -331,7 +331,22 @@ class API(object):
         time = args.get('time')
 
         LOGGER.debug('Loading provider')
-        p = load_provider(self.config['datasets'][dataset]['provider'])
+        try:
+            p = load_provider(self.config['datasets'][dataset]['provider'])
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
