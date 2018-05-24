@@ -30,8 +30,6 @@
 import importlib
 import logging
 
-from pygeoapi.provider.base import ProviderConnectionError
-
 LOGGER = logging.getLogger(__name__)
 
 PROVIDERS = {
