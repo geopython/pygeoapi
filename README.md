@@ -56,14 +56,6 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # enter http://localhost:5000/api and click 'Explore'
 ```
 
-## Docker
-
-To pull and run pygeoapi without ES.
-
-```
-docker pull geopython/pygeoapi
-docker run -d -p 5000:5000 geopython/pygeoapi
-```
 
 ## Docker (composition) 
 

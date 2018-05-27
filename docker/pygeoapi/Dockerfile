@@ -21,6 +21,7 @@ RUN apk update && apk add --no-cache \
    openssl-dev \
    g++ \
    make \
+   curl \
    sqlite-dev \
    libxml2-dev \
    "proj4-dev@edge-testing" \
@@ -38,8 +39,8 @@ RUN ldconfig /usr/local/lib
 RUN git clone $GITHUB
 
 
-RUN wget https://raw.githubusercontent.com/eficode/wait-for/master/wait-for -O /wait-for
-RUN chmod +x /wait-for 
+COPY wait-for-elasticsearch.sh /wait-for-elasticsearch.sh
+RUN chmod +x /wait-for-elasticsearch.sh
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY run_pygeoapi.sh /run_pygeoapi.sh
