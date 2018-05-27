@@ -85,6 +85,8 @@ it is very likely that you forgot to setup the sysctl
 
 
 #### Building and Running composition:
+
+To build and run the composition in localhost
 ```
 cd docker
 sudo sysctl -w vm.max_map_count=262144
