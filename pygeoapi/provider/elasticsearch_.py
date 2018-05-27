@@ -64,8 +64,17 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
+        if not self.es.ping():
+            msg = 'Cannot connect to Elasticsearch'
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
+
         LOGGER.debug('Grabbing field information')
-        self.fields = self.get_fields()
+        try:
+            self.fields = self.get_fields()
+        except exceptions.NotFoundError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError(err)
 
     def get_fields(self):
         """
