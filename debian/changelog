@@ -1,0 +1,24 @@
+python-pygeoapi (0.1.3) trusty; urgency=medium
+
+  * move elasticsearch requirements into dev
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Wed, 09 May 2018 17:38:11 +0000
+
+python-pygeoapi (0.1.2) trusty; urgency=medium
+
+  * remove shapely support
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Fri, 04 May 2018 12:17:32 +0000
+
+python-pygeoapi (0.1.1) trusty; urgency=medium
+
+  * add link hreflang support
+  * refactor CORS support
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Thu, 03 May 2018 20:48:08 +0000
+
+python-pygeoapi (0.1.0) trusty; urgency=medium
+
+  * initial Debian packaging
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Thu, 03 May 2018 00:52:33 +0000

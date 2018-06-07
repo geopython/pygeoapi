@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} Collections {% endblock %}
+{% block body %}
+    <section id="collections">
+      <h2>Collections <a title="JSON" href="{{ config['server']['url'] }}/collections"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
+      <ul>
+      {% for k, v in config['datasets'].items()%}
+          <li><a title="{{ v['title'] }}" href="{{ config['server']['url'] }}/collections/{{ k }}?f=html">{{ v['title'] }}</a></li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}

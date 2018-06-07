@@ -1,0 +1,16 @@
+Source: python-pygeoapi
+Section: python
+Priority: optional
+Maintainer: Tom Kralidis <tomkralidis@gmail.com>
+Build-Depends: debhelper (>= 9), python, python-setuptools
+Standards-Version: 3.9.5
+X-Python-Version: >= 2.7
+Vcs-Git: https://github.com/geopython/pygeoapi.git
+
+Package: python-pygeoapi
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-pkg-resources, python-click, python-flask, python-yaml
+Suggests: python-elasticsearch, python-geojson
+Homepage: https://github.com/geopython/pygeoapi
+Description: pygeoapi provides an API to geospatial
+ data
