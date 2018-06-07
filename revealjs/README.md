@@ -24,3 +24,10 @@ Generic folder structure form reveal
   * ``plugin/`` Components that have been developed as extensions to reveal.js
   * ``lib/`` All other third party assets (JavaScript, CSS, fonts)
 
+
+WWW Location
+------------
+The revealjs can be found here:
+```
+https://geopython.github.io/pygeoapi/revealjs
+```
