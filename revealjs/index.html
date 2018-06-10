@@ -22,21 +22,32 @@
 		</script>
 		<link href="https://fonts.googleapis.com/css?family=Roboto:400i" rel="stylesheet"> 
 		<style type="text/css">
-		.reveal h1,
-		.reveal h2 {
-		 margin: 0 0 20px 0;
-  		font-family: 'Roboto', sans-serif;
+		
+		.reveal h1{
+		font-family: 'Roboto', sans-serif;
+		font-size: 3.0em;
+		}
+		
+		#intro h1,
+		#intro h2 {
+		margin: 0 0 20px 0;
   		line-height: 0.9em;
+  		font-size: 3.0em !important;
   		letter-spacing: 0.02em;
   		text-transform: none;
   		text-shadow: none;
+  		text-align: left;
 		}
+		
 		
 		.twitter {
 			/* color: #C0C0C0; */
 			color: #00aced;
 		}
 		
+		
+		
+
 		html.intro body{
 			background:url("static/geopython.png"); 
 			background-repeat: no-repeat;
@@ -49,21 +60,35 @@
 		}
 		
 		</style>
-		
 	</head>
 	<body>
 		<div class="reveal">
 			<div class="slides">
 				<section data-state="intro" data-markdown>
 				<textarea data-template>
+				<!-- .slide: id="intro" -->
 				# pygeoAPI
+				
+				## API for geospatial data   
 				---
-				## API to geospatial data
-				
-				
 				[@tomkralidis](https://twitter.com/tomkralidis)  [@JMendesDeJesus](https://twitter.com/JMendesDeJesus) [@normanbarker](https://twitter.com/normanbarker) [@perrygeo](https://twitter.com/perrygeo)  <!-- .element: class="twitter"-->
 				</textarea>
-				 
+				</section>
+				<section id="basement_background">
+					<section data-markdown>
+						<textarea data-template>
+						<!-- .slide: id="background" -->
+						# Background
+						## (WFS 2.0)
+						
+						</textarea>
+					</section>
+					<section data-markdown>
+						<textarea data-template>
+						## testint
+						</textarea>
+					</section>
+					
 				</section>
 			</div>
 		</div>
@@ -76,6 +101,8 @@
 			// - https://github.com/hakimel/reveal.js#configuration
 			// - https://github.com/hakimel/reveal.js#dependencies
 			Reveal.initialize({
+				slideNumber: true,
+				slideNumber: 'c/t',
 				dependencies: [
 					{ src: 'plugin/markdown/marked.js' },
 					{ src: 'plugin/markdown/markdown.js' },
