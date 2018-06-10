@@ -23,16 +23,25 @@
 		<link href="https://fonts.googleapis.com/css?family=Roboto:400i" rel="stylesheet"> 
 		<style type="text/css">
 		
+		.reveal pre code {
+		  max-height: 500px;
+		}
+		
+		.reveal code {
+		font-size: 75%
+		}
+		
+		
 		.reveal h1{
 		font-family: 'Roboto', sans-serif;
-		font-size: 3.0em;
+		font-size: 2.0em;
 		}
 		
 		#intro h1,
 		#intro h2 {
 		margin: 0 0 20px 0;
   		line-height: 0.9em;
-  		font-size: 3.0em !important;
+  		font-size: 1.0em !important;
   		letter-spacing: 0.02em;
   		text-transform: none;
   		text-shadow: none;
@@ -78,14 +87,39 @@
 					<section data-markdown>
 						<textarea data-template>
 						<!-- .slide: id="background" -->
-						# Background
-						## (WFS 2.0)
+						In the beggining there was... WFS2.0
 						
 						</textarea>
 					</section>
 					<section data-markdown>
 						<textarea data-template>
-						## testint
+						 - Key Value Parameters (KVP) or XML encodings <!-- .element: class="fragment" data-fragment-index="1" -->
+						 - Requests using HTTP GET, HTTP POST and SOAP <!-- .element: class="fragment" data-fragment-index="2" -->
+						 - Responses as XML <!-- .element: class="fragment" data-fragment-index="3" -->
+						</textarea>
+					</section>
+					<section data-markdown>
+						<textarea data-template>
+						 ```xml
+<wfs:FeatureCollection 
+xmlns:ms="http://mapserver.gis.umn.edu/mapserver" 
+xmlns:gml="http://www.opengis.net/gml"  [..]>
+	<gml:boundedBy>
+		<gml:Envelope srsName="EPSG:32661">[..]</gml:Envelope>
+	</gml:boundedBy>
+	<gml:featureMember>
+		<ms:north_poles_wfs gml:id="north_poles_wfs.0">
+        	<gml:boundedBy>
+              [..]
+            </gml:boundedBy>
+        <ms:msGeometry>[..]</ms:msGeometry>
+        <ms:Id>0</ms:Id>
+              [..] 
+        </gml:featureMember>
+        [..]
+</wfs:FeatureCollection>
+       
+```
 						</textarea>
 					</section>
 					
