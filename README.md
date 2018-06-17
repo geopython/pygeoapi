@@ -56,6 +56,30 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # enter http://localhost:5000/api and click 'Explore'
 ```
 
+## Docker
+
+Docker folder contains 2 sub-folder
+
+- Simple
+- Compose
+
+First folder will create a simple docker image with only GeoJSON, CSV as SQLite providers. While the second folder contains a full docker composition to run pygeoapi with ES.
+
+For simple testing and demonstration is more convenient to use the simple image
+
+Docker images have the following settings:
+- Alpine edge OS
+- spatialite compilation 4.3.0a
+- pygeoapi running on port **5000**  
+
+
+### Simple (image)
+
+Simple sub folder contains a simple implementation of pygeoapi with out ES (only: GeoJSON, CSV and SQLite provider).
+```
+cd docker/simple
+docker build -t pygeoapi:latest
+```
 
 ## Docker (composition) 
 
@@ -78,17 +102,11 @@ docker_elastic_search_1 exited with code 78
 ```
 it is very likely that you forgot to setup the sysctl
 
-#### pygeoapi
-- alpine edge OS
-- spatialite compilation 4.3.0a
-- port **5000**
-
-
 #### Building and Running composition:
 
 To build and run the composition in localhost
 ```
-cd docker
+cd docker/compose
 sudo sysctl -w vm.max_map_count=262144
 docker-compose build
 docker-compose up 
