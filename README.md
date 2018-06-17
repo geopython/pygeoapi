@@ -78,8 +78,10 @@ Docker images have the following settings:
 Simple sub folder contains a simple implementation of pygeoapi with out ES (only: GeoJSON, CSV and SQLite provider).
 ```
 cd docker/simple
-docker build -t pygeoapi:latest
+docker build -t pygeoapi:latest .
+docker run -p5000:5000 -v /pygeoapi/tests/data pygeoapi:latest
 ```
+
 
 ## Docker (composition) 
 
