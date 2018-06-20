@@ -1,156 +1,148 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>pygeoAPI - API to Geospatial Data</title>
+<title>pygeoAPI - API to Geospatial Data</title>
 
-		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+<link rel="stylesheet" href="css/reveal.css">
+<link rel="stylesheet" href="css/theme/black.css">
 
-		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/zenburn.css">
+<!-- Theme used for syntax highlighting of code -->
+<link rel="stylesheet" href="lib/css/zenburn.css">
 
-		<!-- Printing and PDF exports -->
-		<script>
+<!-- Printing and PDF exports -->
+<script>
 			var link = document.createElement( 'link' );
 			link.rel = 'stylesheet';
 			link.type = 'text/css';
 			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
 			document.getElementsByTagName( 'head' )[0].appendChild( link );
 		</script>
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400i" rel="stylesheet">
-		<link href="https://fonts.googleapis.com/css?family=Exo+2:200i" rel="stylesheet">
-		<link rel="stylesheet" href="css/fullscreen-img.css"> 
-		<style type="text/css">
-		
-		:root {
-  /* Base font size */
-  font-size: 10px;   
-  
-  /* Set neon color */
-  --neon-text-color: #f40;
-  --neon-border-color: #08f;
+<link href="https://fonts.googleapis.com/css?family=Roboto:400i"
+	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Exo+2:200i"
+	rel="stylesheet">
+<link rel="stylesheet" href="css/fullscreen-img.css">
+<style type="text/css">
+:root {
+	/* Base font size */
+	font-size: 10px;
+	/* Set neon color */ -
+	-neon-text-color: #f40; -
+	-neon-border-color: #08f;
 }
+
 h5 {
-  font-size: 13rem;
-  font-weight: 200;
-  font-style: italic;
-  color: #fff;
-  padding: 4rem 6rem 5.5rem;
-  border: 0.4rem solid #fff;
-  border-radius: 2rem;
-  text-transform: uppercase;
-  animation: flicker 1.5s infinite alternate;     
+	font-size: 13rem;
+	font-weight: 200;
+	font-style: italic;
+	color: #fff;
+	padding: 4rem 6rem 5.5rem;
+	border: 0.4rem solid #fff;
+	border-radius: 2rem;
+	text-transform: uppercase;
+	animation: flicker 1.5s infinite alternate;
 }
 
 h5::-moz-selection {
-  background-color: var(--neon-border-color);
-  color: var(--neon-text-color);
+	background-color: var(- -neon-border-color);
+	color: var(- -neon-text-color);
 }
 
 h5::selection {
-  background-color: var(--neon-border-color);
-  color: var(--neon-text-color);
+	background-color: var(- -neon-border-color);
+	color: var(- -neon-text-color);
 }
 
 h5:focus {
-  outline: none;
+	outline: none;
 }
 
 /* Animate neon flicker */
-@keyframes flicker {
-    
-    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-      
-        text-shadow:
-            -0.2rem -0.2rem 1rem #fff,
-            0.2rem 0.2rem 1rem #fff,
-            0 0 2rem var(--neon-text-color),
-            0 0 4rem var(--neon-text-color),
-            0 0 6rem var(--neon-text-color),
-            0 0 8rem var(--neon-text-color),
-            0 0 10rem var(--neon-text-color);
-        
-        box-shadow:
-            0 0 .5rem #fff,
-            inset 0 0 .5rem #fff,
-            0 0 2rem var(--neon-border-color),
-            inset 0 0 2rem var(--neon-border-color),
-            0 0 4rem var(--neon-border-color),
-            inset 0 0 4rem var(--neon-border-color);        
-    }
-    
-    20%, 24%, 55% {        
-        text-shadow: none;
-        box-shadow: none;
-    }    
+@
+keyframes flicker { 0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+	text-shadow: -0.2rem -0.2rem 1rem #fff, 0.2rem 0.2rem 1rem #fff, 0 0
+		2rem var(- -neon-text-color), 0 0 4rem var(- -neon-text-color), 0 0
+		6rem var(- -neon-text-color), 0 0 8rem var(- -neon-text-color), 0 0
+		10rem var(- -neon-text-color);
+	box-shadow: 0 0 .5rem #fff, inset 0 0 .5rem #fff, 0 0 2rem
+		var(- -neon-border-color), inset 0 0 2rem var(- -neon-border-color), 0
+		0 4rem var(- -neon-border-color), inset 0 0 4rem
+		var(- -neon-border-color);
 }
 
+20%,
+24%,
+55%
+{
+text-shadow
+:
+ 
+none
+;
 
+        
+box-shadow
+:
+ 
+none
+;
 
-		
-		
-		.reveal section img {
-			background:none; 
-			border:none; 
-			box-shadow:none;
-		}
-		
-		.reveal pre code {
-		  max-height: 500px;
-		}
-		
-		.reveal code {
-		font-size: 75%
-		}
-		
-		
-		.reveal h1{
-		font-family: 'Roboto', sans-serif;
-		font-size: 2.0em;
-		}
-		
-		#intro h1,
-		#intro h2 {
-		margin: 0 0 20px 0;
-  		line-height: 0.9em;
-  		font-size: 1.0em !important;
-  		letter-spacing: 0.02em;
-  		text-transform: none;
-  		text-shadow: none;
-  		text-align: left;
-		}
-		
-		
-		.twitter {
-			/* color: #C0C0C0; */
-			color: #00aced;
-		}
-		
-		
-		
+    
+}
+}
+.reveal section img {
+	background: none;
+	border: none;
+	box-shadow: none;
+}
 
-		html.intro body{
-			background:url("static/geopython.png"); 
-			background-repeat: no-repeat;
-    		background-attachment: fixed;
-    		background-position: center; 
-    		background-color: rgba(10,10,10,0.9);
-    		background-position: 95% 10%;		
-    		background-size: 10%;	
-			
-		}
-		
-		
-		
-		</style>
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section data-state="intro" data-markdown>
+.reveal pre code {
+	max-height: 500px;
+}
+
+.reveal code {
+	font-size: 75%
+}
+
+.reveal h1 {
+	font-family: 'Roboto', sans-serif;
+	font-size: 2.0em;
+}
+
+#intro h1, #intro h2 {
+	margin: 0 0 20px 0;
+	line-height: 0.9em;
+	font-size: 1.0em !important;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	text-shadow: none;
+	text-align: left;
+}
+
+.twitter {
+	/* color: #C0C0C0; */
+	color: #00aced;
+}
+
+html.intro body {
+	background: url("static/geopython.png");
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-position: center;
+	background-color: rgba(10, 10, 10, 0.9);
+	background-position: 95% 10%;
+	background-size: 10%;
+}
+</style>
+</head>
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<section data-state="intro" data-markdown>
 				<textarea data-template>
 				
 				# pygeoAPI
@@ -159,28 +151,27 @@ h5:focus {
 				---
 				[@tomkralidis](https://twitter.com/tomkralidis)  [@JMendesDeJesus](https://twitter.com/JMendesDeJesus) [@normanbarker](https://twitter.com/normanbarker) [@perrygeo](https://twitter.com/perrygeo)  <!-- .element: class="twitter"-->
 				</textarea>
-				</section>
-				<section id="basement_background">
-					<section data-markdown>
-						<textarea data-template>
+			</section>
+			<section id="basement_background">
+				<section data-markdown>
+					<textarea data-template>
 						<!-- .slide: id="background" -->
 						In the beggining there was... WFS2.0
 						
 						</textarea>
-					</section>
-					<section data-markdown>
-						<textarea data-template>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
 						 - Key Value Parameters (KVP) or XML encodings <!-- .element: class="fragment" data-fragment-index="1" -->
 						 - Requests using HTTP GET, HTTP POST and SOAP <!-- .element: class="fragment" data-fragment-index="2" -->
 						 - Responses as XML <!-- .element: class="fragment" data-fragment-index="3" -->
 						</textarea>
-					</section>
-					<section data-markdown>
-						<textarea data-template>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
 						 ```xml
-<wfs:FeatureCollection 
-xmlns:ms="http://mapserver.gis.umn.edu/mapserver" 
-xmlns:gml="http://www.opengis.net/gml"  [..]>
+<wfs:FeatureCollection xmlns:ms="http://mapserver.gis.umn.edu/mapserver"
+							xmlns:gml="http://www.opengis.net/gml" [..]>
 	<gml:boundedBy>
 		<gml:Envelope srsName="EPSG:32661">[..]</gml:Envelope>
 	</gml:boundedBy>
@@ -192,13 +183,14 @@ xmlns:gml="http://www.opengis.net/gml"  [..]>
         <ms:msGeometry>[..]</ms:msGeometry>
         <ms:Id>0</ms:Id>
               [..] 
-        </gml:featureMember>
+        
+							</gml:featureMember>
         [..]
 </wfs:FeatureCollection>
 ```
 			</textarea>
-					</section>
-					<section data-markdown>
+				</section>
+				<section data-markdown>
 					<textarea data-template>
 					## "Issues"
 					   - Highly verbose  <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -206,21 +198,22 @@ xmlns:gml="http://www.opengis.net/gml"  [..]>
 					   - Verbose documentation (WFS2.0 has 239 pages)  <!-- .element: class="fragment" data-fragment-index="3" -->
 					   - OGC document from 2010 <!-- .element: class="fragment" data-fragment-index="4" -->
 					   - Not REST friendly <!-- .element: class="fragment" data-fragment-index="5" -->
-					</textarea>					
-					</section> 
-				</section> <!--  end of WFS2.0 issues -->
-				
-				<section data-markdown>
-					<textarea data-template>
+					</textarea>
+				</section>
+			</section>
+			<!--  end of WFS2.0 issues -->
+
+			<section data-markdown>
+				<textarea data-template>
 					 ### New era is upon us
 					  - REST is coming a MUST
 					  - Fast standard development
 					  - Opinion: Develoment should be more developer friendly 
 					 
-					</textarea>	
-				</section>
-				<section data-markdown>
-						<textarea data-template>	
+					</textarea>
+			</section>
+			<section data-markdown>
+				<textarea data-template>	
 						### WFS 3.0 Hackathlon - Kickstart
 
 						- OGC sponsored <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -228,16 +221,19 @@ xmlns:gml="http://www.opengis.net/gml"  [..]>
 						- Write specification using github <!-- .element: class="fragment" data-fragment-index="3" -->
 						- Fort Collins <!-- .element: class="fragment" data-fragment-index="4" --> 
 						</textarea>
-				</section>
-				<section><!--TODO make it as markdown  image not working on markdown -->
-				           <img src="https://geocat.github.io/pygeoapi/revealjs/static/W3C_OGC.png"></img>
-				           <a href="https://www.w3.org/TR/sdw-bp/">https://www.w3.org/TR/sdw-bp/</a>
-				           <br /><br />
-				           <strong>*MUST SEE DOCUMENT*</strong>
-			   </section>
-			   <section> <!-- Open API explanation -->
-				   <section data-markdown>
-						<textarea data-template>
+			</section>
+			<section>
+				<!--TODO make it as markdown  image not working on markdown -->
+				<img
+					src="https://geocat.github.io/pygeoapi/revealjs/static/W3C_OGC.png"></img>
+				<a href="https://www.w3.org/TR/sdw-bp/">https://www.w3.org/TR/sdw-bp/</a>
+				<br />
+				<br /> <strong>*MUST SEE DOCUMENT*</strong>
+			</section>
+			<section>
+				<!-- Open API explanation -->
+				<section data-markdown>
+					<textarea data-template>
 						## OpenAPI
 						   	
 						- Specification on how to describe a REST web service <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -245,22 +241,23 @@ xmlns:gml="http://www.opengis.net/gml"  [..]>
 						- Language agnostic	 <!-- .element: class="fragment" data-fragment-index="3" -->
 						   	
 						</textarea>
-				   </section>
-				   <section fullscreen-img ="https://geocat.github.io/pygeoapi/revealjs/static/SwaggerAPI.png">
-						<a href="http://swagger.io"  style="background-color: #101010">http://swagger.io</a>
-				   </section>
-				   
-				   <section data-markdown>
-				   <textarea data-template>
+				</section>
+				<section
+					fullscreen-img="https://geocat.github.io/pygeoapi/revealjs/static/SwaggerAPI.png">
+					<a href="http://swagger.io" style="background-color: #101010">http://swagger.io</a>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
 					   - OpenAPI is based on YAML Syntax
 					   - Describes REST end POINTS
 					   - HTTP Verbs to use
 					   - Format of Responses
 				   </textarea>
-				   </section>
-				   
-				   <section data-markdown>
-					   <textarea data-template>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
 					   Example
 ```yaml
 openapi: 3.0.1
@@ -271,11 +268,11 @@ info:
    contact:
    name: La oreja de van Gogh
 ```				   
-</textarea>				   
-</section>
-				   
-<section data-markdown>
-	<textarea data-template>
+</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
 						   
 	```yaml
 	paths:
@@ -293,29 +290,32 @@ info:
 			content:
 				application/json:
 	```				   
-	</textarea>				   
-</section>
-		
+	</textarea>
+				</section>
 
-	</section> <!--  end of Open API -->
-	
-	<section data-markdown>
-	<textarea data-template>
+
+			</section>
+			<!--  end of Open API -->
+
+			<section data-markdown>
+				<textarea data-template>
 	## Spec
 
 	https://github.com/opengeospatial/WFS_FES/blob/master/openapi.yaml
 	
 	This file describe the WFS 3.0 structure 	
-	</textarea>>
-	</section>
-	
-			   
-			   
-	<section fullscreen-img="https://geocat.github.io/pygeoapi/revealjs/static/EndPoints.png"  fullscreen-size="contain">
-	</section>
-	
-	 <section data-markdown>
-			<textarea data-template>
+	</textarea>
+				>
+			</section>
+
+
+
+			<section
+				fullscreen-img="https://geocat.github.io/pygeoapi/revealjs/static/EndPoints.png"
+				fullscreen-size="contain"></section>
+
+			<section data-markdown>
+				<textarea data-template>
 			## Example
 			```
 			  /collections
@@ -330,11 +330,11 @@ info:
 			  /collections/countries/items/The_Netherlands
 			 ```
 			Data is structured and each feature is a REST representation
-			</textarea>  
-	</section>
-	
-	<section data-markdown>
-		<textarea data-template>
+			</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
 		### Repository
 		https://github.com/opengeospatial/WFS_FES
 	   
@@ -342,82 +342,103 @@ info:
 		### OGC document WFS 3.0
 		https://rawgit.com/opengeospatial/WFS_FES/master/docs/17-069.html
 		</textarea>
-	
-	</section>
-	<section> <!--  PyGEOAPI section  vertical-->
-		<section> <!--  First slide -->
-		 <h1>pyGeoapi</h1>
-			<img src="https://geocat.github.io/pygeoapi/revealjs/static/geopython.png">
-	      <p>(part of the amazing Geopython community in GitHub )</p>	
-	      <p><a href="https://github.com/geopython">https://github.com/geopython</a></p>
-		</section>
-		
-	    <section data-markdown>
-	     <textarea data-template>
+
+			</section>
+			<section>
+				<!--  PyGEOAPI section  vertical-->
+				<section>
+					<!--  First slide -->
+					<h1>pyGeoapi</h1>
+					<img
+						src="https://geocat.github.io/pygeoapi/revealjs/static/geopython.png">
+					<p>(part of the amazing Geopython community in GitHub )</p>
+					<p>
+						<a href="https://github.com/geopython">https://github.com/geopython</a>
+					</p>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
 	     ## PyGeoAPI
 	     
 	     - More than just a pre WFS 3.0 implementation <!-- .element: class="fragment" data-fragment-index="1" -->
 	     - API access to data sets <!-- .element: class="fragment" data-fragment-index="2" -->
 	     - Powered by:  <!-- .element: class="fragment" data-fragment-index="3" -->
-	    <img class="fragment" data-fragment-index="4"  src="static/flask.png" style="background: white; border-radius: 10px"></img> 
+	    <img class="fragment" data-fragment-index="4"
+							src="static/flask.png"
+							style="background: white; border-radius: 10px"></img> 
 	    </textarea>
-	    </section>
-	    
-	    <section data-markdown>
-	     <textarea data-template>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
 	     ## PyGeoAPI
 	     - Flask supporting REST
 	     - Automatic generated OpenAPI yml (description end points)
 	     - Data provider agnostic
 	     - Currently 4 drivers implemented
 	     </textarea>
-	     </section>
-	     
-	     <section>
-	    <table >
-			<tbody>
-			<tr>
-				<td> <img src="https://geocat.github.io/pygeoapi/revealjs/static/elastic_search.png" /> </td>
-				<td> <img src="https://geocat.github.io/pygeoapi/revealjs/static/csv_file.jpg" /> </td>
-				<td> <img src="https://geocat.github.io/pygeoapi/revealjs/static/spaltiallite.jpg" /> </td>
-				<td> <img src="https://geocat.github.io/pygeoapi/revealjs/static/geojson-logo.png" /> </td>
-			</tr>
-			<tr>
-			<td align="center">Elastic Search</td>
-			<td align="center">CSV</td>
-			<td align="center">Spatialite</td>
-			<td align="center">GeoJSON</td>
-			</tr>
-			</tbody>
-		</table>
-	    </section>
-	    
-	<section>
-		<img src = "https://geocat.github.io/pygeoapi/revealjs/static/pygeoapi.png"></img>
-		<a href="https://github.com/geopython/pygeoapi">https://github.com/geopython/pygeoapi</a>
-	</section>
-	
-	<section>
-		<!--  TODO DOCKER -->>
-	</section>
-	
-	
-	    
-	</section> <!-- end of PyGEOPAI -->
-						
-	 <section>
-	 <!--  final slide -->
-	 <h5>The end <br/> Please use PyGeoAPI responsibly</h5>
-	 </section>					
-						
-								
-			</div> <!--  end of slide presentation -->
+				</section>
+
+				<section>
+					<table>
+						<tbody>
+							<tr>
+								<td><img
+									src="https://geocat.github.io/pygeoapi/revealjs/static/elastic_search.png" />
+								</td>
+								<td><img
+									src="https://geocat.github.io/pygeoapi/revealjs/static/csv_file.jpg" />
+								</td>
+								<td><img
+									src="https://geocat.github.io/pygeoapi/revealjs/static/spaltiallite.jpg" />
+								</td>
+								<td><img
+									src="https://geocat.github.io/pygeoapi/revealjs/static/geojson-logo.png" />
+								</td>
+							</tr>
+							<tr>
+								<td align="center">Elastic Search</td>
+								<td align="center">CSV</td>
+								<td align="center">Spatialite</td>
+								<td align="center">GeoJSON</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section>
+					<img
+						src="https://geocat.github.io/pygeoapi/revealjs/static/pygeoapi.png"></img>
+					<a href="https://github.com/geopython/pygeoapi">https://github.com/geopython/pygeoapi</a>
+				</section>
+
+				<section>
+					<!--  TODO DOCKER -->
+					>
+				</section>
+
+
+
+			</section>
+			<!-- end of PyGEOPAI -->
+
+			<section>
+				<!--  final slide -->
+				<h5>
+					The end <br /> Please use PyGeoAPI responsibly
+				</h5>
+			</section>
+
+
 		</div>
+		<!--  end of slide presentation -->
+	</div>
 
-		<script src="lib/js/head.min.js"></script>
-		<script src="js/reveal.js"></script>
+	<script src="lib/js/head.min.js"></script>
+	<script src="js/reveal.js"></script>
 
-		<script>
+	<script>
 			// More info about config & dependencies:
 			// - https://github.com/hakimel/reveal.js#configuration
 			// - https://github.com/hakimel/reveal.js#dependencies
@@ -433,5 +454,5 @@ info:
 				]
 			});
 		</script>
-	</body>
+</body>
 </html>
