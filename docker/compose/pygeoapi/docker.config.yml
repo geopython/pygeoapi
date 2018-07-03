@@ -80,7 +80,7 @@ datasets:
             id_field: id
             geometry:
                 x_field: long
-                y_field: lat
+                y_field: long
 
     ne_110m_populated_places_simple:
         title: Populated Places
@@ -107,7 +107,8 @@ datasets:
                 bbox: [-180,-90,180,90]
         provider:
             name: Elasticsearch
-            data: http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection
+            #Note elastic_search is the docker container of ES the name is defined in the docker-compose.yml
+            data: http://elastic_search:9200/ne_110m_populated_places_simple/FeatureCollection
             id_field: geonameid
 
     lakes:
