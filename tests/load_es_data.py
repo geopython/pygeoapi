@@ -59,7 +59,7 @@ settings = {
 }
 
 # create index
-es.indices.create(index=index_name, body=settings,request_timeout=90)
+es.indices.create(index=index_name, body=settings, request_timeout=90)
 
 with open(sys.argv[1]) as fh:
     d = json.load(fh)
