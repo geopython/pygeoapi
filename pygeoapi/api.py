@@ -37,6 +37,7 @@ from jinja2 import Environment, FileSystemLoader
 from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.provider import load_provider
+from pygeoapi.formatters import FORMATTERS, load_formatter
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
@@ -286,6 +287,7 @@ class API(object):
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
                                'resulttype', 'time']
         formats = ['json', 'html']
+        formats.extend(f.lower() for f in FORMATTERS.keys())
 
         if dataset not in self.config['datasets'].keys():
             exception = {
@@ -416,6 +418,21 @@ class API(object):
             headers_['Content-type'] = 'text/html'
             content = _render_j2_template(self.config, 'items.html',
                                           content)
+            return headers_, 200, content
+        elif format_ == 'csv':  # render
+            formatter = load_formatter('CSV', geom=True)
+
+            content = formatter.write(
+                data=content,
+                options={
+                    'provider_def':
+                        self.config['datasets'][dataset]['provider']
+                }
+            )
+
+            headers_['Content-type'] = '{}; charset={}'.format(
+                formatter.mimetype, self.config['server']['encoding'])
+
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content)
