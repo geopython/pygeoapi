@@ -29,5 +29,5 @@ WWW Location
 ------------
 The revealjs can be found here:
 ```
-https://geopython.github.io/pygeoapi/revealjs
+https://geopython.github.io/pygeoapi/presentation
 ```
