@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport"
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>pygeoAPI - API to Geospatial Data</title>
+<title>pygeoapi - API to Geospatial Data</title>
 <link rel="stylesheet" href="css/reveal.css">
 <link rel="stylesheet" href="css/theme/black.css">
 
@@ -82,7 +82,7 @@ html.intro body {
 			<section data-state="intro" data-markdown>
 				<textarea data-template>
 				
-				# pygeoAPI
+				# pygeoapi
 				
 				## API for geospatial data   
 				---
@@ -93,7 +93,7 @@ html.intro body {
 				<section data-markdown>
 					<textarea data-template>
 						<!-- .slide: id="background" -->
-						In the beggining there was... WFS2.0						
+						In the beggining there was... WFS 2.0						
 						</textarea>
 				</section>
 				<section data-markdown>
@@ -127,14 +127,14 @@ html.intro body {
 					<textarea data-template>
 					## "Issues"
 					   - Highly verbose  <!-- .element: class="fragment" data-fragment-index="1" -->
-					   - To connected to XML technologies <!-- .element: class="fragment" data-fragment-index="2" -->
-					   - Verbose documentation (WFS2.0 has 239 pages)  <!-- .element: class="fragment" data-fragment-index="3" -->
+					   - Highly dependent on XML technologies <!-- .element: class="fragment" data-fragment-index="2" -->
+					   - Verbose documentation (WFS 2.0 has 239 pages)  <!-- .element: class="fragment" data-fragment-index="3" -->
 					   - OGC document from 2010 <!-- .element: class="fragment" data-fragment-index="4" -->
 					   - Not REST friendly <!-- .element: class="fragment" data-fragment-index="5" -->
 					</textarea>
 				</section>
 			</section>
-			<!--  end of WFS2.0 issues -->
+			<!--  end of WFS 2.0 issues -->
 
 			<section data-markdown>
 				<textarea data-template>
@@ -150,9 +150,9 @@ html.intro body {
 				<textarea data-template>	
 						### WFS 3.0 Hackathlon - Kickstart
 						 - OGC sponsored <!-- .element: class="fragment" data-fragment-index="1"  -->
-						 - Develop WFS3.0 based on OpenAPI <!-- .element: class="fragment" data-fragment-index="2"  -->
-						 - Write specification using github <!-- .element: class="fragment" data-fragment-index="3"  -->
-						 - Hackathlon in Fort Collins <!-- .element: class="fragment" data-fragment-index="4"  --> 
+						 - Develop WFS 3.0 based on OpenAPI <!-- .element: class="fragment" data-fragment-index="2"  -->
+						 - Write specification using GitHub <!-- .element: class="fragment" data-fragment-index="3"  -->
+						 - Hackathlon in Fort Collins, CO, USA <!-- .element: class="fragment" data-fragment-index="4"  --> 
 						</textarea>
 			</section>
 			<section>
@@ -168,7 +168,7 @@ html.intro body {
 					<textarea data-template>
 						## OpenAPI / Swagger
 						- Specification on how to describe a REST web service <!-- .element: class="fragment" data-fragment-index="1" -->
-						- Originally was referred as swagger <!-- .element: class="fragment" data-fragment-index="2"  -->
+						- Originally was referred as Swagger <!-- .element: class="fragment" data-fragment-index="2"  -->
 						- Language agnostic	 <!-- .element: class="fragment" data-fragment-index="3" style="text-align: center; -->
 
 						</textarea>
@@ -182,7 +182,7 @@ html.intro body {
 					![alt text](https://geopython.github.io/pygeoapi/presentation/static/swagger.png "Swagger header") <!-- .element: style="max-width: 50%; max-height: 50%;" style="text-align: center; -->
 					   
 					   - OpenAPI is based on YAML Syntax <!-- .element: class="fragment" data-fragment-index="1" style="text-align: center; -->
-					   - Describes REST end POINTS <!-- .element: class="fragment" data-fragment-index="2" style="text-align: center; -->
+					   - Describes REST endpoints <!-- .element: class="fragment" data-fragment-index="2" style="text-align: center; -->
 					   - HTTP Verbs to use <!-- .element: class="fragment" data-fragment-index="3" style="text-align: center; -->
 					   - Format of Responses <!-- .element: class="fragment" data-fragment-index="4" style="text-align: center; -->
 				   </textarea>
@@ -265,7 +265,7 @@ responses:
 			<section data-markdown>
 				<textarea data-template>
 		### OGC Seeks Public Comment on WFS 3.0 Candidate Standard
-		![alt text](https://geopython.github.io/pygeoapi/presentation/static/ogc.png "OGC seeks public comment on WFS3.0")
+		![alt text](https://geopython.github.io/pygeoapi/presentation/static/ogc.png "OGC seeks public comment on WFS 3.0")
 		 
 		http://www.opengeospatial.org/pressroom/pressreleases/2830
 		</textarea>
@@ -277,7 +277,7 @@ responses:
 					<h1>pyGeoapi</h1>
 					<img
 						src="https://geopython.github.io/pygeoapi/presentation/static/geopython.png">
-					<p>(part of the amazing Geopython community in GitHub )</p>
+					<p>(part of the amazing Geopython community in GitHub)</p>
 					<p>
 						<a href="https://github.com/geopython">https://github.com/geopython</a>
 					</p>
@@ -312,7 +312,7 @@ responses:
 								<td><img src="https://geopython.github.io/pygeoapi/presentation/static/geojson-logo.png" /></td>
 							</tr>
 							<tr>
-								<td align="center">Elastic Search</td>
+								<td align="center">Elasticsearch</td>
 								<td align="center">CSV</td>
 								<td align="center">Spatialite</td>
 								<td align="center">GeoJSON</td>
@@ -357,9 +357,9 @@ responses:
 				<section data-markdown>
 					<textarea data-template>
 			![alt text](https://geopython.github.io/pygeoapi/presentation/static/docker.png "Docker logo")
-			- Dockerhub image withtout ElasticSearch <!-- .element: class="fragment" data-fragment-index="1"  -->
-			- Docker-compose dor Elastic Search in github <!-- .element: class="fragment" data-fragment-index="2" -->
-			- Easy to scale PyGEOAPI with docker swarm  <!-- .element: class="fragment" data-fragment-index="3"  -->
+			- Dockerhub image without Elasticsearch <!-- .element: class="fragment" data-fragment-index="1"  -->
+			- Docker-compose dor Elasticsearch in github <!-- .element: class="fragment" data-fragment-index="2" -->
+			- Easy to scale pygeoapi with docker swarm  <!-- .element: class="fragment" data-fragment-index="3"  -->
 			</textarea>
 				</section>
 				<section data-markdown>
@@ -374,7 +374,7 @@ responses:
 			<section> <!-- production usage -->
 			<section data-markdown>
 				<textarea data-template>
-				(Some) Production instances of PyGEOAPI
+				(Some) Production instances of pygeoapi
 				![alt text](https://geopython.github.io/pygeoapi/presentation/static/geopython.png "Geopython")
 				
 				Contact: [@tomkralidis](https://twitter.com/tomkralidis) <!-- .element: class="twitter"-->
@@ -413,7 +413,7 @@ responses:
 				<textarea data-template>
 				### SpatioTemporal Asset Catalog (STAC)
 				- Simple catalog of spatiotemporal items (JSON) <!-- .element: class="fragment" data-fragment-index="1"  -->
-				- Parallel work to WFS3.0 <!-- .element: class="fragment" data-fragment-index="2"  -->
+				- Parallel work to WFS 3.0 <!-- .element: class="fragment" data-fragment-index="2"  -->
 				- Pull from storages like S3 <!-- .element: class="fragment" data-fragment-index="3"  -->
 				- Geospatial assets openly searchable and crawlable <!-- .element: class="fragment" data-fragment-index="4"  -->
 				- More oriented for sat imagery <!-- .element: class="fragment" data-fragment-index="5"  -->
