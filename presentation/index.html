@@ -89,6 +89,7 @@ html.intro body {
 				[@tomkralidis](https://twitter.com/tomkralidis)  [@JMendesDeJesus](https://twitter.com/JMendesDeJesus) [@normanbarker](https://twitter.com/normanbarker) [@perrygeo](https://twitter.com/perrygeo)  <!-- .element: class="twitter"-->
 				</textarea>
 			</section>
+			
 			<section id="basement_background">
 				<section data-markdown>
 					<textarea data-template>
@@ -130,18 +131,27 @@ html.intro body {
 					   - Highly dependent on XML technologies <!-- .element: class="fragment" data-fragment-index="2" -->
 					   - Verbose documentation (WFS 2.0 has 239 pages)  <!-- .element: class="fragment" data-fragment-index="3" -->
 					   - OGC document from 2010 <!-- .element: class="fragment" data-fragment-index="4" -->
-					   - Not REST friendly <!-- .element: class="fragment" data-fragment-index="5" -->
+					   - No unique urls for features <!-- .element: class="fragment" data-fragment-index="5" -->
+					   - Features hard to index by search engine <!-- .element: class="fragment" data-fragment-index="6" -->
 					</textarea>
 				</section>
-			</section>
-			<!--  end of WFS 2.0 issues -->
+			
+				<section data-markdown>
+					<textarea data-template>
+					## "Issues"
+					![alt text](https://geopython.github.io/pygeoapi/presentation/static/ldproxy.jpeg "OGC seeks public comment on WFS 3.0")
+					- ldproxy for services to be crawlable
+					- OGC world is NOT W3C friendly  
+					</textarea>
+				</section>
+			</section><!--  end of WFS 2.0 issues -->
 			<!-- Explain REST -->
 			<section>
 			<section data-markdown>
 				<textarea data-template>
 
 					 ### New era is upon us
-					  - REST is coming a MUST <!-- .element: class="fragment" data-fragment-index="1" -->
+					  - REST is becoming a MUST <!-- .element: class="fragment" data-fragment-index="1" -->
 					  - Fast standard development <!-- .element: class="fragment" data-fragment-index="2"  -->
 					  - Opinion: Development should be more developer friendly <!-- .element: class="fragment" data-fragment-index="3"  -->
 					</textarea>
@@ -154,8 +164,10 @@ html.intro body {
 			- REpresentational State Transfer (REST) <!-- .element: class="fragment" data-fragment-index="1" -->
 			- Uses HTTP's verbs (GET/POST/DELETE) <!-- .element: class="fragment" data-fragment-index="2"  -->
 			- Uses HTTP's codes (200, 404, 201, etc) <!-- .element: class="fragment" data-fragment-index="3"  -->
-			- Uses URI to identify resources <!-- .element: class="fragment" data-fragment-index="4"  -->	
-			- Stateless <!-- .element: class="fragment" data-fragment-index="5" -->
+			- Uses URI to identify resources <!-- .element: class="fragment" data-fragment-index="4"  -->
+			- Content negotiation (ask for media-type)	<!-- .element: class="fragment" data-fragment-index="5"  -->
+			- Stateless <!-- .element: class="fragment" data-fragment-index="6" -->
+			
 			
 			</textarea>
 			</section>
@@ -163,7 +175,7 @@ html.intro body {
 			<section data-markdown>
 			<textarea data-template>
 			
-			![alt text](https://geocat.github.io/pygeoapi/presentation/static/rest-api.png "REST symbol") <!-- .element: style="background-color: white;"  -->
+			![alt text](https://geopython.github.io/pygeoapi/presentation/static/rest-api.png "REST symbol") <!-- .element: style="background-color: white;"  -->
 			
 			- Very popular among developers <!-- .element: class="fragment" data-fragment-index="1" -->
 			- Easy to understand <!-- .element: class="fragment" data-fragment-index="2" -->
@@ -499,24 +511,80 @@ responses:
 			
 			- Implement more data providers <!-- .element: class="fragment" data-fragment-index="1"  -->
 			- PostGIS and Geopackage as data providers <!-- .element: class="fragment" data-fragment-index="2"  -->
-			- Improve code and functions <!-- .element: class="fragment" data-fragment-index="3"  -->
-			
+			- Support for OGC <!-- .element: class="fragment" data-fragment-index="3"  -->
+			- Improve code and functions <!-- .element: class="fragment" data-fragment-index="4"  -->
+			- Content negotiation (Reponse as geopackage/gml) <!-- .element: class="fragment" data-fragment-index="5"  -->
+			- Advance filters (CQL)  <!-- .element: class="fragment" data-fragment-index="6"  -->
 			</textarea>
 			</section>
-			
+			<section>
 			<section data-markdown><!--  STAC section -->
 				<textarea data-template>
 				### SpatioTemporal Asset Catalog (STAC)
 				- Simple catalog of spatiotemporal items (JSON) <!-- .element: class="fragment" data-fragment-index="1"  -->
-				- Parallel work to WFS 3.0 <!-- .element: class="fragment" data-fragment-index="2"  -->
-				- Pull from storages like S3 <!-- .element: class="fragment" data-fragment-index="3"  -->
-				- Geospatial assets openly searchable and crawlable <!-- .element: class="fragment" data-fragment-index="4"  -->
-				- More oriented for sat imagery <!-- .element: class="fragment" data-fragment-index="5"  -->
+				- (stac != csw || csw => stac) <!-- .element: class="fragment" data-fragment-index="2" -->
+				- More oriented for sat imagery <!-- .element: class="fragment" data-fragment-index="3"  -->
+				- Parallel work to WFS 3.0 <!-- .element: class="fragment" data-fragment-index="4"  -->
+				- Pull from storages like S3 <!-- .element: class="fragment" data-fragment-index="5"  -->
+				- Geospatial assets openly searchable and crawlable <!-- .element: class="fragment" data-fragment-index="5"  -->
+				
 				</textarea>
 			</section>
 			<section>
 			<img src="https://geopython.github.io/pygeoapi/presentation/static/stac.png">
 			  <a href="https://github.com/radiantearth/stac-spec" target="_blank">https://github.com/radiantearth/stac-spec</a> 
+			</section>
+			<section data-markdown>
+			<textarea data-template>
+			### LandSat8 - Stac Example
+			```json
+			{
+  "id": "LC81530252014153LGN00",
+  "type": "Feature",
+  "bbox": [ 49.16354,72.27502,51.36812,75.67662
+        ],
+  "geometry": {
+    "type": "MultiPolygon",
+"coordinates": [..]
+			
+			```
+			</textarea>
+			</section>
+			<section data-markdown>
+			<textarea data-template>
+			### LandSat8 - Stac Example
+			```json
+			"properties": {
+				"datetime": "2014-06-02T09:22:02Z",
+				"provider": "USGS",
+				"eo:gsd": 30.0,
+				"eo:cloud_cover" : 10,
+				"eo:off_nadir" : 0.000,
+				"eo:azimuth": 0.00,
+				"eo:sun_azimuth" : 149.01607154,
+				"eo:sun_elevation" : 59.21424700,
+		  }
+			```
+			</textarea>
+			</section >
+			<section data-markdown>
+						<textarea data-template>
+			### LandSat8 - Stac Example
+			```json
+  "assets" :{
+    "thumbnail": {
+          "href": "http://landsat[..]/LC81530252014153LGN00_thumb_large.jpg",
+          "required": true,
+          "type": "jpeg"
+    },
+    "metadata": {
+      "href": "http://landsat[..]LC81530252014153LGN00_MTL.txt",
+      "required": true,
+      "type": "mtl"
+},
+		  }
+			```
+			</textarea>
 			</section>
 			
 			</section><!--  end of STAC section -->
