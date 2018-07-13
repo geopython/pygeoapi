@@ -135,7 +135,8 @@ html.intro body {
 				</section>
 			</section>
 			<!--  end of WFS 2.0 issues -->
-
+			<!-- Explain REST -->
+			<section>
 			<section data-markdown>
 				<textarea data-template>
 
@@ -146,21 +147,78 @@ html.intro body {
 					</textarea>
 			</section>
 			<section data-markdown>
+			<textarea data-template>
+			### What is REST ???
 			
-				<textarea data-template>	
-						### WFS 3.0 Hackathlon - Kickstart
-						 - OGC sponsored <!-- .element: class="fragment" data-fragment-index="1"  -->
-						 - Develop WFS 3.0 based on OpenAPI <!-- .element: class="fragment" data-fragment-index="2"  -->
-						 - Write specification using GitHub <!-- .element: class="fragment" data-fragment-index="3"  -->
-						 - Hackathlon in Fort Collins, CO, USA <!-- .element: class="fragment" data-fragment-index="4"  --> 
-						</textarea>
+			
+			- REpresentational State Transfer (REST) <!-- .element: class="fragment" data-fragment-index="1" -->
+			- Uses HTTP's verbs (GET/POST/DELETE) <!-- .element: class="fragment" data-fragment-index="2"  -->
+			- Uses HTTP's codes (200, 404, 201, etc) <!-- .element: class="fragment" data-fragment-index="3"  -->
+			- Uses URI to identify resources <!-- .element: class="fragment" data-fragment-index="4"  -->	
+			- Stateless <!-- .element: class="fragment" data-fragment-index="5" -->
+			
+			</textarea>
+			</section>
+			
+			<section data-markdown>
+			<textarea data-template>
+			
+			![alt text](https://geocat.github.io/pygeoapi/presentation/static/rest-api.png "REST symbol") <!-- .element: style="background-color: white;"  -->
+			
+			- Very popular among developers <!-- .element: class="fragment" data-fragment-index="1" -->
+			- Easy to understand <!-- .element: class="fragment" data-fragment-index="2" -->
+			- JSON is king in REST webservices <!-- .element: class="fragment" data-fragment-index="3" -->
+			- No rigid standards (good or bad) <!-- .element: class="fragment" data-fragment-index="4" -->
+			
+			</textarea>
+			</section>
+			
+			</section> <!--  End of REST -->
+			<section> 
+			<section data-markdown> <!-- Hackathon -->
+			<textarea data-template>
+				### WFS 3.0 Hackathon - Kickstart
+				
+				- OGC sponsored <!-- .element: class="fragment" data-fragment-index="1"  -->
+				- Develop WFS 3.0 based on OpenAPI <!-- .element: class="fragment" data-fragment-index="2"  -->
+				- Write specification using GitHub <!-- .element: class="fragment" data-fragment-index="3"  -->
+				- Hackathon in Fort Collins, CO, USA <!-- .element: class="fragment" data-fragment-index="4"  --> 
+			</textarea>
 			</section>
 			<section>
-				<!--TODO make it as markdown  image not working on markdown -->
-				<img
-					src="https://geopython.github.io/pygeoapi/presentation/static/W3C_OGC.png"></img>
-				<a href="https://www.w3.org/TR/sdw-bp/">https://www.w3.org/TR/sdw-bp/</a>
-				<br /> <br /> <strong>*MUST SEE DOCUMENT*</strong>
+			<img src="https://geopython.github.io/pygeoapi/presentation/static/Hackathon1.jpg"/>
+			</section>
+			<section>
+			<img src="https://geopython.github.io/pygeoapi/presentation/static/Hackathon2.jpg"/>
+			</section>
+			<section>
+			<img src="https://geopython.github.io/pygeoapi/presentation/static/Hackathon3.jpg"/>
+			</section>
+			<section data-markdown>
+			<textarea data-template>
+				![alt text](https://geopython.github.io/pygeoapi/presentation/static/Jivan_Amara.png "Jivan Amara") <!-- .element: style="background-color: white;"  -->
+				
+				Matthew Douglas Wiggett aka Jivan Amara
+				
+				1975 - 2018
+				
+				(Go-lang client/server for WFS3.0)
+			</textarea>
+			</section>
+			
+			
+			</section> <!--  End Hackathon -->
+			
+			<section data-markdown>
+				<textarea data-template>
+				### OGC and W3C
+				
+				![alt text](https://geopython.github.io/pygeoapi/presentation/static/W3C_OGC.png "W3C and OFG")
+				
+				[https://www.w3.org/TR/sdw-bp/](https://www.w3.org/TR/sdw-bp/) <!-- .element: target="_blank" -->
+				
+				**MUST SEE DOCUMENT** 
+				</textarea>
 			</section>
 			<section>
 				<!-- Open API explanation -->
@@ -175,7 +233,7 @@ html.intro body {
 				</section>
 				<section
 					fullscreen-img="https://geopython.github.io/pygeoapi/presentation/static/SwaggerAPI.png" fullscreen-size="contain">
-					<a href="http://swagger.io" style="background-color: #101010">http://swagger.io</a>
+					<a href="http://swagger.io" style="background-color: #101010" target="_blank">http://swagger.io</a>
 				</section>
 				<section data-markdown>
 					<textarea data-template>
@@ -226,14 +284,16 @@ responses:
 				<textarea data-template>
 	## Spec
 
-	https://github.com/opengeospatial/WFS_FES/blob/master/openapi.yaml
+	https://github.com/opengeospatial/WFS_FES/blob/master/openapi.yaml 
 	
-	The file above describes the WFS 3.0 structure 	
+	The file above describes the WFS 3.0 structure 	<!-- .element: class="fragment" data-fragment-index="1"  -->
+	
 	</textarea>
 			</section>
-			<section
-				fullscreen-img="https://geopython.github.io/pygeoapi/presentation/static/EndPoints.png"
-				fullscreen-size="contain">
+			<section>
+				<img src="https://geopython.github.io/pygeoapi/presentation/static/EndPoints.png" />
+				
+				<a href="https://app.swaggerhub.com/apis/cholmesgeo/WFS3/M1" target="_blank">Check it in SwaggerHub</a>
 			</section>
 			<section data-markdown>
 				<textarea data-template>
@@ -255,11 +315,12 @@ responses:
 			</section>
 			<section data-markdown>
 				<textarea data-template>
-		### Repository
-		https://github.com/opengeospatial/WFS_FES
-	   
 		### OGC document WFS 3.0
-		https://rawgit.com/opengeospatial/WFS_FES/master/docs/17-069.html
+		https://rawgit.com/opengeospatial/WFS_FES/master/docs/17-069.html <!-- .element: target="_blank"  -->
+				
+		### Repository (extra info)
+		https://github.com/opengeospatial/WFS_FES <!-- .element: target="_blank"  --> 
+	   
 		</textarea>
 			</section>
 			<section data-markdown>
@@ -267,7 +328,7 @@ responses:
 		### OGC Seeks Public Comment on WFS 3.0 Candidate Standard
 		![alt text](https://geopython.github.io/pygeoapi/presentation/static/ogc.png "OGC seeks public comment on WFS 3.0")
 		 
-		http://www.opengeospatial.org/pressroom/pressreleases/2830
+		http://www.opengeospatial.org/pressroom/pressreleases/2830  <!-- .element: target="_blank"  -->
 		</textarea>
 			</section>
 			<section>
@@ -323,19 +384,39 @@ responses:
 
 				<section>
 					<img src="https://geopython.github.io/pygeoapi/presentation/static/pygeoapi.png"></img> <a
-						href="https://github.com/geopython/pygeoapi">https://github.com/geopython/pygeoapi</a>
+						href="https://github.com/geopython/pygeoapi" target="_blank">https://github.com/geopython/pygeoapi</a>
 				</section>
 			</section>
 			<!-- end of PyGEOPAI -->
 			<section>
 				<!--  docker section -->
 				<section data-markdown>
-					<textarea data-template>
+				<textarea data-template>
 			![alt text](https://geopython.github.io/pygeoapi/presentation/static/docker.png "Docker logo")
 			# Docker and PyGeoAPI
 			</textarea>
-				</section>
-				<section data-markdown>
+			</section>
+			<section data-markdown>
+			<textarea data-template>
+			![alt text](https://geopython.github.io/pygeoapi/presentation/static/docker.png "Docker logo")
+			
+			- In dockerhub we have images of pygeoapi
+			- Images create linux containers running content
+			- We can use images to test locally or in server
+			
+			</textarea>
+			</section>
+			<section data-markdown>
+			<textarea data-template>
+			![alt text](https://geopython.github.io/pygeoapi/presentation/static/docker_hub.png "Docker Hub")
+			
+			Geopython dockerhub
+			
+			https://hub.docker.com/u/geopython/dashboard/ <!-- .element: target="_blank"  -->
+			</textarea>
+			</section>
+		     	
+		  <section data-markdown>
 					<textarea data-template>
 			Pulling from dockerhub
 			```
@@ -355,10 +436,15 @@ responses:
 			</textarea>
 				</section>
 				<section data-markdown>
+				 <textarea data-template>
+				  Let's see if we can make it run :)
+				 </textarea>
+				</section>
+				<section data-markdown>
 					<textarea data-template>
 			![alt text](https://geopython.github.io/pygeoapi/presentation/static/docker.png "Docker logo")
 			- Dockerhub image without Elasticsearch <!-- .element: class="fragment" data-fragment-index="1"  -->
-			- Docker-compose dor Elasticsearch in github <!-- .element: class="fragment" data-fragment-index="2" -->
+			- Docker-compose for Elasticsearch in github <!-- .element: class="fragment" data-fragment-index="2" -->
 			- Easy to scale pygeoapi with docker swarm  <!-- .element: class="fragment" data-fragment-index="3"  -->
 			</textarea>
 				</section>
@@ -406,8 +492,17 @@ responses:
 			</textarea>
 			</section>
 			
-			
 			</section><!-- End Production instances -->
+			<section data-markdown> <!-- road map -->
+			<textarea data-template>
+			## Roadmap
+			
+			- Implement more data providers <!-- .element: class="fragment" data-fragment-index="1"  -->
+			- PostGIS and Geopackage as data providers <!-- .element: class="fragment" data-fragment-index="2"  -->
+			- Improve code and functions <!-- .element: class="fragment" data-fragment-index="3"  -->
+			
+			</textarea>
+			</section>
 			
 			<section data-markdown><!--  STAC section -->
 				<textarea data-template>
@@ -421,7 +516,7 @@ responses:
 			</section>
 			<section>
 			<img src="https://geopython.github.io/pygeoapi/presentation/static/stac.png">
-			  <a href="https://github.com/radiantearth/stac-spec">https://github.com/radiantearth/stac-spec</a> 
+			  <a href="https://github.com/radiantearth/stac-spec" target="_blank">https://github.com/radiantearth/stac-spec</a> 
 			</section>
 			
 			</section><!--  end of STAC section -->
