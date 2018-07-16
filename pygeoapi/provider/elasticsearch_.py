@@ -29,7 +29,7 @@
 
 import logging
 
-from elasticsearch import Elasticsearch, exceptions
+from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
@@ -183,8 +183,20 @@ class ElasticsearchProvider(BaseProvider):
 
         try:
             LOGGER.debug('querying Elasticsearch')
-            results = self.es.search(index=self.index_name, from_=startindex,
-                                     size=limit, body=query)
+            if startindex + limit > 10000:
+                gen = helpers.scan(client=self.es, query=query,
+                                   preserve_order=True,
+                                   index=self.index_name)
+                results = {'hits': {'total': limit, 'hits': []}}
+                for i in range(startindex + limit):
+                    if i >= startindex:
+                        results['hits']['hits'].append(next(gen))
+                    else:
+                        next(gen)
+            else:
+                results = self.es.search(index=self.index_name,
+                                         from_=startindex, size=limit,
+                                         body=query)
         except exceptions.ConnectionError as err:
             LOGGER.error(err)
             raise ProviderConnectionError()
