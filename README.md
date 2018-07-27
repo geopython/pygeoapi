@@ -58,14 +58,14 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 
 ## Docker
 
-Docker folder contains 2 sub-folder
+Docker folder contains 2 sub-folders:
 
 - Simple
 - Compose
 
 First folder will create a simple docker image with only GeoJSON, CSV as SQLite providers. While the second folder contains a full docker composition to run pygeoapi with ES.
 
-For simple testing and demonstration is more convenient to use the simple image
+For simple testing and demonstration is more convenient to use the simple image.
 
 Docker images have the following settings:
 - Alpine edge OS
@@ -89,10 +89,10 @@ Docker folder contains a docker-composition necessary to build a minimal pygeoap
 
 ### ES
 
-- oficial elasticsearch:**5.6.8** on **CentosOS 7**
+- official elasticsearch: **5.6.8** on **CentosOS 7**
 - ports **9300** and **9200**
 
-Elastic search requires the host system to have its virtual memory parameter (**max_map_count**) [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
+Elasticsearch requires the host system to have its virtual memory parameter (**max_map_count**) [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
 
 ```  
 sudo sysctl -w vm.max_map_count=262144
