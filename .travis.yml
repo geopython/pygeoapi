@@ -7,7 +7,7 @@ python:
   - "3.5"
 
 services:
-  = elasticsearch
+  - elasticsearch
 
 before_install:
   - sudo apt-get -qq update
@@ -22,7 +22,7 @@ env:
   - PYGEOAPI_CONFIG=pygeoapi-config.yml
 
 before_script:
-  - sleep 10
+  - sleep 20
   - python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
   - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
 
