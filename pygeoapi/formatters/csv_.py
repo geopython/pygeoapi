@@ -50,7 +50,7 @@ class CSVFormatter(BaseFormatter):
         """
 
         BaseFormatter.__init__(self, 'csv', geom)
-        self.mimetype = 'text/plain'
+        self.mimetype = 'text/csv'
 
     def write(self, options={}, data=None):
         """
