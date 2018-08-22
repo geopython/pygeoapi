@@ -433,6 +433,9 @@ class API(object):
             headers_['Content-type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
 
+            cd = 'attachment; filename="{}.csv"'.format(dataset)
+            headers_['Content-Disposition'] = cd
+
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content)
