@@ -1,3 +1,9 @@
+python-pygeoapi (0.2.2) trusty; urgency=medium
+
+  * fix ES issues for large returns
+
+ -- Tom Kralidis <tomkralidist@gmail.com>  Fri, 24 Aug 2018 14:33:03 +0000
+
 python-pygeoapi (0.2.1) trusty; urgency=medium
 
   * fix HTTP response headers for CSV
