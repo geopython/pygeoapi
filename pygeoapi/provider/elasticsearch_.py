@@ -189,10 +189,14 @@ class ElasticsearchProvider(BaseProvider):
                                    index=self.index_name)
                 results = {'hits': {'total': limit, 'hits': []}}
                 for i in range(startindex + limit):
-                    if i >= startindex:
-                        results['hits']['hits'].append(next(gen))
-                    else:
-                        next(gen)
+                    try:
+                        if i >= startindex:
+                            results['hits']['hits'].append(next(gen))
+                        else:
+                            next(gen)
+                    except StopIteration:
+                        break
+                results['hits']['total'] = len(results['hits']['hits'])
             else:
                 results = self.es.search(index=self.index_name,
                                          from_=startindex, size=limit,
