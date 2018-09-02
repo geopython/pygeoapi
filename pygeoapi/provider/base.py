@@ -113,3 +113,8 @@ class ProviderConnectionError(Exception):
 class ProviderQueryError(Exception):
     """query / backend error"""
     pass
+
+
+class ProviderVersionError(Exception):
+    """Incorrect provider version"""
+    pass
