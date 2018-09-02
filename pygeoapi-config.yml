@@ -176,8 +176,8 @@ datasets:
         links:
             - type: text/html
               rel: canonical
-              type: information
-              href: http://wiki.openstreetmap.org/wiki/Points_of_interest/
+              title: information
+              href: https://wiki.openstreetmap.org/wiki/Points_of_interest/
               hreflang: en-US
         extents:
             spatial:
