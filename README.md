@@ -113,3 +113,13 @@ sudo sysctl -w vm.max_map_count=262144
 docker-compose build
 docker-compose up 
 ``` 
+
+### Testing code 
+
+Unit tests are run using pytest on the top project folder:
+
+```
+pytest tests
+```
+
+Enviroment variable are set on file `pytest.ini`

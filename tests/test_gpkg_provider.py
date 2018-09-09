@@ -34,6 +34,6 @@ def test_query(config):
 
 def test_get(config):
     p = GeoPackageProvider(config)
-    results = p.get(11)
+    results = p.get(5156778016)
     assert len(results['features']) == 1
-    #assert "Netherlands" in results['features'][0]['properties']['admin']
+    assert "tourist_info" in results['features'][0]['properties']['fclass']
