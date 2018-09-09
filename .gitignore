@@ -107,5 +107,5 @@ local.swagger.yml
 # misc
 *.swp
 .pytest_cache
-#/docker/
+/docker/
 /presentation/
