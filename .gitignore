@@ -108,4 +108,3 @@ local.swagger.yml
 *.swp
 .pytest_cache
 /docker/
-/presentation/
