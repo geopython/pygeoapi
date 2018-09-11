@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SQLiteProvider(BaseProvider):
-    """Generic provide for SQLITE using sqlite3 module.
+    """Generic provider for SQLITE using sqlite3 module.
     This module requires install of libsqlite3-mod-spatialite
     TODO: DELETE, UPDATE, CREATE
     """
