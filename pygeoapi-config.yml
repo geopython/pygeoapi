@@ -159,3 +159,35 @@ datasets:
             data: tests/data/ne_110m_admin_0_countries.sqlite
             id_field: ogc_fid
             table: ne_110m_admin_0_countries
+    poi:
+        title: Portuguese point of interrest
+        description: Portuguese points of interrest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands
+        keywords:
+            - Portugal
+            - POI
+            - Point of Interrest
+            - Madeira
+            - Azores
+            - OSM
+            - Open Street Map
+            - NaturaGIS
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://wiki.openstreetmap.org/wiki/Points_of_interest/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-31.2687 32.5898 -6.18992 42.152]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider: 
+            name: GeoPackage
+            data: tests/data/poi_portugal.gpkg
+            id_field: osm_id
+            table: poi_portugal
+            
