@@ -12,15 +12,12 @@ services:
 
 addons:
   postgresql: 9.6
-  apt:
-    packages:
-    - postgresql-9.6-postgis-2.3
-  
+
 
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
-  - sudo psql -U postgres -c "create extension postgis"
+  - sudo apt-get install -y postgresql-9.6-postgis-2.4
 
 install:
   - pip install -r requirements.txt
