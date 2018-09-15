@@ -8,10 +8,19 @@ python:
 
 services:
   - elasticsearch
+  - postgresql
+
+addons:
+  postgresql: 9.5
+  apt:
+    packages:
+    - postgresql-9.5-postgis-2.2
+  
 
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
+  - sudo psql -U postgres -c "create extension postgis"
 
 install:
   - pip install -r requirements.txt
