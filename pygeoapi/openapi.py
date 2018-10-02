@@ -280,7 +280,7 @@ def get_oas(cfg, version='3.0'):
         raise RuntimeError('OpenAPI version not supported')
 
 
-@click.command()
+@click.command('generate-openapi-document')
 @click.pass_context
 @click.option('--config', '-c', 'config_file', help='configuration file')
 def generate_openapi_document(ctx, config_file):
