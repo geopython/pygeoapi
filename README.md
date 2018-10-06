@@ -20,7 +20,7 @@ vi local.config.yml
 # TODO: what is most important to edit?
 export PYGEOAPI_CONFIG=/path/to/local.config.yml
 # generate OpenAPI Document
-pygeoapi generate_openapi_document -c local.config.yml > openapi.yml
+pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
 export PYGEOAPI_OPENAPI=/path/to/openapi.yml
 pygeoapi serve
 ```

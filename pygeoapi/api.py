@@ -45,6 +45,11 @@ LOGGER = logging.getLogger(__name__)
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
+HEADERS = {
+    'Content-type': 'application/json',
+    'X-Powered-By': 'pygeoapi {}'.format(__version__)
+}
+
 
 class API(object):
     """API object"""
@@ -76,9 +81,7 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/json'
-        }
+        headers_ = HEADERS.copy()
 
         formats = ['json', 'html']
 
@@ -139,9 +142,8 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/openapi+json;version=3.0'
-        }
+        headers_ = HEADERS.copy()
+        headers_['Content-type'] = 'application/openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
 
@@ -155,9 +157,7 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/json'
-        }
+        headers_ = HEADERS.copy()
 
         formats = ['json', 'html']
 
@@ -197,9 +197,7 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/json'
-        }
+        headers_ = HEADERS.copy()
 
         formats = ['json', 'html']
 
@@ -279,9 +277,7 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/json'
-        }
+        headers_ = HEADERS.copy()
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
@@ -452,9 +448,7 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = {
-            'Content-type': 'application/json'
-        }
+        headers_ = HEADERS.copy()
 
         formats = ['json', 'html']
 
