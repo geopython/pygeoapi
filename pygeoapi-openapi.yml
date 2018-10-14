@@ -1,0 +1,273 @@
+components:
+  parameters:
+    id:
+      description: The id of a feature
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    limit:
+      description: The optional limit parameter limits the number of items that are
+        presented in the response document. Only items are counted that are on the
+        first level of the collection in the response document. Nested objects contained
+        within the explicitly requested items shall not be counted. Minimum = 1. Maximum
+        = 10000. Default = 10.
+      explode: false
+      in: query
+      name: limit
+      required: false
+      schema:
+        default: 10
+        maximum: 10000
+        minimum: 1
+        type: integer
+      style: form
+info:
+  contact:
+    email: you@example.org
+    name: Organization Name
+    url: https://github.com/geopython/pygeoapi
+  description: pygeoapi provides an API to geospatial data
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  termsOfService: None
+  title: pygeoapi default instance
+  version: 3.0.1
+  x-keywords:
+  - geospatial
+  - data
+  - api
+openapi: 3.0.1
+paths:
+  /:
+    get:
+      description: API
+      responses:
+        200:
+          description: successful operation
+      summary: API
+      tags:
+      - server
+  /api:
+    get:
+      description: This document
+      responses:
+        200:
+          description: successful operation
+      summary: This document
+      tags:
+      - server
+  /collections:
+    get:
+      description: Feature Collections
+      responses:
+        200:
+          description: successful operation
+      summary: Feature Collections
+      tags:
+      - server
+  /collections/countries:
+    get:
+      description: Countries of the world
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get feature collection metadata
+      tags:
+      - countries
+  /collections/countries/items:
+    get:
+      description: Countries of the world
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Countries in the world features
+      tags:
+      - countries
+  /collections/countries/items/{id}:
+    get:
+      description: Countries of the world
+      parameters:
+      - $ref: '#/components/parameters/id'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Countries in the world feature by ID
+      tags:
+      - countries
+  /collections/lakes:
+    get:
+      description: lakes of the world, public domain
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get feature collection metadata
+      tags:
+      - lakes
+  /collections/lakes/items:
+    get:
+      description: lakes of the world, public domain
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Large Lakes features
+      tags:
+      - lakes
+  /collections/lakes/items/{id}:
+    get:
+      description: lakes of the world, public domain
+      parameters:
+      - $ref: '#/components/parameters/id'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Large Lakes feature by ID
+      tags:
+      - lakes
+  /collections/obs:
+    get:
+      description: Observations
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get feature collection metadata
+      tags:
+      - obs
+  /collections/obs/items:
+    get:
+      description: Observations
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Observations features
+      tags:
+      - obs
+  /collections/obs/items/{id}:
+    get:
+      description: Observations
+      parameters:
+      - $ref: '#/components/parameters/id'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Observations feature by ID
+      tags:
+      - obs
+  /collections/poi:
+    get:
+      description: Portuguese points of interrest obtained from OpenStreetMap. Dataset
+        includes Madeira and Azores islands
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get feature collection metadata
+      tags:
+      - poi
+  /collections/poi/items:
+    get:
+      description: Portuguese points of interrest obtained from OpenStreetMap. Dataset
+        includes Madeira and Azores islands
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Portuguese point of interrest features
+      tags:
+      - poi
+  /collections/poi/items/{id}:
+    get:
+      description: Portuguese points of interrest obtained from OpenStreetMap. Dataset
+        includes Madeira and Azores islands
+      parameters:
+      - $ref: '#/components/parameters/id'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Portuguese point of interrest feature by ID
+      tags:
+      - poi
+  /conformance:
+    get:
+      description: API conformance definition
+      responses:
+        200:
+          description: successful operation
+      summary: API conformance definition
+      tags:
+      - server
+servers:
+- description: pygeoapi provides an API to geospatial data
+  url: http://localhost:5000/
+tags:
+- description: pygeoapi provides an API to geospatial data
+  externalDocs:
+    description: information
+    url: http://example.org
+  name: server
+- description: Observations
+  name: obs
+- description: lakes of the world, public domain
+  name: lakes
+- description: Countries of the world
+  name: countries
+- description: Portuguese points of interrest obtained from OpenStreetMap. Dataset
+    includes Madeira and Azores islands
+  name: poi
+
