@@ -158,6 +158,28 @@ class PostgreSQLProvider(BaseProvider):
 
         
         end_index = startindex + limit
+        
+        with DatabaseConnection(self.conn_dic,self.table) as db:
+            cursor = db.conn.cursor(cursor_factory = RealDictCursor)
+            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR for select {0},ST_AsGeoJSON({1}) from {2} LIMIT %s").format(db.columns,
+                                                                                         Identifier('geom'),
+                                                                                         Identifier(self.table))
+
+            cursor.execute(sql_query,(limit,))
+            cursor.execute("fetch forward {} from geo_cursor".format(startindex))
+            
+            
+            self.dataDB = cursor.fetchall()
+            feature_collection = self.__response_feature_collection()
+            
+            return feature_collection
+            #with db.cursor(name = 'pygeoapi_cursor') as cursor:
+            #    conn.execute('DECLARE pygeoapi_cursor SCROLL CURSOR FOR <query>')
+        
+               
+        
+        
+        
         # Not working
         # http://localhost:5000/collections/countries/items/?startindex=10
         
@@ -231,7 +253,6 @@ class PostgreSQLProvider(BaseProvider):
 
     def __repr__(self):
         return '<PostgreSQLProvider> {},{}'.format(self.data, self.table)
-
 
 
     def __response_feature_hits(self, hits):
