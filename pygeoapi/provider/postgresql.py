@@ -182,10 +182,9 @@ class PostgreSQLProvider(BaseProvider):
 
             cursor.execute(sql_query)
 
-            cursor.execute("fetch forward {} from geo_cursor"
-                           .format(startindex))
-            cursor.execute("fetch forward {} from geo_cursor"
-                           .format(limit))
+            for index in [startindex, limit]:
+                cursor.execute("fetch forward {} from geo_cursor"
+                               .format(index))
 
             self.dataDB = cursor.fetchall()
             feature_collection = self.__response_feature_collection()

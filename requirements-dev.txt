@@ -5,6 +5,7 @@ docutils==0.14
 flake8==3.5.0
 twine==1.11.0
 wheel==0.31.0
+psycopg2==2.7.6
 pypandoc==1.4
 pytest==3.5.0
 pytest-cov
