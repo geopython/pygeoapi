@@ -31,7 +31,7 @@ env:
 before_script:
   - sleep 20
   - python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
-  - pygeoapi generate_openapi_document -c pygeoapi-config.yml > pygeoapi-openapi.yml
+  - pygeoapi generate-openapi-document -c pygeoapi-config.yml > pygeoapi-openapi.yml
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'
   - gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
