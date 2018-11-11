@@ -97,8 +97,7 @@ class GeoPackageProvider(BaseProvider):
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
-        e,g: http://localhost:5000/poi/items?
-        limit=1&resulttype=hits
+        e,g: http://localhost:5000/collections/poi/items?resulttype=hits
 
         :returns: GeoJSON FeaturesCollection
         """
