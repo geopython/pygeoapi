@@ -44,16 +44,17 @@ import logging
 import json
 import psycopg2
 from psycopg2.sql import SQL, Identifier
-from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
+from pygeoapi.provider.base import BaseProvider, \
+    ProviderConnectionError, ProviderQueryError
+
 from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
 
 
 class DatabaseConnection(object):
-    """Database connection class to be use as a with statement
-    Returning a connection object is better than a cursor, since
-     using with will be responsible for naming the cursor
+    """Database connection class to be used as 'with' statement.
+     The class returns a connection object.
     """
 
     def __init__(self, conn_dic, table, context="query"):
@@ -69,8 +70,10 @@ class DatabaseConnection(object):
              (defaults to UNIX socket if not provided)
             port – connection port number
              (defaults to 5432 if not provided)
+            schema – schema to use as search path, normally
+             data is in the public schema
 
-        :param table: table name containind data. This variable is used to
+        :param table: table name containing the data. This variable is used to
                 assemble column information
         :param context: query or hits, if query then it will determine
                 table column otherwise will not do it
@@ -82,12 +85,23 @@ class DatabaseConnection(object):
         self.context = context
         self.columns = None
         self.conn = None
+        self.schema = None
 
     def __enter__(self):
         try:
+            self.schema = self.conn_dic.pop('schema', None)
+            if self.schema == 'public' or self.schema is None:
+                pass
+            else:
+                self.conn_dic["options"] = '-c search_path={}'.format(
+                    self.schema)
+                LOGGER.debug('Using schema {} as search path'.format(
+                    self.schema))
             self.conn = psycopg2.connect(**self.conn_dic)
+
         except psycopg2.OperationalError:
-            LOGGER.error('Couldnt connect to Postgis using:{}'.format(str(self.conn_dic)))
+            LOGGER.error('Couldnt connect to Postgis using:{}'.format(
+                str(self.conn_dic)))
             raise ProviderConnectionError()
 
         self.cur = self.conn.cursor()
@@ -166,7 +180,14 @@ class PostgreSQLProvider(BaseProvider):
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
                 sql_query = SQL("select count(*) as hits from {}").\
                     format(Identifier(self.table))
-                cursor.execute(sql_query)
+                try:
+                    cursor.execute(sql_query)
+                except Exception as err:
+                    LOGGER.error('Error executing sql_query: {}'.format(
+                        sql_query.as_string(cursor)))
+                    LOGGER.error('Using public schema: {}'.format(db.schema))
+                    raise ProviderQueryError()
+
                 hits = cursor.fetchone()["hits"]
 
             return self.__response_feature_hits(hits)
@@ -184,12 +205,16 @@ class PostgreSQLProvider(BaseProvider):
             LOGGER.debug('SQL Query:{}'.format(sql_query))
             LOGGER.debug('Start Index:{}'.format(startindex))
             LOGGER.debug('End Index'.format(end_index))
-
-            cursor.execute(sql_query)
-
-            for index in [startindex, limit]:
-                cursor.execute("fetch forward {} from geo_cursor"
-                               .format(index))
+            try:
+                cursor.execute(sql_query)
+                for index in [startindex, limit]:
+                    cursor.execute("fetch forward {} from geo_cursor"
+                                   .format(index))
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}'.format(
+                    sql_query.as_string(cursor)))
+                LOGGER.error('Using public schema: {}'.format(db.schema))
+                raise ProviderQueryError()
 
             self.dataDB = cursor.fetchall()
             feature_collection = self.__response_feature_collection()
@@ -198,7 +223,7 @@ class PostgreSQLProvider(BaseProvider):
     def get(self, identifier):
         """
         Query the provider for a specific
-        feature id e.g: /collections/hotosm_bdi_waterways/items/25469515
+        feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
 
         :param identifier: feature id
 
@@ -208,6 +233,7 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Get item from Postgis')
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+
             sql_query = SQL("select {0},ST_AsGeoJSON({1}) \
             from {2} WHERE {3}=%s").format(db.columns,
                                            Identifier('geom'),
@@ -216,8 +242,14 @@ class PostgreSQLProvider(BaseProvider):
 
             LOGGER.debug('SQL Query:{}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier:{}'.format(identifier))
+            try:
+                cursor.execute(sql_query, (identifier, ))
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}'.format(
+                    sql_query.as_string(cursor)))
+                LOGGER.error('Using public schema: {}'.format(db.schema))
+                raise ProviderQueryError()
 
-            cursor.execute(sql_query, (identifier, ))
             self.dataDB = cursor.fetchall()
             feature_collection = self.__response_feature_collection()
             return feature_collection
