@@ -44,7 +44,7 @@ import logging
 import json
 import psycopg2
 from psycopg2.sql import SQL, Identifier
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
@@ -84,7 +84,12 @@ class DatabaseConnection(object):
         self.conn = None
 
     def __enter__(self):
-        self.conn = psycopg2.connect(**self.conn_dic)
+        try:
+            self.conn = psycopg2.connect(**self.conn_dic)
+        except psycopg2.OperationalError:
+            LOGGER.error('Couldnt connect to Postgis using:{}'.format(str(self.conn_dic)))
+            raise ProviderConnectionError()
+
         self.cur = self.conn.cursor()
         if self.context == 'query':
             # Getting columns
