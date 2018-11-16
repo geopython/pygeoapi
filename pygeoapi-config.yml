@@ -190,4 +190,39 @@ datasets:
             data: tests/data/poi_portugal.gpkg
             id_field: osm_id
             table: poi_portugal
+
+    hotosm_bdi_waterways:
+        title: Waterways of Burundi
+        description: Waterways of Burundi, Africa. Dataset timestamp  1st Sep 2018 - Humanitarian OpenStreetMap Team (HOT)
+        keywords:
+            - Burundi
+            - Waterways
+            - Africa
+            - OSM
+            - HOT
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://data.humdata.org/dataset/hotosm_bdi_waterways
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [28.9845376683957 -4.48174334765485,30.866396969019 -2.3096796]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider: 
+            name: PostgreSQL
+            data: 
+                host: 127.0.0.1
+                dbname: test 
+                user: postgres
+                password: postgres
+                port: 5432
+                schema: public 
+            id_field: osm_id 
+            table: hotosm_bdi_waterways
             

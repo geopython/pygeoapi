@@ -8,10 +8,17 @@ python:
 
 services:
   - elasticsearch
+  - postgresql
+
+addons:
+  postgresql: 9.6
+
 
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
+  - sudo apt-get install -y postgresql-9.6-postgis-2.4
+  
 
 install:
   - pip install -r requirements.txt
@@ -25,6 +32,9 @@ before_script:
   - sleep 20
   - python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
   - pygeoapi generate-openapi-document -c pygeoapi-config.yml > pygeoapi-openapi.yml
+  - psql -U postgres -c 'create database test'
+  - psql -U postgres -d test -c 'create extension postgis'
+  - gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
 
 script:
   - pytest --cov=pygeoapi
