@@ -36,4 +36,11 @@ This directory provides test data to demonstrate functionality.
 - source: Open Street Map - Natural GIS
 - URL: [http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities](http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities)
 - Data obtained from WFS instance of NaturalGIS company (http://www.naturalgis.pt/en/) and converted to geopackage
-- Upstream data from Open Street Map extract for Portugal 
+- Upstream data from Open Street Map extract for Portugal
+
+### `hotosm_bdi_waterways.sql.gz`
+- source: Open Street Map - Humanitarian OpenStreetMap Team (HOT)
+- URL: [hotosm_bdi_waterways](https://data.humdata.org/dataset/hotosm_bdi_waterways)
+- Waterways of Burundi
+- Date of dataset: Sep 01, 2018 
+- Location: Burundi, Africa

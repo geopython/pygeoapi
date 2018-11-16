@@ -37,6 +37,7 @@ PROVIDERS = {
     'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
     'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
     'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
+    'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
     'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider'
 }
 
