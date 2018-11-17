@@ -351,15 +351,46 @@ class API(object):
             if k not in reserved_fieldnames and k in p.fields.keys():
                 properties.append((k, v))
 
+        LOGGER.debug('processing sort parameter')
+        val = args.get('sortby')
+
+        if val is not None:
+            sortby = []
+            sorts = val.split(',')
+            for s in sorts:
+                if ':' in s:
+                    prop, order = s.split(':')
+                    if order not in ['A', 'D']:
+                        exception = {
+                            'code': 'InvalidParameterValue',
+                            'description': 'sort order should be A or D'
+                        }
+                        LOGGER.error(exception)
+                        return headers_, 400, json.dumps(exception)
+                    sortby.append({'property': prop, 'order': order})
+                else:
+                    sortby.append({'property': s, 'order': 'A'})
+            for s in sortby:
+                if s['property'] not in p.fields.keys():
+                    exception = {
+                        'code': 'InvalidParameterValue',
+                        'description': 'bad sort property'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 400, json.dumps(exception)
+        else:
+            sortby = []
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
+        LOGGER.debug('sortby: {}'.format(sortby))
 
         try:
             content = p.query(startindex=int(startindex), limit=int(limit),
                               resulttype=resulttype, bbox=bbox, time=time,
-                              properties=properties)
+                              properties=properties, sortby=sortby)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',

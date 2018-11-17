@@ -63,6 +63,18 @@ def test_query(config):
     assert len(results['features']) == 1
     assert results['features'][0]['ID'] == 1559804
 
+    results = p.query(sortby=[{'property': 'nameascii', 'order': 'A'}])
+    assert results['features'][0]['properties']['nameascii'] == 'Abidjan'
+
+    results = p.query(sortby=[{'property': 'nameascii', 'order': 'D'}])
+    assert results['features'][0]['properties']['nameascii'] == 'Zagreb'
+
+    results = p.query(sortby=[{'property': 'scalerank', 'order': 'A'}])
+    assert results['features'][0]['properties']['scalerank'] == 0
+
+    results = p.query(sortby=[{'property': 'scalerank', 'order': 'D'}])
+    assert results['features'][0]['properties']['scalerank'] == 8
+
 
 def test_get(config):
     p = ElasticsearchProvider(config)
