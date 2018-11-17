@@ -185,7 +185,7 @@ class GeoPackageProvider(BaseProvider):
         self.cursor.execute("SELECT AutoGPKGStop()")
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[]):
+              bbox=[], time=None, properties=[], sortby=[]):
         """
         Query Geopackage for all the content.
         e,g: http://localhost:5000/collections/poi/items?
@@ -197,6 +197,7 @@ class GeoPackageProvider(BaseProvider):
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
 
         :returns: GeoJSON FeaturesCollection
         """
