@@ -157,10 +157,14 @@ class ElasticsearchProvider(BaseProvider):
                     'range': {
                         time_field: {
                             'gte': time_begin,
-                            'lte': time_end,
+                            'lte': time_end
                         }
                     }
                 }
+                if time_begin == '..':
+                    range_['range'][time_field].pop('gte')
+                elif time_end == '..':
+                    range_['range'][time_field].pop('lte')
 
                 filter_.append(range_)
 
