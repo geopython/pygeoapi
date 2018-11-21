@@ -98,7 +98,7 @@ class ElasticsearchProvider(BaseProvider):
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[]):
+              bbox=[], time=None, properties=[], sortby=[]):
         """
         query Elasticsearch index
 
@@ -108,6 +108,7 @@ class ElasticsearchProvider(BaseProvider):
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -180,6 +181,31 @@ class ElasticsearchProvider(BaseProvider):
                     }
                 }
                 query['query']['bool']['filter'].append(pf)
+
+        if sortby:
+            LOGGER.debug('processing sortby')
+            query['sort'] = []
+            for sort in sortby:
+                LOGGER.debug('processing sort object: {}'.format(sort))
+
+                sp = sort['property']
+
+                if self.fields[sp]['type'] == 'string':
+                        LOGGER.debug('setting ES .raw on property')
+                        sort_property = 'properties.{}.raw'.format(sp)
+                else:
+                        sort_property = 'properties.{}'.format(sp)
+
+                sort_order = 'asc'
+                if sort['order'] == 'D':
+                    sort_order = 'desc'
+
+                sort_ = {
+                    sort_property: {
+                        'order': sort_order
+                    }
+                }
+                query['sort'].append(sort_)
 
         try:
             LOGGER.debug('querying Elasticsearch')

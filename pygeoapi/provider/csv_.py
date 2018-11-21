@@ -109,7 +109,7 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[]):
+              bbox=[], time=None, properties=[], sortby=[]):
         """
         CSV query
 
@@ -119,6 +119,7 @@ class CSVProvider(BaseProvider):
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
 
         :returns: dict of GeoJSON FeatureCollection
         """
