@@ -52,6 +52,18 @@ settings = {
             'properties': {
                 'geometry': {
                     'type': 'geo_shape'
+                },
+                'properties': {
+                    'properties': {
+                        'nameascii': {
+                            'type': 'text',
+                            'fields': {
+                                'raw': {
+                                    'type': 'keyword'
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

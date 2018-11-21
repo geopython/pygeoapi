@@ -90,7 +90,7 @@ class GeoJSONProvider(BaseProvider):
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[]):
+              bbox=[], time=None, properties=[], sortby=[]):
         """
         query the provider
 
@@ -100,6 +100,7 @@ class GeoJSONProvider(BaseProvider):
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param time: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
