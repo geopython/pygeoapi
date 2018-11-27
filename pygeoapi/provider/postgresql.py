@@ -215,6 +215,7 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
                 LOGGER.error('Using public schema: {}'.format(db.schema))
+                LOGGER.error(err)
                 raise ProviderQueryError()
 
             self.dataDB = cursor.fetchall()
@@ -249,6 +250,7 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
                 LOGGER.error('Using public schema: {}'.format(db.schema))
+                LOGGER.error(err)
                 raise ProviderQueryError()
 
             self.dataDB = cursor.fetchall()
