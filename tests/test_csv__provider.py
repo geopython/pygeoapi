@@ -82,6 +82,13 @@ def test_query(fixture, config):
     assert len(results['features']) == 1
     assert results['features'][0]['ID'] == '238'
 
+    assert len(results['features'][0]['properties']) == 3
+
+    config['properties'] = ['value', 'stn_id']
+    p = CSVProvider(config)
+    results = p.query()
+    assert len(results['features'][0]['properties']) == 2
+
 
 def test_get(fixture, config):
     p = CSVProvider(config)

@@ -27,11 +27,12 @@
 #
 # =================================================================
 
+from collections import OrderedDict
 import csv
 import itertools
 import logging
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,7 +91,17 @@ class CSVProvider(BaseProvider):
                         float(row.pop(self.geometry_y))
                     ]
                 }
-                feature['properties'] = row
+                if self.properties:
+                    feature['properties'] = OrderedDict()
+                    for p in self.properties:
+                        try:
+                            feature['properties'][p] = row[p]
+                        except KeyError as err:
+                            LOGGER.error(err)
+                            raise ProviderQueryError()
+                else:
+                    feature['properties'] = row
+
                 if identifier is not None and feature['ID'] == identifier:
                     found = True
                     result = feature
