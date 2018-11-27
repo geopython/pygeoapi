@@ -75,6 +75,13 @@ def test_query(config):
     results = p.query(sortby=[{'property': 'scalerank', 'order': 'D'}])
     assert results['features'][0]['properties']['scalerank'] == 8
 
+    assert len(results['features'][0]['properties']) == 37
+
+    config['properties'] = ['nameascii']
+    p = ElasticsearchProvider(config)
+    results = p.query()
+    assert len(results['features'][0]['properties']) == 1
+
 
 def test_get(config):
     p = ElasticsearchProvider(config)
