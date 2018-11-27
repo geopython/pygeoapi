@@ -36,7 +36,7 @@ es = Elasticsearch()
 
 type_name = 'FeatureCollection'
 
-if (sys.argv) == 1:
+if len(sys.argv) == 1:
     print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
     sys.exit(1)
 
