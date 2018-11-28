@@ -1,3 +1,12 @@
+python-pygeoapi (0.3.0) trusty; urgency=medium
+
+  * query sorting
+  * Geopackage provider support
+  * add X-Powered-By header
+  * support open ended range time queries (ES provider)
+
+ -- Tom Kralidis <tomkralidist@gmail.com>  Wed, 28 Nov 2018 19:04:32 +0000
+
 python-pygeoapi (0.2.2) trusty; urgency=medium
 
   * fix ES issues for large returns
