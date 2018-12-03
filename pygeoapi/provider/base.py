@@ -48,6 +48,7 @@ class BaseProvider(object):
         self.data = provider_def['data']
         self.id_field = provider_def['id_field']
         self.time_field = provider_def.get('time_field')
+        self.properties = provider_def.get('properties', [])
         self.fields = {}
 
     def get_fields(self):

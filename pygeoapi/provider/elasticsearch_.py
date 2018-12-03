@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+from collections import OrderedDict
 import logging
 
 from elasticsearch import Elasticsearch, exceptions, helpers
@@ -211,6 +212,15 @@ class ElasticsearchProvider(BaseProvider):
                 }
                 query['sort'].append(sort_)
 
+        if self.properties:
+            LOGGER.debug('including specified fields: {}'.format(
+                self.properties))
+            query['_source'] = {
+                'includes': list(map('properties.{}'.format, self.properties))
+            }
+            query['_source']['includes'].append('properties.{}'.format(
+                self.id_field))
+            query['_source']['includes'].append('geometry')
         try:
             LOGGER.debug('querying Elasticsearch')
             if startindex + limit > 10000:
@@ -253,7 +263,22 @@ class ElasticsearchProvider(BaseProvider):
             id_ = feature['_source']['properties'][self.id_field]
             LOGGER.debug('serializing id {}'.format(id_))
             feature['_source']['ID'] = id_
-            feature_collection['features'].append(feature['_source'])
+            if self.properties:
+                feature_thinned = {
+                    'geometry': feature['_source']['geometry'],
+                    'properties': OrderedDict()
+                }
+                for p in self.properties:
+                    try:
+                        feature_thinned['properties'][p] = \
+                            feature['_source']['properties'][p]
+                    except KeyError as err:
+                        LOGGER.error(err)
+                        raise ProviderQueryError()
+
+                feature_collection['features'].append(feature_thinned)
+            else:
+                feature_collection['features'].append(feature['_source'])
 
         return feature_collection
 
