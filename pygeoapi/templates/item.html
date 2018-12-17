@@ -26,7 +26,17 @@
               {% for k, v in data['properties'].items() %}
               <tr>
                 <th>{{ k }}</th>
+                {% if k == 'links' %}
+                <td>
+                    <ul>
+                        {% for l in v %}
+                        <li><a href="{{ l['href'] }}">{{ l['title'] }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                {% else %}
                 <td>{{ v }}</td>
+                {% endif %}
               </tr>
               {% endfor %}
             </table>

@@ -90,11 +90,12 @@ class ElasticsearchProvider(BaseProvider):
         p = ii[self.index_name]['mappings'][self.type_name]['properties']['properties']  # noqa
 
         for k, v in p['properties'].items():
-            if v['type'] == 'text':
-                type_ = 'string'
-            else:
-                type_ = v['type']
-            fields_[k] = {'type': type_}
+            if 'type' in v:
+                if v['type'] == 'text':
+                    type_ = 'string'
+                else:
+                    type_ = v['type']
+                fields_[k] = {'type': type_}
 
         return fields_
 
