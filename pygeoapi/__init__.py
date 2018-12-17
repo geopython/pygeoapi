@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-__version__ = '0.2.2'
+__version__ = '0.4.0'
 
 import click
 from pygeoapi.flask_app import serve

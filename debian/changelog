@@ -1,3 +1,10 @@
+python-pygeoapi (0.4.0) trusty; urgency=medium
+
+  * add column ordering
+  * add properties.links support
+
+ -- Tom Kralidis <tomkralidist@gmail.com>  Mon, 17 Dec 2018 21:17:17 +0000
+
 python-pygeoapi (0.2.2) trusty; urgency=medium
 
   * fix ES issues for large returns
