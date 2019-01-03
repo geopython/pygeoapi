@@ -221,6 +221,7 @@ class ElasticsearchProvider(BaseProvider):
             }
             query['_source']['includes'].append('properties.{}'.format(
                 self.id_field))
+            query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
         try:
             LOGGER.debug('querying Elasticsearch')
@@ -266,6 +267,8 @@ class ElasticsearchProvider(BaseProvider):
             feature['_source']['ID'] = id_
             if self.properties:
                 feature_thinned = {
+                    'ID': feature['_source']['properties'][self.id_field],
+                    'type': feature['_source']['type'],
                     'geometry': feature['_source']['geometry'],
                     'properties': OrderedDict()
                 }
