@@ -1,3 +1,9 @@
+python-pygeoapi (0.4.1) trusty; urgency=medium
+
+  * fix ES GeoJSON output
+
+ -- Tom Kralidis <tomkralidist@gmail.com>  Mon, 07 Jan 2019 12:21:10 +0000
+
 python-pygeoapi (0.4.0) trusty; urgency=medium
 
   * add column ordering
