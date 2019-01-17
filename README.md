@@ -122,4 +122,4 @@ Unit tests are run using pytest on the top project folder:
 pytest tests
 ```
 
-Enviroment variable are set on file `pytest.ini`
+Environment variables are set on file `pytest.ini`
