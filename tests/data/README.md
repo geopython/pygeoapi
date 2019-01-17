@@ -33,13 +33,13 @@ This directory provides test data to demonstrate functionality.
 - Copyright (c) 1996-2008 Regents of the University of Minnesota
 
 ### `poi_portugal.gpkg`
-- source: Open Street Map - Natural GIS
+- source: OpenStreetMap - Natural GIS
 - URL: [http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities](http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities)
 - Data obtained from WFS instance of NaturalGIS company (http://www.naturalgis.pt/en/) and converted to geopackage
-- Upstream data from Open Street Map extract for Portugal
+- Upstream data from OpenStreetMap extract for Portugal
 
 ### `hotosm_bdi_waterways.sql.gz`
-- source: Open Street Map - Humanitarian OpenStreetMap Team (HOT)
+- source: OpenStreetMap - Humanitarian OpenStreetMap Team (HOT)
 - URL: [hotosm_bdi_waterways](https://data.humdata.org/dataset/hotosm_bdi_waterways)
 - Waterways of Burundi
 - Date of dataset: Sep 01, 2018 
