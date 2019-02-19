@@ -416,7 +416,7 @@ class API(object):
             'type': 'application/json',
             'rel': 'self',
             'title': 'Collection items',
-            'href': '{}/collections/{}/items'.format(
+            'href': '{}collections/{}/items'.format(
                 self.config['server']['url'], dataset)
             }, {
             'type': 'application/json',
