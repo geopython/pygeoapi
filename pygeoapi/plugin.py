@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,15 +27,45 @@
 #
 # =================================================================
 
+import importlib
 import logging
 
 LOGGER = logging.getLogger(__name__)
 
-PROVIDERS = {
-    'CSV': 'pygeoapi.provider.csv_.CSVProvider',
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
-    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-    'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
-    'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
-    'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider'
-}
+
+def load_plugin(plugin_def, plugin_list):
+    """
+    loads plugin by name
+
+    :param plugin_def: plugin definition
+    :param plugin_list: list of plugin registry
+
+    :returns: plugin object
+    """
+
+    name = plugin_def['name']
+
+    LOGGER.debug('Plugins: {}'.format(plugin_list))
+
+    if '.' not in name and name not in plugin_list.keys():
+        msg = 'Plugin {} not found'.format(name)
+        LOGGER.exception(msg)
+        raise InvalidPluginError(msg)
+
+    if '.' in name:  # dotted path
+        packagename, classname = name.rsplit('.', 1)
+    else:  # core formatter
+        packagename, classname = plugin_list[name].rsplit('.', 1)
+
+    LOGGER.debug('package name: {}'.format(packagename))
+    LOGGER.debug('class name: {}'.format(classname))
+
+    module = importlib.import_module(packagename)
+    class_ = getattr(module, classname)
+    plugin = class_(plugin_def)
+    return plugin
+
+
+class InvalidPluginError(Exception):
+    """Invalid plugin"""
+    pass

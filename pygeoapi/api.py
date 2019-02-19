@@ -36,8 +36,9 @@ from jinja2 import Environment, FileSystemLoader
 
 from pygeoapi import __version__
 from pygeoapi.log import setup_logger
-from pygeoapi.provider import load_provider
-from pygeoapi.formatter import FORMATTERS, load_formatter
+from pygeoapi.plugin import load_plugin
+from pygeoapi.provider import PROVIDERS
+from pygeoapi.formatter import FORMATTERS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
@@ -330,7 +331,8 @@ class API(object):
 
         LOGGER.debug('Loading provider')
         try:
-            p = load_provider(self.config['datasets'][dataset]['provider'])
+            p = load_plugin(self.config['datasets'][dataset]['provider'],
+                            PROVIDERS)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -447,7 +449,7 @@ class API(object):
                                           content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
-            formatter = load_formatter('CSV', geom=True)
+            formatter = load_plugin({'name': 'CSV', 'geom': True}, FORMATTERS)
 
             content = formatter.write(
                 data=content,
@@ -503,7 +505,8 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading provider')
-        p = load_provider(self.config['datasets'][dataset]['provider'])
+        p = load_plugin(self.config['datasets'][dataset]['provider'],
+                        PROVIDERS)
 
         LOGGER.debug('Fetching id {}'.format(identifier))
         content = p.get(identifier)

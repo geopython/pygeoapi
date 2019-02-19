@@ -35,20 +35,21 @@ LOGGER = logging.getLogger(__name__)
 class BaseFormatter(object):
     """generic Formatter ABC"""
 
-    def __init__(self, name, geom=False):
+    def __init__(self, formatter_def):
         """
         Initialize object
 
-        :param name: formatter name
-        :param geom: whether to emit geometry (default False)
+        :param formatter_def: formatter definition
 
         :returns: pygeoapi.providers.base.BaseFormatter
         """
 
         self.mimetype = None
+        self.geom = False
 
-        self.name = name
-        self.geom = geom
+        self.name = formatter_def['name']
+        if 'geom' in formatter_def:
+            self.geom = formatter_def['geom']
 
     def write(self, options={}, data=None):
         """
