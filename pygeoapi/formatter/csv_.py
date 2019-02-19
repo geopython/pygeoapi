@@ -32,7 +32,7 @@ import logging
 
 import unicodecsv as csv
 
-from pygeoapi.formatters.base import BaseFormatter
+from pygeoapi.formatter.base import BaseFormatter
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class CSVFormatter(BaseFormatter):
 
         :param geom: whether to emit geometry (default False)
 
-        :returns: pygeoapi.formatters.csv_.CSVFormatter
+        :returns: pygeoapi.formatter.csv_.CSVFormatter
         """
 
         BaseFormatter.__init__(self, 'csv', geom)

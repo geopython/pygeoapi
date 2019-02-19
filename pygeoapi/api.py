@@ -37,7 +37,7 @@ from jinja2 import Environment, FileSystemLoader
 from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.provider import load_provider
-from pygeoapi.formatters import FORMATTERS, load_formatter
+from pygeoapi.formatter import FORMATTERS, load_formatter
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
@@ -416,7 +416,7 @@ class API(object):
             'type': 'application/json',
             'rel': 'self',
             'title': 'Collection items',
-            'href': '{}collections/{}/items'.format(
+            'href': '{}/collections/{}/items'.format(
                 self.config['server']['url'], dataset)
             }, {
             'type': 'application/json',

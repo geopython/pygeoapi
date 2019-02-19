@@ -31,7 +31,7 @@ import csv
 import io
 import pytest
 
-from pygeoapi.formatters.csv_ import CSVFormatter
+from pygeoapi.formatter.csv_ import CSVFormatter
 
 
 @pytest.fixture()
