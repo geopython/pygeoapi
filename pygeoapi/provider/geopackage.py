@@ -31,8 +31,8 @@ import sqlite3
 import logging
 import os
 import json
+from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
-from pygeoapi.provider import InvalidPluginError
 
 LOGGER = logging.getLogger(__name__)
 
