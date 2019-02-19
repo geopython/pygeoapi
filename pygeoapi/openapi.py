@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,7 +32,7 @@ import logging
 import click
 import yaml
 
-from pygeoapi.provider import load_provider
+from pygeoapi.plugin import load_plugin
 
 LOGGER = logging.getLogger(__name__)
 
@@ -195,7 +195,7 @@ def get_oas_30(cfg):
             }
         }
 
-        p = load_provider(cfg['datasets'][k]['provider'])
+        p = load_plugin('provider', cfg['datasets'][k]['provider'])
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)

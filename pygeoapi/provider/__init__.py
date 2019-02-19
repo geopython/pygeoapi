@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -26,54 +26,3 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-
-import importlib
-import logging
-
-LOGGER = logging.getLogger(__name__)
-
-PROVIDERS = {
-    'CSV': 'pygeoapi.provider.csv_.CSVProvider',
-    'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',
-    'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-    'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
-    'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
-    'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider'
-}
-
-
-def load_provider(provider_def):
-    """
-    loads provider by name
-
-    :param provider_def: provider definition
-
-    :returns: provider object
-    """
-
-    LOGGER.debug('Providers: {}'.format(PROVIDERS))
-
-    pname = provider_def['name']
-
-    if '.' not in pname and pname not in PROVIDERS.keys():
-        msg = 'Provider {} not found'.format(pname)
-        LOGGER.exception(msg)
-        raise InvalidProviderError(msg)
-
-    if '.' in pname:  # dotted path
-        packagename, classname = pname.rsplit('.', 1)
-    else:  # core provider
-        packagename, classname = PROVIDERS[pname].rsplit('.', 1)
-
-    LOGGER.debug('package name: {}'.format(packagename))
-    LOGGER.debug('class name: {}'.format(classname))
-
-    module = importlib.import_module(packagename)
-    class_ = getattr(module, classname)
-    provider = class_(provider_def)
-    return provider
-
-
-class InvalidProviderError(Exception):
-    """invalid provider"""
-    pass
