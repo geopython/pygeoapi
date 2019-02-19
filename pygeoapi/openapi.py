@@ -199,27 +199,13 @@ def get_oas_30(cfg):
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)
-
-            if v2['type'] == 'date':
-                schema = {
-                    'type': 'string',
-                    'format': 'date'
-                }
-            elif v2['type'] == 'float':
-                schema = {
-                    'type': 'number',
-                    'format': 'float'
-                }
-            else:
-                schema = {
-                    'type': v2['type']
-                }
-
             paths['{}'.format(path_)]['get']['parameters'].append({
                 'name': k2,
                 'in': 'query',
                 'required': False,
-                'schema': schema,
+                'schema': {
+                    'type': v2['type'],
+                },
                 'style': 'form',
                 'explode': False
             })
