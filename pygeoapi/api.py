@@ -37,7 +37,7 @@ from jinja2 import Environment, FileSystemLoader
 from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.provider import load_provider
-from pygeoapi.formatters import FORMATTERS, load_formatter
+from pygeoapi.formatter import FORMATTERS, load_formatter
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)

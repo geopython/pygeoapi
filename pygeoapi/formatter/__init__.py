@@ -33,7 +33,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 FORMATTERS = {
-    'CSV': 'pygeoapi.formatters.csv_.CSVFormatter',
+    'CSV': 'pygeoapi.formatter.csv_.CSVFormatter',
 }
 
 
