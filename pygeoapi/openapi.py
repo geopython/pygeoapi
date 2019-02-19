@@ -33,7 +33,6 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.provider import PROVIDERS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -196,7 +195,7 @@ def get_oas_30(cfg):
             }
         }
 
-        p = load_plugin(cfg['datasets'][k]['provider'], PROVIDERS)
+        p = load_plugin('provider', cfg['datasets'][k]['provider'])
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)

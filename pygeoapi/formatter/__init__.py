@@ -26,11 +26,3 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-
-import logging
-
-LOGGER = logging.getLogger(__name__)
-
-FORMATTERS = {
-    'CSV': 'pygeoapi.formatter.csv_.CSVFormatter',
-}

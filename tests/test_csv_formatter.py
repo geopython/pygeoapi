@@ -59,7 +59,7 @@ def fixture():
 
 
 def test_csv_formatter(fixture):
-    f = CSVFormatter(geom=True)
+    f = CSVFormatter({'geom': True})
     f_csv = f.write(data=fixture)
 
     buffer = io.StringIO(f_csv.decode('utf-8'))

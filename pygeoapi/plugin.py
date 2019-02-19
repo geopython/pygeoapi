@@ -32,18 +32,39 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+PLUGINS = {
+    'provider': {
+        'CSV': 'pygeoapi.provider.csv_.CSVProvider',
+        'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',  # noqa
+        'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
+        'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
+        'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
+        'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider'
+    },
+    'formatter': {
+        'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
+    }
+}
 
-def load_plugin(plugin_def, plugin_list):
+
+def load_plugin(plugin_type, plugin_def):
     """
     loads plugin by name
 
+    :param plugin_type: type of plugin (provider, formatter)
     :param plugin_def: plugin definition
-    :param plugin_list: list of plugin registry
 
     :returns: plugin object
     """
 
     name = plugin_def['name']
+
+    if plugin_type not in PLUGINS.keys():
+        msg = 'Plugin type {} not found'.format(plugin_type)
+        LOGGER.exception(msg)
+        raise InvalidPluginError(msg)
+
+    plugin_list = PLUGINS[plugin_type]
 
     LOGGER.debug('Plugins: {}'.format(plugin_list))
 
