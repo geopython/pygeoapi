@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -59,7 +59,7 @@ def fixture():
 
 
 def test_csv_formatter(fixture):
-    f = CSVFormatter(geom=True)
+    f = CSVFormatter({'geom': True})
     f_csv = f.write(data=fixture)
 
     buffer = io.StringIO(f_csv.decode('utf-8'))

@@ -40,16 +40,20 @@ LOGGER = logging.getLogger(__name__)
 class CSVFormatter(BaseFormatter):
     """CSV formatter"""
 
-    def __init__(self, geom=False):
+    def __init__(self, formatter_def):
         """
         Initialize object
 
-        :param geom: whether to emit geometry (default False)
+        :param formatter_def: formatter definition
 
         :returns: pygeoapi.formatter.csv_.CSVFormatter
         """
 
-        BaseFormatter.__init__(self, 'csv', geom)
+        geom = False
+        if 'geom' in formatter_def:
+            geom = formatter_def['geom']
+
+        BaseFormatter.__init__(self, {'name': 'csv', 'geom': geom})
         self.mimetype = 'text/csv'
 
     def write(self, options={}, data=None):

@@ -31,8 +31,8 @@ import sqlite3
 import logging
 import os
 import json
+from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
-from pygeoapi.provider import InvalidProviderError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ class GeoPackageProvider(BaseProvider):
         if (os.path.exists(self.data)):
             conn = sqlite3.connect(self.data)
         else:
-            raise InvalidProviderError
+            raise InvalidPluginError
 
         try:
             conn.enable_load_extension(True)
@@ -145,15 +145,15 @@ class GeoPackageProvider(BaseProvider):
             else:
                 LOGGER.info("SELECT AutoGPKGStart() returned 0." +
                             "Likely that this is not a GeoPackage")
-                raise InvalidProviderError
-        except InvalidProviderError:
+                raise InvalidPluginError
+        except InvalidPluginError:
             raise
 
         cursor.execute("PRAGMA table_info({})".format(self.view))
         result = cursor.fetchall()
         try:
             # TODO: Better exceptions declaring
-            # InvalidProviderError as Parent class
+            # InvalidPluginError as Parent class
             assert len(result), "Table not found"
             assert len([item for item in result
                         if self.id_field in item]), "id_field not present"
@@ -162,7 +162,7 @@ class GeoPackageProvider(BaseProvider):
             assert len([item for item in result
                         if 'geom' in item]), "geom column not found"
 
-        except InvalidProviderError:
+        except InvalidPluginError:
             raise
 
         self.columns = [item[1] for item in result if item[1] != 'geom']
