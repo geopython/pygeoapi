@@ -186,6 +186,76 @@ class API(object):
 
         return headers_, 200, json.dumps(conformance)
 
+    def describe_processes(self, headers, args, process=None):
+        """
+        Provide processes metadata
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        if process is not None:
+            if process not in self.config['processes'].keys():
+                exception = {
+                    'code': 'NotFound',
+                    'description': 'identifier not found'
+                }
+                LOGGER.error(exception)
+                return headers_, 404, json.dumps(exception)
+
+            processes = self.config['processes'][process].copy()
+            processes.pop('processor')
+        else:
+            processes = self.config['processes'].copy()
+
+        response = {
+            'processes': processes
+        }
+
+        return headers_, 200, json.dumps(response)
+
+    def execute_process(self, headers, args, data, process):
+        """
+        Execute process
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param data: process data
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        if not data:
+            exception = {
+                'code': 'MissingParameterValue',
+                'description': 'missing request data'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if process not in self.config['processes'].keys():
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+
+        p = load_plugin('process',
+                        self.config['processes'][process]['processor'])
+
+        response = p.execute(data)
+
+        return headers_, 201, json.dumps(response)
+
     def describe_collections(self, headers, args, dataset=None):
         """
         Provide feature collection metadata

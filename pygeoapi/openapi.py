@@ -249,6 +249,87 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+    paths['/processes'] = {
+        'get': {
+            'summary': 'Processes',
+            'description': 'Processes',
+            'tags': ['server'],
+            'responses': {
+                200: {
+                    'description': 'successful operation'
+                }
+            }
+        }
+    }
+
+# BEGIN
+    LOGGER.debug('setting up processes')
+    for k, v in cfg['processes'].items():
+        process_name_path = '/processes/{}'.format(k)
+        tag = {
+            'name': k,
+            'description': v['description'],
+            'externalDocs': {}
+        }
+        for link in v['links']:
+            if link['type'] == 'information':
+                tag['externalDocs']['description'] = link['type']
+                tag['externalDocs']['url'] = link['url']
+                break
+        if len(tag['externalDocs']) == 0:
+            del tag['externalDocs']
+
+        oas['tags'].append(tag)
+
+        paths[process_name_path] = {
+            'get': {
+                'summary': 'Get process metadata'.format(v['title']),  # noqa
+                'description': v['description'],
+                'tags': [k],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    }
+                }
+            },
+            'post': {
+                'summary': 'Process {} execution'.format(v['title']),
+                'description': v['description'],
+                'tags': [k],
+                'parameters': [],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    }
+                }
+            }
+        }
+        for k2, v2 in v['inputs'].items():
+            paths[process_name_path]['post']['parameters'].append({
+                'name': k2,
+                'in': 'body',
+                'description': v2['description'],
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+#                'style': 'form',
+#                'explode': False
+            })
+
     oas['paths'] = paths
 
     oas['components'] = {

@@ -120,6 +120,24 @@ def dataset(feature_collection, feature=None):
     return response
 
 
+@APP.route('/processes')
+@APP.route('/processes/<name>', methods=['GET', 'POST'])
+def describe_processes(name=None):
+    if request.method == 'GET':
+        headers, status_code, content = api_.describe_processes(
+            request.headers, request.args, name)
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.args, request.data, name)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
