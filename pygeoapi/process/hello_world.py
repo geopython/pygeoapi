@@ -34,7 +34,33 @@ from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
-__version__ = '0.1.0'
+PROCESS_METADATA = {
+    'version': '0.1.0',
+    'name': 'hello-world',
+    'title': 'Hello World process',
+    'description': 'Hello World process',
+    'keywords': ['hello world'],
+    'links': [{
+        'type': 'text/html',
+        'rel': 'canonical',
+        'title': 'information',
+        'href': 'https://example.org/process',
+        'hreflang': 'en-US'
+    }],
+    'inputs': {
+        'name': {
+            'title': 'name',
+            'description': 'name'
+        }
+    },
+    'outputs': {
+        'hello-world-response': {
+            'title': 'output hello world',
+            'description': 'output hello world',
+            'formats': ['application/json']
+        }
+    }
+}
 
 
 class HelloWorldProcessor(BaseProcessor):
@@ -47,7 +73,7 @@ class HelloWorldProcessor(BaseProcessor):
         :returns: pygeoapi.process.hello_world.HelloWorldProcessor
         """
 
-        BaseProcessor.__init__(self, provider_def, __version__)
+        BaseProcessor.__init__(self, provider_def, PROCESS_METADATA)
 
     def execute(self, data):
         response = {'message': None}

@@ -263,16 +263,17 @@ def get_oas_30(cfg):
         }
     }
 
-# BEGIN
     LOGGER.debug('setting up processes')
     for k, v in cfg['processes'].items():
+        p = load_plugin('process', v['processor'])
+
         process_name_path = '/processes/{}'.format(k)
         tag = {
             'name': k,
-            'description': v['description'],
+            'description': p.metadata['description'],
             'externalDocs': {}
         }
-        for link in v['links']:
+        for link in p.metadata['links']:
             if link['type'] == 'information':
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
@@ -284,8 +285,8 @@ def get_oas_30(cfg):
 
         paths[process_name_path] = {
             'get': {
-                'summary': 'Get process metadata'.format(v['title']),  # noqa
-                'description': v['description'],
+                'summary': 'Get process metadata'.format(p.metadata['title']),
+                'description': p.metadata['description'],
                 'tags': [k],
                 'responses': {
                     200: {
@@ -300,8 +301,8 @@ def get_oas_30(cfg):
                 }
             },
             'post': {
-                'summary': 'Process {} execution'.format(v['title']),
-                'description': v['description'],
+                'summary': 'Process {} execution'.format(p.metadata['title']),
+                'description': p.metadata['description'],
                 'tags': [k],
                 'parameters': [],
                 'responses': {
@@ -317,7 +318,7 @@ def get_oas_30(cfg):
                 }
             }
         }
-        for k2, v2 in v['inputs'].items():
+        for k2, v2 in p.metadata['inputs'].items():
             paths[process_name_path]['post']['parameters'].append({
                 'name': k2,
                 'in': 'body',
@@ -325,9 +326,7 @@ def get_oas_30(cfg):
                 'required': True,
                 'schema': {
                     'type': 'string'
-                },
-#                'style': 'form',
-#                'explode': False
+                }
             })
 
     oas['paths'] = paths

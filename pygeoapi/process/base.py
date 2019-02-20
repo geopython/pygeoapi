@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseProcessor(object):
     """generic Processor ABC"""
 
-    def __init__(self, processor_def, version):
+    def __init__(self, processor_def, process_metadata):
         """
         Initialize object
         :param processor_def: processor definition
@@ -43,12 +43,12 @@ class BaseProcessor(object):
         """
 
         self.name = processor_def['name']
-        self.version = version
+        self.metadata = process_metadata
 
     def execute(self):
         """
         execute the process
-        :returns: dict of 0..n GeoJSON features
+        :returns: dict of process response
         """
 
         raise NotImplementedError()

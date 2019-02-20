@@ -199,8 +199,11 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
+        processes_config = self.config['processes']
+        processes = {}
+
         if process is not None:
-            if process not in self.config['processes'].keys():
+            if process not in processes_config.keys():
                 exception = {
                     'code': 'NotFound',
                     'description': 'identifier not found'
@@ -208,10 +211,12 @@ class API(object):
                 LOGGER.error(exception)
                 return headers_, 404, json.dumps(exception)
 
-            processes = self.config['processes'][process].copy()
-            processes.pop('processor')
+            p = load_plugin('process', processes_config[process]['processor'])
+            processes[process] = p.metadata
         else:
-            processes = self.config['processes'].copy()
+            for k, v in processes_config.items():
+                p = load_plugin('process', processes_config[k]['processor'])
+                processes[k] = p.metadata
 
         response = {
             'processes': processes

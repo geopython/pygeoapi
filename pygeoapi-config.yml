@@ -228,25 +228,5 @@ datasets:
 
 processes:
     hello-world:
-        title: Hello World process
-        description: Hello World process
-        keywords:
-            - hello world
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://example.org/process
-              hreflang: en-US
-        inputs:
-            - name:
-                title: name
-                description: name
-        outputs:
-            - hello-world-response:
-                title: output hello world
-                description: output hello world
-                formats:
-                    - application/json
         processor:
             name: HelloWorld
