@@ -45,7 +45,7 @@ TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
 HEADERS = {
-    'Content-type': 'application/json',
+    'Content-Type': 'application/json',
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
@@ -124,7 +124,7 @@ class API(object):
         ]
 
         if format_ == 'html':  # render
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
 
@@ -142,7 +142,7 @@ class API(object):
         """
 
         headers_ = HEADERS.copy()
-        headers_['Content-type'] = 'application/openapi+json;version=3.0'
+        headers_['Content-Type'] = 'application/openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
 
@@ -179,7 +179,7 @@ class API(object):
         }
 
         if format_ == 'html':  # render
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'conformance.html',
                                           conformance)
             return headers_, 200, content
@@ -192,6 +192,7 @@ class API(object):
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
+        :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
@@ -253,7 +254,7 @@ class API(object):
             fcm['collections'].append(collection)
 
         if format_ == 'html':  # render
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             if dataset is not None:
                 content = _render_j2_template(self.config, 'collection.html',
                                               fcm)
@@ -442,7 +443,7 @@ class API(object):
         content['timeStamp'] = datetime.utcnow().isoformat()
 
         if format_ == 'html':  # render
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'items.html',
                                           content)
             return headers_, 200, content
@@ -457,7 +458,7 @@ class API(object):
                 }
             )
 
-            headers_['Content-type'] = '{}; charset={}'.format(
+            headers_['Content-Type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
 
             cd = 'attachment; filename="{}.csv"'.format(dataset)
@@ -531,7 +532,7 @@ class API(object):
         ]
 
         if format_ == 'html':  # render
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'item.html',
                                           content)
             return headers_, 200, content

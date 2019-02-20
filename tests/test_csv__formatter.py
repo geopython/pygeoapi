@@ -58,7 +58,7 @@ def fixture():
     return data
 
 
-def test_csv_formatter(fixture):
+def test_csv__formatter(fixture):
     f = CSVFormatter({'geom': True})
     f_csv = f.write(data=fixture)
 
