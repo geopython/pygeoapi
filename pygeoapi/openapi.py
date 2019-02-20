@@ -49,7 +49,7 @@ def get_oas_30(cfg):
     paths = {}
     LOGGER.debug('setting up server info')
     oas = {
-        'openapi': '3.0.1',
+        'openapi': '3.0.2',
         'tags': []
     }
     info = {
@@ -67,7 +67,7 @@ def get_oas_30(cfg):
             'name': cfg['metadata']['license']['name'],
             'url': cfg['metadata']['license']['url']
         },
-        'version': '3.0.1'
+        'version': '3.0.2'
     }
     oas['info'] = info
 
@@ -179,7 +179,10 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/limit'}
+                    {'$ref': '#/components/parameters/f'},
+                    {'$ref': '#/components/parameters/limit'},
+                    {'$ref': '#/components/parameters/sortby'},
+                    {'$ref': '#/components/parameters/startindex'}
                 ],
                 'responses': {
                     200: {
@@ -230,7 +233,8 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/id'}
+                    {'$ref': '#/components/parameters/id'},
+                    {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
                     200: {
@@ -258,6 +262,19 @@ def get_oas_30(cfg):
                     'type': 'string'
                 }
             },
+            'f': {
+                'name': 'f',
+                'in': 'query',
+                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                    'enum': ['GeoJSON', 'CSV'],
+                    'default': 'GeoJSON'
+                },
+                'style': 'form',
+                'explode': False
+            },
             'limit': {
                 'name': 'limit',
                 'in': 'query',
@@ -268,6 +285,30 @@ def get_oas_30(cfg):
                     'minimum': 1,
                     'maximum': 10000,
                     'default': cfg['server']['limit']
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'sortby': {
+                'name': 'sortby',
+                'in': 'query',
+                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'startindex': {
+                'name': 'startindex',
+                'in': 'query',
+                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'default': 0
                 },
                 'style': 'form',
                 'explode': False
