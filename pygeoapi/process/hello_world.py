@@ -83,4 +83,4 @@ class HelloWorldProcessor(BaseProcessor):
         return response
 
     def __repr__(self):
-        return '<HelloWorldProcessor>'.format(self.data)
+        return '<HelloWorldProcessor> {}'.format(self.name)
