@@ -299,6 +299,18 @@ def get_oas_30(cfg):
                         'description': 'not found'
                     }
                 }
+            }
+        }
+        paths['{}/jobs'.format(process_name_path)] = {
+            'get': {
+                'summary': 'Retrieve job list for process',
+                'description': p.metadata['description'],
+                'tags': [k],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    }
+                }
             },
             'post': {
                 'summary': 'Process {} execution'.format(p.metadata['title']),
@@ -314,20 +326,21 @@ def get_oas_30(cfg):
                     },
                     404: {
                         'description': 'not found'
+                    },
+                },
+                'requestBody': {
+                    'description': 'Mandatory execute request JSON',
+                    'required': True,
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': 'execute.yaml'
+                            }
+                        }
                     }
                 }
             }
         }
-        for k2, v2 in p.metadata['inputs'].items():
-            paths[process_name_path]['post']['parameters'].append({
-                'name': k2,
-                'in': 'body',
-                'description': v2['description'],
-                'required': True,
-                'schema': {
-                    'type': 'string'
-                }
-            })
 
     oas['paths'] = paths
 

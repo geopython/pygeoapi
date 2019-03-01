@@ -121,11 +121,23 @@ def dataset(feature_collection, feature=None):
 
 
 @APP.route('/processes')
-@APP.route('/processes/<name>', methods=['GET', 'POST'])
+@APP.route('/processes/<name>')
 def describe_processes(name=None):
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.args, name)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
+def execute_process(name=None):
     if request.method == 'GET':
-        headers, status_code, content = api_.describe_processes(
-            request.headers, request.args, name)
+        headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
         headers, status_code, content = api_.execute_process(
             request.headers, request.args, request.data, name)
