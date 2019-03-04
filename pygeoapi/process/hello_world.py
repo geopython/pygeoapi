@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import json
 import logging
 
 from pygeoapi.process.base import BaseProcessor
@@ -36,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'name': 'hello-world',
+    'id': 'hello-world',
     'title': 'Hello World process',
     'description': 'Hello World process',
     'keywords': ['hello world'],
@@ -47,19 +46,29 @@ PROCESS_METADATA = {
         'href': 'https://example.org/process',
         'hreflang': 'en-US'
     }],
-    'inputs': {
-        'name': {
-            'title': 'name',
-            'description': 'name'
+    'inputs': [{
+        'id': 'name',
+        'title': 'name',
+        'input': {
+          'literalDataDomain': {
+            'dataType': 'string',
+            'valueDefinition': {
+              'anyValue': True
+            }
+          }
+        },
+        'minOccurs': 1,
+        'maxOccurs': 1
+    }],
+    'outputs': [{
+        'id': 'hello-world-response',
+        'title': 'output hello world',
+        'input': {
+            'formats': [{
+                'mimeType': 'application/json'
+            }]
         }
-    },
-    'outputs': {
-        'hello-world-response': {
-            'title': 'output hello world',
-            'description': 'output hello world',
-            'formats': ['application/json']
-        }
-    }
+    }]
 }
 
 
@@ -76,11 +85,12 @@ class HelloWorldProcessor(BaseProcessor):
         BaseProcessor.__init__(self, provider_def, PROCESS_METADATA)
 
     def execute(self, data):
-        response = {'message': None}
-        data_ = json.loads(data)
-        response['message'] = data_['inputs']['data']['name']
+        outputs = [{
+            'id': 'name',
+            'value': data['name']
+        }]
 
-        return response
+        return outputs
 
     def __repr__(self):
         return '<HelloWorldProcessor> {}'.format(self.name)
