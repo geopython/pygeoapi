@@ -191,8 +191,47 @@ def test_get_features(config, api_):
     assert len(features['features']) == 3
     assert features['features'][1]['properties']['stn_id'] == '2147'
 
+    headers_, code, response = api_.get_features(
+        headers, {'sortby': 'stn_id', 'stn_id': '35'}, 'obs')
+
+    assert code == 400
+
+    headers_, code, response = api_.get_features(
+        headers, {'sortby': 'stn_id:FOO', 'stn_id': '35', 'value': '89.9'},
+        'obs')
+
+    assert code == 400
+
+    headers_, code, response = api_.get_features(
+        headers, {'sortby': 'stn_id:A'}, 'obs')
+
+    assert features['features'][1]['properties']['stn_id'] == '2147'
+
+    headers_, code, response = api_.get_features(
+        headers, {'f': 'csv'}, 'obs')
+
+    assert headers_['Content-Type'] == 'text/csv; charset=utf-8'
+
 
 def test_get_feature(config, api_):
+    headers_, code, response = api_.get_feature(
+        headers, {'f': 'foo'}, 'obs', '371')
+
+    assert code == 400
+
+    headers_, code, response = api_.get_feature(headers, {}, 'foo', '371')
+
+    assert code == 400
+
+    headers_, code, response = api_.get_feature(headers, {}, 'obs', 'notfound')
+
+    assert code == 404
+
+    headers_, code, response = api_.get_feature(
+        headers, {'f': 'html'}, 'obs', '371')
+
+    assert headers_['Content-Type'] == 'text/html'
+
     headers_, code, response = api_.get_feature(headers, {}, 'obs', '371')
     features = json.loads(response)
 
@@ -231,6 +270,11 @@ def test_execute_process(config, api_):
             'value': 'test'
         }]
     }
+
+    headers_, code, response = api_.execute_process(
+        headers, {}, '', 'hello-world')
+    response = json.loads(response)
+    assert code == 400
 
     headers_, code, response = api_.execute_process(
         headers, {}, json.dumps(request), 'foo')
