@@ -77,7 +77,7 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             if resulttype == 'hits':
-                LOGGER('Returning hits only')
+                LOGGER.debug('Returning hits only')
                 feature_collection['numberMatched'] = len(list(data_))
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
