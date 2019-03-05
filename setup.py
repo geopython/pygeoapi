@@ -31,7 +31,47 @@ import io
 import os
 import re
 from setuptools import Command, find_packages, setup
+import shutil
 import sys
+
+
+class PyCleanBuild(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        remove_files = [
+            'debian/files',
+            'debian/python-pygeoapi.debhelper.log',
+            'debian/python-pygeoapi.postinst.debhelper',
+            'debian/python-pygeoapi.prerm.debhelper',
+            'debian/python-pygeoapi.substvars'
+        ]
+
+        remove_dirs = [
+            'debian/python-pygeoapi'
+        ]
+
+        for file_ in remove_files:
+            try:
+                os.remove(file_)
+            except OSError:
+                pass
+
+        for dir_ in remove_dirs:
+            try:
+                shutil.rmtree(dir_)
+            except OSError:
+                pass
+
+        for file_ in os.listdir('..'):
+            if file_.endswith(('.deb', '.build', '.changes')):
+                os.remove('../{}'.format(file_))
 
 
 class PyTest(Command):
@@ -134,5 +174,9 @@ setup(
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: GIS'
     ],
-    cmdclass={'test': PyTest, 'coverage': PyTest}
+    cmdclass={
+        'test': PyTest,
+        'coverage': PyCoverage,
+        'cleanbuild': PyCleanBuild
+    }
 )
