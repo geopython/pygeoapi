@@ -1,0 +1,232 @@
+components:
+  parameters:
+    f:
+      description: The optional f parameter indicates the output format which the
+        server shall provide as part of the response document.  The default format
+        is GeoJSON.
+      explode: false
+      in: query
+      name: f
+      required: false
+      schema:
+        default: GeoJSON
+        enum:
+        - GeoJSON
+        - CSV
+        type: string
+      style: form
+    id:
+      description: The id of a feature
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    limit:
+      description: The optional limit parameter limits the number of items that are
+        presented in the response document. Only items are counted that are on the
+        first level of the collection in the response document. Nested objects contained
+        within the explicitly requested items shall not be counted. Minimum = 1. Maximum
+        = 10000. Default = 10.
+      explode: false
+      in: query
+      name: limit
+      required: false
+      schema:
+        default: 10
+        maximum: 10000
+        minimum: 1
+        type: integer
+      style: form
+    sortby:
+      description: The optional sortby parameter indicates the sort property and order
+        on which the server shall present results in the response document using the
+        convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and
+        `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple
+        properties is supported by providing a comma-separated list.
+      explode: false
+      in: query
+      name: sortby
+      required: false
+      schema:
+        type: string
+      style: form
+    startindex:
+      description: The optional startindex parameter indicates the index within the
+        result set from which the server shall begin presenting results in the response
+        document.  The first element has an index of 0 (default).
+      explode: false
+      in: query
+      name: startindex
+      required: false
+      schema:
+        default: 0
+        minimum: 0
+        type: integer
+      style: form
+info:
+  contact:
+    email: you@example.org
+    name: Organization Name
+    url: https://github.com/geopython/pygeoapi
+  description: pygeoapi provides an API to geospatial data
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  termsOfService: None
+  title: pygeoapi default instance
+  version: 3.0.2
+  x-keywords:
+  - geospatial
+  - data
+  - api
+openapi: 3.0.2
+paths:
+  /:
+    get:
+      description: API
+      responses:
+        200:
+          description: successful operation
+      summary: API
+      tags:
+      - server
+  /api:
+    get:
+      description: This document
+      responses:
+        200:
+          description: successful operation
+      summary: This document
+      tags:
+      - server
+  /collections:
+    get:
+      description: Feature Collections
+      responses:
+        200:
+          description: successful operation
+      summary: Feature Collections
+      tags:
+      - server
+  /collections/obs:
+    get:
+      description: Observations
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get feature collection metadata
+      tags:
+      - obs
+  /collections/obs/items:
+    get:
+      description: Observations
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sortby'
+      - $ref: '#/components/parameters/startindex'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Observations features
+      tags:
+      - obs
+  /collections/obs/items/{id}:
+    get:
+      description: Observations
+      parameters:
+      - $ref: '#/components/parameters/id'
+      - $ref: '#/components/parameters/f'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get Observations feature by ID
+      tags:
+      - obs
+  /conformance:
+    get:
+      description: API conformance definition
+      responses:
+        200:
+          description: successful operation
+      summary: API conformance definition
+      tags:
+      - server
+  /processes:
+    get:
+      description: Processes
+      responses:
+        200:
+          description: successful operation
+      summary: Processes
+      tags:
+      - server
+  /processes/hello-world:
+    get:
+      description: Hello World process
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Get process metadata
+      tags:
+      - hello-world
+  /processes/hello-world/jobs:
+    get:
+      description: Hello World process
+      responses:
+        200:
+          description: successful operation
+      summary: Retrieve job list for process
+      tags:
+      - hello-world
+    post:
+      description: Hello World process
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: execute.yaml
+        description: Mandatory execute request JSON
+        required: true
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: Invalid ID supplied
+        404:
+          description: not found
+      summary: Process Hello World process execution
+      tags:
+      - hello-world
+servers:
+- description: pygeoapi provides an API to geospatial data
+  url: http://localhost:5000/
+tags:
+- description: pygeoapi provides an API to geospatial data
+  externalDocs:
+    description: information
+    url: http://example.org
+  name: server
+- description: Observations
+  name: obs
+- description: Hello World process
+  name: hello-world
+
