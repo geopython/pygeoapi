@@ -63,7 +63,7 @@ PROCESS_METADATA = {
     'outputs': [{
         'id': 'hello-world-response',
         'title': 'output hello world',
-        'input': {
+        'output': {
             'formats': [{
                 'mimeType': 'application/json'
             }]
