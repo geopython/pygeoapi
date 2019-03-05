@@ -225,3 +225,8 @@ datasets:
                 schema: public
             id_field: osm_id
             table: hotosm_bdi_waterways
+
+processes:
+    hello-world:
+        processor:
+            name: HelloWorld

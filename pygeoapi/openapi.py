@@ -249,6 +249,99 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+    paths['/processes'] = {
+        'get': {
+            'summary': 'Processes',
+            'description': 'Processes',
+            'tags': ['server'],
+            'responses': {
+                200: {
+                    'description': 'successful operation'
+                }
+            }
+        }
+    }
+
+    LOGGER.debug('setting up processes')
+    for k, v in cfg['processes'].items():
+        p = load_plugin('process', v['processor'])
+
+        process_name_path = '/processes/{}'.format(k)
+        tag = {
+            'name': k,
+            'description': p.metadata['description'],
+            'externalDocs': {}
+        }
+        for link in p.metadata['links']:
+            if link['type'] == 'information':
+                tag['externalDocs']['description'] = link['type']
+                tag['externalDocs']['url'] = link['url']
+                break
+        if len(tag['externalDocs']) == 0:
+            del tag['externalDocs']
+
+        oas['tags'].append(tag)
+
+        paths[process_name_path] = {
+            'get': {
+                'summary': 'Get process metadata'.format(p.metadata['title']),
+                'description': p.metadata['description'],
+                'tags': [k],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    }
+                }
+            }
+        }
+        paths['{}/jobs'.format(process_name_path)] = {
+            'get': {
+                'summary': 'Retrieve job list for process',
+                'description': p.metadata['description'],
+                'tags': [k],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    }
+                }
+            },
+            'post': {
+                'summary': 'Process {} execution'.format(p.metadata['title']),
+                'description': p.metadata['description'],
+                'tags': [k],
+                'parameters': [],
+                'responses': {
+                    200: {
+                        'description': 'successful operation'
+                    },
+                    400: {
+                        'description': 'Invalid ID supplied'
+                    },
+                    404: {
+                        'description': 'not found'
+                    },
+                },
+                'requestBody': {
+                    'description': 'Mandatory execute request JSON',
+                    'required': True,
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': 'execute.yaml'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     oas['paths'] = paths
 
     oas['components'] = {

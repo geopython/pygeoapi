@@ -43,6 +43,9 @@ PLUGINS = {
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
+    },
+    'process': {
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
     }
 }
 

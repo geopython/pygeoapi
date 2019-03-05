@@ -539,6 +539,93 @@ class API(object):
 
         return headers_, 200, json.dumps(content)
 
+    def describe_processes(self, headers, args, process=None):
+        """
+        Provide processes metadata
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        processes_config = self.config['processes']
+
+        if process is not None:
+            if process not in processes_config.keys():
+                exception = {
+                    'code': 'NotFound',
+                    'description': 'identifier not found'
+                }
+                LOGGER.error(exception)
+                return headers_, 404, json.dumps(exception)
+
+            p = load_plugin('process', processes_config[process]['processor'])
+            p.metadata['jobControlOptions'] = ['sync-execute']
+            p.metadata['outputTransmission'] = ['value']
+            response = p.metadata
+        else:
+            processes = []
+            for k, v in processes_config.items():
+                p = load_plugin('process', processes_config[k]['processor'])
+                p.metadata['jobControlOptions'] = ['sync-execute']
+                p.metadata['outputTransmission'] = ['value']
+                processes.append(p.metadata)
+            response = {
+                'processes': processes
+            }
+
+        return headers_, 200, json.dumps(response)
+
+    def execute_process(self, headers, args, data, process):
+        """
+        Execute process
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param data: process data
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        data_dict = {}
+        response = {}
+
+        if not data:
+            exception = {
+                'code': 'MissingParameterValue',
+                'description': 'missing request data'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if process not in self.config['processes'].keys():
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+
+        p = load_plugin('process',
+                        self.config['processes'][process]['processor'])
+
+        data_ = json.loads(data)
+        for input_ in data_['inputs']:
+            data_dict[input_['id']] = input_['value']
+
+        outputs = p.execute(data_dict)
+
+        response['outputs'] = outputs
+
+        return headers_, 201, json.dumps(response)
+
 
 def to_json(dict_):
     """
