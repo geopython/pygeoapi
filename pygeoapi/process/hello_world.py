@@ -50,12 +50,12 @@ PROCESS_METADATA = {
         'id': 'name',
         'title': 'name',
         'input': {
-          'literalDataDomain': {
-            'dataType': 'string',
-            'valueDefinition': {
-              'anyValue': True
+            'literalDataDomain': {
+                'dataType': 'string',
+                'valueDefinition': {
+                    'anyValue': True
+                }
             }
-          }
         },
         'minOccurs': 1,
         'maxOccurs': 1
