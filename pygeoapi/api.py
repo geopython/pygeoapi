@@ -37,6 +37,7 @@ from jinja2 import Environment, FileSystemLoader
 from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.process.base import ProcessorExecuteError
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
@@ -620,11 +621,17 @@ class API(object):
         for input_ in data_['inputs']:
             data_dict[input_['id']] = input_['value']
 
-        outputs = p.execute(data_dict)
-
-        response['outputs'] = outputs
-
-        return headers_, 201, json.dumps(response)
+        try:
+            outputs = p.execute(data_dict)
+            response['outputs'] = outputs
+            return headers_, 201, json.dumps(response)
+        except ProcessorExecuteError as err:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': str(err)
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
 
 def to_json(dict_):
