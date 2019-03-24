@@ -33,7 +33,7 @@ import os
 import pytest
 import yaml
 
-from pygeoapi.api import API
+from pygeoapi.api import API, check_format
 
 
 def get_test_file_path(filename):
@@ -69,7 +69,7 @@ def api_(config):
     return API(config)
 
 
-def test_api(config, api_, openapi):
+def test_api(config, api_, openapi, headers):
     assert api_.config == config
     assert isinstance(api_.config, dict)
 
@@ -80,12 +80,12 @@ def test_api(config, api_, openapi):
     assert isinstance(root, dict)
 
 
-def test_api_exception(config, api_):
+def test_api_exception(config, api_, headers):
     headers_, code, response = api_.root(headers, {'f': 'foo'})
     assert code == 400
 
 
-def test_root(config, api_):
+def test_root(config, api_, headers):
     headers_, code, response = api_.root(headers, {})
     root = json.loads(response)
 
@@ -100,7 +100,7 @@ def test_root(config, api_):
     assert headers_['Content-Type'] == 'text/html'
 
 
-def test_api_conformance(config, api_):
+def test_api_conformance(config, api_, headers):
     headers_, code, response = api_.api_conformance(headers, {})
     root = json.loads(response)
 
@@ -115,7 +115,7 @@ def test_api_conformance(config, api_):
     assert headers_['Content-Type'] == 'text/html'
 
 
-def test_describe_collections(config, api_):
+def test_describe_collections(config, api_, headers):
     headers_, code, response = api_.describe_collections(headers, {'f': 'foo'})
     assert code == 400
 
@@ -146,7 +146,7 @@ def test_describe_collections(config, api_):
     assert headers_['Content-Type'] == 'text/html'
 
 
-def test_get_features(config, api_):
+def test_get_features(config, api_, headers):
     headers_, code, response = api_.get_features(headers, {}, 'foo')
     features = json.loads(response)
 
@@ -213,7 +213,7 @@ def test_get_features(config, api_):
     assert headers_['Content-Type'] == 'text/csv; charset=utf-8'
 
 
-def test_get_feature(config, api_):
+def test_get_feature(config, api_, headers):
     headers_, code, response = api_.get_feature(
         headers, {'f': 'foo'}, 'obs', '371')
 
@@ -238,7 +238,7 @@ def test_get_feature(config, api_):
     assert features['properties']['stn_id'] == '35'
 
 
-def test_describe_processes(config, api_):
+def test_describe_processes(config, api_, headers):
     headers_, code, response = api_.describe_processes(headers, {}, 'foo')
     processes = json.loads(response)
 
@@ -263,7 +263,7 @@ def test_describe_processes(config, api_):
     assert len(process['jobControlOptions']) == 1
 
 
-def test_execute_process(config, api_):
+def test_execute_process(config, api_, headers):
     request = {
         'inputs': [{
             'id': 'name',
@@ -287,3 +287,27 @@ def test_execute_process(config, api_):
     response = json.loads(response)
 
     assert response['outputs'][0]['value'] == 'test'
+
+
+def test_check_format(headers):
+    args = {
+        'f': 'html'
+    }
+
+    headers_ = headers.copy()
+
+    assert check_format({}, headers_) is None
+
+    assert check_format(args, headers_) == 'html'
+
+    args['f'] = 'json'
+    assert check_format(args, headers_) == 'json'
+
+    headers_['Accept'] = 'text/html'
+    assert check_format({}, headers_) == 'html'
+
+    headers_['Accept'] = 'application/json'
+    assert check_format({}, headers_) == 'json'
+
+    headers_['accept'] = 'text/html'
+    assert check_format({}, headers_) == 'html'
