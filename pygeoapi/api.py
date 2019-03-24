@@ -49,6 +49,8 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+FORMATS = ['json', 'html']
+
 
 class API(object):
     """API object"""
@@ -82,10 +84,9 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
-        formats = ['json', 'html']
+        format_ = check_format(args, headers)
 
-        format_ = args.get('f')
-        if format_ is not None and format_ not in formats:
+        if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid format'
@@ -158,10 +159,9 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
-        formats = ['json', 'html']
+        format_ = check_format(args, headers)
 
-        format_ = args.get('f')
-        if format_ is not None and format_ not in formats:
+        if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid format'
@@ -199,10 +199,9 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
-        formats = ['json', 'html']
+        format_ = check_format(args, headers)
 
-        format_ = args.get('f')
-        if format_ is not None and format_ not in formats:
+        if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid format'
@@ -282,7 +281,7 @@ class API(object):
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
                                'resulttype', 'time']
-        formats = ['json', 'html']
+        formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
         if dataset not in self.config['datasets'].keys():
@@ -293,7 +292,8 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        format_ = args.get('f')
+        format_ = check_format(args, headers)
+
         if format_ is not None and format_ not in formats:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -482,10 +482,9 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
-        formats = ['json', 'html']
+        format_ = check_format(args, headers)
 
-        format_ = args.get('f')
-        if format_ is not None and format_ not in formats:
+        if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid format'
@@ -631,6 +630,31 @@ class API(object):
             }
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
+
+
+def check_format(args, headers):
+    """
+    check format requested from arguments or headers
+
+    :param args: dict of request keyword value pairs
+    :param headers: dict of request headers
+
+    :returns: format value
+    """
+
+    format_ = args.get('f')
+
+    if 'accept' in headers.keys():
+        format_ = headers['accept']
+    elif 'Accept' in headers.keys():
+        format_ = headers['Accept']
+
+    if format_ == 'text/html':
+        format_ = 'html'
+    elif format_ == 'application/json':
+        format_ = 'json'
+
+    return format_
 
 
 def to_json(dict_):
