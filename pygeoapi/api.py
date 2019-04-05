@@ -642,16 +642,25 @@ def check_format(args, headers):
     :returns: format value
     """
 
+    # Optional f=html or f=json query param
+    # overrides accept
     format_ = args.get('f')
+    if format_:
+        return format_
+
+    # Format not specified: get from accept headers
+    format_ = 'text/html'
 
     if 'accept' in headers.keys():
         format_ = headers['accept']
     elif 'Accept' in headers.keys():
         format_ = headers['Accept']
 
-    if format_ == 'text/html':
+    format_ = format_.split(',')
+
+    if 'text/html' in format_:
         format_ = 'html'
-    elif format_ == 'application/json':
+    elif 'application/json' in format_:
         format_ = 'json'
 
     return format_
