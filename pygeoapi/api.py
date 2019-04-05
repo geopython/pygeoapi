@@ -649,19 +649,21 @@ def check_format(args, headers):
         return format_
 
     # Format not specified: get from accept headers
-    format_ = 'text/html'
-
+    # format_ = 'text/html'
+    headers_ = None
     if 'accept' in headers.keys():
-        format_ = headers['accept']
+        headers_ = headers['accept']
     elif 'Accept' in headers.keys():
-        format_ = headers['Accept']
+        headers_ = headers['Accept']
 
-    format_ = format_.split(',')
+    format_ = None
+    if headers_:
+        headers_ = headers_.split(',')
 
-    if 'text/html' in format_:
-        format_ = 'html'
-    elif 'application/json' in format_:
-        format_ = 'json'
+        if 'text/html' in headers_:
+            format_ = 'html'
+        elif 'application/json' in headers_:
+            format_ = 'json'
 
     return format_
 
