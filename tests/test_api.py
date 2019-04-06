@@ -311,3 +311,11 @@ def test_check_format(headers):
 
     headers_['accept'] = 'text/html'
     assert check_format({}, headers_) == 'html'
+
+    hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
+
+    headers_['Accept'] = hh
+    assert check_format({}, headers_) == 'html'
+
+    headers_['accept'] = hh
+    assert check_format({}, headers_) == 'html'
