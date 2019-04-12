@@ -1,14 +1,91 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} Home {% endblock %}
 {% block body %}
-    <section id="service-metadata">
-      <h2>Service Metadata</h2>
+    <section id="collections">
       <table>
         <tr>
-          <td>Provider</td>
-          <td><a title="{{ config['metadata']['provider']['name'] }}" href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['name'] }}</a></td>
+          <td>Keywords</td>
+          <td itemprop="keywords">
+            {% for v in config['metadata']['identification']['keywords'] %}
+              {{ v }}, {% endfor %}</td>
+        </tr>
+        <tr>
+          <td>Terms of service</td>
+          <td>{{ config['metadata']['identification']['terms_of_service'] }}</td>
+        </tr>
+        <tr>
+          <td>License</td>
+          <td itemprop="license"><a itemscope itemtype="http://schema.org/URL" href="{{ config['metadata']['license']['url'] }}">
+            {{ config['metadata']['license']['name'] }}</a></td>
         </tr>
       </table>
+
+      <h2>Provider</h2>
+      <div itemprop="provider" itemscope itemtype="http://schema.org/Organization">
+        <table>
+        <tr>
+          <td>Organization</td>
+          <td itemprop="name">{{ config['metadata']['provider']['name'] }}</td>
+        </tr>
+        <tr>
+          <td>Url</td>
+          <td><a itemprop="url" href="{{ config['metadata']['provider']['url'] }}">
+              {{ config['metadata']['provider']['url'] }}</a></td>
+        </tr>
+        </table>
+
+        <h3>Contact point</h3>
+        <table itemprop="contactPoint" itemscope itemtype="http://schema.org/Contactpoint">
+          <tr>
+            <td>Email</td>
+            <td itemprop="Email">{{ config['metadata']['contact']['email'] }}</td>
+          </tr>
+          <tr>
+              <td>Telephone</td>
+              <td itemprop="Telephone">{{ config['metadata']['contact']['phone'] }}</td>
+          </tr>
+          <tr>
+              <td>Fax</td>
+              <td itemprop="faxNumber">{{ config['metadata']['contact']['fax'] }}</td>
+          </tr>
+          <tr>
+              <td>Contact url</td>
+              <td itemprop="url">{{ config['metadata']['contact']['url'] }}</td>
+          </tr>
+          <tr>
+              <td>Hours</td>
+              <td itemprop="hoursAvailable">{{ config['metadata']['contact']['hours'] }}</td>
+          </tr>
+          <tr>
+            <td>contactType</td>
+            <td itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</td>  
+          </tr>
+        </table>
+
+        <h3>Address</h3>
+        <table itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+          <tr>
+            <td>Address</td>
+            <td itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</td>
+          </tr>
+          <tr>
+              <td>Postalcode</td>
+              <td itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</td>
+            </tr>
+          <tr>
+            <td>City</td>
+            <td itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</td>
+          </tr>
+          <tr>
+            <td>Region</td>
+            <td itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</td>
+          </tr>
+          <tr>
+              <td>Country</td> 
+              <td itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</td>	
+          </tr>
+        </table>
+      </div>
     </section>
     <section id="conformance">
         <h2><a href="{{ config['server']['url'] }}/conformance?f=html">Conformance</a></h2>

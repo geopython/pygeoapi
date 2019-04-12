@@ -17,8 +17,10 @@
     {% endblock %}
   </head>
   <body>
-    <header>
-      <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}/?f=html">{{ config['metadata']['identification']['title'] }}</a><a title="JSON" href="{{ config['server']['url'] }}/"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
+    <header itemscope itemtype="http://schema.org/DataCatalog" itemref="collections">
+      <meta itemprop="url" content="{{ config['server']['url'] }}" />
+      <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}/?f=html"><span itemprop="name">{{ config['metadata']['identification']['title'] }}</span></a>
+        <a title="JSON" href="{{ config['server']['url'] }}/"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
       <span itemprop="description">{{ config['metadata']['identification']['description'] }}</span>
     </header>
     <hr/>
