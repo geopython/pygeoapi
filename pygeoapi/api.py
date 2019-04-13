@@ -532,12 +532,12 @@ class API(object):
             'rel': 'prev',
             'type': 'application/json',
             'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier ) #todo: getPrevious
+                self.config['server']['url'], dataset, identifier) 
             }, {
             'rel': 'next',
             'type': 'application/json',
             'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier ) #todo: getNext
+                self.config['server']['url'], dataset, identifier)
             }
         ]
 
