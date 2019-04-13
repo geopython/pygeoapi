@@ -433,7 +433,7 @@ class API(object):
                 self.config['server']['url'], dataset, next_)
             }, {
             'type': 'application/json',
-            'title': 'Collection',
+            'title': self.config['datasets'][dataset]['title'],
             'rel': 'collection',
             'href': '{}/collections/{}'.format(
                 self.config['server']['url'], dataset)
@@ -525,8 +525,19 @@ class API(object):
             }, {
             'rel': 'collection',
             'type': 'application/json',
+            'title': self.config['datasets'][dataset]['title'],
             'href': '{}/collections/{}'.format(
                 self.config['server']['url'], dataset)
+            }, {
+            'rel': 'prev',
+            'type': 'application/json',
+            'href': '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier ) #todo: getPrevious
+            }, {
+            'rel': 'next',
+            'type': 'application/json',
+            'href': '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier ) #todo: getNext
             }
         ]
 
