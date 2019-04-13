@@ -7,3 +7,18 @@ header {
 main {
     background-color:white
 }
+
+.crumbs {
+    background-color:rgb(230, 230, 230);
+    padding: 6px;   
+}
+.crumbs a {
+    padding-left:10px;
+    color:black;
+    text-transform: capitalize;
+}
+
+#items-map {
+    width: 100%;
+    height: 400px;
+  }

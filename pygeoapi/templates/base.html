@@ -20,24 +20,35 @@
   </head>
   <body>
     <header class="sticky row">
-      <div class="col-sm col-md-10 col-md-offset-1">
+      <div class="col-sm-12 col-md-10 col-md-offset-1">
       <a role="button" title="{{ config['metadata']['identification']['description'] }}" href="{{ config['server']['url'] }}/?f=html">{{ config['metadata']['identification']['title'] }}</a>
       <a href="#" role="button" style="float:right">Contact</a>
       <a href="#" role="button" style="float:right">About</a>
       </div>
     </header>
+    <div class="sticky row crumbs">
+      <div class="col-sm-12 col-md-10 col-md-offset-1">
+        {% block crumbs %}
+        <a href="{{ config['server']['url'] }}">Home</a>
+        {% endblock %} 
+        <span style="float:right">
+          <a href=".?f=json">JSON</a>
+        </span>
+      </div>
+    </div>
     <main>
     <div class="container">
-        <div class="row cols-sm-12 cols-md-10">
-          <div class="col-md-offset-1">
-            {% block body %}
-            {% endblock %}
+      <div class="row">
+        <div class="col-sm-12 col-md-10 col-md-offset-1">
+          <br/>
+          {% block body %}
+          {% endblock %}
         </div>
       </div>
     </div>
     </main>
     <footer class="row bottom">
-        <div class="col-sm col-md-10 col-md-offset-1">
+        <div class="col-sm-12 col-md-10 col-md-offset-1">
           Powered by <a title="pygeoapi" href="https://github.com/geopython/pygeoapi">pygeoapi</a> {{ version }}
         </div>
     </footer>   
