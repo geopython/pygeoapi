@@ -226,6 +226,52 @@ datasets:
             id_field: osm_id
             table: hotosm_bdi_waterways
 
+    dutch_addresses:
+        title: Dutch Addresses
+        description: All Dutch addresses as derived from the key registry BAG
+        keywords:
+            - Netherlands
+            - Addresses
+            - Europe
+            - Holland
+            - BAG
+        crs:
+            - EPSG:28992
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3a97fbe4-2b0d-4e9c-9644-276883400dd7
+              hreflang: nl-NL
+        extents:
+            spatial:
+                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:http://geodata.nationaalgeoregister.nl/inspireadressen/wfs?
+                source_supports:
+                    paging: True
+                    
+                source_options:
+                    VERSION: 2.0.0
+                    OGR_WFS_PAGING_ALLOWED: YES
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: gml_id
+            layer: inspireadressen:inspireadressen
+
 processes:
     hello-world:
         processor:
