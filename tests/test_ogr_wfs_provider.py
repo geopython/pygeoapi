@@ -13,29 +13,27 @@ LOGGER = logging.getLogger(__name__)
 def config_MapServer_WFS():
     return {
         'name': 'OGR',
-        'data':
-            {
-                'source_type': 'WFS',
-                'source': 'WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?',
-                'source_supports':
-                    {
-                        'paging': True
-                    },
-                'source_options':
-                    {
-                        'VERSION': '2.0.0',
-                        'OGR_WFS_PAGING_ALLOWED': 'YES',
-                        'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
-
-                    },
-                'gdal_ogr_options': {
-
-                    'GDAL_CACHEMAX': '64',
-                    # 'GDAL_HTTP_PROXY': (optional proxy)
-                    # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
-                    'CPL_DEBUG': 'NO'
-                },
+        'data': {
+            'source_type': 'WFS',
+            'source': 'WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?',
+            'source_srs': 'EPSG:28992',
+            'target_srs': 'EPSG:4326',
+            'source_capabilities': {
+                'paging': True
             },
+            'source_options': {
+                'VERSION': '2.0.0',
+                'OGR_WFS_PAGING_ALLOWED': 'YES',
+                'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
+            },
+            'gdal_ogr_options': {
+
+                'GDAL_CACHEMAX': '64',
+                # 'GDAL_HTTP_PROXY': (optional proxy)
+                # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
+                'CPL_DEBUG': 'NO'
+            },
+        },
         'id_field': 'gml_id',
         'layer': 'rdinfo:stations'
     }
@@ -45,32 +43,40 @@ def config_MapServer_WFS():
 def config_GeoServer_WFS():
     return {
         'name': 'OGR',
-        'data':
-            {
-                'source_type': 'WFS',
-                'source': 'WFS:https://geodata.nationaalgeoregister.nl/inspireadressen/wfs?',
-                'source_supports':
-                    {
-                        'paging': True
-                    },
-                'source_options':
-                    {
-                        'VERSION': '2.0.0',
-                        'OGR_WFS_PAGING_ALLOWED': 'YES',
-                        'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
-
-                    },
-                'gdal_ogr_options': {
-
-                    'GDAL_CACHEMAX': '64',
-                    # 'GDAL_HTTP_PROXY': (optional proxy)
-                    # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
-                    'CPL_DEBUG': 'NO'
-                },
+        'data': {
+            'source_type': 'WFS',
+            'source':
+                'WFS:https://geodata.nationaalgeoregister.nl'
+                + '/inspireadressen/wfs?',
+            'source_srs': 'EPSG:28992',
+            'target_srs': 'EPSG:28992',
+            'source_capabilities': {
+                'paging': True
             },
+            'source_options': {
+                'VERSION': '2.0.0',
+                'OGR_WFS_PAGING_ALLOWED': 'YES',
+                'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
+            },
+            'gdal_ogr_options': {
+
+                'GDAL_CACHEMAX': '64',
+                # 'GDAL_HTTP_PROXY': (optional proxy)
+                # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
+                'CPL_DEBUG': 'NO'
+            },
+        },
         'id_field': 'gml_id',
         'layer': 'inspireadressen:inspireadressen'
     }
+
+
+def test_get_fields_gs(config_GeoServer_WFS):
+    """Testing field types"""
+    p = OGRProvider(config_GeoServer_WFS)
+    results = p.get_fields()
+    assert results['straatnaam'] == 'string'
+    assert results['huisnummer'] == 'integer'
 
 
 def test_get_ms(config_MapServer_WFS):
@@ -119,7 +125,10 @@ def test_query_bbox_hits_ms(config_MapServer_WFS):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_MapServer_WFS)
-    feature_collection = p.query(bbox=[120000, 480000, 124000, 487000], resulttype='hits')
+    # feature_collection = p.query(
+    # bbox=[120000, 480000, 124000, 487000], resulttype='hits')
+    feature_collection = p.query(
+        bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='hits')
     assert feature_collection.get('type', None) == "FeatureCollection"
     features = feature_collection.get('features', None)
     assert len(features) is 0
@@ -133,7 +142,11 @@ def test_query_bbox_hits_gs(config_GeoServer_WFS):
     """Testing query for a valid JSON object with geometry, single address"""
 
     p = OGRProvider(config_GeoServer_WFS)
-    feature_collection = p.query(bbox=[180800, 452500, 181200, 452700], resulttype='hits')
+    feature_collection = p.query(
+        bbox=(180800, 452500, 181200, 452700), resulttype='hits')
+    # feature_collection = p.query(bbox=(
+    # 5.763409, 52.060197, 5.769256, 52.061976), resulttype='hits')
+
     assert feature_collection.get('type', None) == "FeatureCollection"
     features = feature_collection.get('features', None)
     assert len(features) is 0
@@ -147,7 +160,10 @@ def test_query_bbox_ms(config_MapServer_WFS):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_MapServer_WFS)
-    feature_collection = p.query(bbox=[120000, 480000, 124000, 487000], resulttype='results')
+    # feature_collection = p.query(
+    # bbox=[120000, 480000, 124000, 487000], resulttype='results')
+    feature_collection = p.query(
+        bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='results')
     assert feature_collection.get('type', None) == "FeatureCollection"
     features = feature_collection.get('features', None)
     assert len(features) > 0
@@ -164,7 +180,10 @@ def test_query_bbox_gs(config_GeoServer_WFS):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_GeoServer_WFS)
-    feature_collection = p.query(bbox=[180800, 452500, 181200, 452700], resulttype='results')
+    feature_collection = p.query(
+        bbox=[180800, 452500, 181200, 452700], resulttype='results')
+    # feature_collection = p.query(
+    # bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
     assert feature_collection.get('type', None) == "FeatureCollection"
     features = feature_collection.get('features', None)
     assert len(features) == 1

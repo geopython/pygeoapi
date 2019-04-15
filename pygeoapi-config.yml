@@ -236,7 +236,7 @@ datasets:
             - Holland
             - BAG
         crs:
-            - EPSG:28992
+            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -252,16 +252,29 @@ datasets:
         provider:
             name: OGR
             data:
+                # Use full OGR Driver name, like 'ESRI Shapefile' or 'GPKG'
                 source_type: WFS
+
+                # Use OGR notation. For WFS, URL must be prefixed with 'WFS:'
                 source: WFS:http://geodata.nationaalgeoregister.nl/inspireadressen/wfs?
-                source_supports:
+
+                # Default SRS of the backend (e.g. WFS)
+                source_srs: EPSG:28992
+
+                # Our WFS3 SRS, yes we may even serve in Source SRS!
+                target_srs: EPSG:4326
+
+                # To be finalized, when more source-types tested.
+                source_capabilities:
                     paging: True
-                    
+
+                # Source-type Driver specific options, here WFS.
                 source_options:
                     VERSION: 2.0.0
                     OGR_WFS_PAGING_ALLOWED: YES
                     OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
 
+                # Generic GDAL/OGR Driver options
                 gdal_ogr_options:
 
                     GDAL_CACHEMAX: 64
@@ -270,6 +283,8 @@ datasets:
                     CPL_DEBUG: NO
 
             id_field: gml_id
+
+            # Omit for one/default Layered sources like Shapefiles.
             layer: inspireadressen:inspireadressen
 
 processes:
