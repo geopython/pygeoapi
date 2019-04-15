@@ -20,8 +20,12 @@
           <h2>Items</h2>
       </div>
 
+    {% if data['features'] %}
     <div class="row">
-        <div class="col-md-6">
+      <div class="col-sm-12 col-md-6">
+        <div id="items-map"></div>
+      </div>  
+      <div class="col-sm-12 col-md-6">
           <table>
             <thead>
             <tr>
@@ -43,17 +47,19 @@
           </tbody>
           </table>  
       </div>
-      <div class="col-md-6">
-        <div id="items-map"></div>
-      </div>
-      </div>
-      <div class="row">
+    </div>
+    {% else %}
+    <div class="row col-sm-12">
+        <p>No items</p>
+    </div>
+    {% endif %}
+    <div class="row">
         <div col-sm-12"> 
         {% for link in data['links'] %}
           {% if link['rel'] == 'prev' %}
-          <a role="button" href="{{ link['href'] }}&f=html">Prev</a>
+          <a role="button" href="{{ link['href'] }}">Prev</a>
           {% elif link['rel'] == 'next' %}
-          <a role="button" href="{{ link['href'] }}&f=html">Next</a>
+          <a role="button" href="{{ link['href'] }}">Next</a>
           {% endif %}
         {% endfor %}
         </div>

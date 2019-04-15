@@ -32,7 +32,7 @@
         <a href="{{ config['server']['url'] }}">Home</a>
         {% endblock %} 
         <span style="float:right">
-          <a href=".?f=json">JSON</a>
+          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
         </span>
       </div>
     </div>

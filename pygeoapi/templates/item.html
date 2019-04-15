@@ -18,13 +18,15 @@
 {% block body %}
     <section id="items">
       <div class="row">
-          <div class="col-sm">
-            <h2>Item {{ data['ID'] }}</h2>
-          </div>
+        <div class="col-sm">
+          <h2>Item {{ data['ID'] }}</h2>
+        </div>
       </div>
       <div class="row">
-        <div class="col-md-6">
-            <h3>Properties</h3>
+        <div class="col-md-6 col-sm-12">
+          <div id="items-map"></div>
+        </div>
+        <div class="col-md-6 col-sm-12">
             <table>
               <thead>
               <tr>
@@ -34,12 +36,12 @@
             </thead>
             <tbody>
               <tr>
-                <th>ID</th>
+                <td>ID</td>
                 <td>{{ data.ID }}</td>
               </tr>
               {% for k, v in data['properties'].items() %}
               <tr>
-                <th>{{ k }}</th>
+                <td>{{ k }}</td>
                 {% if k == 'links' %}
                 <td>
                     <ul>
@@ -55,10 +57,6 @@
               {% endfor %}
             </tbody>
             </table>
-
-        </div>
-        <div class="col-md-6">
-            <div id="items-map"></div>
         </div>
       </div>
       <div class="row">
