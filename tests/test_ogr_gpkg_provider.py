@@ -44,9 +44,9 @@ def test_query(config_poi_portugal):
 
 def test_get(config_poi_portugal):
     p = OGRProvider(config_poi_portugal)
-    results = p.get(5156778016)
-    assert len(results['features']) == 1
-    assert "tourist_info" in results['features'][0]['properties']['fclass']
+    result = p.get(5156778016)
+    assert result['id'] == 5156778016
+    assert "tourist_info" in result['properties']['fclass']
 
 
 # Testing with GeoPackage files with identical features
@@ -101,17 +101,17 @@ def test_get_fields_4326(config_gpkg_4326):
 def test_get_28992(config_gpkg_28992):
     """Testing query for a specific object"""
     p = OGRProvider(config_gpkg_28992)
-    results = p.get('inspireadressen.1747652')
-    assert len(results['features']) == 1
-    assert "Mosselsepad" in results['features'][0]['properties']['straatnaam']
+    result = p.get('inspireadressen.1747652')
+    assert result['id'] == 'inspireadressen.1747652'
+    assert "Mosselsepad" in result['properties']['straatnaam']
 
 
 def test_get_4326(config_gpkg_4326):
     """Testing query for a specific object"""
     p = OGRProvider(config_gpkg_4326)
-    results = p.get('inspireadressen.1747652')
-    assert len(results['features']) == 1
-    assert "Mosselsepad" in results['features'][0]['properties']['straatnaam']
+    result = p.get('inspireadressen.1747652')
+    assert result['id'] == 'inspireadressen.1747652'
+    assert "Mosselsepad" in result['properties']['straatnaam']
 
 
 def test_query_hits_28992(config_gpkg_28992):

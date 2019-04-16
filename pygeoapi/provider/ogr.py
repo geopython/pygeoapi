@@ -271,7 +271,7 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter("{field} = '{id}'".format(
                 field=self.id_field, id=identifier))
 
-            result = self._response_feature_collection(layer, 1)
+            result = self._response_feature(layer)
 
         except Exception as err:
             LOGGER.error(err)
@@ -304,9 +304,11 @@ class OGRProvider(BaseProvider):
         self.source_helper = class_(self)
 
     def _response_feature_collection(self, layer, limit):
-        """Assembles GeoJSON output from DB query
+        """
+        Assembles output from Layer query as
+        GeoJSON FeatureCollection structure.
 
-        :returns: GeoJSON FeaturesCollection
+        :returns: GeoJSON FeatureCollection
         """
 
         feature_collection = {
@@ -329,6 +331,20 @@ class OGRProvider(BaseProvider):
                 break
 
         return feature_collection
+
+    def _response_feature(self, layer):
+        """
+        Assembles  output from Layer query as
+        single GeoJSON Feature structure.
+
+        :returns: GeoJSON Feature or None
+        """
+
+        feature_collection = self._response_feature_collection(layer, 1)
+        features = feature_collection['features']
+        if len(features) == 0:
+            return None
+        return features[0]
 
     def _response_feature_hits(self, layer):
         """Assembles GeoJSON/Feature number

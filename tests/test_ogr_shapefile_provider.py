@@ -28,6 +28,7 @@ def config_shapefile_4326():
         'id_field': 'id'
     }
 
+
 # Note that this Shapefile is zipped, as OGR supports /vsizip/!
 @pytest.fixture()
 def config_shapefile_28992():
@@ -58,17 +59,17 @@ def test_get_fields_4326(config_shapefile_4326):
 def test_get_28992(config_shapefile_28992):
     """Testing query for a specific object"""
     p = OGRProvider(config_shapefile_28992)
-    results = p.get('inspireadressen.1747652')
-    assert len(results['features']) == 1
-    assert "Mosselsepad" in results['features'][0]['properties']['straatnaam']
+    result = p.get('inspireadressen.1747652')
+    assert result['id'] == 'inspireadressen.1747652'
+    assert "Mosselsepad" in result['properties']['straatnaam']
 
 
 def test_get_4326(config_shapefile_4326):
     """Testing query for a specific object"""
     p = OGRProvider(config_shapefile_4326)
-    results = p.get('inspireadressen.1747652')
-    assert len(results['features']) == 1
-    assert "Mosselsepad" in results['features'][0]['properties']['straatnaam']
+    result = p.get('inspireadressen.1747652')
+    assert result['id'] == 'inspireadressen.1747652'
+    assert "Mosselsepad" in result['properties']['straatnaam']
 
 
 def test_query_hits_28992(config_shapefile_28992):

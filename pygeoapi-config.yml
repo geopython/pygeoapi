@@ -276,6 +276,8 @@ datasets:
 
                 # Generic GDAL/OGR Driver options
                 gdal_ogr_options:
+                    # Null fields will be empty strings
+                    EMPTY_AS_NULL: NO
 
                     GDAL_CACHEMAX: 64
                     # GDAL_HTTP_PROXY: (optional proxy)
