@@ -45,7 +45,8 @@ class OGRProvider(BaseProvider):
     # To deal with some OGR Source-Driver specifics.
     SOURCE_HELPERS = {
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
-        'ESRI Shapefile': 'pygeoapi.provider.ogr.ShapefileHelper'
+        'ESRI Shapefile': 'pygeoapi.provider.ogr.ShapefileHelper',
+        'GPKG': 'pygeoapi.provider.ogr.GPKGHelper'
     }
 
     def __init__(self, provider_def):
@@ -59,6 +60,8 @@ class OGRProvider(BaseProvider):
         #         source_type: WFS
         #         source: WFS:
         #               http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+        #         source_srs: EPSG:28992
+        #         target_srs: EPSG:4326
         #         source_capabilities:
         #             paging: True
         #         source_options:
@@ -368,6 +371,20 @@ class SourceHelper:
         """
 
         pass
+
+
+class GPKGHelper(SourceHelper):
+
+    def __init__(self, provider):
+        """
+        Initialize object
+
+        :param provider: provider instance
+
+        :returns: pygeoapi.providers.ogr.SourceHelper
+        """
+        self.provider = provider
+        SourceHelper.__init__(self, provider)
 
 
 class ShapefileHelper(SourceHelper):
