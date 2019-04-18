@@ -3,9 +3,11 @@
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
     <title>{% block title %}{{ config['metadata']['identification']['title'] }} -{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="language" content="{{ config['server']['language'] }}">
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
     <meta name="keywords" content="{{ config['metadata']['identification']['keywords']|join(',') }}">
+    <link rel="stylesheet" href="https://unpkg.com/mini.css@3.0.1/dist/mini-default.min.css">
     <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/default.css">
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
@@ -17,17 +19,41 @@
     {% endblock %}
   </head>
   <body>
-    <header itemscope itemtype="http://schema.org/DataCatalog" itemref="collections">
+    <header class="sticky row" itemscope itemtype="http://schema.org/DataCatalog" itemref="collections">
       <meta itemprop="url" content="{{ config['server']['url'] }}" />
-      <h1><a title="{{ config['metadata']['identification']['title'] }}" href="{{ config['server']['url'] }}/?f=html"><span itemprop="name">{{ config['metadata']['identification']['title'] }}</span></a>
-        <a title="JSON" href="{{ config['server']['url'] }}/"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h1>
-      <span itemprop="description">{{ config['metadata']['identification']['description'] }}</span>
+      <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
+      <div class="col-sm-12 col-md-10 col-md-offset-1">
+        <a role="button" itemprop="name" href="{{ config['server']['url'] }}/?f=html">
+          {{ config['metadata']['identification']['title'] }}</a>
+        <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" style="float:right">Contact</a>
+      </div>
     </header>
-    <hr/>
-    {% block body %}
-    {% endblock %}
-    <hr/>
-    <footer>Powered by <a title="pygeoapi" href="https://github.com/geopython/pygeoapi">pygeoapi</a> {{ version }}</footer>
+    <div class="sticky row crumbs">
+      <div class="col-sm-12 col-md-10 col-md-offset-1">
+        {% block crumbs %}
+        <a href="{{ config['server']['url'] }}">Home</a>
+        {% endblock %} 
+        <span style="float:right">
+          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
+        </span>
+      </div>
+    </div>
+    <main>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12 col-md-10 col-md-offset-1">
+          <br/>
+          {% block body %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+    </main>
+    <footer class="row bottom">
+        <div class="col-sm-12 col-md-10 col-md-offset-1">
+          Powered by <a title="pygeoapi" href="https://github.com/geopython/pygeoapi">pygeoapi</a> {{ version }}
+        </div>
+    </footer>   
     {% block extrafoot %}
     {% endblock %}
   </body>
