@@ -1,32 +1,69 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }} 
+<a href="../../collections">Collections</a>       
+{% for link in data['links'] %}
+  {% if link.rel == 'collection' %}
+    <a href="{{ link['href'] }}">{{ link['title'] }}</a>
+  {% endif %}
+{% endfor %}      
+<a href="./items">Items</a>
+{% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
-    <style>
-      #items {
-        width: 80%;
-      }
-      #items-map {
-        width: 100%;
-        height: 600px;
-      }
-    </style>
 {% endblock %}
 
 {% block body %}
     <section id="items">
-      <h2>{{ data['title'] }}</h2>
-      <span>{{ data['description'] }}</span>
-      <h2>Features <a title="JSON" href="./items"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
-      {% for link in data['links'] %}
-        {% if link['rel'] == 'prev' %}
-        <a href="{{ link['href'] }}&f=html">Prev</a>
-        {% elif link['rel'] == 'next' %}
-        <a href="{{ link['href'] }}&f=html">Next</a>
-        {% endif %}
-      {% endfor %}
-      <div id="items-map"></div>
+      <div class="row col-sm-12">
+          <h2>Items</h2>
+      </div>
+
+    {% if data['features'] %}
+    <div class="row">
+      <div class="col-sm-12 col-md-6">
+        <div id="items-map"></div>
+      </div>  
+      <div class="col-sm-12 col-md-6">
+          <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                {% for k, v in data['features'][0]['properties'].items() %}
+                <th>{{ k }}</td>
+                {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for ft in data['features'] %}
+              <tr>
+                <td data-label="ID"><a href="items/{{ ft.ID }}">{{ ft.ID }}</a></td>
+                  {% for k, v in ft['properties'].items() %}
+                  <td data-label="{{ k }}">{{ v }}</td>
+                  {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+          </table>  
+      </div>
+    </div>
+    {% else %}
+    <div class="row col-sm-12">
+        <p>No items</p>
+    </div>
+    {% endif %}
+    <div class="row">
+        <div col-sm-12"> 
+        {% for link in data['links'] %}
+          {% if link['rel'] == 'prev' %}
+          <a role="button" href="{{ link['href'] }}">Prev</a>
+          {% elif link['rel'] == 'next' %}
+          <a role="button" href="{{ link['href'] }}">Next</a>
+          {% endif %}
+        {% endfor %}
+        </div>
+      </div>
     </section>
 {% endblock %}
 
@@ -42,7 +79,7 @@
     var geojson_data = {{ data['features'] |to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
-            var html_ = '<span><a target="_blank" href="items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
+            var html_ = '<span><a href="items/' + feature.ID + '?f=html">' + feature.ID + '</a></span>';
             layer.bindPopup(html_);
         }
     });

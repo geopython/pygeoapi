@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }} 
+<a href="../collections">Collections</a>       
+<a href="./{{ data['name'] }}">{{ data['title'] }}</a>
+{% endblock %}
 {% block body %}
     <section id="collection">
-      <h2>{{ data['title'] }}<a title="JSON" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
+      <h2>{{ data['title'] }}</h2>
       <div>{{ data['description'] }}</div>
-      <div><a title="Browse Features" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items?f=html">Browse Features</a></div>
+      <div><a title="Browse Items" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items?f=html">Browse</a> through the items of the collection {{ data['title'] }}</div>
       <h2>Links</h2>
       <ul>
       {% for link in data['links'] %}
