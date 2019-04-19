@@ -264,10 +264,10 @@ class ElasticsearchProvider(BaseProvider):
         for feature in results['hits']['hits']:
             id_ = feature['_source']['properties'][self.id_field]
             LOGGER.debug('serializing id {}'.format(id_))
-            feature['_source']['ID'] = id_
+            feature['_source']['id'] = id_
             if self.properties:
                 feature_thinned = {
-                    'ID': feature['_source']['properties'][self.id_field],
+                    'id': feature['_source']['properties'][self.id_field],
                     'type': feature['_source']['type'],
                     'geometry': feature['_source']['geometry'],
                     'properties': OrderedDict()
@@ -301,7 +301,7 @@ class ElasticsearchProvider(BaseProvider):
                                  id=identifier)
             LOGGER.debug('Serializing feature')
             id_ = result['_source']['properties'][self.id_field]
-            result['_source']['ID'] = id_
+            result['_source']['id'] = id_
         except Exception as err:
             LOGGER.error(err)
             return None

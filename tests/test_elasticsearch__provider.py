@@ -47,7 +47,7 @@ def test_query(config):
     assert len(results['features']) == 10
     assert results['numberMatched'] == 242
     assert results['numberReturned'] == 10
-    assert results['features'][0]['ID'] == 6691831
+    assert results['features'][0]['id'] == 6691831
     assert results['features'][0]['properties']['nameascii'] == 'Vatican City'
 
     results = p.query(properties=[('nameascii', 'Vatican City')])
@@ -57,11 +57,11 @@ def test_query(config):
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['ID'] == 6691831
+    assert results['features'][0]['id'] == 6691831
 
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['ID'] == 1559804
+    assert results['features'][0]['id'] == 1559804
 
     results = p.query(sortby=[{'property': 'nameascii', 'order': 'A'}])
     assert results['features'][0]['properties']['nameascii'] == 'Abidjan'
@@ -89,5 +89,5 @@ def test_get(config):
     assert results is None
 
     result = p.get('3413829')
-    assert result['ID'] == 3413829
+    assert result['id'] == 3413829
     assert result['properties']['ls_name'] == 'Reykjavik'

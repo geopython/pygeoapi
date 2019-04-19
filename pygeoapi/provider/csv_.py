@@ -83,7 +83,7 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data_, startindex, startindex+limit):
                 feature = {'type': 'Feature'}
-                feature['ID'] = row.pop(self.id_field)
+                feature['id'] = row.pop(self.id_field)
                 feature['geometry'] = {
                     'type': 'Point',
                     'coordinates': [
@@ -102,7 +102,7 @@ class CSVProvider(BaseProvider):
                 else:
                     feature['properties'] = row
 
-                if identifier is not None and feature['ID'] == identifier:
+                if identifier is not None and feature['id'] == identifier:
                     found = True
                     result = feature
                 feature_collection['features'].append(feature)

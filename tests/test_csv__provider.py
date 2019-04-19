@@ -68,7 +68,7 @@ def test_query(fixture, config):
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 5
-    assert results['features'][0]['ID'] == '371'
+    assert results['features'][0]['id'] == '371'
     assert results['features'][0]['properties']['value'] == '89.9'
 
     assert results['features'][0]['geometry']['coordinates'][0] == -75.0
@@ -76,11 +76,11 @@ def test_query(fixture, config):
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['ID'] == '371'
+    assert results['features'][0]['id'] == '371'
 
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['ID'] == '238'
+    assert results['features'][0]['id'] == '238'
 
     assert len(results['features'][0]['properties']) == 3
 
@@ -96,5 +96,5 @@ def test_get(fixture, config):
     assert results is None
 
     result = p.get('964')
-    assert result['ID'] == '964'
+    assert result['id'] == '964'
     assert result['properties']['value'] == '99.9'

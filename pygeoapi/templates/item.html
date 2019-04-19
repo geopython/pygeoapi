@@ -8,7 +8,7 @@
   {% endif %}
 {% endfor %}     
 <a href="../items">Items</a>
-<a href="./{{ data['ID'] }}">{{ data['title'] or data['ID'] }}</a>
+<a href="./{{ data['id'] }}">{{ data['title'] or data['id'] }}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -20,7 +20,7 @@
     <section id="items">
       <div class="row">
         <div class="col-sm">
-          <h2>Item {{ data['ID'] }}</h2>
+          <h2>Item {{ data['id'] }}</h2>
         </div>
       </div>
       <div class="row">
@@ -29,6 +29,7 @@
         </div>
         <div class="col-md-6 col-sm-12">
             <table>
+              <caption>Item properties</caption>
               <thead>
               <tr>
                 <th>Property</th>
@@ -37,8 +38,8 @@
             </thead>
             <tbody>
               <tr>
-                <td>ID</td>
-                <td>{{ data.ID }}</td>
+                <td>id</td>
+                <td>{{ data.id }}</td>
               </tr>
               {% for k, v in data['properties'].items() %}
               <tr>
