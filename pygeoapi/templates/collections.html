@@ -8,9 +8,11 @@
       <h2>Collections in this service</h2>
       <ul>
       {% for k, v in config['datasets'].items()%}
-          <li>
-            <a title="{{ v['title'] }}" href="{{ config['server']['url'] }}/collections/{{ k }}?f=html">{{ v['title'] }}</a><br/>
-            {{ v['description'] }}
+          <li itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
+            <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
+            <a href="{{ config['server']['url'] }}/collections/{{ k }}/items">
+              <span itemprop="name">{{ v['title'] }}</span></a><br/>
+              <span itemprop="description">{{ v['description'] | striptags | truncate }}</span>
           </li>
       {% endfor %}
       </ul>
