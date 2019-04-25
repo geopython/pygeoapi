@@ -19,8 +19,7 @@
             Keywords     
           </div>
           <div class="col-sm-8" itemprop="keywords">
-              {% for v in config['metadata']['identification']['keywords'] %}
-                {{ v }}, {% endfor %}
+              {{ config['metadata']['identification']['keywords']|join(', ')  }}
           </div>
         </div>
         {% if config['metadata']['identification']['terms_of_service'] %}
