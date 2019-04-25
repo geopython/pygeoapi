@@ -53,7 +53,7 @@
   </section>
   <section id="collections">
       <h2>Collections</h2>
-      <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service.</a>
+      <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service</a>
   </section>
   <section id="links">
     <h2>Links</h2>
@@ -82,18 +82,18 @@
       </div>
       <div class="section" itemprop="contactPoint" itemscope itemtype="http://schema.org/Contactpoint">
         <b>Email</b><br/>
-        <span itemprop="Email">{{ config['metadata']['contact']['email'] }}</span><br/>
+        <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
         {% if config['metadata']['contact']['phone'] %}
           <b>Telephone</b><br/>
-          <span itemprop="Telephone">{{ config['metadata']['contact']['phone'] }}</span><br/>
+          <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}<a></span><br/>
         {% endif %}
         {% if config['metadata']['contact']['fax'] %}
           <b>Fax</b><br/>
-          <span itemprop="faxNumber">{{ config['metadata']['contact']['fax'] }}</span><br/>
+          <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}<a></span><br/>
         {% endif %}
         {% if config['metadata']['contact']['url'] %}
           <b>Contact url</b><br/>
-          <span itemprop="url">{{ config['metadata']['contact']['url'] }}</span><br/>
+          <span itemprop="url"><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
         {% endif %}
         {% if config['metadata']['contact']['hours'] %}
           <b>Hours</b><br/>
