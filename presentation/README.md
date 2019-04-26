@@ -25,9 +25,9 @@ Generic folder structure form reveal
   * ``lib/`` All other third party assets (JavaScript, CSS, fonts)
 
 
-WWW Location
+Location
 ------------
-The revealjs can be found here:
+The presentatoin can be found here:
 ```
-https://geopython.github.io/pygeoapi/presentation
+https://pygeoapi.io/presentation
 ```
