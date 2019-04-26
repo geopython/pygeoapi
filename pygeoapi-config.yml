@@ -31,7 +31,7 @@ metadata:
         url: https://creativecommons.org/licenses/by/4.0/
     provider:
         name: Organization Name
-        url: https://github.com/geopython/pygeoapi
+        url: https://pygeoapi.io
     contact:
         name: Lastname, Firstname
         position: Position Title
