@@ -68,7 +68,7 @@ info:
   contact:
     email: you@example.org
     name: Organization Name
-    url: https://github.com/geopython/pygeoapi
+    url: https://pygeoapi.io
   description: pygeoapi provides an API to geospatial data
   license:
     name: CC-BY 4.0 license
