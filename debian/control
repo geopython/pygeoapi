@@ -11,5 +11,5 @@ Package: python-pygeoapi
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-pkg-resources, python-click, python-flask, python-unicodecsv, python-yaml
 Suggests: python-elasticsearch, python-geojson
-Homepage: https://github.com/geopython/pygeoapi
+Homepage: https://pygeoapi.io
 Description: pygeoapi provides an API to geospatial data
