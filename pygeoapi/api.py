@@ -131,7 +131,7 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def api(self, headers, args, openapi):
+    def api(self, headers, args, request_path, openapi):
         """
         Provide OpenAPI document
 
@@ -143,6 +143,16 @@ class API(object):
         """
 
         headers_ = HEADERS.copy()
+        format_ = check_format(args, headers)
+
+        if format_ == 'html':
+            data = {
+                'openapi-document-path': request_path
+            }
+            headers_['Content-Type'] = 'text/html'
+            content = _render_j2_template(self.config, 'api.html', data)
+            return headers_, 200, content
+
         headers_['Content-Type'] = 'application/openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
