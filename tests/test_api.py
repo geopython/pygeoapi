@@ -73,11 +73,17 @@ def test_api(config, api_, openapi, headers):
     assert api_.config == config
     assert isinstance(api_.config, dict)
 
-    headers_, code, response = api_.api(headers, {}, openapi)
+    headers['Content-Type'] = 'application/json'
+    headers_, code, response = api_.api(headers, {}, '/api', openapi)
     assert headers_['Content-Type'] == 'application/openapi+json;version=3.0'
     root = json.loads(response)
 
     assert isinstance(root, dict)
+
+    a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    headers['Accept'] = a
+    headers_, code, response = api_.api(headers, {}, '/api', openapi)
+    assert headers_['Content-Type'] == 'text/html'
 
 
 def test_api_exception(config, api_, headers):
