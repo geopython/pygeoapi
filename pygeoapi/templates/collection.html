@@ -1,14 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }} 
+<a href="../collections">Collections</a>       
+<a href="./{{ data['name'] }}">{{ data['title'] }}</a>
+{% endblock %}
 {% block body %}
-    <section id="collection">
-      <h2>{{ data['title'] }}<a title="JSON" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}"><img alt="JSON" src="{{ config['server']['url'] }}/static/img/json.png" width="30" height="30"/></a></h2>
-      <div>{{ data['description'] }}</div>
-      <div><a title="Browse Features" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items?f=html">Browse Features</a></div>
+    <section id="collections" itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
+      <meta  itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
+      <h2 itemprop="name">{{ data['title'] }}</h2>
+      <div itemprop="description">{{ data['description'] }}</div>
+      <div itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
+        <meta  itemprop="encodingFormat" content="text/html" />
+        <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
+          Browse through the items of collection {{ data['title'] }}.</a></div>
       <h2>Links</h2>
       <ul>
       {% for link in data['links'] %}
-          <li><a title="{{ link['rel'] }}" href="{{ link['href'] }}">{{ link['href'] }}</a></li>
+          <li itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
+            <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
+            <span  itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
+            <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
+            </a></li>
       {% endfor %}
       </ul>
     </section>

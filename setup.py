@@ -155,7 +155,7 @@ setup(
     author_email='tomkralidis@gmail.com',
     maintainer='Tom Kralidis',
     maintainer_email='tomkralidis@gmail.com',
-    url='https://github.com/geopython/pygeoapi',
+    url='https://pygeoapi.io',
     install_requires=read('requirements.txt').splitlines(),
     packages=find_packages(exclude=['pygeoapi.tests']),
     include_package_data=True,

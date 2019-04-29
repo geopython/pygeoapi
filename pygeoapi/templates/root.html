@@ -1,27 +1,124 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} Home {% endblock %}
 {% block body %}
-    <section id="service-metadata">
-      <h2>Service Metadata</h2>
-      <table>
-        <tr>
-          <td>Provider</td>
-          <td><a title="{{ config['metadata']['provider']['name'] }}" href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['name'] }}</a></td>
-        </tr>
-      </table>
-    </section>
-    <section id="conformance">
-        <h2><a href="{{ config['server']['url'] }}/conformance?f=html">Conformance</a></h2>
-    </section>
-    <section id="collections">
-        <h2><a href="{{ config['server']['url'] }}/collections?f=html">Collections</a></h2>
-    </section>
-    <section id="links">
-      <h2>Links</h2>
-      <ul>
-      {% for link in data['links'] %}
-          <li><a title="{{ link['title'] }}" href="{{ link['href'] }}">{{ link['title'] }}</a></li>
-      {% endfor %}
-      </ul>
-    </section>
+
+<br/>
+<section id="collections">
+
+<div class="row">
+  <div class="col-md-8 col-sm-12">
+
+  <section id="identification">
+    <h1>{{ config['metadata']['identification']['title'] }}</h1>
+    <p>{{ config['metadata']['identification']['description'] }}</p>   
+    
+    <div class="card large">
+      <div class="section">
+        <div class="row">
+          <div class="col-sm-4">
+            Keywords     
+          </div>
+          <div class="col-sm-8" itemprop="keywords">
+              {{ config['metadata']['identification']['keywords']|join(', ')  }}
+          </div>
+        </div>
+        {% if config['metadata']['identification']['terms_of_service'] %}
+          <div class="row">
+              <div class="col-sm-4">
+                Terms of service     
+              </div>
+              <div class="col-sm-8">
+                  {{ config['metadata']['identification']['terms_of_service'] }}
+              </div>
+          </div>
+        {% endif %}
+        {% if config['metadata']['license']['url'] %}
+          <div class="row">
+              <div class="col-sm-4">
+                License     
+              </div>
+              <div class="col-sm-8">
+                  <a itemprop="license" href="{{ config['metadata']['license']['url'] }}">
+                    {{ config['metadata']['license']['name'] or config['metadata']['license']['url'] }}</a>
+              </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  <section id="conformance">
+      <h2>Conformance</h2>
+      <a href="{{ config['server']['url'] }}/conformance?f=html">View the conformance classes of this service</a>
+  </section>
+  <section id="collections">
+      <h2>Collections</h2>
+      <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service</a>
+  </section>
+  <section id="links">
+    <h2>Links</h2>
+    <ul>
+    {% for link in data['links'] %}
+        <li><a title="{{ link['title'] }}" href="{{ link['href'] }}">{{ link['title'] }}</a></li>
+    {% endfor %}
+    </ul>
+  </section>
+
+  </div>
+  <div class="col-md-4 col-sm-12" itemprop="provider" itemscope itemtype="http://schema.org/Organization">
+    <div class="card fluid">
+      <div class="section dark">
+       <b>Provider</b>
+      </div>
+      <div class="section">
+        <b itemprop="name">{{ config['metadata']['provider']['name'] }}</b><br/>
+        <a itemprop="url" href="{{ config['metadata']['provider']['url'] }}">
+            {{ config['metadata']['provider']['url'] }}</a><br/>
+      </div>
+    </div>
+    <div class="card fluid">
+      <div class="section dark">
+          <b>Contact point</b>
+      </div>
+      <div class="section" itemprop="contactPoint" itemscope itemtype="http://schema.org/Contactpoint">
+        <b>Email</b><br/>
+        <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
+        {% if config['metadata']['contact']['phone'] %}
+          <b>Telephone</b><br/>
+          <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}<a></span><br/>
+        {% endif %}
+        {% if config['metadata']['contact']['fax'] %}
+          <b>Fax</b><br/>
+          <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}<a></span><br/>
+        {% endif %}
+        {% if config['metadata']['contact']['url'] %}
+          <b>Contact url</b><br/>
+          <span itemprop="url"><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
+        {% endif %}
+        {% if config['metadata']['contact']['hours'] %}
+          <b>Hours</b><br/>
+          <span itemprop="hoursAvailable">{{ config['metadata']['contact']['hours'] }}</span><br/>
+        {% endif %}
+        {% if config['metadata']['contact']['instructions'] %}
+          <b>Contact instructions</b><br/>
+          <span itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card fluid">
+      <div class="section dark">
+          <b>Address</b>
+      </div>
+      <div class="section" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+        <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
+        <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span>,
+        <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span><br/>     
+        <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span>,
+        <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span><br/>
+      </div>
+    </div>
+  </div>
+</div>
+
+</section>
+    
 {% endblock %}
