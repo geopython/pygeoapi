@@ -1,27 +1,38 @@
+python-pygeoapi (0.5.0) trusty; urgency=medium
+
+  * plugin refactoring
+  * add processing capabilities
+  * support text/html in headers
+  * add crumbs to HTML pages
+  * add support for schema.org
+  * add HTML output for API endpoint
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Mon, 29 Apr 2019 17:34:02 +0000
+
 python-pygeoapi (0.4.1) trusty; urgency=medium
 
   * fix ES GeoJSON output
 
- -- Tom Kralidis <tomkralidist@gmail.com>  Mon, 07 Jan 2019 12:21:10 +0000
+ -- Tom Kralidis <tomkralidis@gmail.com>  Mon, 07 Jan 2019 12:21:10 +0000
 
 python-pygeoapi (0.4.0) trusty; urgency=medium
 
   * add column ordering
   * add properties.links support
 
- -- Tom Kralidis <tomkralidist@gmail.com>  Mon, 17 Dec 2018 21:17:17 +0000
+ -- Tom Kralidis <tomkralidis@gmail.com>  Mon, 17 Dec 2018 21:17:17 +0000
 
 python-pygeoapi (0.2.2) trusty; urgency=medium
 
   * fix ES issues for large returns
 
- -- Tom Kralidis <tomkralidist@gmail.com>  Fri, 24 Aug 2018 14:33:03 +0000
+ -- Tom Kralidis <tomkralidis@gmail.com>  Fri, 24 Aug 2018 14:33:03 +0000
 
 python-pygeoapi (0.2.1) trusty; urgency=medium
 
   * fix HTTP response headers for CSV
 
- -- Tom Kralidis <tomkralidist@gmail.com>  Thu, 23 Aug 2018 00:23:07 +0000
+ -- Tom Kralidis <tomkralidis@gmail.com>  Thu, 23 Aug 2018 00:23:07 +0000
 
 python-pygeoapi (0.2.0) trusty; urgency=medium
 
