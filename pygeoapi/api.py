@@ -102,7 +102,7 @@ class API(object):
         fcm['links'] = [{
               'rel': 'self',
               'type': 'application/json',
-              'title': 'this document',
+              'title': 'this document as JSON',
               'href': self.config['server']['url']
             }, {
               'rel': 'self',
@@ -125,6 +125,10 @@ class API(object):
         ]
 
         if format_ == 'html':  # render
+            for link in fcm['links']:
+                if 'json' in link['type']:
+                    link['href'] += '?f=json'
+
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
@@ -454,6 +458,13 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
+
+            # For constructing proper URIs to Items
+            path_info = headers.environ['PATH_INFO']
+            if path_info.endswith('/'):
+                path_info = path_info[:-1]
+
+            content['path_info'] = path_info
             content = _render_j2_template(self.config, 'items.html',
                                           content)
             return headers_, 200, content

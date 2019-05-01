@@ -39,7 +39,7 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
-                <td data-label="ID"><a href="items/{{ ft.ID }}">{{ ft.ID }}</a></td>
+                <td data-label="ID"><a href="{{ data['path_info']}}/{{ ft.ID }}">{{ ft.ID }}</a></td>
                   {% for k, v in ft['properties'].items() %}
                   <td data-label="{{ k }}">{{ v }}</td>
                   {% endfor %}
@@ -55,7 +55,7 @@
     </div>
     {% endif %}
     <div class="row">
-        <div col-sm-12"> 
+        <div class="col-sm-12">
         {% for link in data['links'] %}
           {% if link['rel'] == 'prev' %}
           <a role="button" href="{{ link['href'] }}">Prev</a>
