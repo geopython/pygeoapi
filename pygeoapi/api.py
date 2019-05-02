@@ -465,8 +465,8 @@ class API(object):
                 path_info = path_info[:-1]
 
             content['items_path'] = path_info
-            content['dataset_path'] = '/'.join(path_info.split("/")[:-1])
-            content['collections_path'] = '/'.join(path_info.split("/")[:-2])
+            content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
+            content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
             content = _render_j2_template(self.config, 'items.html',
                                           content)
