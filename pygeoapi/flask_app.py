@@ -166,3 +166,7 @@ def serve(ctx, debug=False):
 #    setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
+
+
+if __name__ == '__main__':  # run locally, for testing
+    serve()
