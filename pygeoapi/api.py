@@ -127,7 +127,7 @@ class API(object):
         if format_ == 'html':  # render
             for link in fcm['links']:
                 if 'json' in link['type']:
-                    link['href'] += '?f=json'
+                    link['href'] = ''.join((link['href'], '?f=json'))
 
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
@@ -464,7 +464,10 @@ class API(object):
             if path_info.endswith('/'):
                 path_info = path_info[:-1]
 
-            content['path_info'] = path_info
+            content['items_path'] = path_info
+            content['dataset_path'] = '/'.join(path_info.split("/")[:-1])
+            content['collections_path'] = '/'.join(path_info.split("/")[:-2])
+            content['startindex'] = startindex
             content = _render_j2_template(self.config, 'items.html',
                                           content)
             return headers_, 200, content
