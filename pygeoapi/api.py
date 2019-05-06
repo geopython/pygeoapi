@@ -102,23 +102,23 @@ class API(object):
         fcm['links'] = [{
               'rel': 'self',
               'type': 'application/json',
-              'title': 'this document as JSON',
+              'title': 'This document as JSON',
               'href': self.config['server']['url']
             }, {
               'rel': 'self',
               'type': 'text/html',
-              'title': 'this document as HTML',
+              'title': 'This document as HTML',
               'href': '{}/?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
-              'title': 'the OpenAPI definition as JSON',
+              'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
             }, {
               'rel': 'self',
               'type': 'text/html',
-              'title': 'the OpenAPI definition as HTML',
+              'title': 'The OpenAPI definition as HTML',
               'href': '{}/api?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }
