@@ -6,15 +6,32 @@
 {% block body %}
     <section id="collections">
       <h2>Collections in this service</h2>
-      <ul>
-      {% for k, v in config['datasets'].items()%}
-          <li itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
-            <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
-            <a href="{{ config['server']['url'] }}/collections/{{ k }}/items">
-              <span itemprop="name">{{ v['title'] }}</span></a><br/>
-              <span itemprop="description">{{ v['description'] | striptags | truncate }}</span>
-          </li>
-      {% endfor %}
-      </ul>
+
+      <div class="row">
+        <div class="col-sm-12 col-md-6">
+            <table class="striped">
+              <caption>Collections</caption>
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+              </thead>
+              <tbody>
+                {% for k, v in config['datasets'].items() %}
+                <tr itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
+                  <td itemprop="name" data-label="name">
+                    <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
+                    <a title="{{ v['title'] | striptags | truncate }}" href="{{ config['server']['url'] }}/collections/{{ k }}">{{ v['title'] | striptags | truncate }}</a>
+                  </td>
+                  <td itemprop="description" data-label="description">
+                    {{ v['description'] | striptags | truncate }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </div>
     </section>
 {% endblock %}
