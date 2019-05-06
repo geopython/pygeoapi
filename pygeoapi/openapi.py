@@ -362,8 +362,8 @@ def get_oas_30(cfg):
                 'required': False,
                 'schema': {
                     'type': 'string',
-                    'enum': ['GeoJSON', 'CSV'],
-                    'default': 'GeoJSON'
+                    'enum': ['json', 'csv'],
+                    'default': 'json'
                 },
                 'style': 'form',
                 'explode': False
