@@ -62,7 +62,7 @@ def test_create(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'ID': '123-456',
+        'id': '123-456',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]},
