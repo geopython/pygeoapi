@@ -51,7 +51,7 @@ def fixture():
             'foo': 'bar',
             'title': None,
           },
-          'ID': 48693
+          'id': 48693
         }]
     }
 
