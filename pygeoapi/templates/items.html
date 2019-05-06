@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
-{% block crumbs %}{{ super() }} 
-<a href="{{ data['collections_path'] }}">Collections</a>
+{% block crumbs %}{{ super() }}
+/ <a href="{{ data['collections_path'] }}">Collections</a>
 {% for link in data['links'] %}
-  {% if link.rel == 'collection' %}
+  {% if link.rel == 'collection' %} /
     <a href="{{ data['dataset_path'] }}">{{ link['title'] }}</a>
   {% endif %}
-{% endfor %}      
-<a href="{{ data['items_path']}}">Items</a>
+{% endfor %}
+/ <a href="{{ data['items_path']}}">Items</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -39,7 +39,7 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
-                <td data-label="id"><a href="{{ data['items_path']}}/items/{{ ft.id }}">{{ ft.id }}</a></td>
+                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
                   <td data-label="{{ k }}">{{ v }}</td>
                   {% endfor %}
