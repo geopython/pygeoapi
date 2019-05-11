@@ -6,11 +6,11 @@
 {% endblock %}
 {% block body %}
     <section id="collections" itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
-      <meta  itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
+      <meta itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
       <h2 itemprop="name">{{ data['title'] }}</h2>
       <div itemprop="description">{{ data['description'] }}</div>
       <div itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
-        <meta  itemprop="encodingFormat" content="text/html" />
+        <meta itemprop="encodingFormat" content="text/html" />
         <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
           Browse through the items of collection {{ data['title'] }}</a></div>
       <h2>Links</h2>
@@ -18,7 +18,7 @@
       {% for link in data['links'] %}
           <li itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
             <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
-            <span  itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
+            <span itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
             <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
             </a></li>
       {% endfor %}

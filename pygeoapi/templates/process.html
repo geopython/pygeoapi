@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }} 
+/ <a href="../processes">Processes</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="processes" itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
+      <meta itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
+      <h2 itemprop="name">{{ data['title'] }}</h2>
+      <div itemprop="description">{{ data['description'] }}</div>
+      <div itemprop="distribution" itemscope itemtype="http://schema.org/WebAPI">
+        <meta itemprop="encodingFormat" content="text/html" />
+      </div>
+      <div class="row">
+        <div class="col-sm-12 col-md-6">
+            <table class="striped">
+              <caption>Inputs</caption>
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+              </thead>
+              <tbody>
+                {% for input_ in data['inputs'] %}
+                <tr>
+                  <td itemprop="name" data-label="name">{{ input_['id'] }}</td>
+                  <td itemprop="title" data-label="title">{{ input_['title'] }}</td>
+                  <td itemprop="description" data-label="description">
+                    {{ input_['description'] | striptags | truncate }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </div>
+      <h2>Links</h2>
+      <ul>
+      {% for link in data['links'] %}
+          <li itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
+            <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
+            <span itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
+            <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
+            </a></li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}
