@@ -102,29 +102,33 @@ class API(object):
         fcm['links'] = [{
               'rel': 'self',
               'type': 'application/json',
-              'title': 'this document',
+              'title': 'This document as JSON',
               'href': self.config['server']['url']
             }, {
               'rel': 'self',
               'type': 'text/html',
-              'title': 'this document as HTML',
+              'title': 'This document as HTML',
               'href': '{}/?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'self',
               'type': 'application/openapi+json;version=3.0',
-              'title': 'the OpenAPI definition as JSON',
+              'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
             }, {
               'rel': 'self',
               'type': 'text/html',
-              'title': 'the OpenAPI definition as HTML',
+              'title': 'The OpenAPI definition as HTML',
               'href': '{}/api?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }
         ]
 
         if format_ == 'html':  # render
+            for link in fcm['links']:
+                if 'json' in link['type']:
+                    link['href'] = ''.join((link['href'], '?f=json'))
+
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
@@ -454,6 +458,16 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
+
+            # For constructing proper URIs to Items
+            path_info = headers.environ['PATH_INFO']
+            if path_info.endswith('/'):
+                path_info = path_info[:-1]
+
+            content['items_path'] = path_info
+            content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
+            content['collections_path'] = '/'.join(path_info.split('/')[:-2])
+            content['startindex'] = startindex
             content = _render_j2_template(self.config, 'items.html',
                                           content)
             return headers_, 200, content

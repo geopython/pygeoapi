@@ -85,7 +85,7 @@ class GeoJSONProvider(BaseProvider):
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
         for i in data['features']:
-            i['ID'] = i['properties'][self.id_field]
+            i['id'] = i['properties'][self.id_field]
 
         return data
 

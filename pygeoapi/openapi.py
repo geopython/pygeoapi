@@ -164,7 +164,7 @@ def get_oas_30(cfg):
                         'description': 'successful operation'
                     },
                     400: {
-                        'description': 'Invalid ID supplied'
+                        'description': 'Invalid id supplied'
                     },
                     404: {
                         'description': 'not found'
@@ -189,7 +189,7 @@ def get_oas_30(cfg):
                         'description': 'successful operation'
                     },
                     400: {
-                        'description': 'Invalid ID supplied'
+                        'description': 'Invalid id supplied'
                     },
                     404: {
                         'description': 'not found'
@@ -229,7 +229,7 @@ def get_oas_30(cfg):
 
         paths['{}/items/{{id}}'.format(collection_name_path)] = {
             'get': {
-                'summary': 'Get {} feature by ID'.format(v['title']),
+                'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -241,7 +241,7 @@ def get_oas_30(cfg):
                         'description': 'successful operation'
                     },
                     400: {
-                        'description': 'Invalid ID supplied'
+                        'description': 'Invalid id supplied'
                     },
                     404: {
                         'description': 'not found'
@@ -293,7 +293,7 @@ def get_oas_30(cfg):
                         'description': 'successful operation'
                     },
                     400: {
-                        'description': 'Invalid ID supplied'
+                        'description': 'Invalid id supplied'
                     },
                     404: {
                         'description': 'not found'
@@ -322,7 +322,7 @@ def get_oas_30(cfg):
                         'description': 'successful operation'
                     },
                     400: {
-                        'description': 'Invalid ID supplied'
+                        'description': 'Invalid id supplied'
                     },
                     404: {
                         'description': 'not found'
@@ -362,8 +362,8 @@ def get_oas_30(cfg):
                 'required': False,
                 'schema': {
                     'type': 'string',
-                    'enum': ['GeoJSON', 'CSV'],
-                    'default': 'GeoJSON'
+                    'enum': ['json', 'csv'],
+                    'default': 'json'
                 },
                 'style': 'form',
                 'explode': False
