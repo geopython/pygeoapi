@@ -3,6 +3,11 @@ language: python
 dist: xenial
 sudo: false
 
+env:
+  global:
+    - PYGEOAPI_CONFIG=pygeoapi-config.yml
+    - CPLUS_INCLUDE_PATH=/usr/include/gdal
+    - C_INCLUDE_PATH=/usr/include/gdal
 
 python:
   - "3.6"
@@ -15,29 +20,25 @@ services:
 addons:
   postgresql: 9.6
 
-
 before_install:
   - sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable -y
   - sudo apt-get -qq update
+  - sudo apt-get install -qq build-essential python3-dev python3-setuptools
   - sudo apt-get install -y libsqlite3-mod-spatialite pandoc devscripts
   - sudo apt-get install -y postgresql-9.6-postgis-2.4
   - sudo apt-get install -y libgdal-dev gdal-bin
 
-
 install:
-  - pip install GDAL==`gdalinfo --version | cut -d' ' -f2 | cut -d',' -f1`
-  - pip install -r requirements.txt
-  - pip install -r requirements-dev.txt
-  - python setup.py install
+  # follow GDAL installed version for Python bindings
+  - pip3 install GDAL==`gdalinfo --version | cut -d' ' -f2 | cut -d',' -f1`
+  - pip3 install -r requirements.txt
+  - pip3 install -r requirements-dev.txt
+  - python3 setup.py install
 
-env:
-  - PYGEOAPI_CONFIG=pygeoapi-config.yml
-  - CPLUS_INCLUDE_PATH=/usr/include/gdal
-  - C_INCLUDE_PATH=/usr/include/gdal
 
 before_script:
   - sleep 20
-  - python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
+  - python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
   - pygeoapi generate-openapi-document -c pygeoapi-config.yml > pygeoapi-openapi.yml
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'
@@ -46,8 +47,8 @@ before_script:
 script:
   - pytest --cov=pygeoapi
   - find . -type f -name "*.py" | xargs flake8
-  - python setup.py --long-description | rst2html5.py
+  - python3 setup.py --long-description | rst2html5.py
 
 after_success:
-  - python setup.py sdist bdist_wheel --universal
+  - python3 setup.py sdist bdist_wheel --universal
   - debuild -b -uc -us

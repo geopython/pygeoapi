@@ -244,7 +244,7 @@ class OGRProvider(BaseProvider):
         try:
             if self.source_capabilities['paging']:
                 self.source_helper.enable_paging(startindex, limit)
-                
+
             layer = self._get_layer()
 
             if bbox:
