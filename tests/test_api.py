@@ -106,7 +106,7 @@ def test_root(config, api_):
 
     assert isinstance(root, dict)
     assert 'links' in root
-    assert len(root['links']) == 4
+    assert len(root['links']) == 6
 
     rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
@@ -145,7 +145,7 @@ def test_describe_collections(config, api_):
         req_headers, {})
     collections = json.loads(response)
 
-    assert len(collections) == 1
+    assert len(collections) == 2
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {}, 'foo')
@@ -160,7 +160,7 @@ def test_describe_collections(config, api_):
     assert collection['name'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'Observations'
-    assert len(collection['links']) == 2
+    assert len(collection['links']) == 6
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {'f': 'html'}, 'obs')
