@@ -345,6 +345,8 @@ def get_oas_30(cfg):
                 }
             }
         }
+        if 'example' in p.metadata:
+            paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
     oas['paths'] = paths
 
