@@ -68,7 +68,7 @@ def api():
         openapi = yaml.load(ff)
 
     headers, status_code, content = api_.api(request.headers, request.args,
-                                             request.path, openapi)
+                                             openapi)
 
     response = make_response(content, status_code)
     if headers:
