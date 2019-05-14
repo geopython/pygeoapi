@@ -46,6 +46,7 @@ class OGRProvider(BaseProvider):
     SOURCE_HELPERS = {
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
         'ESRI Shapefile': 'pygeoapi.provider.ogr.ShapefileHelper',
+        'ESRIJSON': 'pygeoapi.provider.ogr.ESRIJSONHelper',
         'GPKG': 'pygeoapi.provider.ogr.GPKGHelper'
     }
 
@@ -53,28 +54,30 @@ class OGRProvider(BaseProvider):
         """
         Initialize object
 
-        # Typical OGR Provider config:
-        # provider:
-        #     name: OGR
-        #     data:
-        #         source_type: WFS
-        #         source: WFS:
-        #               http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
-        #         source_srs: EPSG:28992
-        #         target_srs: EPSG:4326
-        #         source_capabilities:
-        #             paging: True
-        #         source_options:
-        #             VERSION: 2.0.0
-        #             OGR_WFS_PAGING_ALLOWED: YES
-        #             OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-        #         gdal_ogr_options:
-        #             GDAL_CACHEMAX: 64
-        #             GDAL_HTTP_PROXY: (optional proxy)
-        #             GDAL_PROXY_AUTH: (optional auth for remote WFS)
-        #             CPL_DEBUG: NO
-        #     id_field: gml_id
-        #     layer: rdinfo:stations
+        # Typical OGRProvider YAML config:
+
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+                source_srs: EPSG:28992
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                source_options:
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: gml_id
+            layer: rdinfo:stations
 
 
         :param provider_def: provider definition
@@ -152,7 +155,6 @@ class OGRProvider(BaseProvider):
         # Init
         self.driver = None
         self.conn = None
-        self.layer = None
         self.layer_name = provider_def.get('layer', None)
 
     def _open(self):
@@ -165,9 +167,19 @@ class OGRProvider(BaseProvider):
 
         self.conn = self.driver.Open(self.data_def['source'], 0)
         if not self.conn:
-            msg = 'cannot open OGR Source: %s' % self.data_def['source']
+            msg = 'Cannot open OGR Source: %s' % self.data_def['source']
             LOGGER.error(msg)
             raise Exception(msg)
+
+        # Always need to disable paging immediately after Open!
+        if self.source_capabilities['paging']:
+            self.source_helper.disable_paging()
+
+    def _close(self):
+        self.conn = None
+        LOGGER.debug('closed self.conn')
+
+        self.driver = None
 
     def _get_layer(self):
         if not self.conn:
@@ -194,16 +206,22 @@ class OGRProvider(BaseProvider):
         """
 
         fields = {}
+        try:
+            layer_defn = self._get_layer().GetLayerDefn()
+            for fld in range(layer_defn.GetFieldCount()):
+                field_defn = layer_defn.GetFieldDefn(fld)
+                fieldName = field_defn.GetName()
+                fieldTypeCode = field_defn.GetType()
+                fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
+                fields[fieldName] = fieldType.lower()
+                # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
+                # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
 
-        layer_defn = self._get_layer().GetLayerDefn()
-        for fld in range(layer_defn.GetFieldCount()):
-            field_defn = layer_defn.GetFieldDefn(fld)
-            fieldName = field_defn.GetName()
-            fieldTypeCode = field_defn.GetType()
-            fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
-            fields[fieldName] = fieldType.lower()
-            # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
-            # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
+        except Exception as err:
+            LOGGER.error(err)
+
+        finally:
+            self._close()
 
         return fields
 
@@ -222,38 +240,47 @@ class OGRProvider(BaseProvider):
 
         :returns: dict of 0..n GeoJSON features
         """
-        if self.source_capabilities['paging']:
-            self.source_helper.set_paging(startindex, limit)
+        result = None
+        try:
+            if self.source_capabilities['paging']:
+                self.source_helper.enable_paging(startindex, limit)
+                
+            layer = self._get_layer()
 
-        layer = self._get_layer()
+            if bbox:
+                LOGGER.debug('processing bbox parameter')
+                minx, miny, maxx, maxy = bbox
 
-        if bbox:
-            LOGGER.debug('processing bbox parameter')
-            minx, miny, maxx, maxy = bbox
+                wkt = "POLYGON (({minx} {miny},{minx} {maxy},{maxx} {maxy}," \
+                      "{maxx} {miny},{minx} {miny}))".format(
+                        minx=float(minx), miny=float(miny),
+                        maxx=float(maxx), maxy=float(maxy))
 
-            wkt = "POLYGON (({minx} {miny},{minx} {maxy},{maxx} {maxy}," \
-                  "{maxx} {miny},{minx} {miny}))".format(
-                    minx=float(minx), miny=float(miny),
-                    maxx=float(maxx), maxy=float(maxy))
+                polygon = self.ogr.CreateGeometryFromWkt(wkt)
 
-            polygon = self.ogr.CreateGeometryFromWkt(wkt)
+                if self.transform_in:
+                    polygon.Transform(self.transform_in)
 
-            if self.transform_in:
-                polygon.Transform(self.transform_in)
+                layer.SetSpatialFilter(polygon)
 
-            layer.SetSpatialFilter(polygon)
+                # layer.SetSpatialFilterRect(
+                # float(minx), float(miny), float(maxx), float(maxy))
+            if resulttype == 'hits':
+                LOGGER.debug('hits only specified')
+                result = self._response_feature_hits(layer)
+            elif resulttype == 'results':
+                LOGGER.debug('results specified')
+                result = self._response_feature_collection(layer, limit)
+            else:
+                LOGGER.error('Invalid resulttype: %s' % resulttype)
 
-            # layer.SetSpatialFilterRect(
-            # float(minx), float(miny), float(maxx), float(maxy))
-        if resulttype == 'hits':
-            LOGGER.debug('hits only specified')
-            return self._response_feature_hits(layer)
-        elif resulttype == 'results':
-            LOGGER.debug('results specified')
-            return self._response_feature_collection(layer, limit)
-        else:
-            LOGGER.error('Invalid resulttype: %s' % resulttype)
-            return None
+        except Exception as err:
+            LOGGER.error(err)
+
+        finally:
+            self._close()
+
+        return result
 
     def get(self, identifier):
         """
@@ -271,10 +298,13 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter("{field} = '{id}'".format(
                 field=self.id_field, id=identifier))
 
-            result = self._response_feature(layer)
+            ogr_feature = layer.GetNextFeature()
+            result = self._ogr_feature_to_json(ogr_feature)
 
         except Exception as err:
             LOGGER.error(err)
+        finally:
+            self._close()
 
         return result
 
@@ -303,6 +333,16 @@ class OGRProvider(BaseProvider):
         class_ = getattr(module, classname)
         self.source_helper = class_(self)
 
+    def _ogr_feature_to_json(self, ogr_feature):
+        geom = ogr_feature.GetGeometryRef()
+        if self.transform_out:
+            # Optionally reproject the geometry
+            geom.Transform(self.transform_out)
+
+        json_feature = ogr_feature.ExportToJson(as_object=True)
+        json_feature['id'] = json_feature['properties'].pop(self.id_field)
+        return json_feature
+
     def _response_feature_collection(self, layer, limit):
         """
         Assembles output from Layer query as
@@ -315,52 +355,40 @@ class OGRProvider(BaseProvider):
             'type': 'FeatureCollection',
             'features': []
         }
-        count = 0
-        for feature in layer:
-            geom = feature.GetGeometryRef()
-            if self.transform_out:
-                # Optionally reproject the geometry
-                geom.Transform(self.transform_out)
 
-            json_feature = feature.ExportToJson(as_object=True)
-            json_feature['id'] = json_feature['properties'].pop(self.id_field)
+        # See https://github.com/OSGeo/gdal/blob/master/autotest/
+        #     ogr/ogr_wfs.py#L313
+        layer.ResetReading()
+
+        ogr_feature = layer.GetNextFeature()
+        count = 0
+        while ogr_feature is not None:
+            json_feature = self._ogr_feature_to_json(ogr_feature)
 
             feature_collection['features'].append(json_feature)
+
             count += 1
             if count == limit:
                 break
 
+            ogr_feature = layer.GetNextFeature()
+
         return feature_collection
 
-    def _response_feature(self, layer):
-        """
-        Assembles  output from Layer query as
-        single GeoJSON Feature structure.
-
-        :returns: GeoJSON Feature or None
-        """
-
-        feature_collection = self._response_feature_collection(layer, 1)
-        features = feature_collection['features']
-        if len(features) == 0:
-            return None
-        return features[0]
-
     def _response_feature_hits(self, layer):
-        """Assembles GeoJSON/Feature number
+        """
+        Assembles GeoJSON hits from OGR Feature count
         e.g: http://localhost:5000/collections/
         hotosm_bdi_waterways/items?resulttype=hits
 
         :returns: GeoJSON FeaturesCollection
         """
 
-        feature_collection = {
+        return {
             'type': 'FeatureCollection',
             'numberMatched': layer.GetFeatureCount(),
             'features': []
         }
-
-        return feature_collection
 
 
 class InvalidHelperError(Exception):
@@ -379,11 +407,17 @@ class SourceHelper:
         """
         self.provider = provider
 
-    def set_paging(self, startindex=-1, limit=-1):
+    def enable_paging(self, startindex=-1, limit=-1):
         """
-        Get provider field information (names, types)
+        Enable paged access to dataset (OGR Driver-specific)
 
-        :returns: dict of fields
+        """
+
+        pass
+
+    def disable_paging(self):
+        """
+        Disable paged access to dataset (OGR Driver-specific)
         """
 
         pass
@@ -417,6 +451,46 @@ class ShapefileHelper(SourceHelper):
         SourceHelper.__init__(self, provider)
 
 
+class ESRIJSONHelper(SourceHelper):
+
+    def __init__(self, provider):
+        """
+        Initialize object
+
+        :param provider: provider instance
+
+        :returns: pygeoapi.providers.ogr.SourceHelper
+        """
+        self.provider = provider
+        SourceHelper.__init__(self, provider)
+
+    def enable_paging(self, startindex=-1, limit=-1):
+        """
+        Enable paged access to dataset (OGR Driver-specific)
+
+        """
+
+        if startindex < 0:
+            return
+
+        self.provider.gdal.SetConfigOption(
+            'ESRIJSON_FEATURE_SERVER_PAGING', 'ON')
+        self.provider.gdal.SetConfigOption(
+            'OGR_ESRIJSON_START_INDEX', str(startindex))
+        self.provider.gdal.SetConfigOption(
+            'OGR_ESRIJSON_PAGE_SIZE', str(limit))
+
+    def disable_paging(self):
+        """
+        Disable paged access to dataset (OGR Driver-specific)
+        """
+
+        self.provider.gdal.SetConfigOption(
+            'ESRIJSON_FEATURE_SERVER_PAGING', None)
+        self.provider.gdal.SetConfigOption(
+            'OGR_ESRIJSON_PAGE_SIZE', None)
+
+
 class WFSHelper(SourceHelper):
 
     def __init__(self, provider):
@@ -430,17 +504,28 @@ class WFSHelper(SourceHelper):
         self.provider = provider
         SourceHelper.__init__(self, provider)
 
-    def set_paging(self, startindex=-1, limit=-1):
+    def enable_paging(self, startindex=-1, limit=-1):
         """
-        Get provider field information (names, types)
+        Enable paged access to dataset (OGR Driver-specific)
 
-        :returns: dict of fields
         """
 
         if startindex < 0:
             return
 
         self.provider.gdal.SetConfigOption(
+            'OGR_WFS_PAGING_ALLOWED', 'ON')
+        self.provider.gdal.SetConfigOption(
             'OGR_WFS_BASE_START_INDEX', str(startindex))
         self.provider.gdal.SetConfigOption(
             'OGR_WFS_PAGE_SIZE', str(limit))
+
+    def disable_paging(self):
+        """
+        Disable paged access to dataset (OGR Driver-specific)
+        """
+
+        self.provider.gdal.SetConfigOption(
+            'OGR_WFS_PAGING_ALLOWED', None)
+        self.provider.gdal.SetConfigOption(
+            'OGR_WFS_PAGE_SIZE', None)
