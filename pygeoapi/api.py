@@ -38,6 +38,7 @@ from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
+from pygeoapi.util import str2bool
 
 LOGGER = logging.getLogger(__name__)
 
@@ -669,6 +670,16 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
+        format_ = check_format(args, headers)
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         processes_config = self.config['processes']
 
         if process is not None:
@@ -694,6 +705,17 @@ class API(object):
             response = {
                 'processes': processes
             }
+
+        if format_ == 'html':  # render
+            headers_['Content-Type'] = 'text/html'
+            if process is not None:
+                response = _render_j2_template(self.config, 'process.html',
+                                               p.metadata)
+            else:
+                response = _render_j2_template(self.config, 'processes.html',
+                                               {'processes': processes})
+
+            return headers_, 200, response
 
         return headers_, 200, json.dumps(response)
 
@@ -739,7 +761,13 @@ class API(object):
 
         try:
             outputs = p.execute(data_dict)
-            response['outputs'] = outputs
+            m = p.metadata
+            if 'raw' in args and str2bool(args['raw']):
+                headers_['Content-Type'] = \
+                    m['outputs'][0]['output']['formats'][0]['mimeType']
+                response = outputs
+            else:
+                response['outputs'] = outputs
             return headers_, 201, json.dumps(response)
         except Exception as err:
             exception = {
