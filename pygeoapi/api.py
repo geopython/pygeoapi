@@ -111,7 +111,7 @@ class API(object):
               'href': '{}/?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
-              'rel': 'self',
+              'rel': 'service',
               'type': 'application/openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
@@ -121,6 +121,16 @@ class API(object):
               'title': 'The OpenAPI definition as HTML',
               'href': '{}/api?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
+            }, {
+              'rel': 'conformance',
+              'type': 'application/json',
+              'title': 'conformance',
+              'href': '{}/conformance'.format(self.config['server']['url'])
+            }, {
+              'rel': 'data',
+              'type': 'application/json',
+              'title': 'collections',
+              'href': '{}/collections'.format(self.config['server']['url'])
             }
         ]
 
@@ -224,7 +234,8 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         fcm = {
-            'collections': []
+            'collections': [],
+            'links': []
         }
 
         if all([dataset is not None,
@@ -260,13 +271,61 @@ class API(object):
 
                 collection['links'].append(lnk)
 
+            LOGGER.debug('Adding JSON and HTML link relations')
+            collection['links'].append({
+                'type': 'application/geo+json',
+                'rel': 'item',
+                'title': 'Features as GeoJSON',
+                'href': '{}/collections/{}/items?f=json'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
+                'type': 'text/html',
+                'rel': 'item',
+                'title': 'Features as HTML',
+                'href': '{}/collections/{}/items?f=html'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
+                'type': 'application/json',
+                'rel': 'self',
+                'title': 'This document as JSON',
+                'href': '{}/collections/{}?f=json'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
+                'type': 'text/html',
+                'rel': 'alternate',
+                'title': 'This document as HTML',
+                'href': '{}/collections/{}?f=html'.format(
+                    self.config['server']['url'], k)
+            })
+
             if dataset is not None and k == dataset:
                 fcm = collection
                 break
 
             fcm['collections'].append(collection)
 
+            fcm['links'].append({
+                'type': 'application/json',
+                'rel': 'self',
+                'title': 'This document as JSON',
+                'href': '{}/collections?f=json'.format(
+                    self.config['server']['url'])
+            })
+            fcm['links'].append({
+                'type': 'text/html',
+                'rel': 'alternate',
+                'title': 'This document as HTML',
+                'href': '{}/collections?f=html'.format(
+                    self.config['server']['url'])
+            })
+
         if format_ == 'html':  # render
+            fcm['links'][0]['rel'] = 'alternate'
+            fcm['links'][1]['rel'] = 'self'
+
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
                 content = _render_j2_template(self.config, 'collection.html',
@@ -428,19 +487,25 @@ class API(object):
         next_ = startindex + self.config['server']['limit']
 
         content['links'] = [{
-            'type': 'application/json',
+            'type': 'application/geo+json',
             'rel': 'self',
-            'title': 'Collection items',
-            'href': '{}collections/{}/items'.format(
+            'title': 'This document as GeoJSON',
+            'href': '{}/collections/{}/items'.format(
                 self.config['server']['url'], dataset)
             }, {
-            'type': 'application/json',
+            'type': 'text/html',
+            'rel': 'alternate',
+            'title': 'This document as HTML',
+            'href': '{}/collections/{}/items'.format(
+                self.config['server']['url'], dataset)
+            }, {
+            'type': 'application/geo+json',
             'rel': 'prev',
             'title': 'items (prev)',
             'href': '{}/collections/{}/items/?startindex={}'.format(
                 self.config['server']['url'], dataset, prev)
             }, {
-            'type': 'application/json',
+            'type': 'application/geo+json',
             'rel': 'next',
             'title': 'items (next)',
             'href': '{}/collections/{}/items/?startindex={}'.format(
@@ -454,10 +519,14 @@ class API(object):
             }
         ]
 
-        content['timeStamp'] = datetime.utcnow().isoformat()
+        content['timeStamp'] = datetime.utcnow().strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ')
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
+
+            content['links'][0]['rel'] = 'alternate'
+            content['links'][1]['rel'] = 'self'
 
             # For constructing proper URIs to Items
             path_info = headers.environ['PATH_INFO']
@@ -543,8 +612,15 @@ class API(object):
 
         content['links'] = [{
             'rel': 'self',
-            'type': 'application/json',
-            'href': '{}/collections/{}/items/{}'.format(
+            'type': 'application/geo+json',
+            'title': 'This document as GeoJSON',
+            'href': '{}/collections/{}/items/{}?f=json'.format(
+                self.config['server']['url'], dataset, identifier)
+            }, {
+            'rel': 'alternate',
+            'type': 'text/html',
+            'title': 'This document as HTML',
+            'href': '{}/collections/{}/items/{}?f=html'.format(
                 self.config['server']['url'], dataset, identifier)
             }, {
             'rel': 'collection',
@@ -554,12 +630,12 @@ class API(object):
                 self.config['server']['url'], dataset)
             }, {
             'rel': 'prev',
-            'type': 'application/json',
+            'type': 'application/geo+json',
             'href': '{}/collections/{}/items/{}'.format(
                 self.config['server']['url'], dataset, identifier)
             }, {
             'rel': 'next',
-            'type': 'application/json',
+            'type': 'application/geo+json',
             'href': '{}/collections/{}/items/{}'.format(
                 self.config['server']['url'], dataset, identifier)
             }
@@ -567,6 +643,10 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
+
+            content['links'][0]['rel'] = 'alternate'
+            content['links'][1]['rel'] = 'self'
+
             content = _render_j2_template(self.config, 'item.html',
                                           content)
             return headers_, 200, content
