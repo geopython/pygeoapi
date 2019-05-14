@@ -145,7 +145,7 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def api(self, headers, args, request_path, openapi):
+    def api(self, headers, args, openapi):
         """
         Provide OpenAPI document
 
@@ -159,9 +159,11 @@ class API(object):
         headers_ = HEADERS.copy()
         format_ = check_format(args, headers)
 
+        path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
+
         if format_ == 'html':
             data = {
-                'openapi-document-path': request_path
+                'openapi-document-path': path
             }
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'api.html', data)
@@ -528,15 +530,16 @@ class API(object):
             content['links'][0]['rel'] = 'alternate'
             content['links'][1]['rel'] = 'self'
 
-            # For constructing proper URIs to Items
-            path_info = headers.environ['PATH_INFO']
-            if path_info.endswith('/'):
-                path_info = path_info[:-1]
+            # For constructing proper URIs to items
+            path_info = '/'.join([
+                self.config['server']['url'].rstrip('/'),
+                headers.environ['PATH_INFO'].strip('/')])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
+
             content = _render_j2_template(self.config, 'items.html',
                                           content)
             return headers_, 200, content
