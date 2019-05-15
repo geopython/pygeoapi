@@ -36,6 +36,10 @@ from pygeoapi.plugin import load_plugin
 
 LOGGER = logging.getLogger(__name__)
 
+SCHEMAS = {
+    'wps': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas'  # noqa
+}
+
 
 def get_oas_30(cfg):
     """
@@ -334,13 +338,15 @@ def get_oas_30(cfg):
                     'content': {
                         'application/json': {
                             'schema': {
-                                '$ref': 'execute.yaml'
+                                '$ref': '{}/{}'.format(SCHEMAS['wps'], 'execute.yaml')  # noqa
                             }
                         }
                     }
                 }
             }
         }
+        if 'example' in p.metadata:
+            paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
     oas['paths'] = paths
 

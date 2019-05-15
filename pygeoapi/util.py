@@ -47,3 +47,23 @@ def get_url(scheme, host, port, basepath):
     url = '{}{}'.format(url, basepath)
 
     return url
+
+
+def str2bool(value):
+    """
+    helper function to return Python boolean
+    type (source: https://stackoverflow.com/a/715468)
+
+    :param value: value to be evaluated
+
+    :returns: `bool` of whether the value is boolean-ish
+    """
+
+    value2 = False
+
+    if isinstance(value, bool):
+        value2 = value
+    else:
+        value2 = value.lower() in ('yes', 'true', 't', '1', 'on')
+
+    return value2

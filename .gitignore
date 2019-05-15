@@ -102,7 +102,7 @@ ENV/
 
 # pygeoapi artifacts
 local.config.yml
-local.swagger.yml
+local.openapi.yml
 
 # misc
 *.swp

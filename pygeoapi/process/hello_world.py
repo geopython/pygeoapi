@@ -68,7 +68,14 @@ PROCESS_METADATA = {
                 'mimeType': 'application/json'
             }]
         }
-    }]
+    }],
+    'example': {
+        'inputs': [{
+            'id': 'name',
+            'value': 'hi there',
+            'type': 'text/plain'
+        }]
+    }
 }
 
 
