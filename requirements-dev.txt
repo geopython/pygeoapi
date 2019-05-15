@@ -15,3 +15,4 @@ pytest-env
 pyOpenSSL==17.5.0
 ndg-httpsclient==0.4.4
 pyasn1==0.4.2
+GDAL>=2.2
