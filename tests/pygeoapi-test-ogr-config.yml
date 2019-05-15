@@ -1,0 +1,328 @@
+server:
+    bind:
+        host: 0.0.0.0
+        port: 5000
+    url: http://localhost:5000/
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    pretty_print: true
+    limit: 10
+    # templates: /path/to/templates
+
+logging:
+    level: ERROR
+    #logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: pygeoapi default instance
+        description: pygeoapi provides an API to geospatial data
+        keywords:
+            - geospatial
+            - data
+            - api
+        keywords_type: theme
+        terms_of_service: None
+        url: http://example.org
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: Organization Name
+        url: https://pygeoapi.io
+    contact:
+        name: Lastname, Firstname
+        position: Position Title
+        address: Mailing Address
+        city: City
+        stateorprovince: Administrative Area
+        postalcode: Zip or Postal Code
+        country: Country
+        phone: +xx-xxx-xxx-xxxx
+        fax: +xx-xxx-xxx-xxxx
+        email: you@example.org
+        url: Contact URL
+        hours: Hours of Service
+        instructions: During hours of service.  Off on weekends.
+        role: pointOfContact
+
+datasets:
+
+    dutch_georef_stations:
+        title: Dutch Georef Stations via OGR WFS
+        description: Locations of RD/GNSS-reference stations from Dutch Kadaster PDOK a.k.a RDInfo. Uses MapServer WFS v2 backend via OGRProvider.
+        keywords:
+            - Netherlands
+            - GNSS
+            - Surveying
+            - Holland
+            - RD
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3ebe56dc-5f09-4fb3-b224-55c2db4ca2fd?tab=general
+              hreflang: nl-NL
+        extents:
+            spatial:
+                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+                source_srs: EPSG:28992
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                source_options:
+#                    OGR_WFS_VERSION: 1.1.0
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: gml_id
+            layer: rdinfo:stations
+
+    # Warning: this layer contains about 10 million addresses, the backend WFS seems not optimized
+    dutch_addresses:
+        title: Dutch Addresses via OGR WFS
+        description: All Dutch addresses as derived from the key registry BAG. Uses GeoServer WFS v2 backend via OGRProvider. SLOW BACKEND!
+        keywords:
+            - Netherlands
+            - Addresses
+            - Europe
+            - Holland
+            - BAG
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3a97fbe4-2b0d-4e9c-9644-276883400dd7
+              hreflang: nl-NL
+        extents:
+            spatial:
+                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:http://geodata.nationaalgeoregister.nl/inspireadressen/wfs?
+                source_srs: EPSG:28992
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                source_options:
+#                    OGR_WFS_VERSION: 2.0.0
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: gml_id
+            layer: inspireadressen:inspireadressen
+
+    utah_city_locations:
+        title: Cities in Utah via OGR WFS
+        description: Data from the state of Utah. Standard demo dataset from the deegree WFS server that is used as backend WFS.
+        keywords:
+            - USA
+            - deegree
+            - Utah
+            - Demo data
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://download.deegree.org/documentation/3.3.20/html/lightly.html#example-workspace-2-utah-webmapping-services
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-112.108489, 39.854053, -111.028628, 40.460098]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:http://demo.deegree.org/utah-workspace/services/wfs?TYPENAME=app:SGID93_LOCATION_UDOTMap_CityLocations
+                source_srs: EPSG:26912
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                source_options:
+#                    OGR_WFS_VERSION: 2.0.0
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: NAME
+            layer: app:SGID93_LOCATION_UDOTMap_CityLocations
+
+    unesco_pois_italy:
+        title: Unesco POIs in Italy via OGR WFS
+        description: Unesco Points of Interest in Italy. Using GeoSolutions GeoServer WFS demo-server as backend WFS.
+        keywords:
+            - Italy
+            - Unesco
+            - Demo
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://mapstore2.geo-solutions.it/mapstore/#/dashboard/5593
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [36.0, 17.0, 46.0, 18.0]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: WFS
+                source: WFS:https://demo.geo-solutions.it/geoserver/wfs
+                source_srs: EPSG:32632
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                source_options:
+#                    OGR_WFS_VERSION: 1.1.0
+                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: gml_id
+            layer: unesco:Unesco_point
+
+    ogr_gpkg_poi:
+        title: Portuguese Points of Interest via OGR GPKG
+        description: Portuguese Points of Interest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands. Uses GeoPackage backend via OGR provider.
+        keywords:
+            - Portugal
+            - POI
+            - Point of Interrest
+            - Madeira
+            - Azores
+            - OSM
+            - Open Street Map
+            - NaturaGIS
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://wiki.openstreetmap.org/wiki/Points_of_interest/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-31.2687 32.5898 -6.18992 42.152]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: GPKG
+                source: tests/data/poi_portugal.gpkg
+                source_srs: EPSG:4326
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: osm_id
+            layer: poi_portugal
+
+
+    sf_311incidents:
+        title: SF 311Incidents via OGR ESRI Feature Server
+        description: OGR Provider - ESRI Feature Server - SF 311Incidents
+        keywords:
+            - USA
+            - ESRI
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180, -90, 180, 90]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: ESRIJSON
+                source: ESRIJSON:http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json
+                source_srs: EPSG:4326
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+
+            id_field: objectid
+
+processes:
+    hello-world:
+        processor:
+            name: HelloWorld

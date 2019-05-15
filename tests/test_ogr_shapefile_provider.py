@@ -61,7 +61,7 @@ def test_get_28992(config_shapefile_28992):
     p = OGRProvider(config_shapefile_28992)
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
-    assert "Mosselsepad" in result['properties']['straatnaam']
+    assert 'Mosselsepad' in result['properties']['straatnaam']
 
 
 def test_get_4326(config_shapefile_4326):
@@ -69,7 +69,7 @@ def test_get_4326(config_shapefile_4326):
     p = OGRProvider(config_shapefile_4326)
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
-    assert "Mosselsepad" in result['properties']['straatnaam']
+    assert 'Mosselsepad' in result['properties']['straatnaam']
 
 
 def test_query_hits_28992(config_shapefile_28992):
@@ -77,7 +77,7 @@ def test_query_hits_28992(config_shapefile_28992):
 
     p = OGRProvider(config_shapefile_28992)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) is 0
     hits = feature_collection.get('numberMatched', None)
@@ -90,7 +90,7 @@ def test_query_hits_4326(config_shapefile_4326):
 
     p = OGRProvider(config_shapefile_4326)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) is 0
     hits = feature_collection.get('numberMatched', None)
@@ -106,7 +106,7 @@ def test_query_bbox_hits_4326(config_shapefile_4326):
     # bbox=[120000, 480000, 124000, 487000], resulttype='hits')
     feature_collection = p.query(
         bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) is 0
     hits = feature_collection.get('numberMatched', None)
@@ -124,7 +124,7 @@ def test_query_bbox_hits_28992(config_shapefile_28992):
     feature_collection = p.query(
         bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
 
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) is 0
     hits = feature_collection.get('numberMatched', None)
@@ -141,15 +141,15 @@ def test_query_bbox_28992(config_shapefile_28992):
     #     bbox=[180800, 452500, 181200, 452700], resulttype='results')
     feature_collection = p.query(
         bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 1
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
-    properties = feature.get("properties", None)
+    properties = feature.get('properties', None)
     assert properties is not None
-    geometry = feature.get("geometry", None)
+    geometry = feature.get('geometry', None)
     assert geometry is not None
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
@@ -162,15 +162,15 @@ def test_query_bbox_4326(config_shapefile_4326):
     #     bbox=[180800, 452500, 181200, 452700], resulttype='results')
     feature_collection = p.query(
         bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 1
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
-    properties = feature.get("properties", None)
+    properties = feature.get('properties', None)
     assert properties is not None
-    geometry = feature.get("geometry", None)
+    geometry = feature.get('geometry', None)
     assert geometry is not None
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
@@ -180,15 +180,15 @@ def test_query_with_limit_28992(config_shapefile_28992):
 
     p = OGRProvider(config_shapefile_28992)
     feature_collection = p.query(limit=2, resulttype='results')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 2
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
-    properties = feature.get("properties", None)
+    properties = feature.get('properties', None)
     assert properties is not None
-    geometry = feature.get("geometry", None)
+    geometry = feature.get('geometry', None)
     assert geometry is not None
 
 
@@ -197,13 +197,13 @@ def test_query_with_limit_4326(config_shapefile_4326):
 
     p = OGRProvider(config_shapefile_4326)
     feature_collection = p.query(limit=5, resulttype='results')
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 5
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
-    properties = feature.get("properties", None)
+    properties = feature.get('properties', None)
     assert properties is not None
-    geometry = feature.get("geometry", None)
+    geometry = feature.get('geometry', None)
     assert geometry is not None
