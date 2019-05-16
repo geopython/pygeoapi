@@ -1,0 +1,28 @@
+service: pygeoapi 
+
+provider:
+  name: aws
+  runtime: python3.6
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+
+
+
+custom:
+  wsgi:
+    app: pygeoapi.flask_app.APP
+    packRequirements: true
+functions:
+  app:
+    handler: wsgi_handler.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+    environment:
+      PYGEOAPI_CONFIG: pygeoapi-config.yml
