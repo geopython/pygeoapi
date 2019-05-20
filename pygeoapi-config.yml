@@ -273,6 +273,47 @@ datasets:
             id_field: gml_id
             layer: rdinfo:stations
 
+    ogr_addresses_sqlite:
+        # Gotcha: don't use the name 'ogc_fid' as id-field in your SQLite tables:
+        # OGR will not show this field within GeoJSON properties dict.
+        title: Dutch addresses (subset Otterlo). OGR SQLite Driver
+        description: Dutch addresses subset.
+        keywords:
+            - Netherlands
+            - addresses
+            - INSPIRE
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/4074b3c3-ca85-45ad-bc0d-b5fca8540z0b
+              hreflang: nl-NL
+        extents:
+            spatial:
+                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+            temporal:
+                begin: None
+                end: now  # or empty
+        provider:
+            name: OGR
+            data:
+                source_type: SQLite
+                source: tests/data/dutch_addresses_4326.sqlite
+                source_srs: EPSG:4326
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    CPL_DEBUG: NO
+
+            id_field: id
+            layer: ogrgeojson
+
 processes:
     hello-world:
         processor:

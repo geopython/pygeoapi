@@ -139,12 +139,12 @@ def test_query_bbox_with_startindex_4326(config_sqlite_4326):
 
     p = OGRProvider(config_sqlite_4326)
     feature_collection = p.query(
-        startindex=1, limit=5,
+        startindex=1, limit=50,
         bbox=(5.742, 52.053, 5.773, 52.098),
         resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) == 5
+    assert len(features) == 3
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
@@ -153,4 +153,4 @@ def test_query_bbox_with_startindex_4326(config_sqlite_4326):
     geometry = feature.get('geometry', None)
     assert geometry is not None
     assert properties['straatnaam'] == 'Egypte'
-    assert properties['huisnummer'] == '6'
+    assert properties['huisnummer'] == '4'
