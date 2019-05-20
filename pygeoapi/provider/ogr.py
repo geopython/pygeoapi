@@ -40,14 +40,18 @@ LOGGER = logging.getLogger(__name__)
 
 
 class OGRProvider(BaseProvider):
-    """OGR Provider"""
+    """
+    OGR Provider. Uses GDAL/OGR Python-bindings to access OGR
+    Vector sources. References:
+    https://pcjericks.github.io/py-gdalogr-cookbook/
+    https://www.gdal.org/ogr_formats.html (per-driver specifics)
+    """
 
     # To deal with some OGR Source-Driver specifics.
     SOURCE_HELPERS = {
-        'WFS': 'pygeoapi.provider.ogr.WFSHelper',
-        'ESRI Shapefile': 'pygeoapi.provider.ogr.ShapefileHelper',
         'ESRIJSON': 'pygeoapi.provider.ogr.ESRIJSONHelper',
-        'GPKG': 'pygeoapi.provider.ogr.GPKGHelper'
+        'WFS': 'pygeoapi.provider.ogr.WFSHelper',
+        '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
 
     def __init__(self, provider_def):
@@ -152,10 +156,16 @@ class OGRProvider(BaseProvider):
 
         self._load_source_helper(self.data_def['source_type'])
 
-        # Init
+        # Layer name is required
+        self.layer_name = provider_def.get('layer', None)
+        if not self.layer_name:
+            msg = 'Need explicit \'layer\' attr in provider config'
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        # Init driver and Source connection
         self.driver = None
         self.conn = None
-        self.layer_name = provider_def.get('layer', None)
 
     def _open(self):
         source_type = self.data_def['source_type']
@@ -185,18 +195,8 @@ class OGRProvider(BaseProvider):
         if not self.conn:
             self._open()
 
-        if not self.layer_name:
-            # E.g. Shapefiles may not have explicitly named Layers
-            layer = self.conn.GetLayer(0)
-        else:
-            layer = self.conn.GetLayerByName(self.layer_name)
-
-        if not layer:
-            msg = 'Cannot get Layer {} from OGR Source'.format(self.layer_name)
-            LOGGER.error(msg)
-            raise Exception(msg)
-
-        return layer
+        # Delegate getting Layer to SourceHelper
+        return self.source_helper.get_layer()
 
     def get_fields(self):
         """
@@ -319,14 +319,12 @@ class OGRProvider(BaseProvider):
 
         :returns: Source Helper object
         """
-
+        helper_type = source_type
         if source_type not in OGRProvider.SOURCE_HELPERS.keys():
-            msg = 'No Helper found for OGR Source type: {}'.format(source_type)
-            LOGGER.exception(msg)
-            raise InvalidHelperError(msg)
+            helper_type = '*'
 
         # Create object from full package.class name string.
-        source_helper_class = OGRProvider.SOURCE_HELPERS[source_type]
+        source_helper_class = OGRProvider.SOURCE_HELPERS[helper_type]
 
         packagename, classname = source_helper_class.rsplit('.', 1)
         module = importlib.import_module(packagename)
@@ -340,7 +338,11 @@ class OGRProvider(BaseProvider):
             geom.Transform(self.transform_out)
 
         json_feature = ogr_feature.ExportToJson(as_object=True)
-        json_feature['id'] = json_feature['properties'].pop(self.id_field)
+        try:
+            json_feature['id'] = json_feature['properties'].pop(self.id_field)
+        except Exception:
+            json_feature['id'] = ogr_feature.GetFID()
+
         return json_feature
 
     def _response_feature_collection(self, layer, limit):
@@ -397,15 +399,37 @@ class InvalidHelperError(Exception):
 
 
 class SourceHelper:
+    """
+    Helper classes for OGR-specific Source Types (Drivers).
+    For some actions Driver-specific settings or processing is
+    required. This is delegated to the OGR SourceHelper classes.
+    """
+
     def __init__(self, provider):
         """
-        Initialize object
+        Initialize object with related OGRProvider object.
 
         :param provider: provider instance
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
         self.provider = provider
+
+    def get_layer(self):
+        """
+        Default action to get a Layer object from opened OGR Driver.
+        :return:
+        """
+
+        layer = self.provider.conn.GetLayerByName(self.provider.layer_name)
+
+        if not layer:
+            msg = 'Cannot get Layer {} from OGR Source'.\
+                format(self.provider.layer_name)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return layer
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -423,8 +447,11 @@ class SourceHelper:
         pass
 
 
-class GPKGHelper(SourceHelper):
-
+class CommonSourceHelper(SourceHelper):
+    """
+    SourceHelper for most common OGR Source types:
+    Shapefile, GeoPackage, SQLite, GeoJSON etc.
+    """
     def __init__(self, provider):
         """
         Initialize object
@@ -433,22 +460,54 @@ class GPKGHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        self.provider = provider
         SourceHelper.__init__(self, provider)
+        self.startindex = -1
+        self.limit = -1
 
-
-class ShapefileHelper(SourceHelper):
-
-    def __init__(self, provider):
+    def enable_paging(self, startindex=-1, limit=-1):
         """
-        Initialize object
+        Enable paged access to dataset (OGR Driver-specific)
+        using OGR SQL https://www.gdal.org/ogr_sql.html
+        e.g. SELECT * FROM poly LIMIT 10 OFFSET 30
 
-        :param provider: provider instance
-
-        :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        self.provider = provider
-        SourceHelper.__init__(self, provider)
+        self.startindex = startindex
+        self.limit = limit
+
+    def disable_paging(self):
+        """
+        Disable paged access to dataset (OGR Driver-specific)
+        """
+
+        pass
+
+    def get_layer(self):
+        """
+        Gets OGR layer from OGR dataset.
+        When startindex defined 1 or greater will invoke
+        OGR SQL SELECT with LIMIT and OFFSET.
+        :return: OGR layer object
+        """
+        if self.startindex <= 0:
+            return SourceHelper.get_layer(self)
+
+        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+            ds_name=self.provider.layer_name,
+            limit=self.limit,
+            offset=self.startindex)
+        layer = self.provider.conn.ExecuteSQL(sql)
+
+        # Reset since needs to be set each time explicitly
+        self.startindex = -1
+        self.limit = -1
+
+        if not layer:
+            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
+                self.provider.layer_name)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return layer
 
 
 class ESRIJSONHelper(SourceHelper):
@@ -461,7 +520,6 @@ class ESRIJSONHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        self.provider = provider
         SourceHelper.__init__(self, provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
@@ -501,7 +559,6 @@ class WFSHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        self.provider = provider
         SourceHelper.__init__(self, provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
