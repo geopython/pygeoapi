@@ -273,7 +273,7 @@ class OGRProvider(BaseProvider):
 
                 # layer.SetSpatialFilterRect(
                 # float(minx), float(miny), float(maxx), float(maxy))
-                
+
             # Make response based on resulttype specified
             if resulttype == 'hits':
                 LOGGER.debug('hits only specified')
