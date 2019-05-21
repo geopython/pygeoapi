@@ -67,7 +67,8 @@ def config_gpkg_4326():
                 'paging': True
             },
         },
-        'id_field': 'id'
+        'id_field': 'id',
+        'layer': 'OGRGeoJSON'
     }
 
 
@@ -86,7 +87,8 @@ def config_gpkg_28992():
                 'paging': True
             },
         },
-        'id_field': 'id'
+        'id_field': 'id',
+        'layer': 'OGRGeoJSON'
     }
 
 
@@ -249,3 +251,85 @@ def test_query_with_limit_4326(config_gpkg_4326):
     assert properties is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_with_startindex_28992(config_gpkg_28992):
+    """Testing query for a valid JSON object with geometry"""
+
+    p = OGRProvider(config_gpkg_28992)
+    feature_collection = p.query(startindex=20, limit=5, resulttype='results')
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) == 5
+    hits = feature_collection.get('numberMatched', None)
+    assert hits is None
+    feature = features[0]
+    properties = feature.get('properties', None)
+    assert properties is not None
+    assert feature['id'] == 'inspireadressen.1744969'
+    assert 'Egypte' in properties['straatnaam']
+    geometry = feature.get('geometry', None)
+    assert geometry is not None
+
+
+def test_query_with_startindex_4326(config_gpkg_4326):
+    """Testing query for a valid JSON object with geometry"""
+
+    p = OGRProvider(config_gpkg_4326)
+    feature_collection = p.query(startindex=20, limit=5, resulttype='results')
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) == 5
+    hits = feature_collection.get('numberMatched', None)
+    assert hits is None
+    feature = features[0]
+    properties = feature.get('properties', None)
+    assert properties is not None
+    assert feature['id'] == 'inspireadressen.1744969'
+    assert 'Egypte' in properties['straatnaam']
+    geometry = feature.get('geometry', None)
+    assert geometry is not None
+
+
+def test_query_bbox_with_startindex_28992(config_gpkg_28992):
+    """Testing query for a valid JSON object with geometry"""
+
+    p = OGRProvider(config_gpkg_28992)
+    feature_collection = p.query(
+        startindex=10, limit=5,
+        bbox=(5.742, 52.053, 5.773, 52.098),
+        resulttype='results')
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) == 5
+    hits = feature_collection.get('numberMatched', None)
+    assert hits is None
+    feature = features[0]
+    properties = feature.get('properties', None)
+    assert properties is not None
+    geometry = feature.get('geometry', None)
+    assert geometry is not None
+    assert properties['straatnaam'] == 'Buurtweg'
+    assert properties['huisnummer'] == '4'
+
+
+def test_query_bbox_with_startindex_4326(config_gpkg_4326):
+    """Testing query for a valid JSON object with geometry"""
+
+    p = OGRProvider(config_gpkg_4326)
+    feature_collection = p.query(
+        startindex=1, limit=5,
+        bbox=(5.742, 52.053, 5.773, 52.098),
+        resulttype='results')
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) == 5
+    hits = feature_collection.get('numberMatched', None)
+    assert hits is None
+    feature = features[0]
+    properties = feature.get('properties', None)
+    assert properties is not None
+    geometry = feature.get('geometry', None)
+    assert geometry is not None
+    assert properties['straatnaam'] == 'Egypte'
+    assert properties['huisnummer'] == '6'
