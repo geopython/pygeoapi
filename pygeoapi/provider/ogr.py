@@ -44,7 +44,14 @@ class OGRProvider(BaseProvider):
     OGR Provider. Uses GDAL/OGR Python-bindings to access OGR
     Vector sources. References:
     https://pcjericks.github.io/py-gdalogr-cookbook/
-    https://www.gdal.org/ogr_formats.html (per-driver specifics)
+    https://www.gdal.org/ogr_formats.html (per-driver specifics).
+
+    In theory any OGR source type (Driver) could be used, although
+    some Source Types are Driver-specific handling. This is handled
+    in Source Helper classes, instantiated per Source-Type.
+
+    The following Source Types have been tested to work:
+    GeoPackage (GPKG), SQLite, GeoJSON, ESRI Shapefile, WFS v2.
     """
 
     # To deal with some OGR Source-Driver specifics.
@@ -186,6 +193,7 @@ class OGRProvider(BaseProvider):
             self.source_helper.disable_paging()
 
     def _close(self):
+        self.source_helper.close()
         self.conn = None
         LOGGER.debug('closed self.conn')
 
@@ -265,6 +273,8 @@ class OGRProvider(BaseProvider):
 
                 # layer.SetSpatialFilterRect(
                 # float(minx), float(miny), float(maxx), float(maxy))
+                
+            # Make response based on resulttype specified
             if resulttype == 'hits':
                 LOGGER.debug('hits only specified')
                 result = self._response_feature_hits(layer)
@@ -415,6 +425,15 @@ class SourceHelper:
         """
         self.provider = provider
 
+    def close(self):
+        """
+        OGR Driver-specific handling of closing dataset.
+        Default is no specific handling.
+
+        """
+
+        pass
+
     def get_layer(self):
         """
         Default action to get a Layer object from opened OGR Driver.
@@ -463,6 +482,29 @@ class CommonSourceHelper(SourceHelper):
         SourceHelper.__init__(self, provider)
         self.startindex = -1
         self.limit = -1
+        self.result_set = None
+
+    def close(self):
+        """
+        OGR Driver-specific handling of closing dataset.
+        If ExecuteSQL has been (successfully) called
+        must close ResultSet explicitly.
+        https://gis.stackexchange.com/questions/114112/
+        explicitly-close-a-ogr-result-object-from-a-call-to-executesql
+
+        """
+
+        if not self.result_set:
+            return
+
+        try:
+            self.provider.conn.ReleaseResultSet(self.result_set)
+        except Exception as err:
+            msg = 'ReleaseResultSet exception for Layer {}'.format(
+                self.provider.layer_name)
+            LOGGER.error(msg, err)
+        finally:
+            self.result_set = None
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -483,31 +525,34 @@ class CommonSourceHelper(SourceHelper):
 
     def get_layer(self):
         """
-        Gets OGR layer from OGR dataset.
+        Gets OGR Layer from opened OGR dataset.
         When startindex defined 1 or greater will invoke
-        OGR SQL SELECT with LIMIT and OFFSET.
+        OGR SQL SELECT with LIMIT and OFFSET and return
+        as Layer as ResultSet from ExecuteSQL on dataset.
         :return: OGR layer object
         """
         if self.startindex <= 0:
             return SourceHelper.get_layer(self)
 
+        self.close()
+
         sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
             ds_name=self.provider.layer_name,
             limit=self.limit,
             offset=self.startindex)
-        layer = self.provider.conn.ExecuteSQL(sql)
+        self.result_set = self.provider.conn.ExecuteSQL(sql)
 
         # Reset since needs to be set each time explicitly
         self.startindex = -1
         self.limit = -1
 
-        if not layer:
+        if not self.result_set:
             msg = 'Cannot get Layer {} via ExecuteSQL'.format(
                 self.provider.layer_name)
             LOGGER.error(msg)
             raise Exception(msg)
 
-        return layer
+        return self.result_set
 
 
 class ESRIJSONHelper(SourceHelper):
