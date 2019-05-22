@@ -30,7 +30,7 @@ function error() {
 
 # Workdir
 cd ${PYGEOAPI_HOME}
-ls
+
 echo "Trying to generate openapi.yml"
 pygeoapi generate-openapi-document -c ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
 
