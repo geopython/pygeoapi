@@ -1,0 +1,68 @@
+FROM debian:buster-slim
+
+LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
+
+# Docker file for full geoapi server with libs/packages for all providers.
+# Server runs with gunicorn. You can override ENV settings.
+# Defaults:
+# SCRIPT_NAME=/
+# CONTAINER_NAME=pygeoapi
+# CONTAINER_HOST=0.0.0.0
+# CONTAINER_PORT=80
+# WSGI_WORKERS=4
+# WSGI_WORKER_TIMEOUT=6000
+# WSGI_WORKER_CLASS=gevent
+
+# Calls entrypoint.sh to run. Inspect it for options.
+# Contains some test data. Also allows you to verify by running all unit tests.
+# Simply run: docker run -it geopython/pygeoapi test
+# Override the default config file /pygeoapi/local.config.yml
+# via Docker Volume mapping or within a docker-compose.yml file. See example at
+# https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
+
+# ARGS
+ARG TIMEZONE="Europe/London"
+ARG LOCALE="en_US.UTF-8"
+ARG ADD_DEB_PACKAGES=""
+ARG ADD_PIP_PACKAGES=""
+
+# ENV settings
+ENV TZ=${TIMEZONE} \
+	DEBIAN_FRONTEND="noninteractive" \
+	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils git" \
+	DEB_PACKAGES="locales libgdal20 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
+	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+
+ADD . /pygeoapi
+
+# Run all installs
+RUN \
+	# Install dependencies
+	apt-get update \
+	&& apt-get --no-install-recommends install -y ${DEB_BUILD_DEPS} ${DEB_PACKAGES} \
+	# Timezone
+	&& cp /usr/share/zoneinfo/${TZ} /etc/localtime\
+	&& dpkg-reconfigure tzdata \
+	# Locale
+	&& sed -i -e "s/# ${LOCALE} UTF-8/${LOCALE} UTF-8/" /etc/locale.gen \
+	&& dpkg-reconfigure --frontend=noninteractive locales \
+	&& update-locale LANG=${LOCALE} \
+	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
+	&& pip3 install ${PIP_PACKAGES} \
+	# Install pygeoapi
+	&& cd /pygeoapi \
+	&& pip3 install -r requirements.txt \
+	&& pip3 install -r requirements-dev.txt \
+	&& pip3 install -e . \
+	# Cleanup TODO: remove unused Locales and TZs
+	&& pip3 uninstall --yes wheel \
+	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
+	&& apt autoremove -y  \
+	&& rm -rf /var/lib/apt/lists/*
+
+COPY ./docker/default.config.yml /pygeoapi/local.config.yml
+COPY ./docker/entrypoint.sh /entrypoint.sh
+
+WORKDIR /pygeoapi
+ENTRYPOINT ["/entrypoint.sh"]
+
