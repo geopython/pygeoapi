@@ -32,7 +32,7 @@
             <tr>
                 <th>id</th>
                 {% for k, v in data['features'][0]['properties'].items() %}
-                <th>{{ k }}</td>
+                <td>{{ k }}</td>
                 {% endfor %}
             </tr>
           </thead>
@@ -74,7 +74,7 @@
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
-        'http://tile.osm.org/{z}/{x}/{y}.png', {
+        'https://tile.osm.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             subdomains: '1234'
         }

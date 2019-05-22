@@ -493,13 +493,13 @@ class API(object):
             'type': 'application/geo+json',
             'rel': 'self',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items'.format(
+            'href': '{}/collections/{}/items?f=json'.format(
                 self.config['server']['url'], dataset)
             }, {
             'type': 'text/html',
             'rel': 'alternate',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items'.format(
+            'href': '{}/collections/{}/items?f=html'.format(
                 self.config['server']['url'], dataset)
             }, {
             'type': 'application/geo+json',

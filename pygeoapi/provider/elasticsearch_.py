@@ -238,7 +238,8 @@ class ElasticsearchProvider(BaseProvider):
                             next(gen)
                     except StopIteration:
                         break
-                results['hits']['total'] = len(results['hits']['hits'])
+                results['hits']['total'] = \
+                    len(results['hits']['hits']) + startindex
             else:
                 results = self.es.search(index=self.index_name,
                                          from_=startindex, size=limit,
