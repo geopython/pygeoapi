@@ -184,6 +184,8 @@ def get_oas_30(cfg):
                 'tags': [k],
                 'parameters': [
                     {'$ref': '#/components/parameters/f'},
+                    {'$ref': '#/components/parameters/bbox'},
+                    {'$ref': '#/components/parameters/time'},
                     {'$ref': '#/components/parameters/limit'},
                     {'$ref': '#/components/parameters/sortby'},
                     {'$ref': '#/components/parameters/startindex'}
@@ -217,6 +219,11 @@ def get_oas_30(cfg):
                     'type': 'number',
                     'format': 'float'
                 }
+            elif v2['type'] == 'long':
+                schema = {
+                    'type': 'integer',
+                    'format': 'int64'
+                }
             else:
                 schema = {
                     'type': v2['type']
@@ -231,7 +238,7 @@ def get_oas_30(cfg):
                 'explode': False
             })
 
-        paths['{}/items/{{id}}'.format(collection_name_path)] = {
+        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
@@ -374,6 +381,33 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             },
+            'bbox': {
+                'name': 'bbox',
+                'in': 'query',
+                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'array',
+                    'minItems': 4,
+                    'maxItems': 6,
+                    'items': {
+                        'type': 'number'
+                    }
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'datetime': {
+                'name': 'datetime',
+                'in': 'query',
+                'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string'
+                },
+                'style': 'form',
+                'explode': False,
+            },
             'limit': {
                 'name': 'limit',
                 'in': 'query',
@@ -443,5 +477,5 @@ def generate_openapi_document(ctx, config_file):
     if config_file is None:
         raise click.ClickException('--config/-c required')
     with open(config_file) as ff:
-        s = yaml.load(ff)
+        s = yaml.load(ff, Loader=yaml.FullLoader)
         click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
