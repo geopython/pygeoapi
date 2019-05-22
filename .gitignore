@@ -107,4 +107,3 @@ local.openapi.yml
 # misc
 *.swp
 .pytest_cache
-/docker/
