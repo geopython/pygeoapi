@@ -1,12 +1,15 @@
 # pygeoapi Docker HOWTO
 
-Docker Images `geopython/pygeoapi:latest` and versions are available from DockerHub.
+Docker Images `geopython/pygeoapi:latest` and versions are
+[available from DockerHub](https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi).
 
 Each Docker Image contains a default configuration [default.config.yml](default.config.yml)
 with the project's test data and WFS3 datasets.
 
-You can override this default config via Docker Volume mapping.
-See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi).
+You can override this default config via Docker Volume mapping or by extending the Docker Image
+and copying in your config.
+See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi)
+for the latter method.
 
 Depending on your config you may need specific backends to be available.
 
@@ -50,25 +53,29 @@ version: "3"
 services:
 
   pygeoapi:
-    image: geopython/pygeoapi
-
-    env_file:
-      - pygeoapi.env
+    image: geopython/pygeoapi:latest
 
     volumes:
       - ./my.config.yml:/pygeoapi/local.config.yml
 
 ```
 
-See how the demo server is setup at
+Or you can create a `Dockerfile` extending the base Image and `COPY` in your config:
+
+```
+FROM geopython/pygeoapi:latest
+
+COPY ./my.config.yml /pygeoapi/local.config.yml
+
+```
+
+See how the demo server is setup this way at
 https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
-
-This also shows the `pygeoapi.env` file mainly needed when running from a sub-domain.
  
-## Running - Running on your domain
+## Running - Running on a sub-path
 
-By default the `pygeoapi` Docker Image will run from the `root` domain `/`.
-If you need to run from a sub-domain and have all internal URLs correct
+By default the `pygeoapi` Docker Image will run from the `root` path `/`.
+If you need to run from a sub-path and have all internal URLs correct
 you need to set `SCRIPT_NAME` environment variable.
   
 For example to run with `my.config.yml` on http://localhost:5000/mypygeoapi:
@@ -78,7 +85,29 @@ For example to run with `my.config.yml` on http://localhost:5000/mypygeoapi:
 	# browse to http://localhost:5000/mypygeoapi
 ```
 
-See https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
+Or within a `docker-compose.yml` full example:
+
+```
+version: "3"
+
+services:
+
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+
+    volumes:
+      - ./my.config.yml:/pygeoapi/local.config.yml
+
+    ports:
+      - "5000:80"
+      
+    environment:
+     - SCRIPT_NAME=/pygeoapi
+
+
+```
+
+See [pygeoapi demo service](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi)
 for an full example.
 
 

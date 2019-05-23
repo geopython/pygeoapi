@@ -1,0 +1,41 @@
+version: '3.3'
+
+services:
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+
+    container_name: pygeoapi_es
+
+    entrypoint:
+      - /es-entrypoint.sh
+
+    ports:
+      - 5000:80
+
+    volumes:
+      - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
+      - ./pygeoapi/es-entrypoint.sh:/es-entrypoint.sh
+      - ./pygeoapi/wait-for-elasticsearch.sh:/wait-for-elasticsearch.sh
+
+    links:
+      - elastic_search
+
+    depends_on:
+      - elastic_search
+
+  elastic_search:
+    build: ./ES
+
+    container_name: elastic
+    
+    ports:
+      - 9300:9300
+      - 9200:9200
+    volumes:
+      - elastic_search_data:/usr/share/elasticsearch/data
+
+volumes:
+  elastic_search_data: {}
+  
+#NOTE: Host requires changes in configuration to run ES
+#sudo sysctl -w vm.max_map_count=262144
