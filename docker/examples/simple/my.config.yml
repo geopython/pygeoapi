@@ -1,8 +1,8 @@
 server:
     bind:
         host: 0.0.0.0
-        port: 5000
-    url: http://localhost:5000/
+        port: 80
+    url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -131,3 +131,8 @@ datasets:
             data: tests/data/ne_110m_admin_0_countries.sqlite
             id_field: ogc_fid
             table: ne_110m_admin_0_countries
+
+processes:
+    hello-world:
+        processor:
+            name: HelloWorld
