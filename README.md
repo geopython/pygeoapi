@@ -56,6 +56,14 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # enter http://localhost:5000/api and click 'Explore'
 ```
 
+## Demo Server
+
+There is a demo server on https://demo.pygeoapi.io running the latest (Docker) version
+from the `master` branch of this repo. `pygeoapi` runs there at https://demo.pygeoapi.io/pygeoapi.
+
+The demo server setup and config is maintained within a seperate GH repo:
+https://github.com/geopython/demo.pygeoapi.io.
+
 ## Docker
 
 Best/easiest way to run `pygeoapi` is to use Docker.
@@ -65,6 +73,12 @@ are available.
 The version tagged `latest` is automatically built whenever code 
 in the `master` branch of this GitHub repo changes (autobuild). 
 This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/pygeoapi).
+So the chain is:
+ 
+```
+ (git push to master) --> (DockerHub Image autobuild) --> (demo server redeploy)
+
+```
 
 Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for
 details of the Docker implementation. To get started quickly 
