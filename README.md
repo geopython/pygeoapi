@@ -59,7 +59,7 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 ## Demo Server
 
 There is a demo server on https://demo.pygeoapi.io running the latest (Docker) version
-from the `master` branch of this repo. `pygeoapi` runs there at https://demo.pygeoapi.io/pygeoapi.
+from the `master` branch of this repo. `pygeoapi` runs there at https://demo.pygeoapi.io/master.
 
 The demo server setup and config is maintained within a seperate GH repo:
 https://github.com/geopython/demo.pygeoapi.io.
@@ -72,7 +72,7 @@ are available.
 
 The version tagged `latest` is automatically built whenever code 
 in the `master` branch of this GitHub repo changes (autobuild). 
-This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/pygeoapi).
+This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/master).
 So the chain is:
  
 ```
