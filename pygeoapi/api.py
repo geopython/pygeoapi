@@ -680,31 +680,37 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        processes_config = self.config['processes']
+        processes_config = self.config.get('processes', {})
 
-        if process is not None:
-            if process not in processes_config.keys():
-                exception = {
-                    'code': 'NotFound',
-                    'description': 'identifier not found'
-                }
-                LOGGER.error(exception)
-                return headers_, 404, json.dumps(exception)
+        if processes_config:
+            if process is not None:
+                if process not in processes_config.keys():
+                    exception = {
+                        'code': 'NotFound',
+                        'description': 'identifier not found'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 404, json.dumps(exception)
 
-            p = load_plugin('process', processes_config[process]['processor'])
-            p.metadata['jobControlOptions'] = ['sync-execute']
-            p.metadata['outputTransmission'] = ['value']
-            response = p.metadata
-        else:
-            processes = []
-            for k, v in processes_config.items():
-                p = load_plugin('process', processes_config[k]['processor'])
+                p = load_plugin('process',
+                                processes_config[process]['processor'])
                 p.metadata['jobControlOptions'] = ['sync-execute']
                 p.metadata['outputTransmission'] = ['value']
-                processes.append(p.metadata)
-            response = {
-                'processes': processes
-            }
+                response = p.metadata
+            else:
+                processes = []
+                for k, v in processes_config.items():
+                    p = load_plugin('process',
+                                    processes_config[k]['processor'])
+                    p.metadata['jobControlOptions'] = ['sync-execute']
+                    p.metadata['outputTransmission'] = ['value']
+                    processes.append(p.metadata)
+                response = {
+                    'processes': processes
+                }
+        else:
+            processes = []
+            response = {'processes': processes}
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
@@ -744,7 +750,9 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        if process not in self.config['processes'].keys():
+        processes = self.config.get('processes', {})
+
+        if not processes or process not in processes.keys():
             exception = {
                 'code': 'NotFound',
                 'description': 'identifier not found'
@@ -753,7 +761,7 @@ class API(object):
             return headers_, 404, json.dumps(exception)
 
         p = load_plugin('process',
-                        self.config['processes'][process]['processor'])
+                        processes[process]['processor'])
 
         data_ = json.loads(data)
         for input_ in data_['inputs']:
