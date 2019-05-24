@@ -79,7 +79,7 @@
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
     map.addLayer(new L.TileLayer(
-        'https://tile.osm.org/{z}/{x}/{y}.png', {
+        '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
             subdomains: '1234'
         }
