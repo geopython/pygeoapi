@@ -1,28 +1,29 @@
 FROM docker.elastic.co/elasticsearch/elasticsearch:5.6.8
 
-LABEL maintainer="jorge.dejesus@geocat.net"
+LABEL maintainer="jorge.dejesus@geocat.net justb4@gmail.com"
 ARG DATA_FOLDER=/usr/share/elasticsearch/data
 
 USER root
-COPY docker-entrypoint.sh  /docker-entrypoint.sh
 
+COPY docker-entrypoint.sh  /docker-entrypoint.sh
 COPY add_data.sh /add_data.sh
 
 RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O bin/wait-for-it.sh
-RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/data/ne_110m_populated_places_simple.geojson -O /ne_110m_populated_places_simple.geojson  
-RUN chmod +x bin/wait-for-it.sh 
-
+RUN chmod +x bin/wait-for-it.sh
+RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/data/ne_110m_populated_places_simple.geojson -O ${DATA_FOLDER}/ne_110m_populated_places_simple.geojson
+RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/load_es_data.py -O /load_es_data.py
 
 RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml
 RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 
-RUN yum -y install python-setuptools \
-	&& easy_install elasticsearch \
+RUN yum --enablerepo=extras -y install epel-release \
+	&& yum install -y python-pip \
+	&& yum install -y python-setuptools \
+	&& pip install --upgrade pip && pip install elasticsearch \
 	&& yum clean packages
 
-RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/load_es_data.py -O /load_es_data.py
-
 USER elasticsearch
+
 CMD ["/usr/share/elasticsearch/bin/elasticsearch"]
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

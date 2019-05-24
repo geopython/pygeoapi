@@ -56,70 +56,44 @@ docker run -p 80:8080 swaggerapi/swagger-ui
 # enter http://localhost:5000/api and click 'Explore'
 ```
 
+## Demo Server
+
+There is a demo server on https://demo.pygeoapi.io running the latest (Docker) version
+from the `master` branch of this repo. `pygeoapi` runs there at https://demo.pygeoapi.io/master.
+
+The demo server setup and config is maintained within a seperate GH repo:
+https://github.com/geopython/demo.pygeoapi.io.
+
 ## Docker
 
-Docker folder contains 2 sub-folders:
+Best/easiest way to run `pygeoapi` is to use Docker.
+On DockerHub [pygeoapi Docker Images](https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi) 
+are available.
 
-- Simple
-- Compose
-
-First folder will create a simple docker image with only GeoJSON, CSV as SQLite providers. While the second folder contains a full docker composition to run pygeoapi with ES.
-
-For simple testing and demonstration is more convenient to use the simple image.
-
-Docker images have the following settings:
-- Alpine edge OS
-- spatialite compilation 4.3.0a
-- pygeoapi running on port **5000**  
-
-
-### Simple (image)
-
-Simple sub folder contains a simple implementation of pygeoapi with out ES (only: GeoJSON, CSV and SQLite provider).
+The version tagged `latest` is automatically built whenever code 
+in the `master` branch of this GitHub repo changes (autobuild). 
+This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/master).
+So the chain is:
+ 
 ```
-cd docker/simple
-docker build -t pygeoapi:latest .
-docker run -p5000:5000 -v /pygeoapi/tests/data pygeoapi:latest
+ (git push to master) --> (DockerHub Image autobuild) --> (demo server redeploy)
+
 ```
 
+Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for
+details of the Docker implementation. To get started quickly 
+[several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples) will get you up and running.
 
-## Docker (composition) 
+### Unit Testing 
 
-Docker folder contains a docker-composition necessary to build a minimal pygeoapi using the complete set of providers providers (ES needs to be run as a separated service). Composition is only for development and testing in local environment:
-
-### ES
-
-- official elasticsearch: **5.6.8** on **CentosOS 7**
-- ports **9300** and **9200**
-
-Elasticsearch requires the host system to have its virtual memory parameter (**max_map_count**) [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
-
-```  
-sudo sysctl -w vm.max_map_count=262144
-```
-
-If the docker composition fails with the following error:
-```
-docker_elastic_search_1 exited with code 78
-```
-it is very likely that you forgot to setup the sysctl
-
-### Building and Running composition:
-
-To build and run the composition in localhost
-```
-cd docker/compose
-sudo sysctl -w vm.max_map_count=262144
-docker-compose build
-docker-compose up 
-``` 
-
-### Testing code 
-
-Unit tests are run using pytest on the top project folder:
+Unit tests are run using `pytest` from the top project folder:
 
 ```
 pytest tests
 ```
 
-Environment variables are set on file `pytest.ini`
+NB beware that some tests require Provider dependencies (libraries) to be available
+and that the ElasticSearch and Postgres tests require their respective 
+backend servers running.
+
+Environment variables are set in the file [pytest.ini](pytest.ini).
