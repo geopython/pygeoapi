@@ -12,6 +12,9 @@ server:
     pretty_print: true
     limit: 10
     # templates: /path/to/templates
+    map:
+        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
+        attribution: 'Wikimedia maps | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 
 logging:
     level: ERROR
