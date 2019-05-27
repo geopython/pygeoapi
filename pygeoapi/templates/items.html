@@ -41,7 +41,7 @@
               <tr>
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
-                  <td data-label="{{ k }}">{{ v }}</td>
+                  <td data-label="{{ k }}">{{ v | urlize(20, target='_blank') }}</td>
                   {% endfor %}
               </tr>
             {% endfor %}

@@ -53,7 +53,7 @@
                     </ul>
                 </td>
                 {% else %}
-                <td>{{ v }}</td>
+                <td>{{ v | urlize(25, target='_blank') }}</td>
                 {% endif %}
               </tr>
               {% endfor %}
