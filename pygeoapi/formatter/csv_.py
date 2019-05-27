@@ -76,12 +76,12 @@ class CSVFormatter(BaseFormatter):
         if self.geom:
             LOGGER.debug('Including point geometry')
             if data['features'][0]['geometry']['type'] == 'Point':
-                    fields.insert(0, 'x')
-                    fields.insert(1, 'y')
-                    is_point = True
+                fields.insert(0, 'x')
+                fields.insert(1, 'y')
+                is_point = True
             else:
-                    # TODO: implement wkt geometry serialization
-                    LOGGER.debug('not a point geometry, skipping')
+                # TODO: implement wkt geometry serialization
+                LOGGER.debug('not a point geometry, skipping')
 
         LOGGER.debug('CSV fields: {}'.format(fields))
 

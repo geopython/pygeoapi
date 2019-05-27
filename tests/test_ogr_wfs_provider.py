@@ -134,7 +134,7 @@ def test_query_hits_ms(config_MapServer_WFS):
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     assert hits > 5000
@@ -147,7 +147,7 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     assert hits == 186
@@ -161,7 +161,7 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
 #     feature_collection = p.query(resulttype='hits')
 #     assert feature_collection.get('type', None) == 'FeatureCollection'
 #     features = feature_collection.get('features', None)
-#     assert len(features) is 0
+#     assert len(features) == 0
 #     hits = feature_collection.get('numberMatched', None)
 #     assert hits is not None
 #     assert hits > 8000000
@@ -177,7 +177,7 @@ def test_query_bbox_hits_ms(config_MapServer_WFS):
         bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
@@ -195,11 +195,11 @@ def test_query_bbox_hits_gs(config_GeoServer_WFS):
 
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
-    assert hits is 1
+    assert hits == 1
 
 
 def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
@@ -213,11 +213,11 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
 
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
-    assert hits is 1
+    assert hits == 1
 
 
 def test_query_bbox_ms(config_MapServer_WFS):
