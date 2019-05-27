@@ -81,7 +81,7 @@ def test_query_hits_28992(config_shapefile_28992):
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     assert hits == 2481
@@ -94,7 +94,7 @@ def test_query_hits_4326(config_shapefile_4326):
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     assert hits == 2481
@@ -110,11 +110,11 @@ def test_query_bbox_hits_4326(config_shapefile_4326):
         bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
-    assert hits is 1
+    assert hits == 1
 
 
 def test_query_bbox_hits_28992(config_shapefile_28992):
@@ -128,11 +128,11 @@ def test_query_bbox_hits_28992(config_shapefile_28992):
 
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
-    assert hits is 1
+    assert hits == 1
 
 
 def test_query_bbox_28992(config_shapefile_28992):
