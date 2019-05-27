@@ -1,18 +1,27 @@
-elasticsearch
+# Flask-based CORS setup
 flask_cors
-coverage
-docutils
-flake8
-twine
-wheel
-psycopg2
-pypandoc
+
+# testing
 pytest
 pytest-cov
 pytest-env
+coverage
+
+# PEP8
+flake8
+
+# packaging/PyPI
+twine
+wheel
+docutils
+pypandoc
 # the packages below are used to handle HTTP/SSL
 # errors when uploading to PyPI (https://github.com/pypa/twine/issues/273)
 pyOpenSSL
 ndg-httpsclient
 pyasn1
+
+# providers
+elasticsearch
 GDAL>=2.2
+psycopg2==2.7.6
