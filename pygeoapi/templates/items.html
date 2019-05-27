@@ -32,7 +32,9 @@
             <tr>
                 <th>id</th>
                 {% for k, v in data['features'][0]['properties'].items() %}
+                {% if loop.index < 5 %}
                 <td>{{ k }}</td>
+                {% endif %}
                 {% endfor %}
             </tr>
           </thead>
@@ -41,7 +43,9 @@
               <tr>
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
+                  {% if loop.index < 5 %}
                   <td data-label="{{ k }}">{{ v }}</td>
+                  {% endif %}
                   {% endfor %}
               </tr>
             {% endfor %}
