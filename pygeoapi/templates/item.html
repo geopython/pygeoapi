@@ -81,7 +81,8 @@
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            subdomains: '1234'
+            subdomains: '1234',
+            attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
     var geojson_data = {{ data |to_json }};
