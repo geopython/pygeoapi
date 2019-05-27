@@ -44,7 +44,7 @@
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
                   {% if loop.index < 5 %}
-                  <td data-label="{{ k }}">{{ v }}</td>
+                  <td data-label="{{ k }}">{{ v | urlize(20, target='_blank') }}</td>
                   {% endif %}
                   {% endfor %}
               </tr>
@@ -78,9 +78,10 @@
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
-        'https://tile.osm.org/{z}/{x}/{y}.png', {
+        '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            subdomains: '1234'
+            subdomains: '1234',
+            attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
     var geojson_data = {{ data['features'] |to_json }};
