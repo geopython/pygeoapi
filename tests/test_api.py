@@ -337,6 +337,7 @@ def test_execute_process(config, api_):
     response = json.loads(response)
     assert response['code'] == 'NotFound'
 
+
 def test_check_format():
     args = {
         'f': 'html'
