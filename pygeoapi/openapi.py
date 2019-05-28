@@ -33,6 +33,7 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
+from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -477,5 +478,5 @@ def generate_openapi_document(ctx, config_file):
     if config_file is None:
         raise click.ClickException('--config/-c required')
     with open(config_file) as ff:
-        s = yaml.load(ff, Loader=yaml.FullLoader)
+        s = yaml_load(ff)
         click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
