@@ -1,4 +1,4 @@
 click
 Flask
-PyYAML
+PyYAML>=5.1
 unicodecsv
