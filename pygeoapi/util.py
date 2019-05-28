@@ -29,6 +29,8 @@
 
 import logging
 
+import yaml
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -47,6 +49,22 @@ def get_url(scheme, host, port, basepath):
     url = '{}{}'.format(url, basepath)
 
     return url
+
+
+def yaml_load(fh):
+    """
+    serializes a YAML files into a pyyaml object
+
+    :param fh: file handle
+
+    :returns: `dict` representation of YAML
+    """
+
+    try:
+        return yaml.load(fh, Loader=yaml.FullLoader)
+    except AttributeError as err:
+        LOGGER.warning('YAML loading error: {}'.format(err))
+        return yaml.load(fh)
 
 
 def str2bool(value):

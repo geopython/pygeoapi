@@ -31,11 +31,11 @@ import json
 import os
 
 import pytest
-import yaml
 
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from pygeoapi.api import API, check_format
+from pygeoapi.util import yaml_load
 
 
 def get_test_file_path(filename):
@@ -58,13 +58,13 @@ def make_req_headers(**kwargs):
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        return yaml.load(fh, Loader=yaml.FullLoader)
+        return yaml_load(fh)
 
 
 @pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
-        return yaml.load(fh, Loader=yaml.FullLoader)
+        return yaml_load(fh)
 
 
 @pytest.fixture()
