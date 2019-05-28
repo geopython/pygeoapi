@@ -31,11 +31,11 @@
 import os
 
 import click
-import yaml
 
 from flask import Flask, make_response, request
 
 from pygeoapi.api import API
+from pygeoapi.util import yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -46,7 +46,7 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
 with open(os.environ.get('PYGEOAPI_CONFIG')) as fh:
-    CONFIG = yaml.load(fh, Loader=yaml.FullLoader)
+    CONFIG = yaml_load(fh)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
@@ -73,7 +73,7 @@ def root():
 @APP.route('/api')
 def api():
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
-        openapi = yaml.load(ff, Loader=yaml.FullLoader)
+        openapi = yaml_load(ff)
 
     headers, status_code, content = api_.api(request.headers, request.args,
                                              openapi)
