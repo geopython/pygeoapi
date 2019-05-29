@@ -1,3 +1,16 @@
+python-pygeoapi (0.6.0) trusty; urgency=medium
+
+  * rename feature.ID to feature.id
+  * add HTML output for processing functionality
+  * OGC CITE fixes
+  * fix pathing to work behind proxies
+  * add OGR provider support
+  * add Docker support
+  * make map control properties configurable
+  * add safeguard for yaml parsing
+
+ -- Tom Kralidis <tomkralidis@gmail.com>  Mon, 29 Apr 2019 14:29:57 +0000
+
 python-pygeoapi (0.5.0) trusty; urgency=medium
 
   * plugin refactoring
