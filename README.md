@@ -14,6 +14,7 @@ git clone https://github.com/geopython/pygeoapi.git
 cd pygeoapi
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
+# install provider requirements accordingly from requirements-provider.txt
 pip install -e .
 cp pygeoapi-config.yml local.config.yml
 vi local.config.yml
