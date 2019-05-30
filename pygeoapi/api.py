@@ -125,12 +125,12 @@ class API(object):
             }, {
               'rel': 'conformance',
               'type': 'application/json',
-              'title': 'conformance',
+              'title': 'Conformance',
               'href': '{}/conformance'.format(self.config['server']['url'])
             }, {
               'rel': 'data',
               'type': 'application/json',
-              'title': 'collections',
+              'title': 'Collections',
               'href': '{}/collections'.format(self.config['server']['url'])
             }
         ]
