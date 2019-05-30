@@ -1,0 +1,3 @@
+elasticsearch
+GDAL>=2.2,<3.0
+psycopg2==2.7.6

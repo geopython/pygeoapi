@@ -53,6 +53,7 @@ RUN \
 	&& cd /pygeoapi \
 	&& pip3 install -r requirements.txt \
 	&& pip3 install -r requirements-dev.txt \
+	&& pip3 install -r requirements-provider.txt \
 	&& pip3 install -e . \
 	# Cleanup TODO: remove unused Locales and TZs
 	&& pip3 uninstall --yes wheel \
