@@ -9,11 +9,16 @@
       <meta itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
       <h2 itemprop="name">{{ data['title'] }}</h2>
       <div itemprop="description">{{ data['description'] }}</div>
-      <div itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
-        <meta itemprop="encodingFormat" content="text/html" />
-        <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
-          Browse through the items of collection {{ data['title'] }}</a></div>
-      <h2>Links</h2>
+      <h3>View</h3>
+      <ul>
+        <li>
+          <div itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
+            <meta itemprop="encodingFormat" content="text/html" />
+            <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
+              Browse through the items of "{{ data['title'] }}</a>"</div>
+        </li>
+      </ul>
+      <h3>Links</h3>
       <ul>
       {% for link in data['links'] %}
           <li itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
