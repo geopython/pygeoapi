@@ -16,10 +16,10 @@
 
 {% block body %}
   <section id="collections"></section>    
-  <section id="items">
     <div class="row col-sm-12">
         <h2>Items</h2>
     </div>
+  <section id="items">
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
@@ -27,7 +27,6 @@
       </div>  
       <div class="col-sm-12 col-md-6">
           <table class="striped">
-            <caption>Items</caption>
             <thead>
             <tr>
                 <th>id</th>
