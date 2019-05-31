@@ -239,7 +239,7 @@ def get_oas_30(cfg):
                 'explode': False
             })
 
-        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
+        paths['{}/items/{{id}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
@@ -398,8 +398,8 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             },
-            'datetime': {
-                'name': 'datetime',
+            'time': {
+                'name': 'time',
                 'in': 'query',
                 'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
                 'required': False,
