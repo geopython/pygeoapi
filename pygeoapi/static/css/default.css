@@ -29,7 +29,6 @@ header button, header [type="button"], header .button, header [role="button"] {
   }
 
 .footer {
-    position: fixed;
     left: 0;
     bottom: 0;
     width: 100%;
