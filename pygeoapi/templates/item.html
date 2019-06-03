@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import 'macros.jinja2' as macros %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }} 
 / <a href="../../../collections">Collections</a>
@@ -52,7 +53,7 @@
                     </ul>
                 </td>
                 {% else %}
-                <td>{{ v | urlize(25) }}</td>
+                  <td>{{ macros.render_item_value(v, 80) }}</td>
                 {% endif %}
               </tr>
               {% endfor %}

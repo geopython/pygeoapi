@@ -1,0 +1,13 @@
+{# Optionally renders an img element, otherwise standard value or link rendering #}
+{% macro render_item_value(v, width) -%}
+    {% set val = v | string | trim | lower %}
+    {% if val|length and
+      (val.endswith(".jpg") or val.endswith(".jpeg") or val.endswith(".png") or val.endswith(".gif") or val.endswith(".bmp"))
+    %}
+        {# Ends with image extension: render img element with link to image #}
+        <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
+    {% else %}
+        {# All other cases: text or link value #}
+        {{ v | urlize() }}
+    {% endif %}
+{%- endmacro %}
