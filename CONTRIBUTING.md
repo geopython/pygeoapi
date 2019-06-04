@@ -14,11 +14,11 @@ pygeoapi has the following modes of contribution:
 
 ## Code of Conduct
 
-Contributors to this project are expected to act respectfully toward others in accordance with the [OSGeo Code of Conduct](http://www.osgeo.org/code_of_conduct).
+Contributors to this project are expected to act respectfully toward others in accordance with the [OSGeo Code of Conduct](https://www.osgeo.org/code_of_conduct).
 
-## Submitting bugs
+## Submitting Bugs
 
-### Due diligence
+### Due Diligence
 
 Before submitting a bug, please do the following:
 
@@ -66,7 +66,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * All contributors shall be listed at https://github.com/geopython/pygeoapi/graphs/contributors
 * Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE
 
-### Version control branching
+### Version Control Branching
 
 * Always __make a new branch__ for your work, no matter how small. This makes
   it easy for others to take just that one set of changes from your repository,
@@ -89,7 +89,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
       while, __make sure you rebase or merge to latest ``master``__ to ensure a
         speedier resolution.
 
-### Code formatting
+### Code Formatting
 
 * __Please follow the coding conventions and style used in the pygeoapi repository.__ 
 * pygeoapi endeavours to follow the
@@ -98,4 +98,5 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 ## Suggesting Enhancements
 
 We welcome suggestions for enhancements, but reserve the right to reject them
-if they do not follow future plans for pygeoapi. 
+if they do not follow future plans for pygeoapi.
+
