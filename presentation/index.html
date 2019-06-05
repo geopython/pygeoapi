@@ -98,7 +98,7 @@ html.intro body {
 				
 				## API for geospatial data   
 				---
-				[@tomkralidis](https://twitter.com/tomkralidis)  [@JMendesDeJesus](https://twitter.com/JMendesDeJesus) [@normanbarker](https://twitter.com/normanbarker) [@perrygeo](https://twitter.com/perrygeo)  <!-- .element: class="twitter"-->
+				[@tomkralidis](https://twitter.com/tomkralidis)  [@JMendesDeJesus](https://twitter.com/JMendesDeJesus) [@normanbarker](https://twitter.com/normanbarker) [@perrygeo](https://twitter.com/perrygeo) [@justb4](https://twitter.com/justb4)  <!-- .element: class="twitter"-->
 				</textarea>
 			</section>
 			
@@ -359,10 +359,9 @@ responses:
 				<!--  pygeoapi section vertical-->
 				<section>
 					<!--  First slide -->
-					<h1>pyGeoapi</h1>
-					<img
-						src="https://pygeoapi.io/presentation/static/geopython.png">
-					<p>(part of the amazing Geopython community in GitHub)</p>
+					<h1>pygeoapi</h1>
+					<img src="https://pygeoapi.io/presentation/static/geopython.png">
+					<p>Part of the amazing Geopython community in GitHub</p>
 					<p>
 						<a href="https://github.com/geopython">https://github.com/geopython</a>
 					</p>
@@ -371,9 +370,10 @@ responses:
 					<textarea data-template>
 	     ## pygeoapi
 	     
-	     - More than just a pre WFS 3.0 implementation <!-- .element: class="fragment" data-fragment-index="1"  -->
-	     - API access to data sets <!-- .element: class="fragment" data-fragment-index="2"  -->
-	     - Powered by:  <!-- .element: class="fragment" data-fragment-index="3"  -->  
+		- More than just a WFS v3 implementation <!-- .element: class="fragment" data-fragment-index="1"  -->
+		- Access geospatial data via OGC APIs <!-- .element: class="fragment" data-fragment-index="2"  -->
+		- OSGeo Community Project <!-- .element: class="fragment" data-fragment-index="2"  -->
+		- Powered by:  <!-- .element: class="fragment" data-fragment-index="3"  -->
 	    ![alt text](https://pygeoapi.io/presentation/static/flask.png "Powered by Flask") <!-- .element: class="fragment" data-fragment-index="4" style="background: white; border-radius: 10px" -->
 	    </textarea>
 				</section>
@@ -381,34 +381,83 @@ responses:
 					<textarea data-template>
 	     ## pygeoapi
 	     - Flask supporting REST <!-- .element: class="fragment" data-fragment-index="1" style="text-align: center; -->
-	     - Automatic generated OpenAPI yml (description end points) <!-- .element: class="fragment" data-fragment-index="2"  -->
-	     - Data provider agnostic <!-- .element: class="fragment" data-fragment-index="3"  -->
-	     - Currently 4 drivers implemented <!-- .element: class="fragment" data-fragment-index="4"  -->
+	     - OpenAPI endpoint automatically generated  <!-- .element: class="fragment" data-fragment-index="2"  -->
+	     - Data provider agnostic (plugins) <!-- .element: class="fragment" data-fragment-index="3"  -->
+	     - Docker Images <!-- .element: class="fragment" data-fragment-index="4"  -->
 	     </textarea>
 				</section>
 
 				<section>
+					<h2>Data Providers</h2>
 					<table>
 						<tbody>
 							<tr>
-								<td><img src="https://pygeoapi.io/presentation/static/elastic_search.png" /></td>
-								<td><img src="https://pygeoapi.io/presentation/static/csv_file.jpg" /></td>
-								<td><img src="https://pygeoapi.io/presentation/static/spaltiallite.jpg" /></td>
-								<td><img src="https://pygeoapi.io/presentation/static/geojson-logo.png" /></td>
+								<td><img src="static/elastic_search.png" /></td>
+								<td><img src="static/csv_file.jpg" /></td>
+								<td><img src="static/spaltiallite.jpg" /></td>
+								<td><img src="static/geojson-logo.png" /></td>
 							</tr>
 							<tr>
 								<td align="center">Elasticsearch</td>
 								<td align="center">CSV</td>
-								<td align="center">Spatialite</td>
-								<td align="center">GeoJSON</td>
+								<td align="center">Spatialite*</td>
+								<td align="center">GeoJSON*</td>
+							</tr>
+						</tbody>
+					</table>
+					<p>
+						* also via GDAL-OGR Provider
+					</p>
+				</section>
+				<section>
+					<h2>Data Providers - Cont</h2>
+					<table>
+						<tbody>
+							<tr>
+								<td><img src="static/gdal.png" /></td>
+							</tr>
+							<tr>
+								<td align="center">GDAL-OGR</td>
 							</tr>
 						</tbody>
 					</table>
 				</section>
 
 				<section>
-					<img src="https://pygeoapi.io/presentation/static/pygeoapi.png"></img> <a
-						href="https://github.com/geopython/pygeoapi" target="_blank">https://github.com/geopython/pygeoapi</a>
+					<h2>Data Providers - GDAL-OGR</h2>
+					<ul>
+						<li>via OGR-Python bindings</li>
+						<li>in theory <a href="https://gdal.org/drivers/vector/" target="_blank">~100 Vector Formats!</a></li>
+						<li>thus: WFS2, GeoPackage, Shapefile, GeoJSON, PostGIS, ...</li>
+						<li>paging, reprojection, bbox/attr/id-query, auth</li>
+						<li>thus: unlock existing WFS2!</li>
+					</ul>
+				</section>
+				<section>
+					<p>
+						<a href="https://pygeoapi.io" target="_blank">https://pygeoapi.io</a>
+					</p>
+					<img src="static/pygeoapi.io.png" alt="image pygeoapi site"/>
+				</section>
+				<section> <!-- road map -->
+					<h2>pygeoapi - Roadmap</h2>
+					<ul>
+						<li>More data providers</li>
+						<li>Content negotiation (e.g. Response as GeoPackage, GML,...)</li>
+						<li>Advanced filters (CQL) </li>
+						<li>More OGC APIs: Maps, Tiles, Coverages, Processes</li>
+					</ul>
+				</section>
+				<section>
+					<h2>pygeoapi - Links</h2>
+					<ul>
+						<li>Home: <a href="https://pygeoapi.io" target="_blank">https://pygeoapi.io</a></li>
+						<li>Demo: <a href="https://demo.pygeoapi.io" target="_blank">https://demo.pygeoapi.io</a></li>
+						<li>GitHub: <a href="https://github.com/geopython/pygeoapi" target="_blank">https://github.com/geopython/pygeoapi</a></li>
+						<li>Docker: <a href="https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi" target="_blank">https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi</a></li>
+						<li>Chat: <a href="https://gitter.im/geopython/pygeoapi" target="_blank">https://gitter.im/geopython/pygeoapi</a></li>
+						<li>Mail: <a href="https://lists.osgeo.org/mailman/listinfo/pygeoapi" target="_blank">https://lists.osgeo.org/mailman/listinfo/pygeoapi</a></li>
+					</ul>
 				</section>
 			</section>
 			<!-- end of pygeoapi -->
@@ -424,45 +473,51 @@ responses:
 			<textarea data-template>
 			![alt text](https://pygeoapi.io/presentation/static/docker.png "Docker logo")
 			
-			- In dockerhub we have images of pygeoapi
+			- pygeoapi Docker Images on DockerHub
 			- Images create linux containers running content
-			- We can use images to test locally or in server
-			
+			- Use Docker Images to test locally or deploy in server
+			- See READMEs
 			</textarea>
 			</section>
 			<section data-markdown>
 			<textarea data-template>
-			![alt text](https://pygeoapi.io/presentation/static/docker_hub.png "Docker Hub")
+			![alt text](https://pygeoapi.io/presentation/static/docker_hub.png "DockerHub/Cloud")
 			
-			Geopython dockerhub
-			
-			https://hub.docker.com/u/geopython/dashboard/ <!-- .element: target="_blank"  -->
+			pygeoapi dockerhub
+
+			https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi <!-- .element: target="_blank"  -->
 			</textarea>
 			</section>
 		     	
 		  <section data-markdown>
 					<textarea data-template>
-			Pulling from dockerhub
+			## Up and Running in 2 Minutes
+			Pull from DockerHub
 			```
-			docker pull geopython/pygeoapi
+			docker pull geopython/pygeoapi:latest
 			``` 
-			Running local
+			Run (default config)
 			```
-			docker run -p5000:5000 -v /pygeoapi/tests/data pygeoapi:latest
+			docker run -p 5000:80 -it geopython/pygeoapi:latest
+
 			```
-			Testing:
+			Test:
 			```
 			http://localhost:5000
 			http://localhost:5000/collections
-			http://localhost:5000/collections/countries/items?limit=2
-			http://localhost:5000/collections/countries/items?f=html
+			http://localhost:5000/collections/lakes/items?limit=2
+			http://localhost:5000/collections/lakes/items?f=html
 			```
 			</textarea>
 				</section>
-				<section data-markdown>
-				 <textarea data-template>
-				  Let's see if we can make it run :)
-				 </textarea>
+				<section>
+					<h2>Docker - Next</h2>
+					<ul>
+						<li>custom config via Docker Volume Mapping</li>
+						<li>run with Docker Compose</li>
+						<li>subpath running via Flask "SCRIPT_NAME" env var</li>
+						<li>examples: https://github.com/geopython/pygeoapi/tree/master/docker/examples</li>
+					</ul>
 				</section>
 				<section data-markdown>
 					<textarea data-template>
@@ -517,18 +572,6 @@ responses:
 			</section>
 			
 			</section><!-- End Production instances -->
-			<section data-markdown> <!-- road map -->
-			<textarea data-template>
-			## Roadmap
-			
-			- Implement more data providers <!-- .element: class="fragment" data-fragment-index="1"  -->
-			- PostGIS and Geopackage as data providers <!-- .element: class="fragment" data-fragment-index="2"  -->
-			- Support for OGR <!-- .element: class="fragment" data-fragment-index="3"  -->
-			- Improve code and functions <!-- .element: class="fragment" data-fragment-index="4"  -->
-			- Content negotiation (Reponse as geopackage/gml) <!-- .element: class="fragment" data-fragment-index="5"  -->
-			- Advance filters (CQL)  <!-- .element: class="fragment" data-fragment-index="6"  -->
-			</textarea>
-			</section>
 			<section>
 			<section data-markdown><!--  STAC section -->
 				<textarea data-template>
