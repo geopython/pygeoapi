@@ -5,28 +5,26 @@
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="processes" itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
-      <meta itemprop="includedInDataCatalog" content="{{ config['server']['url'] }}" />
+    <section id="processes" itemscope itemtype="http://schema.org/WebAPI">
       <h2 itemprop="name">{{ data['title'] }}</h2>
       <div itemprop="description">{{ data['description'] }}</div>
-      <div itemprop="distribution" itemscope itemtype="http://schema.org/WebAPI">
-        <meta itemprop="encodingFormat" content="text/html" />
-      </div>
+      <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ data['id'] }}" />
       <div class="row">
         <div class="col-sm-12 col-md-6">
             <table class="striped">
               <caption>Inputs</caption>
               <thead>
               <tr>
+                <th>Id</th>
                 <th>Name</th>
                 <th>Description</th>
               </tr>
               </thead>
               <tbody>
                 {% for input_ in data['inputs'] %}
-                <tr>
-                  <td itemprop="name" data-label="name">{{ input_['id'] }}</td>
-                  <td itemprop="title" data-label="title">{{ input_['title'] }}</td>
+                <tr itemprop="parameter" itemscope itemtype="http://schema.org/Parameter">
+                  <td itemprop="id" data-label="name">{{ input_['id'] }}</td>
+                  <td itemprop="name" data-label="title">{{ input_['title'] }}</td>
                   <td itemprop="description" data-label="description">
                     {{ input_['description'] | striptags | truncate }}
                   </td>
@@ -39,10 +37,9 @@
       <h2>Links</h2>
       <ul>
       {% for link in data['links'] %}
-          <li itemprop="distribution" itemscope itemtype="http://schema.org/DataDownload">
-            <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
-            <span itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
-            <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
+          <li>
+            <a itemprop="documentation" title="{{ link['rel'] }}" href="{{ link['href'] }}">
+            {{ link['title'] }} ({{ link['type'] }})
             </a></li>
       {% endfor %}
       </ul>
