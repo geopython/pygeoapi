@@ -1,10 +1,10 @@
-pygeoapi (0.6.0-1~bionic1) bionic; urgency=medium
+pygeoapi (0.6.0-1~trusty1) trusty; urgency=medium
 
   * Disable tests during package build.
 
  -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Mon, 10 Jun 2019 19:00:00 +0200
 
-pygeoapi (0.6.0-1~bionic0) bionic; urgency=medium
+pygeoapi (0.6.0-1~trusty0) trusty; urgency=medium
 
   * Update debian packaging to support multiple python versions.
 
