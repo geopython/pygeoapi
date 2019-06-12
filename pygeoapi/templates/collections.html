@@ -16,9 +16,10 @@
               <tbody>
                 {% for k, v in config['datasets'].items() %}
                 <tr itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
-                  <td itemprop="name" data-label="name">
-                    <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
-                    <a title="{{ v['title'] | striptags | truncate }}" href="{{ config['server']['url'] }}/collections/{{ k }}">{{ v['title'] | striptags | truncate }}</a>
+                  <td data-label="name">
+                    <a  itemprop="url" title="{{ v['title'] | striptags | truncate }}" 
+                      href="{{ config['server']['url'] }}/collections/{{ k }}">
+                      <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
                   </td>
                   <td itemprop="description" data-label="description">
                     {{ v['description'] | striptags | truncate }}
