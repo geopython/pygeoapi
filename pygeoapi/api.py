@@ -97,6 +97,9 @@ class API(object):
 
         fcm = {
             'links': [],
+            'title': self.config['metadata']['identification']['title'],
+            'description':
+                self.config['metadata']['identification']['description']
         }
 
         LOGGER.debug('Creating links')
