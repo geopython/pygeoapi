@@ -80,6 +80,9 @@
 					<a href="https://twitter.com/justb4">@justb4</a>
 					<a href="https://twitter.com/pvangenuchten">@pvgenuchten</a>
 				</p>
+				<p>
+					<small>version: June 19, 2019</small>
+				</p>
 			</section>
 			
 			<!--  Start of WFS 2.0 issues -->
@@ -203,6 +206,7 @@
 					<li>Develop WFS 3.0 based on Swagger/OpenAPI (v3) </li>
 					<li>Write specification using GitHub</li>
 					<li>First implementations</li>
+					<li><strong>pygeoapi was born on Valentine 2018!</strong></li>
 				</ul>
 			</section>
 			<section>
@@ -295,59 +299,60 @@ responses:
 			<section id="spec">
 				<section>
 				<h2>V. The WFS 3.0 Spec</h2>
+					<p>
+						NB: renamed as: <strong>"OGC API - Features"</strong>
+					</p>
 				</section>
 			
-			<section data-markdown>
-				<textarea data-template>
-	## Spec
+			<section>
+				<h2>Spec</h2>
 
-	https://github.com/opengeospatial/WFS_FES/blob/master/openapi.yaml 
+				<p>
+					<a href="https://github.com/opengeospatial/WFS_FES" target="_blanc">github.com/opengeospatial/WFS_FES</a>
+				</p>
 	
-	The file above describes the WFS 3.0 structure 	
+				<p>Maintained in GitHub</p>
 	
-	</textarea>
 			</section>
+			<section>
+				<small>By C. Portele - <a href="https://github.com/opengeospatial/OGC-API-Hackathon-2019/tree/master/Presentations" target="_blanc">link</a></small>
+					<img src="static/oaf-spec-urls.png" style="background: white; border-radius: 10px"/>
+			</section>
+
 			<section>
 				<img src="static/EndPoints.png" />
 				
 				<a href="https://app.swaggerhub.com/apis/cholmesgeo/WFS3/M1" target="_blank">Check it in SwaggerHub</a>
 			</section>
-			<section data-markdown>
-				<textarea data-template>
-			## Example
-			```
-			  /collections
-			``` 
-			```
-			  /collections/countries 
-			```
-			``` 
-			  /collections/countries/items 
-			```
-			```
-			  /collections/countries/items/The_Netherlands
-			 ```
-			Data is structured and each feature is a REST representation
-			</textarea>
+
+
+			<section>
+				<h2>Example</h2>
+				<pre>
+	/collections
+
+	/collections/countries
+
+	/collections/countries/items
+
+	/collections/countries/items/The_Netherlands
+					
+				</pre>
+				<p>Data is structured and each Feature is a REST representation</p>
 			</section>
-			<section data-markdown>
-				<textarea data-template>
-		### OGC document WFS 3.0
-		https://rawgit.com/opengeospatial/WFS_FES/master/docs/17-069.html <!-- .element: target="_blank"  -->
-				
-		### Repository (extra info)
-		https://github.com/opengeospatial/WFS_FES <!-- .element: target="_blank"  --> 
-	   
-		</textarea>
+
+			<section>
+				<h2>OGC API - Features</h2>
+				<h3>Links</h3>
+				<ul>
+					<li><a href="https://github.com/opengeospatial/WFS_FES" target="_blank">GitHub Repository</a></li>
+					<li><a href="https://github.com/opengeospatial/WFS_FES/tree/master/core/openapi/schemas" target="_blank">OpenAPI Schemas</a></li>
+					<li><a href="http://docs.opengeospatial.org/DRAFTS/17-069.html" target="_blank">Draft 17-069.html</a></li>
+					<li><a href="https://gitter.im/opengeospatial/WFS_FES" target="_blank">Gitter Chat</a></li>
+					<li><a href="https://github.com/opengeospatial/OGC-API-Hackathon-2019" target="_blanc">OGC-API-Hackathon-2019</a></li>
+				</ul>
 			</section>
-			<section data-markdown>
-				<textarea data-template>
-		### OGC Seeks Public Comment on WFS 3.0 Candidate Standard
-		![alt text](static/ogc.png "OGC seeks public comment on WFS 3.0")
-		 
-		http://www.opengeospatial.org/pressroom/pressreleases/2830  <!-- .element: target="_blank"  -->
-		</textarea>
-			</section>
+
 			</section><!--  end of Spec -->
 
 			<!-- Start of pygeoapi -->
@@ -358,21 +363,26 @@ responses:
 				<section>
 					<!--  First slide -->
 					<h2>pygeoapi</h2>
-					<img src="static/geopython.png">
+					<img src="static/geopython.png" alt="geopython site">
 					<p>Part of the amazing Geopython community in GitHub</p>
 					<p>
-						<a href="https://github.com/geopython">https://github.com/geopython</a>
+						<a href="https://geopython.github.io/" target="_blank">geopython.github.io</a>
 					</p>
 				</section>
+				
+				<section>
+					<a href="https://geopython.github.io/" target="_blank"><img src="static/geopython.github.io.png" alt="geopython.github.io" style="background: white; border-radius: 10px"/></a>
+				</section>
+
 				<section>
 					<h3>pygeoapi</h3>
 					<ul>
 						<li>More than just a WFS v3 implementation </li>
 						<li>Access geospatial data via OGC APIs </li>
 						<li>OSGeo Community Project (in Motion) </li>
-						<li>Powered by:</li>
+						<li>Powered (default) by:</li>
 					</ul>
-					<img src="static/flask.png" style="background: white; border-radius: 10px"/>
+					<img src="static/flask.png" alt="flask img" style="background: white; border-radius: 10px"/>
 				</section>
 
 				<section>
@@ -383,6 +393,10 @@ responses:
 						<li>Data provider agnostic (plugins)</li>
 						<li>Docker Images</li>
 					</ul>
+				</section>
+
+				<section>
+					<img src="static/pygeoapi-arch1.png" style="background: white; border-radius: 10px"/>
 				</section>
 
 				<section>
@@ -436,6 +450,12 @@ responses:
 						<a href="https://pygeoapi.io" target="_blank">https://pygeoapi.io</a>
 					</p>
 					<img src="static/pygeoapi.io.png" alt="image pygeoapi site"/>
+				</section>
+				<section>
+					<h3>Demo</h3>
+					<p>
+						<a href="https://demo.pygeoapi.io/master/" target="_blank"><img src="static/pygeoapi-demo-1.png" alt="pygeoapi-demo img" style="background: white; border-radius: 10px"/></a>
+					</p>
 				</section>
 				<section> <!-- road map -->
 					<h2>pygeoapi - Roadmap</h2>
