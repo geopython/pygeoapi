@@ -70,7 +70,7 @@ COPY ./my.config.yml /pygeoapi/local.config.yml
 ```
 
 See how the demo server is setup this way at
-https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
+https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
  
 ## Running - Running on a sub-path
 
