@@ -53,6 +53,29 @@ HEADERS = {
 FORMATS = ['json', 'html']
 
 
+def pre_process(func):
+    """
+        Decorator performing header copy and format\
+        checking before sending arguments to mehods
+
+        :param func: decorated function
+
+        :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        cls = args[0]
+        headers_ = HEADERS.copy()
+        format_ = check_format(args[2], args[1])
+        if len(args) > 3:
+            args = args[3:]
+            return func(cls, headers_, format_, *args, **kwargs)
+        else:
+            return func(cls, headers_, format_)
+
+    return inner
+
+
 class API(object):
     """API object"""
 
@@ -73,19 +96,17 @@ class API(object):
 
         setup_logger(self.config['logging'])
 
-    def root(self, headers, args):
+    @pre_process
+    def root(self, headers_, format_):
         """
         Provide API
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -149,19 +170,19 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def api(self, headers, args, openapi):
+    @pre_process
+    def api(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
         :param openapi: dict of OpenAPI definition
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-        format_ = check_format(args, headers)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
 
@@ -177,19 +198,17 @@ class API(object):
 
         return headers_, 200, json.dumps(openapi)
 
-    def api_conformance(self, headers, args):
+    @pre_process
+    def api_conformance(self,  headers_, format_):
         """
         Provide conformance definition
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -216,20 +235,18 @@ class API(object):
 
         return headers_, 200, json.dumps(conformance)
 
-    def describe_collections(self, headers, args, dataset=None):
+    @pre_process
+    def describe_collections(self,  headers_, format_, dataset=None):
         """
         Provide feature collection metadata
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -344,7 +361,7 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def get_features(self, headers, args, dataset):
+    def get_features(self, headers,  args, dataset):
         """
         Queries feature collection
 
@@ -568,21 +585,19 @@ class API(object):
 
         return headers_, 200, json.dumps(content)
 
-    def get_feature(self, headers, args, dataset, identifier):
+    @pre_process
+    def get_feature(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: dataset name
         :param identifier: feature identifier
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -660,7 +675,8 @@ class API(object):
 
         return headers_, 200, json.dumps(content)
 
-    def describe_processes(self, headers, args, process=None):
+    @pre_process
+    def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
 
@@ -670,10 +686,6 @@ class API(object):
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
