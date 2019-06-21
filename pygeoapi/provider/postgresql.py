@@ -184,8 +184,8 @@ class PostgreSQLProvider(BaseProvider):
                 try:
                     cursor.execute(sql_query)
                 except Exception as err:
-                    LOGGER.error('Error executing sql_query: {}'.format(
-                        sql_query.as_string(cursor)))
+                    LOGGER.error('Error executing sql_query: {}: {}'.format(
+                        sql_query.as_string(cursor)), err)
                     LOGGER.error('Using public schema: {}'.format(db.schema))
                     raise ProviderQueryError()
 

@@ -1,3 +1,34 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Just van den Broecke <justb4@gmail.com>
+#
+# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2019 Just van den Broecke
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
 FROM debian:buster-slim
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
@@ -30,7 +61,7 @@ ARG ADD_PIP_PACKAGES=""
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils git" \
-	DEB_PACKAGES="locales libgdal20 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
+	DEB_PACKAGES="locales libgdal20 python3-gdal libsqlite3-mod-spatialite curl ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ADD . /pygeoapi
@@ -53,6 +84,7 @@ RUN \
 	&& cd /pygeoapi \
 	&& pip3 install -r requirements.txt \
 	&& pip3 install -r requirements-dev.txt \
+	&& pip3 install -r requirements-provider.txt \
 	&& pip3 install -e . \
 	# Cleanup TODO: remove unused Locales and TZs
 	&& pip3 uninstall --yes wheel \

@@ -7,7 +7,7 @@
         "id": 0,
         "scalerank": 0,
         "name": "Lake Baikal",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Baikal",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -181,7 +181,7 @@
         "id": 1,
         "scalerank": 0,
         "name": "Lake Winnipeg",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipeg",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -247,7 +247,7 @@
         "id": 2,
         "scalerank": 0,
         "name": "Great Slave Lake",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Slave_Lake",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -365,7 +365,7 @@
         "id": 3,
         "scalerank": 0,
         "name": "L. Ontario",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ontario",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -451,7 +451,7 @@
         "id": 4,
         "scalerank": 0,
         "name": "L. Erie",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Erie",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -545,7 +545,7 @@
         "id": 5,
         "scalerank": 0,
         "name": "Lake Superior",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Superior",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -687,7 +687,7 @@
         "id": 6,
         "scalerank": 0,
         "name": "Lake Victoria",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Victoria",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -781,7 +781,7 @@
         "id": 7,
         "scalerank": 0,
         "name": "Lake Ladoga",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ladoga",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -981,7 +981,7 @@
         "id": 9,
         "scalerank": 0,
         "name": "Lake Tanganyika",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tanganyika",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -1185,7 +1185,7 @@
         "id": 11,
         "scalerank": 0,
         "name": "Aral Sea",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Aral_Sea",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1373,7 +1373,7 @@
         "id": 13,
         "scalerank": 1,
         "name": "Lake Okeechobee",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Okeechobee",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1415,7 +1415,7 @@
         "id": 14,
         "scalerank": 1,
         "name": "Lago de Nicaragua",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Nicaragua",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1465,7 +1465,7 @@
         "id": 15,
         "scalerank": 1,
         "name": "Lake Tana",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tana",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1515,7 +1515,7 @@
         "id": 16,
         "scalerank": 1,
         "name": "Lago Titicaca",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Titicaca",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1601,7 +1601,7 @@
         "id": 17,
         "scalerank": 1,
         "name": "Lake Winnipegosis",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipegosis",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1699,7 +1699,7 @@
         "id": 18,
         "scalerank": 1,
         "name": "Lake Onega",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Onega",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1813,7 +1813,7 @@
         "id": 19,
         "scalerank": 1,
         "name": "Great Salt Lake",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Salt_Lake",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1871,7 +1871,7 @@
         "id": 20,
         "scalerank": 1,
         "name": "Great Bear Lake",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Bear_Lake",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -1989,7 +1989,7 @@
         "id": 21,
         "scalerank": 1,
         "name": "Lake Athabasca",
-        "name_alt": null,
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Athabasca",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -2042,8 +2042,8 @@
       "properties": {
         "id": 22,
         "scalerank": 1,
-        "name": "Reindeer\rLake",
-        "name_alt": null,
+        "name": "Reindeer Lake",
+        "name_alt": "https://en.wikipedia.org/wiki/Reindeer_Lake",
         "admin": null,
         "featureclass": "Lake"
       },
@@ -2120,8 +2120,8 @@
       "properties": {
         "id": 23,
         "scalerank": 0,
-        "name": "Lake\rHuron",
-        "name_alt": null,
+        "name": "Lake Huron",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Huron",
         "admin": "admin-0",
         "featureclass": "Lake"
       },
@@ -2266,8 +2266,8 @@
       "properties": {
         "id": 24,
         "scalerank": 0,
-        "name": "Lake\rMichigan",
-        "name_alt": null,
+        "name": "Lake Michigan",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Michigan",
         "admin": "admin-0",
         "featureclass": "Lake"
       },

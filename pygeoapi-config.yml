@@ -1,3 +1,32 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#
+# Copyright (c) 2019 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
 server:
     bind:
         host: 0.0.0.0
@@ -10,6 +39,9 @@ server:
     pretty_print: true
     limit: 10
     # templates: /path/to/templates
+    map:
+        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
+        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 
 logging:
     level: ERROR
@@ -82,34 +114,6 @@ datasets:
                 x_field: long
                 y_field: lat
 
-    ne_110m_populated_places_simple:
-        title: Populated Places
-        description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
-        keywords:
-            - populated places
-            - cities
-            - towns
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/
-              hreflang: en-US
-            - type: application/gzip
-              rel: canonical
-              title: download
-              href: http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_populated_places_simple.zip
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-        provider:
-            name: Elasticsearch
-            data: http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection
-            id_field: geonameid
-
     lakes:
         title: Large Lakes
         description: lakes of the world, public domain
@@ -133,186 +137,6 @@ datasets:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
             id_field: id
-
-    countries:
-        title: Countries in the world
-        description: Countries of the world
-        keywords:
-            - countries
-            - natural eart
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: http://www.naturalearthdata.com/
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-            temporal:
-                begin: None
-                end: now  # or empty
-        provider:
-            name: SQLite
-            data: tests/data/ne_110m_admin_0_countries.sqlite
-            id_field: ogc_fid
-            table: ne_110m_admin_0_countries
-    poi:
-        title: Portuguese point of interrest
-        description: Portuguese points of interrest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands
-        keywords:
-            - Portugal
-            - POI
-            - Point of Interrest
-            - Madeira
-            - Azores
-            - OSM
-            - Open Street Map
-            - NaturaGIS
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://wiki.openstreetmap.org/wiki/Points_of_interest/
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-31.2687 32.5898 -6.18992 42.152]
-            temporal:
-                begin: None
-                end: now  # or empty
-        provider:
-            name: GeoPackage
-            data: tests/data/poi_portugal.gpkg
-            id_field: osm_id
-            table: poi_portugal
-
-    hotosm_bdi_waterways:
-        title: Waterways of Burundi
-        description: Waterways of Burundi, Africa. Dataset timestamp  1st Sep 2018 - Humanitarian OpenStreetMap Team (HOT)
-        keywords:
-            - Burundi
-            - Waterways
-            - Africa
-            - OSM
-            - HOT
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://data.humdata.org/dataset/hotosm_bdi_waterways
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [28.9845376683957 -4.48174334765485,30.866396969019 -2.3096796]
-            temporal:
-                begin: None
-                end: now  # or empty
-        provider:
-            name: PostgreSQL
-            data:
-                host: 127.0.0.1
-                dbname: test
-                user: postgres
-                password: postgres
-                port: 5432
-                schema: public
-            id_field: osm_id
-            table: hotosm_bdi_waterways
-
-    dutch_georef_stations:
-        title: Dutch Georef Stations via OGR WFS
-        description: Locations of RD/GNSS-reference stations from Dutch Kadaster PDOK a.k.a RDInfo. Uses MapServer WFS v2 backend via OGRProvider.
-        keywords:
-            - Netherlands
-            - GNSS
-            - Surveying
-            - Holland
-            - RD
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3ebe56dc-5f09-4fb3-b224-55c2db4ca2fd?tab=general
-              hreflang: nl-NL
-        extents:
-            spatial:
-                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
-            temporal:
-                begin: None
-                end: now  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: WFS
-                source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
-                source_srs: EPSG:28992
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                source_options:
-#                    OGR_WFS_VERSION: 1.1.0
-                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: gml_id
-            layer: rdinfo:stations
-
-    ogr_addresses_sqlite:
-        # Gotcha: don't use the name 'ogc_fid' as id-field in your SQLite tables:
-        # OGR will not show this field within GeoJSON properties dict.
-        title: Dutch addresses (subset Otterlo). OGR SQLite Driver
-        description: Dutch addresses subset.
-        keywords:
-            - Netherlands
-            - addresses
-            - INSPIRE
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/4074b3c3-ca85-45ad-bc0d-b5fca8540z0b
-              hreflang: nl-NL
-        extents:
-            spatial:
-                bbox: [50.7539, 7.21097, 53.4658, 3.37087]
-            temporal:
-                begin: None
-                end: now  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: SQLite
-                source: tests/data/dutch_addresses_4326.sqlite
-                source_srs: EPSG:4326
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    CPL_DEBUG: NO
-
-            id_field: id
-            layer: ogrgeojson
 
 processes:
     hello-world:

@@ -31,11 +31,11 @@ import json
 import os
 
 import pytest
-import yaml
 
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from pygeoapi.api import API, check_format
+from pygeoapi.util import yaml_load
 
 
 def get_test_file_path(filename):
@@ -58,13 +58,13 @@ def make_req_headers(**kwargs):
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        return yaml.load(fh, Loader=yaml.FullLoader)
+        return yaml_load(fh)
 
 
 @pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
-        return yaml.load(fh, Loader=yaml.FullLoader)
+        return yaml_load(fh)
 
 
 @pytest.fixture()
@@ -107,6 +107,10 @@ def test_root(config, api_):
     assert isinstance(root, dict)
     assert 'links' in root
     assert len(root['links']) == 6
+    assert 'title' in root
+    assert root['title'] == 'pygeoapi default instance'
+    assert 'description' in root
+    assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
     rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
@@ -146,6 +150,8 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
+    assert len(collections['collections']) == 1
+    assert len(collections['links']) == 2
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {}, 'foo')
@@ -160,7 +166,7 @@ def test_describe_collections(config, api_):
     assert collection['name'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'Observations'
-    assert len(collection['links']) == 6
+    assert len(collection['links']) == 8
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {'f': 'html'}, 'obs')

@@ -1,3 +1,32 @@
+# =================================================================
+#
+# Authors: Just van den Broecke <justb4@gmail.com>
+#
+# Copyright (c) 2019 Just van den Broecke
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
 # Needs to be run like: python3 -m pytest
 
 import logging
@@ -54,7 +83,7 @@ def test_query_hits_4326(config_sqlite_4326):
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     assert hits == 2481
@@ -70,11 +99,11 @@ def test_query_bbox_hits_4326(config_sqlite_4326):
         bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) is 0
+    assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
     print('hits={}'.format(hits))
-    assert hits is 1
+    assert hits == 1
 
 
 def test_query_bbox_4326(config_sqlite_4326):

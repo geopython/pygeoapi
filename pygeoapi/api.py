@@ -118,6 +118,9 @@ class API(object):
 
         fcm = {
             'links': [],
+            'title': self.config['metadata']['identification']['title'],
+            'description':
+                self.config['metadata']['identification']['description']
         }
 
         LOGGER.debug('Creating links')
@@ -146,12 +149,12 @@ class API(object):
             }, {
               'rel': 'conformance',
               'type': 'application/json',
-              'title': 'conformance',
+              'title': 'Conformance',
               'href': '{}/conformance'.format(self.config['server']['url'])
             }, {
               'rel': 'data',
               'type': 'application/json',
-              'title': 'collections',
+              'title': 'Collections',
               'href': '{}/collections'.format(self.config['server']['url'])
             }
         ]
@@ -327,20 +330,20 @@ class API(object):
 
             fcm['collections'].append(collection)
 
-            fcm['links'].append({
-                'type': 'application/json',
-                'rel': 'self',
-                'title': 'This document as JSON',
-                'href': '{}/collections?f=json'.format(
-                    self.config['server']['url'])
-            })
-            fcm['links'].append({
-                'type': 'text/html',
-                'rel': 'alternate',
-                'title': 'This document as HTML',
-                'href': '{}/collections?f=html'.format(
-                    self.config['server']['url'])
-            })
+        fcm['links'].append({
+            'type': 'application/json',
+            'rel': 'self',
+            'title': 'This document as JSON',
+            'href': '{}/collections?f=json'.format(
+                self.config['server']['url'])
+        })
+        fcm['links'].append({
+            'type': 'text/html',
+            'rel': 'alternate',
+            'title': 'This document as HTML',
+            'href': '{}/collections?f=html'.format(
+                self.config['server']['url'])
+        })
 
         if format_ == 'html':  # render
             fcm['links'][0]['rel'] = 'alternate'

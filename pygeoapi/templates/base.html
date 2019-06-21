@@ -20,11 +20,10 @@
   </head>
   <body>
     <header class="sticky row" itemscope itemtype="http://schema.org/DataCatalog" itemref="collections">
-      <meta itemprop="url" content="{{ config['server']['url'] }}" />
       <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
       <div class="col-sm-12 col-md-10 col-md-offset-1">
-        <a role="button" itemprop="name" href="{{ config['server']['url'] }}/?f=html">
-          {{ config['metadata']['identification']['title'] }}</a>
+        <a role="button" itemprop="url" href="{{ config['server']['url'] }}">
+          <span itemprop="name">{{ config['metadata']['identification']['title'] }}</span></a>
         <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" style="float:right">Contact</a>
       </div>
     </header>
@@ -49,11 +48,13 @@
       </div>
     </div>
     </main>
-    <footer class="row bottom">
+    <div class="footer">
+      <div class="row">
         <div class="col-sm-12 col-md-10 col-md-offset-1">
           Powered by <a title="pygeoapi" href="https://pygeoapi.io">pygeoapi</a> {{ version }}
         </div>
-    </footer>   
+      </div>
+    </div>
     {% block extrafoot %}
     {% endblock %}
   </body>

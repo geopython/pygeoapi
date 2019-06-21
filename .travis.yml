@@ -33,6 +33,7 @@ install:
   - pip3 install GDAL==`gdalinfo --version | cut -d' ' -f2 | cut -d',' -f1`
   - pip3 install -r requirements.txt
   - pip3 install -r requirements-dev.txt
+  - pip3 install -r requirements-provider.txt
   - python3 setup.py install
 
 

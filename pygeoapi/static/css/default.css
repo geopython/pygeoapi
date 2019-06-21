@@ -27,3 +27,13 @@ main {
 header button, header [type="button"], header .button, header [role="button"] {
       text-transform: none;
   }
+
+.footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 40px; /* Set the fixed height of the footer here */
+    line-height: 40px; /* Vertically center the text there */
+    background-color:rgb(230, 230, 230);
+}

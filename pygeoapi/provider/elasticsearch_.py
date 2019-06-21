@@ -197,10 +197,10 @@ class ElasticsearchProvider(BaseProvider):
                 sp = sort['property']
 
                 if self.fields[sp]['type'] == 'string':
-                        LOGGER.debug('setting ES .raw on property')
-                        sort_property = 'properties.{}.raw'.format(sp)
+                    LOGGER.debug('setting ES .raw on property')
+                    sort_property = 'properties.{}.raw'.format(sp)
                 else:
-                        sort_property = 'properties.{}'.format(sp)
+                    sort_property = 'properties.{}'.format(sp)
 
                 sort_order = 'asc'
                 if sort['order'] == 'D':

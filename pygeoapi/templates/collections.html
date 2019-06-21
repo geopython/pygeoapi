@@ -6,11 +6,7 @@
 {% block body %}
     <section id="collections">
       <h2>Collections in this service</h2>
-
-      <div class="row">
-        <div class="col-sm-12 col-md-6">
-            <table class="striped">
-              <caption>Collections</caption>
+            <table class="striped" style="overflow: visible;">
               <thead>
               <tr>
                 <th>Name</th>
@@ -20,9 +16,10 @@
               <tbody>
                 {% for k, v in config['datasets'].items() %}
                 <tr itemprop="dataset" itemscope itemtype="http://schema.org/Dataset">
-                  <td itemprop="name" data-label="name">
-                    <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
-                    <a title="{{ v['title'] | striptags | truncate }}" href="{{ config['server']['url'] }}/collections/{{ k }}">{{ v['title'] | striptags | truncate }}</a>
+                  <td data-label="name">
+                    <a  itemprop="url" title="{{ v['title'] | striptags | truncate }}" 
+                      href="{{ config['server']['url'] }}/collections/{{ k }}">
+                      <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
                   </td>
                   <td itemprop="description" data-label="description">
                     {{ v['description'] | striptags | truncate }}
@@ -31,7 +28,5 @@
                 {% endfor %}
               </tbody>
             </table>
-        </div>
-      </div>
     </section>
 {% endblock %}

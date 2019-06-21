@@ -1,4 +1,17 @@
 {% extends "base.html" %}
+{# Optionally renders an img element, otherwise standard value or link rendering #}
+{% macro render_item_value(v, width) -%}
+    {% set val = v | string | trim | lower %}
+    {% if val|length and
+      (val.endswith(".jpg") or val.endswith(".jpeg") or val.endswith(".png") or val.endswith(".gif") or val.endswith(".bmp"))
+    %}
+        {# Ends with image extension: render img element with link to image #}
+        <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
+    {% else %}
+        {# All other cases: text or link value #}
+        {{ v | urlize() }}
+    {% endif %}
+{%- endmacro %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }} 
 / <a href="../../../collections">Collections</a>
@@ -29,7 +42,6 @@
         </div>
         <div class="col-md-6 col-sm-12">
             <table class="striped">
-              <caption>Item properties</caption>
               <thead>
               <tr>
                 <th>Property</th>
@@ -53,7 +65,7 @@
                     </ul>
                 </td>
                 {% else %}
-                <td>{{ v }}</td>
+                  <td>{{ render_item_value(v, 80) }}</td>
                 {% endif %}
               </tr>
               {% endfor %}
@@ -79,9 +91,9 @@
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
     map.addLayer(new L.TileLayer(
-        'https://tile.osm.org/{z}/{x}/{y}.png', {
+        '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            subdomains: '1234'
+            attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
     var geojson_data = {{ data |to_json }};
