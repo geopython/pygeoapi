@@ -29,6 +29,7 @@
 
 from datetime import datetime
 import json
+import io
 import logging
 import multiprocessing
 import os
@@ -782,7 +783,7 @@ class API(object):
             if 'sync-execute' in args and args['sync-execute'] == 'false':
                 LOGGER.debug('asynchronous execution specified')
                 _process = multiprocessing.Process(
-                    target=self.execute_handler,
+                    target=self._execute_handler,
                     args=(p, job_id, data_dict, True))
                 _process.start()
 
@@ -792,7 +793,7 @@ class API(object):
                 return headers_, 201, ''
             else:
                 LOGGER.debug('synchronous execution specified')
-                outputs = self.execute_handler(p, job_id, data_dict)
+                outputs = self._execute_handler(p, job_id, data_dict)
 
             m = p.metadata
             if 'raw' in args and str2bool(args['raw']):
@@ -824,14 +825,16 @@ class API(object):
         """
 
         process_start_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
-        filename = '{}-{}'.format(p.id, job_id)
+
+        filename = '{}-{}'.format(p.metadata['id'], job_id)
         job_filename = os.path.join(
             self.config['server']['manager']['output_dir'], filename)
 
         job_metadata = {
             'identifier': job_id,
-            'processid': p.id,
+            'processid': p.metadata['id'],
             'process_start_datetime': process_start_datetime,
+            'process_end_datetime': None,
             'status': 'running',
             'location': job_filename
         }
@@ -839,6 +842,18 @@ class API(object):
         self.manager.add_job(job_metadata)
 
         outputs = p.execute(data_dict)
+
+        with io.open(job_filename, 'w') as fh:
+            fh.write(json.dumps(outputs))
+
+        process_end_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
+
+        job_update_metadata = {
+            'process_end_datetime': process_end_datetime,
+            'status': 'finished'
+        }
+
+        self.manager.update_job(job_id, job_update_metadata)
 
         if not async_:
             return outputs

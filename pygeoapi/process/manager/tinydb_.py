@@ -106,6 +106,18 @@ class TinyDBManager(BaseManager):
             doc_id = tr.insert(job_metadata)
         return doc_id
 
+    def update_job(self, job_id, update_dict):
+        """
+        Updates a job
+
+        :param update_dict: `dict` of property updates
+
+        :returns: `bool` of status result
+        """
+
+        with transaction(self.db) as tr:
+            tr.update(update_dict, tinydb.where('identifier') == job_id)
+
     def delete_jobs(self, max_jobs, older_than):
         """
         TODO
