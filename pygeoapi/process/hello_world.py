@@ -97,8 +97,6 @@ class HelloWorldProcessor(BaseProcessor):
             'value': data['name']
         }]
 
-        import time
-        time.sleep(60)
         return outputs
 
     def __repr__(self):

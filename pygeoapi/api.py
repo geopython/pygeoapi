@@ -83,8 +83,6 @@ class API(object):
             self.manager = load_plugin('process_manager',
                                        self.config['server']['manager'])
 
-            self.manager.create()
-
     def root(self, headers, args):
         """
         Provide API
@@ -836,7 +834,7 @@ class API(object):
             'process_start_datetime': process_start_datetime,
             'process_end_datetime': None,
             'status': 'running',
-            'location': job_filename
+            'location': None
         }
         LOGGER.debug('adding job metadata')
         self.manager.add_job(job_metadata)
@@ -850,7 +848,8 @@ class API(object):
 
         job_update_metadata = {
             'process_end_datetime': process_end_datetime,
-            'status': 'finished'
+            'status': 'finished',
+            'location': job_filename
         }
 
         self.manager.update_job(job_id, job_update_metadata)

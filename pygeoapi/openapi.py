@@ -328,7 +328,18 @@ def get_oas_30(cfg):
                 'summary': 'Process {} execution'.format(p.metadata['title']),
                 'description': p.metadata['description'],
                 'tags': [k],
-                'parameters': [],
+                'parameters': [{
+                    'name': 'sync-execute',
+                    'in': 'query',
+                    'description': 'sync-execute',
+                    'required': False,
+                    'schema': {
+                        'type': 'string',
+                        'default': 'true'
+                    },
+                    'style': 'form',
+                    'explode': False
+                }],
                 'responses': {
                     200: {
                         'description': 'successful operation'
@@ -338,7 +349,7 @@ def get_oas_30(cfg):
                     },
                     404: {
                         'description': 'not found'
-                    },
+                    }
                 },
                 'requestBody': {
                     'description': 'Mandatory execute request JSON',
@@ -407,7 +418,7 @@ def get_oas_30(cfg):
                     'type': 'string'
                 },
                 'style': 'form',
-                'explode': False,
+                'explode': False
             },
             'limit': {
                 'name': 'limit',
@@ -429,7 +440,7 @@ def get_oas_30(cfg):
                 'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
                 'required': False,
                 'schema': {
-                    'type': 'string',
+                    'type': 'string'
                 },
                 'style': 'form',
                 'explode': False

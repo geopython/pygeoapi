@@ -30,7 +30,6 @@
 import logging
 
 import tinydb
-from tinyrecord import transaction
 
 from pygeoapi.process.manager.base import BaseManager
 
@@ -54,9 +53,10 @@ class TinyDBManager(BaseManager):
         self.name = manager_def['name']
         self.connection = manager_def['connection']
 
-    def create(self):
+    def connect(self):
+
         """
-        Create manager
+        connect to manager
 
         :returns: `bool` of status of result
         """
@@ -72,6 +72,7 @@ class TinyDBManager(BaseManager):
         """
 
         self.db.purge()
+        self.db.close()
         return True
 
     def get_jobs(self, processid=None, status=None):
@@ -85,13 +86,14 @@ class TinyDBManager(BaseManager):
         :returns: 'list` of jobs (identifier, status, process identifier)
         """
 
+        self.connect()
         if processid is None:
             return [doc.doc_id for doc in self.db.all()]
         else:
             query = tinydb.Query()
             return self.db.search(query.processid == processid)
 
-        raise NotImplementedError()
+        self.db.close()
 
     def add_job(self, job_metadata):
         """
@@ -102,8 +104,9 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of add job result
         """
 
-        with transaction(self.db) as tr:
-            doc_id = tr.insert(job_metadata)
+        self.connect()
+        doc_id = self.db.insert(job_metadata)
+        self.db.close()
         return doc_id
 
     def update_job(self, job_id, update_dict):
@@ -115,8 +118,10 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of status result
         """
 
-        with transaction(self.db) as tr:
-            tr.update(update_dict, tinydb.where('identifier') == job_id)
+        self.connect()
+        self.db.update(update_dict, tinydb.where('identifier') == job_id)
+        self.db.close()
+        return True
 
     def delete_jobs(self, max_jobs, older_than):
         """
@@ -134,6 +139,7 @@ class TinyDBManager(BaseManager):
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
+        self.connect()
         query = tinydb.Query()
         r = self.db.search(query.processid == processid, query.jobid == jobid)
 
