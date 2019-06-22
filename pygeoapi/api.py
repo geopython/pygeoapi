@@ -30,7 +30,9 @@
 from datetime import datetime
 import json
 import logging
+import multiprocessing
 import os
+import uuid
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -52,6 +54,8 @@ HEADERS = {
 
 FORMATS = ['json', 'html']
 
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
 
 class API(object):
     """API object"""
@@ -72,6 +76,13 @@ class API(object):
             self.config['server']['templates'] = TEMPLATES
 
         setup_logger(self.config['logging'])
+
+        # TODO: add as decorator
+        if 'manager' in self.config['server']:
+            self.manager = load_plugin('process_manager',
+                                       self.config['server']['manager'])
+
+            self.manager.create()
 
     def root(self, headers, args):
         """
@@ -525,8 +536,7 @@ class API(object):
             }
         ]
 
-        content['timeStamp'] = datetime.utcnow().strftime(
-            '%Y-%m-%dT%H:%M:%S.%fZ')
+        content['timeStamp'] = datetime.utcnow().strftime(DATETIME_FORMAT)
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
@@ -722,7 +732,7 @@ class API(object):
 
         return headers_, 200, json.dumps(response)
 
-    def execute_process(self, headers, args, data, process):
+    def execute_process(self, method, headers, args, data, process):
         """
         Execute process
 
@@ -738,6 +748,10 @@ class API(object):
 
         data_dict = {}
         response = {}
+
+        if method == 'GET':
+            response = self.manager.get_jobs(process)
+            return headers_, 200, json.dumps(response)
 
         if not data:
             exception = {
@@ -763,7 +777,23 @@ class API(object):
             data_dict[input_['id']] = input_['value']
 
         try:
-            outputs = p.execute(data_dict)
+            job_id = str(uuid.uuid1())
+
+            if 'sync-execute' in args and args['sync-execute'] == 'false':
+                LOGGER.debug('asynchronous execution specified')
+                _process = multiprocessing.Process(
+                    target=self.execute_handler,
+                    args=(p, job_id, data_dict, True))
+                _process.start()
+
+                url = '{}/processes/{}/jobs/{}'.format(
+                    self.config['server']['url'], process, job_id)
+                headers_['Location'] = url
+                return headers_, 201, ''
+            else:
+                LOGGER.debug('synchronous execution specified')
+                outputs = self.execute_handler(p, job_id, data_dict)
+
             m = p.metadata
             if 'raw' in args and str2bool(args['raw']):
                 headers_['Content-Type'] = \
@@ -771,6 +801,7 @@ class API(object):
                 response = outputs
             else:
                 response['outputs'] = outputs
+
             return headers_, 201, json.dumps(response)
         except Exception as err:
             exception = {
@@ -779,6 +810,39 @@ class API(object):
             }
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
+
+    def _execute_handler(self, p, job_id, data_dict, async_=False):
+        """
+        Process execution handler
+
+        :param p: `pygeoapi.process` object
+        :param job_id: job identifier
+        :param data_dict: `dict` of data parameters
+        :param async_: `bool` whether to return or dispatch results
+
+        :returns: response payload or void if `async` is `True`
+        """
+
+        process_start_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
+        filename = '{}-{}'.format(p.id, job_id)
+        job_filename = os.path.join(
+            self.config['server']['manager']['output_dir'], filename)
+
+        job_metadata = {
+            'identifier': job_id,
+            'processid': p.id,
+            'process_start_datetime': process_start_datetime,
+            'status': 'running',
+            'location': job_filename
+        }
+        LOGGER.debug('adding job metadata')
+        self.manager.add_job(job_metadata)
+
+        outputs = p.execute(data_dict)
+
+        if not async_:
+            return outputs
+        return
 
 
 def check_format(args, headers):

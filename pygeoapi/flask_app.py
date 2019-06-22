@@ -144,11 +144,8 @@ def describe_processes(name=None):
 
 @APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
 def execute_process(name=None):
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, name)
+    headers, status_code, content = api_.execute_process(
+        request.method, request.headers, request.args, request.data, name)
 
     response = make_response(content, status_code)
 

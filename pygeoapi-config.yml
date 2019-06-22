@@ -139,6 +139,10 @@ datasets:
             id_field: id
 
 processes:
+    manager:
+        name: pygeoapi.process.manager.tinydb_.TinyDBManager
+        connection: /tmp/pygeoapi-process-manager.db
+
     hello-world:
         processor:
             name: HelloWorld
