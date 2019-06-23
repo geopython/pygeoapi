@@ -9,16 +9,16 @@
       <span itemprop="includedInDataCatalog" itemscope itemtype="http://schema.org/DataCatalog">
         <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ data['name'] }}" />
         <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
-        <meta itemprop="name" content="{{ config['metadata']['identification']['description'] | striptags }}" />
+        <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
       </span>
       <h1 itemprop="name">{{ data['title'] }}</h1>
       <meta itemprop="url" content="{{ config['server']['url'] }}" />
       <p itemprop="description">{{ data['description'] }}</p>
-      <div itemprop="keywords">
+      <p itemprop="keywords">
         {% for kw in data['keywords'] %}
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
-      </div>
+      </p>
       <h3>View</h3>
       <ul>
         <li>
