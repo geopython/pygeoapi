@@ -277,6 +277,7 @@ class API(object):
             collection['name'] = k
             collection['title'] = v['title']
             collection['description'] = v['description']
+            collection['keywords'] = v['keywords'];
             for crs in v['crs']:
                 collection['crs'].append(
                     'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))

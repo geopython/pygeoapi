@@ -19,11 +19,10 @@
     {% endblock %}
   </head>
   <body>
-    <header class="sticky row" itemscope itemtype="http://schema.org/DataCatalog" itemref="collections">
-      <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
+    <header class="sticky row">
       <div class="col-sm-12 col-md-10 col-md-offset-1">
-        <a role="button" itemprop="url" href="{{ config['server']['url'] }}">
-          <span itemprop="name">{{ config['metadata']['identification']['title'] }}</span></a>
+        <a role="button" href="{{ config['server']['url'] }}">
+          <span>{{ config['metadata']['identification']['title'] }}</span></a>
         <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" style="float:right">Contact</a>
       </div>
     </header>
