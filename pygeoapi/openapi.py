@@ -417,7 +417,7 @@ def get_oas_30(cfg):
                 'schema': {
                     'type': 'integer',
                     'minimum': 1,
-                    'maximum': 10000,
+                    'maximum': cfg['server']['limit'],
                     'default': cfg['server']['limit']
                 },
                 'style': 'form',
