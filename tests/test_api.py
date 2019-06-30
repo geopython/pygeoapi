@@ -166,7 +166,7 @@ def test_describe_collections(config, api_):
     assert collection['name'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'Observations'
-    assert len(collection['links']) == 8
+    assert len(collection['links']) == 6
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {'f': 'html'}, 'obs')
