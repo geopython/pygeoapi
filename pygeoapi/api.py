@@ -330,20 +330,21 @@ class API(object):
 
             fcm['collections'].append(collection)
 
-        fcm['links'].append({
-            'type': 'application/json',
-            'rel': 'self',
-            'title': 'This document as JSON',
-            'href': '{}/collections?f=json'.format(
-                self.config['server']['url'])
-        })
-        fcm['links'].append({
-            'type': 'text/html',
-            'rel': 'alternate',
-            'title': 'This document as HTML',
-            'href': '{}/collections?f=html'.format(
-                self.config['server']['url'])
-        })
+        if dataset is None:
+            fcm['links'].append({
+                'type': 'application/json',
+                'rel': 'self',
+                'title': 'This document as JSON',
+                'href': '{}/collections?f=json'.format(
+                    self.config['server']['url'])
+            })
+            fcm['links'].append({
+                'type': 'text/html',
+                'rel': 'alternate',
+                'title': 'This document as HTML',
+                'href': '{}/collections?f=html'.format(
+                    self.config['server']['url'])
+            })
 
         if format_ == 'html':  # render
             fcm['links'][0]['rel'] = 'alternate'
