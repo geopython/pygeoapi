@@ -3,32 +3,30 @@
 {% block body %}
 
 <br/>
-<section id="collections">
-
+<section id="collections"  itemscope itemtype="http://schema.org/DataCatalog">
+  <meta itemprop="url" content="{{ config['server']['url'] }}" />
 <div class="row">
   <div class="col-md-8 col-sm-12">
 
   <section id="identification">
-    <h1>{{ config['metadata']['identification']['title'] }}</h1>
-    <p>{{ config['metadata']['identification']['description'] }}</p>   
+    <h1 itemprop="name">{{ config['metadata']['identification']['title'] }}</h1>
+    <p itemprop="description">{{ config['metadata']['identification']['description'] }}</p>   
     
+    <p itemprop="keywords">
+        {% for kw in config['metadata']['identification']['keywords'] %}
+          <mark class="tag">{{ kw }}</mark>
+        {% endfor %}
+    </p>
+
     <div class="card large">
       <div class="section">
-        <div class="row">
-          <div class="col-sm-4">
-            Keywords     
-          </div>
-          <div class="col-sm-8" itemprop="keywords">
-              {{ config['metadata']['identification']['keywords']|join(', ')  }}
-          </div>
-        </div>
         {% if config['metadata']['identification']['terms_of_service'] %}
           <div class="row">
               <div class="col-sm-4">
                 Terms of service     
               </div>
               <div class="col-sm-8">
-                  <a title="Terms of service" href="{{ config['metadata']['identification']['terms_of_service'] }}">{{ config['metadata']['identification']['terms_of_service'] }}</a>
+                {{ config['metadata']['identification']['terms_of_service'] | urlize() }}
               </div>
           </div>
         {% endif %}
@@ -48,15 +46,21 @@
   </section>
   <section id="conformance">
       <h2>Conformance</h2>
-      <a href="{{ config['server']['url'] }}/conformance?f=html">View the conformance classes of this service</a>
+      <p>
+        <a href="{{ config['server']['url'] }}/conformance?f=html">View the conformance classes of this service</a>
+      </p>
   </section>
   <section id="collections">
-      <h2>Collections</h2>
+    <h2>Collections</h2>
+    <p>
       <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service</a>
+    </p>
   </section>
   <section id="processes">
       <h2>Processes</h2>
-      <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
+      <p>  
+        <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
+      </p>
   </section>
   <section id="links">
     <h2>Links</h2>
