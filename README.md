@@ -68,7 +68,7 @@ https://github.com/geopython/demo.pygeoapi.io.
 ## Docker
 
 Best/easiest way to run `pygeoapi` is to use Docker.
-On DockerHub [pygeoapi Docker Images](https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi) 
+On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi) 
 are available.
 
 The version tagged `latest` is automatically built whenever code 
