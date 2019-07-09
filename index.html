@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport"
 	content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>pygeoapi - API to Geospatial Data</title>
+<title>pygeoapi - an OGC API to geospatial data</title>
 <link rel="stylesheet"
 	href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
 	integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
@@ -14,9 +14,8 @@
 </head>
 <body>
 	<div class="main-page">
-
 		<br /> <br /> <img src="./static/geopython.png"
-			class="rounded mx-auto d-block img-fluid" alt="Geopython logo">
+			class="rounded mx-auto d-block img-fluid" alt="geopython logo">
 		<div class="d-flex flex-column">
 			<h1 class="p-2 text-center">pygeoapi</h1>
 		</div>
@@ -24,12 +23,51 @@
 		<div class="container">
 			<div class="row justify-content-center">
 				<div class="col-6 text-center">
-					<h4>pygeoapi is an OGC Compliant Python server implementation of the emerging OGC WFS 3.0 standard <a title="OSGeo Community Project" href="https://osgeo.org"><img alt="OSGeo Community Project" src="https://raw.githubusercontent.com/OSGeo/osgeo/master/incubation/community/OSGeo_community.png" height="64"/></a></h4>
+					<h4>pygeoapi is a Python server implementation of the <a href="https://www.opengeospatial.org/blog/2996">OGC API suite of standards</a>. The project emerged as part of the next generation OGC API efforts in 2018 and provides the capability for organizations to deploy an RESTful OGC API endpoint using OpenAPI, GeoJSON, and HTML. pygeoapi is <a href="https://opensource.org">open source</a> and released under an <a href="https://github.com/geopython/pygeoapi/blob/master/LICENSE.md">MIT license</a>. <a title="OSGeo Community Project" href="https://osgeo.org"><img alt="OSGeo Community Project" src="https://raw.githubusercontent.com/OSGeo/osgeo/master/incubation/community/OSGeo_community.png" height="64"/></a></h4>
 				</div>
 			</div>
 		</div>
+        <div class="row justify-content-center">
+            <code class="bg-dark rounded p-3">
+                python3 -m venv pygeoapi<br/>
+                cd pygeoapi<br/>
+                . bin/activate<br/>
+                git clone https://github.com/geopython/pygeoapi.git<br/>
+                cd pygeoapi<br/>
+                pip install -r requirements.txt<br/>
+                python setup.py install<br/>
+                cp pygeoapi-config.yml example.yml<br/>
+                vi example-config.yml<br/>
+                pygeoapi generate-openapi-document -c example-config.yml > example.openapi.yml<br/>
+                export PYGEOAPI_CONFIG=example-config.yml<br/>
+                export PYGEOAPI_OPENAPI=example-openapi.yml<br/>
+                pygeoapi serve<br/>
+                curl http://localhost:5000
+            </code>
+        </div>
 
 		<br />
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-6">
+                    At a glance:
+                    <ul>
+                        <li>Easy to install: install a full implementation via pip or git</li>
+                        <li>Easy to deploy: via UbuntuGIS or the official Docker image</li>
+                        <li>Flexible: built on a robust plugin framework
+                            <ul>
+                                <li>connect to custom data sources (files, services, databases, etc.)</li>
+                                <li>serve custom output formats</li>
+                                <li>implement custom processes and workflows</li>
+                                <li>deploy via Flask, Django, or any Python framework</li>
+                            </ul>
+                        <li>Compliant: passes OGC Compliance testing</li>
+                    </ul>
+				</div>
+			</div>
+		</div>
+		<br />
+
 		<div class="d-flex flex-row flex-wrap justify-content-center">
 			<div class="p-2">
 				<div class="card" style="width: 18rem;">
@@ -43,9 +81,9 @@
 						</p>
 						<p class="card-text text-center">
 							<a href="https://github.com/geopython/pygeoapi/blob/master/README.md" target="_blank"
-															class="card-link text-center">[README]</a>
+															class="card-link text-center">README</a>
 							<a href="presentation/index.html" target="_blank"
-								class="card-link text-center">[Presentation]</a>
+								class="card-link text-center">Presentation</a>
 						</p>
 					</div>
 				</div>
