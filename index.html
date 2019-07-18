@@ -36,11 +36,11 @@
                 cd pygeoapi<br/>
                 pip install -r requirements.txt<br/>
                 python setup.py install<br/>
-                cp pygeoapi-config.yml example.yml<br/>
+                cp pygeoapi-config.yml example-config.yml<br/>
                 vi example-config.yml<br/>
-                pygeoapi generate-openapi-document -c example-config.yml > example.openapi.yml<br/>
                 export PYGEOAPI_CONFIG=example-config.yml<br/>
                 export PYGEOAPI_OPENAPI=example-openapi.yml<br/>
+                pygeoapi generate-openapi-document -c $PYGEOAPI_CONFIG > $PYGEOAPI_OPENAPI<br/>
                 pygeoapi serve<br/>
                 curl http://localhost:5000
             </code>
