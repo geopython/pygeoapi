@@ -1,4 +1,5 @@
 click
 Flask
+flask_cors
 PyYAML
 unicodecsv

@@ -1,6 +1,3 @@
-# Flask-based CORS setup
-flask_cors
-
 # testing
 pytest
 pytest-cov
