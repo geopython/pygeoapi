@@ -26,6 +26,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+""" Root level code of pygeoapi, parsing content provided by webframework. 
+Returns content from plugins and sets reponses
+"""
+
+
 
 from datetime import datetime
 import json
@@ -45,12 +50,16 @@ LOGGER = logging.getLogger(__name__)
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
+#: Return headers for requests (e.g:X-Powered-By)
 HEADERS = {
     'Content-Type': 'application/json',
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
-FORMATS = ['json', 'html']
+#: Formats allowed for ?f= requests
+FORMATS = ['json', 'html']  
+
+
 
 
 def pre_process(func):
@@ -835,7 +844,7 @@ def to_json(dict_):
     """
     serialize dict to json
 
-    :param dict_: dict_
+    :param dict_: dict
 
     :returns: JSON string representation
     """

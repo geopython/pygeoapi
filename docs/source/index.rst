@@ -9,7 +9,7 @@ Welcome to pygeoapi's documentation!
 |build-status| |docs| |coverage|
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
    
    pygeoapi
@@ -19,7 +19,7 @@ Welcome to pygeoapi's documentation!
    wsgi
    configuration
    plugins
-   API
+   code
 
 
 Indices and tables

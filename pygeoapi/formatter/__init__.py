@@ -26,3 +26,5 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
+"""Output formatter package"""
