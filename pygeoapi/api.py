@@ -26,11 +26,9 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-""" Root level code of pygeoapi, parsing content provided by webframework. 
+""" Root level code of pygeoapi, parsing content provided by webframework.
 Returns content from plugins and sets reponses
 """
-
-
 
 from datetime import datetime
 import json
@@ -57,9 +55,7 @@ HEADERS = {
 }
 
 #: Formats allowed for ?f= requests
-FORMATS = ['json', 'html']  
-
-
+FORMATS = ['json', 'html']
 
 
 def pre_process(func):

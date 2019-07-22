@@ -104,7 +104,7 @@ def api_conformance():
 
     :returns: HTTP response
     """
-    
+
     headers, status_code, content = api_.api_conformance(request.headers,
                                                          request.args)
 
@@ -123,7 +123,7 @@ def describe_collections(name=None):
 
     :returns: HTTP response
     """
-    
+
     headers, status_code, content = api_.describe_collections(
         request.headers, request.args, name)
 
@@ -142,7 +142,7 @@ def dataset(feature_collection, feature=None):
 
     :returns: HTTP response
     """
-    
+
     if feature is None:
         headers, status_code, content = api_.get_features(
             request.headers, request.args, feature_collection)
@@ -184,7 +184,7 @@ def execute_process(name=None):
 
     :returns: HTTP response
     """
-    
+
     if request.method == 'GET':
         headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
@@ -204,10 +204,10 @@ def execute_process(name=None):
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
 def serve(ctx, debug=False):
     """
-    Serve pygeoapi via Flask. Runs pygeopai as a flask server. Not recommend for production.
-    
+    Serve pygeoapi via Flask. Runs pygeoapi
+    as a flask server. Not recommend for production.
     """
-    
+
 #    setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
