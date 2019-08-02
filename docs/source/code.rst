@@ -165,7 +165,7 @@ CSV provider
 Elastic Search provider
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: pygeoapi.provider.elasticsearch
+.. automodule:: pygeoapi.provider.elasticsearch_
    :show-inheritance:
    :members:
    :private-members:
