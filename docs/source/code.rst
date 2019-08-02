@@ -129,9 +129,12 @@ Hello world example process
    :private-members:
    :special-members:
    
+.. _data Provider:
 
 Provider
 --------
+
+
 
 .. automodule:: pygeoapi.provider
    :show-inheritance:
