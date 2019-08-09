@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-""" Logging system """
+"""Logging system"""
 
 import logging
 import sys

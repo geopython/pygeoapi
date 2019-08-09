@@ -33,7 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BaseProcessor(object):
-    """generic Processor ABC. Processes are inherid from this class"""
+    """generic Processor ABC. Processes are inherited from this class"""
 
     def __init__(self, processor_def, process_metadata):
         """

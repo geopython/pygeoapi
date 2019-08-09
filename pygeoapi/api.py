@@ -838,9 +838,9 @@ def check_format(args, headers):
 
 def to_json(dict_):
     """
-    serialize dict to json
+    Serialize dict to json
 
-    :param dict_: dict
+    :param dict_: `dict` of JSON representation
 
     :returns: JSON string representation
     """

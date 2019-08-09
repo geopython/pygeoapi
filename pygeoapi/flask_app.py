@@ -121,6 +121,7 @@ def describe_collections(name=None):
     """
     OGC open api collections  access point
 
+    :param name: identifier of collection name
     :returns: HTTP response
     """
 
@@ -164,6 +165,7 @@ def describe_processes(name=None):
     """
     OGC open api processes access point (experimental)
 
+    :param name: identifier of process to describe
     :returns: HTTP response
     """
     headers, status_code, content = api_.describe_processes(
@@ -182,6 +184,7 @@ def execute_process(name=None):
     """
     OGC open api jobs from processes access point (experimental)
 
+    :param name: identifier of process to execute
     :returns: HTTP response
     """
 
@@ -206,6 +209,10 @@ def serve(ctx, debug=False):
     """
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.
+
+    :param debug: `bool` of whether to run in debug mode
+    :returns void
+
     """
 
 #    setup_logger(CONFIG['logging'])

@@ -13,6 +13,9 @@ API
 
 
 .. automodule:: pygeoapi.api
+   :members:
+   :private-members:
+   :special-members:
 
 
 

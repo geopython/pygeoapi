@@ -5,7 +5,7 @@ sudo: false
 
 env:
   global:
-    - PYGEOAPI_CONFIG="`pwd`/pygeoapi-config.yml"
+    - PYGEOAPI_CONFIG=$(pwd)/pygeoapi-config.yml
     - CPLUS_INCLUDE_PATH=/usr/include/gdal
     - C_INCLUDE_PATH=/usr/include/gdal
 
@@ -34,7 +34,6 @@ install:
   - pip3 install -r requirements.txt
   - pip3 install -r requirements-dev.txt
   - pip3 install -r requirements-provider.txt
-  - pip3 install -r docs/requirements.txt
   - python3 setup.py install
 
 
@@ -47,8 +46,8 @@ before_script:
   - gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
 
 script:
-  - make -C ./docs html
   - pytest --cov=pygeoapi
+  - make -C ./docs html
   - find . -type f -name "*.py" | xargs flake8
   - python3 setup.py --long-description | rst2html5.py
 
