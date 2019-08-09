@@ -5,7 +5,7 @@ sudo: false
 
 env:
   global:
-    - PYGEOAPI_CONFIG=$(pwd)/pygeoapi-config.yml
+    - PYGEOAPI_CONFIG="$(pwd)/pygeoapi-config.yml"
     - CPLUS_INCLUDE_PATH=/usr/include/gdal
     - C_INCLUDE_PATH=/usr/include/gdal
 
