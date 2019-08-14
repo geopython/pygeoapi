@@ -5,7 +5,7 @@ sudo: false
 
 env:
   global:
-    - PYGEOAPI_CONFIG=pygeoapi-config.yml
+    - PYGEOAPI_CONFIG="$(pwd)/pygeoapi-config.yml"
     - CPLUS_INCLUDE_PATH=/usr/include/gdal
     - C_INCLUDE_PATH=/usr/include/gdal
 
@@ -47,8 +47,10 @@ before_script:
 
 script:
   - pytest --cov=pygeoapi
+  - make -C ./docs html
   - find . -type f -name "*.py" | xargs flake8
   - python3 setup.py --long-description | rst2html5.py
+
 
 after_success:
   - python3 setup.py sdist bdist_wheel --universal

@@ -26,3 +26,5 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
+"""OGC process package, each process is an independent module"""

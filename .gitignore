@@ -107,3 +107,6 @@ local.openapi.yml
 # misc
 *.swp
 .pytest_cache
+
+#Eclipse project
+.project
