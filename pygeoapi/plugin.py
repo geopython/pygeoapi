@@ -34,7 +34,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 #: Loads provider plugins to be used by pygeoapi,\
-#: formatters and processes avaiable
+#: formatters and processes available
 PLUGINS = {
     'provider': {
         'CSV': 'pygeoapi.provider.csv_.CSVProvider',
