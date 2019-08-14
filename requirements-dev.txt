@@ -20,3 +20,6 @@ pypandoc
 pyOpenSSL
 ndg-httpsclient
 pyasn1
+
+#Read the docs
+sphinx_rtd_theme
