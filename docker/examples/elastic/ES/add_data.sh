@@ -42,7 +42,7 @@ until $(curl -sSf -XGET --insecure 'http://localhost:9200/_cluster/health?wait_f
     printf 'No status yellow from ES, trying again in 10 seconds \n'
     sleep 10
 done
-echo "Elastic search seems to be working - Adding ne_110m_populated_places_simple.geojson to ES"
+echo "Elasticsearch seems to be working - Adding ne_110m_populated_places_simple.geojson to ES"
 
 python /load_es_data.py /usr/share/elasticsearch/data/ne_110m_populated_places_simple.geojson
 
