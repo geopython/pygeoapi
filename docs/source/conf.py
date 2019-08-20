@@ -28,7 +28,8 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-MOCK_MODULES = ['osgeo', 'psycopg2', 'psycopg2.sql', 'elasticsearch', 'elasticsearch.client']
+MOCK_MODULES = ['osgeo', 'psycopg2', 'psycopg2.sql',
+                'elasticsearch', 'elasticsearch.client']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 sys.path.insert(0, os.path.abspath('../..'))
