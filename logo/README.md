@@ -1,7 +1,9 @@
 # pygeoapi logo
 
 The `pygeoapi` logo was created on August 21, 2019 on https://www.freelogodesign.org by [justb4](https://github.com/justb4).
-The design files can be found in the subdirs below. Usable logo files can be found under [static](../static).
+The [design files](design) can be found in the subdirs below. Usable logo files can be found under [static](../static).
+As that dir is in `gh-pages` which is CNAMEd to https://pygeoapi.io, `pygeoapi` logos and icons can be linked directly without a need for copying: e.g. 
+https://pygeoapi.io/static/pygeoapi-logo.png or without transparency: https://pygeoapi.io/static/pygeoapi-logo-notrans.png.
 
 ## Result
 
