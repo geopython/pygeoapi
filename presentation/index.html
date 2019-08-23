@@ -68,7 +68,7 @@
 		<div class="slides">
 			<section id="frontpage">
 
-				<h1><img src="static/pygeoapi-logo-notrans.png" style="vertical-align: middle;"/></h1>
+				<h1 style="background-color:white"><img src="static/pygeoapi-logo-notrans.png" style="vertical-align: middle;"/></h1>
 
 				<h2>API for geospatial data</h2>
 				<hr/>
@@ -88,7 +88,7 @@
 			<!--  Start of WFS 2.0 issues -->
 			<section id="wfs12_issues">
 				<section>
-				<h2>I. In the beginning there was... WFS v1/v2</h2>
+				<h2>I. WMS, WFS, WCS, WPS have served us well</h2>
 				</section>
 				<section>
 					<h3>Characteristics</h3>
@@ -130,15 +130,15 @@
 						<li>No unique urls for features</li>
 						<li>Features hard to index by search engine</li>
 						<li>"In-band" error reporting</li>
+						<li>Not "webby"</li>
 					</ul>
 				</section>
 			
 				<section>
-					<h3>More Issues</h3>
+					<h3>Change was needed</h3>
 					<img src="static/ldproxy.jpeg"/>
 					<ul>
-						<li>ldproxy for services to be crawlable</li>
-						<li>OGC world is NOT W3C-/Web- friendly</li>
+						<li><a href="https://geo4web-testbed.github.io/topic4/">Geonovum testbed</a> showed OGC world can easily be made crawlable, and crafted <a href="https://github.com/interactive-instruments/ldproxy">LDProxy</a></li>
 					</ul>
 				</section>
 			</section><!--  end of WFS 2.0 issues -->
@@ -151,9 +151,9 @@
 			<section>
 				<h3>RESTFul</h3>
 				<ul>
-					<li>REST is becoming a MUST </li>
-					<li>Fast standards' development</li>
-					<li>Opinion: <br/>Standards (-development) should be more developer-friendly </li>
+					<li>REST is a MUST</li>
+					<li>Fast and interactive standards' development</li>
+					<li>Standards' development should be developer-friendly</li>
 				</ul>
 			</section>
 			<section>
@@ -175,6 +175,7 @@
 					<li>Very popular among developers</li>
 					<li>Easy to understand</li>
 					<li>JSON is king in REST webservices</li>
+					<li>HTML encoding to support humans and search engines</li>
 					<li>No rigid standards (good or bad)</li>
 				</ul>
 			</section>
@@ -182,11 +183,13 @@
 					<textarea data-template>
 					### OGC and W3C
 
-					![alt text](static/W3C_OGC.png "W3C and OFG")
+					![alt text](static/W3C_OGC.png "W3C and OGC")
 
 					[https://www.w3.org/TR/sdw-bp/](https://www.w3.org/TR/sdw-bp/) <!-- .element: target="_blank" -->
 
-					**MUST READ DOCUMENT**
+					Extends <a href="https://www.w3.org/TR/dwbp/">Data on the web best pratice</a>
+					
+					**MUST READ DOCUMENTS**
 					</textarea>
 				</section>
 
@@ -298,14 +301,16 @@ responses:
 			<!--  Start Spec -->
 			<section id="spec">
 				<section>
-				<h2>V. The WFS 3.0 Spec</h2>
-					<p>
-						NB: renamed as: <strong>"OGC API - Features"</strong>
-					</p>
+				<h2>V. Rename to OGC API - Features</h2>
+					<ul>
+						<li>Along WFS 3, OGC defined <a href="https://github.com/opengeospatial/oapi_common">OGC API Common</a></li>
+						<li>Resulting in WFS 3 being renamed to <strong>"OGC API - Features"</strong></li>
+						<li>Other OGC API's are arriving; tiles, catalog, coverage, processes</li>
+					</ul>
 				</section>
 			
 			<section>
-				<h2>Spec</h2>
+				<h2>OGC API - Features Specification</h2>
 
 				<p>
 					<a href="https://github.com/opengeospatial/WFS_FES" target="_blanc">github.com/opengeospatial/WFS_FES</a>
@@ -371,7 +376,7 @@ responses:
 				</section>
 				
 				<section>
-					<a href="https://geopython.github.io/" target="_blank"><img src="static/geopython.github.io.png" alt="geopython.github.io" style="background: white; border-radius: 10px"/></a>
+					<a href="https://geopython.github.io/" target="_blank"><img src="static/pygeoapi-logo-notrans.png" alt="geopython.github.io" style="background: white; border-radius: 10px"/></a>
 				</section>
 
 				<section>
@@ -447,6 +452,13 @@ responses:
 					</ul>
 				</section>
 				<section>
+					<img src="static/schemaorg.png" style="max-height:400px" />
+					<ul>
+						<li>HTML encoding is annotated as schema.org/Dataset to facilitate search engines</li>
+						<li><a href="https://toolbox.google.com/datasetsearch">Google dataset search</a> locates pygeoapi datasets</li>
+					</ul>
+				</section>
+				<section>
 					<p>
 						<a href="https://pygeoapi.io" target="_blank">https://pygeoapi.io</a>
 					</p>
@@ -464,7 +476,7 @@ responses:
 						<li>More data providers</li>
 						<li>Content negotiation (e.g. Response as GeoPackage, GML,...)</li>
 						<li>Advanced filters (CQL) </li>
-						<li>More OGC APIs: Maps, Tiles, Coverages, Processes</li>
+						<li>More OGC APIs: Tiles, Coverages, Processes, Catalog</li>
 					</ul>
 				</section>
 				<section>
@@ -558,8 +570,7 @@ responses:
 
 			<section data-markdown>
 				<textarea data-template>
-				(Some) Production instances of pygeoapi
-				![alt text](static/geopython.png "Geopython")
+				Some production instances of pygeoapi
 				
 				Contact: [@tomkralidis](https://twitter.com/tomkralidis)
 				</textarea>
@@ -602,10 +613,9 @@ responses:
 				- Simple catalog of spatiotemporal items (JSON) 
 				- (stac != csw || csw => stac)
 				- More oriented for sat imagery
-				- Parallel work to WFS 3.0
+				- Parallel work to OGC API Common
 				- Pull from storages like S3
 				- Geospatial assets openly searchable and crawlable
-				
 				</textarea>
 			</section>
 			<section>
@@ -674,7 +684,7 @@ responses:
 				<section>
 					<img src="static/Geocat.jpg" style="border-radius: 10%; max-width: 50%; max-height: 50%;"/>
 					<br/>
-					<p>Need support for WFS3.0???</p>
+					<p>Need support for OGC API - Features???</p>
 					<p><a href="http://geocat.net" target="_blank">@Geocat</a> can help you</p>
 					<img src="static/geocat-banner.png" style="background-color: white; max-width: 50%; max-height: 50%">
 				</section>
