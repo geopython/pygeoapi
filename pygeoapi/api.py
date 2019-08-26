@@ -55,13 +55,16 @@ HEADERS = {
 }
 
 #: Formats allowed for ?f= requests
-FORMATS = ['json', 'html']
+FORMATS = ['json', 'html', 'jsonld']
 
+isoformatter = lambda x: x.isoformat() if x else '..'
+nowchecker = lambda x: isoformatter(datetime.now() if x == 'now' else x)
+dategetter = lambda x, collection: nowchecker(collection.get(x, None))
 
 def pre_process(func):
     """
         Decorator performing header copy and format\
-        checking before sending arguments to mehods
+        checking before sending arguments to methods
 
         :param func: decorated function
 
@@ -80,6 +83,128 @@ def pre_process(func):
 
     return inner
 
+def jsonldify(func):
+    """
+        Decorator that transforms app configuration\
+        to include a JSON-LD representation
+
+        :param func: decorated function
+
+        :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        format = args[2]
+        if not format == 'jsonld':
+            return func(*args, **kwargs)
+        LOGGER.debug('Creating JSON-LD representation')
+        cls = args[0]
+        cfg = cls.config
+        meta = cfg.get('metadata', {})
+        contact = meta.get('contact', {})
+        provider = meta.get('provider', {})
+        ident = meta.get('identification', {})
+        fcmld = {
+          "@context": "http://www.schema.org",
+          "@type": "DataCatalog",
+          # "id": cfg.get('server', {}).get('url', None), ??
+          "url": cfg.get('server', {}).get('url', None),
+          "name": ident.get('title', None),
+          "description": ident.get('description', None),
+          "keywords": ident.get('keywords', None),
+          "termsOfService": ident.get('terms_of_service', None),
+          "license": meta.get('license', {}).get('url', None),
+          "provider": {
+            "@type": "Organization",
+            "name": provider.get('name', None),
+            "url": provider.get('url', None),
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": contact.get('address', None),
+                "postalCode": contact.get('postalcode', None),
+                "addressLocality": contact.get('city', None),
+                "addressRegion": contact.get('stateorprovince', None),
+                "addressCountry": contact.get('country', None)
+            },
+            "contactPoint": {
+                "@type": "Contactpoint",
+                "email": contact.get('email', None),
+                "telephone": contact.get('phone', None),
+                "faxNumber": contact.get('fax', None),
+                "url": contact.get('url', None),
+                "hoursAvailable": contact.get('hours', None),
+                "contactType": contact.get('instructions', None)
+            }
+          }
+        }
+        cls.fcmld = fcmld
+        return func(cls, *args[1:], **kwargs)
+    return inner
+
+def jsonldlify_collection(cls, collection):
+    """
+        Transforms collection into a JSON-LD representation
+
+        :param cls: API object
+        :param collection: `collection` as prepared for non-LD JSON
+                           representation
+
+        :returns: `collection` a dictionary, mapped into JSON-LD, of
+                  type schema:Dataset
+    """
+    begins = collection.get('begins', None)
+    ends = collection.get('ends', None)
+    begins = collection.get('begins', None)
+    ends = collection.get('ends', None)
+
+    bbox = collection.get('extent', None)
+    crs = collection.get('crs', None)
+    hascrs84 = any(map(lambda crs_: crs_.endswith('CRS84'), crs))
+
+
+    dataset =  {
+        "@type": "Dataset",
+        "url": "{}/collections/{}".format(
+            cls.config['server']['url'],
+            collection['name']
+        ),
+        "name": collection['title'],
+        "description": collection['description'],
+        "license": cls.fcmld['license'],
+        "keywords": collection.get('keywords', None),
+        "geoshape": None if (not hascrs84 or not bbox) else {
+            "@type": "GeoShape",
+            "box": '{},{} {},{}'.format(*bbox[0:2], *bbox[2:4])
+        },
+        "temporalCoverage": None if not begins else "{}/{}".format(begins, ends)
+    }
+
+    links =  collection.get('links', [])
+    if links:
+        dataset['distribution'] = list(map(lambda link: {
+            "@type": "DataDownload",
+            "contentURL": link['href'],
+            "encodingFormat": link['type'],
+            "name": link['title'],
+            "inLanguage": link.get('hreflang', None),
+            "author": link['rel'] if link.get('rel', None) == 'author' else None
+        }, links))
+
+    return dataset
+
+def jsonldify_collection_distributions(cls, collection):
+    """
+        Transforms collection disctribitions into a JSON-LD representation
+
+        :param cls: API object
+        :param collection: `collection` as prepared for non-LD JSON
+                           representation
+
+        :returns: `distributions` a list of dictionaries, each item mapped
+                  into JSON-LD of type schema:DataDownload
+    """
+    print(cls, collection)
+    return collection['links']
 
 class API(object):
     """API object"""
@@ -102,6 +227,7 @@ class API(object):
         setup_logger(self.config['logging'])
 
     @pre_process
+    @jsonldify
     def root(self, headers_, format_):
         """
         Provide API
@@ -135,6 +261,11 @@ class API(object):
               'title': 'This document as JSON',
               'href': self.config['server']['url']
             }, {
+                'rel': 'self',
+                'type': 'application/ld+json',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': self.config['server']['url']
+            }, {
               'rel': 'self',
               'type': 'text/html',
               'title': 'This document as HTML',
@@ -166,12 +297,20 @@ class API(object):
 
         if format_ == 'html':  # render
             for link in fcm['links']:
-                if 'json' in link['type']:
-                    link['href'] = ''.join((link['href'], '?f=json'))
+                fparam = None
+                if link['type'] == 'application/json':
+                    fparam = 'json'
+                elif link['type'] == 'application/ld+json':
+                    fparam = 'jsonld'
+                link['href'] = ''.join((link['href'], f'?f={fparam}' if fparam else ''))
 
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
+
+        if format_ == 'jsonld':
+            headers_['Content-Type'] = 'application/ld+json'
+            return headers_, 200, json.dumps(self.fcmld)
 
         return headers_, 200, json.dumps(fcm)
 
@@ -241,6 +380,7 @@ class API(object):
         return headers_, 200, json.dumps(conformance)
 
     @pre_process
+    @jsonldify
     def describe_collections(self,  headers_, format_, dataset=None):
         """
         Provide feature collection metadata
@@ -287,6 +427,8 @@ class API(object):
                 collection['crs'].append(
                     'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
             collection['extent'] = v['extents']['spatial']['bbox']
+            collection['begins'] = dategetter('begin', v['extents']['temporal'])
+            collection['ends'] = dategetter('end', v['extents']['temporal'])
 
             for link in v['links']:
                 lnk = {
@@ -313,6 +455,13 @@ class API(object):
                 'rel': 'item',
                 'title': 'Features as HTML',
                 'href': '{}/collections/{}/items?f=html'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'self',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': '{}/collections/{}?f=jsonld'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
@@ -345,6 +494,13 @@ class API(object):
                     self.config['server']['url'])
             })
             fcm['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'self',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': '{}/collections?f=jsonld'.format(
+                    self.config['server']['url'])
+            })
+            fcm['links'].append({
                 'type': 'text/html',
                 'rel': 'alternate',
                 'title': 'This document as HTML',
@@ -365,6 +521,15 @@ class API(object):
                                               fcm)
 
             return headers_, 200, content
+
+        if format_ == 'jsonld':
+            jsonld = self.fcmld.copy()
+            if dataset is not None:
+                jsonld['dataset'] = jsonldlify_collection(self, fcm)
+            else:
+                jsonld['dataset'] = list(map(lambda collection: jsonldlify_collection(self, collection), fcm.get('collections', [])))
+            headers_['Content-Type'] = 'application/ld+json'
+            return headers_, 200, json.dumps(jsonld)
 
         return headers_, 200, json.dumps(fcm)
 
@@ -689,6 +854,7 @@ class API(object):
         return headers_, 200, json.dumps(content)
 
     @pre_process
+    @jsonldify
     def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
@@ -844,6 +1010,8 @@ def check_format(args, headers):
 
         if 'text/html' in headers_:
             format_ = 'html'
+        elif 'application/ld+json' in headers_:
+            format_ = 'jsonld'
         elif 'application/json' in headers_:
             format_ = 'json'
 
