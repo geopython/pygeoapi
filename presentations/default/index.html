@@ -1,0 +1,516 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta property="og:title" content="pygeoapi - An OGC API for geospatial data" />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://pygeoapi.io/presentations/default" />
+		<meta property="og:image" content="https://pygeoapi.io/presentations/default/static/pygeoapi_intro.png" />
+		<meta property="og:image:url" content="https://pygeoapi.io/presentation/default/static/pygeoapi_intro.png" />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:description" content="pygeoapi is a Python server implementation of the OGC API suite of standards. The project emerged as part of the next generation OGC API efforts in 2018 and provides the capability for organizations to deploy an RESTful OGC API endpoint using OpenAPI, GeoJSON, and HTML. pygeoapi is open source and released under an MIT license." />
+		<title>pygeoapi - An OGC API to geospatial data</title>
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement('link');
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName('head')[0].appendChild(link);
+		</script>
+		<link href="https://fonts.googleapis.com/css?family=Roboto:400i" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Exo+2:200i" rel="stylesheet">
+		<link rel="stylesheet" href="css/fullscreen-img.css">
+
+		<style type="text/css">
+			.reveal section img {
+				background: none;
+				border: none;
+				box-shadow: none;
+			}
+			
+			.reveal pre code {
+				max-height: 600px;
+			}
+			
+			.reveal code {
+				font-size: 75%;
+			}
+			
+			.reveal h1 {
+				font-family: 'Roboto', sans-serif;
+				font-size: 2.0em;
+			}
+		</style>
+	</head>
+	<body>
+	<div class="reveal">
+		<div class="slides">
+			<section id="frontpage">
+				<h1 style="background-color:white"><img src="../../static/pygeoapi-logo-notrans.png" style="vertical-align: middle;"/></h1>
+				<h2>An OGC API to geospatial data</h2>
+				<p><a href="https://pygeoapi.io">https://pygeoapi.io</a></p>
+			</section>
+			<section id="table-of-contents">
+				<h1>Table of contents</h1>
+				<ul>
+					<li>Geospatial API evolution</li>
+					<li>REST/JSON/OpenAPI/Swagger</li>
+					<li>OGC activity</li>
+					<li>Say hello to pygeoapi</li>
+					<li>History</li>
+					<li>Features</li>
+					<li>Installation</li>
+					<li>Deployments</li>
+					<li>Community</li>
+					<li>Support</li>
+				</ul>
+			</section>
+			<section id="geospatial-api-evolution">
+				<section>
+					<h1>Geospatial API evolution</h1>
+				</section>
+				<section>
+					<h1>1990s</h1>
+					<ul>
+						<li>Spirit of XML-RPC/CORBA</li>
+						<li>SOAP/WSDL/UDDI</li>
+						<li>Service Oriented Architecture (SOA)</li>
+						<li>Strong concept of RDBMS as the backend</li>
+						<li>OGC WMS (1999)</li>
+					</ul>
+				</section>
+				<section>
+					<h1>2000s</h1>
+					<ul>
+						<li>Web 2.0</li>
+						<li>JavaScript/AJAX/Google Maps</li>
+						<li>Slippy maps, tiles</li>
+						<li>OGC WFS (2002), WCS (2003), WPS (2005), CSW (2007)</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Realities of OGC web services</h1>
+					<ul>
+						<li>Key Value Parameters (KVP) or XML encodings</li>
+						<li>Requests using HTTP GET, HTTP POST and SOAP</li>
+						<li>Responses as XML (GML)</li>
+						<li>Error handling as custom <i>ExceptionReport</i> within an HTTP 200 response</li>
+						<li>Exhaustive specifications/requirements</li>
+					</ul>
+				</section>
+				<section data-markdown>
+					<h1>Sample response from an OGC WFS 1.0/2.0 service</h1>
+					<textarea data-template>
+						```xml
+						<wfs:FeatureCollection 
+							xmlns:ms="http://mapserver.gis.umn.edu/mapserver"
+							xmlns:gml="http://www.opengis.net/gml" [..]>
+							<gml:boundedBy>
+								<gml:Envelope srsName="EPSG:32661">[..]
+								</gml:Envelope>
+							</gml:boundedBy>
+							<gml:featureMember>
+								<ms:north_poles_wfs gml:id="north_poles_wfs.0">
+									<gml:boundedBy>[..]</gml:boundedBy>
+									<ms:msGeometry>[..]</ms:msGeometry>
+									<ms:Id>0</ms:Id>[..] 
+							</gml:featureMember>[..]
+						</wfs:FeatureCollection>
+						```
+					</textarea>
+				</section>
+				<section>
+					<h3>More realities</h3>
+					<img src="static/ldproxy.jpeg"/>
+					<ul>
+						<li>Complex machinery/architectures (e.g. ldproxy) for services to be crawlable</li>
+						<li>Challenging for web developers to implement</li>
+						<li>Challenging for mainstream web integration (search indexing)</li>
+ 						<li><a href="https://geo4web-testbed.github.io/topic4/">Geonovum testbed</a> showed OGC world can easily be made crawlable, and crafted <a href="https://github.com/interactive-instruments/ldproxy">LDProxy</a></li>
+					</ul>
+				</section>
+			</section>
+			<section id="rest-json-openapi-swagger">
+				<section>
+					<h1>REST/JSON/OpenAPI/Swagger</h1>
+				</section>
+				<section>
+					<h1>REST</h1>
+					<ul>
+						<li>REpresentational State Transfer (REST)</li>
+						<li>HTTP verbs (GET/PUT/POST/DELETE)</li>
+						<li>HTTP codes (200, 201, 404, etc.)</li>
+						<li>Uses URI to identify resources </li>
+						<li>Content negotiation (media types)</li>
+						<li>Stateless</li>
+					</ul>
+				</section>
+				<section>
+					<h1>JSON</h1>
+					<ul>
+						<li>JavaScript Object Notation</li>
+						<li>Easy to write and understand</li>
+						<li>Very popular among web developers</li>
+						<li>JSON is first class in RESTful web services</li>
+						<li>No rigid standards (for better or worse)</li>
+					</ul>
+				</section>
+				<section>
+					<h1>OpenAPI</h1>
+					<ul>
+						<li>Specification on how to describe a REST API</li>
+						<li>Defines endpoints, request parameters, response</li>
+						<li>Programming language agnostic</li>
+						<li>Formerly Swagger</li>
+					</ul>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						```json
+						"info": {
+							"contact": {
+								"email": "you@example.org",
+								"name": "pygeoapi Development Team",
+								"url": "https://pygeoapi.io"
+							},
+							"description": "pygeoapi provides an API to geospatial data",
+							"license": {
+								"name": "CC-BY 4.0 license",
+								"url": "https://creativecommons.org/licenses/by/4.0/"
+							},
+							"termsOfService": "None",
+							"title": "pygeoapi Demo instance - running latest GitHub version",
+							"version": "3.0.2",
+							"x-keywords": [
+								"geospatial",
+								"data",
+								"api"
+							]
+						},
+						"openapi": "3.0.2",
+						```
+					</textarea>
+				</section>
+				<section>
+					<h1>Swagger</h1>
+					<ul>
+						<li>OpenAPI client tooling</li>
+						<li>Robust, web developer focused</li>
+						<li>Automated documentation, testing, code generation</li>
+					</ul>
+				</section>
+			</section>
+			<section id="ogc-activity">
+				<section>
+					<h1>OGC activity</h1>
+				</section>
+				<section>
+					<h1>W3C Spatial Data on the Web Best Practices (2017)</h1>
+					<ul>
+						<li>Recommendations on formats, identifiers, access, licensing, provenance</li>
+						<li>Being webby</li>
+						<li>https://www.w3.org/TR/sdw-bp/</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Design patterns</h1>
+					<ul>
+						<li>Being webby (humans, search engines)</li>
+						<li>Developer friendly</li>
+						<li>Lightweight specification development</li>
+						<li>Removing HTTP use as a tunnel
+							<ul>
+								<li><strike>/ows?request=GetFeature&typename=roads&featureid=5</strike></li>
+								<li>/api/collections/roads/items/5</li>
+							</ul>
+						</li>
+						<li>
+							Modular specification development
+							<ul>
+								<li>Core and extensions</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Timeline</h1>
+					<ul>
+						<li>2017: W3C Spatial Data on the Web Best Practices</li>
+						<li>2017: OGC API Whitepaper</li>
+						<li>2018: WFS3 Hackathon, Weather on the Web API Hackathon</li>
+						<li>2019: OGC API Hackathon</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Future OGC standards</h1>
+					<ul>
+						<li>OGC API - Common (OWS Common)</li>
+						<li>OGC API - Features (WFS)</li>
+						<li>OGC API - Coverages (WCS)</li>
+						<li>OGC API - Maps and Tiles (WMS/WMTS)</li>
+						<li>OGC API - Processing (WPS)</li>
+						<li>OGC API - Records (CSW)</li>
+					</ul>
+				</section>
+				<section>
+					<h1>OGC activity on GitHub</h1>
+					<ul>
+						<li>webby</li>
+						<li>Specification development</li>
+						<li>Issue tracking/discussion/collaboration</li>
+						<li>Standards written in AsciiDoc (!)</li>
+						<li>Standards released as HTML (!) or traditional PDF/etc.</li>
+						<li>Gitter chat</li>
+					</ul>
+				</section>
+			</section>
+			<section id="pygeoapi">
+				<section>
+					<h1>Say hello to pygeoapi</h1>
+					<h1 style="background-color:white"><img src="../../static/pygeoapi-logo-notrans.png" style="vertical-align: middle;"/></h1>
+					<ul>
+						<li><a href="https://geopython.github.io" target="_blank"><img width="60" height="60" src="static/geopython.png" alt="geopython.github.io" style="background: white; border-radius: 10px"/></a> A <a href="https://geopython.github.io">Geopython</a> project</li>
+						<li>Created by <a href="https://twitter.com/tomkralidis">@tomkralidis</a> in 2018 on Valentines Day with ❤️ </li>
+					</ul>
+				</section>
+				<section>
+					<h1>Project Overview</h1>
+					<ul>
+						<li>Geospatial data API framework</li>
+						<li>OGC Compliant (already!)</li>
+						<li>OSGeo Community Project</li>
+						<li>International team (Canada, Netherlands, Greece)
+							<ul>
+								<li>13 core contributors</li>
+								<li>21000 upstream contributors (dependencies)</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Technical Overview</h1>
+					<ul>
+						<li>Core abstract API; web framework agnostic (default Flask)</li>
+						<li>YAML configuration (metadata, dataset connections</li>
+						<li>Automated OpenAPI document generation (data binding)</li>
+						<li>Robust plugin framework (data connections, formats, processing)</li>
+						<li>Easy deployment (pip install, Docker)</li>
+						<li>Minimal dependencies</li>
+					</ul>
+				</section>
+				<section>
+					<img src="static/pygeoapi-arch1.png" style="background: white; border-radius: 10px"/>
+				</section>
+				<section>
+					<h1>Data Providers</h1>
+					<table>
+						<tbody>
+							<tr>
+								<td><img src="static/elastic_search.png" /></td>
+								<td><img src="static/csv_file.jpg" /></td>
+								<td><img src="static/spaltiallite.jpg" /></td>
+								<td><img src="static/geojson-logo.png" /></td>
+							</tr>
+							<tr>
+								<td align="center">Elasticsearch</td>
+								<td align="center">CSV</td>
+								<td align="center">Spatialite*</td>
+								<td align="center">GeoJSON*</td>
+							</tr>
+						</tbody>
+					</table>
+					<p>* also via GDAL-OGR Provider</p>
+				</section>
+				<section>
+					<h2>Data Providers - GDAL/OGR</h2>
+					<img src="static/gdal.png" />
+					<ul>
+						<li>Via OGR-Python bindings</li>
+						<li>Unleashes <a href="https://gdal.org/drivers/vector/" target="_blank">~100 Vector Formats!</a> (WFS 1/2, GeoPackage, Shapefile, GeoJSON, PostGIS, ...)</li>
+						<li>Paging, reprojection, spatial/attribute query</li>
+						<li>Unlock existing WFS 1/2s!</li>
+					</ul>
+				</section>
+			</section>
+			<section id="docker">
+				<section>
+					<h1>Docker</h1>
+				</section>
+				<section>
+					<h1>Overview</h1>
+					<img alt="Docker" src="static/docker.png" />
+					<ul>
+						<li>pygeoapi <a href="https://hub.docker.com/r/geopython/pygeoapi">Docker Images</a> on DockerHub</li>
+						<li>Images create Linux containers running content</li>
+						<li>Use Docker Images to test locally or deploy in server</li>
+					</ul>
+				</section>
+		  		<section data-markdown>
+					<textarea data-template>
+						```bash
+						# Painless deployment
+						# pull from DockerHub
+						docker pull geopython/pygeoapi:latest
+						# run (default config)
+						docker run -p 5000:80 -it geopython/pygeoapi:latest
+						# test
+						curl http://localhost:5000
+						curl http://localhost:5000/collections
+						curl http://localhost:5000/collections/lakes/items?limit=2
+						curl http://localhost:5000/collections/lakes/items?f=html
+						```
+					</textarea>
+				</section>
+				<section>
+					<img src="static/schemaorg.png" style="max-height:400px" />
+					<ul>
+						<li>HTML encoding is annotated as schema.org/Dataset to facilitate search engines</li>
+						<li><a href="https://toolbox.google.com/datasetsearch">Google dataset search</a> locates pygeoapi datasets</li>
+					</ul>
+				</section>
+				<section>
+					<h1>Docker</h1>
+					<ul>
+						<li>Custom config via Docker Volume Mapping</li>
+						<li>Run with Docker Compose</li>
+						<li>Subpath running via Flask <code>SCRIPT_NAME</code> environment variable</li>
+						<li><a href="https://github.com/geopython/pygeoapi/tree/master/docker/examples">Examples</a></li>
+					</ul>
+				</section>
+				<section>
+					<h1>Scaling pygeoapi</h1>
+					<img alt="Docker scale" src="static/docker_scale.png" />
+					Cloud clustering with high availability
+				</section>
+			</section>
+			<section id="production-instances">
+				<section>
+					<h1>Production instances</h1>
+				</section>
+				<section>
+					<h1>Canada</h1>
+					<h2>Meteorological Service of Canada <a href="https://www.canada.ca/en/environment-climate-change/services/weather-general-tools-resources/weather-tools-specialized-data/geospatial-web-services.html">GeoMet</a> platform</h2>
+					<ul>
+						<li>OGC web services platform of Canadian weather, climate and water data</li>
+						<li>Reatime weather</li>
+						<li>Numerical weather prediction</li>
+						<li>Hydrometric and Climate archives</li>
+					</ul>
+				</section>
+				<section>
+					<h1>MSC pygeoapi implementation</h1>
+					<ul>
+						<li><a href="https://canada.ca/climate-services">Climate services data portal</a></li>
+						<li><a href="https://climatedata.ca">climatedata.ca</a></li>
+						<li><a href="https://geo.weather.gc.ca/geomet/features">https://geo.weather.gc.ca/geomet/features</a></li>
+					</ul>
+				</section>
+				<section>
+					<h1>GLOSIS - Global Soil Information</h1>
+					<ul>
+						<li><a href="https://glosis.isric.org">Global soil information system</a> under development by FAO and ISRIC</li>
+						<li>Using pygeoapi as an external API providing OGC API - Features</li>
+						<li>Testbed for JSON-LD for soil data distribution</li>
+						<li><a href="https://glosis.isric.org/ogc">https://glosis.isric.org/ogc</a></li>
+					</ul>
+				</section>
+			</section>
+			<section id="roadmap">
+				<h2>Roadmap</h2>
+				<ul>
+					<li>More data providers</li>
+					<li>Content negotiation (e.g. Response as GeoPackage, GML,...)</li>
+					<li>Advanced filters (CQL) </li>
+					<li>More OGC APIs: Maps, Tiles, Coverages, Processes</li>
+				</ul>
+			</section>
+			<section id="support">
+				<section>
+					<h1>Support</h1>
+				</section>
+				<section>
+					<img src="static/Geocat.jpg" style="border-radius: 10%; max-width: 50%; max-height: 50%;"/>
+					<br/>
+					<p>Need support for WFS3.0???</p>
+					<p><a href="https://www.geocat.net" target="_blank">GeoCat</a> can help you</p>
+					<img src="static/geocat-banner.png" style="background-color: white; max-width: 50%; max-height: 50%">
+				</section>
+				<section>
+					<a href="https://justobjects.nl" target="_blank">
+						<img src="static/justobjects.jpg" style="border-radius: 10%; max-width: 60%; max-height: 60%;"/></a>
+					<br/>
+					<p><a href="https://justobjects.nl" target="_blank">justobjects.nl</a></p>
+				</section>
+				<section>
+					<a href="http://geocomvos.com" target="_blank">
+						<img src="static/geocomvos.png" style="border-radius: 10%; max-width: 60%; max-height: 60%;"/></a>
+					<br/>
+					<p><a href="http://geocomvos.com" target="_blank">GeoComvos ltd</a></p>
+				</section>
+			</section>
+			<section>
+				<h2>Links</h2>
+				<ul>
+					<li>Home: <a href="https://pygeoapi.io" target="_blank">https://pygeoapi.io</a></li>
+					<li>Docs: <a href="https://docs.pygeoapi.io" target="_blank">https://docs.pygeoapi.io</a></li>
+					<li>Demo: <a href="https://demo.pygeoapi.io" target="_blank">https://demo.pygeoapi.io</a></li>
+					<li>GitHub: <a href="https://github.com/geopython/pygeoapi" target="_blank">https://github.com/geopython/pygeoapi</a></li>
+					<li>Docker: <a href="https://hub.docker.com/r/geopython/pygeoapi" target="_blank">https://hub.docker.com/r/geopython/pygeoapi</a></li>
+					<li>Chat: <a href="https://gitter.im/geopython/pygeoapi" target="_blank">https://gitter.im/geopython/pygeoapi</a></li>
+					<li>Mail: <a href="https://lists.osgeo.org/mailman/listinfo/pygeoapi" target="_blank">https://lists.osgeo.org/mailman/listinfo/pygeoapi</a></li>
+				</ul>
+			</section>
+			<section>
+				<h1>Thank you!</h1>
+				<p>
+					<a href="https://twitter.com/tomkralidis">@tomkralidis</a>
+					<a href="https://twitter.com/JMendesDeJesus">@JMendesDeJesus</a>
+					<a href="https://twitter.com/normanbarker">@normanbarker</a>
+					<a href="https://twitter.com/perrygeo">@perrygeo</a>
+					<a href="https://twitter.com/justb4">@justb4</a>
+					<a href="https://twitter.com/pvangenuchten">@pvgenuchten</a>
+					<a href="https://twitter.com/tzotsos">@tzotsos</a>
+				</p>
+			</section>
+		</div>
+	</div>
+	<script src="lib/js/head.min.js"></script>
+	<script src="js/reveal.js"></script>
+
+	<script>
+		// More info about config & dependencies:
+		// - https://github.com/hakimel/reveal.js#configuration
+		// - https://github.com/hakimel/reveal.js#dependencies
+		Reveal.initialize({
+			slideNumber : true,
+			history: true,
+			dependencies : [ {
+				src : 'plugin/markdown/marked.js'
+			}, {
+				src : 'plugin/markdown/markdown.js'
+			}, {
+				src : 'plugin/fullscreen/fullscreen-img.js'
+			}, {
+				src : 'plugin/notes/notes.js',
+				async : true
+			}, {
+				src : 'plugin/highlight/highlight.js',
+				async : true,
+				callback : function() {
+					hljs.initHighlightingOnLoad();
+				}
+			} ]
+		});
+	</script>
+</body>
+</html>
