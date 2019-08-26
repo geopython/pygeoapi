@@ -21,6 +21,21 @@
     {% endfor %}
     {% block extrahead %}
     {% endblock %}
+    <script>
+      var xhr = new XMLHttpRequest();
+      var path = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=jsonld";
+      xhr.open('GET', path);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          var head = document.getElementsByTagName('head')[0];
+          var jsonld_datablock = document.createElement('script');
+          jsonld_datablock.type = "application/ld+json";
+          jsonld_datablock.textContent = xhr.responseText;
+          head.appendChild(jsonld_datablock);
+        }
+      };
+      xhr.send();
+    </script>
   </head>
   <body>
     <header class="sticky row">
@@ -38,9 +53,10 @@
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         {% block crumbs %}
         <a href="{{ config['server']['url'] }}">Home</a>
-        {% endblock %} 
+        {% endblock %}
         <span style="float:right">
           <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
+          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=jsonld">JSON-LD</a>
         </span>
       </div>
     </div>
