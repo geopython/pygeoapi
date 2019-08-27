@@ -176,6 +176,9 @@ class OGRProvider(BaseProvider):
         self.driver = None
         self.conn = None
 
+        LOGGER.debug('Grabbing field information')
+        self.fields = self.get_fields()
+    
     def _list_open_options(self):
         return [
             f"{key}={str(value)}" for key, value in self.open_options.items()]
@@ -284,6 +287,20 @@ class OGRProvider(BaseProvider):
 
                 # layer.SetSpatialFilterRect(
                 # float(minx), float(miny), float(maxx), float(maxy))
+
+            if properties:
+                LOGGER.debug('processing properties')
+
+                attribute_filter = ' and '.join(
+                    map(
+                        lambda x: '{} = \'{}\''.format(x[0], x[1]),
+                        properties
+                    )
+                )
+
+                LOGGER.debug(attribute_filter)
+
+                layer.SetAttributeFilter(attribute_filter)
 
             # Make response based on resulttype specified
             if resulttype == 'hits':
