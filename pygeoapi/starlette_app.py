@@ -165,6 +165,49 @@ async def dataset(request: Request, feature_collection=None, feature=None):
     return response
 
 
+@app.route('/processes')
+@app.route('/processes/{name}')
+async def describe_processes(request: Request, name=None):
+    """
+    OGC open api processes access point (experimental)
+
+    :param name: identifier of process to describe
+    :returns: Starlette HTTP Response
+    """
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes/{name}/jobs', methods=['GET', 'POST'])
+async def execute_process(request: Request, name=None):
+    """
+    OGC open api jobs from processes access point (experimental)
+
+    :param name: identifier of process to execute
+    :returns: Starlette HTTP Response
+    """
+
+    if request.method == 'GET':
+        headers, status_code, content = ({}, 200, "[]")
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.query_params, request.data, name)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
