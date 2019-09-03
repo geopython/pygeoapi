@@ -113,6 +113,28 @@ async def api_conformance(request: Request):
     return response
 
 
+@app.route('/collections')
+@app.route('/collections/{name}')
+async def describe_collections(request: Request, name=None):
+    """
+    OGC open api collections  access point
+
+    :param name: identifier of collection name
+    :returns: Starlette HTTP Response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    headers, status_code, content = api_.describe_collections(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
