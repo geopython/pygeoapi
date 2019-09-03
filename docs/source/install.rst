@@ -3,7 +3,7 @@
 Install
 =======
 
-pygeoapi is nativally run as a Flask app (the code struct is an API and Flask is used as a wrapper). 
+pygeoapi, by default, is natively run as a Flask app (the code struct is an API and Flask is used as a wrapper). Optionally it can be run as a Starlette app.
 
 pygeoapi uses two configuration files: **pygeoapi-config.yml** and **openapi.yml**. First configuration contains all the information and setup to run pygeoapi while the second is exclusivally for the openapi.
 
@@ -29,11 +29,11 @@ It is advisable to run pygeoapi inside an isolated enviroment either *virtualenv
 	. bin/activate
 	git clone https://github.com/geopython/pygeoapi.git
 	cd pygeoapi
-	
+
 	#install requirements
 	pip install -r requirements.txt
 	pip install -r requirements-dev.txt
-	
+
 	# install source in current directory
 	pip install -e .
 	cp pygeoapi-config.yml local.config.yml
@@ -44,9 +44,9 @@ It is advisable to run pygeoapi inside an isolated enviroment either *virtualenv
 	# generate OpenAPI Document
 	pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
 	export PYGEOAPI_OPENAPI=/path/to/openapi.yml
-	
+
 	#Run pygeoapi
-	pygeoapi serve
+	pygeoapi serve --flask
 
 
 If the default configuration was used then we should have pygeoapi running on 
