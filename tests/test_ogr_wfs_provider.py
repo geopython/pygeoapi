@@ -399,6 +399,46 @@ def test_query_with_startindex(config_MapServer_WFS):
     assert '101696.68' in properties['xrd']
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_with_property_filtering_gs(config_GeoServer_WFS):
+    """Testing query with property filtering on geoserver backend"""
+
+    p = OGRProvider(config_GeoServer_WFS)
+
+    feature_collection = p.query(
+        properties=[
+            ('postcode', '9711LM'),
+            ('huisnummer', 106),
+        ]
+    )
+
+    for feature in feature_collection['features']:
+        assert 'properties' in feature
+        assert 'postcode' in feature['properties']
+        assert 'huisnummer' in feature['properties']
+
+        assert feature['properties']['postcode'] == '9711LM'
+        assert feature['properties']['huisnummer'] == 106
+
+
+def test_query_with_property_filtering_ms(config_MapServer_WFS):
+    """Testing query with property filtering on mapserver backend"""
+
+    p = OGRProvider(config_MapServer_WFS)
+
+    feature_collection = p.query(
+        properties=[
+            ('station', '21'),
+        ]
+    )
+
+    for feature in feature_collection['features']:
+        assert 'properties' in feature
+        assert 'station' in feature['properties']
+
+        assert feature['properties']['station'] == '21'
+
 #
 # # OK, but backend GeoServer PDOK WFS takes too much time....
 # # def test_query_with_limit_gs(config_GeoServer_WFS):
