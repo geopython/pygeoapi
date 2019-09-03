@@ -368,13 +368,14 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def get_features(self, headers,  args, dataset):
+    def get_features(self, headers,  args, dataset, pathinfo=None):
         """
         Queries feature collection
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
+        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -559,9 +560,14 @@ class API(object):
             content['links'][1]['rel'] = 'self'
 
             # For constructing proper URIs to items
-            path_info = '/'.join([
-                self.config['server']['url'].rstrip('/'),
-                headers.environ['PATH_INFO'].strip('/')])
+            if pathinfo:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    pathinfo.strip('/')])
+            else:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    headers.environ['PATH_INFO'].strip('/')])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
