@@ -64,9 +64,29 @@ api_ = API(CONFIG)
 async def root(request: Request):
     """
     HTTP root content of pygeoapi. Intro page access point
-    :returns: HTTP response
+    :returns: Starlette HTTP Response
     """
     headers, status_code, content = api_.root(request.headers, request.query_params)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/api')
+async def api(request: Request):
+    """
+    OpenAPI access point
+
+    :returns: Starlette HTTP Response
+    """
+    with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
+        openapi = yaml_load(ff)
+
+    headers, status_code, content = api_.api(
+        request.headers, request.query_params, openapi)
 
     response = Response(content=content, status_code=status_code)
     if headers:
