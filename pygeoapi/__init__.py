@@ -36,7 +36,7 @@ from pygeoapi.openapi import generate_openapi_document
 
 
 cli = click.Group()
-cli.version=__version__
+cli.version = __version__
 
 
 @cli.command()
@@ -46,10 +46,10 @@ cli.version=__version__
 def serve(ctx, server):
     """Run the server with different daemon type"""
 
-    if server is "flask":
+    if server == "flask":
         ctx.forward(serve_flask)
         ctx.invoke(serve_flask)
-    elif server is "starlette":
+    elif server == "starlette":
         ctx.forward(serve_starlette)
         ctx.invoke(serve_starlette)
     else:

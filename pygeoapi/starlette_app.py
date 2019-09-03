@@ -66,7 +66,8 @@ async def root(request: Request):
     HTTP root content of pygeoapi. Intro page access point
     :returns: Starlette HTTP Response
     """
-    headers, status_code, content = api_.root(request.headers, request.query_params)
+    headers, status_code, content = api_.root(
+        request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
     if headers:
@@ -147,9 +148,11 @@ def serve(ctx, server, debug=False):
     """
 
 #    setup_logger(CONFIG['logging'])
-    uvicorn.run(app, debug=True, host=api_.config['server']['bind']['host'],
-            port=api_.config['server']['bind']['port'])
+    uvicorn.run(
+        app, debug=True,
+        host=api_.config['server']['bind']['host'],
+        port=api_.config['server']['bind']['port'])
 
 
-if __name__ == "__main__": # run locally, for testing
+if __name__ == "__main__":  # run locally, for testing
     serve()
