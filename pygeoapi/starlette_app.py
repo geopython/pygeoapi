@@ -95,6 +95,24 @@ async def api(request: Request):
     return response
 
 
+@app.route('/conformance')
+async def api_conformance(request: Request):
+    """
+    OGC open api conformance access point
+
+    :returns: Starlette HTTP Response
+    """
+
+    headers, status_code, content = api_.api_conformance(
+        request.headers, request.query_params)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
