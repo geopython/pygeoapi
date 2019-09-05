@@ -19,10 +19,10 @@ pip install -e .
 cp pygeoapi-config.yml local.config.yml
 vi local.config.yml
 # TODO: what is most important to edit?
-export PYGEOAPI_CONFIG=/path/to/local.config.yml
+export PYGEOAPI_CONFIG=$(pwd)/local.config.yml
 # generate OpenAPI Document
 pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
-export PYGEOAPI_OPENAPI=/path/to/openapi.yml
+export PYGEOAPI_OPENAPI=$(pwd)/openapi.yml
 pygeoapi serve
 ```
 

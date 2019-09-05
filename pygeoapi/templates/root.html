@@ -10,8 +10,8 @@
 
   <section id="identification">
     <h1 itemprop="name">{{ config['metadata']['identification']['title'] }}</h1>
-    <p itemprop="description">{{ config['metadata']['identification']['description'] }}</p>   
-    
+    <p itemprop="description">{{ config['metadata']['identification']['description'] }}</p>
+
     <p itemprop="keywords">
         {% for kw in config['metadata']['identification']['keywords'] %}
           <mark class="tag">{{ kw }}</mark>
@@ -23,7 +23,7 @@
         {% if config['metadata']['identification']['terms_of_service'] %}
           <div class="row">
               <div class="col-sm-4">
-                Terms of service     
+                Terms of service
               </div>
               <div class="col-sm-8">
                 {{ config['metadata']['identification']['terms_of_service'] | urlize() }}
@@ -33,7 +33,7 @@
         {% if config['metadata']['license']['url'] %}
           <div class="row">
               <div class="col-sm-4">
-                License     
+                License
               </div>
               <div class="col-sm-8">
                   <a itemprop="license" href="{{ config['metadata']['license']['url'] }}">
@@ -58,7 +58,7 @@
   </section>
   <section id="processes">
       <h2>Processes</h2>
-      <p>  
+      <p>
         <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
       </p>
   </section>
@@ -87,7 +87,15 @@
       <div class="section dark">
           <b>Contact point</b>
       </div>
-      <div class="section" itemprop="contactPoint" itemscope itemtype="http://schema.org/Contactpoint">
+      <div class="section" itemprop="contactPoint" itemscope itemtype="http://schema.org/ContactPoint">
+        <b>Address</b><br/>
+        <div class="section" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+          <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
+          <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span>,
+          <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span><br/>
+          <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span><br/>
+          <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span>
+        </div>
         <b>Email</b><br/>
         <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
         {% if config['metadata']['contact']['phone'] %}
@@ -112,21 +120,9 @@
         {% endif %}
       </div>
     </div>
-    <div class="card fluid">
-      <div class="section dark">
-          <b>Address</b>
-      </div>
-      <div class="section" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
-        <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
-        <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span>,
-        <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span><br/>     
-        <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span>,
-        <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span><br/>
-      </div>
-    </div>
   </div>
 </div>
 
 </section>
-    
+
 {% endblock %}
