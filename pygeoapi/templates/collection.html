@@ -7,7 +7,7 @@
 {% block body %}
     <section id="collection" itemscope itemtype="//schema.org/Dataset">
       <span itemprop="includedInDataCatalog" itemscope itemtype="//schema.org/DataCatalog">
-        <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ data['name'] }}" />
+        <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
         <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
         <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
       </span>
