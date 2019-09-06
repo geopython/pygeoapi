@@ -210,6 +210,7 @@ def serve(ctx, server, debug=False):
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.
 
+    :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
     :returns void
 

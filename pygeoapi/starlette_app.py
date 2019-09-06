@@ -215,6 +215,8 @@ def serve(ctx, server, debug=False):
     """
     Serve pygeoapi via Starlette. Runs pygeoapi
     as a uvicorn server. Not recommend for production.
+
+    :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
     :returns void
     """
