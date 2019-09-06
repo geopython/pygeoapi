@@ -30,8 +30,6 @@
 __version__ = '0.6.0'
 
 import click
-from pygeoapi.flask_app import serve as serve_flask
-from pygeoapi.starlette_app import serve as serve_starlette
 from pygeoapi.openapi import generate_openapi_document
 
 
@@ -47,9 +45,11 @@ def serve(ctx, server):
     """Run the server with different daemon type"""
 
     if server == "flask":
+        from pygeoapi.flask_app import serve as serve_flask
         ctx.forward(serve_flask)
         ctx.invoke(serve_flask)
     elif server == "starlette":
+        from pygeoapi.starlette_app import serve as serve_starlette
         ctx.forward(serve_starlette)
         ctx.invoke(serve_starlette)
     else:
