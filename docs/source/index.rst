@@ -17,6 +17,7 @@ Welcome to pygeoapi's documentation!
    openapi
    docker
    wsgi
+   asgi
    configuration
    plugins
    code
