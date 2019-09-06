@@ -5,7 +5,7 @@ WSGI
 
  Web Server Gateway Interface (WSGI) is  standard for forwarding request to web applications written on Python language. pygeoapi it self
  doesn't implement WSGI since it is an API, 
- therefore it is required a webframework to access HTTP requests and pass the information to pygeopai
+ therefore it is required a webframework to access HTTP requests and pass the information to pygeoapi
  
 .. code-block:: console
  
@@ -14,17 +14,17 @@ WSGI
    
 the pygeoapi package integrates `Flask <https://flask.palletsprojects.com/en/1.1.x/>`_ as webframework for defining the API routes/end points and WSGI support.
 
-The flask WSGI server can be easely run as a pygeoapi command:
+The flask WSGI server can be easily run as a pygeoapi command with the option `--flask`:
 
 .. code-block:: console
 
-   pygeoapi serve
+   pygeoapi serve --flask
 
-Running a native Flask server is not adivsable, the prefered option is as follows:
+Running a native Flask server is not advisable, the prefered option is as follows:
 
 .. code-block:: console
  
-   HTTP request --> WSGI server (gunicorn) --> Flask (flask_app.py) --> pygeopai API
+   HTTP request --> WSGI server (gunicorn) --> Flask (flask_app.py) --> pygeoapi API
 
 By having a specific WSGI server, the HTTPS are efficiently processed into threads/processes. The current docker pygeoapi 
 implement such strategy (see section: :ref:`docker`), it is prefered to implement pygeopai using docker solutions than running host native WSGI servers.

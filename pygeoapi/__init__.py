@@ -30,15 +30,35 @@
 __version__ = '0.6.0'
 
 import click
-from pygeoapi.flask_app import serve
 from pygeoapi.openapi import generate_openapi_document
 
 
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+cli = click.Group()
+cli.version = __version__
 
 
-cli.add_command(serve)
+@cli.command()
+@click.option('--flask', 'server', flag_value="flask", default=True)
+@click.option('--starlette', 'server', flag_value="starlette")
+@click.pass_context
+def serve(ctx, server):
+    """Run the server with different daemon type
+
+    :param server: `string` of server type
+    :returns void
+
+    """
+
+    if server == "flask":
+        from pygeoapi.flask_app import serve as serve_flask
+        ctx.forward(serve_flask)
+        ctx.invoke(serve_flask)
+    elif server == "starlette":
+        from pygeoapi.starlette_app import serve as serve_starlette
+        ctx.forward(serve_starlette)
+        ctx.invoke(serve_starlette)
+    else:
+        raise click.ClickException('--flask/--starlette is required')
+
+
 cli.add_command(generate_openapi_document)
