@@ -33,6 +33,7 @@ import os
 
 import click
 
+from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
@@ -42,6 +43,9 @@ from pygeoapi.api import API
 from pygeoapi.util import yaml_load
 
 app = Starlette()
+app.mount('/static', StaticFiles(
+    directory='{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
+                                  os.sep)))
 
 CONFIG = None
 
