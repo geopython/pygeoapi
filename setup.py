@@ -127,12 +127,7 @@ def get_package_version():
     raise RuntimeError("Unable to find version string.")
 
 
-try:
-    import pypandoc
-    LONG_DESCRIPTION = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError, OSError):
-    print('Conversion to rST failed.  Using default (will look weird on PyPI)')
-    LONG_DESCRIPTION = read('README.md')
+LONG_DESCRIPTION = read('README.md')
 
 DESCRIPTION = 'pygeoapi provides an API to geospatial data'
 
@@ -144,6 +139,7 @@ setup(
     version=get_package_version(),
     description=DESCRIPTION.strip(),
     long_description=LONG_DESCRIPTION,
+    long_description_content_type='text/markdown',
     license='MIT',
     platforms='all',
     keywords=' '.join([

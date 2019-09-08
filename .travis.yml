@@ -36,7 +36,6 @@ install:
   - pip3 install -r requirements-provider.txt
   - python3 setup.py install
 
-
 before_script:
   - sleep 20
   - python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
@@ -49,8 +48,6 @@ script:
   - pytest --cov=pygeoapi
   - make -C ./docs html
   - find . -type f -name "*.py" | xargs flake8
-  - python3 setup.py --long-description | rst2html5.py
-
 
 after_success:
   - python3 setup.py sdist bdist_wheel --universal
