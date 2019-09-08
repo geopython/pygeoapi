@@ -51,4 +51,4 @@ script:
 
 after_success:
   - python3 setup.py sdist bdist_wheel --universal
-  - debuild -b -uc -us
+  - sudo debuild -b -uc -us
