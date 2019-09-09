@@ -24,9 +24,13 @@
   <body>
     <header class="sticky row">
       <div class="col-sm-12 col-md-10 col-md-offset-1">
-        <a role="button" href="{{ config['server']['url'] }}">
-          <span>{{ config['metadata']['identification']['title'] }}</span></a>
-        <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" style="float:right">Contact</a>
+        <a href="{{ config['server']['url'] }}" class="logo" role="button">
+          <img src="{{ config['server']['url'] }}/static/css/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:39px" /></a>
+        <!-- 
+          Add additional menu items here 
+          <a href="https://pygeoapi.io" role="button" class="button">About</a>
+        -->
+        <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
       </div>
     </header>
     <div class="sticky row crumbs">
@@ -53,7 +57,7 @@
     <div class="footer">
       <div class="row">
         <div class="col-sm-12 col-md-10 col-md-offset-1">
-          Powered by <a title="pygeoapi" href="https://pygeoapi.io">pygeoapi</a> {{ version }}
+          Powered by <a title="pygeoapi" href="https://pygeoapi.io"> <img src="{{ config['server']['url'] }}/static/css/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;" /></a> {{ version }}
         </div>
       </div>
     </div>
