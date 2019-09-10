@@ -3,7 +3,7 @@
 {% block body %}
 
 <br/>
-<section id="collections"  itemscope itemtype="//schema.org/DataCatalog">
+<section id="collections"  itemscope itemtype="https://schema.org/DataCatalog">
   <meta itemprop="url" content="{{ config['server']['url'] }}" />
 <div class="row">
   <div class="col-md-8 col-sm-12">
@@ -72,7 +72,7 @@
   </section>
 
   </div>
-  <div class="col-md-4 col-sm-12" itemprop="provider" itemscope itemtype="//schema.org/Organization">
+  <div class="col-md-4 col-sm-12" itemprop="provider" itemscope itemtype="https://schema.org/Organization">
     <div class="card fluid">
       <div class="section dark">
        <b>Provider</b>
@@ -87,9 +87,9 @@
       <div class="section dark">
           <b>Contact point</b>
       </div>
-      <div class="section" itemprop="contactPoint" itemscope itemtype="//schema.org/ContactPoint">
+      <div class="section" itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
         <b>Address</b><br/>
-        <div class="section" itemprop="address" itemscope itemtype="//schema.org/PostalAddress">
+        <div class="section" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
           <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
           <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span>,
           <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span><br/>

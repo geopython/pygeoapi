@@ -4,7 +4,7 @@
 / <a href="./collections">Collections</a>
 {% endblock %}
 {% block body %}
-    <section id="collections" itemscope itemtype="//schema.org/DataCatalog">
+    <section id="collections" itemscope itemtype="https://schema.org/DataCatalog">
     <meta itemprop="url" content="{{ config['server']['url'] }}" />
     <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
     <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
@@ -18,7 +18,7 @@
               </thead>
               <tbody>
                 {% for k, v in config['datasets'].items() %}
-                <tr itemprop="dataset" itemscope itemtype="//schema.org/Dataset">
+                <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
                   <td data-label="name">
                     <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
                     <a  title="{{ v['title'] | striptags | truncate }}" 

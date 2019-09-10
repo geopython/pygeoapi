@@ -5,8 +5,8 @@
 / <a href="./{{ data['name'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="collection" itemscope itemtype="//schema.org/Dataset">
-      <span itemprop="includedInDataCatalog" itemscope itemtype="//schema.org/DataCatalog">
+    <section id="collection" itemscope itemtype="https://schema.org/Dataset">
+      <span itemprop="includedInDataCatalog" itemscope itemtype="https://schema.org/DataCatalog">
         <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
         <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
         <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
@@ -22,7 +22,7 @@
       <h3>View</h3>
       <ul>
         <li>
-          <div itemprop="distribution" itemscope itemtype="//schema.org/DataDownload">
+          <div itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
             <meta itemprop="encodingFormat" content="text/html" />
             <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
               Browse through the items of "{{ data['title'] }}</a>"</div>
@@ -31,7 +31,7 @@
       <h3>Links</h3>
       <ul>
       {% for link in data['links'] %}
-          <li itemprop="distribution" itemscope itemtype="//schema.org/DataDownload">
+          <li itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
             <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
             <span itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
             <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
