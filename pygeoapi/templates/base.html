@@ -7,7 +7,7 @@
     <meta name="language" content="{{ config['server']['language'] }}">
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
     <meta name="keywords" content="{{ config['metadata']['identification']['keywords']|join(',') }}">
-    <link rel="shortcut icon" href="{{ config['server']['url'] }}/static/css/favicon.ico" type="image/x-icon" >
+    <link rel="shortcut icon" href="{{ config['server']['url'] }}/static/img/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://unpkg.com/mini.css@3.0.1/dist/mini-default.min.css">
     <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/default.css">
     <!--[if lt IE 9]>
@@ -26,7 +26,7 @@
     <header class="sticky row">
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         <a href="{{ config['server']['url'] }}" class="logo" role="button">
-          <img src="{{ config['server']['url'] }}/static/css/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:39px" /></a>
+          <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:60px;vertical-align: middle;" /></a>
         <!-- 
           Add additional menu items here 
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
@@ -58,7 +58,7 @@
     <div class="footer">
       <div class="row">
         <div class="col-sm-12 col-md-10 col-md-offset-1">
-          Powered by <a title="pygeoapi" href="https://pygeoapi.io"> <img src="{{ config['server']['url'] }}/static/css/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;" /></a> {{ version }}
+          Powered by <a title="pygeoapi" href="https://pygeoapi.io"> <img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:48px;vertical-align: middle;" /></a> {{ version }}
         </div>
       </div>
     </div>
