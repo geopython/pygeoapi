@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -40,7 +42,7 @@ def config():
     return {
         'name': 'Sqlite',
         'data': './tests/data/ne_110m_admin_0_countries.sqlite',
-        'id_field': "ogc_fid",
+        'id_field': 'ogc_fid',
         'table': 'ne_110m_admin_0_countries'
     }
 
@@ -50,18 +52,21 @@ def test_query(config):
 
     p = SQLiteProvider(config)
     feature_collection = p.query()
-    assert feature_collection.get('type', None) == "FeatureCollection"
+    assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert features is not None
     feature = features[0]
-    properties = feature.get("properties", None)
+    properties = feature.get('properties', None)
     assert properties is not None
-    geometry = feature.get("geometry", None)
+    geometry = feature.get('geometry', None)
     assert geometry is not None
 
 
 def test_get(config):
     p = SQLiteProvider(config)
-    results = p.get(118)
-    assert len(results['features']) == 1
-    assert "Netherlands" in results['features'][0]['properties']['admin']
+    result = p.get(118)
+    assert isinstance(result, dict)
+    assert 'geometry' in result
+    assert 'properties' in result
+    assert 'id' in result
+    assert 'Netherlands' in result['properties']['admin']
