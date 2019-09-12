@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -203,9 +205,9 @@ class PostgreSQLProvider(BaseProvider):
                        Identifier('geom'),
                        Identifier(self.table))
 
-            LOGGER.debug('SQL Query:{}'.format(sql_query))
-            LOGGER.debug('Start Index:{}'.format(startindex))
-            LOGGER.debug('End Index'.format(end_index))
+            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('Start Index: {}'.format(startindex))
+            LOGGER.debug('End Index: {}'.format(end_index))
             try:
                 cursor.execute(sql_query)
                 for index in [startindex, limit]:
@@ -218,8 +220,17 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
-            self.dataDB = cursor.fetchall()
-            feature_collection = self.__response_feature_collection()
+            row_data = cursor.fetchall()
+
+            feature_collection = {
+                'type': 'FeatureCollection',
+                'features': []
+            }
+
+            for rd in row_data:
+                feature_collection['features'].append(
+                    self.__response_feature(rd))
+
             return feature_collection
 
     def get(self, identifier):
@@ -242,8 +253,8 @@ class PostgreSQLProvider(BaseProvider):
                                            Identifier(self.table),
                                            Identifier(self.id_field))
 
-            LOGGER.debug('SQL Query:{}'.format(sql_query.as_string(db.conn)))
-            LOGGER.debug('Identifier:{}'.format(identifier))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
+            LOGGER.debug('Identifier: {}'.format(identifier))
             try:
                 cursor.execute(sql_query, (identifier, ))
             except Exception as err:
@@ -253,35 +264,31 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
-            self.dataDB = cursor.fetchall()
-            feature_collection = self.__response_feature_collection()
-            return feature_collection
+            row_data = cursor.fetchall()[0]
+            feature = self.__response_feature(row_data)
 
-    def __response_feature_collection(self):
-        """Assembles GeoJSON output from DB query
+            return feature
 
-        :returns: GeoJSON FeaturesCollection
+    def __response_feature(self, row_data):
+        """
+        Assembles GeoJSON output from DB query
+
+        :param row_data: DB row result
+
+        :returns: `dict` of GeoJSON Feature
         """
 
-        feature_list = list()
-        for row_data in self.dataDB:
-            row_data = dict(row_data)
-            feature = {
-                'type': 'Feature'
-            }
-            feature["geometry"] = json.loads(
-                row_data.pop('st_asgeojson')
-                )
-            feature['properties'] = row_data
-            feature['id'] = feature['properties'].pop(self.id_field)
-            feature_list.append(feature)
-
-        feature_collection = {
-            'type': 'FeatureCollection',
-            'features': feature_list
+        rd = dict(row_data)
+        feature = {
+            'type': 'Feature'
         }
+        feature["geometry"] = json.loads(
+            rd.pop('st_asgeojson'))
 
-        return feature_collection
+        feature['properties'] = rd
+        feature['id'] = feature['properties'].pop(self.id_field)
+
+        return feature
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
