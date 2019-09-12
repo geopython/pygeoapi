@@ -752,7 +752,7 @@ class API(object):
 
         processes = self.config.get('processes', {})
 
-        if not processes or process not in processes.keys():
+        if process not in processes:
             exception = {
                 'code': 'NotFound',
                 'description': 'identifier not found'

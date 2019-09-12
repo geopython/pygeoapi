@@ -329,7 +329,7 @@ def test_execute_process(config, api_):
 
     assert response['outputs'][0]['value'] == 'test'
 
-    api_.config['processes'] = []
+    api_.config['processes'] = {}
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
