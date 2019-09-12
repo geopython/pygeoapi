@@ -1,9 +1,11 @@
 .flat {
     border: 0px;
 }
+
 header {
     display: inline-block;
 }
+
 main {
     background-color:white
 }
@@ -12,6 +14,7 @@ main {
     background-color:rgb(230, 230, 230);
     padding: 6px;   
 }
+
 .crumbs a {
     padding: 0px 6px;
     color:black;
@@ -26,4 +29,21 @@ main {
 /* cancel mini-css header>button uppercase */
 header button, header [type="button"], header .button, header [role="button"] {
       text-transform: none;
+}
+
+html, body {
+    background-color: #fff;
+}
+
+footer.sticky {
+    position: fixed;
+    width: 100%;
+}
+
+main {
+    padding-bottom: 65px; /* prevent from falling under the footer */
+}
+
+table:not(.horizontal) {
+    max-height: none;
 }
