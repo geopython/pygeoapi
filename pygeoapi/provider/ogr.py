@@ -489,9 +489,7 @@ class CommonSourceHelper(SourceHelper):
         OGR Driver-specific handling of closing dataset.
         If ExecuteSQL has been (successfully) called
         must close ResultSet explicitly.
-        https://gis.stackexchange.com/questions/114112/
-        explicitly-close-a-ogr-result-object-from-a-call-to-executesql
-
+        https://gis.stackexchange.com/questions/114112/explicitly-close-a-ogr-result-object-from-a-call-to-executesql  # noqa
         """
 
         if not self.result_set:

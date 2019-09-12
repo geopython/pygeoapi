@@ -107,6 +107,10 @@ def test_root(config, api_):
     assert isinstance(root, dict)
     assert 'links' in root
     assert len(root['links']) == 6
+    assert 'title' in root
+    assert root['title'] == 'pygeoapi default instance'
+    assert 'description' in root
+    assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
     rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
@@ -146,6 +150,8 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
+    assert len(collections['collections']) == 1
+    assert len(collections['links']) == 2
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {}, 'foo')

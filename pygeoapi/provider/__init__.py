@@ -26,3 +26,5 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
+"""Provider module containing the plugins wrapping data sources"""

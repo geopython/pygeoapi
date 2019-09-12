@@ -28,6 +28,8 @@
 #
 # =================================================================
 
+""" Flask module providing the route paths to the api"""
+
 import os
 
 import click
@@ -61,6 +63,11 @@ api_ = API(CONFIG)
 
 @APP.route('/')
 def root():
+    """
+    HTTP root content of pygeoapi. Intro page access point
+
+    :returns: HTTP response
+    """
     headers, status_code, content = api_.root(request.headers, request.args)
 
     response = make_response(content, status_code)
@@ -72,6 +79,11 @@ def root():
 
 @APP.route('/api')
 def api():
+    """
+    OpenAPI access point
+
+    :returns: HTTP response
+    """
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml_load(ff)
 
@@ -87,6 +99,12 @@ def api():
 
 @APP.route('/conformance')
 def api_conformance():
+    """
+    OGC open api conformance access point
+
+    :returns: HTTP response
+    """
+
     headers, status_code, content = api_.api_conformance(request.headers,
                                                          request.args)
 
@@ -100,6 +118,13 @@ def api_conformance():
 @APP.route('/collections')
 @APP.route('/collections/<name>')
 def describe_collections(name=None):
+    """
+    OGC open api collections  access point
+
+    :param name: identifier of collection name
+    :returns: HTTP response
+    """
+
     headers, status_code, content = api_.describe_collections(
         request.headers, request.args, name)
 
@@ -113,6 +138,12 @@ def describe_collections(name=None):
 @APP.route('/collections/<feature_collection>/items')
 @APP.route('/collections/<feature_collection>/items/<feature>')
 def dataset(feature_collection, feature=None):
+    """
+    OGC open api collections/{dataset}/items/{feature}  access point
+
+    :returns: HTTP response
+    """
+
     if feature is None:
         headers, status_code, content = api_.get_features(
             request.headers, request.args, feature_collection)
@@ -131,6 +162,12 @@ def dataset(feature_collection, feature=None):
 @APP.route('/processes')
 @APP.route('/processes/<name>')
 def describe_processes(name=None):
+    """
+    OGC open api processes access point (experimental)
+
+    :param name: identifier of process to describe
+    :returns: HTTP response
+    """
     headers, status_code, content = api_.describe_processes(
         request.headers, request.args, name)
 
@@ -144,6 +181,13 @@ def describe_processes(name=None):
 
 @APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
 def execute_process(name=None):
+    """
+    OGC open api jobs from processes access point (experimental)
+
+    :param name: identifier of process to execute
+    :returns: HTTP response
+    """
+
     if request.method == 'GET':
         headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
@@ -161,8 +205,16 @@ def execute_process(name=None):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, debug=False):
-    """Serve pygeoapi via Flask"""
+def serve(ctx, server, debug=False):
+    """
+    Serve pygeoapi via Flask. Runs pygeoapi
+    as a flask server. Not recommend for production.
+
+    :param server: `string` of server type
+    :param debug: `bool` of whether to run in debug mode
+    :returns void
+
+    """
 
 #    setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],

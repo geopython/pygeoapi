@@ -19,7 +19,7 @@
               </thead>
               <tbody>
                 {% for p in data['processes'] %}
-                <tr itemprop="dataset" itemscope itemtype="http://schema.org/WebAPI">
+                <tr itemscope itemtype="https://schema.org/WebAPI">
                   <td itemprop="name" data-label="name">
                     <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ p['id'] }}" />
                     <a title="{{ p['title'] | striptags | truncate }}" href="{{ config['server']['url'] }}/processes/{{ p['id'] }}">{{ p['title'] | striptags | truncate }}</a>

@@ -1,15 +1,42 @@
-Source: python-pygeoapi
+Source: pygeoapi
 Section: python
 Priority: optional
 Maintainer: Tom Kralidis <tomkralidis@gmail.com>
-Build-Depends: debhelper (>= 9), python, python-setuptools
-Standards-Version: 3.9.5
-X-Python-Version: >= 2.7
+Uploaders: Angelos Tzotsos <gcpp.kalxas@gmail.com>
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               python-all,
+               python-setuptools,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.3.0
 Vcs-Git: https://github.com/geopython/pygeoapi.git
+Homepage: https://pygeoapi.io/
 
 Package: python-pygeoapi
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-pkg-resources, python-click, python-flask, python-unicodecsv, python-yaml
+Depends: ${python:Depends},
+         python-pkg-resources,
+         python-click,
+         python-flask,
+         python-unicodecsv,
+         python-yaml,
+         ${misc:Depends}
 Suggests: python-elasticsearch, python-geojson
-Homepage: https://pygeoapi.io
-Description: pygeoapi provides an API to geospatial data
+Description: pygeoapi provides an API to geospatial data.
+ .
+ This package the pygeoapi module for Python 2.
+
+Package: python3-pygeoapi
+Architecture: all
+Depends: ${python3:Depends},
+         python3-pkg-resources,
+         python3-click,
+         python3-flask,
+         python3-unicodecsv,
+         python3-yaml,
+         ${misc:Depends}
+Suggests: python3-elasticsearch, python3-geojson
+Description: pygeoapi provides an API to geospatial data.
+ .
+ This package the pygeoapi module for Python 3.

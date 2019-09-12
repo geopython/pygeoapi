@@ -27,6 +27,8 @@
 #
 # =================================================================
 
+"""Generic util functions used in the code"""
+
 import logging
 
 import yaml

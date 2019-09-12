@@ -26,6 +26,9 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+""" Root level code of pygeoapi, parsing content provided by webframework.
+Returns content from plugins and sets reponses
+"""
 
 from datetime import datetime
 import json
@@ -45,12 +48,37 @@ LOGGER = logging.getLogger(__name__)
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
+#: Return headers for requests (e.g:X-Powered-By)
 HEADERS = {
     'Content-Type': 'application/json',
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+#: Formats allowed for ?f= requests
 FORMATS = ['json', 'html']
+
+
+def pre_process(func):
+    """
+        Decorator performing header copy and format\
+        checking before sending arguments to mehods
+
+        :param func: decorated function
+
+        :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        cls = args[0]
+        headers_ = HEADERS.copy()
+        format_ = check_format(args[2], args[1])
+        if len(args) > 3:
+            args = args[3:]
+            return func(cls, headers_, format_, *args, **kwargs)
+        else:
+            return func(cls, headers_, format_)
+
+    return inner
 
 
 class API(object):
@@ -73,19 +101,17 @@ class API(object):
 
         setup_logger(self.config['logging'])
 
-    def root(self, headers, args):
+    @pre_process
+    def root(self, headers_, format_):
         """
         Provide API
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -97,6 +123,9 @@ class API(object):
 
         fcm = {
             'links': [],
+            'title': self.config['metadata']['identification']['title'],
+            'description':
+                self.config['metadata']['identification']['description']
         }
 
         LOGGER.debug('Creating links')
@@ -146,19 +175,19 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def api(self, headers, args, openapi):
+    @pre_process
+    def api(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
         :param openapi: dict of OpenAPI definition
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-        format_ = check_format(args, headers)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
 
@@ -174,19 +203,17 @@ class API(object):
 
         return headers_, 200, json.dumps(openapi)
 
-    def api_conformance(self, headers, args):
+    @pre_process
+    def api_conformance(self,  headers_, format_):
         """
         Provide conformance definition
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -213,20 +240,18 @@ class API(object):
 
         return headers_, 200, json.dumps(conformance)
 
-    def describe_collections(self, headers, args, dataset=None):
+    @pre_process
+    def describe_collections(self,  headers_, format_, dataset=None):
         """
         Provide feature collection metadata
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -257,6 +282,7 @@ class API(object):
             collection['name'] = k
             collection['title'] = v['title']
             collection['description'] = v['description']
+            collection['keywords'] = v['keywords']
             for crs in v['crs']:
                 collection['crs'].append(
                     'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
@@ -310,6 +336,7 @@ class API(object):
 
             fcm['collections'].append(collection)
 
+        if dataset is None:
             fcm['links'].append({
                 'type': 'application/json',
                 'rel': 'self',
@@ -341,13 +368,14 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def get_features(self, headers, args, dataset):
+    def get_features(self, headers,  args, dataset, pathinfo=None):
         """
         Queries feature collection
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
+        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -532,9 +560,14 @@ class API(object):
             content['links'][1]['rel'] = 'self'
 
             # For constructing proper URIs to items
-            path_info = '/'.join([
-                self.config['server']['url'].rstrip('/'),
-                headers.environ['PATH_INFO'].strip('/')])
+            if pathinfo:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    pathinfo.strip('/')])
+            else:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    headers.environ['PATH_INFO'].strip('/')])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
@@ -565,21 +598,19 @@ class API(object):
 
         return headers_, 200, json.dumps(content)
 
-    def get_feature(self, headers, args, dataset, identifier):
+    @pre_process
+    def get_feature(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: dataset name
         :param identifier: feature identifier
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -657,7 +688,8 @@ class API(object):
 
         return headers_, 200, json.dumps(content)
 
-    def describe_processes(self, headers, args, process=None):
+    @pre_process
+    def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
 
@@ -667,10 +699,6 @@ class API(object):
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -816,9 +844,9 @@ def check_format(args, headers):
 
 def to_json(dict_):
     """
-    serialize dict to json
+    Serialize dict to json
 
-    :param dict_: dict_
+    :param dict_: `dict` of JSON representation
 
     :returns: JSON string representation
     """

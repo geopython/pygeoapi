@@ -1,7 +1,7 @@
 # pygeoapi Docker HOWTO
 
 Docker Images `geopython/pygeoapi:latest` and versions are
-[available from DockerHub](https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi).
+[available from DockerHub](https://hub.docker.com/r/geopython/pygeoapi).
 
 Each Docker Image contains a default configuration [default.config.yml](default.config.yml)
 with the project's test data and WFS3 datasets.
@@ -10,7 +10,7 @@ You can override this default config via Docker Volume mapping or by extending t
 and copying in your config.
 See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi)
 for the latter method.
-
+https://github.com/geopython/demo.pygeoapi.io/tree/master/services
 Depending on your config you may need specific backends to be available.
 
 ## Running - Basics
@@ -70,7 +70,7 @@ COPY ./my.config.yml /pygeoapi/local.config.yml
 ```
 
 See how the demo server is setup this way at
-https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
+https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
  
 ## Running - Running on a sub-path
 

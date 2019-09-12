@@ -1,4 +1,17 @@
 {% extends "base.html" %}
+{# Optionally renders an img element, otherwise standard value or link rendering #}
+{% macro render_item_value(v, width) -%}
+    {% set val = v | string | trim | lower %}
+    {% if val|length and
+      (val.endswith(".jpg") or val.endswith(".jpeg") or val.endswith(".png") or val.endswith(".gif") or val.endswith(".bmp"))
+    %}
+        {# Ends with image extension: render img element with link to image #}
+        <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
+    {% else %}
+        {# All other cases: text or link value #}
+        {{ v | urlize() }}
+    {% endif %}
+{%- endmacro %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }} 
 / <a href="../../../collections">Collections</a>
@@ -16,8 +29,7 @@
 {% endblock %}
 
 {% block body %}
-    <section id="collections"></section> 
-    <section id="items">
+    <section id="item">
       <div class="row">
         <div class="col-sm">
           <h2>Item {{ data['id'] }}</h2>
@@ -52,7 +64,7 @@
                     </ul>
                 </td>
                 {% else %}
-                <td>{{ v | urlize(25) }}</td>
+                  <td>{{ render_item_value(v, 80) }}</td>
                 {% endif %}
               </tr>
               {% endfor %}

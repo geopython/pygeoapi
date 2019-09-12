@@ -33,6 +33,7 @@ from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
+#: Process metadata and description
 PROCESS_METADATA = {
     'version': '0.1.0',
     'id': 'hello-world',
@@ -80,7 +81,7 @@ PROCESS_METADATA = {
 
 
 class HelloWorldProcessor(BaseProcessor):
-    """Hello World Processor"""
+    """Hello World Processor example"""
 
     def __init__(self, provider_def):
         """
