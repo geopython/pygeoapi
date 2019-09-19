@@ -213,7 +213,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-31.2687 32.5898 -6.18992 42.152]
+                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
             temporal:
                 begin: None
                 end: now  # or empty
@@ -242,7 +242,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [28.9845376683957 -4.48174334765485,30.866396969019 -2.3096796]
+                bbox: [28.9845376683957, -4.48174334765485, 30.866396969019, -2.3096796]
             temporal:
                 begin: None
                 end: now  # or empty
