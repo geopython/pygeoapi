@@ -138,7 +138,7 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'This document as HTML',
-              'href': '{}/?f=html'.format(self.config['server']['url']),
+              'href': '{}?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'service',
