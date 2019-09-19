@@ -184,7 +184,7 @@ datasets:
             spatial:
                 bbox: [-180,-90,180,90]
             temporal:
-                begin: None
+                begin:
                 end: now  # or empty
         provider:
             name: SQLite
@@ -215,7 +215,7 @@ datasets:
             spatial:
                 bbox: [-31.2687, 32.5898, -6.18992, 42.152]
             temporal:
-                begin: None
+                begin:
                 end: now  # or empty
         provider:
             name: GeoPackage
@@ -244,7 +244,7 @@ datasets:
             spatial:
                 bbox: [28.9845376683957, -4.48174334765485, 30.866396969019, -2.3096796]
             temporal:
-                begin: None
+                begin:
                 end: now  # or empty
         provider:
             name: PostgreSQL
@@ -279,7 +279,7 @@ datasets:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
             temporal:
-                begin: None
+                begin:
                 end: now  # or empty
         provider:
             name: OGR
