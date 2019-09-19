@@ -105,7 +105,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-180,-90,180,90]
+                bbox: [-180, -90, 180, 90]
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
@@ -139,7 +139,7 @@ datasets:
 #              hreflang: en-US
 #        extents:
 #            spatial:
-#                bbox: [-180,-90,180,90]
+#                bbox: [-180, -90, 180, 90]
 #        provider:
 #            name: Elasticsearch
 #            data: http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection
@@ -160,7 +160,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-180,-90,180,90]
+                bbox: [-180, -90, 180, 90]
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty
@@ -185,7 +185,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-180,-90,180,90]
+                bbox: [-180, -90, 180, 90]
             temporal:
                 begin: None
                 end: now  # or empty
@@ -216,7 +216,7 @@ datasets:
 #              hreflang: en-US
 #        extents:
 #            spatial:
-#                bbox: [-31.2687 32.5898 -6.18992 42.152]
+#                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
 #            temporal:
 #                begin: None
 #                end: now  # or empty
@@ -245,7 +245,7 @@ datasets:
 #              hreflang: en-US
 #        extents:
 #            spatial:
-#                bbox: [28.9845376683957 -4.48174334765485,30.866396969019 -2.3096796]
+#                bbox: [28.9845376683957, -4.48174334765485, 30.866396969019, -2.3096796]
 #            temporal:
 #                begin: None
 #                end: now  # or empty
@@ -421,7 +421,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-31.2687 32.5898 -6.18992 42.152]
+                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
             temporal:
                 begin: None
                 end: now  # or empty
@@ -460,7 +460,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-180,-90,180,90]
+                bbox: [-180, -90, 180, 90]
             temporal:
                 begin: 2011-11-11
                 end: now  # or empty

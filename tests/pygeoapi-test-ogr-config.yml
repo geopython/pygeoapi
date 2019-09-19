@@ -290,7 +290,7 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-31.2687 32.5898 -6.18992 42.152]
+                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
             temporal:
                 begin: None
                 end: now  # or empty
