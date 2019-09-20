@@ -294,7 +294,7 @@ def test_describe_processes(config, api_):
     assert len(process['outputTransmission']) == 1
     assert len(process['jobControlOptions']) == 1
 
-    api_.config['processes'] = []
+    api_.config['processes'] = {}
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(

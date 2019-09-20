@@ -275,8 +275,11 @@ def get_oas_30(cfg):
     }
 
     LOGGER.debug('setting up processes')
-    if 'processes' in cfg:
-        for k, v in cfg['processes'].items():
+
+    processes = cfg.get('processes', {})
+
+    if processes:
+        for k, v in processes.items():
             p = load_plugin('process', v['processor'])
 
             process_name_path = '/processes/{}'.format(k)
