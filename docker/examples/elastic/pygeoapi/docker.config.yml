@@ -187,7 +187,7 @@ datasets:
             spatial:
                 bbox: [-180,-90,180,90]
             temporal:
-                begin: None
+                begin:
                 end: now  # or empty
         provider: 
             name: SQLite
