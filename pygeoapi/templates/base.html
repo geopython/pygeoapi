@@ -55,13 +55,7 @@
       </div>
     </div>
     </main>
-    <div class="footer">
-      <div class="row">
-        <div class="col-sm-12 col-md-10 col-md-offset-1">
-          Powered by <a title="pygeoapi" href="https://pygeoapi.io"> <img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:48px;vertical-align: middle;" /></a> {{ version }}
-        </div>
-      </div>
-    </div>
+    <footer class="sticky">Powered by <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
     {% block extrafoot %}
     {% endblock %}
   </body>
