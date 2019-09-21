@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+from copy import deepcopy
 import logging
 
 import click
@@ -86,6 +87,9 @@ def get_oas_30(cfg):
             'summary': 'API',
             'description': 'API',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
                 200: {
                     'description': 'successful operation'
@@ -99,6 +103,9 @@ def get_oas_30(cfg):
             'summary': 'This document',
             'description': 'This document',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
                 200: {
                     'description': 'successful operation'
@@ -112,6 +119,9 @@ def get_oas_30(cfg):
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
                 200: {
                     'description': 'successful operation'
@@ -125,6 +135,9 @@ def get_oas_30(cfg):
             'summary': 'Feature Collections',
             'description': 'Feature Collections',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
                 200: {
                     'description': 'successful operation'
@@ -141,6 +154,102 @@ def get_oas_30(cfg):
             'url': cfg['metadata']['identification']['url']}
         }
     )
+
+    oas['components'] = {
+        'parameters': {
+            'id': {
+                'name': 'id',
+                'in': 'path',
+                'description': 'The id of a feature',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                }
+            },
+            'f': {
+                'name': 'f',
+                'in': 'query',
+                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                    'enum': ['json', 'html'],
+                    'default': 'json'
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'bbox': {
+                'name': 'bbox',
+                'in': 'query',
+                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'array',
+                    'minItems': 4,
+                    'maxItems': 6,
+                    'items': {
+                        'type': 'number'
+                    }
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'time': {
+                'name': 'time',
+                'in': 'query',
+                'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string'
+                },
+                'style': 'form',
+                'explode': False,
+            },
+            'limit': {
+                'name': 'limit',
+                'in': 'query',
+                'description': 'The optional limit parameter limits the number of items that are presented in the response document. Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted. Minimum = 1. Maximum = 10000. Default = {}.'.format(cfg['server']['limit']),  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': cfg['server']['limit'],
+                    'default': cfg['server']['limit']
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'sortby': {
+                'name': 'sortby',
+                'in': 'query',
+                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'startindex': {
+                'name': 'startindex',
+                'in': 'query',
+                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'default': 0
+                },
+                'style': 'form',
+                'explode': False
+            }
+        }
+    }
+
+    items_f = deepcopy(oas['components']['parameters']['f'])
+    items_f['schema']['enum'].append('csv')
+
     LOGGER.debug('setting up datasets')
     for k, v in cfg['datasets'].items():
         collection_name_path = '/collections/{}'.format(k)
@@ -164,6 +273,9 @@ def get_oas_30(cfg):
                 'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
                 'responses': {
                     200: {
                         'description': 'successful operation'
@@ -184,7 +296,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/f'},
+                    items_f,
                     {'$ref': '#/components/parameters/bbox'},
                     {'$ref': '#/components/parameters/time'},
                     {'$ref': '#/components/parameters/limit'},
@@ -267,6 +379,9 @@ def get_oas_30(cfg):
             'summary': 'Processes',
             'description': 'Processes',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
                 200: {
                     'description': 'successful operation'
@@ -305,6 +420,9 @@ def get_oas_30(cfg):
                         p.metadata['title']),
                     'description': p.metadata['description'],
                     'tags': [k],
+                    'parameters': [
+                        {'$ref': '#/components/parameters/f'}
+                    ],
                     'responses': {
                         200: {
                             'description': 'successful operation'
@@ -363,98 +481,6 @@ def get_oas_30(cfg):
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
     oas['paths'] = paths
-
-    oas['components'] = {
-        'parameters': {
-            'id': {
-                'name': 'id',
-                'in': 'path',
-                'description': 'The id of a feature',
-                'required': True,
-                'schema': {
-                    'type': 'string'
-                }
-            },
-            'f': {
-                'name': 'f',
-                'in': 'query',
-                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                    'enum': ['json', 'csv'],
-                    'default': 'json'
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'bbox': {
-                'name': 'bbox',
-                'in': 'query',
-                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'array',
-                    'minItems': 4,
-                    'maxItems': 6,
-                    'items': {
-                        'type': 'number'
-                    }
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'time': {
-                'name': 'time',
-                'in': 'query',
-                'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string'
-                },
-                'style': 'form',
-                'explode': False,
-            },
-            'limit': {
-                'name': 'limit',
-                'in': 'query',
-                'description': 'The optional limit parameter limits the number of items that are presented in the response document. Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted. Minimum = 1. Maximum = 10000. Default = {}.'.format(cfg['server']['limit']),  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 1,
-                    'maximum': cfg['server']['limit'],
-                    'default': cfg['server']['limit']
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'sortby': {
-                'name': 'sortby',
-                'in': 'query',
-                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'startindex': {
-                'name': 'startindex',
-                'in': 'query',
-                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 0,
-                    'default': 0
-                },
-                'style': 'form',
-                'explode': False
-            }
-        }
-    }
 
     return oas
 
