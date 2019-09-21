@@ -1,4 +1,5 @@
 click
+python-dateutil
 Flask
 PyYAML
 unicodecsv
