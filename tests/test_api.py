@@ -302,6 +302,14 @@ def test_describe_processes(config, api_):
     processes = json.loads(response)
     assert len(processes['processes']) == 0
 
+    api_.config.pop('processes')
+
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'foo')
+    processes = json.loads(response)
+    assert len(processes['processes']) == 0
+
 
 def test_execute_process(config, api_):
     req_body = {
@@ -330,6 +338,14 @@ def test_execute_process(config, api_):
     assert response['outputs'][0]['value'] == 'test'
 
     api_.config['processes'] = {}
+
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.execute_process(
+        req_headers, {}, json.dumps(req_body), 'hello-world')
+    response = json.loads(response)
+    assert response['code'] == 'NotFound'
+
+    api_.config.pop('processes')
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
