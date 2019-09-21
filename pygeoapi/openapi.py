@@ -84,6 +84,7 @@ def get_oas_30(cfg):
 
     paths['/'] = {
         'get': {
+            'operationId': 'root',
             'summary': 'API',
             'description': 'API',
             'tags': ['server'],
@@ -100,6 +101,7 @@ def get_oas_30(cfg):
 
     paths['/api'] = {
         'get': {
+            'operationId': 'api',
             'summary': 'This document',
             'description': 'This document',
             'tags': ['server'],
@@ -116,6 +118,7 @@ def get_oas_30(cfg):
 
     paths['/conformance'] = {
         'get': {
+            'operationId': 'conformance',
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
             'tags': ['server'],
@@ -132,6 +135,7 @@ def get_oas_30(cfg):
 
     paths['/collections'] = {
         'get': {
+            'operationId': 'collections',
             'summary': 'Feature Collections',
             'description': 'Feature Collections',
             'tags': ['server'],
@@ -270,6 +274,7 @@ def get_oas_30(cfg):
 
         paths[collection_name_path] = {
             'get': {
+                'operationId': 'collections_{}'.format(k),
                 'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
@@ -292,6 +297,7 @@ def get_oas_30(cfg):
 
         paths['{}/items'.format(collection_name_path)] = {
             'get': {
+                'operationId': 'collections_{}_items'.format(k),
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
@@ -353,6 +359,7 @@ def get_oas_30(cfg):
 
         paths['{}/items/{{id}}'.format(collection_name_path)] = {
             'get': {
+                'operationId': 'collections_{}_items_id'.format(k),
                 'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
@@ -376,6 +383,7 @@ def get_oas_30(cfg):
 
     paths['/processes'] = {
         'get': {
+            'operationId': 'processes',
             'summary': 'Processes',
             'description': 'Processes',
             'tags': ['server'],
@@ -416,6 +424,7 @@ def get_oas_30(cfg):
 
             paths[process_name_path] = {
                 'get': {
+                    'operationId': 'processes_{}'.format(k),
                     'summary': 'Get process metadata'.format(
                         p.metadata['title']),
                     'description': p.metadata['description'],
@@ -438,6 +447,7 @@ def get_oas_30(cfg):
             }
             paths['{}/jobs'.format(process_name_path)] = {
                 'get': {
+                    'operationId': 'processes_{}_jobs_get'.format(k),
                     'summary': 'Retrieve job list for process',
                     'description': p.metadata['description'],
                     'tags': [k],
@@ -448,6 +458,7 @@ def get_oas_30(cfg):
                     }
                 },
                 'post': {
+                    'operationId': 'processes_{}_jobs_post'.format(k),
                     'summary': 'Process {} execution'.format(
                         p.metadata['title']),
                     'description': p.metadata['description'],
