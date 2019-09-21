@@ -276,85 +276,91 @@ def get_oas_30(cfg):
     }
 
     LOGGER.debug('setting up processes')
-    for k, v in cfg['processes'].items():
-        p = load_plugin('process', v['processor'])
 
-        process_name_path = '/processes/{}'.format(k)
-        tag = {
-            'name': k,
-            'description': p.metadata['description'],
-            'externalDocs': {}
-        }
-        for link in p.metadata['links']:
-            if link['type'] == 'information':
-                tag['externalDocs']['description'] = link['type']
-                tag['externalDocs']['url'] = link['url']
-                break
-        if len(tag['externalDocs']) == 0:
-            del tag['externalDocs']
+    processes = cfg.get('processes', {})
 
-        oas['tags'].append(tag)
+    if processes:
+        for k, v in processes.items():
+            p = load_plugin('process', v['processor'])
 
-        paths[process_name_path] = {
-            'get': {
-                'summary': 'Get process metadata'.format(p.metadata['title']),
+            process_name_path = '/processes/{}'.format(k)
+            tag = {
+                'name': k,
                 'description': p.metadata['description'],
-                'tags': [k],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
+                'externalDocs': {}
+            }
+            for link in p.metadata['links']:
+                if link['type'] == 'information':
+                    tag['externalDocs']['description'] = link['type']
+                    tag['externalDocs']['url'] = link['url']
+                    break
+            if len(tag['externalDocs']) == 0:
+                del tag['externalDocs']
+
+            oas['tags'].append(tag)
+
+            paths[process_name_path] = {
+                'get': {
+                    'summary': 'Get process metadata'.format(
+                        p.metadata['title']),
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'responses': {
+                        200: {
+                            'description': 'successful operation'
+                        },
+                        400: {
+                            'description': 'Invalid id supplied'
+                        },
+                        404: {
+                            'description': 'not found'
+                        }
                     }
                 }
             }
-        }
-        paths['{}/jobs'.format(process_name_path)] = {
-            'get': {
-                'summary': 'Retrieve job list for process',
-                'description': p.metadata['description'],
-                'tags': [k],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
+            paths['{}/jobs'.format(process_name_path)] = {
+                'get': {
+                    'summary': 'Retrieve job list for process',
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'responses': {
+                        200: {
+                            'description': 'successful operation'
+                        }
                     }
-                }
-            },
-            'post': {
-                'summary': 'Process {} execution'.format(p.metadata['title']),
-                'description': p.metadata['description'],
-                'tags': [k],
-                'parameters': [],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    },
                 },
-                'requestBody': {
-                    'description': 'Mandatory execute request JSON',
-                    'required': True,
-                    'content': {
-                        'application/json': {
-                            'schema': {
-                                '$ref': '{}/{}'.format(SCHEMAS['wps'], 'execute.yaml')  # noqa
+                'post': {
+                    'summary': 'Process {} execution'.format(
+                        p.metadata['title']),
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'parameters': [],
+                    'responses': {
+                        200: {
+                            'description': 'successful operation'
+                        },
+                        400: {
+                            'description': 'Invalid id supplied'
+                        },
+                        404: {
+                            'description': 'not found'
+                        },
+                    },
+                    'requestBody': {
+                        'description': 'Mandatory execute request JSON',
+                        'required': True,
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '{}/{}'.format(SCHEMAS['wps'], 'execute.yaml')  # noqa
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        if 'example' in p.metadata:
-            paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+            if 'example' in p.metadata:
+                paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
     oas['paths'] = paths
 
