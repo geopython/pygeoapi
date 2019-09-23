@@ -3,7 +3,7 @@
 {% block body %}
 
 <br/>
-<section id="collections"  itemscope itemtype="https://schema.org/DataCatalog">
+<section id="collections" itemscope itemtype="https://schema.org/DataCatalog">
   <meta itemprop="url" content="{{ config['server']['url'] }}" />
 <div class="row">
   <div class="col-md-8 col-sm-12">
@@ -62,13 +62,11 @@
         <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
       </p>
   </section>
-  <section id="links">
-    <h2>Links</h2>
-    <ul>
-    {% for link in data['links'] %}
-        <li><a title="{{ link['title'] }}" href="{{ link['href'] }}">{{ link['title'] }}</a></li>
-    {% endfor %}
-    </ul>
+  <section id="api">
+      <h2>API Definition</h2>
+      <p>
+        <a href="{{ config['server']['url'] }}/api?f=html">OpenAPI</a>
+      </p>
   </section>
 
   </div>
@@ -79,8 +77,7 @@
       </div>
       <div class="section">
         <b itemprop="name">{{ config['metadata']['provider']['name'] }}</b><br/>
-        <a itemprop="url" href="{{ config['metadata']['provider']['url'] }}">
-            {{ config['metadata']['provider']['url'] }}</a><br/>
+        <a itemprop="url" href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['url'] }}</a><br/>
       </div>
     </div>
     <div class="card fluid">
@@ -100,11 +97,11 @@
         <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
         {% if config['metadata']['contact']['phone'] %}
           <b>Telephone</b><br/>
-          <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}<a></span><br/>
+          <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}</a></span><br/>
         {% endif %}
         {% if config['metadata']['contact']['fax'] %}
           <b>Fax</b><br/>
-          <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}<a></span><br/>
+          <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}</a></span><br/>
         {% endif %}
         {% if config['metadata']['contact']['url'] %}
           <b>Contact URL</b><br/>
