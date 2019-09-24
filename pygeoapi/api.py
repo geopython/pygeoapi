@@ -190,6 +190,14 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
 
         if format_ == 'html':

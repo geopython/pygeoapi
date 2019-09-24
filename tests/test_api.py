@@ -89,6 +89,10 @@ def test_api(config, api_, openapi):
     rsp_headers, code, response = api_.api(req_headers, {}, openapi)
     assert rsp_headers['Content-Type'] == 'text/html'
 
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.api(req_headers, {'f': 'foo'}, openapi)
+    assert code == 400
+
 
 def test_api_exception(config, api_):
     req_headers = make_req_headers()
