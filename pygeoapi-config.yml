@@ -65,19 +65,19 @@ metadata:
         name: Organization Name
         url: https://pygeoapi.io
     contact:
-        name: Lastname, Firstname
+        name: Full Name
         position: Position Title
         address: Mailing Address
         city: City
         stateorprovince: Administrative Area
-        postalcode: Zip or Postal Code
+        postalcode: 1234
         country: Country
-        phone: +xx-xxx-xxx-xxxx
-        fax: +xx-xxx-xxx-xxxx
+        phone: +1-555-555-5555
+        fax: +1-555-555-555
         email: you@example.org
         url: https://example.com
-        hours: Hours of Service
-        instructions: During hours of service. Off on weekends.
+        hours: Mo-Su
+        instructions: Open all day, everyday.
         role: pointOfContact
 
 datasets:
@@ -89,6 +89,11 @@ datasets:
             - monitoring
         crs:
             - CRS84
+        context:
+            - datetime: https://schema.org/DateTime
+            - vocab: https://example.com/vocab#
+              stn_id: "vocab:stn_id"
+              value: "vocab:value"
         links:
             - type: text/csv
               rel: canonical
