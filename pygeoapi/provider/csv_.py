@@ -54,7 +54,7 @@ class CSVProvider(BaseProvider):
         self.geometry_y = provider_def['geometry']['y_field']
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], time=None, properties=[]):
+              identifier=None, bbox=[], datetime=None, properties=[]):
         """
         Load CSV data
 
@@ -120,7 +120,7 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[]):
         """
         CSV query
 
@@ -128,7 +128,7 @@ class CSVProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param time: temporal (datestamp or extent)
+        :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 

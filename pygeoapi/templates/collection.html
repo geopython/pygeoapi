@@ -2,7 +2,7 @@
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }} 
 / <a href="../collections">Collections</a>
-/ <a href="./{{ data['name'] }}">{{ data['title'] }}</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
     <section id="collection" itemscope itemtype="https://schema.org/Dataset">
@@ -24,7 +24,7 @@
         <li>
           <div itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
             <meta itemprop="encodingFormat" content="text/html" />
-            <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['name'] }}/items">
+            <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
               Browse through the items of "{{ data['title'] }}</a>"</div>
         </li>
       </ul>

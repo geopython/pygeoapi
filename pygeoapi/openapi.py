@@ -38,9 +38,57 @@ from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
-SCHEMAS = {
-    'wps': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas'  # noqa
+# TODO: handle this better once schemas are public/final
+# allow also for schema caching
+OPENAPI_YAML = {
+    'oapif': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-features/master/core/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
 }
+
+
+# TODO: remove this function once OGC API - Processing is final
+def gen_media_type_object(media_type, api_type, path):
+    """
+    Generates an OpenAPI Media Type Object
+
+    :param media_type: MIME type
+    :param api_type: OGC API type
+    :param path: local path of OGC API parameter or schema definition
+
+    :returns: `dict` of media type object
+    """
+
+    ref = '{}#{}'.format(OPENAPI_YAML[api_type], path)
+
+    content = {
+        media_type: {
+            'schema': {
+                '$ref': ref
+            }
+        }
+    }
+
+    return content
+
+
+# TODO: remove this function once OGC API - Processing is final
+def gen_response_object(description, media_type, api_type, path):
+    """
+    Generates an OpenAPI Response Object
+
+    :param description: text description of response
+    :param media_type: MIME type
+    :param api_type: OGC API type
+
+    :returns: `dict` of response object
+    """
+
+    response = {
+        'description': description,
+        'content': gen_media_type_object(media_type, api_type, path)
+    }
+
+    return response
 
 
 def get_oas_30(cfg):
@@ -91,9 +139,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -107,9 +155,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '#/components/responses/200'},
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                'default': {'$ref': '#/components/responses/default'}
             }
         }
     }
@@ -123,9 +171,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -139,9 +187,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -156,16 +204,16 @@ def get_oas_30(cfg):
     )
 
     oas['components'] = {
-        'parameters': {
-            'id': {
-                'name': 'id',
-                'in': 'path',
-                'description': 'The id of a feature',
-                'required': True,
-                'schema': {
-                    'type': 'string'
-                }
+        'responses': {
+            '200': {
+                'description': 'successful operation',
             },
+            'default': {
+               'description': 'Unexpected error',
+               'content': gen_media_type_object('application/json', 'oapif', 'schemas/exception.yaml')  # noqa
+            }
+        },
+        'parameters': {
             'f': {
                 'name': 'f',
                 'in': 'query',
@@ -175,47 +223,6 @@ def get_oas_30(cfg):
                     'type': 'string',
                     'enum': ['json', 'html'],
                     'default': 'json'
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'bbox': {
-                'name': 'bbox',
-                'in': 'query',
-                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'array',
-                    'minItems': 4,
-                    'maxItems': 6,
-                    'items': {
-                        'type': 'number'
-                    }
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'time': {
-                'name': 'time',
-                'in': 'query',
-                'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string'
-                },
-                'style': 'form',
-                'explode': False,
-            },
-            'limit': {
-                'name': 'limit',
-                'in': 'query',
-                'description': 'The optional limit parameter limits the number of items that are presented in the response document. Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted. Minimum = 1. Maximum = 10000. Default = {}.'.format(cfg['server']['limit']),  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 1,
-                    'maximum': cfg['server']['limit'],
-                    'default': cfg['server']['limit']
                 },
                 'style': 'form',
                 'explode': False
@@ -277,47 +284,42 @@ def get_oas_30(cfg):
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
 
-        paths['{}/items'.format(collection_name_path)] = {
+        items_path = '{}/items'.format(collection_name_path)
+
+        paths[items_path] = {
             'get': {
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
                     items_f,
-                    {'$ref': '#/components/parameters/bbox'},
-                    {'$ref': '#/components/parameters/time'},
-                    {'$ref': '#/components/parameters/limit'},
+                    {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/sortby'},
                     {'$ref': '#/components/parameters/startindex'}
                 ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
 
         p = load_plugin('provider', cfg['datasets'][k]['provider'])
+
+        if p.time_field is not None:
+            paths[items_path]['get']['parameters'].append(
+                {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)
@@ -351,25 +353,20 @@ def get_oas_30(cfg):
                 'explode': False
             })
 
-        paths['{}/items/{{id}}'.format(collection_name_path)] = {
+        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/id'},
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
@@ -383,9 +380,8 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '#/components/responses/200'},
+                'default': {'$ref': '#/components/responses/default'}
             }
         }
     }
@@ -424,15 +420,8 @@ def get_oas_30(cfg):
                         {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
-                        200: {
-                            'description': 'successful operation'
-                        },
-                        400: {
-                            'description': 'Invalid id supplied'
-                        },
-                        404: {
-                            'description': 'not found'
-                        }
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
                     }
                 }
             }
@@ -442,9 +431,8 @@ def get_oas_30(cfg):
                     'description': p.metadata['description'],
                     'tags': [k],
                     'responses': {
-                        200: {
-                            'description': 'successful operation'
-                        }
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
                     }
                 },
                 'post': {
@@ -454,15 +442,8 @@ def get_oas_30(cfg):
                     'tags': [k],
                     'parameters': [],
                     'responses': {
-                        200: {
-                            'description': 'successful operation'
-                        },
-                        400: {
-                            'description': 'Invalid id supplied'
-                        },
-                        404: {
-                            'description': 'not found'
-                        },
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
                     },
                     'requestBody': {
                         'description': 'Mandatory execute request JSON',
@@ -470,7 +451,7 @@ def get_oas_30(cfg):
                         'content': {
                             'application/json': {
                                 'schema': {
-                                    '$ref': '{}/{}'.format(SCHEMAS['wps'], 'execute.yaml')  # noqa
+                                    '$ref': '{}/schemas/execute.yaml'.format(OPENAPI_YAML['oapip'])  # noqa
                                 }
                             }
                         }
