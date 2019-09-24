@@ -107,7 +107,7 @@ def jsonldify(func):
         fcmld = {
           "@context": "http://www.schema.org",
           "@type": "DataCatalog",
-          # "id": cfg.get('server', {}).get('url', None), ??
+          "@id": cfg.get('server', {}).get('url', None),
           "url": cfg.get('server', {}).get('url', None),
           "name": ident.get('title', None),
           "description": ident.get('description', None),
@@ -168,7 +168,7 @@ def jsonldlify_collection(cls, collection):
 
     dataset =  {
         "@type": "Dataset",
-        "url": "{}/collections/{}".format(
+        "@id": "{}/collections/{}".format(
             cls.config['server']['url'],
             collection['name']
         ),
@@ -176,12 +176,15 @@ def jsonldlify_collection(cls, collection):
         "description": collection['description'],
         "license": cls.fcmld['license'],
         "keywords": collection.get('keywords', None),
-        "geoshape": None if (not hascrs84 or not bbox) else {
-            "@type": "GeoShape",
-            "box": '{},{} {},{}'.format(*bbox[0:2], *bbox[2:4])
+        "spatial": None if (not hascrs84 or not bbox) else {
+            "geo": {
+                "@type": "GeoShape",
+                "box": '{},{} {},{}'.format(*bbox[0:2], *bbox[2:4])
+            }
         },
         "temporalCoverage": None if not begins else "{}/{}".format(begins, ends)
     }
+    dataset['url'] = dataset['@id']
 
     links =  collection.get('links', [])
     if links:
