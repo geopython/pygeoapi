@@ -89,6 +89,10 @@ def test_api(config, api_, openapi):
     rsp_headers, code, response = api_.api(req_headers, {}, openapi)
     assert rsp_headers['Content-Type'] == 'text/html'
 
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.api(req_headers, {'f': 'foo'}, openapi)
+    assert code == 400
+
 
 def test_api_exception(config, api_):
     req_headers = make_req_headers()
@@ -163,7 +167,7 @@ def test_describe_collections(config, api_):
         req_headers, {}, 'obs')
     collection = json.loads(response)
 
-    assert collection['name'] == 'obs'
+    assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'Observations'
     assert len(collection['links']) == 6
@@ -242,6 +246,46 @@ def test_get_features(config, api_):
         req_headers, {'f': 'csv'}, 'obs')
 
     assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2003'}, 'obs')
+
+    assert code == 200
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '1999'}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2010-04-22'}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2001-11-11/2003-12-18'}, 'obs')
+
+    assert code == 200
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '../2003-12-18'}, 'obs')
+
+    assert code == 200
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2001-11-11/..'}, 'obs')
+
+    assert code == 200
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '1999/2005-04-22'}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
+
+    assert code == 400
 
 
 def test_get_feature(config, api_):

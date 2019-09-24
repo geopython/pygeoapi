@@ -29,6 +29,7 @@
 
 """Generic util functions used in the code"""
 
+from datetime import date, datetime, time
 import logging
 
 import yaml
@@ -87,3 +88,20 @@ def str2bool(value):
         value2 = value.lower() in ('yes', 'true', 't', '1', 'on')
 
     return value2
+
+
+def json_serial(obj):
+    """
+    helper function to convert to JSON non-default
+    types (source: https://stackoverflow.com/a/22238613)
+    :param obj: `object` to be evaluate
+    :returns: JSON non-default type to `str`
+    """
+
+    if isinstance(obj, (datetime, date, time)):
+        serial = obj.isoformat()
+        return serial
+
+    msg = '{} type {} not serializable'.format(obj, type(obj))
+    LOGGER.error(msg)
+    raise TypeError(msg)
