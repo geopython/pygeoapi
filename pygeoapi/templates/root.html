@@ -114,9 +114,9 @@
           <b>Hours</b><br/>
           <span itemprop="hoursAvailable">{{ config['metadata']['contact']['hours'] }}</span><br/>
         {% endif %}
-        {% if config['metadata']['contact']['instructions'] %}
+        {% if config['metadata']['contact']['role'] %}
           <b>Contact instructions</b><br/>
-          <span itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</span>
+          <span itemprop="contactType">{{ config['metadata']['contact']['role'] }}</span>
         {% endif %}
       </div>
     </div>
