@@ -58,7 +58,7 @@ def gen_media_type_object(media_type, api_type, path):
     :returns: `dict` of media type object
     """
 
-    ref = '{}#{}'.format(OPENAPI_YAML[api_type], path)
+    ref = '{}/{}'.format(OPENAPI_YAML[api_type], path)
 
     content = {
         media_type: {
@@ -132,8 +132,8 @@ def get_oas_30(cfg):
 
     paths['/'] = {
         'get': {
-            'summary': 'API',
-            'description': 'API',
+            'summary': 'Landing page',
+            'description': 'Landing page',
             'tags': ['server'],
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
@@ -210,7 +210,7 @@ def get_oas_30(cfg):
             },
             'default': {
                'description': 'Unexpected error',
-               'content': gen_media_type_object('application/json', 'oapif', 'schemas/exception.yaml')  # noqa
+               'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
             }
         },
         'parameters': {
