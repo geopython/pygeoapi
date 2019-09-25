@@ -84,7 +84,7 @@
       <div class="section dark">
           <b>Contact point</b>
       </div>
-      <div class="section" itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
+      <div class="section">
         <b>Address</b><br/>
         <div class="section" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
           <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
@@ -93,28 +93,30 @@
           <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span><br/>
           <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span>
         </div>
-        <b>Email</b><br/>
-        <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
-        {% if config['metadata']['contact']['phone'] %}
-          <b>Telephone</b><br/>
-          <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}</a></span><br/>
-        {% endif %}
-        {% if config['metadata']['contact']['fax'] %}
-          <b>Fax</b><br/>
-          <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}</a></span><br/>
-        {% endif %}
-        {% if config['metadata']['contact']['url'] %}
-          <b>Contact URL</b><br/>
-          <span itemprop="url"><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
-        {% endif %}
-        {% if config['metadata']['contact']['hours'] %}
-          <b>Hours</b><br/>
-          <span itemprop="hoursAvailable">{{ config['metadata']['contact']['hours'] }}</span><br/>
-        {% endif %}
-        {% if config['metadata']['contact']['instructions'] %}
-          <b>Contact instructions</b><br/>
-          <span itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</span>
-        {% endif %}
+        <div itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
+          <b>Email</b><br/>
+          <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
+          {% if config['metadata']['contact']['phone'] %}
+            <b>Telephone</b><br/>
+            <span itemprop="Telephone"><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}</a></span><br/>
+          {% endif %}
+          {% if config['metadata']['contact']['fax'] %}
+            <b>Fax</b><br/>
+            <span itemprop="faxNumber"><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}</a></span><br/>
+          {% endif %}
+          {% if config['metadata']['contact']['url'] %}
+            <b>Contact URL</b><br/>
+            <span itemprop="url"><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
+          {% endif %}
+          {% if config['metadata']['contact']['hours'] %}
+            <b>Hours</b><br/>
+            <span itemprop="hoursAvailable">{{ config['metadata']['contact']['hours'] }}</span><br/>
+          {% endif %}
+          {% if config['metadata']['contact']['instructions'] %}
+            <b>Contact instructions</b><br/>
+            <span itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</span>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
