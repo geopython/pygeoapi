@@ -85,14 +85,6 @@
           <b>Contact point</b>
       </div>
       <div class="section" itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
-        <b>Address</b><br/>
-        <div class="section" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
-          <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
-          <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span>,
-          <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span><br/>
-          <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span><br/>
-          <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span>
-        </div>
         <b>Email</b><br/>
         <span itemprop="Email"><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
         {% if config['metadata']['contact']['phone'] %}
@@ -115,6 +107,18 @@
           <b>Contact instructions</b><br/>
           <span itemprop="contactType">{{ config['metadata']['contact']['instructions'] }}</span>
         {% endif %}
+      </div>
+    </div>
+    <div class="card fluid">
+      <div class="section dark">
+          <b>Address</b>
+      </div>
+      <div class="section" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+        <span itemprop="streetAddress">{{ config['metadata']['contact']['address'] }}</span><br/>
+        <span itemprop="postalCode">{{ config['metadata']['contact']['postalcode'] }}</span>,
+        <span itemprop="addressLocality">{{ config['metadata']['contact']['city'] }}</span><br/>
+        <span itemprop="addressRegion">{{ config['metadata']['contact']['stateorprovince'] }}</span>,
+        <span itemprop="addressCountry">{{ config['metadata']['contact']['country'] }}</span><br/>
       </div>
     </div>
   </div>
