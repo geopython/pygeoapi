@@ -173,7 +173,7 @@ def get_oas_30(cfg):
                 'required': False,
                 'schema': {
                     'type': 'string',
-                    'enum': ['json', 'html'],
+                    'enum': ['json', 'html', 'jsonld'],
                     'default': 'json'
                 },
                 'style': 'form',
@@ -182,7 +182,7 @@ def get_oas_30(cfg):
             'bbox': {
                 'name': 'bbox',
                 'in': 'query',
-                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
+                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WGS84 (minx, miny, maxx, maxy).',  # noqa
                 'required': False,
                 'schema': {
                     'type': 'array',
