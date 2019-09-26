@@ -478,7 +478,8 @@ class API(object):
         datetime_ = args.get('datetime')
         datetime_invalid = False
 
-        if datetime_ is not None:
+        if (datetime_ is not None and
+                'temporal' in self.config['datasets'][dataset]['extents']):
             te = self.config['datasets'][dataset]['extents']['temporal']
 
             if '/' in datetime_:  # envelope

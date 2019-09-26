@@ -285,7 +285,12 @@ def test_get_features(config, api_):
     rsp_headers, code, response = api_.get_features(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
-    assert code == 400
+    api_.config['datasets']['obs']['extents'].pop('temporal')
+
+    rsp_headers, code, response = api_.get_features(
+        req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
+
+    assert code == 200
 
 
 def test_get_feature(config, api_):
