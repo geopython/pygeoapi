@@ -432,9 +432,6 @@ class API(object):
                 }
             }
 
-            # for crs in v['crs']:
-            #     collection['crs'].append(
-            #         'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
             t_ext = v.get('extents', {}).get('temporal', {})
             begins = dategetter('begin', t_ext)
             ends = dategetter('end', t_ext)
