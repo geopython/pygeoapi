@@ -296,10 +296,12 @@ class API(object):
 
             collection['extent'] = {
                 'spatial': {
-                    'bbox': v['extents']['spatial']['bbox'],
-                    'crs': v['extents']['spatial']['crs']
+                    'bbox': v['extents']['spatial']['bbox']
                 }
             }
+            if 'crs' in v['extents']['spatial']:
+                collection['extent']['spatial']['crs'] = \
+                    v['extents']['spatial']['crs']
 
             if 'temporal' in v['extents']:
                 t_ext = v['extents']['temporal']
