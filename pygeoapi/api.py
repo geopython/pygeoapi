@@ -31,6 +31,7 @@ Returns content from plugins and sets reponses
 """
 
 from datetime import datetime
+from dateutil.parser import parse as dateparse
 import json
 import logging
 import os
@@ -41,7 +42,7 @@ from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import str2bool
+from pygeoapi.util import json_serial, str2bool
 
 LOGGER = logging.getLogger(__name__)
 
@@ -322,6 +323,14 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
 
         if format_ == 'html':
@@ -337,7 +346,7 @@ class API(object):
         return headers_, 200, json.dumps(openapi)
 
     @pre_process
-    def api_conformance(self,  headers_, format_):
+    def api_conformance(self, headers_, format_):
         """
         Provide conformance definition
 
@@ -375,7 +384,7 @@ class API(object):
 
     @pre_process
     @jsonldify
-    def describe_collections(self,  headers_, format_, dataset=None):
+    def describe_collections(self, headers_, format_, dataset=None):
         """
         Provide feature collection metadata
 
@@ -412,17 +421,30 @@ class API(object):
 
         LOGGER.debug('Creating collections')
         for k, v in self.config['datasets'].items():
-            collection = {'links': [], 'crs': []}
-            collection['name'] = k
+            collection = {'links': []}
+            collection['id'] = k
+            collection['itemType'] = 'feature'
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
-            for crs in v['crs']:
-                collection['crs'].append(
-                    'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
-            collection['extent'] = v['extents']['spatial']['bbox']
-            collection['begins'] = dategetter('begin', v['extents']['temporal'])
-            collection['ends'] = dategetter('end', v['extents']['temporal'])
+            collection['extent'] = {
+                'spatial': {
+                    'bbox': v['extents']['spatial']['bbox'],
+                    'crs': v['extents']['spatial']['crs']
+                }
+            }
+
+            # for crs in v['crs']:
+            #     collection['crs'].append(
+            #         'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
+            t_ext = v.get('extents', {}).get('temporal', {})
+            begins = dategetter('begin', t_ext)
+            ends = dategetter('end', t_ext)
+            collection['extent']['temporal'] = {
+                'interval': [[begins, ends]]
+            }
+            if 'trs' in t_ext:
+                collection['extent']['temporal']['trs'] = t_ext['trs']
 
             for link in v['links']:
                 lnk = {
@@ -532,9 +554,9 @@ class API(object):
             headers_['Content-Type'] = 'application/ld+json'
             return headers_, 200, json.dumps(jsonld)
 
-        return headers_, 200, json.dumps(fcm)
+        return headers_, 200, json.dumps(fcm, default=json_serial)
 
-    def get_features(self, headers,  args, dataset, pathinfo=None):
+    def get_features(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection
 
@@ -550,7 +572,7 @@ class API(object):
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'time']
+                               'resulttype', 'datetime']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -560,7 +582,7 @@ class API(object):
                 'description': 'Invalid feature collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, json.dumps(exception, default=json_serial)
 
         format_ = check_format(args, headers)
 
@@ -573,10 +595,14 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Processing startindex parameter')
         try:
             startindex = int(args.get('startindex'))
         except TypeError:
             startindex = 0
+
+        LOGGER.debug('Processing limit parameter')
         try:
             limit = int(args.get('limit'))
         except TypeError:
@@ -584,6 +610,7 @@ class API(object):
 
         resulttype = args.get('resulttype') or 'results'
 
+        LOGGER.debug('Processing bbox parameter')
         try:
             bbox = args.get('bbox').split(',')
             if len(bbox) != 4:
@@ -596,7 +623,53 @@ class API(object):
         except AttributeError:
             bbox = []
 
-        time = args.get('time')
+        LOGGER.debug('Processing datetime parameter')
+        # TODO: pass datetime to query as a `datetime` object
+        # we would need to ensure partial dates work accordingly
+        # as well as setting '..' values to `None` so that underlying
+        # providers can just assume a `datetime.datetime` object
+        #
+        # NOTE: needs testing when passing partials from API to backend
+        datetime_ = args.get('datetime')
+        datetime_invalid = False
+
+        if datetime_ is not None:
+            te = self.config['datasets'][dataset]['extents']['temporal']
+
+            if '/' in datetime_:  # envelope
+                LOGGER.debug('detected time range')
+                LOGGER.debug('Validating time windows')
+                datetime_begin, datetime_end = datetime_.split('/')
+                if datetime_begin != '..':
+                    datetime_begin = dateparse(datetime_begin)
+                if datetime_end != '..':
+                    datetime_end = dateparse(datetime_end)
+
+                if te['begin'] is not None and datetime_begin != '..':
+                    if datetime_begin < te['begin']:
+                        datetime_invalid = True
+
+                if te['end'] is not None and datetime_end != '..':
+                    if datetime_end > te['end']:
+                        datetime_invalid = True
+
+            else:  # time instant
+                datetime__ = dateparse(datetime_)
+                LOGGER.debug('detected time instant')
+                if te['begin'] is not None and datetime__ != '..':
+                    if datetime__ < te['begin']:
+                        datetime_invalid = True
+                if te['end'] is not None and datetime__ != '..':
+                    if datetime__ > te['end']:
+                        datetime_invalid = True
+
+        if datetime_invalid:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'datetime parameter out of range'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading provider')
         try:
@@ -660,8 +733,9 @@ class API(object):
 
         try:
             content = p.query(startindex=int(startindex), limit=int(limit),
-                              resulttype=resulttype, bbox=bbox, time=time,
-                              properties=properties, sortby=sortby)
+                              resulttype=resulttype, bbox=bbox,
+                              datetime=datetime_, properties=properties,
+                              sortby=sortby)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -769,7 +843,7 @@ class API(object):
             content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content)
+        return headers_, 200, json.dumps(content, default=json_serial)
 
     @pre_process
     def get_feature(self, headers_, format_, dataset, identifier):
@@ -869,7 +943,7 @@ class API(object):
             content = geojson2geojsonld(self.config, content, dataset, identifier=identifier)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content)
+        return headers_, 200, json.dumps(content, default=json_serial)
 
     @pre_process
     @jsonldify
@@ -914,6 +988,7 @@ class API(object):
                 for k, v in processes_config.items():
                     p = load_plugin('process',
                                     processes_config[k]['processor'])
+                    p.metadata['itemType'] = ['process']
                     p.metadata['jobControlOptions'] = ['sync-execute']
                     p.metadata['outputTransmission'] = ['value']
                     processes.append(p.metadata)

@@ -90,8 +90,6 @@ datasets:
         keywords:
             - observations
             - monitoring
-        crs:
-            - CRS84
         links:
             - type: text/csv
               rel: canonical
@@ -106,9 +104,11 @@ datasets:
         extents:
             spatial:
                 bbox: [-180, -90, 180, 90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
+                trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
         provider:
             name: CSV
             data: tests/data/obs.csv
@@ -124,8 +124,6 @@ datasets:
 #            - populated places
 #            - cities
 #            - towns
-#        crs:
-#            - CRS84
 #        links:
 #            - type: text/html
 #              rel: canonical
@@ -140,6 +138,7 @@ datasets:
 #        extents:
 #            spatial:
 #                bbox: [-180, -90, 180, 90]
+#                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
 #        provider:
 #            name: Elasticsearch
 #            data: http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection
@@ -150,8 +149,6 @@ datasets:
         description: lakes of the world, public domain
         keywords:
             - lakes
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -161,9 +158,11 @@ datasets:
         extents:
             spatial:
                 bbox: [-180, -90, 180, 90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: now  # or empty
+                end: null  # or empty
+                trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
         provider:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
@@ -175,8 +174,6 @@ datasets:
         keywords:
             - countries
             - natural eart
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -186,9 +183,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-180, -90, 180, 90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: SQLite
             data: tests/data/ne_110m_admin_0_countries.sqlite
@@ -206,8 +204,6 @@ datasets:
 #            - OSM
 #            - Open Street Map
 #            - NaturaGIS
-#        crs:
-#            - CRS84
 #        links:
 #            - type: text/html
 #              rel: canonical
@@ -217,9 +213,10 @@ datasets:
 #        extents:
 #            spatial:
 #                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
+#                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
 #            temporal:
 #                begin:
-#                end: now  # or empty
+#                end: null  # or empty
 #        provider:
 #            name: GeoPackage
 #            data: tests/data/poi_portugal.gpkg
@@ -235,8 +232,6 @@ datasets:
 #            - Africa
 #            - OSM
 #            - HOT
-#        crs:
-#            - CRS84
 #        links:
 #            - type: text/html
 #              rel: canonical
@@ -246,9 +241,10 @@ datasets:
 #        extents:
 #            spatial:
 #                bbox: [28.9845376683957, -4.48174334765485, 30.866396969019, -2.3096796]
+#                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
 #            temporal:
 #                begin:
-#                end: now  # or empty
+#                end: null  # or empty
 #        provider:
 #            name: PostgreSQL
 #            data:
@@ -270,8 +266,6 @@ datasets:
             - Surveying
             - Holland
             - RD
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -281,9 +275,10 @@ datasets:
         extents:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -316,8 +311,6 @@ datasets:
             - deegree
             - Utah
             - Demo data
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -327,9 +320,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-112.108489, 39.854053, -111.028628, 40.460098]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -361,8 +355,6 @@ datasets:
             - Italy
             - Unesco
             - Demo
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -372,9 +364,10 @@ datasets:
         extents:
             spatial:
                 bbox: [36.0, 17.0, 46.0, 18.0]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -411,8 +404,6 @@ datasets:
             - OSM
             - Open Street Map
             - NaturaGIS
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -422,9 +413,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-31.2687, 32.5898, -6.18992, 42.152]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -450,8 +442,6 @@ datasets:
         description: lakes of the world, public domain
         keywords:
             - lakes
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -461,9 +451,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-180, -90, 180, 90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -491,8 +482,6 @@ datasets:
             - Netherlands
             - addresses
             - INSPIRE
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -502,9 +491,10 @@ datasets:
         extents:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -533,8 +523,6 @@ datasets:
             - Netherlands
             - addresses
             - INSPIRE
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -544,9 +532,10 @@ datasets:
         extents:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin:
-                end: now  # or empty
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -574,8 +563,6 @@ datasets:
 #        keywords:
 #            - USA
 #            - ESRI
-#        crs:
-#            - CRS84
 #        links:
 #            - type: text/html
 #              rel: canonical
@@ -585,9 +572,10 @@ datasets:
 #        extents:
 #            spatial:
 #                bbox: [-180, -90, 180, 90]
+#                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
 #            temporal:
 #                begin:
-#                end: now  # or empty
+#                end: null  # or empty
 #        provider:
 #            name: OGR
 #            data:
