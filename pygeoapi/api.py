@@ -157,21 +157,19 @@ def jsonldlify_collection(cls, collection):
         :returns: `collection` a dictionary, mapped into JSON-LD, of
                   type schema:Dataset
     """
-    begins = collection.get('begins', None)
-    ends = collection.get('ends', None)
-    begins = collection.get('begins', None)
-    ends = collection.get('ends', None)
+    temporal_extent = collection.get('extent', {}).get('temporal', {})
+    interval = temporal_extent.get('interval', [[None, None]])
 
-    bbox = collection.get('extent', None)
-    crs = collection.get('crs', None)
-    hascrs84 = any(map(lambda crs_: crs_.endswith('CRS84'), crs))
-
+    spatial_extent = collection.get('extent', {}).get('spatial', {})
+    bbox = spatial_extent.get('bbox', None)
+    crs = spatial_extent.get('crs', None)
+    hascrs84 = crs.endswith('CRS84')
 
     dataset =  {
         "@type": "Dataset",
         "@id": "{}/collections/{}".format(
             cls.config['server']['url'],
-            collection['name']
+            collection['id']
         ),
         "name": collection['title'],
         "description": collection['description'],
@@ -183,7 +181,7 @@ def jsonldlify_collection(cls, collection):
                 "box": '{},{} {},{}'.format(*bbox[0:2], *bbox[2:4])
             }
         },
-        "temporalCoverage": None if not begins else "{}/{}".format(begins, ends)
+        "temporalCoverage": None if not interval else "{}/{}".format(*interval[0])
     }
     dataset['url'] = dataset['@id']
 
