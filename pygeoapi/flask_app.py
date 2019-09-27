@@ -205,7 +205,7 @@ def execute_process(name=None):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server, debug=False):
+def serve(ctx, server=None, debug=False):
     """
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.
