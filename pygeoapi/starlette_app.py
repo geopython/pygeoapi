@@ -215,7 +215,7 @@ async def execute_process(request: Request, name=None):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server, debug=False):
+def serve(ctx, server=None, debug=False):
     """
     Serve pygeoapi via Starlette. Runs pygeoapi
     as a uvicorn server. Not recommend for production.
