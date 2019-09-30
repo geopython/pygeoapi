@@ -124,8 +124,39 @@ def config_geosol_gs_WFS():
     }
 
 
+@pytest.fixture()
+def config_geonode_gs_WFS():
+    return {
+        'name': 'OGR',
+        'data': {
+            'source_type': 'WFS',
+            'source':
+                'WFS:https://geonode.wfp.org/geoserver/wfs?',
+            'source_srs': 'EPSG:4326',
+            'target_srs': 'EPSG:4326',
+            'source_capabilities': {
+                'paging': True
+            },
+            'source_options': {
+                'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
+            },
+            'open_options': {
+                'EXPOSE_GML_ID': 'NO'
+            },
+            'gdal_ogr_options': {
+                'EMPTY_AS_NULL': 'NO',
+                'GDAL_CACHEMAX': '64',
+                'CPL_DEBUG': 'NO'
+            },
+        },
+        'id_field': 'adm0_id',
+        'layer': 'geonode:csp_iso2_type'
+    }
+
+
 def test_get_fields_gs(config_GeoServer_WFS):
     """Testing field types"""
+
     p = OGRProvider(config_GeoServer_WFS)
     results = p.get_fields()
     assert results['straatnaam'] == 'string'
@@ -134,6 +165,7 @@ def test_get_fields_gs(config_GeoServer_WFS):
 
 def test_get_ms(config_MapServer_WFS):
     """Testing query for a specific object"""
+
     p = OGRProvider(config_MapServer_WFS)
     result = p.get('stations.4403')
     assert result['id'] == 'stations.4403'
@@ -142,6 +174,7 @@ def test_get_ms(config_MapServer_WFS):
 
 def test_get_geosol_gs(config_geosol_gs_WFS):
     """Testing query for a specific object"""
+
     p = OGRProvider(config_geosol_gs_WFS)
     result = p.get('Unesco_point.123')
     assert result['id'] == 'Unesco_point.123'
@@ -150,10 +183,30 @@ def test_get_geosol_gs(config_geosol_gs_WFS):
 
 def test_get_gs(config_GeoServer_WFS):
     """Testing query for a specific object"""
+
     p = OGRProvider(config_GeoServer_WFS)
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
     assert 'Mosselsepad' in result['properties']['straatnaam']
+
+
+def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
+    """Testing query not returning gml_id for a specific object"""
+
+    p = OGRProvider(config_geonode_gs_WFS)
+    assert p.open_options is not None
+    result = p.get_fields()
+    assert result.get('gml_id') is None
+
+
+def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
+    """Testing query not returning gml_id for a specific object"""
+
+    p = OGRProvider(config_geonode_gs_WFS)
+    assert p.open_options is not None
+    p.open_options['EXPOSE_GML_ID'] = 'YES'
+    result = p.get_fields()
+    assert result.get('gml_id')
 
 
 def test_query_hits_ms(config_MapServer_WFS):
