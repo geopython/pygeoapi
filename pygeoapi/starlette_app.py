@@ -81,6 +81,7 @@ async def root(request: Request):
 
 
 @app.route('/api')
+@app.route('/api/')
 async def api(request: Request):
     """
     OpenAPI access point
@@ -101,6 +102,7 @@ async def api(request: Request):
 
 
 @app.route('/conformance')
+@app.route('/conformance/')
 async def api_conformance(request: Request):
     """
     OGC open api conformance access point
@@ -119,6 +121,7 @@ async def api_conformance(request: Request):
 
 
 @app.route('/collections')
+@app.route('/collections/')
 @app.route('/collections/{name}')
 async def describe_collections(request: Request, name=None):
     """
@@ -141,6 +144,7 @@ async def describe_collections(request: Request, name=None):
 
 
 @app.route('/collections/{feature_collection}/items')
+@app.route('/collections/{feature_collection}/items/')
 @app.route('/collections/{feature_collection}/items/{feature}')
 async def dataset(request: Request, feature_collection=None, feature=None):
     """
@@ -170,6 +174,7 @@ async def dataset(request: Request, feature_collection=None, feature=None):
 
 
 @app.route('/processes')
+@app.route('/processes/')
 @app.route('/processes/{name}')
 async def describe_processes(request: Request, name=None):
     """
@@ -190,6 +195,7 @@ async def describe_processes(request: Request, name=None):
 
 
 @app.route('/processes/{name}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{name}/jobs/', methods=['GET', 'POST'])
 async def execute_process(request: Request, name=None):
     """
     OGC open api jobs from processes access point (experimental)
