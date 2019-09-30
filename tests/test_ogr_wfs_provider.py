@@ -199,6 +199,16 @@ def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
     assert result.get('gml_id') is None
 
 
+def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
+    """Testing query not returning gml_id for a specific object"""
+
+    p = OGRProvider(config_geonode_gs_WFS)
+    assert p.open_options is not None
+    p.open_options['EXPOSE_GML_ID'] = 'YES'
+    result = p.get_fields()
+    assert result.get('gml_id')
+
+
 def test_query_hits_ms(config_MapServer_WFS):
     """Testing query on entire collection for hits"""
 
