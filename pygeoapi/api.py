@@ -619,13 +619,13 @@ class API(object):
             'type': 'application/geo+json',
             'rel': 'prev',
             'title': 'items (prev)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
+            'href': '{}/collections/{}/items?startindex={}'.format(
                 self.config['server']['url'], dataset, prev)
             }, {
             'type': 'application/geo+json',
             'rel': 'next',
             'title': 'items (next)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
+            'href': '{}/collections/{}/items?startindex={}'.format(
                 self.config['server']['url'], dataset, next_)
             }, {
             'type': 'application/json',
