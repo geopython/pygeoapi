@@ -198,6 +198,11 @@ def test_get_features(config, api_):
     assert code == 400
 
     rsp_headers, code, response = api_.get_features(
+        req_headers, {'bbox': '1,2,3,4c'}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_features(
         req_headers, {'f': 'html'}, 'obs')
     assert rsp_headers['Content-Type'] == 'text/html'
 
