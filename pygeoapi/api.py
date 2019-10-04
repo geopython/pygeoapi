@@ -467,6 +467,15 @@ class API(object):
                 return headers_, 400, json.dumps(exception)
         except AttributeError:
             bbox = []
+        try:
+            [float(c) for c in bbox]
+        except ValueError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'bbox values must be numbers'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing datetime parameter')
         # TODO: pass datetime to query as a `datetime` object
