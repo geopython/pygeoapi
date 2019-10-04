@@ -205,7 +205,7 @@ class PostgreSQLProvider(BaseProvider):
                        Identifier('geom'),
                        Identifier(self.table))
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
@@ -286,7 +286,7 @@ class PostgreSQLProvider(BaseProvider):
             rd.pop('st_asgeojson'))
 
         feature['properties'] = rd
-        feature['id'] = feature['properties'].pop(self.id_field)
+        feature['id'] = feature['properties'].get(self.id_field)
 
         return feature
 
