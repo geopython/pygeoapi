@@ -1144,9 +1144,14 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     isCollection = identifier is None
     if isCollection:
         for i, feature in enumerate(data['features']):
-            featureId = feature.get('id', None) or feature.get('properties', {}).pop('id', None)
+            featureId = feature.get('id', None) or feature.get('properties', {}).get('id', None)
             if featureId is None: continue
-            feature['id'] = '{}/{}'.format(data['id'], featureId)
+            # NOTE: there are better ways to assert whether a string is a URI
+            # TODO: which should be considered before merging into master
+            if featureId.startswith('http'):
+                feature['id'] = featureId
+            else:
+                feature['id'] = '{}/{}'.format(data['id'], featureId)
     return json.dumps(ldjsonData)
 
 def _render_j2_template(config, template, data):
