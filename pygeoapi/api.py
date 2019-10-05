@@ -295,9 +295,14 @@ class API(object):
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
 
+            bbox = v['extents']['spatial']['bbox']
+            # The output should be an array of bbox, so if the user only
+            # provided a single bbox, wrap it in a array.
+            if not isinstance(bbox[0], list):
+                bbox = [bbox]
             collection['extent'] = {
                 'spatial': {
-                    'bbox': v['extents']['spatial']['bbox']
+                    'bbox': bbox
                 }
             }
             if 'crs' in v['extents']['spatial']:
