@@ -143,7 +143,7 @@ class API(object):
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'service-desc',
-              'type': 'application/openapi+json;version=3.0',
+              'type': 'application/vnd.oai.openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
             }, {
@@ -208,7 +208,8 @@ class API(object):
             content = _render_j2_template(self.config, 'api.html', data)
             return headers_, 200, content
 
-        headers_['Content-Type'] = 'application/openapi+json;version=3.0'
+        headers_['Content-Type'] = \
+            'application/vnd.oai.openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
 
