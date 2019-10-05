@@ -142,12 +142,12 @@ class API(object):
               'href': '{}?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
-              'rel': 'service-doc',
+              'rel': 'service-desc',
               'type': 'application/openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
             }, {
-              'rel': 'service-desc',
+              'rel': 'service-doc',
               'type': 'text/html',
               'title': 'The OpenAPI definition as HTML',
               'href': '{}/api?f=html'.format(self.config['server']['url']),
