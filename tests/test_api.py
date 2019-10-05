@@ -169,8 +169,18 @@ def test_describe_collections(config, api_):
 
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
-    assert collection['description'] == 'Observations'
+    assert collection['description'] == 'Observations_description'
     assert len(collection['links']) == 6
+    assert collection['extent'] == {
+        'spatial': {
+            'bbox': [[-180, -90, 180, 90]],
+            'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+        },
+        'temporal': {
+            'interval': [['2000-10-30T18:24:39', '2007-10-30T08:57:29']],
+            'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+        }
+    }
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {'f': 'html'}, 'obs')
