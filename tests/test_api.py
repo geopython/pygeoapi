@@ -79,7 +79,7 @@ def test_api(config, api_, openapi):
     req_headers = make_req_headers(HTTP_CONTENT_TYPE='application/json')
     rsp_headers, code, response = api_.api(req_headers, {}, openapi)
     assert rsp_headers['Content-Type'] ==\
-        'application/openapi+json;version=3.0'
+        'application/vnd.oai.openapi+json;version=3.0'
     root = json.loads(response)
 
     assert isinstance(root, dict)
