@@ -83,7 +83,7 @@ metadata:
 datasets:
     obs:
         title: Observations
-        description: Observations
+        description: Observations_description
         keywords:
             - observations
             - monitoring
