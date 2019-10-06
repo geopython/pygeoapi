@@ -35,6 +35,7 @@ from dateutil.parser import parse as dateparse
 import json
 import logging
 import os
+import urllib.parse
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -629,18 +630,26 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
+        serialized_query_params = ''
+        for k, v in args.items():
+            if k not in ('f', 'startindex'):
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
         content['links'] = [{
             'type': 'application/geo+json',
             'rel': 'self',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f=json'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=json{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }, {
             'type': 'text/html',
             'rel': 'alternate',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f=html'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=html{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }
         ]
 
@@ -651,8 +660,9 @@ class API(object):
                     'type': 'application/geo+json',
                     'rel': 'prev',
                     'title': 'items (prev)',
-                    'href': '{}/collections/{}/items?limit={}&startindex={}'
-                    .format(self.config['server']['url'], dataset, limit, prev)
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(self.config['server']['url'], dataset, prev,
+                            serialized_query_params)
                 })
 
         if len(content['features']) == limit:
@@ -662,9 +672,10 @@ class API(object):
                     'type': 'application/geo+json',
                     'rel': 'next',
                     'title': 'items (next)',
-                    'href': '{}/collections/{}/items?limit={}&startindex={}'
+                    'href': '{}/collections/{}/items?startindex={}{}'
                     .format(
-                        self.config['server']['url'], dataset, limit, next_)
+                        self.config['server']['url'], dataset, next_,
+                        serialized_query_params)
                 })
 
         content['links'].append(
