@@ -35,6 +35,7 @@ from dateutil.parser import parse as dateparse
 import json
 import logging
 import os
+import urllib.parse
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -450,14 +451,31 @@ class API(object):
         LOGGER.debug('Processing startindex parameter')
         try:
             startindex = int(args.get('startindex'))
+            if startindex < 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'startindex value should be positive ' +
+                                   'or zero'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
             startindex = 0
 
         LOGGER.debug('Processing limit parameter')
         try:
             limit = int(args.get('limit'))
+            # TODO: We should do more validation, against the min and max
+            # allowed by the server configuration
+            if limit <= 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'limit value should be strictly positive'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
-            limit = self.config['server']['limit']
+            limit = int(self.config['server']['limit'])
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -593,7 +611,7 @@ class API(object):
         LOGGER.debug('sortby: {}'.format(sortby))
 
         try:
-            content = p.query(startindex=int(startindex), limit=int(limit),
+            content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
                               sortby=sortby)
@@ -612,44 +630,62 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        prev = startindex - self.config['server']['limit']
-        if prev < 0:
-            prev = 0
-
-        next_ = startindex + self.config['server']['limit']
+        serialized_query_params = ''
+        for k, v in args.items():
+            if k not in ('f', 'startindex'):
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
         content['links'] = [{
             'type': 'application/geo+json',
             'rel': 'self',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f=json'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=json{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }, {
             'type': 'text/html',
             'rel': 'alternate',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f=html'.format(
-                self.config['server']['url'], dataset)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'prev',
-            'title': 'items (prev)',
-            'href': '{}/collections/{}/items?startindex={}'.format(
-                self.config['server']['url'], dataset, prev)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'next',
-            'title': 'items (next)',
-            'href': '{}/collections/{}/items?startindex={}'.format(
-                self.config['server']['url'], dataset, next_)
-            }, {
-            'type': 'application/json',
-            'title': self.config['datasets'][dataset]['title'],
-            'rel': 'collection',
-            'href': '{}/collections/{}'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=html{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }
         ]
+
+        if startindex > 0:
+            prev = max(0, startindex - limit)
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'prev',
+                    'title': 'items (prev)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(self.config['server']['url'], dataset, prev,
+                            serialized_query_params)
+                })
+
+        if len(content['features']) == limit:
+            next_ = startindex + limit
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'next',
+                    'title': 'items (next)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(
+                        self.config['server']['url'], dataset, next_,
+                        serialized_query_params)
+                })
+
+        content['links'].append(
+            {
+                'type': 'application/json',
+                'title': self.config['datasets'][dataset]['title'],
+                'rel': 'collection',
+                'href': '{}/collections/{}'.format(
+                    self.config['server']['url'], dataset)
+            })
 
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
