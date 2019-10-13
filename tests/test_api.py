@@ -169,7 +169,7 @@ def test_describe_collections(config, api_):
 
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
-    assert collection['description'] == 'Observations_description'
+    assert collection['description'] == 'My cool observations'
     assert len(collection['links']) == 6
     assert collection['extent'] == {
         'spatial': {
