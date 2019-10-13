@@ -86,7 +86,7 @@ metadata:
 datasets:
     obs:
         title: Observations
-        description: Observations
+        description: My cool observations
         keywords:
             - observations
             - monitoring
