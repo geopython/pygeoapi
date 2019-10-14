@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 from datetime import date, datetime, time
+from decimal import Decimal
 import logging
 
 import yaml
@@ -101,6 +102,8 @@ def json_serial(obj):
     if isinstance(obj, (datetime, date, time)):
         serial = obj.isoformat()
         return serial
+    elif isinstance(obj, Decimal):
+        return float(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
