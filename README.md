@@ -15,14 +15,15 @@ cd pygeoapi
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 # install provider requirements accordingly from requirements-provider.txt
+# install starlette requirements accordingly from requirements-starlette.txt
 pip install -e .
 cp pygeoapi-config.yml local.config.yml
 vi local.config.yml
 # TODO: what is most important to edit?
-export PYGEOAPI_CONFIG=/path/to/local.config.yml
+export PYGEOAPI_CONFIG=$(pwd)/local.config.yml
 # generate OpenAPI Document
 pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
-export PYGEOAPI_OPENAPI=/path/to/openapi.yml
+export PYGEOAPI_OPENAPI=$(pwd)/openapi.yml
 pygeoapi serve
 ```
 
@@ -68,24 +69,24 @@ https://github.com/geopython/demo.pygeoapi.io.
 ## Docker
 
 Best/easiest way to run `pygeoapi` is to use Docker.
-On DockerHub [pygeoapi Docker Images](https://cloud.docker.com/u/geopython/repository/docker/geopython/pygeoapi) 
+On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi)
 are available.
 
-The version tagged `latest` is automatically built whenever code 
-in the `master` branch of this GitHub repo changes (autobuild). 
+The version tagged `latest` is automatically built whenever code
+in the `master` branch of this GitHub repo changes (autobuild).
 This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/master).
 So the chain is:
- 
+
 ```
  (git push to master) --> (DockerHub Image autobuild) --> (demo server redeploy)
 
 ```
 
 Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for
-details of the Docker implementation. To get started quickly 
+details of the Docker implementation. To get started quickly
 [several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples) will get you up and running.
 
-### Unit Testing 
+### Unit Testing
 
 Unit tests are run using `pytest` from the top project folder:
 
@@ -94,7 +95,7 @@ pytest tests
 ```
 
 NB beware that some tests require Provider dependencies (libraries) to be available
-and that the ElasticSearch and Postgres tests require their respective 
+and that the ElasticSearch and Postgres tests require their respective
 backend servers running.
 
 Environment variables are set in the file [pytest.ini](pytest.ini).

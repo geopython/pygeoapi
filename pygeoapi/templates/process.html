@@ -5,7 +5,7 @@
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="processes" itemscope itemtype="http://schema.org/WebAPI">
+    <section id="processes" itemscope itemtype="https://schema.org/WebAPI">
       <h2 itemprop="name">{{ data['title'] }}</h2>
       <div itemprop="description">{{ data['description'] }}</div>
       <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ data['id'] }}" />
@@ -22,7 +22,7 @@
               </thead>
               <tbody>
                 {% for input_ in data['inputs'] %}
-                <tr itemprop="parameter" itemscope itemtype="http://schema.org/Parameter">
+                <tr itemprop="parameter" itemscope itemtype="https://schema.org/Parameter">
                   <td itemprop="id" data-label="name">{{ input_['id'] }}</td>
                   <td itemprop="name" data-label="title">{{ input_['title'] }}</td>
                   <td itemprop="description" data-label="description">

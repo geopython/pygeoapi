@@ -76,10 +76,10 @@ class OGRProvider(BaseProvider):
                 target_srs: EPSG:4326
                 source_capabilities:
                     paging: True
-
                 source_options:
                     OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
+                # open_options:
+                    # EXPOSE_GML_ID: NO
                 gdal_ogr_options:
                     EMPTY_AS_NULL: NO
                     GDAL_CACHEMAX: 64
@@ -135,6 +135,8 @@ class OGRProvider(BaseProvider):
         source_options = self.data_def.get('source_options', {})
         for key in source_options:
             self.gdal.SetConfigOption(key, str(source_options[key]))
+        # Open options
+        self.open_options = self.data_def.get('open_options', {})
 
         self.source_capabilities = self.data_def.get('source_capabilities',
                                                      {'paging': False})
@@ -174,6 +176,10 @@ class OGRProvider(BaseProvider):
         self.driver = None
         self.conn = None
 
+    def _list_open_options(self):
+        return [
+            f"{key}={str(value)}" for key, value in self.open_options.items()]
+
     def _open(self):
         source_type = self.data_def['source_type']
         self.driver = self.ogr.GetDriverByName(source_type)
@@ -181,8 +187,13 @@ class OGRProvider(BaseProvider):
             msg = 'No Driver for Source: {}'.format(source_type)
             LOGGER.error(msg)
             raise Exception(msg)
-
-        self.conn = self.driver.Open(self.data_def['source'], 0)
+        if self.open_options:
+            self.conn = self.gdal.OpenEx(
+                self.data_def['source'],
+                self.gdal.OF_VECTOR,
+                open_options=self._list_open_options())
+        else:
+            self.conn = self.driver.Open(self.data_def['source'], 0)
         if not self.conn:
             msg = 'Cannot open OGR Source: %s' % self.data_def['source']
             LOGGER.error(msg)
@@ -208,7 +219,7 @@ class OGRProvider(BaseProvider):
 
     def get_fields(self):
         """
-         Get provider field information (names, types)
+        Get provider field information (names, types)
 
         :returns: dict of fields
         """
@@ -234,7 +245,7 @@ class OGRProvider(BaseProvider):
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[]):
         """
         Query OGR source
 
@@ -242,7 +253,7 @@ class OGRProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param time: temporal (datestamp or extent)
+        :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 
@@ -489,9 +500,7 @@ class CommonSourceHelper(SourceHelper):
         OGR Driver-specific handling of closing dataset.
         If ExecuteSQL has been (successfully) called
         must close ResultSet explicitly.
-        https://gis.stackexchange.com/questions/114112/
-        explicitly-close-a-ogr-result-object-from-a-call-to-executesql
-
+        https://gis.stackexchange.com/questions/114112/explicitly-close-a-ogr-result-object-from-a-call-to-executesql  # noqa
         """
 
         if not self.result_set:

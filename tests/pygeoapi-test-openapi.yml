@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,34 +38,11 @@ components:
       name: f
       required: false
       schema:
-        default: GeoJSON
+        default: json
         enum:
-        - GeoJSON
-        - CSV
+        - json
+        - html
         type: string
-      style: form
-    id:
-      description: The id of a feature
-      in: path
-      name: id
-      required: true
-      schema:
-        type: string
-    limit:
-      description: The optional limit parameter limits the number of items that are
-        presented in the response document. Only items are counted that are on the
-        first level of the collection in the response document. Nested objects contained
-        within the explicitly requested items shall not be counted. Minimum = 1. Maximum
-        = 10000. Default = 10.
-      explode: false
-      in: query
-      name: limit
-      required: false
-      schema:
-        default: 10
-        maximum: 10000
-        minimum: 1
-        type: integer
       style: form
     sortby:
       description: The optional sortby parameter indicates the sort property and order
@@ -93,6 +70,15 @@ components:
         minimum: 0
         type: integer
       style: form
+  responses:
+    '200':
+      description: successful operation
+    default:
+      content:
+        application/json:
+          schema:
+            $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/exception.yaml
+      description: Unexpected error
 info:
   contact:
     email: you@example.org
@@ -113,106 +99,157 @@ openapi: 3.0.2
 paths:
   /:
     get:
-      description: API
+      description: Landing page
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
-      summary: API
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        400:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Landing page
       tags:
       - server
   /api:
     get:
       description: This document
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: '#/components/responses/200'
+        400:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        default:
+          $ref: '#/components/responses/default'
       summary: This document
       tags:
       - server
   /collections:
     get:
       description: Feature Collections
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collections
+        400:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Feature Collections
       tags:
       - server
   /collections/obs:
     get:
-      description: Observations
+      description: My cool observations
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
         400:
-          description: Invalid id supplied
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
         404:
-          description: not found
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get feature collection metadata
       tags:
       - obs
   /collections/obs/items:
     get:
-      description: Observations
+      description: My cool observations
       parameters:
-      - $ref: '#/components/parameters/f'
-      - $ref: '#/components/parameters/limit'
+      - description: The optional f parameter indicates the output format which the
+          server shall provide as part of the response document.  The default format
+          is GeoJSON.
+        explode: false
+        in: query
+        name: f
+        required: false
+        schema:
+          default: json
+          enum:
+          - json
+          - html
+          - csv
+          type: string
+        style: form
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
       - $ref: '#/components/parameters/sortby'
       - $ref: '#/components/parameters/startindex'
       responses:
         200:
-          description: successful operation
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
         400:
-          description: Invalid id supplied
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
         404:
-          description: not found
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get Observations features
       tags:
       - obs
-  /collections/obs/items/{id}:
+  /collections/obs/items/{featureId}:
     get:
-      description: Observations
+      description: My cool observations
       parameters:
-      - $ref: '#/components/parameters/id'
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
       - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
         400:
-          description: Invalid id supplied
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
         404:
-          description: not found
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get Observations feature by id
       tags:
       - obs
   /conformance:
     get:
       description: API conformance definition
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ConformanceDeclaration
+        400:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        500:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: API conformance definition
       tags:
       - server
   /processes:
     get:
       description: Processes
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
       summary: Processes
       tags:
       - server
   /processes/hello-world:
     get:
       description: Hello World process
+      parameters:
+      - $ref: '#/components/parameters/f'
       responses:
         200:
-          description: successful operation
-        400:
-          description: Invalid id supplied
-        404:
-          description: not found
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
       summary: Get process metadata
       tags:
       - hello-world
@@ -221,7 +258,9 @@ paths:
       description: Hello World process
       responses:
         200:
-          description: successful operation
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
       summary: Retrieve job list for process
       tags:
       - hello-world
@@ -231,17 +270,20 @@ paths:
       requestBody:
         content:
           application/json:
+            example:
+              inputs:
+              - id: name
+                type: text/plain
+                value: hi there
             schema:
-              $ref: execute.yaml
+              $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/execute.yaml
         description: Mandatory execute request JSON
         required: true
       responses:
         200:
-          description: successful operation
-        400:
-          description: Invalid id supplied
-        404:
-          description: not found
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
       summary: Process Hello World process execution
       tags:
       - hello-world
@@ -254,7 +296,7 @@ tags:
     description: information
     url: http://example.org
   name: server
-- description: Observations
+- description: My cool observations
   name: obs
 - description: Hello World process
   name: hello-world

@@ -52,14 +52,14 @@ class GeoJSONProvider(BaseProvider):
     and will override any 'id' provided in the original data.
     The feature 'properties' will be preserved.
 
-    TODO
-    - query method should take bbox
-    - instead of methods returning FeatureCollections,
-      we should be yielding Features and aggregating in the view
-    - there are strict id semantics; all features in the input GeoJSON file
-      must be present and be unique strings. Otherwise it will break.
-    - How to raise errors in the provider implementation such that
-      appropriate HTTP responses will be raised
+    TODO:
+    * query method should take bbox
+    * instead of methods returning FeatureCollections,
+    we should be yielding Features and aggregating in the view
+    * there are strict id semantics; all features in the input GeoJSON file
+    must be present and be unique strings. Otherwise it will break.
+    * How to raise errors in the provider implementation such that
+    * appropriate HTTP responses will be raised
     """
 
     def __init__(self, provider_def):
@@ -73,6 +73,7 @@ class GeoJSONProvider(BaseProvider):
         Yes loading from disk, deserializing and validation
         happens on every request. This is not efficient.
         """
+
         if os.path.exists(self.data):
             with open(self.data) as src:
                 data = json.loads(src.read())
@@ -90,7 +91,7 @@ class GeoJSONProvider(BaseProvider):
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[]):
         """
         query the provider
 
@@ -98,12 +99,13 @@ class GeoJSONProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param time: temporal (datestamp or extent)
+        :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
+
         # TODO filter by bbox without resorting to third-party libs
         data = self._load()
 
@@ -124,6 +126,7 @@ class GeoJSONProvider(BaseProvider):
         :param identifier: feature id
         :returns: dict of single GeoJSON feature
         """
+
         all_data = self._load()
         for feature in all_data['features']:
             if str(feature['properties'][self.id_field]) == identifier:
@@ -154,6 +157,7 @@ class GeoJSONProvider(BaseProvider):
         :param identifier: feature id
         :param new_feature: new GeoJSON feature dictionary
         """
+
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
             if feature['properties']['id'] == identifier:
@@ -170,6 +174,7 @@ class GeoJSONProvider(BaseProvider):
 
         :param identifier: feature id
         """
+
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
             if feature['properties']['id'] == identifier:

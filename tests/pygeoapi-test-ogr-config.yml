@@ -91,8 +91,6 @@ datasets:
             - Surveying
             - Holland
             - RD
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -102,9 +100,10 @@ datasets:
         extents:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -139,8 +138,6 @@ datasets:
             - Europe
             - Holland
             - BAG
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -150,9 +147,10 @@ datasets:
         extents:
             spatial:
                 bbox: [50.7539, 7.21097, 53.4658, 3.37087]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -185,8 +183,6 @@ datasets:
             - deegree
             - Utah
             - Demo data
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -196,9 +192,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-112.108489, 39.854053, -111.028628, 40.460098]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -230,8 +227,6 @@ datasets:
             - Italy
             - Unesco
             - Demo
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -241,9 +236,10 @@ datasets:
         extents:
             spatial:
                 bbox: [36.0, 17.0, 46.0, 18.0]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -280,8 +276,6 @@ datasets:
             - OSM
             - Open Street Map
             - NaturaGIS
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -290,10 +284,11 @@ datasets:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-31.2687 32.5898 -6.18992 42.152]
+                bbox: [-31.2687, 32.5898, -6.18992, 42.152]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:
@@ -321,8 +316,6 @@ datasets:
         keywords:
             - USA
             - ESRI
-        crs:
-            - CRS84
         links:
             - type: text/html
               rel: canonical
@@ -332,9 +325,10 @@ datasets:
         extents:
             spatial:
                 bbox: [-180, -90, 180, 90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: None
-                end: now  # or empty
+                begin:
+                end: null  # or empty
         provider:
             name: OGR
             data:

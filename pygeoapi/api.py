@@ -26,14 +26,19 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+""" Root level code of pygeoapi, parsing content provided by webframework.
+Returns content from plugins and sets reponses
+"""
 
 from datetime import datetime
+from dateutil.parser import parse as dateparse
 import json
 import io
 import logging
 import multiprocessing
 import os
 import uuid
+import urllib.parse
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -41,21 +46,46 @@ from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import str2bool
+from pygeoapi.util import json_serial, str2bool
 
 LOGGER = logging.getLogger(__name__)
 
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
+#: Return headers for requests (e.g:X-Powered-By)
 HEADERS = {
     'Content-Type': 'application/json',
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+#: Formats allowed for ?f= requests
 FORMATS = ['json', 'html']
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
+
+def pre_process(func):
+    """
+        Decorator performing header copy and format\
+        checking before sending arguments to mehods
+
+        :param func: decorated function
+
+        :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        cls = args[0]
+        headers_ = HEADERS.copy()
+        format_ = check_format(args[2], args[1])
+        if len(args) > 3:
+            args = args[3:]
+            return func(cls, headers_, format_, *args, **kwargs)
+        else:
+            return func(cls, headers_, format_)
+
+    return inner
 
 
 class API(object):
@@ -83,19 +113,17 @@ class API(object):
             self.manager = load_plugin('process_manager',
                                        self.config['server']['manager'])
 
-    def root(self, headers, args):
+    @pre_process
+    def root(self, headers_, format_):
         """
         Provide API
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -122,15 +150,15 @@ class API(object):
               'rel': 'self',
               'type': 'text/html',
               'title': 'This document as HTML',
-              'href': '{}/?f=html'.format(self.config['server']['url']),
+              'href': '{}?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
-              'rel': 'service',
-              'type': 'application/openapi+json;version=3.0',
+              'rel': 'service-desc',
+              'type': 'application/vnd.oai.openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
               'href': '{}/api'.format(self.config['server']['url'])
             }, {
-              'rel': 'self',
+              'rel': 'service-doc',
               'type': 'text/html',
               'title': 'The OpenAPI definition as HTML',
               'href': '{}/api?f=html'.format(self.config['server']['url']),
@@ -159,19 +187,27 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm)
 
-    def api(self, headers, args, openapi):
+    @pre_process
+    def api(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests, pre checked by
+                        pre_process decorator
         :param openapi: dict of OpenAPI definition
 
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = HEADERS.copy()
-        format_ = check_format(args, headers)
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
 
@@ -183,23 +219,22 @@ class API(object):
             content = _render_j2_template(self.config, 'api.html', data)
             return headers_, 200, content
 
-        headers_['Content-Type'] = 'application/openapi+json;version=3.0'
+        headers_['Content-Type'] = \
+            'application/vnd.oai.openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
 
-    def api_conformance(self, headers, args):
+    @pre_process
+    def api_conformance(self, headers_, format_):
         """
         Provide conformance definition
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -211,10 +246,10 @@ class API(object):
 
         conformance = {
             'conformsTo': [
-                'http://www.opengis.net/spec/wfs-1/3.0/req/core',
-                'http://www.opengis.net/spec/wfs-1/3.0/req/oas30',
-                'http://www.opengis.net/spec/wfs-1/3.0/req/html',
-                'http://www.opengis.net/spec/wfs-1/3.0/req/geojson'
+                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/core',
+                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
+                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/html',
+                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/geojson'
             ]
         }
 
@@ -226,20 +261,18 @@ class API(object):
 
         return headers_, 200, json.dumps(conformance)
 
-    def describe_collections(self, headers, args, dataset=None):
+    @pre_process
+    def describe_collections(self, headers_, format_, dataset=None):
         """
         Provide feature collection metadata
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -266,14 +299,44 @@ class API(object):
 
         LOGGER.debug('Creating collections')
         for k, v in self.config['datasets'].items():
-            collection = {'links': [], 'crs': []}
-            collection['name'] = k
+            collection = {'links': []}
+            collection['id'] = k
+            collection['itemType'] = 'feature'
             collection['title'] = v['title']
             collection['description'] = v['description']
-            for crs in v['crs']:
-                collection['crs'].append(
-                    'http://www.opengis.net/def/crs/OGC/1.3/{}'.format(crs))
-            collection['extent'] = v['extents']['spatial']['bbox']
+            collection['keywords'] = v['keywords']
+
+            bbox = v['extents']['spatial']['bbox']
+            # The output should be an array of bbox, so if the user only
+            # provided a single bbox, wrap it in a array.
+            if not isinstance(bbox[0], list):
+                bbox = [bbox]
+            collection['extent'] = {
+                'spatial': {
+                    'bbox': bbox
+                }
+            }
+            if 'crs' in v['extents']['spatial']:
+                collection['extent']['spatial']['crs'] = \
+                    v['extents']['spatial']['crs']
+
+            if 'temporal' in v['extents']:
+                t_ext = v['extents']['temporal']
+
+                if 'begin' in t_ext:
+                    b = t_ext['begin']
+                else:
+                    b = None
+                if 'end' in t_ext:
+                    e = t_ext['end']
+                else:
+                    e = None
+
+                collection['extent']['temporal'] = {
+                    'interval': [[b, e]]
+                }
+                if 'trs' in t_ext:
+                    collection['extent']['temporal']['trs'] = t_ext['trs']
 
             for link in v['links']:
                 lnk = {
@@ -323,20 +386,21 @@ class API(object):
 
             fcm['collections'].append(collection)
 
-        fcm['links'].append({
-            'type': 'application/json',
-            'rel': 'self',
-            'title': 'This document as JSON',
-            'href': '{}/collections?f=json'.format(
-                self.config['server']['url'])
-        })
-        fcm['links'].append({
-            'type': 'text/html',
-            'rel': 'alternate',
-            'title': 'This document as HTML',
-            'href': '{}/collections?f=html'.format(
-                self.config['server']['url'])
-        })
+        if dataset is None:
+            fcm['links'].append({
+                'type': 'application/json',
+                'rel': 'self',
+                'title': 'This document as JSON',
+                'href': '{}/collections?f=json'.format(
+                    self.config['server']['url'])
+            })
+            fcm['links'].append({
+                'type': 'text/html',
+                'rel': 'alternate',
+                'title': 'This document as HTML',
+                'href': '{}/collections?f=html'.format(
+                    self.config['server']['url'])
+            })
 
         if format_ == 'html':  # render
             fcm['links'][0]['rel'] = 'alternate'
@@ -352,15 +416,16 @@ class API(object):
 
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(fcm)
+        return headers_, 200, json.dumps(fcm, default=json_serial)
 
-    def get_features(self, headers, args, dataset):
+    def get_features(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
+        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -369,7 +434,7 @@ class API(object):
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'time']
+                               'resulttype', 'datetime']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -379,7 +444,7 @@ class API(object):
                 'description': 'Invalid feature collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, json.dumps(exception, default=json_serial)
 
         format_ = check_format(args, headers)
 
@@ -392,17 +457,39 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Processing startindex parameter')
         try:
             startindex = int(args.get('startindex'))
+            if startindex < 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'startindex value should be positive ' +
+                                   'or zero'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
             startindex = 0
+
+        LOGGER.debug('Processing limit parameter')
         try:
             limit = int(args.get('limit'))
+            # TODO: We should do more validation, against the min and max
+            # allowed by the server configuration
+            if limit <= 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'limit value should be strictly positive'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
-            limit = self.config['server']['limit']
+            limit = int(self.config['server']['limit'])
 
         resulttype = args.get('resulttype') or 'results'
 
+        LOGGER.debug('Processing bbox parameter')
         try:
             bbox = args.get('bbox').split(',')
             if len(bbox) != 4:
@@ -414,8 +501,64 @@ class API(object):
                 return headers_, 400, json.dumps(exception)
         except AttributeError:
             bbox = []
+        try:
+            [float(c) for c in bbox]
+        except ValueError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'bbox values must be numbers'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
-        time = args.get('time')
+        LOGGER.debug('Processing datetime parameter')
+        # TODO: pass datetime to query as a `datetime` object
+        # we would need to ensure partial dates work accordingly
+        # as well as setting '..' values to `None` so that underlying
+        # providers can just assume a `datetime.datetime` object
+        #
+        # NOTE: needs testing when passing partials from API to backend
+        datetime_ = args.get('datetime')
+        datetime_invalid = False
+
+        if (datetime_ is not None and
+                'temporal' in self.config['datasets'][dataset]['extents']):
+            te = self.config['datasets'][dataset]['extents']['temporal']
+
+            if '/' in datetime_:  # envelope
+                LOGGER.debug('detected time range')
+                LOGGER.debug('Validating time windows')
+                datetime_begin, datetime_end = datetime_.split('/')
+                if datetime_begin != '..':
+                    datetime_begin = dateparse(datetime_begin)
+                if datetime_end != '..':
+                    datetime_end = dateparse(datetime_end)
+
+                if te['begin'] is not None and datetime_begin != '..':
+                    if datetime_begin < te['begin']:
+                        datetime_invalid = True
+
+                if te['end'] is not None and datetime_end != '..':
+                    if datetime_end > te['end']:
+                        datetime_invalid = True
+
+            else:  # time instant
+                datetime__ = dateparse(datetime_)
+                LOGGER.debug('detected time instant')
+                if te['begin'] is not None and datetime__ != '..':
+                    if datetime__ < te['begin']:
+                        datetime_invalid = True
+                if te['end'] is not None and datetime__ != '..':
+                    if datetime__ > te['end']:
+                        datetime_invalid = True
+
+        if datetime_invalid:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'datetime parameter out of range'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading provider')
         try:
@@ -478,9 +621,10 @@ class API(object):
         LOGGER.debug('sortby: {}'.format(sortby))
 
         try:
-            content = p.query(startindex=int(startindex), limit=int(limit),
-                              resulttype=resulttype, bbox=bbox, time=time,
-                              properties=properties, sortby=sortby)
+            content = p.query(startindex=startindex, limit=limit,
+                              resulttype=resulttype, bbox=bbox,
+                              datetime=datetime_, properties=properties,
+                              sortby=sortby)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -496,46 +640,65 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        prev = startindex - self.config['server']['limit']
-        if prev < 0:
-            prev = 0
-
-        next_ = startindex + self.config['server']['limit']
+        serialized_query_params = ''
+        for k, v in args.items():
+            if k not in ('f', 'startindex'):
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
         content['links'] = [{
             'type': 'application/geo+json',
             'rel': 'self',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f=json'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=json{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }, {
             'type': 'text/html',
             'rel': 'alternate',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f=html'.format(
-                self.config['server']['url'], dataset)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'prev',
-            'title': 'items (prev)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
-                self.config['server']['url'], dataset, prev)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'next',
-            'title': 'items (next)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
-                self.config['server']['url'], dataset, next_)
-            }, {
-            'type': 'application/json',
-            'title': self.config['datasets'][dataset]['title'],
-            'rel': 'collection',
-            'href': '{}/collections/{}'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=html{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }
         ]
 
-        content['timeStamp'] = datetime.utcnow().strftime(DATETIME_FORMAT)
+        if startindex > 0:
+            prev = max(0, startindex - limit)
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'prev',
+                    'title': 'items (prev)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(self.config['server']['url'], dataset, prev,
+                            serialized_query_params)
+                })
+
+        if len(content['features']) == limit:
+            next_ = startindex + limit
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'next',
+                    'title': 'items (next)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(
+                        self.config['server']['url'], dataset, next_,
+                        serialized_query_params)
+                })
+
+        content['links'].append(
+            {
+                'type': 'application/json',
+                'title': self.config['datasets'][dataset]['title'],
+                'rel': 'collection',
+                'href': '{}/collections/{}'.format(
+                    self.config['server']['url'], dataset)
+            })
+
+        content['timeStamp'] = datetime.utcnow().strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ')
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
@@ -544,9 +707,14 @@ class API(object):
             content['links'][1]['rel'] = 'self'
 
             # For constructing proper URIs to items
-            path_info = '/'.join([
-                self.config['server']['url'].rstrip('/'),
-                headers.environ['PATH_INFO'].strip('/')])
+            if pathinfo:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    pathinfo.strip('/')])
+            else:
+                path_info = '/'.join([
+                    self.config['server']['url'].rstrip('/'),
+                    headers.environ['PATH_INFO'].strip('/')])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
@@ -575,23 +743,21 @@ class API(object):
 
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content)
+        return headers_, 200, json.dumps(content, default=json_serial)
 
-    def get_feature(self, headers, args, dataset, identifier):
+    @pre_process
+    def get_feature(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param dataset: dataset name
         :param identifier: feature identifier
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in FORMATS:
             exception = {
@@ -667,9 +833,10 @@ class API(object):
                                           content)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content)
+        return headers_, 200, json.dumps(content, default=json_serial)
 
-    def describe_processes(self, headers, args, process=None):
+    @pre_process
+    def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
 
@@ -680,10 +847,6 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
-
         if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -692,31 +855,38 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        processes_config = self.config['processes']
+        processes_config = self.config.get('processes', {})
 
-        if process is not None:
-            if process not in processes_config.keys():
-                exception = {
-                    'code': 'NotFound',
-                    'description': 'identifier not found'
-                }
-                LOGGER.error(exception)
-                return headers_, 404, json.dumps(exception)
+        if processes_config:
+            if process is not None:
+                if process not in processes_config.keys():
+                    exception = {
+                        'code': 'NotFound',
+                        'description': 'identifier not found'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 404, json.dumps(exception)
 
-            p = load_plugin('process', processes_config[process]['processor'])
-            p.metadata['jobControlOptions'] = ['sync-execute']
-            p.metadata['outputTransmission'] = ['value']
-            response = p.metadata
-        else:
-            processes = []
-            for k, v in processes_config.items():
-                p = load_plugin('process', processes_config[k]['processor'])
+                p = load_plugin('process',
+                                processes_config[process]['processor'])
                 p.metadata['jobControlOptions'] = ['sync-execute']
                 p.metadata['outputTransmission'] = ['value']
-                processes.append(p.metadata)
-            response = {
-                'processes': processes
-            }
+                response = p.metadata
+            else:
+                processes = []
+                for k, v in processes_config.items():
+                    p = load_plugin('process',
+                                    processes_config[k]['processor'])
+                    p.metadata['itemType'] = ['process']
+                    p.metadata['jobControlOptions'] = ['sync-execute']
+                    p.metadata['outputTransmission'] = ['value']
+                    processes.append(p.metadata)
+                response = {
+                    'processes': processes
+                }
+        else:
+            processes = []
+            response = {'processes': processes}
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
@@ -760,7 +930,9 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        if process not in self.config['processes'].keys():
+        processes = self.config.get('processes', {})
+
+        if process not in processes:
             exception = {
                 'code': 'NotFound',
                 'description': 'identifier not found'
@@ -769,7 +941,7 @@ class API(object):
             return headers_, 404, json.dumps(exception)
 
         p = load_plugin('process',
-                        self.config['processes'][process]['processor'])
+                        processes[process]['processor'])
 
         data_ = json.loads(data)
         for input_ in data_['inputs']:
@@ -897,9 +1069,9 @@ def check_format(args, headers):
 
 def to_json(dict_):
     """
-    serialize dict to json
+    Serialize dict to json
 
-    :param dict_: dict_
+    :param dict_: `dict` of JSON representation
 
     :returns: JSON string representation
     """

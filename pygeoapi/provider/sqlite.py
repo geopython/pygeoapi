@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -56,39 +58,32 @@ class SQLiteProvider(BaseProvider):
 
         self.table = provider_def['table']
 
-        self.dataDB = None
+        LOGGER.debug('Setting SQLite properties:')
+        LOGGER.debug('Data source: {}'.format(self.data))
+        LOGGER.debug('Name: {}'.format(self.name))
+        LOGGER.debug('ID_field: {}'.format(self.id_field))
+        LOGGER.debug('Table: {}'.format(self.table))
 
-        LOGGER.debug('Setting Sqlite propreties:')
-        LOGGER.debug('Data source:{}'.format(self.data))
-        LOGGER.debug('Name:{}'.format(self.name))
-        LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Table:{}'.format(self.table))
+    def __response_feature(self, row_data):
+        """
+        Assembles GeoJSON output from DB query
 
-    def __response_feature_collection(self):
-        """Assembles GeoJSON output from DB query
+        :param row_data: DB row result
 
-        :returns: GeoJSON FeaturesCollection
+        :returns: `dict` of GeoJSON Feature
         """
 
-        feature_list = list()
-        for row_data in self.dataDB:
-            row_data = dict(row_data)  # sqlite3.Row is doesnt support pop
-            feature = {
-                'type': 'Feature'
-            }
-            feature["geometry"] = json.loads(
-                row_data.pop('AsGeoJSON(geometry)')
-                )
-            feature['properties'] = row_data
-            feature['id'] = feature['properties'].pop(self.id_field)
-            feature_list.append(feature)
-
-        feature_collection = {
-            'type': 'FeatureCollection',
-            'features': feature_list
+        rd = dict(row_data)  # sqlite3.Row is doesnt support pop
+        feature = {
+            'type': 'Feature'
         }
+        feature["geometry"] = json.loads(
+            rd.pop('AsGeoJSON(geometry)')
+            )
+        feature['properties'] = rd
+        feature['id'] = feature['properties'].pop(self.id_field)
 
-        return feature_collection
+        return feature
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
@@ -151,9 +146,9 @@ class SQLiteProvider(BaseProvider):
         return cursor
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], time=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[]):
         """
-        Query Sqlite for all the content.
+        Query SQLite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
         limit=1&resulttype=results
 
@@ -161,13 +156,13 @@ class SQLiteProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param time: temporal (datestamp or extent)
+        :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying Sqlite')
+        LOGGER.debug('Querying SQLite')
 
         cursor = self.__load()
 
@@ -186,13 +181,21 @@ class SQLiteProvider(BaseProvider):
         sql_query = "select {} from {} where rowid >= ? \
         and rowid <= ?;".format(self.columns, self.table)
 
-        LOGGER.debug('SQL Query:{}'.format(sql_query))
-        LOGGER.debug('Start Index:{}'.format(startindex))
-        LOGGER.debug('End Index'.format(end_index))
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        LOGGER.debug('Start Index: {}'.format(startindex))
+        LOGGER.debug('End Index: {}'.format(end_index))
 
-        self.dataDB = cursor.execute(sql_query, (startindex, end_index, ))
+        row_data = cursor.execute(sql_query, (startindex, end_index, ))
 
-        feature_collection = self.__response_feature_collection()
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'features': []
+        }
+
+        for rd in row_data:
+            feature_collection['features'].append(
+                self.__response_feature(rd))
+
         return feature_collection
 
     def get(self, identifier):
@@ -205,7 +208,7 @@ class SQLiteProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        LOGGER.debug('Get item from Sqlite')
+        LOGGER.debug('Get item from SQLite')
 
         cursor = self.__load()
 
@@ -215,13 +218,13 @@ class SQLiteProvider(BaseProvider):
                                                             self.table,
                                                             self.id_field)
 
-        LOGGER.debug('SQL Query:{}'.format(sql_query))
-        LOGGER.debug('Identifier:{}'.format(identifier))
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        LOGGER.debug('Identifier: {}'.format(identifier))
 
-        self.dataDB = cursor.execute(sql_query, (identifier, ))
+        row_data = cursor.execute(sql_query, (identifier, )).fetchone()
 
-        feature_collection = self.__response_feature_collection()
-        return feature_collection
+        feature = self.__response_feature(row_data)
+        return feature
 
     def __repr__(self):
-        return '<SQLiteProvider> {},{}'.format(self.data, self.table)
+        return '<SQLiteProvider> {}, {}'.format(self.data, self.table)

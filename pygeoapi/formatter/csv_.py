@@ -46,7 +46,7 @@ class CSVFormatter(BaseFormatter):
 
         :param formatter_def: formatter definition
 
-        :returns: pygeoapi.formatter.csv_.CSVFormatter
+        :returns: `pygeoapi.formatter.csv_.CSVFormatter`
         """
 
         geom = False

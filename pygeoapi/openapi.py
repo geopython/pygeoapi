@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+from copy import deepcopy
 import logging
 
 import click
@@ -37,9 +38,57 @@ from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
-SCHEMAS = {
-    'wps': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas'  # noqa
+# TODO: handle this better once schemas are public/final
+# allow also for schema caching
+OPENAPI_YAML = {
+    'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
 }
+
+
+# TODO: remove this function once OGC API - Processing is final
+def gen_media_type_object(media_type, api_type, path):
+    """
+    Generates an OpenAPI Media Type Object
+
+    :param media_type: MIME type
+    :param api_type: OGC API type
+    :param path: local path of OGC API parameter or schema definition
+
+    :returns: `dict` of media type object
+    """
+
+    ref = '{}/{}'.format(OPENAPI_YAML[api_type], path)
+
+    content = {
+        media_type: {
+            'schema': {
+                '$ref': ref
+            }
+        }
+    }
+
+    return content
+
+
+# TODO: remove this function once OGC API - Processing is final
+def gen_response_object(description, media_type, api_type, path):
+    """
+    Generates an OpenAPI Response Object
+
+    :param description: text description of response
+    :param media_type: MIME type
+    :param api_type: OGC API type
+
+    :returns: `dict` of response object
+    """
+
+    response = {
+        'description': description,
+        'content': gen_media_type_object(media_type, api_type, path)
+    }
+
+    return response
 
 
 def get_oas_30(cfg):
@@ -83,13 +132,16 @@ def get_oas_30(cfg):
 
     paths['/'] = {
         'get': {
-            'summary': 'API',
-            'description': 'API',
+            'summary': 'Landing page',
+            'description': 'Landing page',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -99,10 +151,13 @@ def get_oas_30(cfg):
             'summary': 'This document',
             'description': 'This document',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '#/components/responses/200'},
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                'default': {'$ref': '#/components/responses/default'}
             }
         }
     }
@@ -112,10 +167,13 @@ def get_oas_30(cfg):
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -125,10 +183,13 @@ def get_oas_30(cfg):
             'summary': 'Feature Collections',
             'description': 'Feature Collections',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
+                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -141,6 +202,61 @@ def get_oas_30(cfg):
             'url': cfg['metadata']['identification']['url']}
         }
     )
+
+    oas['components'] = {
+        'responses': {
+            '200': {
+                'description': 'successful operation',
+            },
+            'default': {
+               'description': 'Unexpected error',
+               'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
+            }
+        },
+        'parameters': {
+            'f': {
+                'name': 'f',
+                'in': 'query',
+                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                    'enum': ['json', 'html'],
+                    'default': 'json'
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'sortby': {
+                'name': 'sortby',
+                'in': 'query',
+                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                },
+                'style': 'form',
+                'explode': False
+            },
+            'startindex': {
+                'name': 'startindex',
+                'in': 'query',
+                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'default': 0
+                },
+                'style': 'form',
+                'explode': False
+            }
+        }
+    }
+
+    items_f = deepcopy(oas['components']['parameters']['f'])
+    items_f['schema']['enum'].append('csv')
+
     LOGGER.debug('setting up datasets')
     for k, v in cfg['datasets'].items():
         collection_name_path = '/collections/{}'.format(k)
@@ -164,48 +280,46 @@ def get_oas_30(cfg):
                 'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
 
-        paths['{}/items'.format(collection_name_path)] = {
+        items_path = '{}/items'.format(collection_name_path)
+
+        paths[items_path] = {
             'get': {
                 'summary': 'Get {} features'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/f'},
-                    {'$ref': '#/components/parameters/bbox'},
-                    {'$ref': '#/components/parameters/time'},
-                    {'$ref': '#/components/parameters/limit'},
+                    items_f,
+                    {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/sortby'},
                     {'$ref': '#/components/parameters/startindex'}
                 ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
 
         p = load_plugin('provider', cfg['datasets'][k]['provider'])
+
+        if p.time_field is not None:
+            paths[items_path]['get']['parameters'].append(
+                {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
         for k2, v2 in p.fields.items():
             path_ = '{}/items'.format(collection_name_path)
@@ -239,25 +353,20 @@ def get_oas_30(cfg):
                 'explode': False
             })
 
-        paths['{}/items/{{id}}'.format(collection_name_path)] = {
+        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} feature by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '#/components/parameters/id'},
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
-                    }
+                    200: {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
@@ -267,199 +376,94 @@ def get_oas_30(cfg):
             'summary': 'Processes',
             'description': 'Processes',
             'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
             'responses': {
-                200: {
-                    'description': 'successful operation'
-                }
+                200: {'$ref': '#/components/responses/200'},
+                'default': {'$ref': '#/components/responses/default'}
             }
         }
     }
 
     LOGGER.debug('setting up processes')
-    for k, v in cfg['processes'].items():
-        p = load_plugin('process', v['processor'])
 
-        process_name_path = '/processes/{}'.format(k)
-        tag = {
-            'name': k,
-            'description': p.metadata['description'],
-            'externalDocs': {}
-        }
-        for link in p.metadata['links']:
-            if link['type'] == 'information':
-                tag['externalDocs']['description'] = link['type']
-                tag['externalDocs']['url'] = link['url']
-                break
-        if len(tag['externalDocs']) == 0:
-            del tag['externalDocs']
+    processes = cfg.get('processes', {})
 
-        oas['tags'].append(tag)
+    if processes:
+        for k, v in processes.items():
+            p = load_plugin('process', v['processor'])
 
-        paths[process_name_path] = {
-            'get': {
-                'summary': 'Get process metadata'.format(p.metadata['title']),
+            process_name_path = '/processes/{}'.format(k)
+            tag = {
+                'name': k,
                 'description': p.metadata['description'],
-                'tags': [k],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
+                'externalDocs': {}
+            }
+            for link in p.metadata['links']:
+                if link['type'] == 'information':
+                    tag['externalDocs']['description'] = link['type']
+                    tag['externalDocs']['url'] = link['url']
+                    break
+            if len(tag['externalDocs']) == 0:
+                del tag['externalDocs']
+
+            oas['tags'].append(tag)
+
+            paths[process_name_path] = {
+                'get': {
+                    'summary': 'Get process metadata'.format(
+                        p.metadata['title']),
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': '#/components/parameters/f'}
+                    ],
+                    'responses': {
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
                     }
                 }
             }
-        }
-        paths['{}/jobs'.format(process_name_path)] = {
-            'get': {
-                'summary': 'Retrieve job list for process',
-                'description': p.metadata['description'],
-                'tags': [k],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    }
-                }
-            },
-            'post': {
-                'summary': 'Process {} execution'.format(p.metadata['title']),
-                'description': p.metadata['description'],
-                'tags': [k],
-                'parameters': [{
-                    'name': 'sync-execute',
-                    'in': 'query',
-                    'description': 'sync-execute',
-                    'required': False,
-                    'schema': {
-                        'type': 'string',
-                        'default': 'true'
-                    },
-                    'style': 'form',
-                    'explode': False
-                }],
-                'responses': {
-                    200: {
-                        'description': 'successful operation'
-                    },
-                    400: {
-                        'description': 'Invalid id supplied'
-                    },
-                    404: {
-                        'description': 'not found'
+            paths['{}/jobs'.format(process_name_path)] = {
+                'get': {
+                    'summary': 'Retrieve job list for process',
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'responses': {
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
                     }
                 },
-                'requestBody': {
-                    'description': 'Mandatory execute request JSON',
-                    'required': True,
-                    'content': {
-                        'application/json': {
-                            'schema': {
-                                '$ref': '{}/{}'.format(SCHEMAS['wps'], 'execute.yaml')  # noqa
+                'post': {
+                    'summary': 'Process {} execution'.format(
+                        p.metadata['title']),
+                    'description': p.metadata['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': '{}/schemas/execute.yaml#/properties/mode'.format(OPENAPI_YAML['oapip'])}  # noqa
+                    ],
+                    'responses': {
+                        200: {'$ref': '#/components/responses/200'},
+                        'default': {'$ref': '#/components/responses/default'}
+                    },
+                    'requestBody': {
+                        'description': 'Mandatory execute request JSON',
+                        'required': True,
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '{}/schemas/execute.yaml'.format(OPENAPI_YAML['oapip'])  # noqa
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        if 'example' in p.metadata:
-            paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+            if 'example' in p.metadata:
+                paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
     oas['paths'] = paths
-
-    oas['components'] = {
-        'parameters': {
-            'id': {
-                'name': 'id',
-                'in': 'path',
-                'description': 'The id of a feature',
-                'required': True,
-                'schema': {
-                    'type': 'string'
-                }
-            },
-            'f': {
-                'name': 'f',
-                'in': 'query',
-                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                    'enum': ['json', 'csv'],
-                    'default': 'json'
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'bbox': {
-                'name': 'bbox',
-                'in': 'query',
-                'description': 'The bbox parameter indicates the minimum bounding rectangle upon which to query the collection in WFS84 (minx, miny, maxx, maxy).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'array',
-                    'minItems': 4,
-                    'maxItems': 6,
-                    'items': {
-                        'type': 'number'
-                    }
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'time': {
-                'name': 'time',
-                'in': 'query',
-                'description': 'The time parameter indicates an RFC3339 formatted datetime (single, interval, open).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string'
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'limit': {
-                'name': 'limit',
-                'in': 'query',
-                'description': 'The optional limit parameter limits the number of items that are presented in the response document. Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted. Minimum = 1. Maximum = 10000. Default = {}.'.format(cfg['server']['limit']),  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 1,
-                    'maximum': 10000,
-                    'default': cfg['server']['limit']
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'sortby': {
-                'name': 'sortby',
-                'in': 'query',
-                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string'
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'startindex': {
-                'name': 'startindex',
-                'in': 'query',
-                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 0,
-                    'default': 0
-                },
-                'style': 'form',
-                'explode': False
-            }
-        }
-    }
 
     return oas
 
