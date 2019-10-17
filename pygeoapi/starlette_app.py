@@ -103,14 +103,14 @@ async def api(request: Request):
 
 @app.route('/conformance')
 @app.route('/conformance/')
-async def api_conformance(request: Request):
+async def conformance(request: Request):
     """
     OGC open api conformance access point
 
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.api_conformance(
+    headers, status_code, content = api_.conformance(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -160,11 +160,11 @@ async def dataset(request: Request, feature_collection=None, feature=None):
     if 'feature' in request.path_params:
         feature = request.path_params['feature']
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.query_params,
             feature_collection, pathinfo=request.scope['path'])
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.query_params, feature_collection, feature)
 
     response = Response(content=content, status_code=status_code)
