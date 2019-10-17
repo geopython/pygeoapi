@@ -120,20 +120,20 @@ def test_root(config, api_):
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
-def test_api_conformance(config, api_):
+def test_conformance(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.api_conformance(req_headers, {})
+    rsp_headers, code, response = api_.conformance(req_headers, {})
     root = json.loads(response)
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
     assert len(root['conformsTo']) == 4
 
-    rsp_headers, code, response = api_.api_conformance(
+    rsp_headers, code, response = api_.conformance(
         req_headers, {'f': 'foo'})
     assert code == 400
 
-    rsp_headers, code, response = api_.api_conformance(
+    rsp_headers, code, response = api_.conformance(
         req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
 
@@ -187,54 +187,55 @@ def test_describe_collections(config, api_):
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
-def test_get_features(config, api_):
+def test_get_collection_items(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {}, 'foo')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'foo'}, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'bbox': '1,2,3'}, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'bbox': '1,2,3,4c'}, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'html'}, 'obs')
     assert rsp_headers['Content-Type'] == 'text/html'
 
-    rsp_headers, code, response = api_.get_features(req_headers, {}, 'obs')
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {}, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 5
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'resulttype': 'hits'}, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 0
 
     # Invalid limit
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'limit': 0}, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'limit': 2}, 'obs')
     features = json.loads(response)
 
@@ -253,13 +254,13 @@ def test_get_features(config, api_):
     assert links[3]['rel'] == 'collection'
 
     # Invalid startindex
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'startindex': -1}, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'startindex': 2}, 'obs')
     features = json.loads(response)
 
@@ -277,7 +278,7 @@ def test_get_features(config, api_):
     assert '/collections/obs' in links[3]['href']
     assert links[3]['rel'] == 'collection'
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'startindex': 1, 'limit': 1,
                       'bbox': '-180,90,180,90'}, 'obs')
     features = json.loads(response)
@@ -301,97 +302,97 @@ def test_get_features(config, api_):
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'sortby': 'stn_id', 'stn_id': '35'}, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'sortby': 'stn_id:FOO', 'stn_id': '35', 'value': '89.9'},
         'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'sortby': 'stn_id:A'}, 'obs')
     features = json.loads(response)
     # FIXME? this test errors out currently
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'csv'}, 'obs')
 
     assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2003'}, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '1999'}, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2010-04-22'}, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2001-11-11/2003-12-18'}, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '../2003-12-18'}, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2001-11-11/..'}, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '1999/2005-04-22'}, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
     api_.config['datasets']['obs']['extents'].pop('temporal')
 
-    rsp_headers, code, response = api_.get_features(
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
     assert code == 200
 
 
-def test_get_feature(config, api_):
+def test_get_collection_item(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_feature(
+    rsp_headers, code, response = api_.get_collection_item(
         req_headers, {'f': 'foo'}, 'obs', '371')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_feature(
+    rsp_headers, code, response = api_.get_collection_item(
         req_headers, {}, 'foo', '371')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_feature(
+    rsp_headers, code, response = api_.get_collection_item(
         req_headers, {}, 'obs', 'notfound')
 
     assert code == 404
 
-    rsp_headers, code, response = api_.get_feature(
+    rsp_headers, code, response = api_.get_collection_item(
         req_headers, {'f': 'html'}, 'obs', '371')
 
     assert rsp_headers['Content-Type'] == 'text/html'
 
-    rsp_headers, code, response = api_.get_feature(
+    rsp_headers, code, response = api_.get_collection_item(
         req_headers, {}, 'obs', '371')
     features = json.loads(response)
 

@@ -98,15 +98,15 @@ def api():
 
 
 @APP.route('/conformance')
-def api_conformance():
+def conformance():
     """
     OGC open api conformance access point
 
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.api_conformance(request.headers,
-                                                         request.args)
+    headers, status_code, content = api_.conformance(request.headers,
+                                                     request.args)
 
     response = make_response(content, status_code)
     if headers:
@@ -145,10 +145,10 @@ def dataset(feature_collection, feature=None):
     """
 
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.args, feature_collection)
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.args, feature_collection, feature)
 
     response = make_response(content, status_code)
