@@ -997,7 +997,7 @@ def to_json(dict_):
     :returns: JSON string representation
     """
 
-    return json.dumps(dict_)
+    return json.dumps(dict_, default=json_serial)
 
 
 def _render_j2_template(config, template, data):
