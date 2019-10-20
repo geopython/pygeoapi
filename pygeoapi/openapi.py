@@ -41,7 +41,7 @@ LOGGER = logging.getLogger(__name__)
 # TODO: handle this better once schemas are public/final
 # allow also for schema caching
 OPENAPI_YAML = {
-    'oapif': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-features/master/core/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
 }
 
