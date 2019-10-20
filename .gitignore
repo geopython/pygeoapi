@@ -111,3 +111,7 @@ openapi.yml
 
 #Eclipse project
 .project
+docker-compose.yml
+.gitignore
+notes.txt
+pygeoapi-config-local.yml
