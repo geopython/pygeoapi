@@ -215,7 +215,7 @@ class API(object):
         return headers_, 200, json.dumps(openapi)
 
     @pre_process
-    def api_conformance(self, headers_, format_):
+    def conformance(self, headers_, format_):
         """
         Provide conformance definition
 
@@ -408,7 +408,7 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm, default=json_serial)
 
-    def get_features(self, headers, args, dataset, pathinfo=None):
+    def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection
 
@@ -736,7 +736,7 @@ class API(object):
         return headers_, 200, json.dumps(content, default=json_serial)
 
     @pre_process
-    def get_feature(self, headers_, format_, dataset, identifier):
+    def get_collection_item(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
 
