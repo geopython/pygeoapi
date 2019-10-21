@@ -56,20 +56,12 @@ def test_get_typed_value():
     assert isinstance(value, str)
 
 
-def test_get_url():
-    url = util.get_url('http', 'example.org', 8002, '/b')
-    assert url == 'http://example.org:8002/b'
-
-    url = util.get_url('http', 'example.org', 80, '/b')
-    assert url == 'http://example.org/b'
-
-
 def test_yaml_load():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
         d = util.yaml_load(fh)
         assert isinstance(d, dict)
     with pytest.raises(FileNotFoundError):
-        with open(get_test_file_path('ipygeoapi-test-config.yml')) as fh:
+        with open(get_test_file_path('404.yml')) as fh:
             d = util.yaml_load(fh)
 
 
@@ -81,7 +73,11 @@ def test_str2bool():
     assert util.str2bool('1') is True
     assert util.str2bool(True) is True
     assert util.str2bool('true') is True
+    assert util.str2bool('True') is True
+    assert util.str2bool('TRUE') is True
+    assert util.str2bool('tRuE') is True
     assert util.str2bool('on') is True
+    assert util.str2bool('On') is True
     assert util.str2bool('off') is False
 
 

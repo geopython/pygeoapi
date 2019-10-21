@@ -33,9 +33,6 @@ import pytest
 
 from pygeoapi.util import yaml_load
 
-os.environ['PYGEOAPI_PORT'] = '5001'
-os.environ['PYGEOAPI_TITLE'] = 'my title'
-
 
 def get_test_file_path(filename):
     """helper function to open test file safely"""
@@ -46,14 +43,20 @@ def get_test_file_path(filename):
         return 'tests/{}'.format(filename)
 
 
-@pytest.fixture()
-def config():
+def test_config_envvars():
+    os.environ['PYGEOAPI_PORT'] = '5001'
+    os.environ['PYGEOAPI_TITLE'] = 'my title'
+
     with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:
-        return yaml_load(fh)
+        config = yaml_load(fh)
 
-
-def test_config_envvars(config):
     assert isinstance(config, dict)
     assert config['server']['bind']['port'] == 5001
     assert config['metadata']['identification']['title'] == \
         'pygeoapi default instance my title'
+
+    os.environ.pop('PYGEOAPI_PORT')
+
+    with pytest.raises(EnvironmentError):
+        with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:  # noqa
+            config = yaml_load(fh)
