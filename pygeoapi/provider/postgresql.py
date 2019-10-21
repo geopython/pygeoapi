@@ -45,7 +45,7 @@
 import logging
 import json
 import psycopg2
-from psycopg2.sql import SQL, Identifier
+from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError
 
@@ -86,6 +86,7 @@ class DatabaseConnection(object):
         self.table = table
         self.context = context
         self.columns = None
+        self.fields = {} # TODO: Maybe combine with columns
         self.conn = None
         self.schema = None
 
@@ -109,7 +110,7 @@ class DatabaseConnection(object):
         self.cur = self.conn.cursor()
         if self.context == 'query':
             # Getting columns
-            query_cols = "SELECT column_name FROM information_schema.columns \
+            query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
             WHERE table_name = '{}' and udt_name != 'geometry';".format(
                 self.table)
 
@@ -118,6 +119,7 @@ class DatabaseConnection(object):
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
+            self.fields = dict(result)
 
         return self
 
@@ -156,6 +158,15 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
         LOGGER.debug('Table:{}'.format(self.table))
+
+        LOGGER.debug('Get available fields/properties')
+        self.get_fields()
+
+    def get_fields(self):
+        if not self.fields:
+            with DatabaseConnection(self.conn_dic, self.table) as db:
+                self.fields = db.fields
+        return self.fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -199,13 +210,15 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            where_clauses = [SQL('{0} = {1}').format(Identifier(k), Literal(v)) for k,v in properties]
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {0},ST_AsGeoJSON({1}) FROM {2}").\
+             SELECT {0},ST_AsGeoJSON({1}) FROM {2} WHERE {3}").\
                 format(db.columns,
                        Identifier('geom'),
-                       Identifier(self.table))
+                       Identifier(self.table),
+                       SQL(' AND ').join(where_clauses))
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
