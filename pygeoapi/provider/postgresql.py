@@ -86,7 +86,7 @@ class DatabaseConnection(object):
         self.table = table
         self.context = context
         self.columns = None
-        self.fields = {} # Dict of columns. Key is col name, value is type
+        self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
         self.schema = None
 
@@ -211,8 +211,11 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
             if properties:
-                property_clauses = [SQL('{0} = {1}').format(Identifier(k), Literal(v)) for k, v in properties]
-                where_clause = SQL(' WHERE {0}').format(SQL(' AND ').join(property_clauses))
+                property_clauses = \
+                    [SQL('{0} = {1}').format(
+                        Identifier(k), Literal(v)) for k, v in properties]
+                where_clause = \
+                    SQL(' WHERE {0}').format(SQL(' AND ').join(property_clauses))
             else:
                 where_clause = SQL('')
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
