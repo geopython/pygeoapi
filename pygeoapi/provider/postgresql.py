@@ -215,7 +215,8 @@ class PostgreSQLProvider(BaseProvider):
                     [SQL('{0} = {1}').format(
                         Identifier(k), Literal(v)) for k, v in properties]
                 where_clause = \
-                    SQL(' WHERE {0}').format(SQL(' AND ').join(property_clauses))
+                    SQL(' WHERE {0}').format(
+                        SQL(' AND ').join(property_clauses))
             else:
                 where_clause = SQL('')
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
