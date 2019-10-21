@@ -86,7 +86,7 @@ class DatabaseConnection(object):
         self.table = table
         self.context = context
         self.columns = None
-        self.fields = {} # TODO: Maybe combine with columns
+        self.fields = {} # Dict of columns. Key is col name, value is type
         self.conn = None
         self.schema = None
 
