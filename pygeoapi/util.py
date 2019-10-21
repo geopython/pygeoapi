@@ -62,23 +62,6 @@ def get_typed_value(value):
     return value2
 
 
-def get_url(scheme, host, port, basepath):
-    """
-    Provides URL of instance
-
-    :returns: string of complete baseurl
-    """
-
-    url = '{}://{}'.format(scheme, host)
-
-    if port not in [80, 443]:
-        url = '{}:{}'.format(url, port)
-
-    url = '{}{}'.format(url, basepath)
-
-    return url
-
-
 def yaml_load(fh):
     """
     serializes a YAML files into a pyyaml object
@@ -90,10 +73,12 @@ def yaml_load(fh):
 
     # support environment variables in config
     # https://stackoverflow.com/a/55301129
-    #
     path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
 
     def path_constructor(loader, node):
+        env_var = path_matcher.match(node.value).group(1)
+        if env_var not in os.environ:
+            raise EnvironmentError('Undefined environment variable in config')
         return get_typed_value(os.path.expandvars(node.value))
 
     class EnvVarLoader(yaml.SafeLoader):
