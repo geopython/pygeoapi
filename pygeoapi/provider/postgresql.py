@@ -210,13 +210,17 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-            where_clauses = [SQL('{0} = {1}').format(Identifier(k), Literal(v)) for k,v in properties]
+            if properties:
+                property_clauses = [SQL('{0} = {1}').format(Identifier(k), Literal(v)) for k, v in properties]
+                where_clause = SQL(' WHERE {0}').format(SQL(' AND ').join(property_clauses))
+            else:
+                where_clause = SQL('')
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {0},ST_AsGeoJSON({1}) FROM {2} WHERE {3}").\
+             SELECT {0},ST_AsGeoJSON({1}) FROM {2}{3}").\
                 format(db.columns,
                        Identifier('geom'),
                        Identifier(self.table),
-                       SQL(' AND ').join(where_clauses))
+                       where_clause)
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
