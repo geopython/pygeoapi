@@ -188,8 +188,6 @@ class PostgreSQLProvider(BaseProvider):
                 except Exception as err:
                     LOGGER.error('Error executing sql_query: {}: {}'.format(
                         sql_query.as_string(cursor)), err)
-                    LOGGER.error('Using search_path : {}'.format(
-                        db.search_path))
                     raise ProviderQueryError()
 
                 hits = cursor.fetchone()["hits"]
@@ -217,7 +215,6 @@ class PostgreSQLProvider(BaseProvider):
             except Exception as err:
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
-                LOGGER.error('Using search_path: {}'.format(db.search_path))
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
@@ -261,7 +258,6 @@ class PostgreSQLProvider(BaseProvider):
             except Exception as err:
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
-                LOGGER.error('Using search path : {}'.format(db.search_path))
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
