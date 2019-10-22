@@ -30,7 +30,6 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
-
 import pytest
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
@@ -62,6 +61,12 @@ def test_query(config):
     assert properties is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_bbox(config):
+    psp = PostgreSQLProvider(config)
+    boxed_feature_collection = psp.query(bbox=[29.3373, -3.4099, 29.3761, -3.3924])
+    assert len(boxed_feature_collection['features']) == 5
 
 
 def test_get(config):
