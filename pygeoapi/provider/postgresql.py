@@ -45,7 +45,7 @@
 import logging
 import json
 import psycopg2
-from psycopg2.sql import SQL, Identifier
+from psycopg2.sql import SQL, Identifier, Placeholder
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError
 
@@ -102,7 +102,7 @@ class DatabaseConnection(object):
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
-            LOGGER.error('Couldnt connect to Postgis using:{}'.format(
+            LOGGER.error("Couldn't connect to Postgis using:{}".format(
                 str(self.conn_dic)))
             raise ProviderConnectionError()
 
@@ -200,16 +200,23 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {0},ST_AsGeoJSON({1}) FROM {2}").\
+                SELECT {0},ST_AsGeoJSON({1}) FROM {2} WHERE geom && ST_MakeEnvelope({3}, {4}, {5}, {6})").\
                 format(db.columns,
                        Identifier('geom'),
-                       Identifier(self.table))
+                       Identifier(self.table),
+                       Placeholder(),
+                       Placeholder(),
+                       Placeholder(),
+                       Placeholder()
+                       )
+            if not bbox:
+                bbox = [-180, -90, 180, 90]
 
             LOGGER.debug('SQL Query: {}'.format(sql_query))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
-                cursor.execute(sql_query)
+                cursor.execute(sql_query, bbox)
                 for index in [startindex, limit]:
                     cursor.execute("fetch forward {} from geo_cursor"
                                    .format(index))
