@@ -95,7 +95,8 @@ class DatabaseConnection(object):
         try:
             search_path = self.conn_dic.pop('search_path', ['public'])
             if search_path != ['public']:
-                self.conn_dic["options"] = f'-c search_path={search_path}'
+                self.conn_dic["options"] = f'-c \
+                search_path={",".join(search_path)}'
                 LOGGER.debug(f'Using search path: {search_path} ')
             self.conn = psycopg2.connect(**self.conn_dic)
 
@@ -147,7 +148,7 @@ class PostgreSQLProvider(BaseProvider):
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
-        self.geom = provider_def.get('geom_field','geom')
+        self.geom = provider_def.get('geom_field', 'geom')
 
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
