@@ -2,6 +2,7 @@
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Mary Bucknell <mbucknell@usgs.gov>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2019 Tom Kralidis
