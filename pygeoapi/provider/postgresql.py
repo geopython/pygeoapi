@@ -93,15 +93,10 @@ class DatabaseConnection(object):
 
     def __enter__(self):
         try:
-            self.search_path = self.conn_dic.pop('search_path', None)
-            if self.search_path is ['public'] or self.search_path is None:
-                pass
-            else:
-                if "public" not in self.search_path:
-                    self.search_path = self.search_path + ["publc"]
-                self.search_path = ",".join(self.search_path)
-                self.conn_dic["options"] = f'-c search_path={self.search_path}'
-                LOGGER.debug(f'Using search path: {self.search_path} ')
+            search_path = self.conn_dic.pop('search_path', ['public'])
+            if search_path != ['public']:
+                self.conn_dic["options"] = f'-c search_path={search_path}'
+                LOGGER.debug(f'Using search path: {search_path} ')
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
@@ -152,8 +147,7 @@ class PostgreSQLProvider(BaseProvider):
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
-        self.geom = provider_def.get('geom_field') \
-            if provider_def.get('geom_field') else "geom"
+        self.geom = provider_def.get('geom_field','geom')
 
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
