@@ -80,9 +80,9 @@ async def root(request: Request):
     return response
 
 
-@app.route('/api')
-@app.route('/api/')
-async def api(request: Request):
+@app.route('/openapi')
+@app.route('/openapi/')
+async def openapi(request: Request):
     """
     OpenAPI access point
 
@@ -91,7 +91,7 @@ async def api(request: Request):
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(
+    headers, status_code, content = api_.openapi(
         request.headers, request.query_params, openapi)
 
     response = Response(content=content, status_code=status_code)

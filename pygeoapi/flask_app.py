@@ -77,8 +77,8 @@ def root():
     return response
 
 
-@APP.route('/api')
-def api():
+@APP.route('/openapi')
+def openapi():
     """
     OpenAPI access point
 
@@ -87,8 +87,8 @@ def api():
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(request.headers, request.args,
-                                             openapi)
+    headers, status_code, content = api_.openapi(request.headers, request.args,
+                                                 openapi)
 
     response = make_response(content, status_code)
     if headers:
