@@ -186,14 +186,12 @@ def execute_process(name=None):
     :param name: identifier of process to execute
     :returns: HTTP response
     """
-
+    # Get should get a list of jobs running 
     if request.method == 'GET':
         headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
         headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, name)
-
-    response = make_response(content, status_code)
+            request.method, request.headers, request.args, request.data, name)
 
     if headers:
         response.headers = headers
