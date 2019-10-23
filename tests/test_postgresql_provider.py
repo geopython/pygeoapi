@@ -64,8 +64,11 @@ def test_query(config):
 
 
 def test_query_bbox(config):
+    """Test query with a specified bounding box"""
     psp = PostgreSQLProvider(config)
-    boxed_feature_collection = psp.query(bbox=[29.3373, -3.4099, 29.3761, -3.3924])
+    boxed_feature_collection = psp.query(
+        bbox=[29.3373, -3.4099, 29.3761, -3.3924]
+    )
     assert len(boxed_feature_collection['features']) == 3
 
 
