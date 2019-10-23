@@ -55,7 +55,7 @@ curl http://localhost:5000/collections/countries/items?resulttype=hits
 docker pull swaggerapi/swagger-ui
 docker run -p 80:8080 swaggerapi/swagger-ui
 # go to http://localhost
-# enter http://localhost:5000/api and click 'Explore'
+# enter http://localhost:5000/openapi and click 'Explore'
 ```
 
 ## Demo Server
