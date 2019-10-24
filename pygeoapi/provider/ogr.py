@@ -178,7 +178,7 @@ class OGRProvider(BaseProvider):
 
         LOGGER.debug('Grabbing field information')
         self.fields = self.get_fields()
-    
+
     def _list_open_options(self):
         return [
             f"{key}={str(value)}" for key, value in self.open_options.items()]
