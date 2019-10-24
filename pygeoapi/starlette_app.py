@@ -80,8 +80,9 @@ async def root(request: Request):
     return response
 
 
-@app.route('/api')
-async def api(request: Request):
+@app.route('/openapi')
+@app.route('/openapi/')
+async def openapi(request: Request):
     """
     OpenAPI access point
 
@@ -90,7 +91,7 @@ async def api(request: Request):
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(
+    headers, status_code, content = api_.openapi(
         request.headers, request.query_params, openapi)
 
     response = Response(content=content, status_code=status_code)
@@ -101,14 +102,15 @@ async def api(request: Request):
 
 
 @app.route('/conformance')
-async def api_conformance(request: Request):
+@app.route('/conformance/')
+async def conformance(request: Request):
     """
     OGC open api conformance access point
 
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.api_conformance(
+    headers, status_code, content = api_.conformance(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -119,7 +121,9 @@ async def api_conformance(request: Request):
 
 
 @app.route('/collections')
+@app.route('/collections/')
 @app.route('/collections/{name}')
+@app.route('/collections/{name}/')
 async def describe_collections(request: Request, name=None):
     """
     OGC open api collections  access point
@@ -141,7 +145,9 @@ async def describe_collections(request: Request, name=None):
 
 
 @app.route('/collections/{feature_collection}/items')
+@app.route('/collections/{feature_collection}/items/')
 @app.route('/collections/{feature_collection}/items/{feature}')
+@app.route('/collections/{feature_collection}/items/{feature}/')
 async def dataset(request: Request, feature_collection=None, feature=None):
     """
     OGC open api collections/{dataset}/items/{feature}  access point
@@ -154,11 +160,11 @@ async def dataset(request: Request, feature_collection=None, feature=None):
     if 'feature' in request.path_params:
         feature = request.path_params['feature']
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.query_params,
             feature_collection, pathinfo=request.scope['path'])
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.query_params, feature_collection, feature)
 
     response = Response(content=content, status_code=status_code)
@@ -170,7 +176,9 @@ async def dataset(request: Request, feature_collection=None, feature=None):
 
 
 @app.route('/processes')
+@app.route('/processes/')
 @app.route('/processes/{name}')
+@app.route('/processes/{name}/')
 async def describe_processes(request: Request, name=None):
     """
     OGC open api processes access point (experimental)
@@ -190,6 +198,7 @@ async def describe_processes(request: Request, name=None):
 
 
 @app.route('/processes/{name}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{name}/jobs/', methods=['GET', 'POST'])
 async def execute_process(request: Request, name=None):
     """
     OGC open api jobs from processes access point (experimental)
@@ -215,7 +224,7 @@ async def execute_process(request: Request, name=None):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server, debug=False):
+def serve(ctx, server=None, debug=False):
     """
     Serve pygeoapi via Starlette. Runs pygeoapi
     as a uvicorn server. Not recommend for production.

@@ -77,8 +77,8 @@ def root():
     return response
 
 
-@APP.route('/api')
-def api():
+@APP.route('/openapi')
+def openapi():
     """
     OpenAPI access point
 
@@ -87,8 +87,8 @@ def api():
     with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(request.headers, request.args,
-                                             openapi)
+    headers, status_code, content = api_.openapi(request.headers, request.args,
+                                                 openapi)
 
     response = make_response(content, status_code)
     if headers:
@@ -98,15 +98,15 @@ def api():
 
 
 @APP.route('/conformance')
-def api_conformance():
+def conformance():
     """
     OGC open api conformance access point
 
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.api_conformance(request.headers,
-                                                         request.args)
+    headers, status_code, content = api_.conformance(request.headers,
+                                                     request.args)
 
     response = make_response(content, status_code)
     if headers:
@@ -145,10 +145,10 @@ def dataset(feature_collection, feature=None):
     """
 
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.args, feature_collection)
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.args, feature_collection, feature)
 
     response = make_response(content, status_code)
@@ -205,7 +205,7 @@ def execute_process(name=None):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server, debug=False):
+def serve(ctx, server=None, debug=False):
     """
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.

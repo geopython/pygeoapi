@@ -30,7 +30,7 @@
 server:
     bind:
         host: 0.0.0.0
-        port: 5000
+        port: ${PYGEOAPI_PORT}
     url: http://localhost:5000/
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
@@ -49,7 +49,7 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
+        title: pygeoapi default instance ${PYGEOAPI_TITLE}
         description: pygeoapi provides an API to geospatial data
         keywords:
             - geospatial

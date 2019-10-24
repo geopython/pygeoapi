@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2019 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,28 +30,36 @@
 """Generic util functions used in the code"""
 
 from datetime import date, datetime, time
+from decimal import Decimal
 import logging
+import os
+import re
 
 import yaml
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_url(scheme, host, port, basepath):
+def get_typed_value(value):
     """
-    Provides URL of instance
+    Derive true type from data value
 
-    :returns: string of complete baseurl
+    :param value: value
+
+    :returns: value as a native Python data type
     """
 
-    url = '{}://{}'.format(scheme, host)
+    try:
+        if '.' in value:  # float?
+            value2 = float(value)
+        elif len(value) > 1 and value.startswith('0'):
+            value2 = value
+        else:  # int?
+            value2 = int(value)
+    except ValueError:  # string (default)?
+        value2 = value
 
-    if port not in [80, 443]:
-        url = '{}:{}'.format(url, port)
-
-    url = '{}{}'.format(url, basepath)
-
-    return url
+    return value2
 
 
 def yaml_load(fh):
@@ -63,11 +71,23 @@ def yaml_load(fh):
     :returns: `dict` representation of YAML
     """
 
-    try:
-        return yaml.load(fh, Loader=yaml.FullLoader)
-    except AttributeError as err:
-        LOGGER.warning('YAML loading error: {}'.format(err))
-        return yaml.load(fh)
+    # support environment variables in config
+    # https://stackoverflow.com/a/55301129
+    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+
+    def path_constructor(loader, node):
+        env_var = path_matcher.match(node.value).group(1)
+        if env_var not in os.environ:
+            raise EnvironmentError('Undefined environment variable in config')
+        return get_typed_value(os.path.expandvars(node.value))
+
+    class EnvVarLoader(yaml.SafeLoader):
+        pass
+
+    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
+    EnvVarLoader.add_constructor('!path', path_constructor)
+
+    return yaml.load(fh, Loader=EnvVarLoader)
 
 
 def str2bool(value):
@@ -99,8 +119,9 @@ def json_serial(obj):
     """
 
     if isinstance(obj, (datetime, date, time)):
-        serial = obj.isoformat()
-        return serial
+        return obj.isoformat()
+    elif isinstance(obj, Decimal):
+        return float(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)

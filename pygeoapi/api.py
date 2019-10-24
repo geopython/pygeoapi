@@ -35,6 +35,7 @@ from dateutil.parser import parse as dateparse
 import json
 import logging
 import os
+import urllib.parse
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -265,15 +266,15 @@ class API(object):
               'href': '{}?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
-              'rel': 'service',
-              'type': 'application/openapi+json;version=3.0',
+              'rel': 'service-desc',
+              'type': 'application/vnd.oai.openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
-              'href': '{}/api'.format(self.config['server']['url'])
+              'href': '{}/openapi'.format(self.config['server']['url'])
             }, {
-              'rel': 'self',
+              'rel': 'service-doc',
               'type': 'text/html',
               'title': 'The OpenAPI definition as HTML',
-              'href': '{}/api?f=html'.format(self.config['server']['url']),
+              'href': '{}/openapi?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'conformance',
@@ -308,7 +309,7 @@ class API(object):
         return headers_, 200, json.dumps(fcm)
 
     @pre_process
-    def api(self, headers_, format_, openapi):
+    def openapi(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
 
@@ -329,22 +330,23 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
+        path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
 
         if format_ == 'html':
             data = {
                 'openapi-document-path': path
             }
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'api.html', data)
+            content = _render_j2_template(self.config, 'openapi.html', data)
             return headers_, 200, content
 
-        headers_['Content-Type'] = 'application/openapi+json;version=3.0'
+        headers_['Content-Type'] = \
+            'application/vnd.oai.openapi+json;version=3.0'
 
         return headers_, 200, json.dumps(openapi)
 
     @pre_process
-    def api_conformance(self, headers_, format_):
+    def conformance(self, headers_, format_):
         """
         Provide conformance definition
 
@@ -425,12 +427,20 @@ class API(object):
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
+
+            bbox = v['extents']['spatial']['bbox']
+            # The output should be an array of bbox, so if the user only
+            # provided a single bbox, wrap it in a array.
+            if not isinstance(bbox[0], list):
+                bbox = [bbox]
             collection['extent'] = {
                 'spatial': {
-                    'bbox': v['extents']['spatial']['bbox'],
-                    'crs': v['extents']['spatial']['crs']
+                    'bbox': bbox
                 }
             }
+            if 'crs' in v['extents']['spatial']:
+                collection['extent']['spatial']['crs'] = \
+                    v['extents']['spatial']['crs']
 
             t_ext = v.get('extents', {}).get('temporal', {})
             begins = dategetter('begin', t_ext)
@@ -551,7 +561,7 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm, default=json_serial)
 
-    def get_features(self, headers, args, dataset, pathinfo=None):
+    def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection
 
@@ -594,14 +604,31 @@ class API(object):
         LOGGER.debug('Processing startindex parameter')
         try:
             startindex = int(args.get('startindex'))
+            if startindex < 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'startindex value should be positive ' +
+                                   'or zero'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
             startindex = 0
 
         LOGGER.debug('Processing limit parameter')
         try:
             limit = int(args.get('limit'))
+            # TODO: We should do more validation, against the min and max
+            # allowed by the server configuration
+            if limit <= 0:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'limit value should be strictly positive'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
         except TypeError:
-            limit = self.config['server']['limit']
+            limit = int(self.config['server']['limit'])
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -617,6 +644,15 @@ class API(object):
                 return headers_, 400, json.dumps(exception)
         except AttributeError:
             bbox = []
+        try:
+            [float(c) for c in bbox]
+        except ValueError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'bbox values must be numbers'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing datetime parameter')
         # TODO: pass datetime to query as a `datetime` object
@@ -628,7 +664,8 @@ class API(object):
         datetime_ = args.get('datetime')
         datetime_invalid = False
 
-        if datetime_ is not None:
+        if (datetime_ is not None and
+                'temporal' in self.config['datasets'][dataset]['extents']):
             te = self.config['datasets'][dataset]['extents']['temporal']
 
             if '/' in datetime_:  # envelope
@@ -727,7 +764,7 @@ class API(object):
         LOGGER.debug('sortby: {}'.format(sortby))
 
         try:
-            content = p.query(startindex=int(startindex), limit=int(limit),
+            content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
                               sortby=sortby)
@@ -746,18 +783,20 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        prev = startindex - self.config['server']['limit']
-        if prev < 0:
-            prev = 0
-
-        next_ = startindex + self.config['server']['limit']
+        serialized_query_params = ''
+        for k, v in args.items():
+            if k not in ('f', 'startindex'):
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
         content['links'] = [{
             'type': 'application/geo+json',
             'rel': 'self' if format_ == 'json' else 'alternate',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f=json'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=json{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }, {
             'rel': 'self' if format_ != 'json' else 'alternate',
             'type': 'application/ld+json',
@@ -768,28 +807,44 @@ class API(object):
             'type': 'text/html',
             'rel': 'alternate' if format_ != 'html' else 'self',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f=html'.format(
-                self.config['server']['url'], dataset)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'prev',
-            'title': 'items (prev)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
-                self.config['server']['url'], dataset, prev)
-            }, {
-            'type': 'application/geo+json',
-            'rel': 'next',
-            'title': 'items (next)',
-            'href': '{}/collections/{}/items/?startindex={}'.format(
-                self.config['server']['url'], dataset, next_)
-            }, {
-            'type': 'application/json',
-            'title': self.config['datasets'][dataset]['title'],
-            'rel': 'collection',
-            'href': '{}/collections/{}'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=html{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }
         ]
+
+        if startindex > 0:
+            prev = max(0, startindex - limit)
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'prev',
+                    'title': 'items (prev)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(self.config['server']['url'], dataset, prev,
+                            serialized_query_params)
+                })
+
+        if len(content['features']) == limit:
+            next_ = startindex + limit
+            content['links'].append(
+                {
+                    'type': 'application/geo+json',
+                    'rel': 'next',
+                    'title': 'items (next)',
+                    'href': '{}/collections/{}/items?startindex={}{}'
+                    .format(
+                        self.config['server']['url'], dataset, next_,
+                        serialized_query_params)
+                })
+
+        content['links'].append(
+            {
+                'type': 'application/json',
+                'title': self.config['datasets'][dataset]['title'],
+                'rel': 'collection',
+                'href': '{}/collections/{}'.format(
+                    self.config['server']['url'], dataset)
+            })
 
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
@@ -841,7 +896,7 @@ class API(object):
         return headers_, 200, json.dumps(content, default=json_serial)
 
     @pre_process
-    def get_feature(self, headers_, format_, dataset, identifier):
+    def get_collection_item(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
 
@@ -1115,7 +1170,7 @@ def to_json(dict_):
     :returns: JSON string representation
     """
 
-    return json.dumps(dict_)
+    return json.dumps(dict_, default=json_serial)
 
 def geojson2geojsonld(config, data, dataset, identifier=None):
     """
