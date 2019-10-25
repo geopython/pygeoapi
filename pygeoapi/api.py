@@ -166,7 +166,7 @@ def jsonldlify_collection(cls, collection):
     crs = spatial_extent.get('crs', None)
     hascrs84 = crs.endswith('CRS84')
 
-    dataset =  {
+    dataset = {
         "@type": "Dataset",
         "@id": "{}/collections/{}".format(
             cls.config['server']['url'],
@@ -176,17 +176,17 @@ def jsonldlify_collection(cls, collection):
         "description": collection['description'],
         "license": cls.fcmld['license'],
         "keywords": collection.get('keywords', None),
-        "spatial": None if (not hascrs84 or not bbox) else {
-            "geo": {
+        "spatial": None if (not hascrs84 or not bbox) else [{
+            "Place": {
                 "@type": "GeoShape",
-                "box": '{},{} {},{}'.format(*bbox[0:2], *bbox[2:4])
+                "box": '{},{} {},{}'.format(*_bbox[0:2], *_bbox[2:4])
             }
-        },
+        } for _bbox in bbox],
         "temporalCoverage": None if not interval else "{}/{}".format(*interval[0])
     }
     dataset['url'] = dataset['@id']
 
-    links =  collection.get('links', [])
+    links = collection.get('links', [])
     if links:
         dataset['distribution'] = list(map(lambda link: {k: v for k, v in {
             "@type": "DataDownload",
@@ -250,17 +250,17 @@ class API(object):
 
         LOGGER.debug('Creating links')
         fcm['links'] = [{
-              'rel': 'self',
+              'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
               'type': 'application/json',
               'title': 'This document as JSON',
-              'href': self.config['server']['url']
+              'href': '{}f=json'.format(self.config['server']['url'])
             }, {
-                'rel': 'self',
-                'type': 'application/ld+json',
-                'title': 'This document as RDF (JSON-LD)',
-                'href': self.config['server']['url']
+              'rel': 'self' if format_ == 'jsonld' else 'alternate',
+              'type': 'application/ld+json',
+              'title': 'This document as RDF (JSON-LD)',
+              'href': '{}f=jsonld'.format(self.config['server']['url'])
             }, {
-              'rel': 'self',
+              'rel': 'self' if format_ == 'html' else 'alternate',
               'type': 'text/html',
               'title': 'This document as HTML',
               'href': '{}?f=html'.format(self.config['server']['url']),
@@ -290,14 +290,6 @@ class API(object):
         ]
 
         if format_ == 'html':  # render
-            for link in fcm['links']:
-                fparam = None
-                if link['type'] == 'application/json':
-                    fparam = 'json'
-                elif link['type'] == 'application/ld+json':
-                    fparam = 'jsonld'
-                link['href'] = ''.join((link['href'], f'?f={fparam}' if fparam else ''))
-
             headers_['Content-Type'] = 'text/html'
             content = _render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
@@ -486,22 +478,22 @@ class API(object):
                     self.config['server']['url'], k)
             })
             collection['links'].append({
-                'type': 'application/ld+json',
-                'rel': 'self',
-                'title': 'This document as RDF (JSON-LD)',
-                'href': '{}/collections/{}?f=jsonld'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
                 'type': 'application/json',
-                'rel': 'self',
+                'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections/{}?f=json'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'self' if format_ == 'jsonld' else 'alternate',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': '{}/collections/{}?f=jsonld'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
                 'type': 'text/html',
-                'rel': 'alternate',
+                'rel': 'self' if format_ == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
@@ -516,29 +508,27 @@ class API(object):
         if dataset is None:
             fcm['links'].append({
                 'type': 'application/json',
-                'rel': 'self',
+                'rel': 'self' if not format or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections?f=json'.format(
                     self.config['server']['url'])
             })
             fcm['links'].append({
                 'type': 'application/ld+json',
-                'rel': 'self',
+                'rel': 'self' if format_ == 'jsonld' else 'alternate',
                 'title': 'This document as RDF (JSON-LD)',
                 'href': '{}/collections?f=jsonld'.format(
                     self.config['server']['url'])
             })
             fcm['links'].append({
                 'type': 'text/html',
-                'rel': 'alternate',
+                'rel': 'self' if format_ == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections?f=html'.format(
                     self.config['server']['url'])
             })
 
         if format_ == 'html':  # render
-            fcm['links'][0]['rel'] = 'alternate'
-            fcm['links'][1]['rel'] = 'self'
 
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
@@ -793,19 +783,19 @@ class API(object):
 
         content['links'] = [{
             'type': 'application/geo+json',
-            'rel': 'self' if format_ == 'json' else 'alternate',
+            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items?f=json{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
             }, {
-            'rel': 'self' if format_ != 'json' else 'alternate',
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items?f=jsonld'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/items?f=jsonld{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
             }, {
             'type': 'text/html',
-            'rel': 'alternate' if format_ != 'html' else 'self',
+            'rel': 'self' if format_ == 'html' else 'alternate',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items?f=html{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
@@ -943,19 +933,19 @@ class API(object):
             return headers_, 404, json.dumps(exception)
 
         content['links'] = [{
-            'rel': 'self' if format_ == 'json' else 'alternate',
+            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items/{}?f=json'.format(
                 self.config['server']['url'], dataset, identifier)
             }, {
-            'rel': 'self' if format_ != 'json' else 'alternate',
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
             'href': '{}/collections/{}/items/{}?f=jsonld'.format(
                 self.config['server']['url'], dataset, identifier)
             }, {
-            'rel': 'alternate' if format_ != 'html' else 'self',
+            'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items/{}?f=html'.format(
@@ -981,9 +971,6 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-
-            content['links'][0]['rel'] = 'alternate'
-            content['links'][1]['rel'] = 'self'
 
             content = _render_j2_template(self.config, 'item.html',
                                           content)
