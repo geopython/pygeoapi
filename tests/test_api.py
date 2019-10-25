@@ -111,7 +111,7 @@ def test_root(config, api_):
 
     assert isinstance(root, dict)
     assert 'links' in root
-    assert len(root['links']) == 6
+    assert len(root['links']) == 7
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
@@ -156,7 +156,7 @@ def test_describe_collections(config, api_):
 
     assert len(collections) == 2
     assert len(collections['collections']) == 1
-    assert len(collections['links']) == 2
+    assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {}, 'foo')
@@ -171,7 +171,7 @@ def test_describe_collections(config, api_):
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
-    assert len(collection['links']) == 6
+    assert len(collection['links']) == 8
     assert collection['extent'] == {
         'spatial': {
             'bbox': [[-180, -90, 180, 90]],
@@ -244,15 +244,18 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == '35'
 
     links = features['links']
-    assert len(links) == 4
+    assert len(links) == 5
     assert '/collections/obs/items?f=json' in links[0]['href']
+    print(links)
     assert links[0]['rel'] == 'self'
-    assert '/collections/obs/items?f=html' in links[1]['href']
+    assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
-    assert '/collections/obs/items?startindex=2&limit=2' in links[2]['href']
-    assert links[2]['rel'] == 'next'
-    assert '/collections/obs' in links[3]['href']
-    assert links[3]['rel'] == 'collection'
+    assert '/collections/obs/items?f=html' in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=2&limit=2' in links[3]['href']
+    assert links[3]['rel'] == 'next'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
 
     # Invalid startindex
     rsp_headers, code, response = api_.get_collection_items(
@@ -269,15 +272,17 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == '2147'
 
     links = features['links']
-    assert len(links) == 4
+    assert len(links) == 5
     assert '/collections/obs/items?f=json' in links[0]['href']
     assert links[0]['rel'] == 'self'
-    assert '/collections/obs/items?f=html' in links[1]['href']
+    assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
-    assert '/collections/obs/items?startindex=0' in links[2]['href']
-    assert links[2]['rel'] == 'prev'
-    assert '/collections/obs' in links[3]['href']
-    assert links[3]['rel'] == 'collection'
+    assert '/collections/obs/items?f=html' in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=0' in links[3]['href']
+    assert links[3]['rel'] == 'prev'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'startindex': 1, 'limit': 1,
@@ -287,21 +292,24 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 1
 
     links = features['links']
-    assert len(links) == 5
+    assert len(links) == 6
     assert '/collections/obs/items?f=json&limit=1&bbox=-180,90,180,90' in \
         links[0]['href']
     assert links[0]['rel'] == 'self'
-    assert '/collections/obs/items?f=html&limit=1&bbox=-180,90,180,90' in \
+    assert '/collections/obs/items?f=jsonld&limit=1&bbox=-180,90,180,90' in \
         links[1]['href']
     assert links[1]['rel'] == 'alternate'
+    assert '/collections/obs/items?f=html&limit=1&bbox=-180,90,180,90' in \
+        links[2]['href']
+    assert links[2]['rel'] == 'alternate'
     assert '/collections/obs/items?startindex=0&limit=1&bbox=-180,90,180,90' \
-        in links[2]['href']
-    assert links[2]['rel'] == 'prev'
-    assert '/collections/obs/items?startindex=2&limit=1&bbox=-180,90,180,90' \
         in links[3]['href']
-    assert links[3]['rel'] == 'next'
-    assert '/collections/obs' in links[4]['href']
-    assert links[4]['rel'] == 'collection'
+    assert links[3]['rel'] == 'prev'
+    assert '/collections/obs/items?startindex=2&limit=1&bbox=-180,90,180,90' \
+        in links[4]['href']
+    assert links[4]['rel'] == 'next'
+    assert '/collections/obs' in links[5]['href']
+    assert links[5]['rel'] == 'collection'
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'sortby': 'stn_id', 'stn_id': '35'}, 'obs')
@@ -501,6 +509,9 @@ def test_check_format():
     args['f'] = 'json'
     assert check_format(args, req_headers) == 'json'
 
+    args['f'] = 'jsonld'
+    assert check_format(args, req_headers) == 'jsonld'
+
     args['f'] = 'html'
     assert check_format(args, req_headers) == 'html'
 
@@ -509,6 +520,9 @@ def test_check_format():
 
     req_headers['Accept'] = 'application/json'
     assert check_format({}, req_headers) == 'json'
+
+    req_headers['Accept'] = 'application/ld+json'
+    assert check_format({}, req_headers) == 'jsonld'
 
     req_headers['accept'] = 'text/html'
     assert check_format({}, req_headers) == 'html'
@@ -529,6 +543,9 @@ def test_check_format():
 
     req_headers = make_req_headers(HTTP_ACCEPT='application/json')
     assert check_format({}, req_headers) == 'json'
+
+    req_headers = make_req_headers(HTTP_ACCEPT='application/ld+json')
+    assert check_format({}, req_headers) == 'jsonld'
 
     # Overrule HTTP content negotiation
     args['f'] = 'html'
