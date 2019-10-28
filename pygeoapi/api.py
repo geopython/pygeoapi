@@ -146,12 +146,12 @@ class API(object):
               'rel': 'service-desc',
               'type': 'application/vnd.oai.openapi+json;version=3.0',
               'title': 'The OpenAPI definition as JSON',
-              'href': '{}/api'.format(self.config['server']['url'])
+              'href': '{}/openapi'.format(self.config['server']['url'])
             }, {
               'rel': 'service-doc',
               'type': 'text/html',
               'title': 'The OpenAPI definition as HTML',
-              'href': '{}/api?f=html'.format(self.config['server']['url']),
+              'href': '{}/openapi?f=html'.format(self.config['server']['url']),
               'hreflang': self.config['server']['language']
             }, {
               'rel': 'conformance',
@@ -178,7 +178,7 @@ class API(object):
         return headers_, 200, json.dumps(fcm)
 
     @pre_process
-    def api(self, headers_, format_, openapi):
+    def openapi(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
 
@@ -199,14 +199,14 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        path = '/'.join([self.config['server']['url'].rstrip('/'), 'api'])
+        path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
 
         if format_ == 'html':
             data = {
                 'openapi-document-path': path
             }
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'api.html', data)
+            content = _render_j2_template(self.config, 'openapi.html', data)
             return headers_, 200, content
 
         headers_['Content-Type'] = \

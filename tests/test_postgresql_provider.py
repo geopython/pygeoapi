@@ -42,10 +42,12 @@ def config():
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',
-                 'password': 'postgres'
+                 'password': 'postgres',
+                 'search_path': ['osm', 'public']
                  },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
+        'geom_field': 'foo_geom',
         'allow_property_filtering': True
     }
 
