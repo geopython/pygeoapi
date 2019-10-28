@@ -200,11 +200,12 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-                SELECT {0},ST_AsGeoJSON({1}) FROM {2} WHERE {1} @ \
-                ST_MakeEnvelope({3}, {4}, {5}, {6})").\
+                SELECT {},ST_AsGeoJSON({}) FROM {} WHERE {} @ \
+                ST_MakeEnvelope({}, {}, {}, {})").\
                 format(db.columns,
                        Identifier('geom'),
                        Identifier(self.table),
+                       Identifier('geom'),
                        Placeholder(),
                        Placeholder(),
                        Placeholder(),
@@ -213,7 +214,7 @@ class PostgreSQLProvider(BaseProvider):
             if not bbox:
                 bbox = [-180, -90, 180, 90]
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
@@ -255,11 +256,11 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("select {0},ST_AsGeoJSON({1}) \
-            from {2} WHERE {3}=%s").format(db.columns,
-                                           Identifier('geom'),
-                                           Identifier(self.table),
-                                           Identifier(self.id_field))
+            sql_query = SQL("select {},ST_AsGeoJSON({}) \
+            from {} WHERE {}=%s").format(db.columns,
+                                         Identifier('geom'),
+                                         Identifier(self.table),
+                                         Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
