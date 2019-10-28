@@ -112,7 +112,7 @@ paths:
       summary: Landing page
       tags:
       - server
-  /api:
+  /openapi:
     get:
       description: This document
       parameters:

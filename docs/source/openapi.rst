@@ -15,9 +15,9 @@ pygeoapi REST end points descriptions on OpenAPI standard are automatically gene
    pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
    
 
-The api will them be accessible at `/api` endpoint.
+The api will them be accessible at `/openapi` endpoint.
 
-For api demo please check: `<https://demo.pygeoapi.io/master/api>`_
+For api demo please check: `<https://demo.pygeoapi.io/master/openapi>`_
 
 The api page has REST description but also integrated clients that can be used to send requests to the REST end points and  see the response provided
 

@@ -146,7 +146,7 @@ def get_oas_30(cfg):
         }
     }
 
-    paths['/api'] = {
+    paths['/openapi'] = {
         'get': {
             'summary': 'This document',
             'description': 'This document',

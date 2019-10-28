@@ -77,7 +77,7 @@ def test_api(config, api_, openapi):
     assert isinstance(api_.config, dict)
 
     req_headers = make_req_headers(HTTP_CONTENT_TYPE='application/json')
-    rsp_headers, code, response = api_.api(req_headers, {}, openapi)
+    rsp_headers, code, response = api_.openapi(req_headers, {}, openapi)
     assert rsp_headers['Content-Type'] ==\
         'application/vnd.oai.openapi+json;version=3.0'
     root = json.loads(response)
@@ -86,11 +86,12 @@ def test_api(config, api_, openapi):
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     req_headers = make_req_headers(HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.api(req_headers, {}, openapi)
+    rsp_headers, code, response = api_.openapi(req_headers, {}, openapi)
     assert rsp_headers['Content-Type'] == 'text/html'
 
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.api(req_headers, {'f': 'foo'}, openapi)
+    rsp_headers, code, response = api_.openapi(req_headers, {'f': 'foo'},
+                                               openapi)
     assert code == 400
 
 
