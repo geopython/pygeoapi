@@ -569,7 +569,7 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        LOGGER.debug('processing property parameters if enabled')
+        LOGGER.debug('processing property parameters')
         for k, v in args.items():
             if k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
