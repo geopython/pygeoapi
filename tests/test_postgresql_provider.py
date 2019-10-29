@@ -47,8 +47,7 @@ def config():
                  },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
-        'geom_field': 'foo_geom',
-        'allow_property_filtering': True
+        'geom_field': 'foo_geom'
     }
 
 

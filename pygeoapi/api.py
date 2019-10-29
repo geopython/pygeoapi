@@ -569,13 +569,11 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        if self.config['datasets'][dataset]['provider']\
-                .get('allow_property_filtering', False):
-            LOGGER.debug('processing property parameters if enabled')
-            for k, v in args.items():
-                if k not in reserved_fieldnames and k in p.fields.keys():
-                    LOGGER.debug('Add property filter {}={}'.format(k, v))
-                    properties.append((k, v))
+        LOGGER.debug('processing property parameters if enabled')
+        for k, v in args.items():
+            if k not in reserved_fieldnames and k in p.fields.keys():
+                LOGGER.debug('Add property filter {}={}'.format(k, v))
+                properties.append((k, v))
 
         LOGGER.debug('processing sort parameter')
         val = args.get('sortby')
