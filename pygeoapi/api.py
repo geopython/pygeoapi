@@ -1190,7 +1190,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             if featureId is None: continue
             # NOTE: there are better ways to assert whether a string is a URI
             # TODO: which should be considered before merging into master
-            if featureId.startswith('http'):
+            if str(featureId).startswith('http'):
                 feature['id'] = featureId
             else:
                 feature['id'] = '{}/{}'.format(data['id'], featureId)
