@@ -96,8 +96,8 @@ def jsonldify(func):
     """
 
     def inner(*args, **kwargs):
-        format = args[2]
-        if not format == 'jsonld':
+        format_ = args[2]
+        if not format_ == 'jsonld':
             return func(*args, **kwargs)
         LOGGER.debug('Creating JSON-LD representation')
         cls = args[0]
