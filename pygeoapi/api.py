@@ -43,7 +43,7 @@ from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import json_serial, str2bool
+from pygeoapi.util import json_serial, str2bool, is_url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def jsonldify(func):
         provider = meta.get('provider', {})
         ident = meta.get('identification', {})
         fcmld = {
-          "@context": "http://www.schema.org",
+          "@context": "https://www.schema.org",
           "@type": "DataCatalog",
           "@id": cfg.get('server', {}).get('url', None),
           "url": cfg.get('server', {}).get('url', None),
@@ -1188,9 +1188,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         for i, feature in enumerate(data['features']):
             featureId = feature.get('id', None) or feature.get('properties', {}).get('id', None)
             if featureId is None: continue
-            # NOTE: there are better ways to assert whether a string is a URI
-            # TODO: which should be considered before merging into master
-            if str(featureId).startswith('http'):
+            if is_url(str(featureId)):
                 feature['id'] = featureId
             else:
                 feature['id'] = '{}/{}'.format(data['id'], featureId)

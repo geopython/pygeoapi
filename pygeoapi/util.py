@@ -34,6 +34,7 @@ from decimal import Decimal
 import logging
 import os
 import re
+from urllib.parse import urlparse
 
 import yaml
 
@@ -114,7 +115,7 @@ def json_serial(obj):
     """
     helper function to convert to JSON non-default
     types (source: https://stackoverflow.com/a/22238613)
-    :param obj: `object` to be evaluate
+    :param obj: `object` to be evaluated
     :returns: JSON non-default type to `str`
     """
 
@@ -126,3 +127,17 @@ def json_serial(obj):
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
     raise TypeError(msg)
+
+def is_url(urlstring):
+    """
+    Validation function that determines whether a candidate URL should be
+    considered a URI. No remote resource is obtained; this does not check
+    the existence of any remote resource.
+    :param urlstring: `str` to be evaluated as candidate URL.
+    :returns: `bool` of whether the URL looks like a URL.
+    """
+    try:
+        result = urlparse(urlstring)
+        return bool(result.scheme and result.netloc)
+    except ValueError:
+        return False
