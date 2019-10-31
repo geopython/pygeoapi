@@ -87,8 +87,6 @@ datasets:
         keywords:
             - observations
             - monitoring
-        crs:
-            - CRS84
         context:
             - datetime: https://schema.org/DateTime
             - vocab: https://example.com/vocab#
