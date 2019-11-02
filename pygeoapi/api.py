@@ -572,6 +572,7 @@ class API(object):
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
             if k not in reserved_fieldnames and k in p.fields.keys():
+                LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
         LOGGER.debug('processing sort parameter')
