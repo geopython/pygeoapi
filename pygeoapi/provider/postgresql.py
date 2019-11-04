@@ -46,7 +46,7 @@
 import logging
 import json
 import psycopg2
-from psycopg2.sql import SQL, Identifier, Placeholder, Literal
+from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError
 
@@ -210,17 +210,29 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            where_conditions = []
             if properties:
                 property_clauses = \
-                    [SQL('{0} = {1}').format(
+                    [SQL('{} = {}').format(
                         Identifier(k), Literal(v)) for k, v in properties]
-                where_clause = \
-                    SQL(' WHERE {0}').format(
-                        SQL(' AND ').join(property_clauses))
+                where_conditions += property_clauses
+            if bbox:
+                bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
+                    Identifier(self.geom),
+                    SQL(', ').join(
+                        [Literal(bbox_coord) for bbox_coord in bbox]
+                    )
+                )
+                where_conditions.append(bbox_clause)
+
+            if where_conditions:
+                where_clause = SQL(' WHERE {}').format(
+                    SQL(' AND ').join(where_conditions)
+                )
             else:
                 where_clause = SQL('')
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {0},ST_AsGeoJSON({1}) FROM {2}{3}").\
+             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
                 format(db.columns,
                        Identifier(self.geom),
                        Identifier(self.table),
