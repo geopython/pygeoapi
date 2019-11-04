@@ -2,6 +2,7 @@
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Mary Bucknell <mbucknell@usgs.gov>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2019 Tom Kralidis
@@ -45,7 +46,7 @@
 import logging
 import json
 import psycopg2
-from psycopg2.sql import SQL, Identifier, Placeholder
+from psycopg2.sql import SQL, Identifier, Placeholder, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError
 
@@ -89,6 +90,7 @@ class DatabaseConnection(object):
         self.table = table
         self.context = context
         self.columns = None
+        self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
     def __enter__(self):
@@ -108,7 +110,7 @@ class DatabaseConnection(object):
         self.cur = self.conn.cursor()
         if self.context == 'query':
             # Getting columns
-            query_cols = "SELECT column_name FROM information_schema.columns \
+            query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
             WHERE table_name = '{}' and udt_name != 'geometry';".format(
                 self.table)
 
@@ -117,6 +119,7 @@ class DatabaseConnection(object):
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
+            self.fields = dict(result)
 
         return self
 
@@ -156,6 +159,15 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
         LOGGER.debug('Table:{}'.format(self.table))
+
+        LOGGER.debug('Get available fields/properties')
+        self.get_fields()
+
+    def get_fields(self):
+        if not self.fields:
+            with DatabaseConnection(self.conn_dic, self.table) as db:
+                self.fields = db.fields
+        return self.fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -198,26 +210,27 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            if properties:
+                property_clauses = \
+                    [SQL('{0} = {1}').format(
+                        Identifier(k), Literal(v)) for k, v in properties]
+                where_clause = \
+                    SQL(' WHERE {0}').format(
+                        SQL(' AND ').join(property_clauses))
+            else:
+                where_clause = SQL('')
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-                SELECT {},ST_AsGeoJSON({}) FROM {} WHERE {} && \
-                ST_MakeEnvelope({}, {}, {}, {})").\
+             SELECT {0},ST_AsGeoJSON({1}) FROM {2}{3}").\
                 format(db.columns,
                        Identifier(self.geom),
                        Identifier(self.table),
-                       Identifier(self.geom),
-                       Placeholder(),
-                       Placeholder(),
-                       Placeholder(),
-                       Placeholder()
-                       )
-            if not bbox:
-                bbox = [-180, -90, 180, 90]
+                       where_clause)
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
-                cursor.execute(sql_query, bbox)
+                cursor.execute(sql_query)
                 for index in [startindex, limit]:
                     cursor.execute("fetch forward {} from geo_cursor"
                                    .format(index))
