@@ -30,6 +30,7 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
+
 import pytest
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
@@ -63,6 +64,28 @@ def test_query(config):
     assert properties is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_with_property_filter(config):
+    """Test query  valid features when filtering by property"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=[("waterway", "stream")])
+    features = feature_collection.get('features', None)
+    stream_features = list(
+        filter(lambda feature: feature['properties']['waterway'] == 'stream',
+               features))
+    assert (len(features) == len(stream_features))
+
+    feature_collection = p.query()
+    features = feature_collection.get('features', None)
+    stream_features = list(
+        filter(lambda feature: feature['properties']['waterway'] == 'stream',
+               features))
+    other_features = list(
+        filter(lambda feature: feature['properties']['waterway'] != 'stream',
+               features))
+    assert (len(features) != len(stream_features))
+    assert (len(other_features) != 0)
 
 
 def test_query_bbox(config):
