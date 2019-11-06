@@ -3,3 +3,4 @@ python-dateutil
 Flask
 PyYAML
 unicodecsv
+flask-cors
