@@ -12,7 +12,7 @@
         {{ v | urlize() }}
     {% endif %}
 {%- endmacro %}
-{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block title %}{{ super() }} {{ data['title'] }} - {{ data['id'] }}{% endblock %}
 {% block crumbs %}{{ super() }} 
 / <a href="../../../collections">Collections</a>
 {% for link in data['links'] %}

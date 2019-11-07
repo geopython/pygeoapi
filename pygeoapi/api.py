@@ -819,6 +819,7 @@ class API(object):
 
             content['links'][0]['rel'] = 'alternate'
             content['links'][1]['rel'] = 'self'
+            content['title'] = self.config['datasets'][dataset]['title']
 
             content = _render_j2_template(self.config, 'item.html',
                                           content)
