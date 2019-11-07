@@ -31,6 +31,7 @@ __version__ = '0.6.0'
 
 import click
 from pygeoapi.openapi import generate_openapi_document
+from pygeoapi.catalogue import generate_catalogue
 
 
 cli = click.Group()
@@ -62,3 +63,4 @@ def serve(ctx, server):
 
 
 cli.add_command(generate_openapi_document)
+cli.add_command(generate_catalogue)
