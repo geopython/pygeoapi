@@ -205,11 +205,10 @@ class PostgreSQLQueryProvider(BaseProvider):
                         SQL(' AND ').join(property_clauses)).as_string(cursor)
             else:
                 where_clause = ''
-            ## TODO add in geom when geom column is available
             sql_query = \
                 SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-                SELECT {0} FROM {1}{2}".
-                    format(db.columns, self.query_table, where_clause))
+                SELECT {0}, ST_AsGeoJSON({1}) FROM {2}{3}".
+                    format(db.columns, self.geom, self.query_table, where_clause))
 
             #sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
             # SELECT {0},ST_AsGeoJSON({1}) FROM {2}{3}").\
@@ -253,13 +252,12 @@ class PostgreSQLQueryProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        #TODO: Add back in geom query when available
         LOGGER.debug('Get item from Postgis')
         with DatabaseConnection(self.conn_dic, self.columns) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("SELECT {} FROM {} WHERE {}=%s".format(
-                db.columns, self.query_table, self.id_field)
+            sql_query = SQL("SELECT {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s".format(
+                db.columns, self.geom, self.query_table, self.id_field)
             )
 
             #sql_query = SQL("select {0},ST_AsGeoJSON({1}) \
@@ -294,8 +292,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         feature = {
             'type': 'Feature'
         }
-        feature["geometry"] = {} #TODO: Add this back in json.loads(
-            #rd.pop('st_asgeojson'))
+        feature["geometry"] = json.loads(
+            rd.pop('st_asgeojson'))
 
         feature['properties'] = rd
         feature['id'] = rd.pop(self.columns.get(self.id_field))
