@@ -129,7 +129,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
         self.geom = provider_def.get('geom_field', 'geom')
-        self.columns_to_properties = provider_def.get('column_property_mapping')
+        self.columns_to_properties = \
+            provider_def.get('column_property_mapping')
         self.columns = SQL(', ').join(
             [SQL('{} {}').format(Identifier(col), Identifier(prop))
              for (col, prop) in self.columns_to_properties.items()])
@@ -215,11 +216,14 @@ class PostgreSQLQueryProvider(BaseProvider):
 
             with DatabaseConnection(self.conn_dic) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-                sql_query = SQL(
-                'DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
-                ).format(select_clause, SQL(self.query_table), where_clause)
+                sql_query = \
+                    SQL('DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
+                        ).format(select_clause,
+                                 SQL(self.query_table),
+                                 where_clause)
 
-                LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
+                LOGGER.debug('SQL Query: {}'.format(
+                    sql_query.as_string(cursor)))
                 LOGGER.debug('Start Index: {}'.format(startindex))
                 LOGGER.debug('End Index: {}'.format(startindex + limit))
                 try:
@@ -252,14 +256,14 @@ class PostgreSQLQueryProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = \
-                SQL('SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s') \
-                    .format(
-                    self.columns,
-                    Identifier(self.id_field),
-                    Identifier(self.geom),
-                    SQL(self.query_table),
-                    Identifier(self.id_field))
+            sql_query = SQL(
+                'SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s') \
+                .format(
+                self.columns,
+                Identifier(self.id_field),
+                Identifier(self.geom),
+                SQL(self.query_table),
+                Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
