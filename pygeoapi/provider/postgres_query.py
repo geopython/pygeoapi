@@ -93,7 +93,8 @@ class DatabaseConnection(object):
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
-            LOGGER.error(f'Couldn\'t connect to Postgis using: {self.conn_dic!s}')
+            LOGGER.error(
+                f'Couldn\'t connect to Postgis using: {self.conn_dic!s}')
             raise ProviderConnectionError()
 
         self.cur = self.conn.cursor()
@@ -172,7 +173,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         if properties:
             property_clauses = \
                 [SQL('{} = {}').format(
-                    Identifier(self.properties_to_cols[k]), Literal(v)) for k, v in properties]
+                    Identifier(self.properties_to_cols[k]),
+                    Literal(v)) for k, v in properties]
             where_conditions += property_clauses
         if bbox:
             bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
@@ -250,8 +252,14 @@ class PostgreSQLQueryProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL('SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s').format(
-                self.columns, Identifier(self.id_field),Identifier(self.geom), SQL(self.query_table), Identifier(self.id_field))
+            sql_query = \
+                SQL('SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s') \
+                    .format(
+                    self.columns,
+                    Identifier(self.id_field),
+                    Identifier(self.geom),
+                    SQL(self.query_table),
+                    Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
