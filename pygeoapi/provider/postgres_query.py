@@ -132,6 +132,7 @@ class PostgreSQLQueryProvider(BaseProvider):
         self.columns = SQL(', ').join(
             [SQL('{} {}').format(Identifier(col), Identifier(prop))
              for (col, prop) in self.columns_to_properties.items()])
+
         self.properties_to_cols = dict(zip(self.columns_to_properties.values(),
                                            self.columns_to_properties.keys()))
 
@@ -171,8 +172,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         if properties:
             property_clauses = \
                 [SQL('{} = {}').format(
-                    Identifier(k), Literal(v)) for k, v in properties]
-            where_conditions.append(property_clauses)
+                    Identifier(self.properties_to_cols[k]), Literal(v)) for k, v in properties]
+            where_conditions += property_clauses
         if bbox:
             bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
                 Identifier(self.geom),
@@ -207,10 +208,10 @@ class PostgreSQLQueryProvider(BaseProvider):
 
             return self.__response_feature_hits(hits)
         else:
-            select_clause = SQL('SELECT {}, ST_AsGeoJSON({})').format(
-                self.columns, Identifier(self.geom))
+            select_clause = SQL('SELECT {}, {}, ST_AsGeoJSON({})').format(
+                self.columns, Identifier(self.id_field), Identifier(self.geom))
 
-            with DatabaseConnection(self.conn_dic, self.columns) as db:
+            with DatabaseConnection(self.conn_dic) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
                 sql_query = SQL(
                 'DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
@@ -234,7 +235,7 @@ class PostgreSQLQueryProvider(BaseProvider):
 
             return {
                 'type': 'FeatureCollection',
-                'features': [self._response_feature(rd) for rd in row_data]
+                'features': [self.__response_feature(rd) for rd in row_data]
             }
 
     def get(self, identifier):
@@ -246,11 +247,11 @@ class PostgreSQLQueryProvider(BaseProvider):
         """
 
         LOGGER.debug('Get item from Postgis')
-        with DatabaseConnection(self.conn_dic, self.columns) as db:
+        with DatabaseConnection(self.conn_dic) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL('SELECT {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s').format(
-                self.columns, Identifier(self.geom), SQL(self.query_table), Identifier(self.id_field))
+            sql_query = SQL('SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s').format(
+                self.columns, Identifier(self.id_field),Identifier(self.geom), SQL(self.query_table), Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
@@ -277,7 +278,7 @@ class PostgreSQLQueryProvider(BaseProvider):
 
         return {
             'type': 'Feature',
-            'id': rd.pop(self.columns_to_properties.get(self.id_field)),
+            'id': rd.pop(self.id_field),
             'geometry': json.loads(rd.pop('st_asgeojson')),
             'properties': rd
         }
