@@ -60,7 +60,7 @@ class DatabaseConnection(object):
      The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, columns):
+    def __init__(self, conn_dic):
         """
         PostgreSQLProvider Class constructor returning
         :param conn_dic: dictionary with connection parameters
@@ -87,7 +87,7 @@ class DatabaseConnection(object):
         try:
             search_path = self.conn_dic.pop('search_path', ['public'])
             if search_path != ['public']:
-                self.conn_dic["options"] = f'-c \
+                self.conn_dic['options'] = f'-c \
                 search_path={",".join(search_path)}'
                 LOGGER.debug(f'Using search path: {search_path} ')
             self.conn = psycopg2.connect(**self.conn_dic)
@@ -111,8 +111,6 @@ class PostgreSQLQueryProvider(BaseProvider):
     cursor (using support class DatabaseCursor)
     """
 
-    ## TODO: think about SQL injection and how to sanitize the query config parameter
-
     def __init__(self, provider_def):
         """
         PostgreSQLProvider Class constructor
@@ -130,18 +128,19 @@ class PostgreSQLQueryProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
         self.geom = provider_def.get('geom_field', 'geom')
-        self.columns_to_properties = provider_def.get('column_property_mapping');
+        self.columns_to_properties = provider_def.get('column_property_mapping')
         self.columns = SQL(', ').join(
             [SQL('{} {}').format(Identifier(col), Identifier(prop))
              for (col, prop) in self.columns_to_properties.items()])
-        self.properties_to_cols = dict(zip(self.columns_to_properties.values(), self.columns_to_properties.keys()))
+        self.properties_to_cols = dict(zip(self.columns_to_properties.values(),
+                                           self.columns_to_properties.keys()))
 
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
-            ",".join(("{}={}".format(*i) for i in self.conn_dic.items()))))
+            ','.join(('{}={}'.format(*i) for i in self.conn_dic.items()))))
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Query:{}'.format(self.query_table))
+        LOGGER.debug('Query_table:{}'.format(self.query_table))
 
         LOGGER.debug('Get available fields/properties')
         self.get_fields()
@@ -166,19 +165,14 @@ class PostgreSQLQueryProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying PostGIS')
-        if resulttype == 'hits':
-            select_clause = SQL('SELECT count(*) as hits')
-        else:
-            select_clause = SQL('SELECT {}, ST_AsGeoJSON({})').format(
-                self.columns, Identifier(self.geom))
+        LOGGER.debug('Querying PostGIS with query_table')
 
         where_conditions = []
         if properties:
             property_clauses = \
                 [SQL('{} = {}').format(
                     Identifier(k), Literal(v)) for k, v in properties]
-            where_conditions += property_clauses
+            where_conditions.append(property_clauses)
         if bbox:
             bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
                 Identifier(self.geom),
@@ -196,10 +190,10 @@ class PostgreSQLQueryProvider(BaseProvider):
             where_clause = SQL('')
 
         if resulttype == 'hits':
-            with DatabaseConnection(self.conn_dic,
-                                    self.columns, context="hits") as db:
+            select_clause = SQL('SELECT count(*) as hits')
+            with DatabaseConnection(self.conn_dic) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-                sql_query = SQL("{} FROM {}{}").format(select_clause,
+                sql_query = SQL('{} FROM {}{}').format(select_clause,
                                                        SQL(self.query_table),
                                                        where_clause)
                 try:
@@ -213,21 +207,22 @@ class PostgreSQLQueryProvider(BaseProvider):
 
             return self.__response_feature_hits(hits)
         else:
-            end_index = startindex + limit
+            select_clause = SQL('SELECT {}, ST_AsGeoJSON({})').format(
+                self.columns, Identifier(self.geom))
 
             with DatabaseConnection(self.conn_dic, self.columns) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
                 sql_query = SQL(
-                "DECLARE \"geo_cursor\" CURSOR FOR {} FROM {} {}"
+                'DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
                 ).format(select_clause, SQL(self.query_table), where_clause)
 
                 LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
                 LOGGER.debug('Start Index: {}'.format(startindex))
-                LOGGER.debug('End Index: {}'.format(end_index))
+                LOGGER.debug('End Index: {}'.format(startindex + limit))
                 try:
                     cursor.execute(sql_query)
                     for index in [startindex, limit]:
-                        cursor.execute("fetch forward {} from geo_cursor"
+                        cursor.execute('fetch forward {} from geo_cursor'
                                        .format(index))
                 except Exception as err:
                     LOGGER.error('Error executing sql_query: {}'.format(
@@ -237,16 +232,10 @@ class PostgreSQLQueryProvider(BaseProvider):
 
                 row_data = cursor.fetchall()
 
-            feature_collection = {
+            return {
                 'type': 'FeatureCollection',
-                'features': []
+                'features': [self._response_feature(rd) for rd in row_data]
             }
-
-            for rd in row_data:
-                feature_collection['features'].append(
-                    self.__response_feature(rd))
-
-            return feature_collection
 
     def get(self, identifier):
         """
@@ -260,14 +249,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.columns) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("SELECT {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s").format(
+            sql_query = SQL('SELECT {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s').format(
                 self.columns, Identifier(self.geom), SQL(self.query_table), Identifier(self.id_field))
-
-            #sql_query = SQL("select {0},ST_AsGeoJSON({1}) \
-            #from {2} WHERE {3}=%s").format(db.columns,
-            #                               Identifier(self.geom),
-            #                               Identifier(self.table),
-            #                               Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
@@ -280,9 +263,8 @@ class PostgreSQLQueryProvider(BaseProvider):
                 raise ProviderQueryError()
 
             row_data = cursor.fetchall()[0]
-        feature = self.__response_feature(row_data)
 
-        return feature
+        return self.__response_feature(row_data)
 
     def __response_feature(self, row_data):
         """
@@ -292,16 +274,13 @@ class PostgreSQLQueryProvider(BaseProvider):
         """
 
         rd = dict(row_data)
-        feature = {
-            'type': 'Feature'
+
+        return {
+            'type': 'Feature',
+            'id': rd.pop(self.columns_to_properties.get(self.id_field)),
+            'geometry': json.loads(rd.pop('st_asgeojson')),
+            'properties': rd
         }
-        feature["geometry"] = json.loads(
-            rd.pop('st_asgeojson'))
-
-        feature['properties'] = rd
-        feature['id'] = rd.pop(self.columns_to_properties.get(self.id_field))
-
-        return feature
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
@@ -309,9 +288,8 @@ class PostgreSQLQueryProvider(BaseProvider):
         hotosm_bdi_waterways/items?resulttype=hits
         :returns: GeoJSON FeaturesCollection
         """
-
-        feature_collection = {"features": [],
-                              "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = hits
-
-        return feature_collection
+        return {
+            'features': [],
+            'type': 'FeatureCollection',
+            'numberMatched': hits
+        }
