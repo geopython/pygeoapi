@@ -32,13 +32,13 @@
 # Needs to be run like: python3 -m pytest
 
 import pytest
-from pygeoapi.provider.postgres_query import PostgreSQLQueryProvider
+from pygeoapi.provider.postgresql import PostgreSQLProvider
 
 
 @pytest.fixture()
 def config():
     return {
-        'name': 'PostgreSQLQuery',
+        'name': 'PostgreSQL',
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',
@@ -54,7 +54,7 @@ def config():
             'depth': 'depth',
             'z_index': 'zIndex'
         },
-        'query_table': 'hotosm_bdi_waterways',
+        'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
     }
 
@@ -62,7 +62,7 @@ def config():
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
 
-    p = PostgreSQLQueryProvider(config)
+    p = PostgreSQLProvider(config)
     feature_collection = p.query()
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
@@ -76,7 +76,7 @@ def test_query(config):
 
 def test_query_with_property_filter(config):
     """Test query  valid features when filtering by property"""
-    p = PostgreSQLQueryProvider(config)
+    p = PostgreSQLProvider(config)
     feature_collection = p.query(properties=[("waterway", "stream")])
     features = feature_collection.get('features', None)
     stream_features = list(
@@ -98,7 +98,7 @@ def test_query_with_property_filter(config):
 
 def test_query_bbox(config):
     """Test query with a specified bounding box"""
-    psp = PostgreSQLQueryProvider(config)
+    psp = PostgreSQLProvider(config)
     boxed_feature_collection = psp.query(
         bbox=[29.3373, -3.4099, 29.3761, -3.3924]
     )
@@ -107,7 +107,7 @@ def test_query_bbox(config):
 
 def test_get(config):
     """Testing query for a specific object"""
-    p = PostgreSQLQueryProvider(config)
+    p = PostgreSQLProvider(config)
     result = p.get(29701937)
     assert isinstance(result, dict)
     assert 'geometry' in result

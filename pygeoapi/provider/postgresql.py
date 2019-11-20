@@ -60,11 +60,10 @@ class DatabaseConnection(object):
      The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, context="query"):
+    def __init__(self, conn_dic):
         """
         PostgreSQLProvider Class constructor returning
-
-        :param conn: dictionary with connection parameters
+        :param conn_dic: dictionary with connection parameters
                     to be used by psycopg2
             dbname – the database name (database is a deprecated alias)
             user – user name used to authenticate
@@ -78,48 +77,27 @@ class DatabaseConnection(object):
              or in a specific schema ["osm", "public"].
              Note: First we should have the schema
              being used and then public
-
-        :param table: table name containing the data. This variable is used to
-                assemble column information
-        :param context: query or hits, if query then it will determine
-                table column otherwise will not do it
         :returns: psycopg2.extensions.connection
         """
 
         self.conn_dic = conn_dic
-        self.table = table
-        self.context = context
-        self.columns = None
-        self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
     def __enter__(self):
         try:
             search_path = self.conn_dic.pop('search_path', ['public'])
             if search_path != ['public']:
-                self.conn_dic["options"] = f'-c \
+                self.conn_dic['options'] = f'-c \
                 search_path={",".join(search_path)}'
                 LOGGER.debug(f'Using search path: {search_path} ')
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
-            LOGGER.error("Couldn't connect to Postgis using:{}".format(
-                str(self.conn_dic)))
+            LOGGER.error(
+                f'Couldn\'t connect to Postgis using: {self.conn_dic!s}')
             raise ProviderConnectionError()
 
         self.cur = self.conn.cursor()
-        if self.context == 'query':
-            # Getting columns
-            query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
-            WHERE table_name = '{}' and udt_name != 'geometry';".format(
-                self.table)
-
-            self.cur.execute(query_cols)
-            result = self.cur.fetchall()
-            self.columns = SQL(', ').join(
-                [Identifier(item[0]) for item in result]
-                )
-            self.fields = dict(result)
 
         return self
 
@@ -137,36 +115,57 @@ class PostgreSQLProvider(BaseProvider):
     def __init__(self, provider_def):
         """
         PostgreSQLProvider Class constructor
-
         :param provider_def: provider definitions from yml pygeoapi-config.
-                             data,id_field, name set in parent class
+                             data, name, id_field and query set in parent class
                              data contains the connection information
                              for class DatabaseCursor
-
         :returns: pygeoapi.providers.base.PostgreSQLProvider
         """
 
         BaseProvider.__init__(self, provider_def)
 
+        self.name = provider_def['name']
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
         self.geom = provider_def.get('geom_field', 'geom')
 
+        if 'column_property_mapping' in provider_def:
+            self.columns_to_properties = \
+                provider_def.get('column_property_mapping')
+
+        else:
+            # Getting columns
+            query_cols = \
+                "SELECT column_name, udt_name FROM information_schema.columns \
+                 WHERE table_name = '{}' and udt_name != 'geometry';".format(
+                    self.table)
+            with DatabaseConnection(self.conn_dic) as db:
+                cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+                cursor.execute(query_cols)
+                result = cursor.fetchall()
+                self.columns_to_properties = dict(zip([item['column_name'] for item in result],
+                                                      [item['column_name'] for item in result]))
+        self.columns = SQL(', ').join(
+            [SQL('{} {}').format(Identifier(col), Identifier(prop))
+             for (col, prop) in self.columns_to_properties.items()])
+
+        self.properties_to_cols = dict(zip(self.columns_to_properties.values(),
+                                           self.columns_to_properties.keys()))
+
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
-            ",".join(("{}={}".format(*i) for i in self.conn_dic.items()))))
+            ','.join(('{}={}'.format(*i) for i in self.conn_dic.items()))))
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Table:{}'.format(self.table))
+        LOGGER.debug('Query_table:{}'.format(self.table))
 
         LOGGER.debug('Get available fields/properties')
         self.get_fields()
 
     def get_fields(self):
         if not self.fields:
-            with DatabaseConnection(self.conn_dic, self.table) as db:
-                self.fields = db.fields
+            self.fields = dict((v, '') for v in self.properties_to_cols.keys())
         return self.fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
@@ -175,7 +174,6 @@ class PostgreSQLProvider(BaseProvider):
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
         limit=1&resulttype=results
-
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
@@ -183,18 +181,40 @@ class PostgreSQLProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
-
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying PostGIS')
+        LOGGER.debug('Querying PostGIS ')
+
+        where_conditions = []
+        if properties:
+            property_clauses = \
+                [SQL('{} = {}').format(
+                    Identifier(self.properties_to_cols[k]),
+                    Literal(v)) for k, v in properties]
+            where_conditions += property_clauses
+        if bbox:
+            bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
+                Identifier(self.geom),
+                SQL(', ').join(
+                    [Literal(bbox_coord) for bbox_coord in bbox]
+                )
+            )
+            where_conditions.append(bbox_clause)
+
+        if where_conditions:
+            where_clause = SQL(' WHERE {}').format(
+                SQL(' AND ').join(where_conditions)
+            )
+        else:
+            where_clause = SQL('')
 
         if resulttype == 'hits':
-
-            with DatabaseConnection(self.conn_dic,
-                                    self.table, context="hits") as db:
+            select_clause = SQL('SELECT count(*) as hits')
+            with DatabaseConnection(self.conn_dic) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-                sql_query = SQL("select count(*) as hits from {}").\
-                    format(Identifier(self.table))
+                sql_query = SQL('{} FROM {}{}').format(select_clause,
+                                                       SQL(self.table),
+                                                       where_clause)
                 try:
                     cursor.execute(sql_query)
                 except Exception as err:
@@ -205,85 +225,60 @@ class PostgreSQLProvider(BaseProvider):
                 hits = cursor.fetchone()["hits"]
 
             return self.__response_feature_hits(hits)
+        else:
+            select_clause = SQL('SELECT {}, {}, ST_AsGeoJSON({})').format(
+                self.columns, Identifier(self.id_field), Identifier(self.geom))
 
-        end_index = startindex + limit
+            with DatabaseConnection(self.conn_dic) as db:
+                cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+                sql_query = \
+                    SQL('DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
+                        ).format(select_clause,
+                                 SQL(self.table),
+                                 where_clause)
 
-        with DatabaseConnection(self.conn_dic, self.table) as db:
-            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-            where_conditions = []
-            if properties:
-                property_clauses = \
-                    [SQL('{} = {}').format(
-                        Identifier(k), Literal(v)) for k, v in properties]
-                where_conditions += property_clauses
-            if bbox:
-                bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
-                    Identifier(self.geom),
-                    SQL(', ').join(
-                        [Literal(bbox_coord) for bbox_coord in bbox]
-                    )
-                )
-                where_conditions.append(bbox_clause)
-
-            if where_conditions:
-                where_clause = SQL(' WHERE {}').format(
-                    SQL(' AND ').join(where_conditions)
-                )
-            else:
-                where_clause = SQL('')
-            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
-                format(db.columns,
-                       Identifier(self.geom),
-                       Identifier(self.table),
-                       where_clause)
-
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
-            LOGGER.debug('Start Index: {}'.format(startindex))
-            LOGGER.debug('End Index: {}'.format(end_index))
-            try:
-                cursor.execute(sql_query)
-                for index in [startindex, limit]:
-                    cursor.execute("fetch forward {} from geo_cursor"
-                                   .format(index))
-            except Exception as err:
-                LOGGER.error('Error executing sql_query: {}'.format(
+                LOGGER.debug('SQL Query: {}'.format(
                     sql_query.as_string(cursor)))
-                LOGGER.error(err)
-                raise ProviderQueryError()
+                LOGGER.debug('Start Index: {}'.format(startindex))
+                LOGGER.debug('End Index: {}'.format(startindex + limit))
+                try:
+                    cursor.execute(sql_query)
+                    for index in [startindex, limit]:
+                        cursor.execute('fetch forward {} from geo_cursor'
+                                       .format(index))
+                except Exception as err:
+                    LOGGER.error('Error executing sql_query: {}'.format(
+                        sql_query.as_string(cursor)))
+                    LOGGER.error(err)
+                    raise ProviderQueryError()
 
-            row_data = cursor.fetchall()
+                row_data = cursor.fetchall()
 
-            feature_collection = {
+            return {
                 'type': 'FeatureCollection',
-                'features': []
+                'features': [self.__response_feature(rd) for rd in row_data]
             }
-
-            for rd in row_data:
-                feature_collection['features'].append(
-                    self.__response_feature(rd))
-
-            return feature_collection
 
     def get(self, identifier):
         """
         Query the provider for a specific
         feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
-
         :param identifier: feature id
-
         :returns: GeoJSON FeaturesCollection
         """
 
         LOGGER.debug('Get item from Postgis')
-        with DatabaseConnection(self.conn_dic, self.table) as db:
+        with DatabaseConnection(self.conn_dic) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("select {},ST_AsGeoJSON({}) \
-            from {} WHERE {}=%s").format(db.columns,
-                                         Identifier(self.geom),
-                                         Identifier(self.table),
-                                         Identifier(self.id_field))
+            sql_query = SQL(
+                'SELECT {}, {}, ST_AsGeoJSON({})  FROM {} WHERE {}=%s') \
+                .format(
+                self.columns,
+                Identifier(self.id_field),
+                Identifier(self.geom),
+                SQL(self.table),
+                Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
@@ -296,41 +291,33 @@ class PostgreSQLProvider(BaseProvider):
                 raise ProviderQueryError()
 
             row_data = cursor.fetchall()[0]
-            feature = self.__response_feature(row_data)
 
-            return feature
+        return self.__response_feature(row_data)
 
     def __response_feature(self, row_data):
         """
         Assembles GeoJSON output from DB query
-
         :param row_data: DB row result
-
         :returns: `dict` of GeoJSON Feature
         """
 
         rd = dict(row_data)
-        feature = {
-            'type': 'Feature'
+
+        return {
+            'type': 'Feature',
+            'id': rd.pop(self.id_field),
+            'geometry': json.loads(rd.pop('st_asgeojson')),
+            'properties': rd
         }
-        feature["geometry"] = json.loads(
-            rd.pop('st_asgeojson'))
-
-        feature['properties'] = rd
-        feature['id'] = feature['properties'].pop(self.id_field)
-
-        return feature
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
         e.g: http://localhost:5000/collections/
         hotosm_bdi_waterways/items?resulttype=hits
-
         :returns: GeoJSON FeaturesCollection
         """
-
-        feature_collection = {"features": [],
-                              "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = hits
-
-        return feature_collection
+        return {
+            'features': [],
+            'type': 'FeatureCollection',
+            'numberMatched': hits
+        }
