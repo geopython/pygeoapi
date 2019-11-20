@@ -125,12 +125,27 @@ class PostgreSQLQueryProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
         self.name = provider_def['name']
-        self.query_table = provider_def['query_table']
+        self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
         self.geom = provider_def.get('geom_field', 'geom')
-        self.columns_to_properties = \
-            provider_def.get('column_property_mapping')
+
+        if 'column_property_mapping' in provider_def:
+            self.columns_to_properties = \
+                provider_def.get('column_property_mapping')
+
+        else:
+            # Getting columns
+            query_cols = \
+                "SELECT column_name, udt_name FROM information_schema.columns \
+                 WHERE table_name = '{}' and udt_name != 'geometry';".format(
+                    self.table)
+            with DatabaseConnection(self.conn_dic) as db:
+                cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+                cursor.execute(query_cols)
+                result = cursor.fetchall()
+                self.columns_to_properties = dict(zip([item['column_name'] for item in result],
+                                                      [item['column_name'] for item in result]))
         self.columns = SQL(', ').join(
             [SQL('{} {}').format(Identifier(col), Identifier(prop))
              for (col, prop) in self.columns_to_properties.items()])
@@ -143,7 +158,7 @@ class PostgreSQLQueryProvider(BaseProvider):
             ','.join(('{}={}'.format(*i) for i in self.conn_dic.items()))))
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Query_table:{}'.format(self.query_table))
+        LOGGER.debug('Query_table:{}'.format(self.table))
 
         LOGGER.debug('Get available fields/properties')
         self.get_fields()
@@ -168,7 +183,7 @@ class PostgreSQLQueryProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying PostGIS with query_table')
+        LOGGER.debug('Querying PostGIS ')
 
         where_conditions = []
         if properties:
@@ -198,7 +213,7 @@ class PostgreSQLQueryProvider(BaseProvider):
             with DatabaseConnection(self.conn_dic) as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
                 sql_query = SQL('{} FROM {}{}').format(select_clause,
-                                                       SQL(self.query_table),
+                                                       SQL(self.table),
                                                        where_clause)
                 try:
                     cursor.execute(sql_query)
@@ -219,7 +234,7 @@ class PostgreSQLQueryProvider(BaseProvider):
                 sql_query = \
                     SQL('DECLARE "geo_cursor" CURSOR FOR {} FROM {} {}'
                         ).format(select_clause,
-                                 SQL(self.query_table),
+                                 SQL(self.table),
                                  where_clause)
 
                 LOGGER.debug('SQL Query: {}'.format(
@@ -262,7 +277,7 @@ class PostgreSQLQueryProvider(BaseProvider):
                 self.columns,
                 Identifier(self.id_field),
                 Identifier(self.geom),
-                SQL(self.query_table),
+                SQL(self.table),
                 Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
