@@ -144,8 +144,9 @@ class PostgreSQLProvider(BaseProvider):
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
                 cursor.execute(query_cols)
                 result = cursor.fetchall()
-                self.columns_to_properties = dict(zip([item['column_name'] for item in result],
-                                                      [item['column_name'] for item in result]))
+                self.columns_to_properties = \
+                    dict(zip([item['column_name'] for item in result],
+                             [item['column_name'] for item in result]))
         self.columns = SQL(', ').join(
             [SQL('{} {}').format(Identifier(col), Identifier(prop))
              for (col, prop) in self.columns_to_properties.items()])
