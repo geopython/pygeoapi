@@ -50,6 +50,7 @@ def config():
         'geom_field': 'foo_geom'
     }
 
+
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
 
