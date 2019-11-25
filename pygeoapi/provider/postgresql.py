@@ -165,6 +165,15 @@ class PostgreSQLProvider(BaseProvider):
         self.get_fields()
 
     def get_fields(self):
+        """
+        Get fields from PostgreSQL table (columns are field) if there is no
+        column_property_mapping parameter in the config. Please note that this
+        assumes that the table config parameter is a table name. If
+        column_property_mapping is available this will return the property
+        names that will be used in the geojson response.
+
+        :returns: dict of fields
+        """
         if not self.fields:
             self.fields = dict((v, '') for v in self.properties_to_cols.keys())
         return self.fields
