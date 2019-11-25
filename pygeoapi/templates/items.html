@@ -23,7 +23,49 @@
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
-        <div id="items-map"></div>
+        <div class="row">
+          <div class="col-sm-12">
+            <div id="items-map"></div>
+          </div>
+          <div class="col-sm-12">
+            <div class="row">
+                <div class="col-sm-12">
+                  Warning: Higher limits not recommended!
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                  Limit: <a href="{{ data['items_path']}}">10 (default)</a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                  Limit: <a href="{{ data['items_path']}}?limit=100">100</a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                  Limit: <a href="{{ data['items_path']}}?limit=1000">1,000</a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                  Limit: <a href="{{ data['items_path']}}?limit=2000">2,000</a>
+                </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-12">
+                {% for link in data['links'] %}
+                {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
+                <a role="button" href="{{ link['href'] }}">Prev</a>
+                {% elif link['rel'] == 'next' and data['features'] %}
+                <a role="button" href="{{ link['href'] }}">Next</a>
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>  
       <div class="col-sm-12 col-md-6">
           <table class="striped">
@@ -57,23 +99,11 @@
         <p>No items</p>
     </div>
     {% endif %}
-    <div class="row">
-        <div class="col-sm-12">
-        {% for link in data['links'] %}
-          {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
-          <a role="button" href="{{ link['href'] }}">Prev</a>
-          {% elif link['rel'] == 'next' and data['features'] %}
-          <a role="button" href="{{ link['href'] }}">Next</a>
-          {% endif %}
-        {% endfor %}
-        </div>
-      </div>
     </section>
 {% endblock %}
 
 {% block extrafoot %}
 {% if data['features'] %}
-
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
