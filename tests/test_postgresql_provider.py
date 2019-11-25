@@ -50,9 +50,6 @@ def config():
         'geom_field': 'foo_geom'
     }
 
-
-
-
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
 
@@ -109,6 +106,7 @@ def test_get(config):
     assert 'id' in result
     assert 'Kanyosha' in result['properties']['name']
 
+
 @pytest.fixture()
 def col_prop_config():
     return {
@@ -131,6 +129,7 @@ def col_prop_config():
         'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
     }
+
 
 def test_query_with_col_prop(col_prop_config):
     """Testing query for a valid JSON object with geometry"""
