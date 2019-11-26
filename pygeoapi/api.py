@@ -107,7 +107,7 @@ def jsonldify(func):
         provider = meta.get('provider', {})
         ident = meta.get('identification', {})
         fcmld = {
-          "@context": "https://www.schema.org",
+          "@context": "https://schema.org",
           "@type": "DataCatalog",
           "@id": cfg.get('server', {}).get('url', None),
           "url": cfg.get('server', {}).get('url', None),
@@ -253,12 +253,12 @@ class API(object):
               'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
               'type': 'application/json',
               'title': 'This document as JSON',
-              'href': '{}f=json'.format(self.config['server']['url'])
+              'href': '{}?f=json'.format(self.config['server']['url'])
             }, {
               'rel': 'self' if format_ == 'jsonld' else 'alternate',
               'type': 'application/ld+json',
               'title': 'This document as RDF (JSON-LD)',
-              'href': '{}f=jsonld'.format(self.config['server']['url'])
+              'href': '{}?f=jsonld'.format(self.config['server']['url'])
             }, {
               'rel': 'self' if format_ == 'html' else 'alternate',
               'type': 'text/html',
