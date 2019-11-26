@@ -285,7 +285,7 @@ class PostgreSQLProvider(BaseProvider):
 
     def get_next(self, cursor, identifier):
         """
-        Query previous ID given current ID
+        Query next ID given current ID
 
         :param identifier: feature id
 
