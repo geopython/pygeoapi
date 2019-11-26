@@ -29,6 +29,7 @@
 
 import json
 import os
+import logging
 
 import pytest
 
@@ -36,7 +37,9 @@ from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from pygeoapi.api import API, check_format
 from pygeoapi.util import yaml_load
+from pyld import jsonld
 
+LOGGER = logging.getLogger(__name__)
 
 def get_test_file_path(filename):
     """helper function to open test file safely"""
@@ -111,6 +114,11 @@ def test_root(config, api_):
 
     assert isinstance(root, dict)
     assert 'links' in root
+    assert root['links'][0]['rel'] == 'self'
+    assert root['links'][0]['type'] == 'application/json'
+    assert root['links'][0]['href'].endswith('?f=json')
+    assert any(l['href'].endswith('f=jsonld') and l['rel'] == 'alternate' for l in root['links'])
+    assert any(l['href'].endswith('f=html') and l['rel'] == 'alternate' for l in root['links'])
     assert len(root['links']) == 7
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
@@ -120,6 +128,31 @@ def test_root(config, api_):
     rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
 
+def test_root_structured_data(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.root(req_headers, {"f": "jsonld"})
+    root = json.loads(response)
+
+    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
+
+    assert isinstance(root, dict)
+    assert 'description' in root
+    assert root['description'] == 'pygeoapi provides an API to geospatial data'
+
+    assert '@context' in root
+    assert root['@context'] == 'https://schema.org'
+    expanded = jsonld.expand(root)[0]
+    assert '@type' in expanded
+    assert 'http://schema.org/DataCatalog' in expanded['@type']
+    assert 'http://schema.org/description' in expanded
+    assert root['description'] == expanded['http://schema.org/description'][0]['@value']
+    assert 'http://schema.org/keywords' in expanded
+    assert len(expanded['http://schema.org/keywords']) == 3
+    assert '@value' in expanded['http://schema.org/keywords'][0].keys()
+    assert 'http://schema.org/provider' in expanded
+    assert expanded['http://schema.org/provider'][0]['@type'][0] == 'http://schema.org/Organization'
+    assert expanded['http://schema.org/name'][0]['@value'] == root['name']
 
 def test_conformance(config, api_):
     req_headers = make_req_headers()
@@ -187,6 +220,45 @@ def test_describe_collections(config, api_):
         req_headers, {'f': 'html'}, 'obs')
     assert rsp_headers['Content-Type'] == 'text/html'
 
+def test_describe_collections_json_ld(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_collections(
+        req_headers, {'f': 'jsonld'}, 'obs')
+    collection = json.loads(response)
+
+    assert '@context' in collection
+    expanded = jsonld.expand(collection)[0]
+    # Metadata is about a schema:DataCollection that contains a schema:Dataset
+    assert not expanded['@id'].endswith('obs')
+    assert 'http://schema.org/dataset' in expanded
+    assert len(expanded['http://schema.org/dataset']) == 1
+    dataset = expanded['http://schema.org/dataset'][0]
+    assert dataset['@type'][0] == 'http://schema.org/Dataset'
+    assert len(dataset['http://schema.org/distribution']) == 8
+    assert all(
+        dist['@type'][0] == 'http://schema.org/DataDownload'
+        for dist in dataset['http://schema.org/distribution']
+    )
+
+    assert 'http://schema.org/Organization' in expanded['http://schema.org/provider'][0]['@type']
+
+    assert 'http://schema.org/Place' in dataset['http://schema.org/spatial'][0]
+    assert 'http://schema.org/GeoShape' in dataset['http://schema.org/spatial'][0]['http://schema.org/Place'][0]['@type']
+    assert dataset['http://schema.org/spatial'][0]['http://schema.org/Place'][0]['http://schema.org/box'][0]['@value'] == '-180,-90 180,90'
+
+    assert 'http://schema.org/temporalCoverage' in dataset
+    assert dataset['http://schema.org/temporalCoverage'][0]['@value'] == '2000-10-30T18:24:39/2007-10-30T08:57:29'
+
+def test_get_collection_items_json_ld(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'f': 'jsonld'}, 'obs')
+    features = json.loads(response)
+
+    assert '@context' in features
+    expanded = jsonld.expand(collection)[0]
+    print(expanded)
+    assert False # TODO continue assertions
 
 def test_get_collection_items(config, api_):
     req_headers = make_req_headers()
