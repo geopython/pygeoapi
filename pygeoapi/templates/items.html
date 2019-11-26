@@ -35,22 +35,22 @@
             </div>
             <div class="row">
                 <div class="col-sm-12">
-                  Limit: <a href="{{ data['items_path']}}">10 (default)</a>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12">
-                  Limit: <a href="{{ data['items_path']}}?limit=100">100</a>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12">
-                  Limit: <a href="{{ data['items_path']}}?limit=1000">1,000</a>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12">
-                  Limit: <a href="{{ data['items_path']}}?limit=2000">2,000</a>
+                  Limit:
+                  <select id="limits">
+                    <option value="10">10 (default)</option>
+                    <option value="100">100</option>
+                    <option value="1000">1,000</option>
+                    <option value="2000">2,000</option>
+                  </select>
+                  <script>
+                    var select = document.getElementById('limits');
+                    let params = (new URL(document.location)).searchParams;
+                    select.value = params.get('limit') || 10;
+                    select.addEventListener('change', ev => {
+                      var limit = ev.target.value;
+                      document.location.search = `limit=${limit}`;
+                    });
+                  </script>
                 </div>
             </div>
             <div class="row">
