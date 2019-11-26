@@ -68,12 +68,17 @@
         {% endfor %}
         </div>
       </div>
+
     </section>
 {% endblock %}
 
 {% block extrafoot %}
 {% if data['features'] %}
-
+    {% if data['crs:epsg'] and data['crs:epsg'] != 4326 %}
+    <script src="https://unpkg.com/proj4@2.0.1/dist/proj4.js"></script>
+    <script src="https://epsg.io/4326.js"></script>
+    <script src="https://epsg.io/{{ data['crs:epsg'] }}.js"></script>
+    {% endif %}
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
@@ -83,6 +88,13 @@
         }
     ));
     var geojson_data = {{ data['features'] |to_json }};
+    {% if data['crs:epsg'] and data['crs:epsg'] != 4326 %}
+    var projector = proj4('EPSG:{{ data['crs:epsg'] }}', 'EPSG:4326');
+    geojson_data = geojson_data.map(g => {
+      g.geometry.coordinates = g.geometry.coordinates.map(l1 => l1.map(l2 => l2.map(coord => projector.forward(coord))));
+      return g;
+    });
+    {% endif %}
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
             var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';
