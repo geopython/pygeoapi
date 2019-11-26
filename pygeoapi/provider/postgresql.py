@@ -265,6 +265,42 @@ class PostgreSQLProvider(BaseProvider):
 
             return feature_collection
 
+    def get_previous(self, cursor, identifier):
+        """
+        Query previous ID given current ID
+
+        :param identifier: feature id
+
+        :returns: feature id
+        """
+        cursor.execute(SQL('SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1').format(
+            Identifier(self.id_field),
+            Identifier(self.table),
+            Identifier(self.id_field),
+            Identifier(self.id_field),
+        ), (identifier,))
+        item = cursor.fetchall()
+        id = item[0]['id']
+        return id
+
+    def get_next(self, cursor, identifier):
+        """
+        Query previous ID given current ID
+
+        :param identifier: feature id
+
+        :returns: feature id
+        """
+        cursor.execute(SQL('SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1').format(
+            Identifier(self.id_field),
+            Identifier(self.table),
+            Identifier(self.id_field),
+            Identifier(self.id_field),
+        ), (identifier,))
+        item = cursor.fetchall()
+        id = item[0]['id']
+        return id
+
     def get(self, identifier):
         """
         Query the provider for a specific
@@ -298,6 +334,8 @@ class PostgreSQLProvider(BaseProvider):
             row_data = cursor.fetchall()[0]
             feature = self.__response_feature(row_data)
 
+            feature['previous'] = self.get_previous(cursor, identifier)
+            feature['next'] = self.get_next(cursor, identifier)
             return feature
 
     def __response_feature(self, row_data):
