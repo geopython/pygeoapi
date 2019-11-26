@@ -273,7 +273,8 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        cursor.execute(SQL('SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1').format(
+        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1'
+        cursor.execute(SQL(sql).format(
             Identifier(self.id_field),
             Identifier(self.table),
             Identifier(self.id_field),
@@ -291,7 +292,8 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        cursor.execute(SQL('SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1').format(
+        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1'
+        cursor.execute(SQL(sql).format(
             Identifier(self.id_field),
             Identifier(self.table),
             Identifier(self.id_field),
