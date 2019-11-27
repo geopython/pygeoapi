@@ -86,11 +86,13 @@ Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/maste
 details of the Docker implementation. To get started quickly
 [several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples) will get you up and running.
 
+## Development
+
 ### Unit Testing
 
 Unit tests are run using `pytest` from the top project folder:
 
-```
+```sh
 pytest tests
 ```
 
@@ -98,4 +100,20 @@ NB beware that some tests require Provider dependencies (libraries) to be availa
 and that the ElasticSearch and Postgres tests require their respective
 backend servers running.
 
+Running a subset of the tests is possible, e.g.:
+
+```sh
+pytest tests/test_api.py`
+```
+
 Environment variables are set in the file [pytest.ini](pytest.ini).
+
+### Linting and formatting
+
+[`black`](https://github.com/psf/black) is used for auto-formatting code; [`flake8`](https://pypi.org/project/flake8/) is used to check compliance against [PEP 8](https://www.python.org/dev/peps/pep-0008/). These tools are combined into an automatic workflow with [`pre-commit`](https://pre-commit.com/). When you attempt to commit, pre-commit will first auto-format any Python files that you changed; then it will check PEP 8 compliance. You will have the opportunity to review the automatic changes (since you will need to `git add` them again).
+
+You will need the development dependencies (`requirements-dev.txt`) installed. Then run
+```sh
+pre-commit install
+```
+to install the pre-commit hooks into `.git`. Now whenever you commit, these checks will automatically operate.
