@@ -9,6 +9,8 @@ coverage
 
 # PEP8
 flake8
+pre-commit
+black
 
 # packaging/PyPI
 twine

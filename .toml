@@ -1,0 +1,13 @@
+[tool.black]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.github
+  | \.__pycache__
+  | \.venv
+  | aws-lambda
+  | docker
+  | docs
+)/
+'''
