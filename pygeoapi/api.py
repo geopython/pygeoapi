@@ -192,7 +192,7 @@ def jsonldlify_collection(cls, collection):
             "@type": "DataDownload",
             "contentURL": link['href'],
             "encodingFormat": link['type'],
-            "name": link['title'],
+            "description": link['title'],
             "inLanguage": link.get('hreflang', cls.config.get('server', {}).get('language', None)),
             "author": link['rel'] if link.get('rel', None) == 'author' else None
         }.items() if v is not None}, links))
@@ -1176,6 +1176,8 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     data['id'] = ('{}/collections/{}/items/{}' if identifier else '{}/collections/{}/items').format(
         *[config['server']['url'], dataset, identifier]
     )
+    if data.get('timeStamp', False):
+        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
     ldjsonData = {
         "@context": [
             "https://geojson.org/geojson-ld/geojson-context.jsonld", # Default vocabulary
@@ -1188,6 +1190,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         for i, feature in enumerate(data['features']):
             featureId = feature.get('id', None) or feature.get('properties', {}).get('id', None)
             if featureId is None: continue
+            # Note: @id or https://schema.org/url or both or something else?
             if is_url(str(featureId)):
                 feature['id'] = featureId
             else:

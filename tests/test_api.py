@@ -249,17 +249,6 @@ def test_describe_collections_json_ld(config, api_):
     assert 'http://schema.org/temporalCoverage' in dataset
     assert dataset['http://schema.org/temporalCoverage'][0]['@value'] == '2000-10-30T18:24:39/2007-10-30T08:57:29'
 
-def test_get_collection_items_json_ld(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'f': 'jsonld'}, 'obs')
-    features = json.loads(response)
-
-    assert '@context' in features
-    expanded = jsonld.expand(collection)[0]
-    print(expanded)
-    assert False # TODO continue assertions
-
 def test_get_collection_items(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.get_collection_items(
@@ -450,6 +439,31 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
+def test_get_collection_items_json_ld(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'f': 'jsonld', 'limit': 2}, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    collection = json.loads(response)
+
+    assert '@context' in collection
+    assert collection['@context'][0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
+    assert len(collection['@context']) > 1
+    assert 'schema' in collection['@context'][1]
+    assert collection['@context'][1]['schema'] == 'https://schema.org/'
+    expanded = jsonld.expand(collection)[0]
+    featuresUri = 'https://purl.org/geojson/vocab#features'
+    assert len(expanded[featuresUri]) == 2
+    geometryUri = 'https://purl.org/geojson/vocab#geometry'
+    assert all((geometryUri in f) for f in expanded[featuresUri])
+    assert all((f[geometryUri][0]['@type'][0] == 'https://purl.org/geojson/vocab#Point') for f in expanded[featuresUri])
+    propertiesUri = 'https://purl.org/geojson/vocab#properties'
+    assert all(propertiesUri in f for f in expanded[featuresUri])
+    assert all(len(f[propertiesUri][0].keys()) > 0 for f in expanded[featuresUri])
+    assert all(('https://schema.org/observationDate' in f[propertiesUri][0]) for f in expanded[featuresUri])
+    assert all((f[propertiesUri][0]['https://schema.org/observationDate'][0]['@type'] == 'https://schema.org/DateTime') for f in expanded[featuresUri])
+    assert any((f[propertiesUri][0]['https://schema.org/observationDate'][0]['@value'] == '2001-10-30T14:24:55Z') for f in expanded[featuresUri])
+
 
 def test_get_collection_item(config, api_):
     req_headers = make_req_headers()
@@ -475,10 +489,29 @@ def test_get_collection_item(config, api_):
 
     rsp_headers, code, response = api_.get_collection_item(
         req_headers, {}, 'obs', '371')
-    features = json.loads(response)
+    feature = json.loads(response)
 
-    assert features['properties']['stn_id'] == '35'
+    assert feature['properties']['stn_id'] == '35'
 
+def test_get_collection_item(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_item(
+        req_headers, {'f': 'jsonld'}, 'obs', '371')
+    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    feature = json.loads(response)
+    assert '@context' in feature
+    assert feature['@context'][0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
+    assert len(feature['@context']) > 1
+    assert 'schema' in feature['@context'][1]
+    assert feature['@context'][1]['schema'] == 'https://schema.org/'
+    assert feature['properties']['stn_id'] == '35'
+    assert feature['id'].startswith('http://')
+    assert feature['id'].endswith('/collections/obs/items/371')
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['@id'].startswith('http://')
+    assert expanded['@id'].endswith('/collections/obs/items/371')
+    assert expanded['https://purl.org/geojson/vocab#properties'][0]['https://schema.org/identifier'][0]['@type'] == 'https://schema.org/Text'
+    assert expanded['https://purl.org/geojson/vocab#properties'][0]['https://schema.org/identifier'][0]['@value'] == '35'
 
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()
