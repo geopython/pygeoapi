@@ -715,6 +715,7 @@ class API(object):
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
             if k not in reserved_fieldnames and k in p.fields.keys():
+                LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
         LOGGER.debug('processing sort parameter')
@@ -972,6 +973,7 @@ class API(object):
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
 
+            content['title'] = self.config['datasets'][dataset]['title']
             content = _render_j2_template(self.config, 'item.html',
                                           content)
             return headers_, 200, content

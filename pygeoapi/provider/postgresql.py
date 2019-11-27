@@ -2,6 +2,7 @@
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Mary Bucknell <mbucknell@usgs.gov>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2019 Tom Kralidis
@@ -45,7 +46,7 @@
 import logging
 import json
 import psycopg2
-from psycopg2.sql import SQL, Identifier
+from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError
 
@@ -72,8 +73,11 @@ class DatabaseConnection(object):
              (defaults to UNIX socket if not provided)
             port – connection port number
              (defaults to 5432 if not provided)
-            schema – schema to use as search path, normally
-             data is in the public schema
+            search_path – search path to be used (by order) , normally
+             data is in the public schema, [public],
+             or in a specific schema ["osm", "public"].
+             Note: First we should have the schema
+             being used and then public
 
         :param table: table name containing the data. This variable is used to
                 assemble column information
@@ -86,30 +90,27 @@ class DatabaseConnection(object):
         self.table = table
         self.context = context
         self.columns = None
+        self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
-        self.schema = None
 
     def __enter__(self):
         try:
-            self.schema = self.conn_dic.pop('schema', None)
-            if self.schema == 'public' or self.schema is None:
-                pass
-            else:
-                self.conn_dic["options"] = '-c search_path={}'.format(
-                    self.schema)
-                LOGGER.debug('Using schema {} as search path'.format(
-                    self.schema))
+            search_path = self.conn_dic.pop('search_path', ['public'])
+            if search_path != ['public']:
+                self.conn_dic["options"] = f'-c \
+                search_path={",".join(search_path)}'
+                LOGGER.debug(f'Using search path: {search_path} ')
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
-            LOGGER.error('Couldnt connect to Postgis using:{}'.format(
+            LOGGER.error("Couldn't connect to Postgis using:{}".format(
                 str(self.conn_dic)))
             raise ProviderConnectionError()
 
         self.cur = self.conn.cursor()
         if self.context == 'query':
             # Getting columns
-            query_cols = "SELECT column_name FROM information_schema.columns \
+            query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
             WHERE table_name = '{}' and udt_name != 'geometry';".format(
                 self.table)
 
@@ -118,6 +119,7 @@ class DatabaseConnection(object):
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
+            self.fields = dict(result)
 
         return self
 
@@ -149,6 +151,7 @@ class PostgreSQLProvider(BaseProvider):
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.conn_dic = provider_def['data']
+        self.geom = provider_def.get('geom_field', 'geom')
 
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
@@ -156,6 +159,15 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
         LOGGER.debug('Table:{}'.format(self.table))
+
+        LOGGER.debug('Get available fields/properties')
+        self.get_fields()
+
+    def get_fields(self):
+        if not self.fields:
+            with DatabaseConnection(self.conn_dic, self.table) as db:
+                self.fields = db.fields
+        return self.fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -188,7 +200,6 @@ class PostgreSQLProvider(BaseProvider):
                 except Exception as err:
                     LOGGER.error('Error executing sql_query: {}: {}'.format(
                         sql_query.as_string(cursor)), err)
-                    LOGGER.error('Using public schema: {}'.format(db.schema))
                     raise ProviderQueryError()
 
                 hits = cursor.fetchone()["hits"]
@@ -199,13 +210,35 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {0},ST_AsGeoJSON({1}) FROM {2}").\
-                format(db.columns,
-                       Identifier('geom'),
-                       Identifier(self.table))
+            where_conditions = []
+            if properties:
+                property_clauses = \
+                    [SQL('{} = {}').format(
+                        Identifier(k), Literal(v)) for k, v in properties]
+                where_conditions += property_clauses
+            if bbox:
+                bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
+                    Identifier(self.geom),
+                    SQL(', ').join(
+                        [Literal(bbox_coord) for bbox_coord in bbox]
+                    )
+                )
+                where_conditions.append(bbox_clause)
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
+            if where_conditions:
+                where_clause = SQL(' WHERE {}').format(
+                    SQL(' AND ').join(where_conditions)
+                )
+            else:
+                where_clause = SQL('')
+            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
+             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
+                format(db.columns,
+                       Identifier(self.geom),
+                       Identifier(self.table),
+                       where_clause)
+
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
@@ -216,7 +249,6 @@ class PostgreSQLProvider(BaseProvider):
             except Exception as err:
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
-                LOGGER.error('Using public schema: {}'.format(db.schema))
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
@@ -247,11 +279,11 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("select {0},ST_AsGeoJSON({1}) \
-            from {2} WHERE {3}=%s").format(db.columns,
-                                           Identifier('geom'),
-                                           Identifier(self.table),
-                                           Identifier(self.id_field))
+            sql_query = SQL("select {},ST_AsGeoJSON({}) \
+            from {} WHERE {}=%s").format(db.columns,
+                                         Identifier(self.geom),
+                                         Identifier(self.table),
+                                         Identifier(self.id_field))
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
@@ -260,7 +292,6 @@ class PostgreSQLProvider(BaseProvider):
             except Exception as err:
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))
-                LOGGER.error('Using public schema: {}'.format(db.schema))
                 LOGGER.error(err)
                 raise ProviderQueryError()
 

@@ -322,36 +322,37 @@ def get_oas_30(cfg):
                 {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
         for k2, v2 in p.fields.items():
-            path_ = '{}/items'.format(collection_name_path)
+            if p.properties and k2 in p.properties:
+                path_ = '{}/items'.format(collection_name_path)
 
-            if v2['type'] == 'date':
-                schema = {
-                    'type': 'string',
-                    'format': 'date'
-                }
-            elif v2['type'] == 'float':
-                schema = {
-                    'type': 'number',
-                    'format': 'float'
-                }
-            elif v2['type'] == 'long':
-                schema = {
-                    'type': 'integer',
-                    'format': 'int64'
-                }
-            else:
-                schema = {
-                    'type': v2['type']
-                }
+                if v2['type'] == 'date':
+                    schema = {
+                        'type': 'string',
+                        'format': 'date'
+                    }
+                elif v2['type'] == 'float':
+                    schema = {
+                        'type': 'number',
+                        'format': 'float'
+                    }
+                elif v2['type'] == 'long':
+                    schema = {
+                        'type': 'integer',
+                        'format': 'int64'
+                    }
+                else:
+                    schema = {
+                        'type': v2['type']
+                    }
 
-            paths['{}'.format(path_)]['get']['parameters'].append({
-                'name': k2,
-                'in': 'query',
-                'required': False,
-                'schema': schema,
-                'style': 'form',
-                'explode': False
-            })
+                paths['{}'.format(path_)]['get']['parameters'].append({
+                    'name': k2,
+                    'in': 'query',
+                    'required': False,
+                    'schema': schema,
+                    'style': 'form',
+                    'explode': False
+                })
 
         paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
