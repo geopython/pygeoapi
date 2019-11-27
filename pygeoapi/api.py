@@ -59,9 +59,21 @@ HEADERS = {
 #: Formats allowed for ?f= requests
 FORMATS = ['json', 'html', 'jsonld']
 
-isoformatter = lambda x: x.isoformat()
-nowchecker = lambda x: '..' if (x == 'now' or x is None) else isoformatter(x)
-dategetter = lambda x, collection: nowchecker(collection.get(x, None))
+
+def dategetter(date_property, collection):
+    """
+    Attempts to obtains a date value from a collection.
+    :param date_property: property representing the date
+    :param collection: dictionary to check within
+
+    :returns: `str` (ISO8601) representing the date. ('..' if null or "now",
+        allowing for an open interval).
+    """
+    value = collection.get(date_property, None)
+    if value == 'now' or value is None:
+        return '..'
+    return value.isoformat()
+
 
 def pre_process(func):
     """
@@ -84,6 +96,7 @@ def pre_process(func):
             return func(cls, headers_, format_)
 
     return inner
+
 
 def jsonldify(func):
     """
@@ -147,6 +160,7 @@ def jsonldify(func):
         return func(cls, *args[1:], **kwargs)
     return inner
 
+
 def jsonldlify_collection(cls, collection):
     """
         Transforms collection into a JSON-LD representation
@@ -182,7 +196,9 @@ def jsonldlify_collection(cls, collection):
                 "box": '{},{} {},{}'.format(*_bbox[0:2], *_bbox[2:4])
             }
         } for _bbox in bbox],
-        "temporalCoverage": None if not interval else "{}/{}".format(*interval[0])
+        "temporalCoverage": None if not interval else "{}/{}".format(
+            *interval[0]
+        )
     }
     dataset['url'] = dataset['@id']
 
@@ -193,8 +209,12 @@ def jsonldlify_collection(cls, collection):
             "contentURL": link['href'],
             "encodingFormat": link['type'],
             "description": link['title'],
-            "inLanguage": link.get('hreflang', cls.config.get('server', {}).get('language', None)),
-            "author": link['rel'] if link.get('rel', None) == 'author' else None
+            "inLanguage": link.get(
+                'hreflang', cls.config.get('server', {}).get('language', None)
+            ),
+            "author": link['rel'] if link.get(
+                'rel', None
+            ) == 'author' else None
         }.items() if v is not None}, links))
 
     return dataset
@@ -250,7 +270,8 @@ class API(object):
 
         LOGGER.debug('Creating links')
         fcm['links'] = [{
-              'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
+              'rel': 'self' if not format_ or
+              format_ == 'json' else 'alternate',
               'type': 'application/json',
               'title': 'This document as JSON',
               'href': '{}?f=json'.format(self.config['server']['url'])
@@ -479,7 +500,8 @@ class API(object):
             })
             collection['links'].append({
                 'type': 'application/json',
-                'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
+                'rel': 'self' if not format_
+                or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections/{}?f=json'.format(
                     self.config['server']['url'], k)
@@ -508,7 +530,8 @@ class API(object):
         if dataset is None:
             fcm['links'].append({
                 'type': 'application/json',
-                'rel': 'self' if not format or format_ == 'json' else 'alternate',
+                'rel': 'self' if not format
+                or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections?f=json'.format(
                     self.config['server']['url'])
@@ -545,7 +568,13 @@ class API(object):
             if dataset is not None:
                 jsonld['dataset'] = jsonldlify_collection(self, fcm)
             else:
-                jsonld['dataset'] = list(map(lambda collection: jsonldlify_collection(self, collection), fcm.get('collections', [])))
+                jsonld['dataset'] = list(
+                    map(
+                        lambda collection: jsonldlify_collection(
+                            self, collection
+                        ), fcm.get('collections', [])
+                    )
+                )
             headers_['Content-Type'] = 'application/ld+json'
             return headers_, 200, json.dumps(jsonld)
 
@@ -979,7 +1008,9 @@ class API(object):
             return headers_, 200, content
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
-            content = geojson2geojsonld(self.config, content, dataset, identifier=identifier)
+            content = geojson2geojsonld(
+                self.config, content, dataset, identifier=identifier
+            )
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content, default=json_serial)
@@ -1161,6 +1192,7 @@ def to_json(dict_):
 
     return json.dumps(dict_, default=json_serial)
 
+
 def geojson2geojsonld(config, data, dataset, identifier=None):
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
@@ -1175,29 +1207,34 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['datasets'][dataset].get('context', [])
-    data['id'] = ('{}/collections/{}/items/{}' if identifier else '{}/collections/{}/items').format(
+    data['id'] = (
+        '{}/collections/{}/items/{}' if identifier
+        else '{}/collections/{}/items'
+    ).format(
         *[config['server']['url'], dataset, identifier]
     )
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
     ldjsonData = {
-        "@context": [
-            "https://geojson.org/geojson-ld/geojson-context.jsonld", # Default vocabulary
-            *(context or [])
-        ],
+        "@context": [defaultVocabulary, *(context or [])],
         **data
     }
     isCollection = identifier is None
     if isCollection:
         for i, feature in enumerate(data['features']):
-            featureId = feature.get('id', None) or feature.get('properties', {}).get('id', None)
-            if featureId is None: continue
+            featureId = feature.get(
+                'id', None
+            ) or feature.get('properties', {}).get('id', None)
+            if featureId is None:
+                continue
             # Note: @id or https://schema.org/url or both or something else?
             if is_url(str(featureId)):
                 feature['id'] = featureId
             else:
                 feature['id'] = '{}/{}'.format(data['id'], featureId)
     return json.dumps(ldjsonData)
+
 
 def _render_j2_template(config, template, data):
     """

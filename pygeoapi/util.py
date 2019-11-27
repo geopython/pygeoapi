@@ -128,6 +128,7 @@ def json_serial(obj):
     LOGGER.error(msg)
     raise TypeError(msg)
 
+
 def is_url(urlstring):
     """
     Validation function that determines whether a candidate URL should be
