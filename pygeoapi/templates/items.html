@@ -23,7 +23,16 @@
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
-        <div id="items-map"></div>
+        <div class="row">
+          <div class="col-sm-12">
+            <div id="items-map"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-12">
+            <a id="map-extent-items" href="">Items of current map extent</a>
+          </div>
+        </div>
       </div>  
       <div class="col-sm-12 col-md-6">
           <table class="striped">
@@ -93,6 +102,20 @@
 
     map.addLayer(items);
     map.fitBounds(items.getBounds());
+    const link = document.getElementById('map-extent-items');
+    const linkUpdater = event => {
+      const bbox = map.getBounds().toBBoxString();
+      const params = document.location.search.replace('?', '').split('&').reduce((a, v) => {
+        const [k, p] = v.split('=').map(decodeURIComponent);
+        a[k] = p;
+        return a;
+      }, {});
+      params.bbox = bbox;
+      link.href = Object.keys(params).reduce((a, p) => a + `${encodeURIComponent(p)}=${encodeURIComponent(params[p])}&`, '?');
+    };
+    map.on('moveend', linkUpdater);
+    map.on('zoomend', linkUpdater);
+    linkUpdater();
     </script>
 {% endif %}
 {% endblock %}
