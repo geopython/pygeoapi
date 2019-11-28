@@ -105,7 +105,8 @@
     const link = document.getElementById('map-extent-items');
     const linkUpdater = event => {
       const bbox = map.getBounds().toBBoxString();
-      const params = document.location.search.replace('?', '').split('&').reduce((a, v) => {
+      const search = document.location.search.trim();
+      const params = !search ? {} : search.replace('?', '').split('&').reduce((a, v) => {
         const [k, p] = v.split('=').map(decodeURIComponent);
         a[k] = p;
         return a;
