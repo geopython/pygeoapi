@@ -1,6 +1,6 @@
 # =================================================================
 #
-# Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+# Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.net>
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
@@ -59,10 +59,28 @@ class SQLiteProvider(BaseProvider):
         self.table = provider_def['table']
 
         LOGGER.debug('Setting SQLite properties:')
-        LOGGER.debug('Data source: {}'.format(self.data))
-        LOGGER.debug('Name: {}'.format(self.name))
-        LOGGER.debug('ID_field: {}'.format(self.id_field))
-        LOGGER.debug('Table: {}'.format(self.table))
+        LOGGER.debug(f'Data source: {self.data}')
+        LOGGER.debug(f'Name: {self.name}')
+        LOGGER.debug(f'ID_field: {self.id_field}')
+        LOGGER.debug(f'Table: {self.table}')
+        
+        LOGGER.debug('Get available fields/properties')
+        self.get_fields()
+
+    def get_fields(self):
+        """
+         Get fields from sqlite table (columns are field) 
+        
+        :returns: dict of fields
+        """
+        # get_fields as a method decorator? 
+        if not self.fields:
+            cursor = self.__load()
+            results = cursor.execute(f'PRAGMA table_info({self.table})').fetchall()
+            [self.fields.update({ item["name"]:item["type"].lower()}) for item in results]
+        return self.fields
+
+
 
     def __response_feature(self, row_data):
         """
@@ -108,12 +126,13 @@ class SQLiteProvider(BaseProvider):
         if (os.path.exists(self.data)):
             conn = sqlite3.connect(self.data)
         else:
-            raise InvalidPluginError
+            LOGGER.error('Path to sqlite does not exist')
+            raise InvalidPluginError()
 
         try:
             conn.enable_load_extension(True)
         except AttributeError as err:
-            LOGGER.error('Extension loading not enabled: {}'.format(err))
+            LOGGER.error(f'Extension loading not enabled: {err}')
             raise ProviderConnectionError()
 
         conn.row_factory = sqlite3.Row
@@ -121,27 +140,25 @@ class SQLiteProvider(BaseProvider):
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT load_extension('mod_spatialite.so')")
-            cursor.execute("PRAGMA table_info({})".format(self.table))
+            cursor.execute(f'PRAGMA table_info({self.table})')
         except sqlite3.OperationalError as err:
-            LOGGER.error('Extension loading error: {}'.format(err))
+            LOGGER.error(f'Extension loading error: {err}')
             raise ProviderConnectionError()
         result = cursor.fetchall()
         try:
-            # TODO: Better exceptions declaring
-            # InvalidPluginError as Parent class
-            assert len(result), "Table not found"
+            assert len(result), 'Table not found'
             assert len([item for item in result
-                        if item['pk'] == 1]), "Primary key not found"
+                        if item['pk'] == 1]), 'Primary key not found'
             assert len([item for item in result
-                        if self.id_field in item]), "id_field not present"
+                        if self.id_field in item]), 'id_field not present'
             assert len([item for item in result
-                        if 'GEOMETRY' in item]), "GEOMETRY column not found"
+                        if 'GEOMETRY' in item]), 'GEOMETRY column not found'
 
-        except InvalidPluginError:
-            raise
+        except AssertionError:
+            raise InvalidPluginError
 
         self.columns = [item[1] for item in result if item[1] != 'GEOMETRY']
-        self.columns = ",".join(self.columns)+",AsGeoJSON(geometry)"
+        self.columns = ','.join(self.columns)+',AsGeoJSON(geometry)'
 
         return cursor
 
@@ -150,7 +167,7 @@ class SQLiteProvider(BaseProvider):
         """
         Query SQLite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
-        limit=1&resulttype=results
+        limit=5&startindex=2&resulttype=results&continent=Europe&admin=Albania
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
@@ -169,24 +186,29 @@ class SQLiteProvider(BaseProvider):
         LOGGER.debug('Got cursor from DB')
 
         if resulttype == 'hits':
-            res = cursor.execute("select count(*) as hits from {};".format(
-                self.table))
+            res = cursor.execute(f"select count(*) as hits from {self.table};")
 
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
+
+        where_syntax = ""
+        where_values = tuple()
+        if properties:
+            where_syntax = " where "
+            where_syntax += " and ".join([f"{k}=?" for k,v in properties])
+        
+            where_values += where_values + tuple((v for k,v in properties)) 
+        
+        sql_query = f"select {self.columns} from {self.table} {where_syntax} limit ? offset ?"
         end_index = startindex + limit
-        # Not working
-        # http://localhost:5000/collections/countries/items/?startindex=10
-        sql_query = "select {} from {} where rowid >= ? \
-        and rowid <= ?;".format(self.columns, self.table)
-
-        LOGGER.debug('SQL Query: {}'.format(sql_query))
-        LOGGER.debug('Start Index: {}'.format(startindex))
-        LOGGER.debug('End Index: {}'.format(end_index))
-
-        row_data = cursor.execute(sql_query, (startindex, end_index, ))
-
+        
+        LOGGER.debug(f'SQL Query: {sql_query}')
+        LOGGER.debug(f'Start Index: {startindex}')
+        LOGGER.debug(f'End Index: {end_index}')
+        
+        row_data = cursor.execute(sql_query, where_values + (limit, startindex))
+        
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
@@ -214,12 +236,10 @@ class SQLiteProvider(BaseProvider):
 
         LOGGER.debug('Got cursor from DB')
 
-        sql_query = "select {} from {} where {}==?;".format(self.columns,
-                                                            self.table,
-                                                            self.id_field)
+        sql_query = f'select {self.columns} from {self.table} where {self.id_field}==?;'
 
-        LOGGER.debug('SQL Query: {}'.format(sql_query))
-        LOGGER.debug('Identifier: {}'.format(identifier))
+        LOGGER.debug(f'SQL Query: {sql_query}')
+        LOGGER.debug(f'Identifier: {identifier}')
 
         row_data = cursor.execute(sql_query, (identifier, )).fetchone()
 
@@ -227,4 +247,4 @@ class SQLiteProvider(BaseProvider):
         return feature
 
     def __repr__(self):
-        return '<SQLiteProvider> {}, {}'.format(self.data, self.table)
+        return f'<SQLiteProvider> {self.data}, {self.table}'

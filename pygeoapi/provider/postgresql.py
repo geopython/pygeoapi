@@ -164,6 +164,11 @@ class PostgreSQLProvider(BaseProvider):
         self.get_fields()
 
     def get_fields(self):
+        """
+        Get fields from PostgreSQL table (columns are field) 
+        
+        :returns: dict of fields
+        """
         if not self.fields:
             with DatabaseConnection(self.conn_dic, self.table) as db:
                 self.fields = db.fields
