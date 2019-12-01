@@ -165,8 +165,8 @@ class PostgreSQLProvider(BaseProvider):
 
     def get_fields(self):
         """
-        Get fields from PostgreSQL table (columns are field) 
-        
+        Get fields from PostgreSQL table (columns are field)
+
         :returns: dict of fields
         """
         if not self.fields:

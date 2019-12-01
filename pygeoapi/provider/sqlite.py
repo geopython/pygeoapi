@@ -63,24 +63,25 @@ class SQLiteProvider(BaseProvider):
         LOGGER.debug(f'Name: {self.name}')
         LOGGER.debug(f'ID_field: {self.id_field}')
         LOGGER.debug(f'Table: {self.table}')
-        
+
         LOGGER.debug('Get available fields/properties')
         self.get_fields()
 
     def get_fields(self):
         """
-         Get fields from sqlite table (columns are field) 
-        
+         Get fields from sqlite table (columns are field)
+
         :returns: dict of fields
         """
-        # get_fields as a method decorator? 
+
         if not self.fields:
             cursor = self.__load()
-            results = cursor.execute(f'PRAGMA table_info({self.table})').fetchall()
-            [self.fields.update({ item["name"]:item["type"].lower()}) for item in results]
+            results = cursor.execute(
+                f'PRAGMA table_info({self.table})').fetchall()
+            [self.fields.update(
+                {item["name"]:item["type"].lower()}
+                ) for item in results]
         return self.fields
-
-
 
     def __response_feature(self, row_data):
         """
@@ -137,6 +138,7 @@ class SQLiteProvider(BaseProvider):
 
         conn.row_factory = sqlite3.Row
         conn.enable_load_extension(True)
+        conn.set_trace_callback(LOGGER.debug)
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT load_extension('mod_spatialite.so')")
@@ -167,7 +169,8 @@ class SQLiteProvider(BaseProvider):
         """
         Query SQLite for all the content.
         e,g: http://localhost:5000/collections/countries/items?
-        limit=5&startindex=2&resulttype=results&continent=Europe&admin=Albania
+        limit=5&startindex=2&resulttype=results&continent=Europe&admin=Albania&bbox=29.3373,-3.4099,29.3761,-3.3924
+        http://localhost:5000/collections/countries/items?continent=Africa&bbox=29.3373,-3.4099,29.3761,-3.3924
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
@@ -191,24 +194,33 @@ class SQLiteProvider(BaseProvider):
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
-
-        where_syntax = ""
+        where_syntax = " where " if property or bbox else ""
         where_values = tuple()
+
         if properties:
-            where_syntax = " where "
-            where_syntax += " and ".join([f"{k}=?" for k,v in properties])
-        
-            where_values += where_values + tuple((v for k,v in properties)) 
-        
-        sql_query = f"select {self.columns} from {self.table} {where_syntax} limit ? offset ?"
+            where_syntax += " and ".join([f"{k}=?" for k, v in properties])
+            where_values += where_values + tuple((v for k, v in properties))
+
+        if bbox:
+            # cast to float string doesnt work on sqlite3
+            bbox = [float(c) for c in bbox]
+            if properties:
+                where_syntax += " and "
+            # TODO: check name of geometry column
+            where_syntax += " Intersects(geometry, BuildMbr(?,?,?,?)) "
+            where_values += tuple(bbox)
+
+        sql_query = f"select {self.columns} from \
+            {self.table} {where_syntax} limit ? offset ?"
         end_index = startindex + limit
-        
+
         LOGGER.debug(f'SQL Query: {sql_query}')
         LOGGER.debug(f'Start Index: {startindex}')
         LOGGER.debug(f'End Index: {end_index}')
-        
-        row_data = cursor.execute(sql_query, where_values + (limit, startindex))
-        
+
+        row_data = cursor.execute(sql_query,
+                                  where_values + (limit, startindex))
+
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
@@ -236,7 +248,8 @@ class SQLiteProvider(BaseProvider):
 
         LOGGER.debug('Got cursor from DB')
 
-        sql_query = f'select {self.columns} from {self.table} where {self.id_field}==?;'
+        sql_query = f'select {self.columns} from \
+            {self.table} where {self.id_field}==?;'
 
         LOGGER.debug(f'SQL Query: {sql_query}')
         LOGGER.debug(f'Identifier: {identifier}')
