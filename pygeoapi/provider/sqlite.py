@@ -194,7 +194,7 @@ class SQLiteProvider(BaseProvider):
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
-        where_syntax = " where " if property or bbox else ""
+        where_syntax = " where " if (properties or bbox) else ""
         where_values = tuple()
 
         if properties:
@@ -212,6 +212,8 @@ class SQLiteProvider(BaseProvider):
 
         sql_query = f"select {self.columns} from \
             {self.table} {where_syntax} limit ? offset ?"
+        print(startindex)
+        print(limit)
         end_index = startindex + limit
 
         LOGGER.debug(f'SQL Query: {sql_query}')

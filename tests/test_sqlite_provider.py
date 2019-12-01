@@ -62,6 +62,38 @@ def test_query(config):
     assert geometry is not None
 
 
+def test_query_with_property_filter(config):
+    """Test query  valid features when filtering by property"""
+
+    p = SQLiteProvider(config)
+    feature_collection = p.query(properties=[
+        ("continent", "Europe")], limit=100)
+    features = feature_collection.get('features', None)
+    assert len(features) == 39
+
+
+def test_query_with_property_filter_bbox(config):
+    """Test query  valid features when filtering by property"""
+    p = SQLiteProvider(config)
+    feature_collection = p.query(properties=[("continent", "Europe")],
+                                 bbox=[29.3373, -3.4099, 29.3761, -3.3924])
+    features = feature_collection.get('features', None)
+    assert len(features) == 0
+
+
+def test_query_bbox(config):
+    """Test query with a specified bounding box"""
+
+    psp = SQLiteProvider(config)
+    boxed_feature_collection = psp.query(
+        bbox=[29.3373, -3.4099, 29.3761, -3.3924]
+    )
+
+    assert len(boxed_feature_collection['features']) == 1
+    assert 'Burundi' in \
+        boxed_feature_collection['features'][0]['properties']['name']
+
+
 def test_get(config):
     p = SQLiteProvider(config)
     result = p.get(118)
