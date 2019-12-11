@@ -72,6 +72,38 @@ Best/easiest way to run `pygeoapi` is to use Docker.
 On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi)
 are available.
 
+### Installation 
+
+Install Docker (Ubuntu)
+```bash
+sudo apt-get install apt-transport-https
+sudo apt-get install ca-certificates
+sudo apt-get install curl
+sudo apt-get install gnupg-agent
+sudo apt-get install software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add –
+sudo apt-key fingerprint 0EBFCD88
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+sudo systemctl enable docker
+```
+Pull dockerhub repo
+```bash
+docker pull geopython/pygeoapi
+```
+Create my.config.yml (https://github.com/geopython/pygeoapi/blob/master/docker/examples/simple/my.config.yml) in home directory
+
+Run/Create Container
+
+``` bash
+$ sudo docker run --name geoapi -p 5000:80 -v $(pwd)/my.config.yml:/pygeoapi/local.config.yml -it geopython/pygeoapi
+```
+
+Go to http://localhost:5000/ and should be up and running. 
+
+### Background
+
 The version tagged `latest` is automatically built whenever code
 in the `master` branch of this GitHub repo changes (autobuild).
 This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/master).
@@ -83,8 +115,12 @@ So the chain is:
 ```
 
 Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for
-details of the Docker implementation. To get started quickly
+details of the Docker implementation. 
+
+To get started quickly
 [several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples) will get you up and running.
+
+
 
 ### Unit Testing
 
