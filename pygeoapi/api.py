@@ -492,7 +492,7 @@ class API(object):
         except AttributeError:
             bbox = []
         try:
-            [float(c) for c in bbox]
+            bbox = [float(c) for c in bbox]
         except ValueError:
             exception = {
                 'code': 'InvalidParameterValue',
