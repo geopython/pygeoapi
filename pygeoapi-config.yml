@@ -65,19 +65,19 @@ metadata:
         name: Organization Name
         url: https://pygeoapi.io
     contact:
-        name: Full Name
+        name: Lastname, Firstname
         position: Position Title
         address: Mailing Address
         city: City
         stateorprovince: Administrative Area
-        postalcode: 1234
+        postalcode: Zip or Postal Code
         country: Country
-        phone: +1-555-555-5555
-        fax: +1-555-555-555
+        phone: +xx-xxx-xxx-xxxx
+        fax: +xx-xxx-xxx-xxxx
         email: you@example.org
-        url: https://example.com
-        hours: Mo-Su
-        instructions: Open all day, everyday.
+        url: Contact URL
+        hours: Mo-Fr 08:00-17:00
+        instructions: During hours of service. Off on weekends.
         role: pointOfContact
 
 datasets:
