@@ -23,8 +23,55 @@
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
+<<<<<<< HEAD
         <div id="items-map"></div>
       </div>
+=======
+        <div class="row">
+          <div class="col-sm-12">
+            <div id="items-map"></div>
+          </div>
+          <div class="col-sm-12">
+            <div class="row">
+                <div class="col-sm-12">
+                  Warning: Higher limits not recommended!
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                  Limit:
+                  <select id="limits">
+                    <option value="10">10 (default)</option>
+                    <option value="100">100</option>
+                    <option value="1000">1,000</option>
+                    <option value="2000">2,000</option>
+                  </select>
+                  <script>
+                    var select = document.getElementById('limits');
+                    let params = (new URL(document.location)).searchParams;
+                    select.value = params.get('limit') || 10;
+                    select.addEventListener('change', ev => {
+                      var limit = ev.target.value;
+                      document.location.search = `limit=${limit}`;
+                    });
+                  </script>
+                </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-12">
+                {% for link in data['links'] %}
+                {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
+                <a role="button" href="{{ link['href'] }}">Prev</a>
+                {% elif link['rel'] == 'next' and data['features'] %}
+                <a role="button" href="{{ link['href'] }}">Next</a>
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>  
+>>>>>>> upstream/master
       <div class="col-sm-12 col-md-6">
           <table class="striped">
             <thead>
@@ -57,23 +104,11 @@
         <p>No items</p>
     </div>
     {% endif %}
-    <div class="row">
-        <div class="col-sm-12">
-        {% for link in data['links'] %}
-          {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
-          <a role="button" href="{{ link['href'] }}">Prev</a>
-          {% elif link['rel'] == 'next' and data['features'] %}
-          <a role="button" href="{{ link['href'] }}">Next</a>
-          {% endif %}
-        {% endfor %}
-        </div>
-      </div>
     </section>
 {% endblock %}
 
 {% block extrafoot %}
 {% if data['features'] %}
-
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
