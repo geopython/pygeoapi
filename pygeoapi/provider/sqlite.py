@@ -239,8 +239,6 @@ class SQLiteGPKGProvider(BaseProvider):
             where_values += where_values + tuple((v for k, v in properties))
 
         if bbox:
-            # cast to float string doesnt work on sqlite3
-            bbox = [float(c) for c in bbox]
             if properties:
                 where_syntax += " and "
             # TODO: check name of geometry column
