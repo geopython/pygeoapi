@@ -184,7 +184,7 @@ class SQLiteGPKGProvider(BaseProvider):
         try:
             cursor.execute(f'PRAGMA table_info({self.table})')
             result = cursor.fetchall()
-        except sqlite3.OperationalError as err:
+        except sqlite3.OperationalError:
             LOGGER.error(f' Couldnt find table: {self.table}')
             raise ProviderConnectionError()
 
