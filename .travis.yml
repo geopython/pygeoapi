@@ -16,6 +16,7 @@ python:
 services:
   - elasticsearch
   - postgresql
+  - mongodb
 
 addons:
   postgresql: 9.6
@@ -27,6 +28,7 @@ before_install:
   - sudo apt-get install -y libsqlite3-mod-spatialite devscripts fakeroot debhelper
   - sudo apt-get install -y postgresql-9.6-postgis-2.4
   - sudo apt-get install -y libgdal-dev gdal-bin
+  - sudo apt-get install -y mongodb
 
 install:
   # follow GDAL installed version for Python bindings
@@ -39,6 +41,7 @@ install:
 before_script:
   - sleep 20
   - python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
+  - python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
   - pygeoapi generate-openapi-document -c pygeoapi-config.yml > pygeoapi-openapi.yml
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'

@@ -43,7 +43,8 @@ PLUGINS = {
         'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
-        'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider'
+        'SQLite': 'pygeoapi.provider.sqlite.SQLiteProvider',
+        'MongoDB': 'pygeoapi.provider.mongo.MongoProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
