@@ -221,7 +221,7 @@ def get_oas_30(cfg):
                 'required': False,
                 'schema': {
                     'type': 'string',
-                    'enum': ['json', 'html'],
+                    'enum': ['json', 'html', 'jsonld'],
                     'default': 'json'
                 },
                 'style': 'form',

@@ -317,7 +317,7 @@ class PostgreSQLProvider(BaseProvider):
             rd.pop('st_asgeojson'))
 
         feature['properties'] = rd
-        feature['id'] = feature['properties'].pop(self.id_field)
+        feature['id'] = feature['properties'].get(self.id_field)
 
         return feature
 
