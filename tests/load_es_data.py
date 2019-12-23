@@ -78,6 +78,9 @@ with open(sys.argv[1]) as fh:
     d = json.load(fh)
 
 for f in d['features']:
-    f['properties'][id_field] = f['properties'][id_field]
+    try:
+        f['properties'][id_field] = int(f['properties'][id_field])
+    except ValueError:
+        f['properties'][id_field] = f['properties'][id_field]
     res = es.index(index=index_name, doc_type=type_name,
                    id=f['properties'][id_field], body=f)
