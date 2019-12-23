@@ -36,11 +36,12 @@ es = Elasticsearch()
 
 type_name = 'FeatureCollection'
 
-if len(sys.argv) == 1:
-    print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
+if len(sys.argv) == 2:
+    print('Usage: {} <path/to/data.geojson> <id-field>'.format(sys.argv[0]))
     sys.exit(1)
 
-index_name = os.path.splitext(os.path.basename(sys.argv[1]))[0]
+index_name = os.path.splitext(os.path.basename(sys.argv[1]))[0].lower()
+id_field = sys.argv[2]
 
 if es.indices.exists(index_name):
     es.indices.delete(index_name)
@@ -77,6 +78,6 @@ with open(sys.argv[1]) as fh:
     d = json.load(fh)
 
 for f in d['features']:
-    f['properties']['geonameid'] = int(f['properties']['geonameid'])
+    f['properties'][id_field] = f['properties'][id_field]
     res = es.index(index=index_name, doc_type=type_name,
-                   id=f['properties']['geonameid'], body=f)
+                   id=f['properties'][id_field], body=f)

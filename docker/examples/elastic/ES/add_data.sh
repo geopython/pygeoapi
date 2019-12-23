@@ -44,7 +44,7 @@ until $(curl -sSf -XGET --insecure 'http://localhost:9200/_cluster/health?wait_f
 done
 echo "Elasticsearch seems to be working - Adding ne_110m_populated_places_simple.geojson to ES"
 
-python /load_es_data.py /usr/share/elasticsearch/data/ne_110m_populated_places_simple.geojson
+python /load_es_data.py /usr/share/elasticsearch/data/ne_110m_populated_places_simple.geojson geonameid
 
 echo "Seems that data was loaded"
 
