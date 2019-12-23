@@ -38,7 +38,7 @@ install:
 
 before_script:
   - sleep 20
-  - python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson
+  - python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
   - pygeoapi generate-openapi-document -c pygeoapi-config.yml > pygeoapi-openapi.yml
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'
