@@ -59,6 +59,13 @@ HEADERS = {
 #: Formats allowed for ?f= requests
 FORMATS = ['json', 'html', 'jsonld']
 
+CONFORMANCE = [
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+]
+
 
 def dategetter(date_property, collection):
     """
@@ -379,12 +386,7 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         conformance = {
-            'conformsTo': [
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
-            ]
+            'conformsTo': CONFORMANCE
         }
 
         if format_ == 'html':  # render
