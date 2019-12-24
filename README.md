@@ -1,10 +1,9 @@
 # pygeoapi
 
 [![Build Status](https://travis-ci.org/geopython/pygeoapi.png)](https://travis-ci.org/geopython/pygeoapi)
+<a href="https://json-ld.org"><img src="https://json-ld.org/images/json-ld-button-88.png" height="20"/></a>
 
 pygeoapi provides an API to geospatial data
-
-[![JSON-LD support](https://json-ld.org/images/json-ld-button-88.png)](https://json-ld.org/images/)
 
 ## Installation
 
