@@ -4,6 +4,8 @@
 
 pygeoapi provides an API to geospatial data
 
+[![JSON-LD support](https://json-ld.org/images/json-ld-button-88.png)](https://json-ld.org/images/)
+
 ## Installation
 
 ```bash
@@ -70,7 +72,7 @@ https://github.com/geopython/demo.pygeoapi.io.
 
 Best/easiest way to run `pygeoapi` is to use Docker. On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi) are available.
 
-Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for details of the Docker implementation. 
+Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for details of the Docker implementation.
 
 ### Unit Testing
 
