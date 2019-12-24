@@ -31,24 +31,22 @@ Returns content from plugins and sets reponses
 """
 
 from datetime import datetime
-from dateutil.parser import parse as dateparse
 import json
 import logging
-import os
 import urllib.parse
 
-from jinja2 import Environment, FileSystemLoader
+from dateutil.parser import parse as dateparse
 
 from pygeoapi import __version__
+from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
+                                  jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import json_serial, str2bool, is_url
+from pygeoapi.util import (dategetter, json_serial, render_j2_template,
+                           str2bool, TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
-
-TEMPLATES = '{}{}templates'.format(os.path.dirname(
-    os.path.realpath(__file__)), os.sep)
 
 #: Return headers for requests (e.g:X-Powered-By)
 HEADERS = {
@@ -65,21 +63,6 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
 ]
-
-
-def dategetter(date_property, collection):
-    """
-    Attempts to obtains a date value from a collection.
-    :param date_property: property representing the date
-    :param collection: dictionary to check within
-
-    :returns: `str` (ISO8601) representing the date. ('..' if null or "now",
-        allowing for an open interval).
-    """
-    value = collection.get(date_property, None)
-    if value == 'now' or value is None:
-        return '..'
-    return value.isoformat()
 
 
 def pre_process(func):
@@ -103,128 +86,6 @@ def pre_process(func):
             return func(cls, headers_, format_)
 
     return inner
-
-
-def jsonldify(func):
-    """
-        Decorator that transforms app configuration\
-        to include a JSON-LD representation
-
-        :param func: decorated function
-
-        :returns: `func`
-    """
-
-    def inner(*args, **kwargs):
-        format_ = args[2]
-        if not format_ == 'jsonld':
-            return func(*args, **kwargs)
-        LOGGER.debug('Creating JSON-LD representation')
-        cls = args[0]
-        cfg = cls.config
-        meta = cfg.get('metadata', {})
-        contact = meta.get('contact', {})
-        provider = meta.get('provider', {})
-        ident = meta.get('identification', {})
-        fcmld = {
-          "@context": "https://schema.org",
-          "@type": "DataCatalog",
-          "@id": cfg.get('server', {}).get('url', None),
-          "url": cfg.get('server', {}).get('url', None),
-          "name": ident.get('title', None),
-          "description": ident.get('description', None),
-          "keywords": ident.get('keywords', None),
-          "termsOfService": ident.get('terms_of_service', None),
-          "license": meta.get('license', {}).get('url', None),
-          "provider": {
-            "@type": "Organization",
-            "name": provider.get('name', None),
-            "url": provider.get('url', None),
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": contact.get('address', None),
-                "postalCode": contact.get('postalcode', None),
-                "addressLocality": contact.get('city', None),
-                "addressRegion": contact.get('stateorprovince', None),
-                "addressCountry": contact.get('country', None)
-            },
-            "contactPoint": {
-                "@type": "Contactpoint",
-                "email": contact.get('email', None),
-                "telephone": contact.get('phone', None),
-                "faxNumber": contact.get('fax', None),
-                "url": contact.get('url', None),
-                "hoursAvailable": {
-                    "opens": contact.get('hours', None),
-                    "description": contact.get('instructions', None)
-                },
-                "contactType": contact.get('role', None),
-                "description": contact.get('position', None)
-            }
-          }
-        }
-        cls.fcmld = fcmld
-        return func(cls, *args[1:], **kwargs)
-    return inner
-
-
-def jsonldlify_collection(cls, collection):
-    """
-        Transforms collection into a JSON-LD representation
-
-        :param cls: API object
-        :param collection: `collection` as prepared for non-LD JSON
-                           representation
-
-        :returns: `collection` a dictionary, mapped into JSON-LD, of
-                  type schema:Dataset
-    """
-    temporal_extent = collection.get('extent', {}).get('temporal', {})
-    interval = temporal_extent.get('interval', [[None, None]])
-
-    spatial_extent = collection.get('extent', {}).get('spatial', {})
-    bbox = spatial_extent.get('bbox', None)
-    crs = spatial_extent.get('crs', None)
-    hascrs84 = crs.endswith('CRS84')
-
-    dataset = {
-        "@type": "Dataset",
-        "@id": "{}/collections/{}".format(
-            cls.config['server']['url'],
-            collection['id']
-        ),
-        "name": collection['title'],
-        "description": collection['description'],
-        "license": cls.fcmld['license'],
-        "keywords": collection.get('keywords', None),
-        "spatial": None if (not hascrs84 or not bbox) else [{
-            "Place": {
-                "@type": "GeoShape",
-                "box": '{},{} {},{}'.format(*_bbox[0:2], *_bbox[2:4])
-            }
-        } for _bbox in bbox],
-        "temporalCoverage": None if not interval else "{}/{}".format(
-            *interval[0]
-        )
-    }
-    dataset['url'] = dataset['@id']
-
-    links = collection.get('links', [])
-    if links:
-        dataset['distribution'] = list(map(lambda link: {k: v for k, v in {
-            "@type": "DataDownload",
-            "contentURL": link['href'],
-            "encodingFormat": link['type'],
-            "description": link['title'],
-            "inLanguage": link.get(
-                'hreflang', cls.config.get('server', {}).get('language', None)
-            ),
-            "author": link['rel'] if link.get(
-                'rel', None
-            ) == 'author' else None
-        }.items() if v is not None}, links))
-
-    return dataset
 
 
 class API(object):
@@ -319,7 +180,7 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'root.html', fcm)
+            content = render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
 
         if format_ == 'jsonld':
@@ -357,7 +218,7 @@ class API(object):
                 'openapi-document-path': path
             }
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'openapi.html', data)
+            content = render_j2_template(self.config, 'openapi.html', data)
             return headers_, 200, content
 
         headers_['Content-Type'] = \
@@ -391,8 +252,8 @@ class API(object):
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'conformance.html',
-                                          conformance)
+            content = render_j2_template(self.config, 'conformance.html',
+                                         conformance)
             return headers_, 200, content
 
         return headers_, 200, json.dumps(conformance)
@@ -557,22 +418,22 @@ class API(object):
 
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
-                content = _render_j2_template(self.config, 'collection.html',
-                                              fcm)
+                content = render_j2_template(self.config, 'collection.html',
+                                             fcm)
             else:
-                content = _render_j2_template(self.config, 'collections.html',
-                                              fcm)
+                content = render_j2_template(self.config, 'collections.html',
+                                             fcm)
 
             return headers_, 200, content
 
         if format_ == 'jsonld':
             jsonld = self.fcmld.copy()
             if dataset is not None:
-                jsonld['dataset'] = jsonldlify_collection(self, fcm)
+                jsonld['dataset'] = jsonldify_collection(self, fcm)
             else:
                 jsonld['dataset'] = list(
                     map(
-                        lambda collection: jsonldlify_collection(
+                        lambda collection: jsonldify_collection(
                             self, collection
                         ), fcm.get('collections', [])
                     )
@@ -889,8 +750,8 @@ class API(object):
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
-            content = _render_j2_template(self.config, 'items.html',
-                                          content)
+            content = render_j2_template(self.config, 'items.html',
+                                         content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
             formatter = load_plugin('formatter', {'name': 'CSV', 'geom': True})
@@ -1005,8 +866,8 @@ class API(object):
             headers_['Content-Type'] = 'text/html'
 
             content['title'] = self.config['datasets'][dataset]['title']
-            content = _render_j2_template(self.config, 'item.html',
-                                          content)
+            content = render_j2_template(self.config, 'item.html',
+                                         content)
             return headers_, 200, content
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
@@ -1074,11 +935,11 @@ class API(object):
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
             if process is not None:
-                response = _render_j2_template(self.config, 'process.html',
-                                               p.metadata)
+                response = render_j2_template(self.config, 'process.html',
+                                              p.metadata)
             else:
-                response = _render_j2_template(self.config, 'processes.html',
-                                               {'processes': processes})
+                response = render_j2_template(self.config, 'processes.html',
+                                              {'processes': processes})
 
             return headers_, 200, response
 
@@ -1181,77 +1042,3 @@ def check_format(args, headers):
             format_ = 'json'
 
     return format_
-
-
-def to_json(dict_):
-    """
-    Serialize dict to json
-
-    :param dict_: `dict` of JSON representation
-
-    :returns: JSON string representation
-    """
-
-    return json.dumps(dict_, default=json_serial)
-
-
-def geojson2geojsonld(config, data, dataset, identifier=None):
-    """
-    Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
-    read from, and extended by, the pygeoapi configuration for a particular
-    dataset.
-
-    :param config: dict of configuration
-    :param data: dict of data:
-    :param dataset: dataset identifier
-    :param identifier: item identifier (optional)
-
-    :returns: string of rendered JSON (GeoJSON-LD)
-    """
-    context = config['datasets'][dataset].get('context', [])
-    data['id'] = (
-        '{}/collections/{}/items/{}' if identifier
-        else '{}/collections/{}/items'
-    ).format(
-        *[config['server']['url'], dataset, identifier]
-    )
-    if data.get('timeStamp', False):
-        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
-    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
-    ldjsonData = {
-        "@context": [defaultVocabulary, *(context or [])],
-        **data
-    }
-    isCollection = identifier is None
-    if isCollection:
-        for i, feature in enumerate(data['features']):
-            featureId = feature.get(
-                'id', None
-            ) or feature.get('properties', {}).get('id', None)
-            if featureId is None:
-                continue
-            # Note: @id or https://schema.org/url or both or something else?
-            if is_url(str(featureId)):
-                feature['id'] = featureId
-            else:
-                feature['id'] = '{}/{}'.format(data['id'], featureId)
-    return json.dumps(ldjsonData)
-
-
-def _render_j2_template(config, template, data):
-    """
-    render Jinja2 template
-
-    :param config: dict of configuration
-    :param template: template (relative path)
-    :param data: dict of data
-
-    :returns: string of rendered template
-    """
-
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
-    env.filters['to_json'] = to_json
-    env.globals.update(to_json=to_json)
-
-    template = env.get_template(template)
-    return template.render(config=config, data=data, version=__version__)
