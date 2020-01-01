@@ -47,8 +47,11 @@ import logging
 import json
 import psycopg2
 from psycopg2.sql import SQL, Identifier, Literal
-from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError
+from pygeoapi.provider.base import (
+    BaseProvider,
+    ProviderConnectionError,
+    ProviderQueryError,
+)
 
 from psycopg2.extras import RealDictCursor
 
@@ -95,30 +98,32 @@ class DatabaseConnection(object):
 
     def __enter__(self):
         try:
-            search_path = self.conn_dic.pop('search_path', ['public'])
-            if search_path != ['public']:
-                self.conn_dic["options"] = f'-c \
+            search_path = self.conn_dic.pop("search_path", ["public"])
+            if search_path != ["public"]:
+                self.conn_dic[
+                    "options"
+                ] = f'-c \
                 search_path={",".join(search_path)}'
-                LOGGER.debug(f'Using search path: {search_path} ')
+                LOGGER.debug(f"Using search path: {search_path} ")
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
-            LOGGER.error("Couldn't connect to Postgis using:{}".format(
-                str(self.conn_dic)))
+            LOGGER.error(
+                "Couldn't connect to Postgis using:{}".format(str(self.conn_dic))
+            )
             raise ProviderConnectionError()
 
         self.cur = self.conn.cursor()
-        if self.context == 'query':
+        if self.context == "query":
             # Getting columns
             query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
             WHERE table_name = '{}' and udt_name != 'geometry';".format(
-                self.table)
+                self.table
+            )
 
             self.cur.execute(query_cols)
             result = self.cur.fetchall()
-            self.columns = SQL(', ').join(
-                [Identifier(item[0]) for item in result]
-                )
+            self.columns = SQL(", ").join([Identifier(item[0]) for item in result])
             self.fields = dict(result)
 
         return self
@@ -148,19 +153,22 @@ class PostgreSQLProvider(BaseProvider):
 
         BaseProvider.__init__(self, provider_def)
 
-        self.table = provider_def['table']
-        self.id_field = provider_def['id_field']
-        self.conn_dic = provider_def['data']
-        self.geom = provider_def.get('geom_field', 'geom')
+        self.table = provider_def["table"]
+        self.id_field = provider_def["id_field"]
+        self.conn_dic = provider_def["data"]
+        self.geom = provider_def.get("geom_field", "geom")
 
-        LOGGER.debug('Setting Postgresql properties:')
-        LOGGER.debug('Connection String:{}'.format(
-            ",".join(("{}={}".format(*i) for i in self.conn_dic.items()))))
-        LOGGER.debug('Name:{}'.format(self.name))
-        LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Table:{}'.format(self.table))
+        LOGGER.debug("Setting Postgresql properties:")
+        LOGGER.debug(
+            "Connection String:{}".format(
+                ",".join(("{}={}".format(*i) for i in self.conn_dic.items()))
+            )
+        )
+        LOGGER.debug("Name:{}".format(self.name))
+        LOGGER.debug("ID_field:{}".format(self.id_field))
+        LOGGER.debug("Table:{}".format(self.table))
 
-        LOGGER.debug('Get available fields/properties')
+        LOGGER.debug("Get available fields/properties")
         self.get_fields()
 
     def get_fields(self):
@@ -169,8 +177,16 @@ class PostgreSQLProvider(BaseProvider):
                 self.fields = db.fields
         return self.fields
 
-    def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+    def query(
+        self,
+        startindex=0,
+        limit=10,
+        resulttype="results",
+        bbox=[],
+        datetime=None,
+        properties=[],
+        sortby=[],
+    ):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -186,20 +202,24 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying PostGIS')
+        LOGGER.debug("Querying PostGIS")
 
-        if resulttype == 'hits':
+        if resulttype == "hits":
 
-            with DatabaseConnection(self.conn_dic,
-                                    self.table, context="hits") as db:
+            with DatabaseConnection(self.conn_dic, self.table, context="hits") as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-                sql_query = SQL("select count(*) as hits from {}").\
-                    format(Identifier(self.table))
+                sql_query = SQL("select count(*) as hits from {}").format(
+                    Identifier(self.table)
+                )
                 try:
                     cursor.execute(sql_query)
                 except Exception as err:
-                    LOGGER.error('Error executing sql_query: {}: {}'.format(
-                        sql_query.as_string(cursor)), err)
+                    LOGGER.error(
+                        "Error executing sql_query: {}: {}".format(
+                            sql_query.as_string(cursor)
+                        ),
+                        err,
+                    )
                     raise ProviderQueryError()
 
                 hits = cursor.fetchone()["hits"]
@@ -212,56 +232,51 @@ class PostgreSQLProvider(BaseProvider):
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
             where_conditions = []
             if properties:
-                property_clauses = \
-                    [SQL('{} = {}').format(
-                        Identifier(k), Literal(v)) for k, v in properties]
+                property_clauses = [
+                    SQL("{} = {}").format(Identifier(k), Literal(v))
+                    for k, v in properties
+                ]
                 where_conditions += property_clauses
             if bbox:
-                bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
+                bbox_clause = SQL("{} && ST_MakeEnvelope({})").format(
                     Identifier(self.geom),
-                    SQL(', ').join(
-                        [Literal(bbox_coord) for bbox_coord in bbox]
-                    )
+                    SQL(", ").join([Literal(bbox_coord) for bbox_coord in bbox]),
                 )
                 where_conditions.append(bbox_clause)
 
             if where_conditions:
-                where_clause = SQL(' WHERE {}').format(
-                    SQL(' AND ').join(where_conditions)
+                where_clause = SQL(" WHERE {}").format(
+                    SQL(" AND ").join(where_conditions)
                 )
             else:
-                where_clause = SQL('')
-            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
-                format(db.columns,
-                       Identifier(self.geom),
-                       Identifier(self.table),
-                       where_clause)
+                where_clause = SQL("")
+            sql_query = SQL(
+                'DECLARE "geo_cursor" CURSOR FOR \
+             SELECT {},ST_AsGeoJSON({}) FROM {}{}'
+            ).format(
+                db.columns, Identifier(self.geom), Identifier(self.table), where_clause
+            )
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
-            LOGGER.debug('Start Index: {}'.format(startindex))
-            LOGGER.debug('End Index: {}'.format(end_index))
+            LOGGER.debug("SQL Query: {}".format(sql_query.as_string(cursor)))
+            LOGGER.debug("Start Index: {}".format(startindex))
+            LOGGER.debug("End Index: {}".format(end_index))
             try:
                 cursor.execute(sql_query)
                 for index in [startindex, limit]:
-                    cursor.execute("fetch forward {} from geo_cursor"
-                                   .format(index))
+                    cursor.execute("fetch forward {} from geo_cursor".format(index))
             except Exception as err:
-                LOGGER.error('Error executing sql_query: {}'.format(
-                    sql_query.as_string(cursor)))
+                LOGGER.error(
+                    "Error executing sql_query: {}".format(sql_query.as_string(cursor))
+                )
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
             row_data = cursor.fetchall()
 
-            feature_collection = {
-                'type': 'FeatureCollection',
-                'features': []
-            }
+            feature_collection = {"type": "FeatureCollection", "features": []}
 
             for rd in row_data:
-                feature_collection['features'].append(
-                    self.__response_feature(rd))
+                feature_collection["features"].append(self.__response_feature(rd))
 
             return feature_collection
 
@@ -273,16 +288,19 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1'
-        cursor.execute(SQL(sql).format(
-            Identifier(self.id_field),
-            Identifier(self.table),
-            Identifier(self.id_field),
-            Identifier(self.id_field),
-        ), (identifier,))
+        sql = "SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1"
+        cursor.execute(
+            SQL(sql).format(
+                Identifier(self.id_field),
+                Identifier(self.table),
+                Identifier(self.id_field),
+                Identifier(self.id_field),
+            ),
+            (identifier,),
+        )
         item = cursor.fetchall()
-        id = item[0]['id']
-        return id
+        id_ = item[0]["id"]
+        return id_
 
     def get_next(self, cursor, identifier):
         """
@@ -292,15 +310,18 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1'
-        cursor.execute(SQL(sql).format(
-            Identifier(self.id_field),
-            Identifier(self.table),
-            Identifier(self.id_field),
-            Identifier(self.id_field),
-        ), (identifier,))
+        sql = "SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1"
+        cursor.execute(
+            SQL(sql).format(
+                Identifier(self.id_field),
+                Identifier(self.table),
+                Identifier(self.id_field),
+                Identifier(self.id_field),
+            ),
+            (identifier,),
+        )
         item = cursor.fetchall()
-        id = item[0]['id']
+        id = item[0]["id"]
         return id
 
     def get(self, identifier):
@@ -313,31 +334,36 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        LOGGER.debug('Get item from Postgis')
+        LOGGER.debug("Get item from Postgis")
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("select {},ST_AsGeoJSON({}) \
-            from {} WHERE {}=%s").format(db.columns,
-                                         Identifier(self.geom),
-                                         Identifier(self.table),
-                                         Identifier(self.id_field))
+            sql_query = SQL(
+                "select {},ST_AsGeoJSON({}) \
+            from {} WHERE {}=%s"
+            ).format(
+                db.columns,
+                Identifier(self.geom),
+                Identifier(self.table),
+                Identifier(self.id_field),
+            )
 
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
-            LOGGER.debug('Identifier: {}'.format(identifier))
+            LOGGER.debug("SQL Query: {}".format(sql_query.as_string(db.conn)))
+            LOGGER.debug("Identifier: {}".format(identifier))
             try:
-                cursor.execute(sql_query, (identifier, ))
+                cursor.execute(sql_query, (identifier,))
             except Exception as err:
-                LOGGER.error('Error executing sql_query: {}'.format(
-                    sql_query.as_string(cursor)))
+                LOGGER.error(
+                    "Error executing sql_query: {}".format(sql_query.as_string(cursor))
+                )
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
             row_data = cursor.fetchall()[0]
             feature = self.__response_feature(row_data)
 
-            feature['previous'] = self.get_previous(cursor, identifier)
-            feature['next'] = self.get_next(cursor, identifier)
+            feature["pre"] = self.get_previous(cursor, identifier)
+            feature["next"] = self.get_next(cursor, identifier)
             return feature
 
     def __response_feature(self, row_data):
@@ -350,14 +376,11 @@ class PostgreSQLProvider(BaseProvider):
         """
 
         rd = dict(row_data)
-        feature = {
-            'type': 'Feature'
-        }
-        feature["geometry"] = json.loads(
-            rd.pop('st_asgeojson'))
+        feature = {"type": "Feature"}
+        feature["geometry"] = json.loads(rd.pop("st_asgeojson"))
 
-        feature['properties'] = rd
-        feature['id'] = feature['properties'].pop(self.id_field)
+        feature["properties"] = rd
+        feature["id"] = feature["properties"].pop(self.id_field)
 
         return feature
 
@@ -369,8 +392,7 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        feature_collection = {"features": [],
-                              "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = hits
+        feature_collection = {"features": [], "type": "FeatureCollection"}
+        feature_collection["numberMatched"] = hits
 
         return feature_collection
