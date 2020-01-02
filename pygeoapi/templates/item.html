@@ -49,7 +49,7 @@
                 <div class="col-sm-12">
                   {% for link in data['links'] %}
                   {% if link['rel'] == 'prev' %}
-                  <a role="button" href="./{{ data['prev'] }}">Prev</a>
+                  <a role="button" href="./{{ data['prev'] }}">Previous</a>
                   {% elif link['rel'] == 'next' %}
                   <a role="button" href="./{{ data['next'] }}">Next</a>
                   {% endif %}
