@@ -481,21 +481,21 @@ class API(object):
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
                 'type': 'application/geo+json',
-                'rel': 'item',
+                'rel': 'items',
                 'title': 'Features as GeoJSON',
                 'href': '{}/collections/{}/items?f=json'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
                 'type': 'application/ld+json',
-                'rel': 'item',
+                'rel': 'items',
                 'title': 'Features as RDF (GeoJSON-LD)',
                 'href': '{}/collections/{}/items?f=jsonld'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
                 'type': 'text/html',
-                'rel': 'item',
+                'rel': 'items',
                 'title': 'Features as HTML',
                 'href': '{}/collections/{}/items?f=html'.format(
                     self.config['server']['url'], k)
@@ -633,8 +633,17 @@ class API(object):
                 }
                 LOGGER.error(exception)
                 return headers_, 400, json.dumps(exception)
-        except TypeError:
+        except (TypeError) as err:
+            LOGGER.warning(err)
             startindex = 0
+        except ValueError as err:
+            LOGGER.warning(err)
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'startindex value should be an integer'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing limit parameter')
         try:
@@ -648,8 +657,17 @@ class API(object):
                 }
                 LOGGER.error(exception)
                 return headers_, 400, json.dumps(exception)
-        except TypeError:
+        except TypeError as err:
+            LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
+        except ValueError as err:
+            LOGGER.warning(err)
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'limit value should be an integer'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -745,7 +763,14 @@ class API(object):
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
-            if k not in reserved_fieldnames and k in p.fields.keys():
+            if k not in reserved_fieldnames and k not in p.fields.keys():
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'unknown query parameter'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
+            elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
