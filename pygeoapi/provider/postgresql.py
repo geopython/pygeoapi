@@ -336,7 +336,7 @@ class PostgreSQLProvider(BaseProvider):
             row_data = cursor.fetchall()[0]
             feature = self.__response_feature(row_data)
 
-            feature['previous'] = self.get_previous(cursor, identifier)
+            feature['prev'] = self.get_previous(cursor, identifier)
             feature['next'] = self.get_next(cursor, identifier)
             return feature
 
