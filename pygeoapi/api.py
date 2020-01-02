@@ -319,13 +319,14 @@ class API(object):
                     v['extents']['spatial']['crs']
 
             t_ext = v.get('extents', {}).get('temporal', {})
-            begins = dategetter('begin', t_ext)
-            ends = dategetter('end', t_ext)
-            collection['extent']['temporal'] = {
-                'interval': [[begins, ends]]
-            }
-            if 'trs' in t_ext:
-                collection['extent']['temporal']['trs'] = t_ext['trs']
+            if t_ext:
+                begins = dategetter('begin', t_ext)
+                ends = dategetter('end', t_ext)
+                collection['extent']['temporal'] = {
+                    'interval': [[begins, ends]]
+                }
+                if 'trs' in t_ext:
+                    collection['extent']['temporal']['trs'] = t_ext['trs']
 
             for link in v['links']:
                 lnk = {
@@ -921,7 +922,7 @@ class API(object):
                 for k, v in processes_config.items():
                     p = load_plugin('process',
                                     processes_config[k]['processor'])
-                    p.metadata['itemType'] = ['process']
+                    p.metadata['itemType'] = 'process'
                     p.metadata['jobControlOptions'] = ['sync-execute']
                     p.metadata['outputTransmission'] = ['value']
                     processes.append(p.metadata)
