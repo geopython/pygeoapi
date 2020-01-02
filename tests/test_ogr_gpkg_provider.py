@@ -73,9 +73,9 @@ def test_query(config_poi_portugal):
 
 def test_get(config_poi_portugal):
     p = OGRProvider(config_poi_portugal)
-    result = p.get(5156778016)
-    assert result['id'] == 5156778016
-    assert 'tourist_info' in result['properties']['fclass']
+    result = p.get(536678593)
+    assert result['id'] == 536678593
+    assert 'cafe' in result['properties']['fclass']
 
 
 # Testing with GeoPackage files with identical features
