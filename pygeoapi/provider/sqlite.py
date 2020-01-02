@@ -61,10 +61,10 @@ class SQLiteGPKGProvider(BaseProvider):
         self.geom_col = None
 
         LOGGER.debug('Setting SQLite properties:')
-        LOGGER.debug(f'Data source: {self.data}')
-        LOGGER.debug(f'Name: {self.name}')
-        LOGGER.debug(f'ID_field: {self.id_field}')
-        LOGGER.debug(f'Table: {self.table}')
+        LOGGER.debug('Data source: {}'.format(self.data))
+        LOGGER.debug('Name: {}'.format(self.name))
+        LOGGER.debug('ID_field: {}'.format(self.id_field))
+        LOGGER.debug('Table: {}'.format(self.table))
 
         self.cursor = self.__load()
 
@@ -83,7 +83,7 @@ class SQLiteGPKGProvider(BaseProvider):
         if not self.fields:
 
             results = self.cursor.execute(
-                f'PRAGMA table_info({self.table})').fetchall()
+                'PRAGMA table_info({})'.format(self.table)).fetchall()
             [self.fields.update(
                 {item["name"]:item["type"].lower()}
                 ) for item in results]
@@ -103,7 +103,7 @@ class SQLiteGPKGProvider(BaseProvider):
             'type': 'Feature'
         }
         feature["geometry"] = json.loads(
-            rd.pop(f'AsGeoJSON({self.geom_col})')
+            rd.pop('AsGeoJSON({})'.format(self.geom_col))
             )
         feature['properties'] = rd
         feature['id'] = feature['properties'].pop(self.id_field)
@@ -139,7 +139,7 @@ class SQLiteGPKGProvider(BaseProvider):
         try:
             conn.enable_load_extension(True)
         except AttributeError as err:
-            LOGGER.error(f'Extension loading not enabled: {err}')
+            LOGGER.error('Extension loading not enabled: {}'.format(err))
             raise ProviderConnectionError()
 
         conn.row_factory = sqlite3.Row
@@ -149,7 +149,7 @@ class SQLiteGPKGProvider(BaseProvider):
         try:
             cursor.execute("SELECT load_extension('mod_spatialite.so')")
         except sqlite3.OperationalError as err:
-            LOGGER.error(f'Extension loading error: {err}')
+            LOGGER.error('Extension loading error: {}'.format(err))
             raise ProviderConnectionError()
         result = cursor.fetchall()
 
@@ -182,10 +182,10 @@ class SQLiteGPKGProvider(BaseProvider):
             self.geom_col = "geometry"
 
         try:
-            cursor.execute(f'PRAGMA table_info({self.table})')
+            cursor.execute('PRAGMA table_info({})'.format(self.table))
             result = cursor.fetchall()
         except sqlite3.OperationalError:
-            LOGGER.error(f' Couldnt find table: {self.table}')
+            LOGGER.error('Couldnt find table: {}'.format(self.table))
             raise ProviderConnectionError()
 
         try:
@@ -197,10 +197,11 @@ class SQLiteGPKGProvider(BaseProvider):
             raise InvalidPluginError
 
         self.columns = [item[1] for item in result if item[1] != self.geom_col]
-        self.columns = ','.join(self.columns)+f',AsGeoJSON({self.geom_col})'
+        self.columns = ','.join(self.columns)+',AsGeoJSON({})'.format(
+            self.geom_col)
 
         if self.application_id:
-            self.table = f"vgpkg_{self.table}"
+            self.table = "vgpkg_{}".format(self.table)
 
         return cursor
 
@@ -226,7 +227,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         if resulttype == 'hits':
             res = self.cursor.execute(
-                f"select count(*) as hits from {self.table};")
+                "select count(*) as hits from {};".format(self.table))
 
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
@@ -235,24 +236,27 @@ class SQLiteGPKGProvider(BaseProvider):
         where_values = tuple()
 
         if properties:
-            where_syntax += " and ".join([f"{k}=?" for k, v in properties])
+            where_syntax += " and ".join(
+                ["{}=?".format(k) for k, v in properties])
             where_values += where_values + tuple((v for k, v in properties))
 
         if bbox:
             if properties:
                 where_syntax += " and "
             # TODO: check name of geometry column
-            where_syntax += f" Intersects({self.geom_col}, BuildMbr(?,?,?,?)) "
+            where_syntax += " Intersects({}, \
+                BuildMbr(?,?,?,?)) ".format(self.geom_col)
             where_values += tuple(bbox)
 
-        sql_query = f"select {self.columns} from \
-            {self.table} {where_syntax} limit ? offset ?"
+        sql_query = "select {} from \
+            {} {} limit ? offset ?".format(
+                self.columns, self.table, where_syntax)
 
         end_index = startindex + limit
 
-        LOGGER.debug(f'SQL Query: {sql_query}')
-        LOGGER.debug(f'Start Index: {startindex}')
-        LOGGER.debug(f'End Index: {end_index}')
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        LOGGER.debug('Start Index: {}'.format(startindex))
+        LOGGER.debug('End Index: {}'.format(end_index))
 
         row_data = self.cursor.execute(
             sql_query, where_values + (limit, startindex))
@@ -280,11 +284,12 @@ class SQLiteGPKGProvider(BaseProvider):
 
         LOGGER.debug('Get item from SQLite/GPKG')
 
-        sql_query = f'select {self.columns} from \
-            {self.table} where {self.id_field}==?;'
+        sql_query = 'select {} from \
+            {} where {}==?;'.format(
+                self.columns, self.table, self.id_field)
 
-        LOGGER.debug(f'SQL Query: {sql_query}')
-        LOGGER.debug(f'Identifier: {identifier}')
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        LOGGER.debug('Identifier: {}'.format(identifier))
 
         row_data = self.cursor.execute(sql_query, (identifier, )).fetchone()
 
@@ -292,4 +297,4 @@ class SQLiteGPKGProvider(BaseProvider):
         return feature
 
     def __repr__(self):
-        return f'<SQLiteGPKGProvider> {self.data}, {self.table}'
+        return '<SQLiteGPKGProvider> {}, {}'.format(self.data, self.table)
