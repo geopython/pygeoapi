@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y",
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-150.0000000, 40.0000000],
+          [-150.0000000, 90.0000000],
+          [-45.0000000, 90.0000000],
+          [-45.0000000, 40.0000000],
+          [-150.0000000, 40.0000000]
+        ]]
+      },
+      "properties": {
+        "identifier": "CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y",
+        "filepath": "/Users/tkralidi/CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y.nc",
+        "datetime": "2019-10-11"
+      }
+    }
+  ]
+}

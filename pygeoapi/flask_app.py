@@ -158,6 +158,9 @@ def dataset(feature_collection, feature=None):
 
     return response
 
+def collection_coverages(collection_id, coverage_id=None):
+    pass
+
 
 @APP.route('/processes')
 @APP.route('/processes/<name>')

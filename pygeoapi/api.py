@@ -438,7 +438,7 @@ class API(object):
         for k, v in self.config['datasets'].items():
             collection = {'links': []}
             collection['id'] = k
-            collection['itemType'] = 'feature'
+            collection['itemType'] = v['type']
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
@@ -458,13 +458,14 @@ class API(object):
                     v['extents']['spatial']['crs']
 
             t_ext = v.get('extents', {}).get('temporal', {})
-            begins = dategetter('begin', t_ext)
-            ends = dategetter('end', t_ext)
-            collection['extent']['temporal'] = {
-                'interval': [[begins, ends]]
-            }
-            if 'trs' in t_ext:
-                collection['extent']['temporal']['trs'] = t_ext['trs']
+            if t_ext:
+                begins = dategetter('begin', t_ext)
+                ends = dategetter('end', t_ext)
+                collection['extent']['temporal'] = {
+                    'interval': [[begins, ends]]
+                }
+                if 'trs' in t_ext:
+                    collection['extent']['temporal']['trs'] = t_ext['trs']
 
             for link in v['links']:
                 lnk = {
@@ -609,6 +610,15 @@ class API(object):
             }
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception, default=json_serial)
+
+        if (self.config['datasets'][dataset]['type'] in
+           ['coverage', 'map', 'process']):
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Collection specified is a coverage or process'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         format_ = check_format(args, headers)
 
@@ -949,6 +959,15 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
+        if (self.config['datasets'][dataset]['type'] in
+           ['coverage', 'map', 'process']):
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Collection specified is a coverage or process'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         LOGGER.debug('Loading provider')
         p = load_plugin('provider',
                         self.config['datasets'][dataset]['provider'])
@@ -1060,7 +1079,7 @@ class API(object):
                 for k, v in processes_config.items():
                     p = load_plugin('process',
                                     processes_config[k]['processor'])
-                    p.metadata['itemType'] = ['process']
+                    p.metadata['itemType'] = 'process'
                     p.metadata['jobControlOptions'] = ['sync-execute']
                     p.metadata['outputTransmission'] = ['value']
                     processes.append(p.metadata)

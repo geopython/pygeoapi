@@ -81,7 +81,32 @@ metadata:
         role: pointOfContact
 
 datasets:
+    cmip5:
+        type: coverage
+        title: CMIP5 sample
+        description: CMIP5 sample
+        keywords:
+            - climate
+        extents:
+            spatial:
+                bbox: [-150,40,-45,90]
+        links:
+            - type: text/html
+              rel: canonical
+              title: data
+              href: https://climate-change.canada.ca/climate-data/#/cmip5-data
+              hreflang: en-CA
+        provider:
+            name: Elasticsearch
+            data: http://localhost:9200/cmip5/FeatureCollection
+            item_field: filepath
+            id_field: id
+            time_field: datetime
+            geometry:
+                x_field: long
+                y_field: lat
     obs:
+        type: feature
         title: Observations
         description: My cool observations
         keywords:
@@ -119,6 +144,7 @@ datasets:
                 y_field: lat
 
     lakes:
+        type: feature
         title: Large Lakes
         description: lakes of the world, public domain
         keywords:
