@@ -97,9 +97,9 @@ class DatabaseConnection(object):
         try:
             search_path = self.conn_dic.pop('search_path', ['public'])
             if search_path != ['public']:
-                self.conn_dic["options"] = f'-c \
-                search_path={",".join(search_path)}'
-                LOGGER.debug(f'Using search path: {search_path} ')
+                self.conn_dic["options"] = '-c \
+                search_path={}'.format(",".join(search_path))
+                LOGGER.debug('Using search path: {} '.format(search_path))
             self.conn = psycopg2.connect(**self.conn_dic)
 
         except psycopg2.OperationalError:
@@ -164,6 +164,11 @@ class PostgreSQLProvider(BaseProvider):
         self.get_fields()
 
     def get_fields(self):
+        """
+        Get fields from PostgreSQL table (columns are field)
+
+        :returns: dict of fields
+        """
         if not self.fields:
             with DatabaseConnection(self.conn_dic, self.table) as db:
                 self.fields = db.fields
@@ -265,6 +270,44 @@ class PostgreSQLProvider(BaseProvider):
 
             return feature_collection
 
+    def get_previous(self, cursor, identifier):
+        """
+        Query previous ID given current ID
+
+        :param identifier: feature id
+
+        :returns: feature id
+        """
+        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1'
+        cursor.execute(SQL(sql).format(
+            Identifier(self.id_field),
+            Identifier(self.table),
+            Identifier(self.id_field),
+            Identifier(self.id_field),
+        ), (identifier,))
+        item = cursor.fetchall()
+        id_ = item[0]['id']
+        return id_
+
+    def get_next(self, cursor, identifier):
+        """
+        Query next ID given current ID
+
+        :param identifier: feature id
+
+        :returns: feature id
+        """
+        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1'
+        cursor.execute(SQL(sql).format(
+            Identifier(self.id_field),
+            Identifier(self.table),
+            Identifier(self.id_field),
+            Identifier(self.id_field),
+        ), (identifier,))
+        item = cursor.fetchall()
+        id_ = item[0]['id']
+        return id_
+
     def get(self, identifier):
         """
         Query the provider for a specific
@@ -298,6 +341,8 @@ class PostgreSQLProvider(BaseProvider):
             row_data = cursor.fetchall()[0]
             feature = self.__response_feature(row_data)
 
+            feature['prev'] = self.get_previous(cursor, identifier)
+            feature['next'] = self.get_next(cursor, identifier)
             return feature
 
     def __response_feature(self, row_data):

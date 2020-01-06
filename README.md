@@ -1,6 +1,7 @@
 # pygeoapi
 
 [![Build Status](https://travis-ci.org/geopython/pygeoapi.png)](https://travis-ci.org/geopython/pygeoapi)
+<a href="https://json-ld.org"><img src="https://json-ld.org/images/json-ld-button-88.png" height="20"/></a>
 
 pygeoapi provides an API to geospatial data
 
@@ -70,7 +71,7 @@ https://github.com/geopython/demo.pygeoapi.io.
 
 Best/easiest way to run `pygeoapi` is to use Docker. On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi) are available.
 
-Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for details of the Docker implementation. 
+Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for details of the Docker implementation.
 
 ### Unit Testing
 
