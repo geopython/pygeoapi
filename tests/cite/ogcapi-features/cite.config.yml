@@ -1,8 +1,8 @@
 server:
     bind:
         host: 0.0.0.0
-        port: 5001
-    url: http://147.102.109.27:5001/
+        port: 80
+    url: https://demo.pygeoapi.io/cite
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -20,24 +20,24 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
-        description: pygeoapi provides an API to geospatial data
+        title: pygeoapi CITE instance
+        description: pygeoapi instance in support of OGC CITE compliance
         keywords:
             - geospatial
             - data
             - api
         keywords_type: theme
         terms_of_service: null
-        url: http://example.org
+        url: https://pygeoapi.io
     license:
         name: CC-BY 4.0 license
         url: https://creativecommons.org/licenses/by/4.0/
     provider:
-        name: Organization Name
+        name: pygeoapi
         url: https://pygeoapi.io
     contact:
-        name: Lastname, Firstname
-        position: Position Title
+        name: Tom Kralidis
+        position: Senior Systems Scientist
         address: Mailing Address
         city: City
         stateorprovince: Administrative Area
@@ -45,8 +45,8 @@ metadata:
         country: Country
         phone: +xx-xxx-xxx-xxxx
         fax: +xx-xxx-xxx-xxxx
-        email: you@example.org
-        url: Contact URL
+        email: pygeoapi@lists.osgeo.org
+        url: https://pygeoapi.io/community/
         hours: Mo-Fr 08:00-17:00
         instructions: During hours of service. Off on weekends.
         role: pointOfContact
