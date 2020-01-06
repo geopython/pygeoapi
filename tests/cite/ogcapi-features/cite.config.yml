@@ -1,8 +1,8 @@
 server:
     bind:
         host: 0.0.0.0
-        port: 80
-    url: https://demo.pygeoapi.io/cite
+        port: 5001
+    url: http://localhost:5001
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
