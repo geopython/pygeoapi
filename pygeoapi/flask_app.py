@@ -176,6 +176,23 @@ def collection_coverage_metadata(collection_id):
 
     return response
 
+@APP.route('/collections/<collection_id>/coverage/all')
+def collection_coverage_subset(collection_id):
+    """
+    OGC open api collections/{dataset}/coverage/all access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_subset(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
 
 @APP.route('/processes')
 @APP.route('/processes/<name>')

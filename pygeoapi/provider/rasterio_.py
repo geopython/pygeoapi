@@ -51,12 +51,19 @@ class RasterioProvider(BaseProvider):
 
         BaseProvider.__init__(self, provider_def)
 
-        self.d = rasterio.open(self.data)
+        try:
+            self.d = rasterio.open(self.data)
+        except Exception as err:
+            LOGGER.warning(err)
+            raise ProviderConnectionError(err)
 
     def get_metadata(self):
         metadata = {}
 
-        metadata['bounds'] = [self.d.bounds.left, self.d.bounds.bottom, self.d.bounds.right, self.d.bounds.top]
+        metadata['bounds'] = [
+            self.d.bounds.left, self.d.bounds.bottom,
+            self.d.bounds.right, self.d.bounds.top
+        ]
         metadata['name'] = self.d.name
         metadata['bands'] = self.d.count
         metadata['width'] = self.d.width
@@ -64,6 +71,7 @@ class RasterioProvider(BaseProvider):
         metadata['resx'] = self.d.res[0]
         metadata['resy'] = self.d.res[1]
         metadata['native_format'] = self.d.driver
+        metadata['test'] = self.d.driver
 
         metadata['transform'] = [
             self.d.transform.a,
