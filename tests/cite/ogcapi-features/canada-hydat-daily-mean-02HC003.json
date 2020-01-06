@@ -1,0 +1,1240 @@
+{
+    "features": [
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-03",
+            "properties": {
+                "DATE": "1975-10-03",
+                "FLOW": 2.039999961853028,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-03",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-02",
+            "properties": {
+                "DATE": "1975-10-02",
+                "FLOW": 2.059999942779541,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-02",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-01",
+            "properties": {
+                "DATE": "1975-10-01",
+                "FLOW": 2.140000104904175,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-01",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-07",
+            "properties": {
+                "DATE": "1975-10-07",
+                "FLOW": 1.940000057220459,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-07",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-06",
+            "properties": {
+                "DATE": "1975-10-06",
+                "FLOW": 1.9600000381469729,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-06",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-05",
+            "properties": {
+                "DATE": "1975-10-05",
+                "FLOW": 1.909999966621399,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-05",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1975-10-04",
+            "properties": {
+                "DATE": "1975-10-04",
+                "FLOW": 2.0,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1975-10-04",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1983-12-31",
+            "properties": {
+                "DATE": "1983-12-31",
+                "FLOW": 2.5999999046325684,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1983-12-31",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1983-12-30",
+            "properties": {
+                "DATE": "1983-12-30",
+                "FLOW": 2.650000095367432,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1983-12-30",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.2017-05-23",
+            "properties": {
+                "DATE": "2017-05-23",
+                "FLOW": 7.079999923706055,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.2017-05-23",
+                "LEVEL": 2.3320000171661377,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-09",
+            "properties": {
+                "DATE": "1955-09-09",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-09",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-08",
+            "properties": {
+                "DATE": "1955-09-08",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-08",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-07",
+            "properties": {
+                "DATE": "1955-09-07",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-07",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-06",
+            "properties": {
+                "DATE": "1955-09-06",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-06",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-05",
+            "properties": {
+                "DATE": "1955-09-05",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-05",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-04",
+            "properties": {
+                "DATE": "1955-09-04",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-04",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-03",
+            "properties": {
+                "DATE": "1955-09-03",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-03",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-02",
+            "properties": {
+                "DATE": "1955-09-02",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-02",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1955-09-01",
+            "properties": {
+                "DATE": "1955-09-01",
+                "FLOW": 1.4700000286102295,
+                "FLOW_SYMBOL_EN": "Estimated",
+                "FLOW_SYMBOL_FR": "Estim\u00e9",
+                "IDENTIFIER": "02HC003.1955-09-01",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-22",
+            "properties": {
+                "DATE": "1979-11-22",
+                "FLOW": 5.230000019073486,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-22",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-23",
+            "properties": {
+                "DATE": "1979-11-23",
+                "FLOW": 9.260000228881836,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-23",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-20",
+            "properties": {
+                "DATE": "1979-11-20",
+                "FLOW": 3.390000104904175,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-20",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-21",
+            "properties": {
+                "DATE": "1979-11-21",
+                "FLOW": 3.3299999237060547,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-21",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-26",
+            "properties": {
+                "DATE": "1979-11-26",
+                "FLOW": 25.799999237060547,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-26",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-27",
+            "properties": {
+                "DATE": "1979-11-27",
+                "FLOW": 24.399999618530277,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-27",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-24",
+            "properties": {
+                "DATE": "1979-11-24",
+                "FLOW": 20.5,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-24",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-25",
+            "properties": {
+                "DATE": "1979-11-25",
+                "FLOW": 17.899999618530273,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-25",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-28",
+            "properties": {
+                "DATE": "1979-11-28",
+                "FLOW": 18.600000381469727,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-28",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1979-11-29",
+            "properties": {
+                "DATE": "1979-11-29",
+                "FLOW": 17.5,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1979-11-29",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-09",
+            "properties": {
+                "DATE": "1967-02-09",
+                "FLOW": 4.53000020980835,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-09",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-08",
+            "properties": {
+                "DATE": "1967-02-08",
+                "FLOW": 5.659999847412109,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-08",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-01",
+            "properties": {
+                "DATE": "1967-02-01",
+                "FLOW": 3.259999990463257,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-01",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-03",
+            "properties": {
+                "DATE": "1967-02-03",
+                "FLOW": 3.109999895095825,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-03",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-02",
+            "properties": {
+                "DATE": "1967-02-02",
+                "FLOW": 2.8299999237060547,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-02",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-05",
+            "properties": {
+                "DATE": "1967-02-05",
+                "FLOW": 3.9600000381469727,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-05",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-04",
+            "properties": {
+                "DATE": "1967-02-04",
+                "FLOW": 3.400000095367432,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-04",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-07",
+            "properties": {
+                "DATE": "1967-02-07",
+                "FLOW": 6.369999885559082,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-07",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1967-02-06",
+            "properties": {
+                "DATE": "1967-02-06",
+                "FLOW": 4.53000020980835,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1967-02-06",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1995-01-29",
+            "properties": {
+                "DATE": "1995-01-29",
+                "FLOW": 3.309999942779541,
+                "FLOW_SYMBOL_EN": "Ice Conditions",
+                "FLOW_SYMBOL_FR": "Conditions \u00e0 glace",
+                "IDENTIFIER": "02HC003.1995-01-29",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-13",
+            "properties": {
+                "DATE": "1987-03-13",
+                "FLOW": 9.720000267028809,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-13",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.2017-05-27",
+            "properties": {
+                "DATE": "2017-05-27",
+                "FLOW": 17.299999237060547,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.2017-05-27",
+                "LEVEL": 2.5420000553131104,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-12",
+            "properties": {
+                "DATE": "1987-03-12",
+                "FLOW": 12.600000381469728,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-12",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-11",
+            "properties": {
+                "DATE": "1987-03-11",
+                "FLOW": 16.200000762939453,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-11",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-10",
+            "properties": {
+                "DATE": "1987-03-10",
+                "FLOW": 29.100000381469727,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-10",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-17",
+            "properties": {
+                "DATE": "1987-03-17",
+                "FLOW": 7.440000057220459,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-17",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-16",
+            "properties": {
+                "DATE": "1987-03-16",
+                "FLOW": 6.989999771118164,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-16",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.2017-05-26",
+            "properties": {
+                "DATE": "2017-05-26",
+                "FLOW": 30.399999618530277,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.2017-05-26",
+                "LEVEL": 2.691999912261963,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1987-03-15",
+            "properties": {
+                "DATE": "1987-03-15",
+                "FLOW": 7.210000038146973,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1987-03-15",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.1983-11-17",
+            "properties": {
+                "DATE": "1983-11-17",
+                "FLOW": 13.0,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.1983-11-17",
+                "LEVEL": null,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        },
+        {
+            "geometry": {
+                "coordinates": [
+                    -79.52039337158203,
+                    43.69894027709961
+                ],
+                "type": "Point"
+            },
+            "id": "02HC003.2014-07-07",
+            "properties": {
+                "DATE": "2014-07-07",
+                "FLOW": 6.110000133514404,
+                "FLOW_SYMBOL_EN": null,
+                "FLOW_SYMBOL_FR": null,
+                "IDENTIFIER": "02HC003.2014-07-07",
+                "LEVEL": 2.2950000762939453,
+                "LEVEL_SYMBOL_EN": null,
+                "LEVEL_SYMBOL_FR": null,
+                "PROV_TERR_STATE_LOC": "ON",
+                "STATION_NAME": "HUMBER RIVER AT WESTON",
+                "STATION_NUMBER": "02HC003"
+            },
+            "type": "Feature"
+        }
+    ],
+    "links": [
+        {
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items?f=json",
+            "rel": "self",
+            "title": "This document as GeoJSON",
+            "type": "application/geo+json"
+        },
+        {
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items?f=html",
+            "rel": "alternate",
+            "title": "This document as HTML",
+            "type": "text/html"
+        },
+        {
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?startindex=0",
+            "rel": "prev",
+            "title": "items (prev)",
+            "type": "application/geo+json"
+        },
+        {
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?startindex=500",
+            "rel": "next",
+            "title": "items (next)",
+            "type": "application/geo+json"
+        },
+        {
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean",
+            "rel": "collection",
+            "title": "Daily Mean of Water Level or Flow",
+            "type": "application/json"
+        }
+    ],
+    "numberMatched": 26516,
+    "numberReturned": 50,
+    "timeStamp": "2019-12-23T14:08:36.974150Z",
+    "type": "FeatureCollection"
+}
