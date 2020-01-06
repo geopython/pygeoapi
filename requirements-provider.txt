@@ -1,3 +1,4 @@
 elasticsearch==7.0.4
 GDAL>=2.2,<3.0
 psycopg2==2.7.6
+rasterio

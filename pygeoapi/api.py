@@ -444,6 +444,42 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm, default=json_serial)
 
+    @pre_process
+    @jsonldify
+    def get_collection_coverage_metadata(self, headers, args, dataset,
+                                         pathinfo=None):
+        """
+        Returns collection coverage information
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        LOGGER.debug('Loading provider')
+        try:
+            p = load_plugin('provider',
+                            self.config['datasets'][dataset]['provider'])
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+
+        return ({}, 200, {'foo': p.get_metadata()})
+
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection

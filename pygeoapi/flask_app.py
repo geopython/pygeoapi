@@ -158,8 +158,23 @@ def dataset(feature_collection, feature=None):
 
     return response
 
-def collection_coverages(collection_id, coverage_id=None):
-    pass
+@APP.route('/collections/<collection_id>/coverage/metadata')
+def collection_coverage_metadata(collection_id):
+    """
+    OGC open api collections/{dataset}/coverage/description access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_metadata(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
 
 
 @APP.route('/processes')
