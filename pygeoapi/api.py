@@ -446,7 +446,7 @@ class API(object):
 
     @pre_process
     @jsonldify
-    def get_collection_coverage_metadata(self, headers, args, dataset,
+    def get_collection_coverage_metadata(self, headers_, args, dataset,
                                          pathinfo=None):
         """
         Returns collection coverage information
@@ -478,7 +478,7 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        return ({}, 200, {'foo': p.get_metadata()})
+        return (headers_, 200, json.dumps(p.get_metadata()))
 
     @pre_process
     @jsonldify
