@@ -60,12 +60,14 @@ class RasterioProvider(BaseProvider):
     def get_coverage(self):
         metadata = {}
         axes = self._get_axes()
+        range_type = self._get_range_type()
         metadata['envelope'] = {
             'type': 'EnvelopeByAxisType',
             'id': 'envelope',
             'srsName': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
             'axisLabels': list({k for d in axes for k in d.keys()}),
-            'axis': axes
+            'axis': axes,
+            'rangeType': range_type
         }
 
         return metadata
@@ -87,13 +89,23 @@ class RasterioProvider(BaseProvider):
         args = {}
 
         if range_subset:
-            args['indexes'] = range_subset
+            args['indexes'] = list(map(int, range_subset))
 
         try:
             return self.d.read(**args).tolist()
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderQueryError(err)
+
+    def _get_range_type(self):
+        rt = {
+            'type': 'DataRecordType',
+            'field': {
+                'type': 'QuantityType',
+                'definition': self.d.meta['dtype'],
+            }
+        }
+        return rt
 
     def _get_axes(self):
         axes = []
@@ -103,7 +115,7 @@ class RasterioProvider(BaseProvider):
             if not key.startswith(('NETCDF', 'NC_GLOBAL')):
                 axis_key = key.split('#')[0]
                 if (axis_key not in axes_keys and
-                    '{}#axis'.format(axis_key) in tags):
+                    '{}#axis'.format(axis_key) in tags):  # process envelope
                     axes_keys.append(axis_key)
                     axis_metadata = {}
                     axis_metadata[axis_key] = {
