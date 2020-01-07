@@ -340,28 +340,55 @@ class API(object):
 
                 collection['links'].append(lnk)
 
-            LOGGER.debug('Adding JSON and HTML link relations')
-            collection['links'].append({
-                'type': 'application/geo+json',
-                'rel': 'items',
-                'title': 'Features as GeoJSON',
-                'href': '{}/collections/{}/items?f=json'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'application/ld+json',
-                'rel': 'items',
-                'title': 'Features as RDF (GeoJSON-LD)',
-                'href': '{}/collections/{}/items?f=jsonld'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'text/html',
-                'rel': 'items',
-                'title': 'Features as HTML',
-                'href': '{}/collections/{}/items?f=html'.format(
-                    self.config['server']['url'], k)
-            })
+            if v['type'] == 'feature':
+                LOGGER.debug('Adding feature JSON and HTML link relations')
+                collection['links'].append({
+                    'type': 'application/geo+json',
+                    'rel': 'items',
+                    'title': 'Features as GeoJSON',
+                    'href': '{}/collections/{}/items?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'application/ld+json',
+                    'rel': 'items',
+                    'title': 'Features as RDF (GeoJSON-LD)',
+                    'href': '{}/collections/{}/items?f=jsonld'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'items',
+                    'title': 'Features as HTML',
+                    'href': '{}/collections/{}/items?f=html'.format(
+                        self.config['server']['url'], k)
+                })
+
+            elif v['type'] == 'coverage':
+                LOGGER.debug('Adding coverage JSON and HTML link relations')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'coverage',
+                    'title': 'Coverage offering',
+                    'href': '{}/collections/{}/coverage?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'metadata',
+                    'title': 'Coverage metadata',
+                    'href': '{}/collections/{}/coverage/metadata?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'coverage',
+                    'title': 'Coverage data',
+                    'href': '{}/collections/{}/coverage/all?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+
+            LOGGER.debug('Adding additional JSON and HTML link relations')
             collection['links'].append({
                 'type': 'application/json',
                 'rel': 'self' if not format_
