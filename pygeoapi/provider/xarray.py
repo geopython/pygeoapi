@@ -137,22 +137,25 @@ class XarrayProvider(BaseProvider):
             data = self.d
 
 
-        # try:
-        #     bounds = [data['lon'],
-        #              data['lat'],
-        #              data['lon'],
-        #              data['lat']]
-        # except:
-        #     bounds = [data['Longitude'],
-        #               data['Latitude'],
-        #               data['Longitude'],
-        #               data['Latitude']]
-        #
-        #
-        # data = data.where(bounds[0] < bbox[0])
-        # data = data.where(bounds[1] < bbox[1])
-        # data = data.where(bounds[2] > bbox[2])
-        # data = data.where(bounds[3] > bbox[3])
+        lat_lon_vars = []
+        try:
+            bounds = [data['lon'],
+                     data['lat'],
+                     data['lon'],
+                     data['lat']]
+            lat_lon_vars = ['lat','lon']
+        except:
+            bounds = [data['Longitude'],
+                      data['Latitude'],
+                      data['Longitude'],
+                      data['Latitude']]
+            lat_lon_vars = ['Latitude', 'Longitude']
+
+        bit_lon = np.bitwise_and((bounds[0] > bbox[0]), (bounds[2] < bbox[2]))
+        bit_lat = np.bitwise_and((bounds[1] > bbox[1]), (bounds[3] < bbox[3]))
+
+        data = data.isel({lat_lon_vars[1]: bit_lon,
+                          lat_lon_vars[0]: bit_lat})
 
         # except Exception as err:
         #     LOGGER.warning(err)
