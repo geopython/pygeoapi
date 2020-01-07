@@ -44,7 +44,7 @@ server:
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:
@@ -81,6 +81,46 @@ metadata:
         role: pointOfContact
 
 datasets:
+    sst_zarr:
+        type: coverage
+        title: SST Zarr Sample
+        description: SST Zarr Sample
+        keywords:
+        - climate
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/EPSG/8.5/32663
+        links:
+        - type: text/html
+          rel: canonical
+          title: data
+          href: https://data.nodc.noaa.gov/thredds/catalog/crw/5km/v3.1/climatology/nc/catalog.html?dataset=crw/5km/v3.1/climatology/nc/ct5km_climatology_v3.1.nc
+          hreflang: en-US
+        provider:
+            name: xarray
+            data: C:\Users\gpetrochenkov\Documents\Repos\pygeoapi\tests\data\world_sst.zarr
+            id_field: null
+    opendap_sst:
+        type: coverage
+        title: opendap_sst
+        description: opendap_sst
+        keywords:
+        - climate
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/EPSG/8.5/32663
+        links:
+        - type: text/html
+          rel: canonical
+          title: data
+          href: http://test.opendap.org/opendap/MODIS/MOOA/MY1DQN.004/2004.12.31/MY1DQND1.sst.ADD2005001.040.2006011070802.hdf.html
+          hreflang: en-US
+        provider:
+            name: xarray
+            data: http://test.opendap.org/opendap/MODIS/MOOA/MY1DQN.004/2004.12.31/MY1DQND1.sst.ADD2005001.040.2006011070802.hdf
+            id_field: null
     cmip5:
         type: coverage
         title: CMIP5 sample

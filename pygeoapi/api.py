@@ -548,8 +548,7 @@ class API(object):
 
             if 'rangeSubset' in args:
                 LOGGER.debug('Processing rangeSubset')
-                query_args['range_subset'] = list(
-                    map(int, args['rangeSubset'].split(',')))
+                query_args['range_subset'] = args['rangeSubset'].split(',')
 
             data = p.query(**query_args)
 
