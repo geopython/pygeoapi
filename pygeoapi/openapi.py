@@ -41,6 +41,7 @@ LOGGER = logging.getLogger(__name__)
 # TODO: handle this better once schemas are public/final
 # allow also for schema caching
 OPENAPI_YAML = {
+    'oapic': 'https://raw.githubusercontent.com/opengeospatial/ogc_api_coverages/master/standard/openapi',  # noqa
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
 }
@@ -294,7 +295,7 @@ def get_oas_30(cfg):
 
         if v['type'] == 'feature':
             items_path = '{}/items'.format(collection_name_path)
-    
+
             paths[items_path] = {
                 'get': {
                     'summary': 'Get {} features'.format(v['title']),
@@ -315,17 +316,17 @@ def get_oas_30(cfg):
                     }
                 }
             }
-    
+
             p = load_plugin('provider', cfg['datasets'][k]['provider'])
-    
+
             if p.time_field is not None:
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
-    
+
             for k2, v2 in p.fields.items():
                 if p.properties and k2 in p.properties:
                     path_ = '{}/items'.format(collection_name_path)
-    
+
                     if v2['type'] == 'date':
                         schema = {
                             'type': 'string',
@@ -345,7 +346,7 @@ def get_oas_30(cfg):
                         schema = {
                             'type': v2['type']
                         }
-    
+
                     paths['{}'.format(path_)]['get']['parameters'].append({
                         'name': k2,
                         'in': 'query',
@@ -354,7 +355,7 @@ def get_oas_30(cfg):
                         'style': 'form',
                         'explode': False
                     })
-    
+
             paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
                 'get': {
                     'summary': 'Get {} feature by id'.format(v['title']),
@@ -374,22 +375,41 @@ def get_oas_30(cfg):
             }
 
         elif v['type'] == 'coverage':
-            cm_path = '{}/metadata'.format(collection_name_path)
-    
+            cm_path = '{}/coverage/metadata'.format(collection_name_path)
+
             paths[cm_path] = {
                 'get': {
                     'summary': 'Get {} coverage metadata'.format(v['title']),
                     'description': v['description'],
                     'tags': [k],
                     'responses': {
-                        200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        200: {'$ref': '{}/schemas/coverage_metadata.yaml#metadata/properties'.format(OPENAPI_YAML['oapic'])},  # noqa
                         400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                     }
                 }
             }
-    
+
+            cm_path = '{}/coverage/all'.format(collection_name_path)
+
+            paths[cm_path] = {
+                'get': {
+                    'summary': 'Get {} coverage data'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': '{}/openapi.yaml#components/parameters/rangeSubset'.format(OPENAPI_YAML['oapic'])},  # noqa
+                    ],
+                    'responses': {
+                        200: {'$ref': '{}/schemas/coverage_metadata.yaml#metadata/properties'.format(OPENAPI_YAML['oapic'])},  # noqa
+                        400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
     paths['/processes'] = {
         'get': {
             'summary': 'Processes',

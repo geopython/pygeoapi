@@ -480,9 +480,9 @@ class API(object):
 
         return (headers_, 200, json.dumps(p.get_metadata()))
 
-    @pre_process
+#    @pre_process
     @jsonldify
-    def get_collection_coverage_subset(self, headers, args, dataset,
+    def get_collection_coverage_subset(self, headers_, args, dataset,
                                        pathinfo=None):
         """
         Returns a subset of a collection coverage
@@ -495,10 +495,20 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
 
+        query_args = {}
+
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider',
                             self.config['datasets'][dataset]['provider'])
+
+            if 'rangeSubset' in args:
+                LOGGER.debug('Processing rangeSubset')
+                query_args['range_subset'] = list(
+                    map(int, args['rangeSubset'].split(',')))
+
+            data = p.query(**query_args)
+
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -514,7 +524,7 @@ class API(object):
             LOGGER.error(exception)
             return headers_, 500, json.dumps(exception)
 
-        return ({}, 200, {'foo': p.get_metadata()})
+        return ({}, 200, json.dumps(data))
 
     @pre_process
     @jsonldify

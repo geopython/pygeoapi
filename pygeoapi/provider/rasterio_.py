@@ -64,22 +64,20 @@ class RasterioProvider(BaseProvider):
             self.d.bounds.left, self.d.bounds.bottom,
             self.d.bounds.right, self.d.bounds.top
         ]
-        metadata['name'] = self.d.name
-        metadata['bands'] = self.d.count
-        metadata['width'] = self.d.width
-        metadata['height'] = self.d.height
-        metadata['resx'] = self.d.res[0]
-        metadata['resy'] = self.d.res[1]
-        metadata['native_format'] = self.d.driver
-        metadata['test'] = self.d.driver
-
-        metadata['transform'] = [
-            self.d.transform.a,
-            self.d.transform.b,
-            self.d.transform.c,
-            self.d.transform.d,
-            self.d.transform.e,
-            self.d.transform.f
-        ]
+        metadata['meta'] = self.d.meta
+        metadata['tags'] = self.d.tags()
 
         return metadata
+
+    def query(self, range_subset=[]):
+
+        args = {}
+
+        if range_subset:
+            args['indexes'] = range_subset
+
+        try:
+            return self.d.read(**args).tolist()
+        except Exception as err:
+            LOGGER.warning(err)
+            raise ProviderQueryError(err)

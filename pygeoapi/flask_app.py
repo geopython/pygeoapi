@@ -158,6 +158,7 @@ def dataset(feature_collection, feature=None):
 
     return response
 
+
 @APP.route('/collections/<collection_id>/coverage/metadata')
 def collection_coverage_metadata(collection_id):
     """
@@ -176,6 +177,7 @@ def collection_coverage_metadata(collection_id):
 
     return response
 
+
 @APP.route('/collections/<collection_id>/coverage/all')
 def collection_coverage_subset(collection_id):
     """
@@ -193,6 +195,7 @@ def collection_coverage_subset(collection_id):
         response.headers = headers
 
     return response
+
 
 @APP.route('/processes')
 @APP.route('/processes/<name>')
