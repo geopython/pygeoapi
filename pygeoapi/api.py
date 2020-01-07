@@ -446,6 +446,50 @@ class API(object):
 
     @pre_process
     @jsonldify
+    def get_collection_coverage(self, headers_, args, dataset,
+                                pathinfo=None):
+        """
+        Returns collection coverage information
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        LOGGER.debug('Loading provider')
+        try:
+            p = load_plugin('provider',
+                            self.config['datasets'][dataset]['provider'])
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+
+        response_data = {
+            'name': dataset,
+            'title': self.config['datasets'][dataset]['title'],
+            'description': self.config['datasets'][dataset]['description'],
+            'links': self.config['datasets'][dataset]['links'],
+        }
+        response_data.update(p.get_coverage())
+
+        return (headers_, 200, json.dumps(response_data))
+
+    @pre_process
+    @jsonldify
     def get_collection_coverage_metadata(self, headers_, args, dataset,
                                          pathinfo=None):
         """

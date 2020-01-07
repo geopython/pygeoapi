@@ -57,6 +57,19 @@ class RasterioProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
+    def get_coverage(self):
+        metadata = {}
+        axes = self._get_axes()
+        metadata['envelope'] = {
+            'type': 'EnvelopeByAxisType',
+            'id': 'envelope',
+            'srsName': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+            'axisLabels': list({k for d in axes for k in d.keys()}),
+            'axis': axes
+        }
+
+        return metadata
+
     def get_metadata(self):
         metadata = {}
 
@@ -81,3 +94,30 @@ class RasterioProvider(BaseProvider):
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderQueryError(err)
+
+    def _get_axes(self):
+        axes = []
+        axes_keys = []
+        tags = self.d.tags()
+        for key, value in tags.items():
+            if not key.startswith(('NETCDF', 'NC_GLOBAL')):
+                axis_key = key.split('#')[0]
+                if axis_key not in axes_keys:
+                    axis_metadata = {}
+                    axes_keys.append(axis_key)
+                    axis_metadata[axis_key] = {
+                        'id': 'envelope_{}'.format(axis_key),
+                        'type': 'AxisExtentType',
+                        'axisLabel': tags['{}#standard_name'.format(axis_key)],
+                        'uomLabel': tags['{}#units'.format(axis_key)],
+                    }
+                    if axis_key == 'lat':
+                        axis_metadata['lowerBound'] = self.d.bounds.bottom
+                        axis_metadata['upperBound'] = self.d.bounds.top
+                    elif axis_key == 'lon':
+                        axis_metadata['lowerBound'] = self.d.bounds.left
+                        axis_metadata['upperBound'] = self.d.bounds.right
+
+                    axes.append(axis_metadata)
+
+        return axes
