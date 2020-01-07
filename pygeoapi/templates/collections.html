@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} Collections {% endblock %}
-{% block crumbs %}{{ super() }} 
+{% block crumbs %}{{ super() }}
 / <a href="./collections">Collections</a>
 {% endblock %}
 {% block body %}
@@ -21,7 +21,7 @@
                 <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
                   <td data-label="name">
                     <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
-                    <a  title="{{ v['title'] | striptags | truncate }}" 
+                    <a  title="{{ v['title'] | striptags | truncate }}"
                       href="{{ config['server']['url'] }}/collections/{{ k }}">
                       <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
                   </td>

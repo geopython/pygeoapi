@@ -1,6 +1,6 @@
 # =================================================================
 #
-# Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+# Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.net>
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
@@ -39,15 +39,15 @@ from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 LOGGER = logging.getLogger(__name__)
 
 
-class SQLiteProvider(BaseProvider):
-    """Generic provider for SQLITE using sqlite3 module.
+class SQLiteGPKGProvider(BaseProvider):
+    """Generic provider for SQLITE and GPKG using sqlite3 module.
     This module requires install of libsqlite3-mod-spatialite
     TODO: DELETE, UPDATE, CREATE
     """
 
     def __init__(self, provider_def):
         """
-        SQLiteProvider Class constructor
+        SQLiteGPKGProvider Class constructor
 
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
@@ -57,12 +57,37 @@ class SQLiteProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
         self.table = provider_def['table']
+        self.application_id = None
+        self.geom_col = None
 
         LOGGER.debug('Setting SQLite properties:')
         LOGGER.debug('Data source: {}'.format(self.data))
         LOGGER.debug('Name: {}'.format(self.name))
         LOGGER.debug('ID_field: {}'.format(self.id_field))
         LOGGER.debug('Table: {}'.format(self.table))
+
+        self.cursor = self.__load()
+
+        LOGGER.debug('Got cursor from DB')
+        LOGGER.debug('Get available fields/properties')
+
+        self.get_fields()
+
+    def get_fields(self):
+        """
+         Get fields from sqlite table (columns are field)
+
+        :returns: dict of fields
+        """
+
+        if not self.fields:
+
+            results = self.cursor.execute(
+                'PRAGMA table_info({})'.format(self.table)).fetchall()
+            [self.fields.update(
+                {item["name"]:item["type"].lower()}
+                ) for item in results]
+        return self.fields
 
     def __response_feature(self, row_data):
         """
@@ -78,7 +103,7 @@ class SQLiteProvider(BaseProvider):
             'type': 'Feature'
         }
         feature["geometry"] = json.loads(
-            rd.pop('AsGeoJSON(geometry)')
+            rd.pop('AsGeoJSON({})'.format(self.geom_col))
             )
         feature['properties'] = rd
         feature['id'] = feature['properties'].pop(self.id_field)
@@ -108,7 +133,8 @@ class SQLiteProvider(BaseProvider):
         if (os.path.exists(self.data)):
             conn = sqlite3.connect(self.data)
         else:
-            raise InvalidPluginError
+            LOGGER.error('Path to sqlite does not exist')
+            raise InvalidPluginError()
 
         try:
             conn.enable_load_extension(True)
@@ -118,39 +144,74 @@ class SQLiteProvider(BaseProvider):
 
         conn.row_factory = sqlite3.Row
         conn.enable_load_extension(True)
+        # conn.set_trace_callback(LOGGER.debug)
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT load_extension('mod_spatialite.so')")
-            cursor.execute("PRAGMA table_info({})".format(self.table))
         except sqlite3.OperationalError as err:
             LOGGER.error('Extension loading error: {}'.format(err))
             raise ProviderConnectionError()
         result = cursor.fetchall()
+
+        # Checking for geopackage
+        cursor.execute("PRAGMA application_id")
+        result = cursor.fetchone()
+
+        self.application_id = result["application_id"]
+        if self.application_id == 1196444487:
+            LOGGER.info("Detected GPKG 1.2 and greater")
+        elif self.application_id == 1196437808:
+            LOGGER.info("Detected GPKG 1.0 or 1.1")
+        else:
+            LOGGER.info("No GPKG detected assuming spatial sqlite3")
+            self.application_id = 0
+
+        if self.application_id:
+            cursor.execute("SELECT AutoGPKGStart()")
+            result = cursor.fetchall()
+            if result[0][0] == 1:
+                LOGGER.info("Loaded Geopackage support")
+            else:
+                LOGGER.info("SELECT AutoGPKGStart() returned 0." +
+                            "Detected GPKG but couldnt load support")
+                raise InvalidPluginError
+
+        if self.application_id:
+            self.geom_col = "geom"
+        else:
+            self.geom_col = "geometry"
+
         try:
-            # TODO: Better exceptions declaring
-            # InvalidPluginError as Parent class
-            assert len(result), "Table not found"
-            assert len([item for item in result
-                        if item['pk'] == 1]), "Primary key not found"
-            assert len([item for item in result
-                        if self.id_field in item]), "id_field not present"
-            assert len([item for item in result
-                        if 'GEOMETRY' in item]), "GEOMETRY column not found"
+            cursor.execute('PRAGMA table_info({})'.format(self.table))
+            result = cursor.fetchall()
+        except sqlite3.OperationalError:
+            LOGGER.error('Couldnt find table: {}'.format(self.table))
+            raise ProviderConnectionError()
 
-        except InvalidPluginError:
-            raise
+        try:
+            assert len(result), 'Table not found'
+            assert len([item for item in result
+                        if self.id_field in item]), 'id_field not present'
 
-        self.columns = [item[1] for item in result if item[1] != 'GEOMETRY']
-        self.columns = ",".join(self.columns)+",AsGeoJSON(geometry)"
+        except AssertionError:
+            raise InvalidPluginError
+
+        self.columns = [item[1] for item in result if item[1] != self.geom_col]
+        self.columns = ','.join(self.columns)+',AsGeoJSON({})'.format(
+            self.geom_col)
+
+        if self.application_id:
+            self.table = "vgpkg_{}".format(self.table)
 
         return cursor
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
         """
-        Query SQLite for all the content.
+        Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
-        limit=1&resulttype=results
+        limit=5&startindex=2&resulttype=results&continent=Europe&admin=Albania&bbox=29.3373,-3.4099,29.3761,-3.3924
+        http://localhost:5000/collections/countries/items?continent=Africa&bbox=29.3373,-3.4099,29.3761,-3.3924
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
@@ -162,30 +223,43 @@ class SQLiteProvider(BaseProvider):
 
         :returns: GeoJSON FeaturesCollection
         """
-        LOGGER.debug('Querying SQLite')
-
-        cursor = self.__load()
-
-        LOGGER.debug('Got cursor from DB')
+        LOGGER.debug('Querying SQLite/GPKG')
 
         if resulttype == 'hits':
-            res = cursor.execute("select count(*) as hits from {};".format(
-                self.table))
+            res = self.cursor.execute(
+                "select count(*) as hits from {};".format(self.table))
 
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
+        where_syntax = " where " if (properties or bbox) else ""
+        where_values = tuple()
+
+        if properties:
+            where_syntax += " and ".join(
+                ["{}=?".format(k) for k, v in properties])
+            where_values += where_values + tuple((v for k, v in properties))
+
+        if bbox:
+            if properties:
+                where_syntax += " and "
+            # TODO: check name of geometry column
+            where_syntax += " Intersects({}, \
+                BuildMbr(?,?,?,?)) ".format(self.geom_col)
+            where_values += tuple(bbox)
+
+        sql_query = "select {} from \
+            {} {} limit ? offset ?".format(
+                self.columns, self.table, where_syntax)
+
         end_index = startindex + limit
-        # Not working
-        # http://localhost:5000/collections/countries/items/?startindex=10
-        sql_query = "select {} from {} where rowid >= ? \
-        and rowid <= ?;".format(self.columns, self.table)
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))
         LOGGER.debug('Start Index: {}'.format(startindex))
         LOGGER.debug('End Index: {}'.format(end_index))
 
-        row_data = cursor.execute(sql_query, (startindex, end_index, ))
+        row_data = self.cursor.execute(
+            sql_query, where_values + (limit, startindex))
 
         feature_collection = {
             'type': 'FeatureCollection',
@@ -208,23 +282,19 @@ class SQLiteProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        LOGGER.debug('Get item from SQLite')
+        LOGGER.debug('Get item from SQLite/GPKG')
 
-        cursor = self.__load()
-
-        LOGGER.debug('Got cursor from DB')
-
-        sql_query = "select {} from {} where {}==?;".format(self.columns,
-                                                            self.table,
-                                                            self.id_field)
+        sql_query = 'select {} from \
+            {} where {}==?;'.format(
+                self.columns, self.table, self.id_field)
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))
         LOGGER.debug('Identifier: {}'.format(identifier))
 
-        row_data = cursor.execute(sql_query, (identifier, )).fetchone()
+        row_data = self.cursor.execute(sql_query, (identifier, )).fetchone()
 
         feature = self.__response_feature(row_data)
         return feature
 
     def __repr__(self):
-        return '<SQLiteProvider> {}, {}'.format(self.data, self.table)
+        return '<SQLiteGPKGProvider> {}, {}'.format(self.data, self.table)

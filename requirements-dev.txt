@@ -6,6 +6,7 @@ pytest
 pytest-cov
 pytest-env
 coverage
+pyld
 
 # PEP8
 flake8
