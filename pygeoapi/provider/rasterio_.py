@@ -89,7 +89,7 @@ class RasterioProvider(BaseProvider):
         args = {}
 
         if range_subset:
-            args['indexes'] = range_subset
+            args['indexes'] = list(map(int, range_subset))
 
         try:
             return self.d.read(**args).tolist()
