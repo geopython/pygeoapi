@@ -383,7 +383,7 @@ def get_oas_30(cfg):
                     'description': v['description'],
                     'tags': [k],
                     'responses': {
-                        200: {'$ref': '{}/schemas/coverage_metadata.yaml#metadata/properties'.format(OPENAPI_YAML['oapic'])},  # noqa
+                        200: {'$ref': '{}/openapi.yaml#/components/schemas/coverageOffering'.format(OPENAPI_YAML['oapic'])},  # noqa
                         400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
