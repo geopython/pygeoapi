@@ -102,9 +102,10 @@ class RasterioProvider(BaseProvider):
         for key, value in tags.items():
             if not key.startswith(('NETCDF', 'NC_GLOBAL')):
                 axis_key = key.split('#')[0]
-                if axis_key not in axes_keys:
-                    axis_metadata = {}
+                if (axis_key not in axes_keys and
+                    '{}#axis'.format(axis_key) in tags):
                     axes_keys.append(axis_key)
+                    axis_metadata = {}
                     axis_metadata[axis_key] = {
                         'id': 'envelope_{}'.format(axis_key),
                         'type': 'AxisExtentType',
@@ -112,12 +113,22 @@ class RasterioProvider(BaseProvider):
                         'uomLabel': tags['{}#units'.format(axis_key)],
                     }
                     if axis_key == 'lat':
-                        axis_metadata['lowerBound'] = self.d.bounds.bottom
-                        axis_metadata['upperBound'] = self.d.bounds.top
+                        axis_metadata[axis_key]['lowerBound'] = self.d.bounds.bottom
+                        axis_metadata[axis_key]['upperBound'] = self.d.bounds.top
                     elif axis_key == 'lon':
-                        axis_metadata['lowerBound'] = self.d.bounds.left
-                        axis_metadata['upperBound'] = self.d.bounds.right
+                        axis_metadata[axis_key]['lowerBound'] = self.d.bounds.left
+                        axis_metadata[axis_key]['upperBound'] = self.d.bounds.right
 
                     axes.append(axis_metadata)
+
+        if 'NETCDF_DIM_EXTRA' in tags:
+            dims = tags['NETCDF_DIM_EXTRA'].replace('{', '').replace('}', '').split(',')
+            for dim in dims:
+                dim_values_tag = 'NETCDF_DIM_{}_VALUES'.format(dim)
+                dim_values = tags[dim_values_tag].replace('{', '').replace('}', '').split(',')
+                for axis in axes:
+                    if dim in axis:
+                        axis[dim]['lowerBound'] = min(dim_values)
+                        axis[dim]['upperBound'] = max(dim_values)
 
         return axes
