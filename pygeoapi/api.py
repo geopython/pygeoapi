@@ -382,7 +382,7 @@ class API(object):
                 })
                 collection['links'].append({
                     'type': 'application/json',
-                    'rel': 'coverage',
+                    'rel': 'data',
                     'title': 'Coverage data',
                     'href': '{}/collections/{}/coverage/all?f=json'.format(
                         self.config['server']['url'], k)
