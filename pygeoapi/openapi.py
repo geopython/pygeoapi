@@ -375,6 +375,22 @@ def get_oas_30(cfg):
             }
 
         elif v['type'] == 'coverage':
+            cm_path = '{}/coverage'.format(collection_name_path)
+
+            paths[cm_path] = {
+                'get': {
+                    'summary': 'Get {} coverage metadata'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'responses': {
+                        200: {'$ref': '{}/schemas/coverage_metadata.yaml#metadata/properties'.format(OPENAPI_YAML['oapic'])},  # noqa
+                        400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
             cm_path = '{}/coverage/metadata'.format(collection_name_path)
 
             paths[cm_path] = {
