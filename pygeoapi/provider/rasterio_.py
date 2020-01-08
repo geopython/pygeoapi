@@ -30,6 +30,7 @@
 import logging
 
 import rasterio
+from rasterio.windows import from_bounds
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
@@ -73,23 +74,33 @@ class RasterioProvider(BaseProvider):
         return metadata
 
     def get_metadata(self):
-        metadata = {}
-
-        metadata['bounds'] = [
-            self.d.bounds.left, self.d.bounds.bottom,
-            self.d.bounds.right, self.d.bounds.top
-        ]
-        metadata['meta'] = self.d.meta
-        metadata['tags'] = self.d.tags()
+        metadata = {
+            'bounds': self.d.bounds,
+            'meta': self.d.meta,
+            'tags': self.d.tags()
+        }
 
         return metadata
 
-    def query(self, range_subset=[]):
+    def query(self, bands=[], subsets={}):
 
         args = {}
 
-        if range_subset:
-            args['indexes'] = list(map(int, range_subset))
+        if bands:
+            args['indexes'] = list(map(int, bands))
+
+        if 'lat' in subsets and 'long' in subsets:
+            LOGGER.debug('Creating window')
+
+            window = from_bounds(
+                transform=self.d.transform,
+                left=subsets['long'][0],
+                bottom=subsets['lat'][0],
+                right=subsets['long'][1],
+                top=subsets['lat'][1]
+            )
+            LOGGER.debug('window: {}'.format(window))
+            args['window'] = window
 
         try:
             return self.d.read(**args).tolist()
@@ -114,8 +125,8 @@ class RasterioProvider(BaseProvider):
         for key, value in tags.items():
             if not key.startswith(('NETCDF', 'NC_GLOBAL')):
                 axis_key = key.split('#')[0]
-                if (axis_key not in axes_keys and
-                    '{}#axis'.format(axis_key) in tags):  # process envelope
+                if all([axis_key not in axes_keys and
+                       '{}#axis'.format(axis_key) in tags]):  # envelope
                     axes_keys.append(axis_key)
                     axis_metadata = {}
                     axis_metadata[axis_key] = {
@@ -125,22 +136,31 @@ class RasterioProvider(BaseProvider):
                         'uomLabel': tags['{}#units'.format(axis_key)],
                     }
                     if axis_key == 'lat':
-                        axis_metadata[axis_key]['lowerBound'] = self.d.bounds.bottom
-                        axis_metadata[axis_key]['upperBound'] = self.d.bounds.top
+                        axis_metadata[axis_key] = {
+                            'lowerBound': self.d.bounds.bottom,
+                            'upperBound': self.d.bounds.top
+                        }
                     elif axis_key == 'lon':
-                        axis_metadata[axis_key]['lowerBound'] = self.d.bounds.left
-                        axis_metadata[axis_key]['upperBound'] = self.d.bounds.right
+                        axis_metadata[axis_key] = {
+                            'lowerBound': self.d.bounds.left,
+                            'upperBound': self.d.bounds.right
+                        }
 
                     axes.append(axis_metadata)
 
         if 'NETCDF_DIM_EXTRA' in tags:
-            dims = tags['NETCDF_DIM_EXTRA'].replace('{', '').replace('}', '').split(',')
+            dims = _netcdflist2list(tags['NETCDF_DIM_EXTRA'])
             for dim in dims:
                 dim_values_tag = 'NETCDF_DIM_{}_VALUES'.format(dim)
-                dim_values = tags[dim_values_tag].replace('{', '').replace('}', '').split(',')
+                dim_values = _netcdflist2list(tags[dim_values_tag])
+
                 for axis in axes:
                     if dim in axis:
                         axis[dim]['lowerBound'] = min(dim_values)
                         axis[dim]['upperBound'] = max(dim_values)
 
         return axes
+
+
+def _netcdflist2list(tag):
+    return tag.replace('{', '').replace('}', '').split(',')
