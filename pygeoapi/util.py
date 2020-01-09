@@ -34,6 +34,7 @@ from decimal import Decimal
 import json
 import logging
 import os
+import pytz
 import re
 from urllib.parse import urlparse
 
@@ -65,6 +66,36 @@ def dategetter(date_property, collection):
         return '..'
 
     return value.isoformat()
+
+
+def get_timezone_aware(d):
+    """
+    Converts timezone unaware datetime object to UTC timezone aware.
+    If object already has timezone info, no changes are made.
+
+    :param d: datetime object
+
+    :returns: datetime with timezone info.
+    """
+    if d.tzinfo is None or d.tzinfo.utcoffset(d) is None:
+        return d.replace(tzinfo=pytz.utc)
+    return d
+
+
+def date2datetime(d, ceil=False):
+    """
+    helper function to convert date to datetime.
+    Value of type datetime is retured as such.
+    :param d: datetime or date
+    :param ceil: if true use the end of the day of the d<date>.
+    :returns: datetime
+    """
+    if isinstance(d, datetime):
+        return d
+    elif isinstance(d, date):
+        return datetime.combine(d, time.max if ceil else time.min)
+    else:
+        raise ValueError
 
 
 def get_typed_value(value):

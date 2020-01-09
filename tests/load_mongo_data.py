@@ -31,6 +31,7 @@ import json
 import sys
 from pymongo import MongoClient
 from pymongo import GEOSPHERE
+from dateutil.parser import parse
 
 monogourl = 'mongodb://localhost:27017/'
 mongodb = 'testdb'
@@ -49,4 +50,8 @@ with open(sys.argv[1]) as fh:
     d = json.load(fh)
 
 mycol.create_index([("geometry", GEOSPHERE)])
-mycol.insert_many(d['features'])
+
+for item in d['features']:
+    if 'properties' in item and 'datetime' in item['properties']:
+        item['properties']['datetime'] = parse(item['properties']['datetime'])
+    mycol.insert_one(item)

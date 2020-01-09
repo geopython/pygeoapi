@@ -29,12 +29,13 @@
 
 import logging
 
-from bson import Code
 from pymongo import MongoClient
 from pymongo import GEOSPHERE
 from pymongo import ASCENDING, DESCENDING
 from pymongo.collection import ObjectId
+from pygeoapi.date_time import DatetimeRange
 from pygeoapi.provider.base import BaseProvider
+from datetime import timedelta
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +64,21 @@ class MongoProvider(BaseProvider):
         dbclient = MongoClient(self.data)
         self.featuredb = dbclient.get_default_database()
         self.collection = provider_def['collection']
+        self.datetime_field = (provider_def['datetime_field']
+                               if 'datetime_field' in provider_def
+                               else 'datetime')
         self.featuredb[self.collection].create_index([("geometry", GEOSPHERE)])
+        self.fields = self.get_fields()
+
+    def _get_field_type(self, obj):
+        if isinstance(obj, str):
+            return 'string'
+        if isinstance(obj, float):
+            return 'float'
+        if isinstance(obj, int):
+            return 'int'
+
+        return None
 
     def get_fields(self):
         """
@@ -71,13 +86,18 @@ class MongoProvider(BaseProvider):
 
         :returns: dict of fields
         """
-        map = Code(
-            "function() { for (var key in this.properties) "
-            "{ emit(key, null); } }")
-        reduce = Code("function(key, stuff) { return null; }")
-        result = self.featuredb[self.collection].map_reduce(
-            map, reduce, "myresults")
-        return result.distinct('_id')
+        fields = {}
+        features, unused = self._get_feature_list({}, maxitems=-1)
+        for feature in features:
+            for key in feature['properties']:
+                val = feature['properties'][key]
+                val_type = self._get_field_type(val)
+                if key not in fields and val_type is not None:
+                    fields[key] = val_type
+
+        # Datetime field is the only datetime type the we support in orderby
+        fields['datetime'] = 'datetime'
+        return fields
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1):
         featurecursor = self.featuredb[self.collection].find(filterObj)
@@ -87,12 +107,20 @@ class MongoProvider(BaseProvider):
 
         matchCount = self.featuredb[self.collection].count_documents(filterObj)
         featurecursor.skip(skip)
-        featurecursor.limit(maxitems)
+        if maxitems > 0:
+            featurecursor.limit(maxitems)
         featurelist = list(featurecursor)
         for item in featurelist:
             item['id'] = str(item.pop('_id'))
 
         return featurelist, matchCount
+
+    def _get_sort_property_name(self, sort):
+        name = sort['property']
+        if name == 'datetime':
+            return "properties." + self.datetime_field
+        else:
+            return "properties." + name
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -108,18 +136,47 @@ class MongoProvider(BaseProvider):
             and_filter.append(
                 {'geometry': {'$geoWithin': {'$box': [[x, y], [w, h]]}}})
 
-        # This parameter is not working yet!
-        # gte is not sufficient to check date range
         if datetime is not None:
-            assert isinstance(datetime.datetime, datetime)
-            and_filter.append({'properties.datetime': {'$gte': datetime}})
+            assert isinstance(datetime, DatetimeRange)
+            ''' Mongo can only handle milliseconds in date queries, so we have
+                to make a conversion. Lets assume, we have a query:
+                datetime=2019-11-14T11:16:02.989000
+                This will lead to following DatetimeRange:
+                datetime.start = 2019-11-14T11:16:02.989000
+                datetime.end = 2019-11-14T11:16:02.989001
+                , that Mongo iterprets as 11:16:02.989 for both start and end.
+
+                DatetimeRange is converted to following datetimes:
+                datetime.start = 2019-11-14T11:16:02.989000
+                datetime.end = 2019-11-14T11:16:02.990001
+                , that Mongo can handles as
+                datetime.start = 2019-11-14T11:16:02.989
+                datetime.end = 2019-11-14T11:16:02.990
+            '''
+            end = datetime.end
+            if end is not None and end.microsecond % 1000:
+                end += timedelta(milliseconds=1)
+
+            if datetime.start is not None and datetime.end is not None:
+                and_filter.append(
+                    {'properties.' + self.datetime_field:
+                     {'$gte': datetime.start, '$lt': end}})
+            elif datetime.start is not None:
+                and_filter.append(
+                    {'properties.' + self.datetime_field:
+                     {'$gte': datetime.start}})
+            elif datetime.end is not None:
+                and_filter.append(
+                    {'properties.' + self.datetime_field: {'$lt': end}})
+            else:
+                raise ValueError('DatetimeRange begin and end are None')
 
         for prop in properties:
-            and_filter.append({"properties."+prop[0]: {'$eq': prop[1]}})
+            and_filter.append({"properties." + prop[0]: {'$eq': prop[1]}})
 
         filterobj = {'$and': and_filter} if and_filter else {}
 
-        sort_list = [("properties." + sort['property'],
+        sort_list = [(self._get_sort_property_name(sort),
                       ASCENDING if (sort['order'] == 'A') else DESCENDING)
                      for sort in sortby]
 

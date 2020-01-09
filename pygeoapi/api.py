@@ -35,16 +35,15 @@ import json
 import logging
 import urllib.parse
 
-from dateutil.parser import parse as dateparse
-import pytz
-
 from pygeoapi import __version__
+from pygeoapi.date_time import parse as datetimerange_parse
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import (dategetter, json_serial, render_j2_template,
+from pygeoapi.util import (date2datetime, get_timezone_aware, dategetter,
+                           json_serial, render_j2_template,
                            str2bool, TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
@@ -461,7 +460,7 @@ class API(object):
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime']
+                               'resulttype', 'datetime', 'sortby']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -557,59 +556,26 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing datetime parameter')
-        # TODO: pass datetime to query as a `datetime` object
-        # we would need to ensure partial dates work accordingly
-        # as well as setting '..' values to `None` so that underlying
-        # providers can just assume a `datetime.datetime` object
-        #
-        # NOTE: needs testing when passing partials from API to backend
-        datetime_ = args.get('datetime')
+        if args.get('datetime') is not None:
+            datetime_ = datetimerange_parse(args.get('datetime'))
+        else:
+            datetime_ = None
+
         datetime_invalid = False
 
         if (datetime_ is not None and
                 'temporal' in self.config['datasets'][dataset]['extents']):
             te = self.config['datasets'][dataset]['extents']['temporal']
 
-            if te['begin'].tzinfo is None:
-                te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
-            if te['end'].tzinfo is None:
-                te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+            if te['begin'] is not None and datetime_.start is not None:
+                if (get_timezone_aware(datetime_.start) <
+                        get_timezone_aware(date2datetime(te['begin']))):
+                    datetime_invalid = True
 
-            if '/' in datetime_:  # envelope
-                LOGGER.debug('detected time range')
-                LOGGER.debug('Validating time windows')
-                datetime_begin, datetime_end = datetime_.split('/')
-                if datetime_begin != '..':
-                    datetime_begin = dateparse(datetime_begin)
-                    if datetime_begin.tzinfo is None:
-                        datetime_begin = datetime_begin.replace(
-                            tzinfo=pytz.UTC)
-
-                if datetime_end != '..':
-                    datetime_end = dateparse(datetime_end)
-                    if datetime_end.tzinfo is None:
-                        datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
-
-                if te['begin'] is not None and datetime_begin != '..':
-                    if datetime_begin < te['begin']:
-                        datetime_invalid = True
-
-                if te['end'] is not None and datetime_end != '..':
-                    if datetime_end > te['end']:
-                        datetime_invalid = True
-
-            else:  # time instant
-                datetime__ = dateparse(datetime_)
-                if datetime__ != '..':
-                    if datetime__.tzinfo is None:
-                        datetime__ = datetime__.replace(tzinfo=pytz.UTC)
-                LOGGER.debug('detected time instant')
-                if te['begin'] is not None and datetime__ != '..':
-                    if datetime__ < te['begin']:
-                        datetime_invalid = True
-                if te['end'] is not None and datetime__ != '..':
-                    if datetime__ > te['end']:
-                        datetime_invalid = True
+            if te['end'] is not None and datetime_.end is not None:
+                if (get_timezone_aware(datetime_.end) >
+                        get_timezone_aware(date2datetime(te['end']))):
+                    datetime_invalid = True
 
         if datetime_invalid:
             exception = {

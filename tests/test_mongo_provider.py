@@ -113,7 +113,7 @@ def test_get_fields(config):
     p = MongoProvider(config)
     init(p)
     results = p.get_fields()
-    assert len(results) == 37
+    assert len(results) == 38
 
 
 def test_create_and_delete(config):
