@@ -416,6 +416,7 @@ def get_oas_30(cfg):
                     'tags': [k],
                     'parameters': [
                         {'$ref': '{}/openapi.yaml#components/parameters/rangeSubset'.format(OPENAPI_YAML['oapic'])},  # noqa
+                        {'$ref': '{}/openapi.yaml#components/parameters/subset'.format(OPENAPI_YAML['oapic'])},  # noqa
                     ],
                     'responses': {
                         200: {'$ref': '{}/schemas/coverage_metadata.yaml#metadata/properties'.format(OPENAPI_YAML['oapic'])},  # noqa

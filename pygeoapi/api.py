@@ -33,6 +33,7 @@ Returns content from plugins and sets reponses
 from datetime import datetime
 import json
 import logging
+import re
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
@@ -43,8 +44,8 @@ from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import (dategetter, json_serial, render_j2_template,
-                           str2bool, TEMPLATES)
+from pygeoapi.util import (dategetter, get_typed_value, json_serial,
+                           render_j2_template, str2bool, TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -377,7 +378,11 @@ class API(object):
                     'type': 'application/json',
                     'rel': 'metadata',
                     'title': 'Coverage metadata',
+<<<<<<< HEAD
                     'href': '{}/collections/{}/coverage/metadata?f=json'.format(
+=======
+                    'href': '{}/collections/{}/coverage/metadata?f=json'.format(  # noqa
+>>>>>>> upstream/coverages
                         self.config['server']['url'], k)
                 })
                 collection['links'].append({
@@ -520,7 +525,7 @@ class API(object):
     def get_collection_coverage_metadata(self, headers_, args, dataset,
                                          pathinfo=None):
         """
-        Returns collection coverage information
+        Returns collection coverage metadata
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
@@ -568,15 +573,42 @@ class API(object):
 
         query_args = {}
 
+        LOGGER.debug('Processing query parameters')
+
+        subsets = {}
+
+        if 'rangeSubset' in args:
+            LOGGER.debug('Processing rangeSubset parameter')
+            query_args['bands'] = args['rangeSubset'].split(',')
+        elif 'subset' in args:
+            LOGGER.debug('Processing subset parameters')
+            for s in args.getlist('subset'):
+                try:
+                    m = re.search(r'(.*)\((.*),(.*)\)', s)
+                    subsets[m.group(1)] = list(map(
+                        get_typed_value, m.group(2, 3)))
+                except AttributeError:
+                    exception = {
+                        'code': 'InvalidParameterValue',
+                        'description': 'subset should be like "axis(min,max)"'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 400, json.dumps(exception)
+
+            query_args['subsets'] = subsets
+
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider',
                             self.config['datasets'][dataset]['provider'])
 
+<<<<<<< HEAD
             if 'rangeSubset' in args:
                 LOGGER.debug('Processing rangeSubset')
                 query_args['range_subset'] = args['rangeSubset'].split(',')
 
+=======
+>>>>>>> upstream/coverages
             data = p.query(**query_args)
 
         except ProviderConnectionError:
@@ -709,7 +741,7 @@ class API(object):
         except AttributeError:
             bbox = []
         try:
-            bbox = [float(c) for c in bbox]
+            bbox = [get_typed_value(c) for c in bbox]
         except ValueError:
             exception = {
                 'code': 'InvalidParameterValue',
