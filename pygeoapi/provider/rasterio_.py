@@ -44,9 +44,7 @@ class RasterioProvider(BaseProvider):
     def __init__(self, provider_def):
         """
         Initialize object
-
         :param provider_def: provider definition
-
         :returns: pygeoapi.providers.rasterio_.RasterioProvider
         """
 
@@ -86,10 +84,6 @@ class RasterioProvider(BaseProvider):
 
         args = {}
 
-<<<<<<< HEAD
-        if range_subset:
-            args['indexes'] = list(map(int, range_subset))
-=======
         if bands:
             args['indexes'] = list(map(int, bands))
 
@@ -105,7 +99,6 @@ class RasterioProvider(BaseProvider):
             )
             LOGGER.debug('window: {}'.format(window))
             args['window'] = window
->>>>>>> upstream/coverages
 
         try:
             return self.d.read(**args).tolist()
@@ -130,13 +123,8 @@ class RasterioProvider(BaseProvider):
         for key, value in tags.items():
             if not key.startswith(('NETCDF', 'NC_GLOBAL')):
                 axis_key = key.split('#')[0]
-<<<<<<< HEAD
-                if (axis_key not in axes_keys and
-                    '{}#axis'.format(axis_key) in tags):  # process envelope
-=======
                 if all([axis_key not in axes_keys and
                        '{}#axis'.format(axis_key) in tags]):  # envelope
->>>>>>> upstream/coverages
                     axes_keys.append(axis_key)
                     axis_metadata = {}
                     axis_metadata[axis_key] = {

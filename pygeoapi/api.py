@@ -70,9 +70,7 @@ def pre_process(func):
     """
         Decorator performing header copy and format\
         checking before sending arguments to methods
-
         :param func: decorated function
-
         :returns: `func`
     """
 
@@ -95,9 +93,7 @@ class API(object):
     def __init__(self, config):
         """
         constructor
-
         :param config: configuration dict
-
         :returns: `pygeoapi.API` instance
         """
 
@@ -114,11 +110,9 @@ class API(object):
     def root(self, headers_, format_):
         """
         Provide API
-
         :param headers_: copy of HEADERS object
         :param format_: format of requests, pre checked by
                         pre_process decorator
-
         :returns: tuple of headers, status code, content
         """
 
@@ -194,13 +188,10 @@ class API(object):
     def openapi(self, headers_, format_, openapi):
         """
         Provide OpenAPI document
-
-
         :param headers_: copy of HEADERS object
         :param format_: format of requests, pre checked by
                         pre_process decorator
         :param openapi: dict of OpenAPI definition
-
         :returns: tuple of headers, status code, content
         """
 
@@ -231,11 +222,9 @@ class API(object):
     def conformance(self, headers_, format_):
         """
         Provide conformance definition
-
         :param headers_: copy of HEADERS object
         :param format_: format of requests,
                         pre checked by pre_process decorator
-
         :returns: tuple of headers, status code, content
         """
 
@@ -264,12 +253,10 @@ class API(object):
     def describe_collections(self, headers_, format_, dataset=None):
         """
         Provide feature collection metadata
-
         :param headers_: copy of HEADERS object
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: name of collection
-
         :returns: tuple of headers, status code, content
         """
 
@@ -378,11 +365,7 @@ class API(object):
                     'type': 'application/json',
                     'rel': 'metadata',
                     'title': 'Coverage metadata',
-<<<<<<< HEAD
-                    'href': '{}/collections/{}/coverage/metadata?f=json'.format(
-=======
                     'href': '{}/collections/{}/coverage/metadata?f=json'.format(  # noqa
->>>>>>> upstream/coverages
                         self.config['server']['url'], k)
                 })
                 collection['links'].append({
@@ -482,12 +465,10 @@ class API(object):
                                 pathinfo=None):
         """
         Returns collection coverage information
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
         :param pathinfo: path location
-
         :returns: tuple of headers, status code, content
         """
 
@@ -526,12 +507,10 @@ class API(object):
                                          pathinfo=None):
         """
         Returns collection coverage metadata
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
         :param pathinfo: path location
-
         :returns: tuple of headers, status code, content
         """
 
@@ -562,12 +541,10 @@ class API(object):
                                        pathinfo=None):
         """
         Returns a subset of a collection coverage
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
         :param pathinfo: path location
-
         :returns: tuple of headers, status code, content
         """
 
@@ -602,13 +579,6 @@ class API(object):
             p = load_plugin('provider',
                             self.config['datasets'][dataset]['provider'])
 
-<<<<<<< HEAD
-            if 'rangeSubset' in args:
-                LOGGER.debug('Processing rangeSubset')
-                query_args['range_subset'] = args['rangeSubset'].split(',')
-
-=======
->>>>>>> upstream/coverages
             data = p.query(**query_args)
 
         except ProviderConnectionError:
@@ -633,12 +603,10 @@ class API(object):
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
         :param pathinfo: path location
-
         :returns: tuple of headers, status code, content
         """
 
@@ -1003,13 +971,11 @@ class API(object):
     def get_collection_item(self, headers_, format_, dataset, identifier):
         """
         Get a single feature
-
         :param headers_: copy of HEADERS object
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: dataset name
         :param identifier: feature identifier
-
         :returns: tuple of headers, status code, content
         """
 
@@ -1113,11 +1079,9 @@ class API(object):
     def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param process: name of process
-
         :returns: tuple of headers, status code, content
         """
 
@@ -1178,12 +1142,10 @@ class API(object):
     def execute_process(self, headers, args, data, process):
         """
         Execute process
-
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param data: process data
         :param process: name of process
-
         :returns: tuple of headers, status code, content
         """
 
@@ -1239,10 +1201,8 @@ class API(object):
 def check_format(args, headers):
     """
     check format requested from arguments or headers
-
     :param args: dict of request keyword value pairs
     :param headers: dict of request headers
-
     :returns: format value
     """
 
