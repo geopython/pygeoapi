@@ -1,0 +1,15 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "coverage_content_type": "physicalMeasurement",
+    "grid_mapping": "crs",
+    "long_name": "monthly mean sea surface temperature climatology of february",
+    "scale_factor": 0.009999999776482582,
+    "standard_name": "sea_surface_temperature",
+    "units": "degrees_Celsius",
+    "valid_max": 5000,
+    "valid_min": -200
+}

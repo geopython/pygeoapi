@@ -89,7 +89,7 @@ datasets:
         - climate
         extents:
             spatial:
-                bbox: [-180,-90,180,90]
+                bbox: [-20,-20,20,20]
                 crs: http://www.opengis.net/def/crs/EPSG/8.5/32663
         links:
         - type: text/html
@@ -99,7 +99,7 @@ datasets:
           hreflang: en-US
         provider:
             name: xarray
-            data: C:\Users\gpetrochenkov\Documents\Repos\pygeoapi\tests\data\world_sst.zarr
+            data: C:\Users\gpetrochenkov\Desktop\sst.zarr
             id_field: null
     opendap_sst:
         type: coverage

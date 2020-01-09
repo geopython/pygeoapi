@@ -1,0 +1,20 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "comment": "A 2D array, in the same size as the data array in the X and Y directions, classifying land, missing, and ice pixels that are all flagged by the same missing_value (specified by the variable attribute _FillValue) in the data array(s), along with water (data) pixels.",
+    "coverage_content_type": "thematicClassification",
+    "flag_meanings": "valid-water land missing ice",
+    "flag_values": [
+        0,
+        1,
+        2,
+        4
+    ],
+    "grid_mapping": "crs",
+    "long_name": "pixel characteristics flag array for the monthly mean sea surface temperature climatology of may",
+    "standard_name": "sea_surface_temperature",
+    "units": "pixel_classification"
+}

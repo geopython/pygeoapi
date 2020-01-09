@@ -75,15 +75,16 @@ class XarrayProvider(BaseProvider):
             else:
                 try:
                     self.d = xarray.open_dataset(self.data)
-                except TypeError:
-                    LOGGER.warning(TypeError)
-                    raise ProviderConnectionError(TypeError)
+                except IOError:
+                    LOGGER.warning(IOError)
+                    raise ProviderConnectionError(IOError)
 
         else:
             try:
                 self.d = xarray.open_dataset(self.data)
-            except:
-                self.d = None
+            except IOError:
+                LOGGER.warning(IOError)
+                raise ProviderConnectionError(IOError)
 
     def get_coverage(self):
 
@@ -100,10 +101,6 @@ class XarrayProvider(BaseProvider):
         return metadata
 
     def get_metadata(self):
-
-        if self.d is None:
-            LOGGER.warning(ValueError)
-            raise ProviderConnectionError(ValueError)
 
         metadata = {}
 

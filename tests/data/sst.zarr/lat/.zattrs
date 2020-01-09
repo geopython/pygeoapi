@@ -1,0 +1,13 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "lat"
+    ],
+    "axis": "Y",
+    "comment": "equirectangular projection and grid centers",
+    "coverage_content_type": "coordinate",
+    "long_name": "latitude",
+    "standard_name": "latitude",
+    "units": "degrees_north",
+    "valid_max": 89.9749984741211,
+    "valid_min": -89.9749984741211
+}
