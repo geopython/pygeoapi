@@ -31,13 +31,40 @@
 
 from datetime import date, datetime, time
 from decimal import Decimal
+import json
 import logging
 import os
 import re
+from urllib.parse import urlparse
 
+from jinja2 import Environment, FileSystemLoader
 import yaml
 
+from pygeoapi import __version__
+
 LOGGER = logging.getLogger(__name__)
+
+TEMPLATES = '{}{}templates'.format(os.path.dirname(
+    os.path.realpath(__file__)), os.sep)
+
+
+def dategetter(date_property, collection):
+    """
+    Attempts to obtains a date value from a collection.
+
+    :param date_property: property representing the date
+    :param collection: dictionary to check within
+
+    :returns: `str` (ISO8601) representing the date. ('..' if null or "now",
+        allowing for an open interval).
+    """
+
+    value = collection.get(date_property, None)
+
+    if value == 'now' or value is None:
+        return '..'
+
+    return value.isoformat()
 
 
 def get_typed_value(value):
@@ -110,11 +137,23 @@ def str2bool(value):
     return value2
 
 
+def to_json(dict_):
+    """
+    Serialize dict to json
+
+    :param dict_: `dict` of JSON representation
+
+    :returns: JSON string representation
+    """
+
+    return json.dumps(dict_, default=json_serial)
+
+
 def json_serial(obj):
     """
     helper function to convert to JSON non-default
     types (source: https://stackoverflow.com/a/22238613)
-    :param obj: `object` to be evaluate
+    :param obj: `object` to be evaluated
     :returns: JSON non-default type to `str`
     """
 
@@ -126,3 +165,37 @@ def json_serial(obj):
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
     raise TypeError(msg)
+
+
+def is_url(urlstring):
+    """
+    Validation function that determines whether a candidate URL should be
+    considered a URI. No remote resource is obtained; this does not check
+    the existence of any remote resource.
+    :param urlstring: `str` to be evaluated as candidate URL.
+    :returns: `bool` of whether the URL looks like a URL.
+    """
+    try:
+        result = urlparse(urlstring)
+        return bool(result.scheme and result.netloc)
+    except ValueError:
+        return False
+
+
+def render_j2_template(config, template, data):
+    """
+    render Jinja2 template
+
+    :param config: dict of configuration
+    :param template: template (relative path)
+    :param data: dict of data
+
+    :returns: string of rendered template
+    """
+
+    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    env.filters['to_json'] = to_json
+    env.globals.update(to_json=to_json)
+
+    template = env.get_template(template)
+    return template.render(config=config, data=data, version=__version__)

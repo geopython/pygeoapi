@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-service: pygeoapi 
+service: pygeoapi
 
 provider:
   name: aws
@@ -40,13 +40,12 @@ provider:
 plugins:
   - serverless-python-requirements
   - serverless-wsgi
-
-
-
 custom:
   wsgi:
     app: pygeoapi.flask_app.APP
     packRequirements: true
+    textMimeTypes:
+      - application/ld+json
 functions:
   app:
     handler: wsgi_handler.handler

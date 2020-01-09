@@ -37,7 +37,28 @@
       </div>
       <div class="row">
         <div class="col-md-6 col-sm-12">
-          <div id="items-map"></div>
+          <div class="row">
+            <div class="col-sm-12">
+              <div id="items-map"></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-12">
+              {% if data['prev'] or data['next'] %}
+              <div class="row">
+                <div class="col-sm-12">
+                  {% for link in data['links'] %}
+                  {% if data['prev'] and link['rel'] == 'prev' %}
+                  <a role="button" href="./{{ data['prev'] }}">Previous</a>
+                  {% elif data['next'] and link['rel'] == 'next' %}
+                  <a role="button" href="./{{ data['next'] }}">Next</a>
+                  {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
         </div>
         <div class="col-md-6 col-sm-12">
             <table class="striped">
@@ -72,17 +93,6 @@
             </table>
         </div>
       </div>
-      <div class="row">
-          <div class="col-sm-12">
-          {% for link in data['links'] %}
-            {% if link['rel'] == 'prev' %}
-            <a role="button" href="{{ link['href'] }}?f=html">Prev</a>
-            {% elif link['rel'] == 'next' %}
-            <a role="button" href="{{ link['href'] }}?f=html">Next</a>
-            {% endif %}
-          {% endfor %}
-          </div>
-        </div>
     </section>
 {% endblock %}
 

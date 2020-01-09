@@ -31,24 +31,22 @@ Returns content from plugins and sets reponses
 """
 
 from datetime import datetime
-from dateutil.parser import parse as dateparse
 import json
 import logging
-import os
 import urllib.parse
 
-from jinja2 import Environment, FileSystemLoader
+from dateutil.parser import parse as dateparse
 
 from pygeoapi import __version__
+from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
+                                  jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import json_serial, str2bool
+from pygeoapi.util import (dategetter, json_serial, render_j2_template,
+                           str2bool, TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
-
-TEMPLATES = '{}{}templates'.format(os.path.dirname(
-    os.path.realpath(__file__)), os.sep)
 
 #: Return headers for requests (e.g:X-Powered-By)
 HEADERS = {
@@ -57,13 +55,20 @@ HEADERS = {
 }
 
 #: Formats allowed for ?f= requests
-FORMATS = ['json', 'html']
+FORMATS = ['json', 'html', 'jsonld']
+
+CONFORMANCE = [
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+]
 
 
 def pre_process(func):
     """
         Decorator performing header copy and format\
-        checking before sending arguments to mehods
+        checking before sending arguments to methods
 
         :param func: decorated function
 
@@ -104,6 +109,7 @@ class API(object):
         setup_logger(self.config['logging'])
 
     @pre_process
+    @jsonldify
     def root(self, headers_, format_):
         """
         Provide API
@@ -132,12 +138,18 @@ class API(object):
 
         LOGGER.debug('Creating links')
         fcm['links'] = [{
-              'rel': 'self',
+              'rel': 'self' if not format_ or
+              format_ == 'json' else 'alternate',
               'type': 'application/json',
               'title': 'This document as JSON',
-              'href': self.config['server']['url']
+              'href': '{}?f=json'.format(self.config['server']['url'])
             }, {
-              'rel': 'self',
+              'rel': 'self' if format_ == 'jsonld' else 'alternate',
+              'type': 'application/ld+json',
+              'title': 'This document as RDF (JSON-LD)',
+              'href': '{}?f=jsonld'.format(self.config['server']['url'])
+            }, {
+              'rel': 'self' if format_ == 'html' else 'alternate',
               'type': 'text/html',
               'title': 'This document as HTML',
               'href': '{}?f=html'.format(self.config['server']['url']),
@@ -167,13 +179,13 @@ class API(object):
         ]
 
         if format_ == 'html':  # render
-            for link in fcm['links']:
-                if 'json' in link['type']:
-                    link['href'] = ''.join((link['href'], '?f=json'))
-
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'root.html', fcm)
+            content = render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
+
+        if format_ == 'jsonld':
+            headers_['Content-Type'] = 'application/ld+json'
+            return headers_, 200, json.dumps(self.fcmld)
 
         return headers_, 200, json.dumps(fcm)
 
@@ -206,7 +218,7 @@ class API(object):
                 'openapi-document-path': path
             }
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'openapi.html', data)
+            content = render_j2_template(self.config, 'openapi.html', data)
             return headers_, 200, content
 
         headers_['Content-Type'] = \
@@ -235,23 +247,19 @@ class API(object):
             return headers_, 400, json.dumps(exception)
 
         conformance = {
-            'conformsTo': [
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/core',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/html',
-                'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/geojson'
-            ]
+            'conformsTo': CONFORMANCE
         }
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-            content = _render_j2_template(self.config, 'conformance.html',
-                                          conformance)
+            content = render_j2_template(self.config, 'conformance.html',
+                                         conformance)
             return headers_, 200, content
 
         return headers_, 200, json.dumps(conformance)
 
     @pre_process
+    @jsonldify
     def describe_collections(self, headers_, format_, dataset=None):
         """
         Provide feature collection metadata
@@ -310,20 +318,12 @@ class API(object):
                 collection['extent']['spatial']['crs'] = \
                     v['extents']['spatial']['crs']
 
-            if 'temporal' in v['extents']:
-                t_ext = v['extents']['temporal']
-
-                if 'begin' in t_ext:
-                    b = t_ext['begin']
-                else:
-                    b = None
-                if 'end' in t_ext:
-                    e = t_ext['end']
-                else:
-                    e = None
-
+            t_ext = v.get('extents', {}).get('temporal', {})
+            if t_ext:
+                begins = dategetter('begin', t_ext)
+                ends = dategetter('end', t_ext)
                 collection['extent']['temporal'] = {
-                    'interval': [[b, e]]
+                    'interval': [[begins, ends]]
                 }
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
@@ -343,28 +343,43 @@ class API(object):
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
                 'type': 'application/geo+json',
-                'rel': 'item',
+                'rel': 'items',
                 'title': 'Features as GeoJSON',
                 'href': '{}/collections/{}/items?f=json'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'items',
+                'title': 'Features as RDF (GeoJSON-LD)',
+                'href': '{}/collections/{}/items?f=jsonld'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
                 'type': 'text/html',
-                'rel': 'item',
+                'rel': 'items',
                 'title': 'Features as HTML',
                 'href': '{}/collections/{}/items?f=html'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
                 'type': 'application/json',
-                'rel': 'self',
+                'rel': 'self' if not format_
+                or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections/{}?f=json'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'self' if format_ == 'jsonld' else 'alternate',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': '{}/collections/{}?f=jsonld'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
                 'type': 'text/html',
-                'rel': 'alternate',
+                'rel': 'self' if format_ == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
@@ -379,32 +394,53 @@ class API(object):
         if dataset is None:
             fcm['links'].append({
                 'type': 'application/json',
-                'rel': 'self',
+                'rel': 'self' if not format
+                or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections?f=json'.format(
                     self.config['server']['url'])
             })
             fcm['links'].append({
+                'type': 'application/ld+json',
+                'rel': 'self' if format_ == 'jsonld' else 'alternate',
+                'title': 'This document as RDF (JSON-LD)',
+                'href': '{}/collections?f=jsonld'.format(
+                    self.config['server']['url'])
+            })
+            fcm['links'].append({
                 'type': 'text/html',
-                'rel': 'alternate',
+                'rel': 'self' if format_ == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections?f=html'.format(
                     self.config['server']['url'])
             })
 
         if format_ == 'html':  # render
-            fcm['links'][0]['rel'] = 'alternate'
-            fcm['links'][1]['rel'] = 'self'
 
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
-                content = _render_j2_template(self.config, 'collection.html',
-                                              fcm)
+                content = render_j2_template(self.config, 'collection.html',
+                                             fcm)
             else:
-                content = _render_j2_template(self.config, 'collections.html',
-                                              fcm)
+                content = render_j2_template(self.config, 'collections.html',
+                                             fcm)
 
             return headers_, 200, content
+
+        if format_ == 'jsonld':
+            jsonld = self.fcmld.copy()
+            if dataset is not None:
+                jsonld['dataset'] = jsonldify_collection(self, fcm)
+            else:
+                jsonld['dataset'] = list(
+                    map(
+                        lambda collection: jsonldify_collection(
+                            self, collection
+                        ), fcm.get('collections', [])
+                    )
+                )
+            headers_['Content-Type'] = 'application/ld+json'
+            return headers_, 200, json.dumps(jsonld)
 
         return headers_, 200, json.dumps(fcm, default=json_serial)
 
@@ -459,8 +495,17 @@ class API(object):
                 }
                 LOGGER.error(exception)
                 return headers_, 400, json.dumps(exception)
-        except TypeError:
+        except (TypeError) as err:
+            LOGGER.warning(err)
             startindex = 0
+        except ValueError as err:
+            LOGGER.warning(err)
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'startindex value should be an integer'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Processing limit parameter')
         try:
@@ -474,8 +519,17 @@ class API(object):
                 }
                 LOGGER.error(exception)
                 return headers_, 400, json.dumps(exception)
-        except TypeError:
+        except TypeError as err:
+            LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
+        except ValueError as err:
+            LOGGER.warning(err)
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'limit value should be an integer'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -492,7 +546,7 @@ class API(object):
         except AttributeError:
             bbox = []
         try:
-            [float(c) for c in bbox]
+            bbox = [float(c) for c in bbox]
         except ValueError:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -571,7 +625,14 @@ class API(object):
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
-            if k not in reserved_fieldnames and k in p.fields.keys():
+            if k not in reserved_fieldnames and k not in p.fields.keys():
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'unknown query parameter'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, json.dumps(exception)
+            elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
@@ -641,13 +702,19 @@ class API(object):
 
         content['links'] = [{
             'type': 'application/geo+json',
-            'rel': 'self',
+            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items?f=json{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
             }, {
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+            'type': 'application/ld+json',
+            'title': 'This document as RDF (JSON-LD)',
+            'href': '{}/collections/{}/items?f=jsonld{}'.format(
+                self.config['server']['url'], dataset, serialized_query_params)
+            }, {
             'type': 'text/html',
-            'rel': 'alternate',
+            'rel': 'self' if format_ == 'html' else 'alternate',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items?f=html{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
@@ -694,9 +761,6 @@ class API(object):
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
 
-            content['links'][0]['rel'] = 'alternate'
-            content['links'][1]['rel'] = 'self'
-
             # For constructing proper URIs to items
             if pathinfo:
                 path_info = '/'.join([
@@ -712,8 +776,8 @@ class API(object):
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
-            content = _render_j2_template(self.config, 'items.html',
-                                          content)
+            content = render_j2_template(self.config, 'items.html',
+                                         content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
             formatter = load_plugin('formatter', {'name': 'CSV', 'geom': True})
@@ -732,6 +796,10 @@ class API(object):
             cd = 'attachment; filename="{}.csv"'.format(dataset)
             headers_['Content-Disposition'] = cd
 
+            return headers_, 200, content
+        elif format_ == 'jsonld':
+            headers_['Content-Type'] = 'application/ld+json'
+            content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content, default=json_serial)
@@ -784,13 +852,19 @@ class API(object):
             return headers_, 404, json.dumps(exception)
 
         content['links'] = [{
-            'rel': 'self',
+            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items/{}?f=json'.format(
                 self.config['server']['url'], dataset, identifier)
             }, {
-            'rel': 'alternate',
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+            'type': 'application/ld+json',
+            'title': 'This document as RDF (JSON-LD)',
+            'href': '{}/collections/{}/items/{}?f=jsonld'.format(
+                self.config['server']['url'], dataset, identifier)
+            }, {
+            'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items/{}?f=html'.format(
@@ -817,17 +891,21 @@ class API(object):
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
 
-            content['links'][0]['rel'] = 'alternate'
-            content['links'][1]['rel'] = 'self'
             content['title'] = self.config['datasets'][dataset]['title']
-
-            content = _render_j2_template(self.config, 'item.html',
-                                          content)
+            content = render_j2_template(self.config, 'item.html',
+                                         content)
+            return headers_, 200, content
+        elif format_ == 'jsonld':
+            headers_['Content-Type'] = 'application/ld+json'
+            content = geojson2geojsonld(
+                self.config, content, dataset, identifier=identifier
+            )
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content, default=json_serial)
 
     @pre_process
+    @jsonldify
     def describe_processes(self, headers_, format_, process=None):
         """
         Provide processes metadata
@@ -869,7 +947,7 @@ class API(object):
                 for k, v in processes_config.items():
                     p = load_plugin('process',
                                     processes_config[k]['processor'])
-                    p.metadata['itemType'] = ['process']
+                    p.metadata['itemType'] = 'process'
                     p.metadata['jobControlOptions'] = ['sync-execute']
                     p.metadata['outputTransmission'] = ['value']
                     processes.append(p.metadata)
@@ -883,11 +961,11 @@ class API(object):
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
             if process is not None:
-                response = _render_j2_template(self.config, 'process.html',
-                                               p.metadata)
+                response = render_j2_template(self.config, 'process.html',
+                                              p.metadata)
             else:
-                response = _render_j2_template(self.config, 'processes.html',
-                                               {'processes': processes})
+                response = render_j2_template(self.config, 'processes.html',
+                                              {'processes': processes})
 
             return headers_, 200, response
 
@@ -984,38 +1062,9 @@ def check_format(args, headers):
 
         if 'text/html' in headers_:
             format_ = 'html'
+        elif 'application/ld+json' in headers_:
+            format_ = 'jsonld'
         elif 'application/json' in headers_:
             format_ = 'json'
 
     return format_
-
-
-def to_json(dict_):
-    """
-    Serialize dict to json
-
-    :param dict_: `dict` of JSON representation
-
-    :returns: JSON string representation
-    """
-
-    return json.dumps(dict_, default=json_serial)
-
-
-def _render_j2_template(config, template, data):
-    """
-    render Jinja2 template
-
-    :param config: dict of configuration
-    :param template: template (relative path)
-    :param data: dict of data
-
-    :returns: string of rendered template
-    """
-
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
-    env.filters['to_json'] = to_json
-    env.globals.update(to_json=to_json)
-
-    template = env.get_template(template)
-    return template.render(config=config, data=data, version=__version__)
