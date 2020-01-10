@@ -1,8 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [],
-    "comment": "This is a container variable that describes the grid_mapping used by the data in this file. This variable does not contain any data; only information about the geographic coordinate system.",
-    "epsg_code": "EPSG:32663",
-    "grid_mapping_name": "latitude_longitude",
-    "inverse_flattening": 298.2572021484375,
-    "semi_major_axis": 6378137.0
-}
