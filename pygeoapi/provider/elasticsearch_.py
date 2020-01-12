@@ -252,7 +252,7 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderQueryError()
 
-        feature_collection['numberMatched'] = results['hits']['total']
+        feature_collection['numberMatched'] = results['hits']['total']['value']
 
         if resulttype == 'hits':
             return feature_collection
