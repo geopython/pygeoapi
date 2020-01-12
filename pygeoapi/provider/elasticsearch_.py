@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -57,11 +57,9 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('Setting Elasticsearch properties')
         self.es_host = url_tokens[2]
-        self.index_name = url_tokens[-2]
-        self.type_name = url_tokens[-1]
+        self.index_name = url_tokens[-1]
         LOGGER.debug('host: {}'.format(self.es_host))
         LOGGER.debug('index: {}'.format(self.index_name))
-        LOGGER.debug('type: {}'.format(self.type_name))
 
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
@@ -87,7 +85,7 @@ class ElasticsearchProvider(BaseProvider):
         fields_ = {}
         ic = IndicesClient(self.es)
         ii = ic.get(self.index_name)
-        p = ii[self.index_name]['mappings'][self.type_name]['properties']['properties']  # noqa
+        p = ii[self.index_name]['mappings']['properties']['properties']  # noqa
 
         for k, v in p['properties'].items():
             if 'type' in v:
@@ -298,8 +296,7 @@ class ElasticsearchProvider(BaseProvider):
 
         try:
             LOGGER.debug('Fetching identifier {}'.format(identifier))
-            result = self.es.get(self.index_name, doc_type=self.type_name,
-                                 id=identifier)
+            result = self.es.get(self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             id_ = result['_source']['properties'][self.id_field]
             result['_source']['id'] = id_

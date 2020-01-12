@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -568,6 +568,8 @@ class API(object):
         if (datetime_ is not None and
                 'temporal' in self.config['datasets'][dataset]['extents']):
             te = self.config['datasets'][dataset]['extents']['temporal']
+            te['begin'] = dateparse(str(te['begin']))
+            te['end'] = dateparse(str(te['begin']))
 
             if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')

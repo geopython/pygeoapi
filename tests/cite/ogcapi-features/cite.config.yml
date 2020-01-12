@@ -15,7 +15,7 @@ server:
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:
@@ -94,6 +94,6 @@ datasets:
 
         provider:
             name: Elasticsearch
-            data: http://localhost:9200/canada-hydat-daily-mean-02hc003/FeatureCollection
+            data: http://localhost:9200/canada-hydat-daily-mean-02hc003
             id_field: IDENTIFIER
             time_field: DATE

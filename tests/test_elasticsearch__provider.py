@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,7 @@ from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 def config():
     return {
         'name': 'Elasticsearch',
-        'data': 'http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection',  # noqa
+        'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
         'id_field': 'geonameid'
     }
 
