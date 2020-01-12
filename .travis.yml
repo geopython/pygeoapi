@@ -29,6 +29,7 @@ before_install:
   - sudo apt-get install -y postgresql-9.6-postgis-2.4
   - sudo apt-get install -y libgdal-dev gdal-bin
   - sudo apt-get install -y mongodb
+  - curl -O https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/7.5.1/elasticsearch-7.5.1.deb && sudo dpkg -i --force-confnew elasticsearch-7.5.1.deb && sudo service elasticsearch restart
 
 install:
   # follow GDAL installed version for Python bindings
