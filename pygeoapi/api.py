@@ -582,7 +582,8 @@ class API(object):
                 if datetime_begin != '..':
                     datetime_begin = dateparse(datetime_begin)
                     if datetime_begin.tzinfo is None:
-                        datetime_begin = datetime_begin.replace(tzinfo=pytz.UTC)
+                        datetime_begin = datetime_begin.replace(
+                            tzinfo=pytz.UTC)
 
                 if datetime_end != '..':
                     datetime_end = dateparse(datetime_end)
