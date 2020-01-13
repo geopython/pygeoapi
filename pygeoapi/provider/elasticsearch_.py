@@ -223,25 +223,34 @@ class ElasticsearchProvider(BaseProvider):
             query['_source']['includes'].append('geometry')
         try:
             LOGGER.debug('querying Elasticsearch')
-            if startindex + limit > 10000:
+
+            LOGGER.debug('Setting ES paging zero-based')
+            if startindex > 0:
+                startindex2 = startindex - 1
+            else:
+                startindex2 = startindex
+
+            if startindex2 + limit > 10000:
                 gen = helpers.scan(client=self.es, query=query,
                                    preserve_order=True,
                                    index=self.index_name)
                 results = {'hits': {'total': limit, 'hits': []}}
-                for i in range(startindex + limit):
+                for i in range(startindex2 + limit):
                     try:
-                        if i >= startindex:
+                        if i >= startindex2:
                             results['hits']['hits'].append(next(gen))
                         else:
                             next(gen)
                     except StopIteration:
                         break
                 results['hits']['total'] = \
-                    len(results['hits']['hits']) + startindex
+                    len(results['hits']['hits']) + startindex2
             else:
                 results = self.es.search(index=self.index_name,
-                                         from_=startindex, size=limit,
+                                         from_=startindex2, size=limit,
                                          body=query)
+                results['hits']['total'] = results['hits']['total']['value']
+
         except exceptions.ConnectionError as err:
             LOGGER.error(err)
             raise ProviderConnectionError()
@@ -252,7 +261,7 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderQueryError()
 
-        feature_collection['numberMatched'] = results['hits']['total']['value']
+        feature_collection['numberMatched'] = results['hits']['total']
 
         if resulttype == 'hits':
             return feature_collection
