@@ -215,7 +215,9 @@ def test_describe_collections(config, api_):
             'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
         },
         'temporal': {
-            'interval': [['2000-10-30T18:24:39', '2007-10-30T08:57:29']],
+            'interval': [
+                ['2000-10-30T18:24:39+00:00', '2007-10-30T08:57:29+00:00']
+            ],
             'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
         }
     }
@@ -254,7 +256,7 @@ def test_describe_collections_json_ld(config, api_):
 
     assert 'http://schema.org/temporalCoverage' in dataset
     assert dataset['http://schema.org/temporalCoverage'][0][
-        '@value'] == '2000-10-30T18:24:39/2007-10-30T08:57:29'
+        '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
 
 
 def test_get_collection_items(config, api_):
