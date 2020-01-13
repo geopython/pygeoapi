@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,7 @@ from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 def config():
     return {
         'name': 'Elasticsearch',
-        'data': 'http://localhost:9200/ne_110m_populated_places_simple/FeatureCollection',  # noqa
+        'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
         'id_field': 'geonameid'
     }
 
@@ -61,7 +61,7 @@ def test_query(config):
 
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == 1559804
+    assert results['features'][0]['id'] == 3042030
 
     results = p.query(sortby=[{'property': 'nameascii', 'order': 'A'}])
     assert results['features'][0]['properties']['nameascii'] == 'Abidjan'

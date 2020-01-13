@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,8 +34,6 @@ import sys
 from elasticsearch import Elasticsearch
 es = Elasticsearch()
 
-type_name = 'FeatureCollection'
-
 if len(sys.argv) < 3:
     print('Usage: {} <path/to/data.geojson> <id-field>'.format(sys.argv[0]))
     sys.exit(1)
@@ -48,20 +46,22 @@ if es.indices.exists(index_name):
 
 # index settings
 settings = {
+    'settings': {
+        'number_of_shards': 1,
+        'number_of_replicas': 0
+    },
     'mappings': {
-        'FeatureCollection': {
+        'properties': {
+            'geometry': {
+                'type': 'geo_shape'
+            },
             'properties': {
-                'geometry': {
-                    'type': 'geo_shape'
-                },
                 'properties': {
-                    'properties': {
-                        'nameascii': {
-                            'type': 'text',
-                            'fields': {
-                                'raw': {
-                                    'type': 'keyword'
-                                }
+                    'nameascii': {
+                        'type': 'text',
+                        'fields': {
+                            'raw': {
+                                'type': 'keyword'
                             }
                         }
                     }
@@ -82,5 +82,4 @@ for f in d['features']:
         f['properties'][id_field] = int(f['properties'][id_field])
     except ValueError:
         f['properties'][id_field] = f['properties'][id_field]
-    res = es.index(index=index_name, doc_type=type_name,
-                   id=f['properties'][id_field], body=f)
+    res = es.index(index=index_name, id=f['properties'][id_field], body=f)
