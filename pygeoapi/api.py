@@ -36,6 +36,7 @@ import logging
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
+import pytz
 
 from pygeoapi import __version__
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
@@ -569,14 +570,25 @@ class API(object):
                 'temporal' in self.config['datasets'][dataset]['extents']):
             te = self.config['datasets'][dataset]['extents']['temporal']
 
+            if te['begin'].tzinfo is None:
+                te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
+            if te['end'].tzinfo is None:
+                te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+
             if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
                 LOGGER.debug('Validating time windows')
                 datetime_begin, datetime_end = datetime_.split('/')
                 if datetime_begin != '..':
                     datetime_begin = dateparse(datetime_begin)
+                    if datetime_begin.tzinfo is None:
+                        datetime_begin = datetime_begin.replace(
+                            tzinfo=pytz.UTC)
+
                 if datetime_end != '..':
                     datetime_end = dateparse(datetime_end)
+                    if datetime_end.tzinfo is None:
+                        datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
 
                 if te['begin'] is not None and datetime_begin != '..':
                     if datetime_begin < te['begin']:
@@ -588,6 +600,9 @@ class API(object):
 
             else:  # time instant
                 datetime__ = dateparse(datetime_)
+                if datetime__ != '..':
+                    if datetime__.tzinfo is None:
+                        datetime__ = datetime__.replace(tzinfo=pytz.UTC)
                 LOGGER.debug('detected time instant')
                 if te['begin'] is not None and datetime__ != '..':
                     if datetime__ < te['begin']:
