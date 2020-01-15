@@ -1,3 +1,18 @@
+pygeoapi (0.7.0-1~bionic0) bionic; urgency=medium
+  
+  * Numerous CITE compliance fixes
+  * Elasticsearch: update provider to support ES7
+  * MongoDB provider implementation
+  * JSON-LD support
+  * Starlette ASGI implementation
+  * various datetime / timezone aware date handling updates
+  * simplify API landing page
+  * environment variable support in config
+  * move /api to /openapi
+  * various GeoPackage and PostgreSQL/PostGIS provider fixes
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Wed, 15 Jan 2020 20:00:00 +0200
+
 pygeoapi (0.6.0-1~trusty1) trusty; urgency=medium
 
   * Disable tests during package build.
