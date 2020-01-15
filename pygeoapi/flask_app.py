@@ -47,7 +47,7 @@ CONFIG = None
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
-with open(os.environ.get('PYGEOAPI_CONFIG')) as fh:
+with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
 # CORS: optionally enable from config.
@@ -84,7 +84,7 @@ def openapi():
 
     :returns: HTTP response
     """
-    with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
+    with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
         openapi = yaml_load(ff)
 
     headers, status_code, content = api_.openapi(request.headers, request.args,
