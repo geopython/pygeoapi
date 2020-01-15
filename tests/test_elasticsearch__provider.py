@@ -77,6 +77,13 @@ def test_query(config):
 
     assert len(results['features'][0]['properties']) == 37
 
+    results = p.query(sortby=[{'property': 'nameascii', 'order': 'D'}],
+                      limit=10001)
+    assert results['features'][0]['properties']['nameascii'] == 'Zagreb'
+    assert len(results['features']) == 242
+    assert results['numberMatched'] == 242
+    assert results['numberReturned'] == 242
+
     config['properties'] = ['nameascii']
     p = ElasticsearchProvider(config)
     results = p.query()
