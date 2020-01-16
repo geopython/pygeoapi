@@ -248,7 +248,7 @@ def test_describe_collections_json_ld(config, api_):
     assert 'http://schema.org/Organization' in expanded[
         'http://schema.org/provider'][0]['@type']
 
-    assert 'http://schema.org/Place' in dataset['http://schema.org/spatial'][0]
+    assert 'http://schema.org/Place' in dataset['http://schema.org/spatial'][0]['@type']
     assert 'http://schema.org/GeoShape' in dataset[
         'http://schema.org/spatial'][0]['http://schema.org/geo'][0]['@type']
     assert dataset['http://schema.org/spatial'][0]['http://schema.org/geo'][
