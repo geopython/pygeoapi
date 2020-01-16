@@ -131,7 +131,8 @@ def jsonldify_collection(cls, collection):
         "license": cls.fcmld['license'],
         "keywords": collection.get('keywords', None),
         "spatial": None if (not hascrs84 or not bbox) else [{
-            "Place": {
+            "@type": "Place",
+            "geo": {
                 "@type": "GeoShape",
                 "box": '{},{} {},{}'.format(*_bbox[0:2], *_bbox[2:4])
             }
