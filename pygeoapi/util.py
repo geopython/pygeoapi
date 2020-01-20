@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,6 +33,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 import json
 import logging
+import mimetypes
 import os
 import re
 from urllib.parse import urlparse
@@ -46,6 +47,9 @@ LOGGER = logging.getLogger(__name__)
 
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
+
+mimetypes.add_type('text/plain', '.yaml')
+mimetypes.add_type('text/plain', '.yml')
 
 
 def dategetter(date_property, collection):
@@ -199,3 +203,15 @@ def render_j2_template(config, template, data):
 
     template = env.get_template(template)
     return template.render(config=config, data=data, version=__version__)
+
+
+def get_mimetype(filename):
+    """
+    helper function to return MIME type of a given file
+
+    :param filename: filename (with extension)
+
+    :returns: MIME type of given filename
+    """
+
+    return mimetypes.guess_type(filename)[0]
