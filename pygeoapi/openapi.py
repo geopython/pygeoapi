@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,6 +29,7 @@
 
 from copy import deepcopy
 import logging
+import os
 
 import click
 import yaml
@@ -38,12 +39,25 @@ from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
-# TODO: handle this better once schemas are public/final
-# allow also for schema caching
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
 }
+
+
+def get_ogc_schemas_location(server_config):
+
+    osl = server_config.get('ogc_schemas_location', None)
+
+    value = 'http://schemas.opengis.net'
+
+    if osl is not None:
+        if osl.startswith('http'):
+            value = osl
+        elif osl.startswith('/'):
+            value = os.path.join(server_config['url'], 'schemas')
+
+    return value
 
 
 # TODO: remove this function once OGC API - Processing is final
@@ -101,6 +115,10 @@ def get_oas_30(cfg):
     """
 
     paths = {}
+
+    osl = get_ogc_schemas_location(cfg['server'])
+    OPENAPI_YAML['oapif'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
+
     LOGGER.debug('setting up server info')
     oas = {
         'openapi': '3.0.2',

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -96,3 +96,9 @@ def test_json_serial():
 
     with pytest.raises(TypeError):
         util.json_serial('foo')
+
+
+def test_mimetype():
+    assert util.get_mimetype('file.xml') == 'application/xml'
+    assert util.get_mimetype('file.yml') == 'text/plain'
+    assert util.get_mimetype('file.yaml') == 'text/plain'
