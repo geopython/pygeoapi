@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,10 +34,10 @@ import os
 
 import click
 
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, send_from_directory
 
 from pygeoapi.api import API
-from pygeoapi.util import yaml_load
+from pygeoapi.util import get_mimetype, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -55,10 +55,38 @@ if CONFIG['server'].get('cors', False):
     from flask_cors import CORS
     CORS(APP)
 
-APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = \
-    CONFIG['server'].get('pretty_print', True)
+APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
+    'pretty_print', True)
 
 api_ = API(CONFIG)
+
+OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+
+if (OGC_SCHEMAS_LOCATION is not None and
+        not OGC_SCHEMAS_LOCATION.startswith('http')):
+    # serve the OGC schemas locally
+
+    if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        raise RuntimeError('OGC schemas misconfigured')
+
+    @APP.route('/schemas/<path:path>', methods=['GET'])
+    def schemas(path):
+        """
+        Serve OGC schemas locally
+
+        :param path: path of the OGC schema document
+
+        :returns: HTTP response
+        """
+
+        full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
+        dirname_ = os.path.dirname(full_filepath)
+        basename_ = os.path.basename(full_filepath)
+
+        # TODO: better sanitization?
+        path_ = dirname_.replace('..', '').replace('//', '')
+        return send_from_directory(path_, basename_,
+                                   mimetype=get_mimetype(basename_))
 
 
 @APP.route('/')

@@ -4,6 +4,7 @@
 #
 #
 # Copyright (c) 2019 Francesco Bartoli
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,7 +47,6 @@ app = Starlette()
 app.mount('/static', StaticFiles(
     directory='{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
                                   os.sep)))
-
 CONFIG = None
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
@@ -60,6 +60,13 @@ if CONFIG['server'].get('cors', False):
     from starlette.middleware.cors import CORSMiddleware
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
+OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+
+if (OGC_SCHEMAS_LOCATION is not None and
+        not OGC_SCHEMAS_LOCATION.startswith('http')):
+    if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        raise RuntimeError('OGC schemas misconfigured')
+    app.mount('/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION))
 
 api_ = API(CONFIG)
 
