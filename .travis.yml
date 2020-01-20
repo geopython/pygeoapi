@@ -54,6 +54,7 @@ before_script:
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'
   - gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
+  - gunzip < tests/data/land_use_capability_manaakie_whenua_landcare_research_nz.sql.gz | psql -U postgres test
 
 script:
   - pytest --cov=pygeoapi
