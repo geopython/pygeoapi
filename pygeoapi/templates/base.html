@@ -40,6 +40,7 @@
         <a href="{{ config['server']['url'] }}">Home</a>
         {% endblock %}
         <span style="float:right">
+          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=geopackage">GEOPACKAGE</a>
           <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
           <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=jsonld">JSON-LD</a>
         </span>

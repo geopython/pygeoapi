@@ -39,6 +39,9 @@ from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__
+from pygeoapi.gpkg import (
+    format_handler as gpkg_format_handler,
+)  # could use dictionary for format handlers
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
@@ -56,7 +59,7 @@ HEADERS = {
 }
 
 #: Formats allowed for ?f= requests
-FORMATS = ['json', 'html', 'jsonld']
+FORMATS = ['json', 'html', 'jsonld', "geopackage"]
 
 CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
@@ -176,10 +179,16 @@ class API(object):
               'type': 'application/json',
               'title': 'Collections',
               'href': '{}/collections'.format(self.config['server']['url'])
-            }
+            }, {
+                "rel": "self",
+                "type": "text/html",
+                "title": "This document as HTML",
+                "href": "{}?f=html".format(self.config["server"]["url"]),
+                "hreflang": self.config["server"]["language"],
+            },
         ]
 
-        if format_ == 'html':  # render
+        if format_ == 'html' or format_ == "geopackage":  # render
             headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
@@ -816,6 +825,13 @@ class API(object):
             headers_['Content-Type'] = 'application/ld+json'
             content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
+        elif format_ == "geopackage":
+            return gpkg_format_handler(
+                headers_=headers_,
+                dataset=dataset,
+                content=content,
+                json_serial=json_serial
+            )
 
         return headers_, 200, json.dumps(content, default=json_serial)
 
@@ -916,6 +932,13 @@ class API(object):
                 self.config, content, dataset, identifier=identifier
             )
             return headers_, 200, content
+        elif format_ == "geopackage":
+            return gpkg_format_handler(
+                headers_=headers_,
+                dataset='{}_{}'.format(dataset, identifier),
+                content=content,
+                json_serial=json_serial
+            )
 
         return headers_, 200, json.dumps(content, default=json_serial)
 
@@ -1081,5 +1104,9 @@ def check_format(args, headers):
             format_ = 'jsonld'
         elif 'application/json' in headers_:
             format_ = 'json'
+        elif 'application/geopackage+sqlite3' in headers_:
+            format_ = 'geopackage'
+        elif 'application/x-sqlite3' in headers_:
+            format_ = 'geopackage'
 
     return format_
