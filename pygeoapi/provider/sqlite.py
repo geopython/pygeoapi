@@ -2,9 +2,11 @@
 #
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.net>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,6 +39,9 @@ from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
 
 LOGGER = logging.getLogger(__name__)
+
+
+SPATIALITE_EXTENSION = os.getenv('SPATIALITE_LIBRARY_PATH', 'mod_spatialite.so')
 
 
 class SQLiteGPKGProvider(BaseProvider):
@@ -147,7 +152,7 @@ class SQLiteGPKGProvider(BaseProvider):
         # conn.set_trace_callback(LOGGER.debug)
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT load_extension('mod_spatialite.so')")
+            cursor.execute(f"SELECT load_extension('{SPATIALITE_EXTENSION}')")
         except sqlite3.OperationalError as err:
             LOGGER.error('Extension loading error: {}'.format(err))
             raise ProviderConnectionError()
