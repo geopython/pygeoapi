@@ -10,7 +10,7 @@ The REST structure and payload are defined using yaml file structures, the file 
 pygeoapi REST end points descriptions on OpenAPI standard are automatically generated based on the configuration file:
 
  
-.. code-block:: console
+.. code-block:: bash
 
    pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
    

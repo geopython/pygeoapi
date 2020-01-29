@@ -100,7 +100,6 @@ author = 'pygeoapi team'
 license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'
 copyright = '2018-2020, ' + author + ' ' + license
 
-today = 'non-false'
 today_fmt = '%Y-%m-%d'
 
 # The version info for the project you're documenting, acts as replacement for

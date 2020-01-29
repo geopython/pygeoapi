@@ -17,26 +17,20 @@ pygeoapi |release| documentation
    installation
    configuration
    administration
-   running
+   running/index
    deployment
-   linked_data
+   linked-data
    plugins
    development
-   ogc_cite
+   ogc-cite
    contributing
    support
-   further_reading
+   further-reading
    license
 
    
    pygeoapi
-   install
    openapi
-   docker
-   devel
-   wsgi
-#   asgi
-   configuration
    plugins
    code
 

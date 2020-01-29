@@ -25,7 +25,7 @@ using ``gunicorn`` on internal port 80.
 
 To run with default built-in config and data:
 
-.. code-block:: console
+.. code-block:: bash
 
    docker run -p 5000:80 -it geopython/pygeoapi run
    # or simply
@@ -36,7 +36,7 @@ then browse to **http://localhost:5000**
 
 You can also run all unit tests to verify:
 
-.. code-block:: console
+.. code-block:: bash
 
    docker run -it geopython/pygeoapi test
 
@@ -49,7 +49,7 @@ This can be effected best via Docker Volume Mapping.
 
 For example if your config is in ``my.config.yml``:
 
-.. code-block:: console
+.. code-block:: bash
 
    docker run -p 5000:80 -v $(pwd)/my.config.yml:/pygeoapi/local.config.yml -it geopython/pygeoapi
 
@@ -85,7 +85,7 @@ you need to set ``SCRIPT_NAME`` environment variable.
   
 For example to run with ``my.config.yml`` on ``http://localhost:5000/mypygeoapi``:
 
-.. code-block:: console
+.. code-block:: bash
 
    docker run -p 5000:80 -e SCRIPT_NAME='/mypygeoapi' -v $(pwd)/my.config.yml:/pygeoapi/local.config.yml -it geopython/pygeoapi
 

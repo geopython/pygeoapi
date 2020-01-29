@@ -21,38 +21,38 @@ Copy/paste install
 
 It is advisable to run pygeoapi inside an isolated enviroment either *virtualenv* or *docker*, mainly to avoid python package conflicts.
 
-.. code-block:: console
+.. code-block:: bash
 
-	# create virtualenv
-	virtualenv -p python pygeoapi
-	cd pygeoapi
-	. bin/activate
-	git clone https://github.com/geopython/pygeoapi.git
-	cd pygeoapi
+   # create virtualenv
+   virtualenv -p python pygeoapi
+   cd pygeoapi
+   . bin/activate
+   git clone https://github.com/geopython/pygeoapi.git
+   cd pygeoapi
 
-	# install requirements
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt
+   # install requirements
+   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
 
-	# optionally install requirements for starlette
-	pip install -r requirements-starlette.txt
+   # optionally install requirements for starlette
+   pip install -r requirements-starlette.txt
 
-	# install source in current directory
-	pip install -e .
-	cp pygeoapi-config.yml local.config.yml
-	# edit configuration file
-	nano  local.config.yml
+   # install source in current directory
+   pip install -e .
+   cp pygeoapi-config.yml local.config.yml
+   # edit configuration file
+   nano  local.config.yml
 
-	export PYGEOAPI_CONFIG=/path/to/local.config.yml
-	# generate OpenAPI Document
-	pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
-	export PYGEOAPI_OPENAPI=/path/to/openapi.yml
+   export PYGEOAPI_CONFIG=/path/to/local.config.yml
+   # generate OpenAPI Document
+   pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
+   export PYGEOAPI_OPENAPI=/path/to/openapi.yml
 
-	# run pygeoapi
-	pygeoapi serve
+   # run pygeoapi
+   pygeoapi serve
 
-	# optionally run pygeoapi with starlette
-	pygeoapi serve --starlette
+   # optionally run pygeoapi with starlette
+   pygeoapi serve --starlette
 
 If the default configuration was used then we should have pygeoapi running on
 

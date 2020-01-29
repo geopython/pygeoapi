@@ -7,7 +7,7 @@ WSGI
  doesn't implement WSGI since it is an API, 
  therefore it is required a webframework to access HTTP requests and pass the information to pygeoapi
  
-.. code-block:: console
+.. code-block:: bash
  
    HTTP request --> Flask (flask_app.py) --> pygeopai API   
 
@@ -16,13 +16,13 @@ the pygeoapi package integrates `Flask <https://flask.palletsprojects.com/en/1.1
 
 The flask WSGI server can be easily run as a pygeoapi command with the option `--flask`:
 
-.. code-block:: console
+.. code-block:: bash
 
    pygeoapi serve --flask
 
 Running a native Flask server is not advisable, the prefered option is as follows:
 
-.. code-block:: console
+.. code-block:: bash
  
    HTTP request --> WSGI server (gunicorn) --> Flask (flask_app.py) --> pygeoapi API
 
@@ -36,7 +36,7 @@ Running gunicorn
 Gunicorn is one of several WSGI supporting server on python (list of server supporting WSGI: `here <https://wsgi.readthedocs.io/en/latest/servers.html>`_). This server
 is simple to run from the command, e.g:
 
-.. code-block:: console
+.. code-block:: bash
    
    gunicorn pygeoapi.flask_app:APP
 
