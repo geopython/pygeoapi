@@ -63,3 +63,9 @@ script:
 after_success:
   - python3 setup.py sdist bdist_wheel --universal
   - sudo debuild -b -uc -us
+  
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.org#pygeoapi"
+    use_notice: true
