@@ -133,7 +133,7 @@ class ElasticsearchProvider(BaseProvider):
                     'geometry': {
                         'shape': {
                             'type': 'envelope',
-                            'coordinates': [[minx, miny], [maxx, maxy]]
+                            'coordinates': [[minx, maxy], [maxx, miny]]
                         },
                         'relation': 'intersects'
                     }
