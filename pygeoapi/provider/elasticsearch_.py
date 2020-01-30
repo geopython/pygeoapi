@@ -113,7 +113,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
 
-        query = {'query': {'bool': {'filter': []}}}
+        query = {'track_total_hits': True, 'query': {'bool': {'filter': []}}}
         filter_ = []
 
         feature_collection = {
