@@ -461,7 +461,7 @@ class API(object):
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime']
+                               'resulttype', 'datetime', 'sortby']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
