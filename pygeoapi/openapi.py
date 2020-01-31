@@ -340,7 +340,12 @@ def get_oas_30(cfg):
                 {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
         for k2, v2 in p.fields.items():
-            if p.properties and k2 in p.properties:
+            add_parameter = True
+            if p.properties and k2 not in p.properties:
+                LOGGER.debug('Provider specified not to advertise property')
+                add_parameter = False
+
+            if add_parameter:
                 path_ = '{}/items'.format(collection_name_path)
 
                 if v2['type'] == 'date':
