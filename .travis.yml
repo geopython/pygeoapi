@@ -67,5 +67,5 @@ after_success:
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#pygeoapi"
+      - "irc.freenode.org#pygeoapi-activity"
     use_notice: true
