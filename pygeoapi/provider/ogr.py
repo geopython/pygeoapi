@@ -61,6 +61,9 @@ class OGRProvider(BaseProvider):
         '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
 
+    # Setting for traditional CRS axis order.
+    OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
+
     def __init__(self, provider_def):
         """
         Initialize object
@@ -153,9 +156,11 @@ class OGRProvider(BaseProvider):
         self.transform_out = None
         if self.source_srs != self.target_srs:
             source = osgeo_osr.SpatialReference()
+            source.SetAxisMappingStrategy(self.OAMS_TRADITIONAL_GIS_ORDER)
             source.ImportFromEPSG(self.source_srs)
 
             target = osgeo_osr.SpatialReference()
+            source.SetAxisMappingStrategy(self.OAMS_TRADITIONAL_GIS_ORDER)
             target.ImportFromEPSG(self.target_srs)
 
             self.transform_in = \
