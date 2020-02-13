@@ -53,7 +53,7 @@ constitutes a bare minimum; more info is almost always better:
 
 ### Contributor License Agreement
 
-Your contribution will be under our [license](https://github.com/geopython/pygeoapi/blob/master/LICENSE) as per [GitHub's terms of service](https://help.github.com/articles/github-terms-of-service/#6-contributions-under-repository-license).
+Your contribution will be under our [license](https://github.com/geopython/pygeoapi/blob/master/LICENSE.md) as per [GitHub's terms of service](https://help.github.com/articles/github-terms-of-service/#6-contributions-under-repository-license).
 
 ### GitHub Commit Access
 
@@ -64,7 +64,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 
 * Pull requests may include copyright in the source code header by the contributor if the contribution is significant or the contributor wants to claim copyright on their contribution.
 * All contributors shall be listed at https://github.com/geopython/pygeoapi/graphs/contributors
-* Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE
+* Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE.md
 
 ### Version Control Branching
 
