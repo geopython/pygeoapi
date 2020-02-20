@@ -400,89 +400,204 @@ def test_get_feature(config, api_):
 
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()
+
+    # Test for undefined process
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'foo')
-    processes = json.loads(response)
-
+    data = json.loads(response)
     assert code == 404
+    assert data['code'] == 'NoSuchProcess'
 
+    # Test for description of all processes
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {})
-    processes = json.loads(response)
+    data = json.loads(response)
+    assert code == 200
+    assert len(data['processes']) == 1
 
-    assert len(processes['processes']) == 1
-
+    # Test for particular, defined procss
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'hello-world')
     process = json.loads(response)
-
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
     assert process['id'] == 'hello-world'
+    assert process['version'] == '0.2.0'
     assert process['title'] == 'Hello World process'
-    assert process['description'] == 'Hello World process'
-    assert len(process['links']) == 1
-    assert len(process['inputs']) == 1
+    assert len(process['keywords']) == 3
+    assert len(process['links']) == 2
+    assert len(process['inputs']) == 2
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
     assert len(process['jobControlOptions']) == 1
+    assert process['jobControlOptions'][0] == 'sync-execute'
 
+    # Check HTML response when requested in headers
+    req_headers = make_req_headers(HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'text/html'
+
+    # Check JSON response when requested in headers
+    req_headers = make_req_headers(HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Check HTML response when requested with query parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {'f': 'html'}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'text/html'
+
+    # Check JSON response when requested with query parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {'f': 'json'}, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Reset config to have no defined processes
     api_.config['processes'] = {}
 
+    # Test for undefined process
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'foo')
-    processes = json.loads(response)
-    assert len(processes['processes']) == 0
+    data = json.loads(response)
+    assert code == 404
+    assert data['code'] == 'NoSuchProcess'
+    assert rsp_headers['Content-Type'] == 'application/json'
 
+    # Test for description of all processes
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {})
+    data = json.loads(response)
+    assert code == 200
+    assert len(data['processes']) == 0
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Reset config to have no mention of processes at all
     api_.config.pop('processes')
 
+    # Test for undefined process
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'foo')
-    processes = json.loads(response)
-    assert len(processes['processes']) == 0
+    data = json.loads(response)
+    assert code == 404
+    assert data['code'] == 'NoSuchProcess'
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    # Test for description of all processes
+    rsp_headers, code, response = api_.describe_processes(
+        req_headers, {})
+    data = json.loads(response)
+    assert code == 200
+    assert len(data['processes']) == 0
+    assert rsp_headers['Content-Type'] == 'application/json'
 
 
 def test_execute_process(config, api_):
+    req_headers = make_req_headers()
     req_body = {
         'inputs': [{
             'id': 'name',
-            'value': 'test'
+            'value': 'Test'
+        }]
+    }
+    req_body_2 = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Tést'
+        }]
+    }
+    req_body_3 = {
+        'inputs': [{
+            'id': 'name',
+            'value': 'Tést'
+        }, {
+            'id': 'message',
+            'value': 'This is a test.'
+        }]
+    }
+    req_body_4 = {
+        'inputs': [{
+            'id': 'foo',
+            'value': 'Tést'
         }]
     }
 
-    req_headers = make_req_headers()
+    # Test posting empty payload to existing process
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, '', 'hello-world')
-    response = json.loads(response)
+        'POST', req_headers, {}, '', 'hello-world')
+    data = json.loads(response)
     assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'MissingParameterValue'
 
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'foo')
-    response = json.loads(response)
-
+        'POST', req_headers, {}, json.dumps(req_body), 'foo')
+    data = json.loads(response)
     assert code == 404
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'NoSuchProcess'
 
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
-    response = json.loads(response)
+        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert len(data['outputs']) == 1
+    assert data['outputs'][0]['id'] == 'echo'
+    assert data['outputs'][0]['value'] == 'Hello Test!'
 
-    assert response['outputs'][0]['value'] == 'test'
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_2), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert data['outputs'][0]['value'] == 'Hello Tést!'
 
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_3), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert data['outputs'][0]['value'] == 'Hello Tést! This is a test.'
+
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_4), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    # TODO inspect Location URI and asset 400 status
+
+    # Reset config to have no defined processes
     api_.config['processes'] = {}
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
+        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
     response = json.loads(response)
-    assert response['code'] == 'NotFound'
+    assert code == 404
+    assert 'Location' not in rsp_headers
+    assert response['code'] == 'NoSuchProcess'
 
+    # Reset config to have no mention of processes at all
     api_.config.pop('processes')
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
+        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
     response = json.loads(response)
-    assert response['code'] == 'NotFound'
+    assert code == 404
+    assert 'Location' not in rsp_headers
+    assert response['code'] == 'NoSuchProcess'
 
 
 def test_check_format():
