@@ -39,6 +39,7 @@ import multiprocessing
 import os
 import uuid
 import urllib.parse
+from copy import deepcopy
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -46,7 +47,7 @@ from pygeoapi import __version__
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
-from pygeoapi.util import json_serial, str2bool
+from pygeoapi.util import json_serial, str2bool, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -64,11 +65,10 @@ FORMATS = ['json', 'html']
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
-
 def pre_process(func):
     """
-        Decorator performing header copy and format\
-        checking before sending arguments to mehods
+        Decorator performing header copy and format
+        checking before sending arguments to methods
 
         :param func: decorated function
 
@@ -86,7 +86,6 @@ def pre_process(func):
             return func(cls, headers_, format_)
 
     return inner
-
 
 class API(object):
     """API object"""
@@ -112,6 +111,11 @@ class API(object):
         if 'manager' in self.config['server']:
             self.manager = load_plugin('process_manager',
                                        self.config['server']['manager'])
+            LOGGER.info('Process manager plugin loaded')
+        else:
+            LOGGER.info('No process manager defined')
+            self.manager = None
+
 
     @pre_process
     def root(self, headers_, format_):
@@ -841,8 +845,9 @@ class API(object):
         Provide processes metadata
 
         :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param process: name of process
+        :param format_: format of output
+        :param process: name of process, defaults to None to obtain
+            information about all processes
 
         :returns: tuple of headers, status code, content
         """
@@ -857,130 +862,258 @@ class API(object):
 
         processes_config = self.config.get('processes', {})
 
-        if processes_config:
-            if process is not None:
-                if process not in processes_config.keys():
-                    exception = {
-                        'code': 'NotFound',
-                        'description': 'identifier not found'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 404, json.dumps(exception)
+        if process and not processes_config.get(process, None):
+            exception = {
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
+            }
+            return headers_, 404, json.dumps(exception)
 
-                p = load_plugin('process',
-                                processes_config[process]['processor'])
-                p.metadata['jobControlOptions'] = ['sync-execute']
-                p.metadata['outputTransmission'] = ['value']
-                response = p.metadata
-            else:
-                processes = []
-                for k, v in processes_config.items():
-                    p = load_plugin('process',
-                                    processes_config[k]['processor'])
-                    p.metadata['itemType'] = ['process']
-                    p.metadata['jobControlOptions'] = ['sync-execute']
-                    p.metadata['outputTransmission'] = ['value']
-                    processes.append(p.metadata)
-                response = {
-                    'processes': processes
-                }
+        process_jobs_link = lambda process_id: dict({
+            'type': 'text/html',
+            'rel': 'collection',
+            'href': '{}/processes/{}/jobs'.format(self.config['server']['url'], process_id),
+            'title': 'Collection of jobs for the {} process'.format(process_id),
+            'hreflang': self.config['server'].get('language', None)
+        })
+
+
+        if processes_config:
+            process_ids = processes_config.keys() if not process else [p for p in processes_config.keys() if p == process]
+            processes = list(map(lambda process_id: load_plugin('process', processes_config[process_id]['processor']), process_ids))
+            output = []
+            for _process in processes:
+                process_id = _process.metadata['id']
+                if process is not None and process != process_id:
+                    continue
+                metadata = deepcopy(_process.metadata)
+                metadata['itemType'] = ['process']
+                metadata['jobControlOptions'] = ['sync-execute']
+                metadata['outputTransmission'] = ['value']
+                metadata['links'] = metadata.get('links', list())
+                metadata['links'].append(process_jobs_link(process_id))
+                output.append(metadata)
+
+            response = output[0] if process is not None else {
+                'processes': output
+            }
         else:
-            processes = []
-            response = {'processes': processes}
+            response = {'processes': []}
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
             if process is not None:
                 response = _render_j2_template(self.config, 'process.html',
-                                               p.metadata)
+                                               response)
             else:
                 response = _render_j2_template(self.config, 'processes.html',
-                                               {'processes': processes})
+                                               response)
 
             return headers_, 200, response
 
         return headers_, 200, json.dumps(response)
 
-    def execute_process(self, method, headers, args, data, process):
+    def execute_process(self, method, headers, args, data, process_id):
         """
         Execute process
 
+        :param method: HTTP method (GET/POST)
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param data: process data
-        :param process: name of process
+        :param process_id: id of process
 
         :returns: tuple of headers, status code, content
         """
 
         headers_ = HEADERS.copy()
 
-        data_dict = {}
         response = {}
-
-        if method == 'GET':
-            response = self.manager.get_jobs(process)
+        if method == 'GET' and process_id:
+            jobs = self.manager.get_jobs(process_id)
+            response = [job['identifier'] for job in jobs]
             return headers_, 200, json.dumps(response)
 
         if not data:
+            # TODO not all processes require input, e.g. time-depenendent or
+            # random value generators
             exception = {
                 'code': 'MissingParameterValue',
                 'description': 'missing request data'
             }
-            LOGGER.error(exception)
+            LOGGER.info(exception)
             return headers_, 400, json.dumps(exception)
 
-        processes = self.config.get('processes', {})
+        process = self.config.get('processes', {}).get(process_id, None)
 
-        if process not in processes:
+        if not self.manager:
+            raise Exception('No manager, no execution!')
+
+        if not process:
             exception = {
-                'code': 'NotFound',
+                'code': 'NoSuchProcess',
                 'description': 'identifier not found'
             }
-            LOGGER.error(exception)
+            LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        p = load_plugin('process',
-                        processes[process]['processor'])
+        p = load_plugin('process', process['processor'])
 
-        data_ = json.loads(data)
-        for input_ in data_['inputs']:
-            data_dict[input_['id']] = input_['value']
+        data_dict = {_input['id']: _input['value'] for _input in json.loads(data).get('inputs', [])}
 
-        try:
-            job_id = str(uuid.uuid1())
+        job_id = str(uuid.uuid1())
+        url = '{}/processes/{}/jobs/{}'.format(
+            self.config['server']['url'], process_id, job_id)
+        headers_['Location'] = url
 
-            if 'sync-execute' in args and args['sync-execute'] == 'false':
-                LOGGER.debug('asynchronous execution specified')
-                _process = multiprocessing.Process(
-                    target=self._execute_handler,
-                    args=(p, job_id, data_dict, True))
-                _process.start()
+        if 'sync-execute' in args and args['sync-execute'] == 'false':
+            LOGGER.debug('asynchronous execution specified')
+            _process = multiprocessing.Process(
+                target=self._execute_handler,
+                args=(p, job_id, data_dict, True))
+            _process.start()
+            return headers_, 201, ''
+        else:
+            LOGGER.debug('synchronous execution')
+            outputs, status = self._execute_handler(p, job_id, data_dict)
 
-                url = '{}/processes/{}/jobs/{}'.format(
-                    self.config['server']['url'], process, job_id)
-                headers_['Location'] = url
-                return headers_, 201, ''
-            else:
-                LOGGER.debug('synchronous execution specified')
-                outputs = self._execute_handler(p, job_id, data_dict)
+        if status == JobStatus.failed:
+            response = outputs
 
-            m = p.metadata
-            if 'raw' in args and str2bool(args['raw']):
-                headers_['Content-Type'] = \
-                    m['outputs'][0]['output']['formats'][0]['mimeType']
-                response = outputs
-            else:
-                response['outputs'] = outputs
+        m = p.metadata
+        if 'raw' in args and str2bool(args['raw']):
+            headers_['Content-Type'] = \
+                m['outputs'][0]['output']['formats'][0]['mimeType']
+            response = outputs
+        elif status != JobStatus.failed:
+            response['outputs'] = outputs
 
-            return headers_, 201, json.dumps(response)
-        except Exception as err:
+        return headers_, 201, json.dumps(response)
+
+    def retrieve_job_status(self, headers, args, data, process_id, job_id):
+        """
+        Get status of job (instance of a process)
+
+        :param method: HTTP method (GET)
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param data: process data
+        :param process_id: name of process
+        :param job_id: ID of job
+
+        :returns: tuple of headers, status code, content
+        """
+        headers_ = HEADERS.copy()
+        process = self.config.get('processes', {}).get(process_id, None)
+
+        if not process:
             exception = {
-                'code': 'InvalidParameterValue',
-                'description': str(err)
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
             }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+
+        job_result = self.manager.get_job_result(process_id, job_id)
+        if not job_result:
+            exception = {
+                'code': 'NoSuchJob',
+                'description': 'job not found'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+        status = JobStatus[job_result['status']]
+        response = {
+            'jobID': job_id,
+            'status': status.value,
+            'message': job_result.get('message', None),
+            'progress': 100 if status == JobStatus.finished else 0, # TODO actual progress value
+            'links': [
+            {
+                'href': '{}/processes/{}/jobs/{}'.format(
+                    self.config['server']['url'], process_id, job_id
+                ),
+                'rel': 'self',
+                'type': 'application/json',
+                'title': 'Status of {} job {}'.format(process_id, job_id)
+            }]
+        }
+        if status in (JobStatus.successful, JobStatus.running, JobStatus.accepted):
+            # TODO link also if accepted/running?
+            response['links'].append({
+                'href': '{}/processes/{}/jobs/{}/results'.format(
+                    self.config['server']['url'], process_id, job_id
+                ),
+                'rel': 'about',
+                'type': 'application/json',
+                'title': 'Results of {} job {}'.format(process_id, job_id)
+            })
+        elif status == JobStatus.failed:
+            # TODO link to exception report?
+            pass
+        return headers_, 200, json.dumps(response)
+
+    def retrieve_job_result(self, method, headers, args, data, process_id, job_id):
+        """
+        Get result of job (instance of a process)
+
+        :param method: HTTP method (GET)
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param data: process data
+        :param process_id: name of process
+        :param job_id: ID of job
+
+        :returns: tuple of headers, status code, content
+        """
+        headers_ = HEADERS.copy()
+        process = self.config.get('processes', {}).get(process_id, None)
+
+        if not process:
+            exception = {
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+
+        job_result = self.manager.get_job_result(process_id, job_id)
+        if not job_result:
+            exception = {
+                'code': 'NoSuchJob',
+                'description': 'job not found'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+        status = JobStatus[job_result['status']]
+        if status == JobStatus.running:
+            exception = {
+                'code': 'JobNotReady',
+                'description': 'job still running'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+        elif status == JobStatus.accepted:
+            # NOTE: this case is not mentioned in the specification
+            exception = {
+                'code': 'JobNotReady',
+                'description': 'job accepted but not yet running'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+        elif status == JobStatus.failed:
+            code = 'InvalidParameterValue' # TODO this must correspond to actual failure reason
+            http_status = 400 # TODO this must correspond to actual failure reason
+            exception = {
+                'code': code,
+                'description': 'job failed'
+            }
+            LOGGER.info(exception)
+            return headers_, http_status, json.dumps(exception)
+        location = job_result['location']
+        with io.open(location, 'r') as fh:
+            result = json.load(fh)
+        return headers_, 200, json.dumps(result)
 
     def _execute_handler(self, p, job_id, data_dict, async_=False):
         """
@@ -991,43 +1124,75 @@ class API(object):
         :param data_dict: `dict` of data parameters
         :param async_: `bool` whether to return or dispatch results
 
-        :returns: response payload or void if `async` is `True`
+        :returns: tuple of response payload and status, or None if `async` is `True`
         """
 
         process_start_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
 
         filename = '{}-{}'.format(p.metadata['id'], job_id)
-        job_filename = os.path.join(
-            self.config['server']['manager']['output_dir'], filename)
+        job_filename = os.path.join(self.manager.output_dir, filename) # TODO FIXME
 
+        current_status = JobStatus.accepted
         job_metadata = {
             'identifier': job_id,
             'processid': p.metadata['id'],
             'process_start_datetime': process_start_datetime,
             'process_end_datetime': None,
-            'status': 'running',
-            'location': None
+            'status': current_status.value,
+            'location': None,
+            'message': 'Process accepted'
         }
-        LOGGER.debug('adding job metadata')
         self.manager.add_job(job_metadata)
 
-        outputs = p.execute(data_dict)
+        try:
+            current_status = JobStatus.running
+            outputs = p.execute(data_dict)
+            self.manager.update_job(job_id, {
+                'status': current_status.value,
+                'message': 'Process running'
+            })
 
-        with io.open(job_filename, 'w') as fh:
-            fh.write(json.dumps(outputs))
+            with io.open(job_filename, 'w') as fh:
+                fh.write(json.dumps(outputs))
 
-        process_end_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
+            current_status = JobStatus.finished
+            job_update_metadata = {
+                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'status': current_status.value,
+                'location': job_filename,
+                'message': 'Process complete'
+            }
 
-        job_update_metadata = {
-            'process_end_datetime': process_end_datetime,
-            'status': 'finished',
-            'location': job_filename
-        }
+            self.manager.update_job(job_id, job_update_metadata)
 
-        self.manager.update_job(job_id, job_update_metadata)
+        except Exception as err:
+            # TODO assess correct exception type and description to help users
+            # NOTE, the /results endpoint should return the error HTTP status
+            # for jobs that failed, ths specification says that failing jobs
+            # must still be able to be retrieved with their error message
+            # intact, and the correct HTTP error status at the /results
+            # endpoint, even if the /result endpoint correctly returns the
+            # failure information (i.e. what one might assume is a 200
+            # response).
+            current_status = JobStatus.failed
+            code = 'InvalidParameterValue'
+            status_code = 400
+            outputs = {
+                'code': code,
+                'description': str(err) # NOTE this is optional and internal exceptions aren't useful for (or safe to show) end-users
+            }
+            LOGGER.error(outputs)
+            job_metadata = {
+                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'status': current_status.value,
+                'location': None,
+                'message': code
+            }
+
+            self.manager.update_job(job_id, job_metadata)
 
         if not async_:
-            return outputs
+            return outputs, current_status
         return
 
 
@@ -1095,4 +1260,4 @@ def _render_j2_template(config, template, data):
     env.globals.update(to_json=to_json)
 
     template = env.get_template(template)
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=config, data=data, version=__version__).encode("utf-8")

@@ -31,6 +31,7 @@
 
 from datetime import date, datetime, time
 from decimal import Decimal
+from enum import Enum
 import logging
 
 import yaml
@@ -108,3 +109,17 @@ def json_serial(obj):
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
     raise TypeError(msg)
+
+
+class JobStatus(Enum):
+    """
+    Enum for the job status options specified in the WPS 2.0 specification
+    """
+    # From the specification
+    accepted = 'accepted'
+    running = 'running'
+    successful = 'successful'
+    failed = 'failed'
+
+    # Alternative namings used in existing codebase
+    finished = successful # TODO should this status be used?

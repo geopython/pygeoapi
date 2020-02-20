@@ -50,7 +50,6 @@ class TinyDBManager(BaseManager):
 
         BaseManager.__init__(self, manager_def)
 
-        self.name = manager_def['name']
         self.connection = manager_def['connection']
 
     def connect(self):
@@ -141,9 +140,9 @@ class TinyDBManager(BaseManager):
 
         self.connect()
         query = tinydb.Query()
-        r = self.db.search(query.processid == processid, query.jobid == jobid)
+        r = self.db.search((query.processid == processid) & (query.identifier == jobid))
 
-        return r
+        return r[0] if r else None
 
     def add_job_result(self, processid, jobid):
         """

@@ -1,47 +1,156 @@
 {% extends "base.html" %}
+{% macro literalInputTD(data, prop, itemprop, datalabel) -%}
+  <td itemprop="{{ itemprop }}" data-label="{{ datalabel }}">
+    {% if prop == 'dataType' %}
+      <a target="#" title="Type definition" href="http://www.w3.org/2001/XMLSchema#{{ data[prop] }}">
+        {{ data[prop] }}
+      </a>
+    {% else  %}
+      {{ data.get(prop, '') }}
+    {% endif %}
+  </td>
+{%- endmacro %}
+{% macro occurences(min, max) -%}
+  <span>
+  {% if min == max %}
+    {{ min }}
+  {% else %}
+    {{min}}–{{max}}
+  {% endif %}
+  </span>
+{%- endmacro %}
+{% block form_js %}
+<script src="{{ config['server']['url'] }}/static/js/postJob.js"></script>
+{% endblock %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
-{% block crumbs %}{{ super() }} 
+{% block crumbs %}{{ super() }}
 / <a href="../processes">Processes</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
     <section id="processes" itemscope itemtype="https://schema.org/WebAPI">
       <h2 itemprop="name">{{ data['title'] }}</h2>
-      <div itemprop="description">{{ data['description'] }}</div>
-      <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ data['id'] }}" />
+      <p itemprop="keywords">
+          {% for kw in data['keywords'] %}
+            <mark class="tag">{{ kw }}</mark>
+          {% endfor %}
+      </p>
+      <div itemprop="description">{{data.description}}</div>
+      <meta itemprop="url" content="{{config.server.url}}/processes/{{data.id}}" />
       <div class="row">
         <div class="col-sm-12 col-md-6">
-            <table class="striped">
-              <caption>Inputs</caption>
-              <thead>
-              <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Description</th>
+          <table class="striped">
+            <caption>Inputs</caption>
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Data Type</th>
+              <th>Default Value</th>
+              <th>Unit of Measure</th>
+              <th>Occurences</th>
+              <th>Keywords</th>
+            </tr>
+            </thead>
+            <tbody>
+              {% for input_ in data['inputs'] %}
+              <tr itemprop="parameter" itemscope>
+                <td itemprop="id" data-label="name">
+                  {{ input_.id }}
+                </td>
+                <td itemprop="name" data-label="title">
+                  {{ input_.title|striptags|truncate }}
+                </td>
+                <td itemprop="description" data-label="description">
+                  {{ input_.abstract|striptags|truncate }}
+                </td>
+                {% if input_.input.literalDataDomain %}
+                  {{ literalInputTD(input_.input.literalDataDomain, 'dataType', 'dataType', 'dataType') }}
+                  {{ literalInputTD(input_.input.literalDataDomain.valueDefinition, 'defaultValue', '', '') }}
+                  {{ literalInputTD(input_.input.literalDataDomain.valueDefinition, 'uom', '', '') }}
+                {% endif %}
+                <td>
+                  {{ occurences(
+                    input_.get('minOccurs', 1),
+                    input_.get('maxOccurs', 1)
+                  ) }}
+                </td>
+                <td>
+                  {% for kw in input_.get('keywords', []) %}
+                    <mark class="tag">{{ kw }}</mark>
+                  {% endfor %}
+                </td>
               </tr>
-              </thead>
-              <tbody>
-                {% for input_ in data['inputs'] %}
-                <tr itemprop="parameter" itemscope itemtype="https://schema.org/Parameter">
-                  <td itemprop="id" data-label="name">{{ input_['id'] }}</td>
-                  <td itemprop="name" data-label="title">{{ input_['title'] }}</td>
-                  <td itemprop="description" data-label="description">
-                    {{ input_['description'] | striptags | truncate }}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <table class="striped">
+            <caption>Outputs</caption>
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+              {% for output_ in data['outputs'] %}
+              <tr itemprop="parameter" itemscope>
+                <td itemprop="id" data-label="name">{{ output_['id'] }}</td>
+                <td itemprop="name" data-label="title">{{ output_['title'] }}</td>
+                <td itemprop="description" data-label="description">
+                  {{ output_['description'] | striptags | truncate }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
+      <h3>Execution modes</h3>
+      <ul>
+        {% if 'sync-execute' in data.jobControlOptions %}<li>Synchronous</li>{% endif %}
+        {% if 'async-execute' in data.jobControlOptions %}<li>Asynchronous</li>{% endif %}
+      </ul>
       <h2>Links</h2>
       <ul>
-      {% for link in data['links'] %}
-          <li>
-            <a itemprop="documentation" title="{{ link['rel'] }}" href="{{ link['href'] }}">
-            {{ link['title'] }} ({{ link['type'] }})
-            </a></li>
-      {% endfor %}
+        {% for link in data['links'] %}
+            <li>
+            <!-- TODO put links in head as Links as well? -->
+              <a title={{link.title}} rel={{link.rel}} href={{link.href}} hreflang={link.hreflang}>
+                {{ link['title'] }} ({{ link['type'] }})
+              </a>
+            </li>
+        {% endfor %}
       </ul>
+    </section>
+    <section id='process-example'>
+      <h2>Submit a job</h2>
+      <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs')" method="post">
+        <li>
+          {% set typeMap = {'string': 'text', 'integer': 'number', 'boolean': 'checkbox'} %}
+          {% for input_ in data['inputs'] %}
+            <label>{{input_.title|striptags|truncate}}</label>
+            <!-- TODO placeholder with description -->
+            <!-- TODO pre-fill default value if available -->
+            <!-- TODO pre-fill with example -->
+            <!-- TODO infer type from metadata -->
+            <!-- TODO default checked state for checkbox -->
+            <!-- TODO radio for enum -->
+            <input
+              class="job-form-input" type="{{typeMap[input_.input.literalDataDomain.dataType]}}" name={{input_.id}}
+              autocomplete="off" step="any" value="{{input_.input.literalDataDomain.valueDefinition.defaultValue}}"
+              {{(input_.get('minOccurs', 1) > 0) and 'required' or null}}
+            >
+          {% endfor %}
+        </li>
+        <li>
+          <input type="submit" value="Submit job">
+        </li>
+      </form>
+      <section id="job-results"></section>
     </section>
 {% endblock %}

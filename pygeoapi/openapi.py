@@ -388,7 +388,7 @@ def get_oas_30(cfg):
 
     LOGGER.debug('setting up processes')
 
-    processes = cfg.get('processes', {})
+    processes = {k: v for k, v in cfg.get('processes', {}).items() if 'processor' in v}
 
     if processes:
         for k, v in processes.items():
@@ -460,6 +460,7 @@ def get_oas_30(cfg):
                     }
                 }
             }
+            # TODO additional endpoints: /processes/<process>/jobs/<job_id> and /processes/<process>/jobs/<job_id>/results
             if 'example' in p.metadata:
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 

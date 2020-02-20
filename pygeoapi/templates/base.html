@@ -10,6 +10,7 @@
     <link rel="shortcut icon" href="{{ config['server']['url'] }}/static/img/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://unpkg.com/mini.css@3.0.1/dist/mini-default.min.css">
     <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/default.css">
+    {% block form_js %}{% endblock %}
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
@@ -27,8 +28,8 @@
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         <a href="{{ config['server']['url'] }}" class="logo" role="button">
           <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:40px;vertical-align: middle;" /></a>
-        <!-- 
-          Add additional menu items here 
+        <!--
+          Add additional menu items here
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
         -->
         <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
@@ -38,7 +39,7 @@
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         {% block crumbs %}
         <a href="{{ config['server']['url'] }}">Home</a>
-        {% endblock %} 
+        {% endblock %}
         <span style="float:right">
           <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
         </span>

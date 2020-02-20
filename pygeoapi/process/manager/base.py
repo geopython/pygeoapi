@@ -45,6 +45,7 @@ class BaseManager(object):
         """
 
         self.name = manager_def['name']
+        self.output_dir = manager_def.get('output_dir', '/tmp')
 
     def create(self):
         """

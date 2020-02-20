@@ -35,11 +35,11 @@ LOGGER = logging.getLogger(__name__)
 
 #: Process metadata and description
 PROCESS_METADATA = {
-    'version': '0.1.0',
+    'version': '0.2.0',
     'id': 'hello-world',
     'title': 'Hello World process',
-    'description': 'Hello World process',
-    'keywords': ['hello world'],
+    'description': 'An example processes that takes a name as input, and echoes it back as output. Intended to demonstrate a simple process with a single literal input.',
+    'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
         'rel': 'canonical',
@@ -48,8 +48,9 @@ PROCESS_METADATA = {
         'hreflang': 'en-US'
     }],
     'inputs': [{
-        'id': 'name',
-        'title': 'name',
+        'id': 'name', # TODO a URI?
+        'title': 'Name',
+        'abstract': 'The name of the person or entity that you wish to be echoed back as an output.',
         'input': {
             'literalDataDomain': {
                 'dataType': 'string',
@@ -59,11 +60,29 @@ PROCESS_METADATA = {
             }
         },
         'minOccurs': 1,
-        'maxOccurs': 1
+        'maxOccurs': 1,
+        'metadata': None, # TODO how to use?
+        'keywords': ['full name', 'personal']
+    }, {
+        'id': 'message',
+        'title': 'Message',
+        'abstract': 'An optional message to echo as well.',
+        'input': {
+            'literalDataDomain': {
+                'dataType': 'string',
+                'valueDefinition': {
+                    'anyValue': True
+                }
+            }
+        },
+        'minOccurs': 0,
+        'maxOccurs': 1,
+        'metadata': None,
+        'keywords': ['message']
     }],
     'outputs': [{
-        'id': 'hello-world-response',
-        'title': 'output hello world',
+        'id': 'echo',
+        'title': 'A hello world echo with the name and (optional) message submitted for processing.',
         'output': {
             'formats': [{
                 'mimeType': 'application/json'
@@ -73,7 +92,7 @@ PROCESS_METADATA = {
     'example': {
         'inputs': [{
             'id': 'name',
-            'value': 'hi there',
+            'value': 'Ciarán',
             'type': 'text/plain'
         }]
     }
@@ -93,9 +112,10 @@ class HelloWorldProcessor(BaseProcessor):
         BaseProcessor.__init__(self, provider_def, PROCESS_METADATA)
 
     def execute(self, data):
+        value = 'Hello {}! {}'.format(data['name'], data.get('message', '')).strip()
         outputs = [{
-            'id': 'name',
-            'value': data['name']
+            'id': 'echo',
+            'value': value
         }]
 
         return outputs

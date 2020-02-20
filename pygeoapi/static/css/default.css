@@ -1,3 +1,7 @@
+html, body {
+    background-color: #fff;
+}
+
 .flat {
     border: 0px;
 }
@@ -6,18 +10,24 @@ header {
     display: inline-block;
 }
 
+/* cancel mini-css header>button uppercase */
+header button, header [type="button"], header .button, header [role="button"] {
+    text-transform: none;
+}
+
 main {
-    background-color:white
+    background-color: white;
+    padding-bottom: 65px; /* prevent from falling under the footer */
 }
 
 .crumbs {
-    background-color:rgb(230, 230, 230);
-    padding: 6px;   
+    background-color: rgb(230, 230, 230);
+    padding: 6px;
 }
 
 .crumbs a {
     padding: 0px 6px;
-    color:black;
+    color: black;
     text-transform: capitalize;
 }
 
@@ -26,24 +36,72 @@ main {
     height: 400px;
 }
 
-/* cancel mini-css header>button uppercase */
-header button, header [type="button"], header .button, header [role="button"] {
-      text-transform: none;
-}
-
-html, body {
-    background-color: #fff;
-}
-
 footer.sticky {
     position: fixed;
     width: 100%;
 }
 
-main {
-    padding-bottom: 65px; /* prevent from falling under the footer */
-}
-
 table:not(.horizontal) {
     max-height: none;
 }
+
+table {
+    empty-cells: show;
+    table-layout: auto;
+}
+
+th, td {
+  width: auto;
+}
+
+table mark {
+  font-size: 80%;
+  font-weight: 600;
+  line-height: 3em;
+}
+
+#processes table th,
+#processes table td {
+  font-size: 80%;
+  overflow-x: visible;
+}
+
+#process-example {
+  padding: 40px;
+  background: var(--header-back-color);
+  color: var(--header-fore-color);
+}
+
+
+<style type="text/css">
+.form-style-1 {
+	margin: 10px auto;
+	padding: 20px 12px 10px 20px;
+}
+.form-style-1 li {
+	padding: 0;
+	display: block;
+	list-style: none;
+	margin: 10px 0 0 0;
+}
+.form-style-1 label{
+	margin: 0 0 3px 6px;
+	padding: 0px;
+	display: block;
+	font-weight: bold;
+}
+
+.form-style-1 input[type=submit], .form-style-1 input[type=button]{
+	border: none;
+}
+
+.job-results {
+  color: green;
+  overflow: hidden;
+  transition:all 2s ease-in;
+}
+
+.job-results:not(:empty){
+  color: red;
+}
+</style>

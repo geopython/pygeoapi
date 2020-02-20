@@ -159,13 +159,15 @@ def dataset(feature_collection, feature=None):
     return response
 
 
-@APP.route('/processes')
-@APP.route('/processes/<name>')
+@APP.route('/processes', methods=['GET'])
+@APP.route('/processes/<name>', methods=['GET'])
 def describe_processes(name=None):
     """
-    OGC open api processes access point (experimental)
+    OGC WPS REST server respource to retrieve a process collection, or a process
+    description. (Experimental.)
 
-    :param name: identifier of process to describe
+    :param name: identifier of process to describe; if None, retrieves the
+        collection of processes
     :returns: HTTP response
     """
     headers, status_code, content = api_.describe_processes(
@@ -180,24 +182,56 @@ def describe_processes(name=None):
 
 
 @APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
-def execute_process(name=None):
+@APP.route('/processes/<name>/jobs/<job_id>', methods=['GET'])
+def execute_process(name=None, job_id=None):
     """
-    OGC open api jobs from processes access point (experimental)
+    OGC WPS REST server resource to obtain information about jobs submitted
+    as instances of a particular process. If a particular job_id is submitted,
+    returns additional information about that particular job. (Experimental.)
     :param name: identifier of process to execute
+    :param job_id: unique server-generated ID of job
     :returns: HTTP response
     """
-    # Get should get a list of jobs running 
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
+    if not job_id:
+        # Request a new job (POST)
+        # Get array of all job IDs (GET)
         headers, status_code, content = api_.execute_process(
             request.method, request.headers, request.args, request.data, name)
+    else:
+        # Return status of a specific job
+        headers, status_code, content = api_.retrieve_job_status(
+            request.headers, request.args, request.data, name, job_id
+        )
+
+    response = make_response(content, status_code)
 
     if headers:
         response.headers = headers
 
     return response
 
+@APP.route('/processes/<name>/jobs/<job_id>/results', methods=['GET'])
+def retrieve_job_result(name=None, job_id=None):
+    """
+    OGC EPS REST server resource to obtain the results of a particualar job (an
+    instance of a process). Under synchronous execution, these results would
+    have been returned to the client already (but can be requested again). Under
+    asyncronous execution, this is the endpoint a client hits to obtain their
+    results, via a Location header. (Experimental.)
+    :param name: identifier of process to inspect
+    :param job_id: unique ID of particular job executed under this process
+    :returns: HTTP response
+    """
+    headers, status_code, content = api_.retrieve_job_result(
+        request.method, request.headers, request.args, request.data, name, job_id
+    )
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
 
 @click.command()
 @click.pass_context
@@ -216,7 +250,6 @@ def serve(ctx, server=None, debug=False):
 #    setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
-
 
 if __name__ == '__main__':  # run locally, for testing
     serve()
