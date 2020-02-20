@@ -42,10 +42,12 @@ def config():
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',
-                 'password': 'postgres'
+                 'password': 'postgres',
+                 'search_path': ['osm', 'public']
                  },
         'id_field': 'osm_id',
-        'table': 'hotosm_bdi_waterways'
+        'table': 'hotosm_bdi_waterways',
+        'geom_field': 'foo_geom'
     }
 
 
@@ -62,6 +64,37 @@ def test_query(config):
     assert properties is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_with_property_filter(config):
+    """Test query  valid features when filtering by property"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=[("waterway", "stream")])
+    features = feature_collection.get('features', None)
+    stream_features = list(
+        filter(lambda feature: feature['properties']['waterway'] == 'stream',
+               features))
+    assert (len(features) == len(stream_features))
+
+    feature_collection = p.query()
+    features = feature_collection.get('features', None)
+    stream_features = list(
+        filter(lambda feature: feature['properties']['waterway'] == 'stream',
+               features))
+    other_features = list(
+        filter(lambda feature: feature['properties']['waterway'] != 'stream',
+               features))
+    assert (len(features) != len(stream_features))
+    assert (len(other_features) != 0)
+
+
+def test_query_bbox(config):
+    """Test query with a specified bounding box"""
+    psp = PostgreSQLProvider(config)
+    boxed_feature_collection = psp.query(
+        bbox=[29.3373, -3.4099, 29.3761, -3.3924]
+    )
+    assert len(boxed_feature_collection['features']) == 5
 
 
 def test_get(config):

@@ -1,0 +1,99 @@
+server:
+    bind:
+        host: 0.0.0.0
+        port: 5001
+    url: http://localhost:5001
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    pretty_print: true
+    limit: 10
+    # templates: /path/to/templates
+    map:
+        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
+        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+
+logging:
+    level: ERROR
+    #logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: pygeoapi CITE instance
+        description: pygeoapi instance in support of OGC CITE compliance
+        keywords:
+            - geospatial
+            - data
+            - api
+        keywords_type: theme
+        terms_of_service: null
+        url: https://pygeoapi.io
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: pygeoapi
+        url: https://pygeoapi.io
+    contact:
+        name: Tom Kralidis
+        position: Senior Systems Scientist
+        address: Mailing Address
+        city: City
+        stateorprovince: Administrative Area
+        postalcode: Zip or Postal Code
+        country: Country
+        phone: +xx-xxx-xxx-xxxx
+        fax: +xx-xxx-xxx-xxxx
+        email: pygeoapi@lists.osgeo.org
+        url: https://pygeoapi.io/community/
+        hours: Mo-Fr 08:00-17:00
+        instructions: During hours of service. Off on weekends.
+        role: pointOfContact
+
+datasets:
+    canada-hydat-daily-mean-02hc003:
+        title: Daily Mean of Water Level or Flow
+        description: The daily mean is the average of all unit values for a given day.
+        keywords: [Daily, Daily Mean, Water Level, Flow, Discharge]
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: Water Level and Flow - Environment Canada
+              href: https://wateroffice.ec.gc.ca
+              hreflang: en-CA
+            - type: text/html
+              rel: canonical
+              title: Niveau d'eau et débit - Environnement Canada
+              href: https://wateroffice.ec.gc.ca/index_f.html
+              hreflang: fr-CA
+            - type: text/html
+              rel: download
+              title: "National water data archive: HYDAT - Canada.ca"
+              href: https://www.canada.ca/en/environment-climate-change/services/water-overview/quantity/monitoring/survey/data-products-services/national-archive-hydat.html
+              hreflang: en-CA
+            - type: text/html
+              rel: download
+              title: "Archives nationales des données hydrologiques : HYDAT - Canada.ca"
+              href: https://www.canada.ca/fr/environnement-changement-climatique/services/eau-apercu/volume/surveillance/releves/produits-donnees-services/archives-nationales-hydat.html
+              hreflang: fr-CA
+            - type: application/zip
+              rel: download
+              title: download data
+              href: https://collaboration.cmc.ec.gc.ca/cmc/hydrometrics/www
+              hreflang: en-CA
+        extents:
+            spatial:
+                bbox: [-142, 52, -52, 84]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 1850-01-01
+                end: null # or empty
+
+        provider:
+            name: Elasticsearch
+            data: http://localhost:9200/canada-hydat-daily-mean-02hc003
+            id_field: IDENTIFIER
+            time_field: DATE

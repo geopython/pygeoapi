@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,10 +34,10 @@ import os
 
 import click
 
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, send_from_directory
 
 from pygeoapi.api import API
-from pygeoapi.util import yaml_load
+from pygeoapi.util import get_mimetype, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -47,7 +47,7 @@ CONFIG = None
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
-with open(os.environ.get('PYGEOAPI_CONFIG')) as fh:
+with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
 # CORS: optionally enable from config.
@@ -55,10 +55,38 @@ if CONFIG['server'].get('cors', False):
     from flask_cors import CORS
     CORS(APP)
 
-APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = \
-    CONFIG['server'].get('pretty_print', True)
+APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
+    'pretty_print', True)
 
 api_ = API(CONFIG)
+
+OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+
+if (OGC_SCHEMAS_LOCATION is not None and
+        not OGC_SCHEMAS_LOCATION.startswith('http')):
+    # serve the OGC schemas locally
+
+    if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        raise RuntimeError('OGC schemas misconfigured')
+
+    @APP.route('/schemas/<path:path>', methods=['GET'])
+    def schemas(path):
+        """
+        Serve OGC schemas locally
+
+        :param path: path of the OGC schema document
+
+        :returns: HTTP response
+        """
+
+        full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
+        dirname_ = os.path.dirname(full_filepath)
+        basename_ = os.path.basename(full_filepath)
+
+        # TODO: better sanitization?
+        path_ = dirname_.replace('..', '').replace('//', '')
+        return send_from_directory(path_, basename_,
+                                   mimetype=get_mimetype(basename_))
 
 
 @APP.route('/')
@@ -77,18 +105,18 @@ def root():
     return response
 
 
-@APP.route('/api')
-def api():
+@APP.route('/openapi')
+def openapi():
     """
     OpenAPI access point
 
     :returns: HTTP response
     """
-    with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
+    with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(request.headers, request.args,
-                                             openapi)
+    headers, status_code, content = api_.openapi(request.headers, request.args,
+                                                 openapi)
 
     response = make_response(content, status_code)
     if headers:
@@ -98,15 +126,15 @@ def api():
 
 
 @APP.route('/conformance')
-def api_conformance():
+def conformance():
     """
     OGC open api conformance access point
 
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.api_conformance(request.headers,
-                                                         request.args)
+    headers, status_code, content = api_.conformance(request.headers,
+                                                     request.args)
 
     response = make_response(content, status_code)
     if headers:
@@ -145,10 +173,10 @@ def dataset(feature_collection, feature=None):
     """
 
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.args, feature_collection)
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.args, feature_collection, feature)
 
     response = make_response(content, status_code)

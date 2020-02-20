@@ -16,6 +16,7 @@ Welcome to pygeoapi's documentation!
    install
    openapi
    docker
+   devel
    wsgi
    asgi
    configuration

@@ -182,15 +182,6 @@ GeoJSON
    :members:
    :private-members:
 
-
-GeoPackage
-^^^^^^^^^^
-
-.. automodule:: pygeoapi.provider.geopackage
-   :show-inheritance:
-   :members:
-   :private-members:
-   
    
 OGR
 ^^^
@@ -210,8 +201,8 @@ postgresql
    :private-members:
    
    
-sqlite
-^^^^^^
+sqlite/geopackage
+^^^^^^^^^^^^^^^^^
 
 .. automodule:: pygeoapi.provider.sqlite
    :show-inheritance:

@@ -1,8 +1,9 @@
 # pygeoapi
 
 [![Build Status](https://travis-ci.org/geopython/pygeoapi.png)](https://travis-ci.org/geopython/pygeoapi)
+<a href="https://json-ld.org"><img src="https://json-ld.org/images/json-ld-button-88.png" height="20"/></a>
 
-pygeoapi provides an API to geospatial data
+pygeoapi is a Python server implementation of the [OGC API](http://ogcapi.org) suite of standards. The project emerged as part of the next generation OGC API efforts in 2018 and provides the capability for organizations to deploy a RESTful OGC API endpoint using OpenAPI, GeoJSON, and HTML. pygeoapi is [open source](https://opensource.org/) and released under an [MIT license](https://github.com/geopython/pygeoapi/blob/master/LICENSE.md).
 
 ## Installation
 
@@ -55,7 +56,7 @@ curl http://localhost:5000/collections/countries/items?resulttype=hits
 docker pull swaggerapi/swagger-ui
 docker run -p 80:8080 swaggerapi/swagger-ui
 # go to http://localhost
-# enter http://localhost:5000/api and click 'Explore'
+# enter http://localhost:5000/openapi and click 'Explore'
 ```
 
 ## Demo Server
@@ -68,23 +69,9 @@ https://github.com/geopython/demo.pygeoapi.io.
 
 ## Docker
 
-Best/easiest way to run `pygeoapi` is to use Docker.
-On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi)
-are available.
+Best/easiest way to run `pygeoapi` is to use Docker. On DockerHub [pygeoapi Docker Images](https://hub.docker.com/r/geopython/pygeoapi) are available.
 
-The version tagged `latest` is automatically built whenever code
-in the `master` branch of this GitHub repo changes (autobuild).
-This also cascades to updating the [pygeoapi demo service](https://demo.pygeoapi.io/master).
-So the chain is:
-
-```
- (git push to master) --> (DockerHub Image autobuild) --> (demo server redeploy)
-
-```
-
-Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for
-details of the Docker implementation. To get started quickly
-[several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples) will get you up and running.
+Please read the [docker/README](https://github.com/geopython/pygeoapi/blob/master/docker/README.md) for details of the Docker implementation.
 
 ### Unit Testing
 

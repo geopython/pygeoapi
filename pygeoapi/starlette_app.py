@@ -4,6 +4,7 @@
 #
 #
 # Copyright (c) 2019 Francesco Bartoli
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,13 +47,12 @@ app = Starlette()
 app.mount('/static', StaticFiles(
     directory='{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
                                   os.sep)))
-
 CONFIG = None
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
-with open(os.environ.get('PYGEOAPI_CONFIG')) as fh:
+with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
 # CORS: optionally enable from config.
@@ -60,6 +60,13 @@ if CONFIG['server'].get('cors', False):
     from starlette.middleware.cors import CORSMiddleware
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
+OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+
+if (OGC_SCHEMAS_LOCATION is not None and
+        not OGC_SCHEMAS_LOCATION.startswith('http')):
+    if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        raise RuntimeError('OGC schemas misconfigured')
+    app.mount('/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION))
 
 api_ = API(CONFIG)
 
@@ -80,18 +87,18 @@ async def root(request: Request):
     return response
 
 
-@app.route('/api')
-@app.route('/api/')
-async def api(request: Request):
+@app.route('/openapi')
+@app.route('/openapi/')
+async def openapi(request: Request):
     """
     OpenAPI access point
 
     :returns: Starlette HTTP Response
     """
-    with open(os.environ.get('PYGEOAPI_OPENAPI')) as ff:
+    with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
         openapi = yaml_load(ff)
 
-    headers, status_code, content = api_.api(
+    headers, status_code, content = api_.openapi(
         request.headers, request.query_params, openapi)
 
     response = Response(content=content, status_code=status_code)
@@ -103,14 +110,14 @@ async def api(request: Request):
 
 @app.route('/conformance')
 @app.route('/conformance/')
-async def api_conformance(request: Request):
+async def conformance(request: Request):
     """
     OGC open api conformance access point
 
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.api_conformance(
+    headers, status_code, content = api_.conformance(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -160,11 +167,11 @@ async def dataset(request: Request, feature_collection=None, feature=None):
     if 'feature' in request.path_params:
         feature = request.path_params['feature']
     if feature is None:
-        headers, status_code, content = api_.get_features(
+        headers, status_code, content = api_.get_collection_items(
             request.headers, request.query_params,
             feature_collection, pathinfo=request.scope['path'])
     else:
-        headers, status_code, content = api_.get_feature(
+        headers, status_code, content = api_.get_collection_item(
             request.headers, request.query_params, feature_collection, feature)
 
     response = Response(content=content, status_code=status_code)

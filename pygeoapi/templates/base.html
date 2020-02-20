@@ -42,6 +42,7 @@
         {% endblock %}
         <span style="float:right">
           <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
+          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=jsonld">JSON-LD</a>
         </span>
       </div>
     </div>
@@ -59,5 +60,21 @@
     <footer class="sticky">Powered by <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
     {% block extrafoot %}
     {% endblock %}
+    <script>
+      // Requests and embeds JSON-LD representation of current page
+      var xhr = new XMLHttpRequest();
+      var path = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=jsonld";
+      xhr.open('GET', path);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          var head = document.getElementsByTagName('head')[0];
+          var jsonld_datablock = document.createElement('script');
+          jsonld_datablock.type = "application/ld+json";
+          jsonld_datablock.textContent = xhr.responseText;
+          head.appendChild(jsonld_datablock);
+        }
+      };
+      xhr.send();
+    </script>
   </body>
 </html>

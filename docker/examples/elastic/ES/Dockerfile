@@ -2,9 +2,11 @@
 #
 # Authors: Just van den Broecke <justb4@gmail.com>>
 #          Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2019 Jorge Samuel Mendes de Jesus
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,7 +31,7 @@
 #
 # =================================================================
 
-FROM docker.elastic.co/elasticsearch/elasticsearch:5.6.8
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.5.1
 
 LABEL maintainer="jorge.dejesus@geocat.net justb4@gmail.com"
 ARG DATA_FOLDER=/usr/share/elasticsearch/data
