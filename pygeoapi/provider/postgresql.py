@@ -174,6 +174,35 @@ class PostgreSQLProvider(BaseProvider):
                 self.fields = db.fields
         return self.fields
 
+    def __get_where_clauses(self, properties=[], bbox=[]):
+        """
+        Generarates WHERE conditions to be implemented in query.
+        Private method mainly associated with query method
+        :param properties: list of tuples (name, value)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+
+        :returns: psycopg2.sql.Composed or psycopg2.sql.SQL
+        """
+
+        where_conditions = []
+        if properties:
+            property_clauses = [SQL('{} = {}').format(
+                Identifier(k), Literal(v)) for k, v in properties]
+            where_conditions += property_clauses
+        if bbox:
+            bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
+                Identifier(self.geom), SQL(', ').join(
+                    [Literal(bbox_coord) for bbox_coord in bbox]))
+            where_conditions.append(bbox_clause)
+
+        if where_conditions:
+            where_clause = SQL(' WHERE {}').format(
+                SQL(' AND ').join(where_conditions))
+        else:
+            where_clause = SQL('')
+
+        return where_clause
+
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
         """
@@ -198,8 +227,11 @@ class PostgreSQLProvider(BaseProvider):
             with DatabaseConnection(self.conn_dic,
                                     self.table, context="hits") as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-                sql_query = SQL("select count(*) as hits from {}").\
-                    format(Identifier(self.table))
+
+                where_clause = self.__get_where_clauses(
+                    properties=properties, bbox=bbox)
+                sql_query = SQL("select count(*) as hits from {} {}").\
+                    format(Identifier(self.table), where_clause)
                 try:
                     cursor.execute(sql_query)
                 except Exception as err:
@@ -215,27 +247,10 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-            where_conditions = []
-            if properties:
-                property_clauses = \
-                    [SQL('{} = {}').format(
-                        Identifier(k), Literal(v)) for k, v in properties]
-                where_conditions += property_clauses
-            if bbox:
-                bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
-                    Identifier(self.geom),
-                    SQL(', ').join(
-                        [Literal(bbox_coord) for bbox_coord in bbox]
-                    )
-                )
-                where_conditions.append(bbox_clause)
 
-            if where_conditions:
-                where_clause = SQL(' WHERE {}').format(
-                    SQL(' AND ').join(where_conditions)
-                )
-            else:
-                where_clause = SQL('')
+            where_clause = self.__get_where_clauses(
+                properties=properties, bbox=bbox)
+
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
              SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
                 format(db.columns,

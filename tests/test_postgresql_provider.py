@@ -88,6 +88,20 @@ def test_query_with_property_filter(config):
     assert (len(other_features) != 0)
 
 
+def test_query_hits(config):
+    """Test query resulttype=hits with properties"""
+    psp = PostgreSQLProvider(config)
+    results = psp.query(resulttype="hits")
+    assert results["numberMatched"] == 14776
+
+    results = psp.query(
+        bbox=[29.3373, -3.4099, 29.3761, -3.3924], resulttype="hits")
+    assert results["numberMatched"] == 5
+
+    results = psp.query(properties=[("waterway", "stream")], resulttype="hits")
+    assert results["numberMatched"] == 13930
+
+
 def test_query_bbox(config):
     """Test query with a specified bounding box"""
     psp = PostgreSQLProvider(config)
