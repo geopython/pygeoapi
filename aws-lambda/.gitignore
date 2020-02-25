@@ -1,0 +1,5 @@
+# serverless framework artifacts
+.serverless/
+.requirements/
+node_modules/
+package-lock.json
