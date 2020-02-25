@@ -252,7 +252,7 @@ class PostgreSQLProvider(BaseProvider):
                 properties=properties, bbox=bbox)
 
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
+             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
                 format(db.columns,
                        Identifier(self.geom),
                        Identifier(self.table),
@@ -337,8 +337,8 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \
-            FROM {} WHERE {}=%s").format(db.columns,
+            sql_query = SQL("select {},ST_AsGeoJSON({}) \
+            from {} WHERE {}=%s").format(db.columns,
                                          Identifier(self.geom),
                                          Identifier(self.table),
                                          Identifier(self.id_field))
