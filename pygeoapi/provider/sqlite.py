@@ -202,7 +202,8 @@ class SQLiteGPKGProvider(BaseProvider):
         except AssertionError:
             raise InvalidPluginError
 
-        self.columns = [item[1] for item in result if item[1] != self.geom_col]
+        self.columns = [item[1] for item in result if item[1]
+                        not in [self.geom_col, self.geom_col.upper()]]
         self.columns = ','.join(self.columns)+',AsGeoJSON({})'.format(
             self.geom_col)
 
