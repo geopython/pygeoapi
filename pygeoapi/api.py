@@ -858,12 +858,12 @@ class API(object):
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
-        except ProviderQueryError:
+        except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
-            LOGGER.error(exception)
+            LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
 
         if content is None:
