@@ -855,8 +855,16 @@ class API(object):
         p = load_plugin('provider',
                         self.config['datasets'][dataset]['provider'])
 
-        LOGGER.debug('Fetching id {}'.format(identifier))
-        content = p.get(identifier)
+        try:
+            LOGGER.debug('Fetching id {}'.format(identifier))
+            content = p.get(identifier)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
 
         if content is None:
             exception = {

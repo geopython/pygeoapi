@@ -34,7 +34,7 @@ from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
-from pygeoapi.provider.base import (BaseProvider)
+from pygeoapi.provider.base import (BaseProvider, ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -105,23 +105,8 @@ class OGRProvider(BaseProvider):
         LOGGER.info("Using GDAL/OGR version: %d"
                     % int(osgeo_gdal.VersionInfo('VERSION_NUM')))
 
-        # GDAL error handler function
-        # http://pcjericks.github.io/py-gdalogr-cookbook/gdal_general.html
-        def gdal_error_handler(err_class, err_num, err_msg):
-            err_type = {
-                osgeo_gdal.CE_None: 'None',
-                osgeo_gdal.CE_Debug: 'Debug',
-                osgeo_gdal.CE_Warning: 'Warning',
-                osgeo_gdal.CE_Failure: 'Failure',
-                osgeo_gdal.CE_Fatal: 'Fatal'
-            }
-            err_msg = err_msg.replace('\n', ' ')
-            err_class = err_type.get(err_class, 'None')
-            LOGGER.error('Error Number: %s, Type: %s, Msg: %s'
-                         % (err_num, err_class, err_msg))
-
         # install error handler
-        self.gdal.PushErrorHandler(gdal_error_handler)
+        self.gdal.PushErrorHandler(self.gdal_error_handler)
         LOGGER.debug('Setting OGR properties')
 
         self.data_def = provider_def['data']
@@ -175,6 +160,21 @@ class OGRProvider(BaseProvider):
         # Init driver and Source connection
         self.driver = None
         self.conn = None
+
+    # GDAL error handler function
+    # http://pcjericks.github.io/py-gdalogr-cookbook/gdal_general.html
+    def gdal_error_handler(self, err_class, err_num, err_msg):
+        err_type = {
+            osgeo_gdal.CE_None: 'None',
+            osgeo_gdal.CE_Debug: 'Debug',
+            osgeo_gdal.CE_Warning: 'Warning',
+            osgeo_gdal.CE_Failure: 'Failure',
+            osgeo_gdal.CE_Fatal: 'Fatal'
+        }
+        err_msg = err_msg.replace('\n', ' ')
+        err_class = err_type.get(err_class, 'None')
+        LOGGER.error('Error Number: %s, Type: %s, Msg: %s'
+                        % (err_num, err_class, err_msg))
 
     def _list_open_options(self):
         return [
@@ -319,11 +319,13 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter("{field} = '{id}'".format(
                 field=self.id_field, id=identifier))
 
-            ogr_feature = layer.GetNextFeature()
+            ogr_feature = self._get_next_feature(layer)
             result = self._ogr_feature_to_json(ogr_feature)
 
         except Exception as err:
             LOGGER.error(err)
+            if isinstance(err, RuntimeError):
+                raise ProviderQueryError
         finally:
             self._close()
 
@@ -352,6 +354,21 @@ class OGRProvider(BaseProvider):
         class_ = getattr(module, classname)
         self.source_helper = class_(self)
 
+    def _get_next_feature(self, layer):
+        try:
+            # fix issue #371 if OGR_GEOJSON_MAX_OBJ_SIZE is default
+            self.gdal.PushErrorHandler('CPLQuietErrorHandler')
+            next_feature = layer.GetNextFeature()
+            self.gdal.PushErrorHandler(self.gdal_error_handler)
+            if all(val is None for val in next_feature.items().values()):
+                self.gdal.Error(
+                    self.gdal.CE_Failure, 1, "Object properties are all null"
+                )
+            return next_feature
+        except RuntimeError as gdalerr:
+            LOGGER.error(self.gdal.GetLastErrorMsg())
+            raise gdalerr
+
     def _ogr_feature_to_json(self, ogr_feature):
         geom = ogr_feature.GetGeometryRef()
         if self.transform_out:
@@ -361,7 +378,8 @@ class OGRProvider(BaseProvider):
         json_feature = ogr_feature.ExportToJson(as_object=True)
         try:
             json_feature['id'] = json_feature['properties'].pop(self.id_field)
-        except Exception:
+        except Exception as err:
+            LOGGER.error(err)
             json_feature['id'] = ogr_feature.GetFID()
 
         return json_feature

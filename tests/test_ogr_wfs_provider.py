@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+# Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,6 +32,7 @@
 # Needs to be run like: python3 -m pytest
 
 import logging
+from pygeoapi.provider.base import ProviderQueryError
 
 import pytest
 from pygeoapi.provider.ogr import OGRProvider
@@ -141,16 +144,52 @@ def config_geonode_gs_WFS():
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'open_options': {
-                'EXPOSE_GML_ID': 'NO'
+                'EXPOSE_GML_ID': 'NO',
+                # Comment the line below cause it converts automatically MULTISURFACE
+                # to MULTIPOLYGON geometries server side
+                # 'URL': 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
             },
             'gdal_ogr_options': {
                 'EMPTY_AS_NULL': 'NO',
                 'GDAL_CACHEMAX': '64',
-                'CPL_DEBUG': 'NO'
+                'CPL_DEBUG': 'NO',
+                'GDAL_HTTP_UNSAFESSL': 'YES'
             },
         },
         'id_field': 'adm0_id',
-        'layer': 'geonode:csp_iso2_type'
+        'layer': 'geonode:glb_bnd_adm0_1'
+    }
+
+
+@pytest.fixture()
+def config_geonode_gs_geojson_WFS():
+    return {
+        'name': 'OGR',
+        'data': {
+            'source_type': 'WFS',
+            'source':
+                'WFS:https://geonode.wfp.org/geoserver/wfs?',
+            'source_srs': 'EPSG:4326',
+            'target_srs': 'EPSG:4326',
+            'source_capabilities': {
+                'paging': True
+            },
+            'source_options': {
+                'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
+            },
+            'open_options': {
+                'EXPOSE_GML_ID': 'NO',
+                'URL': 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
+            },
+            'gdal_ogr_options': {
+                'EMPTY_AS_NULL': 'NO',
+                'GDAL_CACHEMAX': '64',
+                'CPL_DEBUG': 'NO',
+                'GDAL_HTTP_UNSAFESSL': 'YES'
+            },
+        },
+        'id_field': 'adm0_id',
+        'layer': 'geonode:glb_bnd_adm0_1'
     }
 
 
@@ -200,13 +239,23 @@ def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
 
 
 def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
-    """Testing query not returning gml_id for a specific object"""
+    """Testing query forcing to return gml_id for a specific object"""
 
     p = OGRProvider(config_geonode_gs_WFS)
     assert p.open_options is not None
     p.open_options['EXPOSE_GML_ID'] = 'YES'
     result = p.get_fields()
     assert result.get('gml_id')
+
+
+def test_get_gs_with_geojson_output_too_complex_raise_exception(
+    config_geonode_gs_geojson_WFS
+):
+    """Testing query for a specific object with too complex geojson"""
+    p = OGRProvider(config_geonode_gs_geojson_WFS)
+    with pytest.raises(ProviderQueryError):
+        result = p.get(272)
+        assert result is None
 
 
 def test_query_hits_ms(config_MapServer_WFS):
