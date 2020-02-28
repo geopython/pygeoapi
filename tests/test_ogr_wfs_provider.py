@@ -161,38 +161,6 @@ def config_geonode_gs_WFS():
     }
 
 
-@pytest.fixture()
-def config_geonode_gs_geojson_WFS():
-    return {
-        'name': 'OGR',
-        'data': {
-            'source_type': 'WFS',
-            'source':
-                'WFS:https://geonode.wfp.org/geoserver/wfs?',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
-            'source_capabilities': {
-                'paging': True
-            },
-            'source_options': {
-                'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
-            },
-            'open_options': {
-                'EXPOSE_GML_ID': 'NO',
-                'URL': 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
-            },
-            'gdal_ogr_options': {
-                'EMPTY_AS_NULL': 'NO',
-                'GDAL_CACHEMAX': '64',
-                'CPL_DEBUG': 'NO',
-                'GDAL_HTTP_UNSAFESSL': 'YES'
-            },
-        },
-        'id_field': 'adm0_id',
-        'layer': 'geonode:glb_bnd_adm0_1'
-    }
-
-
 def test_get_fields_gs(config_GeoServer_WFS):
     """Testing field types"""
 
@@ -249,13 +217,14 @@ def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
 
 
 def test_get_gs_with_geojson_output_too_complex_raise_exception(
-    config_geonode_gs_geojson_WFS
+    config_geonode_gs_WFS
 ):
     """Testing query for a specific object with too complex geojson"""
-    p = OGRProvider(config_geonode_gs_geojson_WFS)
+    p = OGRProvider(config_geonode_gs_WFS)
+    assert p.open_options.get('URL') is None
+    p.open_options['URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
     with pytest.raises(ProviderQueryError):
         result = p.get(272)
-        assert result is None
 
 
 def test_query_hits_ms(config_MapServer_WFS):
