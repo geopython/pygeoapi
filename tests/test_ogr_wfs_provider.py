@@ -145,9 +145,11 @@ def config_geonode_gs_WFS():
             },
             'open_options': {
                 'EXPOSE_GML_ID': 'NO',
-                # Comment the line below cause it converts automatically MULTISURFACE
-                # to MULTIPOLYGON geometries server side
-                # 'URL': 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
+                # Comment the line below cause it converts
+                # automatically MULTISURFACE to MULTIPOLYGON
+                # geometries server side
+                # 'URL': 'https://geonode.wfp.org/geoserver/wfs?\
+                # outputformat=json'
             },
             'gdal_ogr_options': {
                 'EMPTY_AS_NULL': 'NO',
@@ -222,9 +224,10 @@ def test_get_gs_with_geojson_output_too_complex_raise_exception(
     """Testing query for a specific object with too complex geojson"""
     p = OGRProvider(config_geonode_gs_WFS)
     assert p.open_options.get('URL') is None
-    p.open_options['URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
+    p.open_options[
+        'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
     with pytest.raises(ProviderQueryError):
-        result = p.get(272)
+        p.get(272)
 
 
 def test_query_hits_ms(config_MapServer_WFS):
