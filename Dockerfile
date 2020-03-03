@@ -2,9 +2,11 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Just van den Broecke <justb4@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,7 +31,7 @@
 #
 # =================================================================
 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -61,7 +63,7 @@ ARG ADD_PIP_PACKAGES=""
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils git" \
-	DEB_PACKAGES="locales libgdal20 python3-gdal libsqlite3-mod-spatialite curl ${ADD_DEB_PACKAGES}" \
+	DEB_PACKAGES="locales libgdal26 python3-gdal libsqlite3-mod-spatialite curl ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ADD . /pygeoapi
