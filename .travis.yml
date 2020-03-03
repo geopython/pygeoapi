@@ -15,6 +15,7 @@ python:
 
 services:
   - postgresql
+  - docker
 
 addons:
   apt:
@@ -45,6 +46,8 @@ before_install:
   - sudo systemctl enable mongod
   - sudo systemctl start mongod
   - sudo systemctl status mongod
+  # verify docker build
+  - docker build -t geopython/pygeoapi:latest .
 
 install:
   # follow GDAL installed version for Python bindings
@@ -62,11 +65,17 @@ before_script:
   - psql -U postgres -c 'create database test'
   - psql -U postgres -d test -c 'create extension postgis'
   - gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
+  # load cite data
+  - python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
 
 script:
   - pytest --cov=pygeoapi
   - make -C ./docs html
   - find . -type f -name "*.py" | xargs flake8
+  # run docker image with cite configuration
+  - docker run -d -p 5001:5001 --network host --add-host="localhost:127.0.0.1" --rm -it -v $(pwd)/tests/cite/ogcapi-features/cite.config.yml:/pygeoapi/local.config.yml --name pygeoapi-travis-master geopython/pygeoapi:latest run
+  - docker ps -a
+
 
 after_success:
   - python3 setup.py sdist bdist_wheel --universal
