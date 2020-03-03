@@ -230,7 +230,7 @@ class PostgreSQLProvider(BaseProvider):
 
                 where_clause = self.__get_where_clauses(
                     properties=properties, bbox=bbox)
-                sql_query = SQL("select count(*) as hits from {} {}").\
+                sql_query = SQL("SELECT COUNT(*) as hits from {} {}").\
                     format(Identifier(self.table), where_clause)
                 try:
                     cursor.execute(sql_query)
@@ -337,7 +337,7 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
-            sql_query = SQL("select {},ST_AsGeoJSON({}) \
+            sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \
             from {} WHERE {}=%s").format(db.columns,
                                          Identifier(self.geom),
                                          Identifier(self.table),
