@@ -75,9 +75,8 @@ script:
   # run docker image with cite configuration
   - docker run -d -p 5001:5001 --network host --add-host="localhost:127.0.0.1" --rm -it -v $(pwd)/tests/cite/ogcapi-features/cite.config.yml:/pygeoapi/local.config.yml --name pygeoapi-travis-master geopython/pygeoapi:latest run
   - docker ps | grep -wq "pygeoapi-travis-master"
-  - docker logs pygeoapi-travis-master 2>&1 |grep -wq "Listening at:"
+  - docker logs pygeoapi-travis-master |grep -wq "Listening at:"
   - docker run --rm --name pygeoapi-travis-runtests-master geopython/pygeoapi:latest test
-
 
 after_success:
   - python3 setup.py sdist bdist_wheel --universal
