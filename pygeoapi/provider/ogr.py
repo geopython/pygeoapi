@@ -183,7 +183,7 @@ class OGRProvider(BaseProvider):
         err_msg = err_msg.replace('\n', ' ')
         err_class = err_type.get(err_class, 'None')
         LOGGER.error('Error Number: %s, Type: %s, Msg: %s'
-                        % (err_num, err_class, err_msg))
+                     % (err_num, err_class, err_msg))
 
     def _list_open_options(self):
         return [
