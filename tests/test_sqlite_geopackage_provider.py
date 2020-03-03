@@ -40,7 +40,7 @@ from pygeoapi.provider.sqlite import SQLiteGPKGProvider
 @pytest.fixture()
 def config_sqlite():
     return {
-        'name': 'Sqlite',
+        'name': 'SQLiteGPKG',
         'data': './tests/data/ne_110m_admin_0_countries.sqlite',
         'id_field': 'ogc_fid',
         'table': 'ne_110m_admin_0_countries'
@@ -50,7 +50,7 @@ def config_sqlite():
 @pytest.fixture()
 def config_geopackage():
     return {
-        'name': 'GeoPackage',
+        'name': 'SQLiteGPKG',
         'data': './tests/data/poi_portugal.gpkg',
         'id_field': 'osm_id',
         'table': 'poi_portugal'

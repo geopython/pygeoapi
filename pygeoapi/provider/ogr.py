@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,6 +62,9 @@ class OGRProvider(BaseProvider):
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
         '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
+
+    # Setting for traditional CRS axis order.
+    OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
 
     def __init__(self, provider_def):
         """
@@ -138,9 +143,13 @@ class OGRProvider(BaseProvider):
         self.transform_out = None
         if self.source_srs != self.target_srs:
             source = osgeo_osr.SpatialReference()
+            source.SetAxisMappingStrategy(
+                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
             source.ImportFromEPSG(self.source_srs)
 
             target = osgeo_osr.SpatialReference()
+            target.SetAxisMappingStrategy(
+                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
             target.ImportFromEPSG(self.target_srs)
 
             self.transform_in = \
@@ -276,7 +285,6 @@ class OGRProvider(BaseProvider):
                         maxx=float(maxx), maxy=float(maxy))
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
-
                 if self.transform_in:
                     polygon.Transform(self.transform_in)
 
