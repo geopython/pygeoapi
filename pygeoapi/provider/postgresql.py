@@ -252,7 +252,7 @@ class PostgreSQLProvider(BaseProvider):
                 properties=properties, bbox=bbox)
 
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT {},ST_AsGeoJSON({}) FROM {}{}").\
+             SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
                 format(db.columns,
                        Identifier(self.geom),
                        Identifier(self.table),
