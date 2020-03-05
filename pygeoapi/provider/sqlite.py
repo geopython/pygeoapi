@@ -271,7 +271,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         if resulttype == 'hits':
 
-            sql_query = "select count(*) as hits from {} {} ".format(
+            sql_query = "SELECT COUNT(*) as hits FROM {} {} ".format(
                 self.table, where_clause)
 
             res = self.cursor.execute(sql_query, where_values)
@@ -279,7 +279,7 @@ class SQLiteGPKGProvider(BaseProvider):
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
-        sql_query = "select {} from \
+        sql_query = "SELECT DISTINCT {} from \
             {} {} limit ? offset ?".format(
                 self.columns, self.table, where_clause)
 
@@ -315,8 +315,8 @@ class SQLiteGPKGProvider(BaseProvider):
 
         LOGGER.debug('Get item from SQLite/GPKG')
 
-        sql_query = 'select {} from \
-            {} where {}==?;'.format(
+        sql_query = 'SELECT {} FROM \
+            {} WHERE {}==?;'.format(
                 self.columns, self.table, self.id_field)
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))
