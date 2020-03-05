@@ -106,7 +106,7 @@ class SQLiteGPKGProvider(BaseProvider):
         :param properties: list of tuples (name, value)
         :param bbox: bounding box [minx,miny,maxx,maxy]
 
-        :returns: str, tupple
+        :returns: str, tuple
         """
 
         where_values = tuple()
