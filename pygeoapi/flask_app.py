@@ -241,7 +241,7 @@ def execute_process(name=None, job_id=None):
 @APP.route('/processes/<name>/jobs/<job_id>/results', methods=['GET'])
 def retrieve_job_result(name=None, job_id=None):
     """
-    OGC EPS REST server resource to obtain the results of a particualar job (an
+    OGC WPS REST server resource to obtain the results of a particualar job (an
     instance of a process). Under synchronous execution, these results would
     have been returned to the client already (but can be requested again). Under
     asyncronous execution, this is the endpoint a client hits to obtain their
