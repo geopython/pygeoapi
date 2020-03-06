@@ -4,24 +4,26 @@ function submitJob(url) {
   for (var i = 0; i < elms.length; i++) {
     inputs.push({id: elms[i].name, value: elms[i].value});
   }
-  var request = new XMLHttpRequest();
-  request.open('POST', url, true);
-  request.setRequestHeader('Content-type', 'application/json');
-  request.onreadystatechange = function() {
-    if (this.readyState = this.DONE && request.status == 201) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-type', 'application/json');
+  xhr.onreadystatechange = function() {
+    if (this.readyState = this.DONE && xhr.status == 201) {
       if (this.onreadystatechange) {
-        request.onreadystatechange = null;
+        xhr.onreadystatechange = null;
       }
       var jobResultsSection = document.getElementById('job-results');
-      jobResultsSection.innerHTML = '<h3>Results</h3>';
-      var responseLocation = request.getResponseHeader("Location");
+      var responseLocation = xhr.getResponseHeader("Location");
+      var jobId = responseLocation.split('/').pop()
+      jobResultsSection.innerHTML = '<h3>Outcome for job ' + jobId + '</h3>';
+
 
       var list = document.createElement('ul');
       jobResultsSection.appendChild(list);
 
       responseElements = [
-        {'innerHTML': 'Job status', 'target': '#', 'href': responseLocation},
-        {'innerHTML': 'Job output', 'target': '#', 'href': responseLocation + '/results'}
+        {'innerHTML': 'Job status', 'target': '_blank', 'href': responseLocation},
+        {'innerHTML': 'Job results', 'target': '_blank', 'href': responseLocation + '/results'}
       ]
 
       responseElements.forEach(function(el) {
@@ -40,6 +42,6 @@ function submitJob(url) {
     }
   }
   data = {"inputs": inputs}
-  request.send(JSON.stringify(data));
+  xhr.send(JSON.stringify(data));
   return false;
 }

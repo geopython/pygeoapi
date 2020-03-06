@@ -28,7 +28,6 @@ main {
 .crumbs a {
     padding: 0px 6px;
     color: black;
-    text-transform: capitalize;
 }
 
 #items-map {
@@ -60,8 +59,8 @@ table mark {
   line-height: 3em;
 }
 
-#processes table th,
-#processes table td {
+#process table th,
+#process table td {
   font-size: 80%;
   overflow-x: visible;
 }
@@ -101,7 +100,39 @@ table mark {
   transition:all 2s ease-in;
 }
 
-.job-results:not(:empty){
-  color: red;
+mark.successful {
+  background-color: green;
+}
+
+mark.accepted {
+  background-color: default;
+}
+
+mark.failed {
+  background-color: red;
+}
+
+mark.running {
+  background-color: orange;
+}
+
+#job-results {
+  border: 1px solid #eee;
+  border-left-color: #1b809e;
+  border-left-width: 5px;
+  border-radius: 3px;
+  margin: 4px;
+  margin-right: 9px;
+  padding: 20px;
+}
+
+#job-results h3 {
+  color: #1b809e;
+}
+
+#job-results:empty {
+  visibility: hidden;
+  /* height: 0px; */
+  padding: 0px;
 }
 </style>

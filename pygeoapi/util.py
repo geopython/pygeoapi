@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 from datetime import date, datetime, time
+import dateutil.parser
 from decimal import Decimal
 from enum import Enum
 import json
@@ -153,6 +154,19 @@ def to_json(dict_):
 
     return json.dumps(dict_, default=json_serial)
 
+def format_datetime(value, format='%H:%M:%S / %Y-%m-%d'):
+    """
+    Parse datetime as ISO; re-present it in particular format
+    for display in HTML
+
+    :param value: `str` of ISO datetime
+    :param format: `str` of datetime format for strftime
+
+    :returns: string
+    """
+    if not isinstance(value, str) or not value.strip():
+        return ''
+    return dateutil.parser.parse(value).strftime(format)
 
 def json_serial(obj):
     """
@@ -199,6 +213,7 @@ def render_j2_template(config, template, data):
 
     env = Environment(loader=FileSystemLoader(TEMPLATES))
     env.filters['to_json'] = to_json
+    env.filters['datetime'] = format_datetime
     env.globals.update(to_json=to_json)
 
     template = env.get_template(template)

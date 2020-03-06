@@ -941,7 +941,8 @@ class API(object):
         Provide processes metadata
 
         :param headers: dict of HTTP headers
-        :param format_: format of output
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
         :param process: name of process, defaults to None to obtain
             information about all processes
 
@@ -1024,13 +1025,39 @@ class API(object):
 
         headers_ = HEADERS.copy()
 
+        format_ = check_format(args, headers_)
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         response = {}
+
+        processes_config = self.config.get('processes', {})
+        if process_id not in processes_config:
+            exception = {
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+
+        process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
+
         if method == 'GET' and process_id:
-            jobs = self.manager.get_jobs(process_id)
+            jobs = sorted(self.manager.get_jobs(process_id), key=lambda k: k['process_start_datetime'], reverse=True)
+            if not format_ or format_ == 'html':
+                headers_['Content-Type'] = 'text/html'
+                response = render_j2_template(self.config, 'jobs.html', {'process': {'id': process_id, 'title': process.metadata['title']}, 'jobs': jobs})
+                return headers_, 200, response
             response = [job['identifier'] for job in jobs]
             return headers_, 200, json.dumps(response)
 
-        if not data:
+        elif method == 'POST' and not data:
             # TODO not all processes require input, e.g. time-depenendent or
             # random value generators
             exception = {
@@ -1040,22 +1067,30 @@ class API(object):
             LOGGER.info(exception)
             return headers_, 400, json.dumps(exception)
 
-        process = self.config.get('processes', {}).get(process_id, None)
-
         if not self.manager:
             raise Exception('No manager, no execution!')
 
-        if not process:
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as e:
+            # Input does not appear to be valid JSON
             exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
+                'code': 'InvalidParameterValue',
+                'description': 'invalid request data'
             }
             LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 400, json.dumps(exception)
 
-        p = load_plugin('process', process['processor'])
-
-        data_dict = {_input['id']: _input['value'] for _input in json.loads(data).get('inputs', [])}
+        try:
+            data_dict = {_input['id']: _input['value'] for _input in data.get('inputs', [])}
+        except KeyError:
+            # Return 4XX client error for missing 'id' or 'value' in an input
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid request data'
+            }
+            LOGGER.info(exception)
+            return headers_, 400, json.dumps(exception)
 
         job_id = str(uuid.uuid1())
         url = '{}/processes/{}/jobs/{}'.format(
@@ -1066,20 +1101,19 @@ class API(object):
             LOGGER.debug('asynchronous execution specified')
             _process = multiprocessing.Process(
                 target=self._execute_handler,
-                args=(p, job_id, data_dict, True))
+                args=(process, job_id, data_dict, True))
             _process.start()
             return headers_, 201, ''
         else:
             LOGGER.debug('synchronous execution')
-            outputs, status = self._execute_handler(p, job_id, data_dict)
+            outputs, status = self._execute_handler(process, job_id, data_dict)
 
         if status == JobStatus.failed:
             response = outputs
 
-        m = p.metadata
         if 'raw' in args and str2bool(args['raw']):
             headers_['Content-Type'] = \
-                m['outputs'][0]['output']['formats'][0]['mimeType']
+                process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
             response = outputs
         elif status != JobStatus.failed:
             response['outputs'] = outputs
@@ -1124,8 +1158,7 @@ class API(object):
             'status': status.value,
             'message': job_result.get('message', None),
             'progress': 100 if status == JobStatus.finished else 0, # TODO actual progress value
-            'links': [
-            {
+            'links': [{
                 'href': '{}/processes/{}/jobs/{}'.format(
                     self.config['server']['url'], process_id, job_id
                 ),
@@ -1163,7 +1196,17 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
         headers_ = HEADERS.copy()
-        process = self.config.get('processes', {}).get(process_id, None)
+        # process = self.config.get('processes', {}).get(process_id, None)
+        processes_config = self.config.get('processes', {})
+        if process_id not in processes_config:
+            exception = {
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
+            }
+            LOGGER.info(exception)
+            return headers_, 404, json.dumps(exception)
+
+        process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
 
         if not process:
             exception = {
@@ -1209,6 +1252,17 @@ class API(object):
         location = job_result['location']
         with io.open(location, 'r') as fh:
             result = json.load(fh)
+
+        format_ = check_format(args, headers_)
+
+        if not format_ or format_ == 'html':
+            headers_['Content-Type'] = 'text/html'
+            response = render_j2_template(self.config, 'jobresult.html', {
+                'process': {'id': process_id, 'title': process.metadata['title']},
+                'job': {'id': job_id},
+                'result': result
+            })
+            return headers_, 200, response
         return headers_, 200, json.dumps(result)
 
     def _execute_handler(self, p, job_id, data_dict, async_=False):

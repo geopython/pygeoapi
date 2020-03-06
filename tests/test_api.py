@@ -576,7 +576,7 @@ def test_describe_processes(config, api_):
     assert rsp_headers['Content-Type'] == 'application/json'
     assert process['id'] == 'hello-world'
     assert process['version'] == '0.2.0'
-    assert process['title'] == 'Hello World process'
+    assert process['title'] == 'Hello World'
     assert len(process['keywords']) == 3
     assert len(process['links']) == 2
     assert len(process['inputs']) == 2
@@ -683,6 +683,25 @@ def test_execute_process(config, api_):
             'value': 'Tést'
         }]
     }
+    req_body_5 = {
+        'inputs': []
+    }
+    req_body_6 = {
+        'inputs': [{
+            'id': 'name',
+            'value': None
+        }]
+    }
+    req_body_7 = {
+        'inputs': [{
+            'id': 'name'
+        }]
+    }
+    req_body_8 = {
+        'inputs': [{
+            'value': 'Test'
+        }]
+    }
 
     # Test posting empty payload to existing process
     rsp_headers, code, response = api_.execute_process(
@@ -729,6 +748,38 @@ def test_execute_process(config, api_):
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     # TODO inspect Location URI and asset 400 status
+
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_5), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    # TODO inspect Location URI and asset 400 status
+
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_6), 'hello-world')
+    data = json.loads(response)
+    assert code == 201
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'Cannot process without a name'
+
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_7), 'hello-world')
+    data = json.loads(response)
+    assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'invalid request data'
+
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {}, json.dumps(req_body_8), 'hello-world')
+    data = json.loads(response)
+    assert code == 400
+    assert 'Location' not in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'invalid request data'
 
     # Reset config to have no defined processes
     api_.config['processes'] = {}

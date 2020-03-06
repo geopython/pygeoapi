@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} Jobs {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../processes">Processes</a>
+/ <a href="../{{ data.process.id }}">{{ data.process.title }}</a>
+/ <a href="./jobs">Jobs</a>
+{% endblock %}
+{% block body %}
+    <section id="jobs">
+      <h2>Jobs for the foo process</h2>
+    </section>
+{% endblock %}

@@ -28,7 +28,7 @@
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="processes" itemscope itemtype="https://schema.org/WebAPI">
+    <section id="process" itemscope itemtype="https://schema.org/WebAPI">
       <h2 itemprop="name">{{ data['title'] }}</h2>
       <p itemprop="keywords">
           {% for kw in data['keywords'] %}
@@ -38,7 +38,7 @@
       <div itemprop="description">{{data.description}}</div>
       <meta itemprop="url" content="{{config.server.url}}/processes/{{data.id}}" />
       <div class="row">
-        <div class="col-sm-12 col-md-6">
+        <div class="col-sm-12 col-md-12">
           <table class="striped">
             <caption>Inputs</caption>
             <thead>
@@ -120,7 +120,7 @@
         {% for link in data['links'] %}
             <li>
             <!-- TODO put links in head as Links as well? -->
-              <a title={{link.title}} rel={{link.rel}} href={{link.href}} hreflang={link.hreflang}>
+              <a title={{link.title}} type={{link.type}} rel={{link.rel}} href={{link.href}} hreflang={{link.hreflang}}>
                 {{ link['title'] }} ({{ link['type'] }})
               </a>
             </li>
@@ -151,6 +151,6 @@
           <input type="submit" value="Submit job">
         </li>
       </form>
-      <section id="job-results"></section>
+      <section class="callout-info" id="job-results"></section>
     </section>
 {% endblock %}

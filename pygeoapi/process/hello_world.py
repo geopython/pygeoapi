@@ -37,7 +37,7 @@ LOGGER = logging.getLogger(__name__)
 PROCESS_METADATA = {
     'version': '0.2.0',
     'id': 'hello-world',
-    'title': 'Hello World process',
+    'title': 'Hello World',
     'description': 'An example processes that takes a name as input, and echoes it back as output. Intended to demonstrate a simple process with a single literal input.',
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
@@ -112,6 +112,9 @@ class HelloWorldProcessor(BaseProcessor):
         BaseProcessor.__init__(self, provider_def, PROCESS_METADATA)
 
     def execute(self, data):
+        name = data.get('name')
+        if not name:
+            raise Exception('Cannot process without a name')
         value = 'Hello {}! {}'.format(data['name'], data.get('message', '')).strip()
         outputs = [{
             'id': 'echo',
