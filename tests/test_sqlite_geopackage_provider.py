@@ -87,7 +87,19 @@ def test_query_geopackage(config_geopackage):
     assert geometry is not None
 
 
-def test_query_with_property_filter_sqlite(config_sqlite):
+def test_query_hits_sqlite_geopackage(config_sqlite):
+    """Testing hits results type for sqlite/geopackage"""
+
+    p = SQLiteGPKGProvider(config_sqlite)
+    results = p.query(resulttype="hits")
+    assert results["numberMatched"] == 177
+    results = p.query(
+        bbox=[28.3373, -5.4099, 32.3761, -3.3924],
+        properties=[("continent", "Africa")], resulttype="hits")
+    assert results["numberMatched"] == 3
+
+
+def test_query_with_property_filter_sqlite_geopackage(config_sqlite):
     """Test query  valid features when filtering by property"""
 
     p = SQLiteGPKGProvider(config_sqlite)
@@ -97,18 +109,7 @@ def test_query_with_property_filter_sqlite(config_sqlite):
     assert len(features) == 39
 
 
-def test_query_with_property_filter_geopackage(config_geopackage):
-    """Test query  valid features when filtering by property"""
-
-    p = SQLiteGPKGProvider(config_geopackage)
-    feature_collection = p.query(properties=[
-        ("fclass", "cafe")], limit=10000)
-    features = feature_collection.get('features', None)
-
-    assert len(features) == 823
-
-
-def test_query_with_property_filter_bbox_sqlite(config_sqlite):
+def test_query_with_property_filter_bbox_sqlite_geopackage(config_sqlite):
     """Test query  valid features when filtering by property"""
     p = SQLiteGPKGProvider(config_sqlite)
     feature_collection = p.query(properties=[("continent", "Europe")],
@@ -117,21 +118,7 @@ def test_query_with_property_filter_bbox_sqlite(config_sqlite):
     assert len(features) == 0
 
 
-def test_query_with_property_filter_bbox_geopackage(config_geopackage):
-    """Test query  valid features when filtering by property"""
-    p = SQLiteGPKGProvider(config_geopackage)
-    feature_collection = p.query(properties=[("fclass", "cafe")],
-                                 bbox=[
-                                     -16.3991310876,
-                                     33.0063015781,
-                                     -16.3366454278,
-                                     33.0560854323
-                                     ])
-    features = feature_collection.get('features', None)
-    assert len(features) == 0
-
-
-def test_query_bbox_sqlite(config_sqlite):
+def test_query_bbox_sqlite_geopackage(config_sqlite):
     """Test query with a specified bounding box"""
 
     psp = SQLiteGPKGProvider(config_sqlite)
@@ -142,17 +129,6 @@ def test_query_bbox_sqlite(config_sqlite):
     assert len(boxed_feature_collection['features']) == 1
     assert 'Burundi' in \
         boxed_feature_collection['features'][0]['properties']['name']
-
-
-def test_query_bbox_geopackage(config_geopackage):
-    """Test query with a specified bounding box"""
-
-    psp = SQLiteGPKGProvider(config_geopackage)
-    boxed_feature_collection = psp.query(
-        bbox=[-16.3991310876, 33.0063015781, -16.3366454278, 33.0560854323]
-    )
-
-    assert len(boxed_feature_collection['features']) == 5
 
 
 def test_get_sqlite(config_sqlite):
