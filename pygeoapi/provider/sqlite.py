@@ -95,6 +95,39 @@ class SQLiteGPKGProvider(BaseProvider):
                 ) for item in results]
         return self.fields
 
+    def __get_where_clauses(self, properties=[], bbox=[]):
+        """
+        Generarates WHERE conditions to be implemented in query.
+        Private method mainly associated with query method.
+
+        Method returns part of the SQL query, plus tupple to be used
+        in the sqlite query method
+
+        :param properties: list of tuples (name, value)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+
+        :returns: str, tuple
+        """
+
+        where_values = tuple()
+        where_clause = " WHERE " if (properties or bbox) else ""
+        if not where_clause:
+            return where_clause, where_values
+
+        if properties:
+            where_clause += " AND ".join(
+                ["{}=?".format(k) for k, v in properties])
+            where_values += where_values + tuple((v for k, v in properties))
+
+        if bbox:
+            if properties:
+                where_clause += " AND "
+            where_clause += " Intersects({}, \
+                BuildMbr(?,?,?,?)) ".format(self.geom_col)
+            where_values += tuple(bbox)
+        # WHERE continent=? <class 'tuple'>: ('Europe',)
+        return where_clause, where_values
+
     def __response_feature(self, row_data):
         """
         Assembles GeoJSON output from DB query
@@ -153,7 +186,8 @@ class SQLiteGPKGProvider(BaseProvider):
         # conn.set_trace_callback(LOGGER.debug)
         cursor = conn.cursor()
         try:
-            cursor.execute(f"SELECT load_extension('{SPATIALITE_EXTENSION}')")
+            cursor.execute("SELECT load_extension('{}')".format(
+                SPATIALITE_EXTENSION))
         except sqlite3.OperationalError as err:
             LOGGER.error('Extension loading error: {}'.format(err))
             raise ProviderConnectionError()
@@ -202,7 +236,8 @@ class SQLiteGPKGProvider(BaseProvider):
         except AssertionError:
             raise InvalidPluginError
 
-        self.columns = [item[1] for item in result if item[1] != self.geom_col]
+        self.columns = [item[1] for item in result if item[1]
+                        not in [self.geom_col, self.geom_col.upper()]]
         self.columns = ','.join(self.columns)+',AsGeoJSON({})'.format(
             self.geom_col)
 
@@ -231,32 +266,22 @@ class SQLiteGPKGProvider(BaseProvider):
         """
         LOGGER.debug('Querying SQLite/GPKG')
 
+        where_clause, where_values = self.__get_where_clauses(
+            properties=properties, bbox=bbox)
+
         if resulttype == 'hits':
-            res = self.cursor.execute(
-                "select count(*) as hits from {};".format(self.table))
+
+            sql_query = "SELECT COUNT(*) as hits FROM {} {} ".format(
+                self.table, where_clause)
+
+            res = self.cursor.execute(sql_query, where_values)
 
             hits = res.fetchone()["hits"]
             return self.__response_feature_hits(hits)
 
-        where_syntax = " where " if (properties or bbox) else ""
-        where_values = tuple()
-
-        if properties:
-            where_syntax += " and ".join(
-                ["{}=?".format(k) for k, v in properties])
-            where_values += where_values + tuple((v for k, v in properties))
-
-        if bbox:
-            if properties:
-                where_syntax += " and "
-            # TODO: check name of geometry column
-            where_syntax += " Intersects({}, \
-                BuildMbr(?,?,?,?)) ".format(self.geom_col)
-            where_values += tuple(bbox)
-
-        sql_query = "select {} from \
+        sql_query = "SELECT DISTINCT {} from \
             {} {} limit ? offset ?".format(
-                self.columns, self.table, where_syntax)
+                self.columns, self.table, where_clause)
 
         end_index = startindex + limit
 
@@ -290,8 +315,8 @@ class SQLiteGPKGProvider(BaseProvider):
 
         LOGGER.debug('Get item from SQLite/GPKG')
 
-        sql_query = 'select {} from \
-            {} where {}==?;'.format(
+        sql_query = 'SELECT {} FROM \
+            {} WHERE {}==?;'.format(
                 self.columns, self.table, self.id_field)
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))

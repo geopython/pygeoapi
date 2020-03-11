@@ -40,7 +40,6 @@ PLUGINS = {
         'CSV': 'pygeoapi.provider.csv_.CSVProvider',
         'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',  # noqa
         'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
-        'GeoPackage': 'pygeoapi.provider.geopackage.GeoPackageProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',

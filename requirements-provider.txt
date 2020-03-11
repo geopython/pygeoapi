@@ -1,5 +1,5 @@
 elasticsearch==7.1.0
-GDAL>=2.2,<3.0
-psycopg2==2.7.6
-tinydb>=3.15.2
+GDAL>=3.0.0
+psycopg2-binary==2.7.6
 pymongo
+tinydb>=3.15.2
