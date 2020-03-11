@@ -1134,9 +1134,9 @@ class API(object):
         :returns: tuple of headers, status code, content
         """
         headers_ = HEADERS.copy()
-        process = self.config.get('processes', {}).get(process_id, None)
 
-        if not process:
+        processes_config = self.config.get('processes', {})
+        if process_id not in processes_config:
             exception = {
                 'code': 'NoSuchProcess',
                 'description': 'identifier not found'
@@ -1152,6 +1152,16 @@ class API(object):
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
+        format_ = check_format(args, headers_)
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         status = JobStatus[job_result['status']]
         response = {
             'jobID': job_id,
@@ -1180,7 +1190,19 @@ class API(object):
         elif status == JobStatus.failed:
             # TODO link to exception report?
             pass
-        return headers_, 200, json.dumps(response)
+
+        if format_ == 'json' or format_ == 'jsonld':
+            return headers_, 200, json.dumps(response)
+        else:
+            headers_['Content-Type'] = 'text/html'
+            process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
+            return headers_, 200, render_j2_template(self.config, 'job.html', {
+                'process': {'id': process_id, 'title': process.metadata['title']},
+                'job': {
+                    'process_start_datetime': job_result['process_start_datetime'],
+                    'process_end_datetime': job_result['process_end_datetime'],
+                    **response}
+            })
 
     def retrieve_job_result(self, method, headers, args, data, process_id, job_id):
         """
@@ -1336,7 +1358,7 @@ class API(object):
                 'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
-                'message': code
+                'message': f'{code}: {outputs["description"]}'
             }
 
             self.manager.update_job(job_id, job_metadata)

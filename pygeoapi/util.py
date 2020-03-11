@@ -29,7 +29,7 @@
 
 """Generic util functions used in the code"""
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 import dateutil.parser
 from decimal import Decimal
 from enum import Enum
@@ -156,7 +156,7 @@ def to_json(dict_):
 
 def format_datetime(value, format='%H:%M:%S / %Y-%m-%d'):
     """
-    Parse datetime as ISO; re-present it in particular format
+    Parse datetime as ISO 8601 string; re-present it in particular format
     for display in HTML
 
     :param value: `str` of ISO datetime
@@ -167,6 +167,22 @@ def format_datetime(value, format='%H:%M:%S / %Y-%m-%d'):
     if not isinstance(value, str) or not value.strip():
         return ''
     return dateutil.parser.parse(value).strftime(format)
+
+def format_duration(start, end=None):
+    """
+    Parse a start and (optional) end datetime as ISO 8601 strings, calculate
+    the difference, and return that duration as a string.
+
+    :param start: `str` of ISO datetime
+    :param end: `str` of ISO datetime, defaults to `start` for a 0 duration
+
+    :returns: string
+    """
+    if not isinstance(start, str) or not start.strip():
+        return ''
+    end = end or start
+    duration = dateutil.parser.parse(end) - dateutil.parser.parse(start)
+    return str(duration)
 
 def json_serial(obj):
     """
@@ -214,6 +230,7 @@ def render_j2_template(config, template, data):
     env = Environment(loader=FileSystemLoader(TEMPLATES))
     env.filters['to_json'] = to_json
     env.filters['datetime'] = format_datetime
+    env.filters['duration'] = format_duration
     env.globals.update(to_json=to_json)
 
     template = env.get_template(template)

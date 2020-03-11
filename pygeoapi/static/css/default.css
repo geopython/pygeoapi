@@ -3,7 +3,7 @@ html, body {
 }
 
 .flat {
-    border: 0px;
+    border: 0;
 }
 
 header {
@@ -26,8 +26,8 @@ main {
 }
 
 .crumbs a {
-    padding: 0px 6px;
     color: black;
+    padding: 0px 6px;
 }
 
 #items-map {
@@ -53,10 +53,13 @@ th, td {
   width: auto;
 }
 
+td.small {
+  font-size: smaller;
+}
+
 table mark {
   font-size: 80%;
   font-weight: 600;
-  line-height: 3em;
 }
 
 #process table th,
@@ -71,8 +74,6 @@ table mark {
   color: var(--header-fore-color);
 }
 
-
-<style type="text/css">
 .form-style-1 {
 	margin: 10px auto;
 	padding: 20px 12px 10px 20px;
@@ -84,7 +85,7 @@ table mark {
 	margin: 10px 0 0 0;
 }
 .form-style-1 label{
-	margin: 0 0 3px 6px;
+	margin: 6px 0 0 6px;
 	padding: 0px;
 	display: block;
 	font-weight: bold;
@@ -132,7 +133,111 @@ mark.running {
 
 #job-results:empty {
   visibility: hidden;
-  /* height: 0px; */
-  padding: 0px;
+  padding: 0;
 }
-</style>
+
+#job-status {
+  border: 2px solid;
+  border-radius: 3px;
+}
+
+#job-status.successful {
+  border-color: green;
+}
+
+#job-status.accepted {
+  border-color: default;
+}
+
+#job-status.failed {
+  border-color: red;
+}
+
+#job-status.running {
+  border-color: orange;
+}
+
+#job-status-header {
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  height: 50px;
+  margin-top: 0;
+  padding: 10px;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+#job-status-header.successful {
+  background-color: lightgreen;
+}
+
+#job-status-header.accepted {
+  background-color: default;
+}
+
+#job-status-header.failed {
+  background-color: pink;
+}
+
+#job-status-header.running {
+  background-color: yellow;
+}
+
+#job-status-header > .progress {
+  float: right;
+}
+
+#job-status-header > span {
+  line-height: 50px;
+}
+
+#job-status-body {
+  margin: 20px;
+  padding: 5px;
+}
+
+#job-status-body > .message {
+  background-color: var(--header-back-color);;
+  border-radius: 3px;
+  padding: 15px;
+}
+
+#job-status-body > .message > h3 {
+  color: grey;
+}
+
+#job-status-body > .links > ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+#job-status-body > .links > ul a {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+#job-status-body > .links > ul a:hover {
+  background-color: var(--header-back-color);;
+}
+
+#job-status-body > .links > ul a:last-of-type {
+  margin-bottom: 0;
+}
+
+#job-status-body > .links > ul li {
+  border: 2px solid var(--header-back-color);;
+  border-radius: 3px;
+  padding: 15px;
+  position: relative;
+}
+
+#job-status-body > .duration > h4,
+#job-status-body > .links > h4 {
+  color: grey;
+  font-size: smaller;
+  margin-bottom: 0;
+}
+
+#job-status-body > .duration > p {
+  margin-top: 0;
+}

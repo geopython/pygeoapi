@@ -7,6 +7,40 @@
 {% endblock %}
 {% block body %}
     <section id="jobs">
-      <h2>Jobs for the foo process</h2>
+      <div class="row">
+        <div class="col-md-12">
+          <table class="job-list striped">
+            <caption>Jobs</caption>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Start</th>
+                <th>Runtime</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in data.jobs %}
+              <tr>
+                <td class="small"><a href="/processes/{{data.process.id}}/jobs/{{ job.identifier }}">{{ job.identifier }}</a></td>
+                <td>
+                  {{ job.process_start_datetime|datetime }}
+                </td>
+                <td>
+                  {{ job.process_start_datetime|duration(job.process_end_datetime) }}
+                </td>
+                <td>
+                  <mark class="{{job.status}}">{{ job.status }}</mark>
+                </td>
+                <td>
+                  {{ job.message }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 {% endblock %}

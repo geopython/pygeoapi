@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} Job status {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../">Processes</a>
+/ <a href="../">{{ data.process.title }}</a>
+/ <a href="./">Jobs</a>
+/ <a href="./{{ data.job.jobID }}">{{ data.job.jobID }}</a>
+{% endblock %}
+{% block body %}
+    <section id="job">
+      <div class="row">
+        <h1>Job status</h1>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div id="job-status" class="{{ data.job.status }}">
+            <div id="job-status-header" class="{{ data.job.status }}">
+              <span>
+                <!-- TODO i18n -->
+                {% if data.job.status == 'successful' %}
+                  Your job was successful!
+                {% elif data.job.status == 'accepted' %}
+                  Your job has been accepted and is awaiting processing
+                {% elif data.job.status == 'running' %}
+                  Your job is in progress
+                {% elif data.job.status == 'failed' %}
+                  We failed to process your job
+                {% endif %}
+              </span>
+              <span class="progress">{{ data.job.progress }}%</span>
+            </div>
+            <div id="job-status-body">
+              <div class="message">
+                <h3>Message</h3>
+                <p>{{ data.job.message }}</p>
+              </div>
+              <div class="duration">
+                <h4>Runtime</h4>
+                <p>{{ data.job.process_start_datetime|duration(data.job.process_end_datetime) }}</p>
+                <h4>Started processing</h4>
+                <p>{{ data.job.process_start_datetime|datetime }}</p>
+                <h4>Finished processing</h4>
+                <p>{{ data.job.process_end_datetime|datetime }}</p>
+              </div>
+              <div class="links">
+                {% if data.job.links %}
+                <h4>Resources</h4>
+                <ul>
+                  {% for link in data.job.links %}
+                  {% if link.rel != 'self' %}
+                  <a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">
+                    <li>{{ link.title }}</li>
+                  </a>
+                  {% endif %}
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+{% endblock %}

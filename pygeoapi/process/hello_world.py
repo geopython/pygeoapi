@@ -38,7 +38,7 @@ PROCESS_METADATA = {
     'version': '0.2.0',
     'id': 'hello-world',
     'title': 'Hello World',
-    'description': 'An example processes that takes a name as input, and echoes it back as output. Intended to demonstrate a simple process with a single literal input.',
+    'description': 'An example process that takes a name as input, and echoes it back as output. Intended to demonstrate a simple process with a single literal input.',
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
@@ -82,7 +82,8 @@ PROCESS_METADATA = {
     }],
     'outputs': [{
         'id': 'echo',
-        'title': 'A hello world echo with the name and (optional) message submitted for processing.',
+        'title': 'Hello, world',
+        'description': 'A "hello world" echo with the name and (optional) message submitted for processing.',
         'output': {
             'formats': [{
                 'mimeType': 'application/json'
