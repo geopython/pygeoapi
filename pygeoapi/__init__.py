@@ -29,9 +29,14 @@
 
 __version__ = '0.7.0'
 
+import os
 import click
+import locale
+
 from pygeoapi.openapi import generate_openapi_document
 
+DEFAULT_LANG = 'en_US.UTF-8'
+locale.setlocale(locale.LC_ALL, os.environ.get('LANG', DEFAULT_LANG))
 
 cli = click.Group()
 cli.version = __version__
