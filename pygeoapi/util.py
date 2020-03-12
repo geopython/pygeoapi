@@ -153,19 +153,19 @@ def to_json(dict_):
 
     return json.dumps(dict_, default=json_serial)
 
-def format_datetime(value, format='%a, %x %X %Z'):
+def format_datetime(value, _format='%a, %x %X %Z'):
     """
     Parse datetime as ISO 8601 string; re-present it in particular format
     for display in HTML
 
     :param value: `str` of ISO datetime
-    :param format: `str` of datetime format for strftime
+    :param _format: `str` of datetime format for strftime
 
     :returns: string
     """
     if not isinstance(value, str) or not value.strip():
         return ''
-    return dateutil.parser.isoparse(value).astimezone(ENV_TZ).strftime(format)
+    return dateutil.parser.isoparse(value).astimezone(ENV_TZ).strftime(_format)
 
 def format_duration(start, end=None):
     """
