@@ -99,4 +99,3 @@ COPY ./docker/entrypoint.sh /entrypoint.sh
 
 WORKDIR /pygeoapi
 ENTRYPOINT ["/entrypoint.sh"]
-

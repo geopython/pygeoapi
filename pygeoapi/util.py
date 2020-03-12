@@ -37,6 +37,7 @@ import json
 import logging
 import mimetypes
 import os
+import pytz
 import re
 from urllib.parse import urlparse
 
@@ -53,10 +54,9 @@ TEMPLATES = '{}{}templates'.format(os.path.dirname(
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
 
-
 def dategetter(date_property, collection):
     """
-    Attempts to obtains a date value from a collection.
+    Attempts to obtain a date value from a collection.
 
     :param date_property: property representing the date
     :param collection: dictionary to check within
@@ -154,7 +154,10 @@ def to_json(dict_):
 
     return json.dumps(dict_, default=json_serial)
 
-def format_datetime(value, format='%H:%M:%S / %Y-%m-%d'):
+def get_os_timezone(default='UTC'):
+    return pytz.timezone(os.environ.get('TZ', default))
+
+def format_datetime(value, format='%a, %x %X %Z'):
     """
     Parse datetime as ISO 8601 string; re-present it in particular format
     for display in HTML
@@ -166,7 +169,8 @@ def format_datetime(value, format='%H:%M:%S / %Y-%m-%d'):
     """
     if not isinstance(value, str) or not value.strip():
         return ''
-    return dateutil.parser.parse(value).strftime(format)
+    tz = get_os_timezone()
+    return dateutil.parser.isoparse(value).astimezone(tz).strftime(format)
 
 def format_duration(start, end=None):
     """
@@ -181,7 +185,7 @@ def format_duration(start, end=None):
     if not isinstance(start, str) or not start.strip():
         return ''
     end = end or start
-    duration = dateutil.parser.parse(end) - dateutil.parser.parse(start)
+    duration = dateutil.parser.isoparse(end) - dateutil.parser.isoparse(start)
     return str(duration)
 
 def json_serial(obj):
