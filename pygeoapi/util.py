@@ -37,14 +37,13 @@ import json
 import logging
 import mimetypes
 import os
-import pytz
 import re
 from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
-from pygeoapi import __version__
+from pygeoapi import __version__, ENV_TZ
 
 LOGGER = logging.getLogger(__name__)
 
@@ -154,9 +153,6 @@ def to_json(dict_):
 
     return json.dumps(dict_, default=json_serial)
 
-def get_os_timezone(default='UTC'):
-    return pytz.timezone(os.environ.get('TZ', default))
-
 def format_datetime(value, format='%a, %x %X %Z'):
     """
     Parse datetime as ISO 8601 string; re-present it in particular format
@@ -169,8 +165,7 @@ def format_datetime(value, format='%a, %x %X %Z'):
     """
     if not isinstance(value, str) or not value.strip():
         return ''
-    tz = get_os_timezone()
-    return dateutil.parser.isoparse(value).astimezone(tz).strftime(format)
+    return dateutil.parser.isoparse(value).astimezone(ENV_TZ).strftime(format)
 
 def format_duration(start, end=None):
     """
