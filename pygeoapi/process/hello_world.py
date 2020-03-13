@@ -93,7 +93,11 @@ PROCESS_METADATA = {
     'example': {
         'inputs': [{
             'id': 'name',
-            'value': 'Ciarán',
+            'value': 'Some name',
+            'type': 'text/plain'
+        },{
+            'id': 'message',
+            'value': 'An optional message.',
             'type': 'text/plain'
         }]
     }

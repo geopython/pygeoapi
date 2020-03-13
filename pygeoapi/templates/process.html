@@ -133,22 +133,29 @@
         <li>
           {% set typeMap = {'string': 'text', 'integer': 'number', 'boolean': 'checkbox'} %}
           {% for input_ in data['inputs'] %}
-            <label>{{input_.title|striptags|truncate}}</label>
+            {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first %}
+            <label for={{input_.id}}>{{input_.title|striptags|truncate}}</label>
             <!-- TODO placeholder with description -->
-            <!-- TODO pre-fill default value if available -->
-            <!-- TODO pre-fill with example -->
             <!-- TODO infer type from metadata -->
             <!-- TODO default checked state for checkbox -->
             <!-- TODO radio for enum -->
+            <!-- TODO max/min for numbers -->
             <input
-              class="job-form-input" type="{{typeMap[input_.input.literalDataDomain.dataType]}}" name={{input_.id}}
-              autocomplete="off" step="any" value="{{input_.input.literalDataDomain.valueDefinition.defaultValue}}"
+              class="job-form-input"
+              type="{{typeMap[input_.input.literalDataDomain.dataType]}}"
+              name={{input_.id}}
+              id={{input_.id}}
+              autocomplete="off"
+              placeholder="{{example.value|default("")}}"
+              step="any"
+              value="{{input_.input.literalDataDomain.valueDefinition.defaultValue|default("")}}"
               {{(input_.get('minOccurs', 1) > 0) and 'required' or null}}
             >
           {% endfor %}
         </li>
         <li>
           <input type="submit" value="Submit job">
+          <input type="reset">
         </li>
       </form>
       <section class="callout-info" id="job-results"></section>
