@@ -133,7 +133,7 @@
         <li>
           {% set typeMap = {'string': 'text', 'integer': 'number', 'boolean': 'checkbox'} %}
           {% for input_ in data['inputs'] %}
-            {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first %}
+            {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first|default("none") %}
             <label for={{input_.id}}>{{input_.title|striptags|truncate}}</label>
             <!-- TODO placeholder with description -->
             <!-- TODO infer type from metadata -->
