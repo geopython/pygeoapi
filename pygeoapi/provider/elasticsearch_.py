@@ -85,17 +85,22 @@ class ElasticsearchProvider(BaseProvider):
         fields_ = {}
         ic = IndicesClient(self.es)
         ii = ic.get(self.index_name)
-        p = ii[self.index_name]['mappings']['properties']['properties']  # noqa
+        try:
+            p = mappings = ii[self.index_name]['mappings'] # noqa
+            if mappings['properties'].get('properties'):
+                p = mappings['properties']['properties']
+            for k, v in p['properties'].items():
+                if 'type' in v:
+                    if v['type'] == 'text':
+                        type_ = 'string'
+                    else:
+                        type_ = v['type']
+                    fields_[k] = {'type': type_}
 
-        for k, v in p['properties'].items():
-            if 'type' in v:
-                if v['type'] == 'text':
-                    type_ = 'string'
-                else:
-                    type_ = v['type']
-                fields_[k] = {'type': type_}
-
-        return fields_
+            return fields_
+        except KeyError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError()
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -268,31 +273,39 @@ class ElasticsearchProvider(BaseProvider):
 
         feature_collection['numberReturned'] = len(results['hits']['hits'])
 
-        LOGGER.debug('serializing features')
-        for feature in results['hits']['hits']:
-            id_ = feature['_source']['properties'][self.id_field]
-            LOGGER.debug('serializing id {}'.format(id_))
-            feature['_source']['id'] = id_
-            if self.properties:
-                feature_thinned = {
-                    'id': feature['_source']['properties'][self.id_field],
-                    'type': feature['_source']['type'],
-                    'geometry': feature['_source']['geometry'],
-                    'properties': OrderedDict()
-                }
-                for p in self.properties:
-                    try:
-                        feature_thinned['properties'][p] = \
-                            feature['_source']['properties'][p]
-                    except KeyError as err:
-                        LOGGER.error(err)
-                        raise ProviderQueryError()
+        try:
+            LOGGER.debug('serializing features')
+            for feature in results['hits']['hits']:
+                _source = feature['_source']
+                if _source.get('properties'):
+                    id_ = feature['_source']['properties'][self.id_field]
+                else:
+                    id_ = feature['_source'][self.id_field]
+                LOGGER.debug('serializing id {}'.format(id_))
+                _source['id'] = id_
+                if self.properties:
+                    feature_thinned = {
+                        'id': id_,
+                        'type': _source['type'],
+                        'geometry': _source['geometry'],
+                        'properties': OrderedDict()
+                    }
+                    for p in self.properties:
+                        try:
+                            feature_thinned['properties'][p] = \
+                                feature['_source']['properties'][p]
+                        except KeyError as err:
+                            LOGGER.error(err)
+                            raise ProviderQueryError()
 
-                feature_collection['features'].append(feature_thinned)
-            else:
-                feature_collection['features'].append(feature['_source'])
+                    feature_collection['features'].append(feature_thinned)
+                else:
+                    feature_collection['features'].append(feature['_source'])
 
-        return feature_collection
+            return feature_collection
+        except KeyError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError()
 
     def get(self, identifier):
         """
