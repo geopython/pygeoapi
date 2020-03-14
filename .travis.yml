@@ -27,7 +27,7 @@ addons:
       - libgdal-dev
       - libsqlite3-mod-spatialite
       - python-pyspatialite
-      - postgresql-10-postgis-2.4
+      - postgresql-10-postgis-3
       - mongodb-org
 
 before_install:
