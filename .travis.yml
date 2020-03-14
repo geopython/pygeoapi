@@ -14,7 +14,6 @@ python:
   - "3.7"
 
 services:
-  - postgresql
   - docker
 
 addons:
@@ -27,7 +26,7 @@ addons:
       - libgdal-dev
       - libsqlite3-mod-spatialite
       - python-pyspatialite
-      - postgresql-10-postgis-3
+      - postgis
       - mongodb-org
 
 before_install:
