@@ -30,6 +30,7 @@
 
 import importlib
 import logging
+import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +66,10 @@ def load_plugin(plugin_type, plugin_def):
     """
 
     name = plugin_def['name']
+
+    if name == "OGR":
+        os.environ["OGR_GEOJSON_MAX_OBJ_SIZE"] = os.environ.get(
+            "OGR_GEOJSON_MAX_OBJ_SIZE", "20MB")
 
     if plugin_type not in PLUGINS.keys():
         msg = 'Plugin type {} not found'.format(plugin_type)

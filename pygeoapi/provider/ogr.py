@@ -36,7 +36,8 @@ from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
-from pygeoapi.provider.base import (BaseProvider, ProviderQueryError)
+from pygeoapi.provider.base import (
+    BaseProvider, ProviderGenericError, ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,12 +107,15 @@ class OGRProvider(BaseProvider):
         self.ogr = osgeo_ogr
         # http://trac.osgeo.org/gdal/wiki/PythonGotchas
         self.gdal = osgeo_gdal
-        self.gdal.UseExceptions()
         LOGGER.info("Using GDAL/OGR version: %d"
                     % int(osgeo_gdal.VersionInfo('VERSION_NUM')))
 
         # install error handler
-        self.gdal.PushErrorHandler(self.gdal_error_handler)
+        err = GdalErrorHandler()
+        self.handler = err.handler
+        self.gdal.PushErrorHandler(self.handler)
+        # Exceptions will get raised on anything >= gdal.CE_Failure
+        self.gdal.UseExceptions()
         LOGGER.debug('Setting OGR properties')
 
         self.data_def = provider_def['data']
@@ -169,21 +173,6 @@ class OGRProvider(BaseProvider):
         # Init driver and Source connection
         self.driver = None
         self.conn = None
-
-    # GDAL error handler function
-    # http://pcjericks.github.io/py-gdalogr-cookbook/gdal_general.html
-    def gdal_error_handler(self, err_class, err_num, err_msg):
-        err_type = {
-            osgeo_gdal.CE_None: 'None',
-            osgeo_gdal.CE_Debug: 'Debug',
-            osgeo_gdal.CE_Warning: 'Warning',
-            osgeo_gdal.CE_Failure: 'Failure',
-            osgeo_gdal.CE_Fatal: 'Fatal'
-        }
-        err_msg = err_msg.replace('\n', ' ')
-        err_class = err_type.get(err_class, 'None')
-        LOGGER.error('Error Number: %s, Type: %s, Msg: %s'
-                     % (err_num, err_class, err_msg))
 
     def _list_open_options(self):
         return [
@@ -303,8 +292,12 @@ class OGRProvider(BaseProvider):
             else:
                 LOGGER.error('Invalid resulttype: %s' % resulttype)
 
+        except RuntimeError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError(err)
         except Exception as err:
             LOGGER.error(err)
+            raise ProviderGenericError(err)
 
         finally:
             self._close()
@@ -330,10 +323,13 @@ class OGRProvider(BaseProvider):
             ogr_feature = self._get_next_feature(layer)
             result = self._ogr_feature_to_json(ogr_feature)
 
+        except RuntimeError as err:
+            LOGGER.error(err)
+            raise ProviderQueryError(err)
         except Exception as err:
             LOGGER.error(err)
-            if isinstance(err, RuntimeError):
-                raise ProviderQueryError
+            raise ProviderGenericError(err)
+
         finally:
             self._close()
 
@@ -367,7 +363,7 @@ class OGRProvider(BaseProvider):
             # fix issue #371 if OGR_GEOJSON_MAX_OBJ_SIZE is default
             self.gdal.PushErrorHandler('CPLQuietErrorHandler')
             next_feature = layer.GetNextFeature()
-            self.gdal.PushErrorHandler(self.gdal_error_handler)
+            self.gdal.PushErrorHandler(self.handler)
             if all(val is None for val in next_feature.items().values()):
                 self.gdal.Error(
                     self.gdal.CE_Failure, 1, "Object properties are all null"
@@ -409,20 +405,28 @@ class OGRProvider(BaseProvider):
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
 
-        ogr_feature = layer.GetNextFeature()
-        count = 0
-        while ogr_feature is not None:
-            json_feature = self._ogr_feature_to_json(ogr_feature)
-
-            feature_collection['features'].append(json_feature)
-
-            count += 1
-            if count == limit:
-                break
-
+        try:
+            self.gdal.PushErrorHandler('CPLQuietErrorHandler')
             ogr_feature = layer.GetNextFeature()
+            self.gdal.PushErrorHandler(self.handler)
+            count = 0
+            while ogr_feature is not None:
+                json_feature = self._ogr_feature_to_json(ogr_feature)
 
-        return feature_collection
+                feature_collection['features'].append(json_feature)
+
+                count += 1
+                if count == limit:
+                    break
+
+                self.gdal.PushErrorHandler('CPLQuietErrorHandler')
+                ogr_feature = layer.GetNextFeature()
+                self.gdal.PushErrorHandler(self.handler)
+
+            return feature_collection
+        except RuntimeError as gdalerr:
+            LOGGER.error(self.gdal.GetLastErrorMsg())
+            raise gdalerr
 
     def _response_feature_hits(self, layer):
         """
@@ -666,3 +670,46 @@ class WFSHelper(SourceHelper):
             'OGR_WFS_PAGING_ALLOWED', None)
         self.provider.gdal.SetConfigOption(
             'OGR_WFS_PAGE_SIZE', None)
+
+
+class GdalErrorHandler:
+
+    def __init__(self):
+        """
+        Initialize the error handler
+
+        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        """
+        self.err_level = osgeo_gdal.CE_None
+        self.err_num = 0
+        self.err_msg = ''
+
+    def handler(self, err_level, err_num, err_msg):
+        """
+        Define custom GDAL error handler function
+
+        :param err_level: error level
+        :param err_num: internal gdal error number
+        :param err_msg: error message
+
+        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        """
+
+        err_type = {
+            osgeo_gdal.CE_None: 'None',
+            osgeo_gdal.CE_Debug: 'Debug',
+            osgeo_gdal.CE_Warning: 'Warning',
+            osgeo_gdal.CE_Failure: 'Failure',
+            osgeo_gdal.CE_Fatal: 'Fatal'
+        }
+        err_msg = err_msg.replace('\n', ' ')
+        level = err_type.get(err_level, 'None')
+
+        self.err_level = err_level
+        self.err_num = err_num
+        self.err_msg = err_msg
+
+        LOGGER.error('Error Number: %s, Type: %s, Msg: %s' % (
+            self.err_num, level, self.err_msg))
+        if self.err_level >= osgeo_gdal.CE_Failure:
+            raise ProviderGenericError(osgeo_gdal.GetLastErrorMsg())

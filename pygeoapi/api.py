@@ -43,7 +43,8 @@ from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
-from pygeoapi.provider.base import ProviderConnectionError, ProviderQueryError
+from pygeoapi.provider.base import (
+    ProviderGenericError, ProviderConnectionError, ProviderQueryError)
 from pygeoapi.util import (dategetter, json_serial, render_j2_template,
                            str2bool, TEMPLATES)
 
@@ -692,19 +693,26 @@ class API(object):
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
                               sortby=sortby)
-        except ProviderConnectionError:
+        except ProviderConnectionError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'connection error (check logs)'
             }
-            LOGGER.error(exception)
+            LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
-        except ProviderQueryError:
+        except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
-            LOGGER.error(exception)
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
 
         serialized_query_params = ''
@@ -862,6 +870,13 @@ class API(object):
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
             }
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
