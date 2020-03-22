@@ -360,10 +360,11 @@ class OGRProvider(BaseProvider):
 
     def _get_next_feature(self, layer):
         try:
-            # fix issue #371 if OGR_GEOJSON_MAX_OBJ_SIZE is default
+            # Make gdal error handler silent
             self.gdal.PushErrorHandler('CPLQuietErrorHandler')
             next_feature = layer.GetNextFeature()
-            self.gdal.PushErrorHandler(self.handler)
+            # Restore error handler
+            self.gdal.PopErrorHandler()
             if all(val is None for val in next_feature.items().values()):
                 self.gdal.Error(
                     self.gdal.CE_Failure, 1, "Object properties are all null"
@@ -406,9 +407,11 @@ class OGRProvider(BaseProvider):
         layer.ResetReading()
 
         try:
+            # Make gdal error handler silent
             self.gdal.PushErrorHandler('CPLQuietErrorHandler')
             ogr_feature = layer.GetNextFeature()
-            self.gdal.PushErrorHandler(self.handler)
+            # Restore error handler
+            self.gdal.PopErrorHandler()
             count = 0
             while ogr_feature is not None:
                 json_feature = self._ogr_feature_to_json(ogr_feature)
@@ -419,9 +422,11 @@ class OGRProvider(BaseProvider):
                 if count == limit:
                     break
 
+                # Make gdal error handler silent
                 self.gdal.PushErrorHandler('CPLQuietErrorHandler')
                 ogr_feature = layer.GetNextFeature()
-                self.gdal.PushErrorHandler(self.handler)
+                # Restore error handler
+                self.gdal.PopErrorHandler()
 
             return feature_collection
         except RuntimeError as gdalerr:
