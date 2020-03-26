@@ -332,6 +332,14 @@ class ElasticsearchProvider(BaseProvider):
         return feature_
 
     def esdoc2geojson(self, doc):
+        """
+        generate GeoJSON `dict` from ES document
+
+        :param doc: `dict` of ES document
+
+        :returns: GeoJSON `dict`
+        """
+
         feature_ = {}
         feature_thinned = {}
 
@@ -373,6 +381,14 @@ class ElasticsearchProvider(BaseProvider):
             return feature_
 
     def mask_prop(self, property_name):
+        """
+        generate property name based on ES backend setup
+
+        :param property_name: property name
+
+        :returns: masked property name
+        """
+
         if self.is_gdal:
             return property_name
         else:
