@@ -30,7 +30,7 @@ pygeoapi serve
 
 ## Example requests
 
-Try the swagger ui at `http://localhost:5000/ui`
+Try the swagger ui at `http://localhost:5000/openapi`
 
 or
 
