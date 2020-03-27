@@ -106,16 +106,21 @@ class BaseProvider(object):
         return '<BaseProvider> {}'.format(self.type)
 
 
-class ProviderConnectionError(Exception):
+class ProviderGenericError(Exception):
+    """Generic error"""
+    pass
+
+
+class ProviderConnectionError(ProviderGenericError):
     """query / backend error"""
     pass
 
 
-class ProviderQueryError(Exception):
+class ProviderQueryError(ProviderGenericError):
     """query / backend error"""
     pass
 
 
-class ProviderVersionError(Exception):
+class ProviderVersionError(ProviderGenericError):
     """Incorrect provider version"""
     pass
