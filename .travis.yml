@@ -34,6 +34,7 @@ before_install:
   - sudo service postgresql stop
   - sudo apt-get remove -yq 'postgresql-*'
   - sudo apt autoremove
+  - sudo rm /etc/apt/sources.list.d/pgdg.list*
   - sudo apt-get -qq update
   - sudo apt-get install -qq build-essential tzdata python3-dev python3-setuptools python-all python3-all python-setuptools python3-pip
   - sudo apt-get install -y devscripts fakeroot debhelper
