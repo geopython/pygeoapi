@@ -277,6 +277,9 @@ def get_oas_30(cfg):
 
     LOGGER.debug('setting up datasets')
     for k, v in cfg['datasets'].items():
+        if v['provider']['name'] == 'FileSystem':
+            continue
+
         collection_name_path = '/collections/{}'.format(k)
         tag = {
             'name': k,
@@ -393,6 +396,21 @@ def get_oas_30(cfg):
             }
         }
 
+    LOGGER.debug('setting up STAC')
+    paths['/stac'] = {
+        'get': {
+            'summary': 'SpatioTemporal Asset Catalog',
+            'description': 'SpatioTemporal Asset Catalog',
+            'tags': ['stac'],
+            'parameters': [],
+            'responses': {
+                200: {'$ref': '#/components/responses/200'},
+                'default': {'$ref': '#/components/responses/default'}
+            }
+        }
+    }
+
+    LOGGER.debug('setting up processes')
     paths['/processes'] = {
         'get': {
             'summary': 'Processes',
@@ -407,8 +425,6 @@ def get_oas_30(cfg):
             }
         }
     }
-
-    LOGGER.debug('setting up processes')
 
     processes = cfg.get('processes', {})
 

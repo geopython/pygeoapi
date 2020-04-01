@@ -102,3 +102,16 @@ def test_mimetype():
     assert util.get_mimetype('file.xml') == 'application/xml'
     assert util.get_mimetype('file.yml') == 'text/plain'
     assert util.get_mimetype('file.yaml') == 'text/plain'
+
+
+def test_get_breadcrumbs():
+    path = '/dataset/model-run/forecast-hour/variable.grib2'
+    breadcrumbs = util.get_breadcrumbs(path)
+
+    assert len(breadcrumbs) == 5
+    assert breadcrumbs[3]['href'] == 'dataset/model-run/forecast-hour'
+
+
+def test_path_basename():
+    assert util.get_path_basename('/path/to/file.txt') == 'file.txt'
+    assert util.get_path_basename('/path/to/dir') == 'dir'

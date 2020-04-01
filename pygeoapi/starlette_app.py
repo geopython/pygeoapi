@@ -182,6 +182,44 @@ async def dataset(request: Request, feature_collection=None, feature=None):
     return response
 
 
+@app.route('/stac')
+async def stac_catalog_root(request: Request):
+    """
+    STAC access point
+    :returns: Starlette HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_root(
+        request.headers, request.query_params)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/stac/{path:path}')
+async def stac_catalog_path(request: Request):
+    """
+    STAC access point
+    :returns: Starlette HTTP response
+    """
+
+    path = request.path_params["path"]
+
+    headers, status_code, content = api_.get_stac_path(
+        request.headers, request.query_params, path)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @app.route('/processes')
 @app.route('/processes/')
 @app.route('/processes/{name}')
