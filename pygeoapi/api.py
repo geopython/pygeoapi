@@ -1031,7 +1031,7 @@ class API(object):
 
             return headers_, 200, response
 
-        return headers_, 200, json.dumps(response)
+        return headers_, 200, json.dumps(response, default=json_serial)
 
     def execute_process(self, method, headers, args, data, process_id):
         """
@@ -1078,7 +1078,7 @@ class API(object):
                 response = render_j2_template(self.config, 'jobs.html', {'process': {'id': process_id, 'title': process.metadata['title']}, 'jobs': jobs})
                 return headers_, 200, response
             response = [job['identifier'] for job in jobs]
-            return headers_, 200, json.dumps(response)
+            return headers_, 200, json.dumps(response, default=json_serial)
 
         elif method == 'POST' and not data:
             # TODO not all processes require input, e.g. time-depenendent or
@@ -1141,7 +1141,7 @@ class API(object):
         elif status != JobStatus.failed:
             response['outputs'] = outputs
 
-        return headers_, 201, json.dumps(response)
+        return headers_, 201, json.dumps(response, default=json_serial)
 
     def retrieve_job_status(self, headers, args, data, process_id, job_id):
         """
@@ -1190,7 +1190,6 @@ class API(object):
             'jobID': job_id,
             'status': status.value,
             'message': job_result.get('message', None),
-            'progress': 100 if status == JobStatus.finished else 0, # TODO actual progress value
             'links': [{
                 'href': '{}/processes/{}/jobs/{}'.format(
                     self.config['server']['url'], process_id, job_id
@@ -1215,7 +1214,7 @@ class API(object):
             pass
 
         if format_ == 'json' or format_ == 'jsonld':
-            return headers_, 200, json.dumps(response)
+            return headers_, 200, json.dumps(response, default=json_serial)
         else:
             headers_['Content-Type'] = 'text/html'
             process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
@@ -1224,6 +1223,7 @@ class API(object):
                 'job': {
                     'process_start_datetime': job_result['process_start_datetime'],
                     'process_end_datetime': job_result['process_end_datetime'],
+                    'progress': job_result.get('progress', 100 if status == JobStatus.finished else 0),
                     **response}
             })
 
@@ -1308,7 +1308,7 @@ class API(object):
                 'result': result
             })
             return headers_, 200, response
-        return headers_, 200, json.dumps(result)
+        return headers_, 200, json.dumps(result, sort_keys=True, indent=4, default=json_serial)
 
     def _execute_handler(self, p, job_id, data_dict, async_=False):
         """
@@ -1335,7 +1335,8 @@ class API(object):
             'process_end_datetime': None,
             'status': current_status.value,
             'location': None,
-            'message': 'Process accepted'
+            'message': 'Process accepted',
+            'progress': 5
         }
         self.manager.add_job(job_metadata)
 
@@ -1344,18 +1345,20 @@ class API(object):
             outputs = p.execute(data_dict)
             self.manager.update_job(job_id, {
                 'status': current_status.value,
-                'message': 'Process running'
+                'message': 'Process running',
+                'progress': 95
             })
 
             with io.open(job_filename, 'w') as fh:
-                fh.write(json.dumps(outputs))
+                fh.write(json.dumps(outputs, sort_keys=True, indent=4))
 
             current_status = JobStatus.finished
             job_update_metadata = {
                 'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': job_filename,
-                'message': 'Process complete'
+                'message': 'Process complete',
+                'progress': 100
             }
 
             self.manager.update_job(job_id, job_update_metadata)

@@ -47,6 +47,9 @@ class BaseProcessor(object):
         self.name = processor_def['name']
         self.metadata = process_metadata
 
+    def __repr__(self):
+        return '<BaseProcessor> {}'.format(self.name)
+
     def execute(self):
         """
         execute the process
@@ -55,9 +58,20 @@ class BaseProcessor(object):
 
         raise NotImplementedError()
 
-    def __repr__(self):
-        return '<BaseProcessor> {}'.format(self.name)
+    def get_default(self, prop):
+        """
+        Return the default value for an input, if present. Expected to raise an
+        appropriate built-in exception if the requested property is absent or
+        has no default value.
 
+        :param prop: id of process for which to obtain default value
+
+        :returns: default value from process metadata
+        """
+        inputs = self.metadata.get('inputs', list())
+        input = next((input for input in inputs if input['id'] == prop), dict())
+        # TODO inputs that are not literalDataDomain
+        return input['input']['literalDataDomain']['valueDefinition']['defaultValue']
 
 class ProcessorExecuteError(Exception):
     """query / backend error"""
