@@ -68,15 +68,24 @@ table mark {
   overflow-x: visible;
 }
 
+#process table td[itemprop="id"],
+#process table td[data-label="Default Value"] {
+   font-family: monospace;
+}
+
 #process-example {
   padding: 40px;
   background: var(--header-back-color);
   color: var(--header-fore-color);
 }
 
+.job-form-input:not([type='checkbox']) {
+  width: 100%;
+}
+
 .form-style-1 {
 	margin: 10px auto;
-	padding: 20px 12px 10px 20px;
+	padding: 20px 20px 10px 20px;
 }
 .form-style-1 li {
 	padding: 0;
@@ -86,9 +95,14 @@ table mark {
 }
 .form-style-1 label{
 	margin: 6px 0 0 6px;
-	padding: 0px;
-	display: block;
+	padding: 0;
 	font-weight: bold;
+  display: block;
+
+}
+input[type='radio'] + label {
+  font-weight: normal;
+  display: inline;
 }
 
 .form-style-1 input[type=submit], .form-style-1 input[type=button]{
@@ -134,6 +148,48 @@ mark.running {
 #job-results:empty {
   visibility: hidden;
   padding: 0;
+}
+
+.renderjson a {
+  text-decoration: none;
+}
+.renderjson .disclosure {
+  color: black;
+  font-size: 120%;
+}
+.renderjson .syntax {
+  color: #ABB2BF;
+}
+.renderjson .string {
+  color: #98C379;
+}
+.renderjson .number {
+  color: #D19A66;
+}
+.renderjson .boolean {
+  color: plum;
+}
+.renderjson .key {
+  color: #E06C75;
+}
+.renderjson .keyword {
+  color: lightgoldenrodyellow;
+}
+.renderjson .object.syntax {
+  color: #ABB2BF;
+}
+.renderjson .array.syntax {
+  color: #ABB2BF;
+}
+
+.toast a {
+  color: white;
+  text-decoration: underline;
+}
+
+table progress {
+  margin-left: 0;
+  margin-right: 0;
 }
 
 #job-status {
@@ -183,7 +239,8 @@ mark.running {
   background-color: yellow;
 }
 
-#job-status-header > .progress {
+#job-status-header > .progress,
+#job-status-header > .spinner {
   float: right;
 }
 
@@ -211,30 +268,16 @@ mark.running {
   padding: 0;
 }
 
-#job-status-body > .links > ul a {
-  display: inline-block;
-  margin-bottom: 10px;
+label {
+  padding: 0;
 }
 
-#job-status-body > .links > ul a:hover {
-  background-color: var(--header-back-color);;
-}
-
-#job-status-body > .links > ul a:last-of-type {
-  margin-bottom: 0;
-}
-
-#job-status-body > .links > ul li {
-  border: 2px solid var(--header-back-color);;
-  border-radius: 3px;
-  padding: 15px;
-  position: relative;
-}
-
-#job-status-body > .duration > h4,
-#job-status-body > .links > h4 {
+#job-status-body h4 label {
   color: grey;
-  font-size: smaller;
+  font-size: 0.8em;
+}
+
+#job-status-body h4 {
   margin-bottom: 0;
 }
 

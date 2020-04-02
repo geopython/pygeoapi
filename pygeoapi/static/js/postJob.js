@@ -2,7 +2,19 @@ function submitJob(url) {
   var elms = document.getElementsByClassName('job-form-input');
   inputs = [];
   for (var i = 0; i < elms.length; i++) {
-    inputs.push({id: elms[i].name, value: elms[i].value});
+    let value;
+    switch(elms[i].type) {
+      case 'checkbox':
+        value = elms[i].checked;
+        break;
+      case 'number':
+        // TODO Integer vs float
+        value = parseFloat(elms[i].value);
+        break;
+      default:
+        value = elms[i].value;
+    }
+    inputs.push({id: elms[i].name, value: value});
   }
   var xhr = new XMLHttpRequest();
   xhr.open('POST', url, true);
@@ -15,8 +27,13 @@ function submitJob(url) {
       var jobResultsSection = document.getElementById('job-results');
       var responseLocation = xhr.getResponseHeader("Location");
       var jobId = responseLocation.split('/').pop()
-      jobResultsSection.innerHTML = '<h3>Outcome for job ' + jobId + '</h3>';
-
+      var h3 = document.CreateElement('h3');
+      h3.innerText(jobId);
+      var span = document.createElement('span');
+      span.classList.add('toast')
+      span.innerHTML = 'Job <a target="_blank" href="' + responseLocation + '">' + jobId + '</a> <span class="icon-link inverse"></span> was created!</span>';
+      jobResultsSection.appendChild(h3);
+      jobResultsSection.appendChild(span);
 
       var list = document.createElement('ul');
       jobResultsSection.appendChild(list);
@@ -32,6 +49,9 @@ function submitJob(url) {
         Object.keys(el).forEach(function(prop) {
           a[prop] = el[prop]
         })
+        var span = document.createElement('span');
+        span.classList.add('icon-link');
+        li.append(span);
         li.appendChild(a);
         list.appendChild(li);
       })
@@ -42,6 +62,7 @@ function submitJob(url) {
     }
   }
   data = {"inputs": inputs}
+  console.debug({data})
   xhr.send(JSON.stringify(data));
   return false;
 }

@@ -18,16 +18,25 @@
               <span>
                 <!-- TODO i18n -->
                 {% if data.job.status == 'successful' %}
+                  <span class="icon-info"></span>
                   Your job was successful!
                 {% elif data.job.status == 'accepted' %}
+                  <span class="icon-info"></span>
                   Your job has been accepted and is awaiting processing
                 {% elif data.job.status == 'running' %}
+                  <span class="icon-info"></span>
                   Your job is in progress
                 {% elif data.job.status == 'failed' %}
+                  <span class="icon-alert"></span>
                   We failed to process your job
                 {% endif %}
               </span>
-              <span class="progress">{{ data.job.progress }}%</span>
+              <span class="progress">
+                {{ data.job.progress }}%
+              </span>
+              {% if data.job.status == 'running' %}
+                <span class="spinner"></span>
+              {% endif %}
             </div>
             <div id="job-status-body">
               <div class="message">
@@ -35,22 +44,26 @@
                 <p>{{ data.job.message }}</p>
               </div>
               <div class="duration">
-                <h4>Runtime</h4>
-                <p>{{ data.job.process_start_datetime|duration(data.job.process_end_datetime) }}</p>
-                <h4>Started processing</h4>
-                <p>{{ data.job.process_start_datetime|datetime }}</p>
-                <h4>Finished processing</h4>
-                <p>{{ data.job.process_end_datetime|datetime }}</p>
+                <h4><label for="progress">Progress</label></h4>
+                <progress id="progress" class="inline" value="{{data.job.progress*10}}" max="1000"></progress>
+                <h4><label for="runtime">Runtime</label></h4>
+                <p><span id="runtime">{{ data.job.process_start_datetime|duration(data.job.process_end_datetime) }}</span></p>
+                <h4><label for="starttime">Started processing</label></h4>
+                <p><span id="starttime">{{ data.job.process_start_datetime|datetime }}</span></p>
+                <h4><label for="endtime">Finished processing</label></h4>
+                <p><span id="endtime">{{ data.job.process_end_datetime|datetime }}</span></p>
               </div>
               <div class="links">
                 {% if data.job.links %}
-                <h4>Resources</h4>
-                <ul>
+                <h4><label for="resources">Resources</label></h4>
+                <ul id="resources">
                   {% for link in data.job.links %}
                   {% if link.rel != 'self' %}
-                  <a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">
-                    <li>{{ link.title }}</li>
-                  </a>
+                  <li>
+                    <a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">
+                      <span class="icon-link"></span>{{ link.title }}
+                    </a>
+                  </li>
                   {% endif %}
                   {% endfor %}
                 </ul>

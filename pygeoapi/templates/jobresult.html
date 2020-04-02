@@ -1,7 +1,4 @@
 {% extends "base.html" %}
-<!-- {% block result_js %}
-    <script src="{{ config['server']['url'] }}/static/js/renderjson.js"></script>
-{% endblock %} -->
 {% block title %}{{ super() }} Job result {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../../../processes">Processes</a>
@@ -9,7 +6,6 @@
 / <a href="../../jobs">Jobs</a>
 / <a href="../{{ data.job.id }}">{{ data.job.id }}</a>
 / <a href="./results">results</a>
-<!-- TODO -->
 {% endblock %}
 {% block body %}
   <section id="jobs">

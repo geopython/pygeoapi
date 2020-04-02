@@ -16,6 +16,7 @@
                 <th></th>
                 <th>Start</th>
                 <th>Runtime</th>
+                <th>Progress</th>
                 <th>Status</th>
                 <th>Message</th>
               </tr>
@@ -29,6 +30,9 @@
                 </td>
                 <td>
                   {{ job.process_start_datetime|duration(job.process_end_datetime) }}
+                </td>
+                <td>
+                  <progress class="inline" value="{{job.progress*10}}" max="1000"></progress>
                 </td>
                 <td>
                   <mark class="{{job.status}}">{{ job.status }}</mark>
