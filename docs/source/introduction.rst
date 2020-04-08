@@ -12,6 +12,7 @@ Features
 - certified OGC Compliant and Reference Implementation for OGC API - Features
 - additionally implements OGC API - Processes and SpatioTemporal Asset Library
 - out of the data provider plugins for GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
+- easy to use OpenAPI / Swagger documentation for developers
 - supports JSON, GeoJSON, HTML and CSV output
 - supports data filtering by spatial, temporal or attribute queries
 - easy to install: install a full implementation via pip or git

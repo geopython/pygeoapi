@@ -4,7 +4,8 @@ Configuration
 =============
 
 Once you have installed pygeoapi, it's time to setup a configuration.  pygeoapi's runtime configuration is defined
-in the `YAML`_ format which is then referenced via the ``PYGEOAPI_CONFIG`` environment variable.
+in the `YAML`_ format which is then referenced via the ``PYGEOAPI_CONFIG`` environment variable.  You can name the
+file whatever you wish; typical filenames end with ``.yml``.
 
 .. note::
    A sample configuration can always be found in the pygeoapi `GitHub <https://github.com/geopython/pygeoapi/blob/master/pygeoapi-config.yml>`_
