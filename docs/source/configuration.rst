@@ -105,101 +105,64 @@ The ``metadata`` section provides settings for overall service metadata and desc
 ``datasets``
 ------------
 
-The ``datasets`` section.
+The ``datasets`` section lists 1 or more dataset collections to be published by the server.
 
 .. code-block:: yaml
 
   datasets:
       obs:
-          title: Observations
-          description: My cool observations
-          keywords:
+          title: Observations  # title of dataset
+          description: My cool observations  # abstract of dataset
+          keywords:  # list of related keywords
               - observations
               - monitoring
-          context:
+          context:  # linked data configuration (see Linked Data section)
               - datetime: https://schema.org/DateTime
               - vocab: https://example.com/vocab#
                 stn_id: "vocab:stn_id"
                 value: "vocab:value"
-          links:
-              - type: text/csv
-                rel: canonical
-                title: data
-                href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
-                hreflang: en-US
-              - type: text/csv
-                rel: alternate
-                title: data
-                href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
-                hreflang: en-US
-          extents:
-              spatial:
-                  bbox: [-180,-90,180,90]
-                  crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-              temporal:
-                  begin: 2000-10-30T18:24:39Z
-                  end: 2007-10-30T08:57:29Z
-          provider:
+          links:  # list of 1..n related links
+              - type: text/csv  # MIME type
+                rel: canonical  # link relations per https://www.iana.org/assignments/link-relations/link-relations.xhtml
+                title: data  # title
+                href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv  # URL
+                hreflang: en-US  # language
+          extents:  # spatial and temporal extents
+              spatial:  # required
+                  bbox: [-180,-90,180,90]  # list of minx, miny, maxx, maxy
+                  crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84  # CRS
+              temporal:  # optional
+                  begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
+                  end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
+          provider:  # required connection information
+              # provider name
+              # see pygeoapi.plugin for supported providers
+              # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider
+              # see Plugins section for more information
               name: CSV
-              data: tests/data/obs.csv
-              id_field: id
-              geometry:
-                  x_field: long
-                  y_field: lat
+              data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
+              id_field: id  # required for vector data, the field corresponding to the ID
+              time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+
+.. note::
+   See :ref:`linked-data` for configuring linked data datasets
+
+.. note::
+   See :ref:`plugins` for more information on plugins
 
 
 ``processes``
 -------------
 
-
-Structured data
----------------
-
-.. image:: https://json-ld.org/images/json-ld-logo-64.png
-    :width: 64px
-    :align: left
-    :alt: JSON-LD support
-
-pygeoapi supports structured metadata about a deployed instance, and is also capable of presenting feature data as structured data. `JSON-LD <https://json-ld.org/>`_ equivalents are available for each HTML page, and are embedded as data blocks within the corresponding page for search engine optimisation (SEO). Tools such as the `Google Structured Data Testing Tool <https://search.google.com/structured-data/testing-tool#url=https%3A%2F%2Fdemo.pygeoapi.io%2Fmaster>`_ can be used to check the structured representations.
-
-The metadata for an instance is determined by the content of the `metadata` section of the configuration YAML. This metadata is included automatically, and is sufficient for inclusion in major indices of datasets, including the `Google Dataset Search <https://developers.google.com/search/docs/data-types/dataset>`_.
-
-For collections, at the level of an item or items, by default the JSON-LD representation adds:
-
-- The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each feature in a collection, that is the URL for that feature (resolving to its HTML representation in pygeoapi)
-
-.. note:: While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your features to be unambiguously interpretable.
-
-pygeoapi currently allows for the extension of the ``@context`` to allow properties to be aliased to terms from vocabularies. This is done by adding a ``context`` section to the configuration of a `dataset`.
-
-The default pygeoapi configuration includes an example for the ``obs`` sample dataset:
-
 .. code-block:: yaml
 
-  context:
-      - datetime: https://schema.org/DateTime
-      - vocab: https://example.com/vocab#
-        stn_id: "vocab:stn_id"
-        value: "vocab:value"
+  processes:
+      hello-world:  # name of process
+          processor:
+              name: HelloWorld  # Python path of process defition
 
-This is a non-existent vocabulary included only to illustrate the expected data structure within the YAML configuration. In particular, the links for the ``stn_id`` and ``value`` properties do not resolve. We can extend this example to one with terms defined by schema.org:
-
-.. code-block:: yaml
-
-  context:
-      - schema: https://schema.org/
-        stn_id: schema:identifer
-        datetime:
-            "@id": schema:observationDate
-            "@type": schema:DateTime
-        value:
-            "@id": schema:value
-            "@type": schema:Number
-
-Now this has been elaborated, the benefit of a structured data representation becomes clearer. What was once an unexplained property called ``datetime`` in the source CSV, it can now be `expanded <https://www.w3.org/TR/json-ld-api/#expansion-algorithms>`_ to `<https://schema.org/observationDate>`_, thereby eliminating ambiguity and enhancing interoperability. Its type is also expressed as `<https://schema.org/DateTime>`_.
-
-This example demonstrates how to use this feature with a CSV data provider, using included sample data. The implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a ``@context``. Relationships between features can be expressed but is dependent on such relationships being expressed by the dataset provider, not pygeoapi.
+.. note::
+   See :ref:`processing-plugins` for more information on plugins
 
 
 .. _`YAML`: https://en.wikipedia.org/wiki/YAML

@@ -61,3 +61,9 @@ Lets consider the steps for a data provider plugin (source code is located here:
 The above class methods are related to the specific URLs defined on the OGC openapi specification:
 
 
+.. _processing-plugins:
+
+Processing plugins
+------------------
+
+Hi
