@@ -14,6 +14,7 @@ pygeoapi |release| documentation
    :name: toc
 
    introduction
+   how-pygeoapi-works
    installation
    configuration
    administration
