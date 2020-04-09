@@ -14,8 +14,8 @@ file whatever you wish; typical filenames end with ``.yml``.
 pygeoapi configuration contains the following core sections:
 
 - ``server``: server-wide settings
--  ``logging``: logging configuration
--  ``metadata``: server-wide metadata (contact, licensing, etc.)
+- ``logging``: logging configuration
+- ``metadata``: server-wide metadata (contact, licensing, etc.)
 - ``datasets``: dataset collections offered by server
 - ``processes``: processes offered by server
 
@@ -24,8 +24,11 @@ pygeoapi configuration contains the following core sections:
 
 Configuration directives and reference are described below via annotated examples.
 
+Reference
+---------
+
 ``server``
-----------
+^^^^^^^^^^
 
 The ``server`` section provides directives on binding and high level tuning.
 
@@ -49,7 +52,7 @@ The ``server`` section provides directives on binding and high level tuning.
 
 
 ``logging``
------------
+^^^^^^^^^^^
 
 The ``logging`` section provides directives for logging messages which are useful for debugging.
 
@@ -64,7 +67,7 @@ The ``logging`` section provides directives for logging messages which are usefu
 
 
 ``metadata``
-------------
+^^^^^^^^^^^^
 
 The ``metadata`` section provides settings for overall service metadata and description.
 
@@ -104,7 +107,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
           role: pointOfContact
 
 ``datasets``
-------------
+^^^^^^^^^^^^
 
 The ``datasets`` section lists 1 or more dataset collections to be published by the server.
 
@@ -145,15 +148,15 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
               id_field: id  # required for vector data, the field corresponding to the ID
               time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
 
-.. note::
-   See :ref:`linked-data` for configuring linked data datasets
+.. seealso::
+   :ref:`linked-data` for configuring linked data datasets
 
-.. note::
-   See :ref:`plugins` for more information on plugins
+.. seealso::
+   :ref:`plugins` for more information on plugins
 
 
 ``processes``
--------------
+^^^^^^^^^^^^^
 
 .. code-block:: yaml
 
@@ -164,6 +167,28 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
 
 .. note::
    See :ref:`processing-plugins` for more information on plugins
+
+
+Using environment variables
+---------------------------
+
+pygeoapi configuration supports using system environment variables, which can be helpful
+for deploying into `12 factor <https://12factor.net/>`_ environments for example.
+
+Below is an example of how to integrate system environment variables in pygeoapi.
+
+.. code-block:: yaml
+
+   server:
+       bind:
+           host: ${MY_HOST}
+           port: ${MY_PORT}
+
+
+Summary
+-------
+
+At this point, you have the configuration ready to administer the server.
 
 
 .. _`YAML`: https://en.wikipedia.org/wiki/YAML

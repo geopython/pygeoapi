@@ -3,7 +3,7 @@
 Introduction
 ============
 
-pygeoapi is a Python server implementation of the OGC API suite of standards. The project emerged as part of the next generation `OGC API`_ efforts in 2018 and provides the capability for organizations to deploy a RESTful OGC API endpoint using OpenAPI, GeoJSON, and HTML. pygeoapi is `open source <https://opensource.org>`_ and released under an MIT :ref:`license`.
+`pygeoapi`_ is a Python server implementation of the OGC API suite of standards. The project emerged as part of the next generation `OGC API`_ efforts in 2018 and provides the capability for organizations to deploy a RESTful OGC API endpoint using OpenAPI, GeoJSON, and HTML. pygeoapi is `open source <https://opensource.org>`_ and released under an MIT :ref:`license`.
 
 Features
 --------
@@ -40,6 +40,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
    `SpatioTemporal Asset Catalog`_,Implementing
 
 
+.. _`pygeoapi`: https://pygeoapi.io
 .. _`OGC API`: http://ogcapi.org
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
 .. _`OGC API - Processes`: https://github.com/opengeospatial/wps-rest-binding

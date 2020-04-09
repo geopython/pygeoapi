@@ -28,9 +28,8 @@ This will dump the OpenAPI document as YAML to your system's ``stdout``.  To sav
    pygeoapi generate-openapi-document -c /path/to/my-pygeoapi-config.yml > /path/to/my-pygeoapi-openapi.yml
 
 
-.. note::
-
-   See :ref:`openapi` for more inforamtion on pygeoapi's OpenAPI support.
+.. seealso::
+   :ref:`openapi` for more information on pygeoapi's OpenAPI support
 
 
 Verifying configuration files
@@ -48,7 +47,7 @@ the Python one-liner per below:
 Setting system environment variables
 ------------------------------------
 
-Now let's set our system environment variables.
+Now, let's set our system environment variables.
 
 In UNIX:
 
@@ -63,3 +62,8 @@ In Windows:
 
     set PYGEOAPI_CONFIG=/path/to/my-pygeoapi-config.yml
     set PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.yml
+
+Summary
+-------
+
+At this point you are ready to run the server.  Let's go!

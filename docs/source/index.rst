@@ -18,7 +18,8 @@ pygeoapi |release| documentation
    installation
    configuration
    administration
-   running/index
+   running
+   docker
    deployment
    linked-data
    plugins
