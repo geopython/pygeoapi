@@ -25,10 +25,11 @@ function submitJob(url) {
         xhr.onreadystatechange = null;
       }
       var jobResultsSection = document.getElementById('job-results');
+      jobResultsSection.innerHTML = null;
       var responseLocation = xhr.getResponseHeader("Location");
       var jobId = responseLocation.split('/').pop()
-      var h3 = document.CreateElement('h3');
-      h3.innerText(jobId);
+      var h3 = document.createElement('h3');
+      h3.innerHTML = jobId;
       var span = document.createElement('span');
       span.classList.add('toast')
       span.innerHTML = 'Job <a target="_blank" href="' + responseLocation + '">' + jobId + '</a> <span class="icon-link inverse"></span> was created!</span>';
@@ -57,6 +58,7 @@ function submitJob(url) {
       })
 
       jobResultsSection.appendChild(list);
+      jobResultsSection.scrollIntoView();
 
       return false
     }
