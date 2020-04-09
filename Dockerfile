@@ -62,8 +62,8 @@ ARG ADD_PIP_PACKAGES=""
 # ENV settings
 ENV TZ=${TZ} \
 	DEBIAN_FRONTEND="noninteractive" \
-	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils git" \
-	DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils ${ADD_DEB_PACKAGES}" \
+	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils git" \
+	DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils libpq-dev ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ENV LANG=${LANG}
@@ -82,6 +82,8 @@ RUN \
 	&& dpkg-reconfigure --frontend=noninteractive locales \
 	&& update-locale LANG=${LANG} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
+	python3 -m pip install --upgrade pip \
+	python3 -m pip install --upgrade setuptools \
 	&& python3 -m pip install ${PIP_PACKAGES} \
 	# # Install pygeoapi
 	&& cd /pygeoapi \
