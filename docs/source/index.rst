@@ -21,7 +21,6 @@ pygeoapi |release| documentation
    running
    running-with-docker
    deployment
-   linked-data
    plugins
    development
    ogc-cite
