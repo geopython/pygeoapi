@@ -32,6 +32,13 @@ This will dump the OpenAPI document as YAML to your system's ``stdout``.  To sav
    :ref:`openapi` for more information on pygeoapi's OpenAPI support
 
 
+OpenAPI document management
+---------------------------
+
+Note that the OpenAPI document provides detailed information on query parameters, and dataset
+property names and their data types.  Whenever you make changes to your pygeoapi configuration,
+always refresh the accompanying OpenAPI document.
+
 Verifying configuration files
 -----------------------------
 
