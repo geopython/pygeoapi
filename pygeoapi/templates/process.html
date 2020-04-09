@@ -108,91 +108,94 @@
               {% endfor %}
             </tbody>
           </table>
+          <h3>Execution modes</h3>
+          <ul>
+            {% if 'sync-execute' in data.jobControlOptions %}<li>Synchronous</li>{% endif %}
+            {% if 'async-execute' in data.jobControlOptions %}<li>Asynchronous</li>{% endif %}
+          </ul>
+          <h2>Links</h2>
+          <ul>
+            {% for link in data['links'] %}
+                <li>
+                <!-- TODO put links in head as Links as well? -->
+                  <span class="icon-link"></span>
+                  <a title={{link.title}} type={{link.type}} rel={{link.rel}} href={{link.href}} hreflang={{link.hreflang}}>
+                    {{ link['title'] }} ({{ link['type'] }})
+                  </a>
+                </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <section id='process-example input-group'>
+            <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs')" method="post">
+              <h2>Submit a job</h2>
+              <li>
+                <!-- TODO placeholder with description -->
+                <!-- TODO infer type from metadata -->
+                <!-- TODO radio for enum -->
+                <!-- TODO max/min for numbers -->
+                {% set typeMap = {'string': 'text', 'integer': 'number', 'float': 'number', 'boolean': 'checkbox', 'enum': 'radio'} %}
+                {% for input_ in data['inputs'] %}
+                  {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first|default("none") %}
+                  {% set rawType = input_.input.literalDataDomain.dataType %}
+                  {% set formType = typeMap[rawType] %}
+                  {% set defaultValue = input_.input.literalDataDomain.valueDefinition.defaultValue|default("") %}
+                  <label for={{input_.id}}>{{input_.title|striptags|truncate}}</label>
+                  {% if formType != 'radio' %}
+                    <input
+                      class="job-form-input"
+                      type="{{formType}}"
+                      name={{input_.id}}
+                      id={{input_.id}}
+                      title="{{input_.abstract|striptags}}"
+                      {% if type == 'string' %}
+                        autocomplete="off"
+                      {% endif %}
+                      {% if formType != 'checkbox' %}
+                        placeholder="{{example.value|default("")}}"
+                        value="{{defaultValue or null}}"
+                      {% endif %}
+                      {% if formType == 'number' %}
+                        step="1"
+                      {% endif %}
+                      {% if (formType == 'checkbox') and (defaultValue is sameas true) %}
+                        checked="checked"
+                      {% endif %}
+                      {% if (input_.get('minOccurs', 1) > 0) %}
+                        required="required"
+                      {% endif %}
+                    >
+                  {% else %}
+                    {% for value in input_.input.literalDataDomain.valueDefinition.possibleValues %}
+                      <input
+                        type={{formType}}
+                        name={{input_.id}}
+                        id={{value|striptags}}
+                        title="{{input_.abstract|striptags}}"
+                        name={{value}}
+                        value={{value}}
+                        {% if input_.input.literalDataDomain.valueDefinition.defaultValue == value %}
+                        checked="checked"
+                        {% endif %}
+                      >
+                      <label for={{value|striptags}}>{{value}}</label>
+                      <br/>
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              </li>
+              <li>
+                <div class="button-group">
+                  <input type="submit" value="Submit job" class="shadowed">
+                  <input type="reset" class="shadowed" value="Reset form">
+                <div>
+              </li>
+            </form>
+            <section class="callout-info" id="job-results"></section>
+          </section>
         </div>
       </div>
-      <h3>Execution modes</h3>
-      <ul>
-        {% if 'sync-execute' in data.jobControlOptions %}<li>Synchronous</li>{% endif %}
-        {% if 'async-execute' in data.jobControlOptions %}<li>Asynchronous</li>{% endif %}
-      </ul>
-      <h2>Links</h2>
-      <ul>
-        {% for link in data['links'] %}
-            <li>
-            <!-- TODO put links in head as Links as well? -->
-              <span class="icon-link"></span>
-              <a title={{link.title}} type={{link.type}} rel={{link.rel}} href={{link.href}} hreflang={{link.hreflang}}>
-                {{ link['title'] }} ({{ link['type'] }})
-              </a>
-            </li>
-        {% endfor %}
-      </ul>
     </section>
-    <section id='process-example input-group' class="col-md-6">
-      <h2>Submit a job</h2>
-      <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs')" method="post">
-        <li>
-          <!-- TODO placeholder with description -->
-          <!-- TODO infer type from metadata -->
-          <!-- TODO radio for enum -->
-          <!-- TODO max/min for numbers -->
-          {% set typeMap = {'string': 'text', 'integer': 'number', 'float': 'number', 'boolean': 'checkbox', 'enum': 'radio'} %}
-          {% for input_ in data['inputs'] %}
-            {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first|default("none") %}
-            {% set rawType = input_.input.literalDataDomain.dataType %}
-            {% set formType = typeMap[rawType] %}
-            {% set defaultValue = input_.input.literalDataDomain.valueDefinition.defaultValue|default("") %}
-            <label for={{input_.id}}>{{input_.title|striptags|truncate}}</label>
-            {% if formType != 'radio' %}
-              <input
-                class="job-form-input"
-                type="{{formType}}"
-                name={{input_.id}}
-                id={{input_.id}}
-                title="{{input_.abstract|striptags}}"
-                {% if type == 'string' %}
-                  autocomplete="off"
-                {% endif %}
-                {% if formType != 'checkbox' %}
-                  placeholder="{{example.value|default("")}}"
-                  value="{{defaultValue or null}}"
-                {% endif %}
-                {% if formType == 'number' %}
-                  step="1"
-                {% endif %}
-                {% if (formType == 'checkbox') and (defaultValue is sameas true) %}
-                  checked="checked"
-                {% endif %}
-                {% if (input_.get('minOccurs', 1) > 0) %}
-                  required="required"
-                {% endif %}
-              >
-            {% else %}
-              {% for value in input_.input.literalDataDomain.valueDefinition.possibleValues %}
-                <input
-                  type={{formType}}
-                  name={{input_.id}}
-                  id={{value|striptags}}
-                  title="{{input_.abstract|striptags}}"
-                  name={{value}}
-                  value={{value}}
-                  {% if input_.input.literalDataDomain.valueDefinition.defaultValue == value %}
-                  checked="checked"
-                  {% endif %}
-                >
-                <label for={{value|striptags}}>{{value}}</label>
-                <br/>
-              {% endfor %}
-            {% endif %}
-          {% endfor %}
-        </li>
-        <li>
-          <div class="button-group">
-            <input type="submit" value="Submit job" class="shadowed">
-            <input type="reset" class="shadowed" value="Reset form">
-          <div>
-        </li>
-      </form>
-      <section class="callout-info" id="job-results"></section>
-    </section>
+
 {% endblock %}
