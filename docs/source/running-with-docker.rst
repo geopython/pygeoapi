@@ -12,8 +12,8 @@ The `pygeoapi demo server`_ runs various Docker images which also serve as `usef
 .. note::
    Both Docker and `Docker Compose`_ are required on your system to run pygeoapi images.
 
-Running - the basics
---------------------
+The basics
+----------
 
 The official pygeoapi Docker image will start a pygeoapi Docker container using Gunicorn on internal port 80.
 
@@ -34,8 +34,8 @@ You can also run all unit tests to verify:
    docker run -it geopython/pygeoapi test
 
 
-Running - overriding the default configuration
-----------------------------------------------
+overriding the default configuration
+------------------------------------
 
 Normally you would override the ``default.config.yml`` with your own ``pygeoapi`` configuration.
 This can be done via Docker Volume Mapping.
@@ -67,8 +67,8 @@ Or you can create a ``Dockerfile`` extending the base image and **copy** in your
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
 
-Running - deploying on a sub-path
----------------------------------
+deploying on a sub-path
+-----------------------
 
 By default the ``pygeoapi`` Docker image will run from the ``root`` path (``/``).  If you need to run from a
 sub-path and have all internal URLs properly configured, you can set the ``SCRIPT_NAME`` environment variable.

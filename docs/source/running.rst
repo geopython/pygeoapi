@@ -61,6 +61,9 @@ Running ``pygeoapi serve`` in production is not recommended or advisable.  Prefe
 .. seealso::
    :ref:`running-with-docker` for container-based production installations.
 
+Apache and mod_wsgi
+^^^^^^^^^^^^^^^^^^^
+
 Gunicorn overview
 ^^^^^^^^^^^^^^^^^
 

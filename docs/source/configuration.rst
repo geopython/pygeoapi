@@ -149,7 +149,7 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
               time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
 
 .. seealso::
-   :ref:`linked-data` for configuring linked data datasets
+   `Linked Data`_ for optionally configuring linked data datasets
 
 .. seealso::
    :ref:`plugins` for more information on plugins
