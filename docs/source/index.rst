@@ -19,7 +19,7 @@ pygeoapi |release| documentation
    configuration
    administration
    running
-   docker
+   running-with-docker
    deployment
    linked-data
    plugins
