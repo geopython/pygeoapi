@@ -64,8 +64,33 @@ Running ``pygeoapi serve`` in production is not recommended or advisable.  Prefe
 Apache and mod_wsgi
 ^^^^^^^^^^^^^^^^^^^
 
-Gunicorn overview
-^^^^^^^^^^^^^^^^^
+Deploying pygeoapi via `mod_wsgi`_ provides a simple approach to enabling within Apache.
+
+To deploy with mod_wsgi, your Apache instance must have mod_wsgi enabled within Apache.  At this point,
+set up the following Python WSGI script:
+
+.. code-block:: python
+
+   import os
+
+   os.environ['PYGEOAPI_CONFIG'] = '/path/to/my-pygeoapi-config.yml'
+   os.environ['PYGEOAPI_OPENAPI'] = '/path/to/my-pygeoapi-openapi.yml'
+
+   from pygeoapi.flask_app import APP as application
+
+Now configure in Apache:
+
+.. code-block:: apache
+
+   WSGIDaemonProcess pygeoapi processes=1 threads=1
+   WSGIScriptAlias /pygeoapi /path/to/pygeoapi.wsgi process-group=pygeoapi application-group=%{GLOBAL}
+
+   <Location /pygeoapi>
+     Header set Access-Control-Allow-Origin "*"
+   </Location>
+
+Gunicorn
+^^^^^^^^
 
 `Gunicorn`_ (for UNIX) is one of several Python WSGI HTTP servers that can be used for production environments.
 
@@ -116,3 +141,4 @@ is simple to run from the command, e.g:
 .. _`WSGI server list`: https://wsgi.readthedocs.io/en/latest/servers.html
 .. _`Gunicorn settings`: http://docs.gunicorn.org/en/stable/settings.html
 .. _`Uvicorn`: https://www.uvicorn.org
+.. _`mod_wsgi`: https://modwsgi.readthedocs.io
