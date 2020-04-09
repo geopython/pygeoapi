@@ -32,8 +32,7 @@ pygeoapi |release| documentation
    pygeoapi
    openapi
    plugins
-   code
-
+   api-documentation
 
 Indices and tables
 ==================
