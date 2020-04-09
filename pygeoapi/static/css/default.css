@@ -74,7 +74,7 @@ table mark {
 }
 
 #process-example {
-  padding: 40px;
+  margin-top: 10px;
   background: var(--header-back-color);
   color: var(--header-fore-color);
 }
