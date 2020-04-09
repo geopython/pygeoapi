@@ -1,7 +1,7 @@
 .. _plugins:
 
-Plugins
-=======
+Customizing pygeoapi: plugins
+=============================
 
 In this section we will explain how pygeoapi uses a plugin approach for data providers, formatters and processes.
 

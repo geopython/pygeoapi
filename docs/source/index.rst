@@ -20,6 +20,8 @@ pygeoapi |release| documentation
    administration
    running
    running-with-docker
+   tour
+   data-publishing/index
    plugins
    development
    ogc-cite

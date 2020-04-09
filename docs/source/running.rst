@@ -14,6 +14,11 @@ can be served via Flask `WSGI`_ or Starlette `ASGI`_.
 
 Since pygeoapi is a Python API at its core, it can be served via numerous web server scenarios.
 
+.. note::
+   Changes to either the pygeoapi or OpenAPI configuration requires a server restart (configurations
+   are loaded once at server startup for performance).
+
+
 Flask WSGI
 ^^^^^^^^^^
 
