@@ -3,7 +3,7 @@
 Publishing vector data to OGC API - Features
 ============================================
 
-`OGC API - Features`_ provides data access functionality to geospatial vector data.
+`OGC API - Features`_ provides geospatial data access functionality to vector data.
 
 To add vector data to pygeoapi, you can use the dataset example in :ref:`configuration`
 as a baseline and modify accordingly.
@@ -145,6 +145,8 @@ GeoPackage file:
 Data access examples
 --------------------
 
+- list all datasets
+  - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo
 - browse features
@@ -159,6 +161,7 @@ Data access examples
   - http://localhost:5000/collections/foo/items?propertyname=foo
 - query features (temporal)
   - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
-- fetch a specific feature: http://localhost:5000/collections/foo/items/123
+- fetch a specific feature
+  - http://localhost:5000/collections/foo/items/123
 
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
