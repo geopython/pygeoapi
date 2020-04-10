@@ -9,7 +9,7 @@
 # files (the "Software"), to deal in the Software without
 # restriction, including without limitation the rights to use,
 # copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the 
+# copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following
 # conditions:
 #
@@ -18,7 +18,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 # HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
@@ -97,7 +97,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'pygeoapi'
 author = 'pygeoapi team'
-license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'
+license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'  # noqa
 copyright = '2018-2020, ' + author + ' ' + license
 
 today_fmt = '%Y-%m-%d'
@@ -135,7 +135,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#html_theme = 'sphinx_rtd_theme'
+# html_theme = 'sphinx_rtd_theme'
 html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -155,7 +155,7 @@ html_static_path = ['_static']
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    '**': [ 
+    '**': [
         'relations.html',  # needs 'show_related': True theme option to display
         'searchbox.html',
         'indexsidebar.html']
