@@ -141,12 +141,15 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
           provider:  # required connection information
               # provider name
               # see pygeoapi.plugin for supported providers
-              # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider
+              # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
               # see Plugins section for more information
               name: CSV
               data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
               id_field: id  # required for vector data, the field corresponding to the ID
               time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+              properties:  # optional: only return the following properties, in order
+                  - stn_id
+                  - value
 
 .. seealso::
    `Linked Data`_ for optionally configuring linked data datasets
