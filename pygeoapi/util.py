@@ -220,7 +220,9 @@ def get_mimetype(filename):
     return mimetypes.guess_type(filename)[0]
 
 def silent_gdal_error(f):
-    
+    """
+    Decorator function for gdal
+    """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         osgeo_gdal.PushErrorHandler('CPLQuietErrorHandler')
@@ -233,6 +235,16 @@ def silent_gdal_error(f):
 
 @silent_gdal_error
 def ignore_gdal_error(inst, fn, *args, **kwargs) -> Any:
+    """
+    Evaluate the function with the object instance.
+
+    :param inst: Object instance
+    :param fn: String function name
+    :param args: List of positional arguments
+    :param kwargs: Keyword arguments
+
+    :returns: Any function evaluation result
+    """
     value = getattr(inst, fn)(*args, **kwargs)
     return value
 
