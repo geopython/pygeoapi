@@ -32,7 +32,6 @@
 # https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0
 
 import logging
-from pygeoapi.provider.base import ProviderQueryError
 
 import pytest
 from pygeoapi.provider.ogr import OGRProvider
@@ -46,7 +45,7 @@ def config_ArcGIS_ESRIJSON():
         'name': 'OGR',
         'data': {
             'source_type': 'ESRIJSON',
-            'source': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json',
+            'source': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json', # noqa
             'source_srs': 'EPSG:4326',
             'target_srs': 'EPSG:4326',
             'source_capabilities': {
@@ -99,7 +98,8 @@ def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     feature_collection = p.query(
-        bbox=[-9822165.181154, 5112669.004249, -9807305.104750, 5133712.297986],
+        bbox=[-9822165.181154, 5112669.004249,
+              -9807305.104750, 5133712.297986],
         resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)

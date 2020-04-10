@@ -194,22 +194,22 @@ class OGRProvider(BaseProvider):
                     self.gdal.OF_VECTOR,
                     open_options=self._list_open_options())
             except Exception:
-                msg = 'Ignore errors during the connection for Driver {}'.format(
-                    source_type)
+                msg = 'Ignore errors during the connection for Driver \
+                    {source_type}'.format(source_type)
                 LOGGER.error(msg)
-                self.conn = _ignore_gdal_error(self.gdal, 'OpenEx',
-                    self.data_def['source'],
+                self.conn = _ignore_gdal_error(
+                    self.gdal, 'OpenEx', self.data_def['source'],
                     self.gdal.OF_VECTOR,
                     open_options=self._list_open_options())
         else:
             try:
                 self.conn = self.driver.Open(self.data_def['source'], 0)
             except Exception:
-                msg = 'Ignore errors during the connection for Driver {}'.format(
-                    source_type)
+                msg = 'Ignore errors during the connection for Driver \
+                    {source_type}'.format(source_type)
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
-                # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 
+                # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa 
                 self.conn = _ignore_gdal_error(
                     self.driver, 'Open', self.data_def['source'], 0)
         if not self.conn:
@@ -729,7 +729,6 @@ class GdalErrorHandler:
         last_error = osgeo_gdal.GetLastErrorMsg()
         if self.err_level >= osgeo_gdal.CE_Failure:
             raise ProviderGenericError(last_error)
-
 
 
 def _silent_gdal_error(f):
