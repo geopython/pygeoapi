@@ -99,6 +99,16 @@ Below is a corresponding ``docker-compose`` approach:
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
 
+Summary
+-------
+
+Docker is an easy and reproducible approach to deploying systems.
+
+.. note::
+   Additional Docker approaches are welcome and encouraged -- feel free to `contribute <contributing>`_ to
+   the documentation!
+
+
 .. _`Docker`: https://www.docker.com
 .. _`geopython Docker Hub`: https://hub.docker.com/r/geopython/pygeoapi
 .. _`pygeoapi GitHub repository`: https://github.com/geopython/pygeoapi

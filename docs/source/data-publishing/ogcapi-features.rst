@@ -17,6 +17,9 @@ The following feature providers are supported:
 - GeoJSON
 - Elasticsearch
 - OGR
+- MongoDB
+- PostgreSQL
+- SQLiteGPKG
 
 Below are specific connection examples based on supported providers.
 

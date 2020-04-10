@@ -139,6 +139,16 @@ is simple to run from the command, e.g:
 .. note::
    Uvicorn is as easy to install as ``pip install guvicorn``
 
+Summary
+-------
+
+pygeoapi has many approaches for deploying depending on your requirements.  Choose one that works for you
+and modify accordingly.
+
+.. note::
+   Additional approaches are welcome and encouraged -- feel free to `contribute <contributing>`_ to
+   the documentation!
+
 
 .. _`WSGI`: https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface
 .. _`ASGI`: https://asgi.readthedocs.io
