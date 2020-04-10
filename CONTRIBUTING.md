@@ -89,13 +89,25 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
       while, __make sure you rebase or merge to latest ``master``__ to ensure a
         speedier resolution.
 
+### Documentation
+
+* documentation is managed in `docs/`, in reStructuredText format
+* [Sphinx](https://www.sphinx-doc.org) is used to generate the documentation
+* See the [reStructuredText Primer](https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html) on rST markup and syntax
+
+
+### Wiki
+
+* the [pygeoapi wiki](https://github.com/geopython/pygeoapi/wiki) provides working level documentation
+
+
 ### Code Formatting
 
 * __Please follow the coding conventions and style used in the pygeoapi repository.__ 
-* pygeoapi endeavours to follow the
-  [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines.
+* pygeoapi follows the [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines
 * 80 characters
 * spaces, not tabs
+* pygeoapi, instead of PyGeoAPI, pygeoAPI, etc.
 
 ## Suggesting Enhancements
 

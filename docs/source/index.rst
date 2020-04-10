@@ -25,7 +25,7 @@ pygeoapi |release| documentation
    data-publishing/index
    plugins
    development
-   ogc-cite
+   ogc-compliance
    contributing
    support
    further-reading

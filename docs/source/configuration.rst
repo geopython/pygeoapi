@@ -169,7 +169,7 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
               name: HelloWorld  # Python path of process defition
 
 .. note::
-   See :ref:`processing-plugins` for more information on plugins
+   See :ref:`plugins` for more information on plugins
 
 
 Using environment variables
