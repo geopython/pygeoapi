@@ -3,7 +3,11 @@
 License
 =======
 
+Code
+----
+
 .. include:: ../../LICENSE.md
+
 
 Documentation
 -------------

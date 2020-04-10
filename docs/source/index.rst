@@ -30,10 +30,7 @@ pygeoapi |release| documentation
    further-reading
    license
 
-   
-   pygeoapi
    openapi
-   plugins
    api-documentation
 
 Indices and tables
