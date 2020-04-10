@@ -31,6 +31,8 @@
 
 import importlib
 import logging
+import functools
+from typing import Any
 
 from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
@@ -38,7 +40,6 @@ from osgeo import osr as osgeo_osr
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError, ProviderQueryError)
-from pygeoapi.util import ignore_gdal_error
 
 LOGGER = logging.getLogger(__name__)
 
@@ -196,7 +197,7 @@ class OGRProvider(BaseProvider):
                 msg = 'Ignore errors during the connection for Driver {}'.format(
                     source_type)
                 LOGGER.error(msg)
-                self.conn = ignore_gdal_error(self.gdal, 'OpenEx',
+                self.conn = _ignore_gdal_error(self.gdal, 'OpenEx',
                     self.data_def['source'],
                     self.gdal.OF_VECTOR,
                     open_options=self._list_open_options())
@@ -209,7 +210,7 @@ class OGRProvider(BaseProvider):
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
                 # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 
-                self.conn = ignore_gdal_error(
+                self.conn = _ignore_gdal_error(
                     self.driver, 'Open', self.data_def['source'], 0)
         if not self.conn:
             msg = 'Cannot open OGR Source: %s' % self.data_def['source']
@@ -380,7 +381,7 @@ class OGRProvider(BaseProvider):
     def _get_next_feature(self, layer):
         try:
             # Ignore gdal error
-            next_feature = ignore_gdal_error(layer, 'GetNextFeature')
+            next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             if all(val is None for val in next_feature.items().values()):
                 self.gdal.Error(
                     self.gdal.CE_Failure, 1, "Object properties are all null"
@@ -424,7 +425,7 @@ class OGRProvider(BaseProvider):
 
         try:
             # Ignore gdal error
-            ogr_feature = ignore_gdal_error(layer, 'GetNextFeature')
+            ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             count = 0
             while ogr_feature is not None:
                 json_feature = self._ogr_feature_to_json(ogr_feature)
@@ -436,7 +437,7 @@ class OGRProvider(BaseProvider):
                     break
 
                 # Ignore gdal error
-                ogr_feature = ignore_gdal_error(layer, 'GetNextFeature')
+                ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
 
             return feature_collection
         except RuntimeError as gdalerr:
@@ -728,3 +729,34 @@ class GdalErrorHandler:
         last_error = osgeo_gdal.GetLastErrorMsg()
         if self.err_level >= osgeo_gdal.CE_Failure:
             raise ProviderGenericError(last_error)
+
+
+
+def _silent_gdal_error(f):
+    """
+    Decorator function for gdal
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        osgeo_gdal.PushErrorHandler('CPLQuietErrorHandler')
+        v = f(*args, **kwargs)
+        osgeo_gdal.PopErrorHandler()
+        return v
+
+    return wrapper
+
+
+@_silent_gdal_error
+def _ignore_gdal_error(inst, fn, *args, **kwargs) -> Any:
+    """
+    Evaluate the function with the object instance.
+
+    :param inst: Object instance
+    :param fn: String function name
+    :param args: List of positional arguments
+    :param kwargs: Keyword arguments
+
+    :returns: Any function evaluation result
+    """
+    value = getattr(inst, fn)(*args, **kwargs)
+    return value

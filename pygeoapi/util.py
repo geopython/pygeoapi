@@ -31,8 +31,6 @@
 
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Any
-import functools
 import json
 import logging
 import mimetypes
@@ -40,7 +38,6 @@ import os
 import re
 from urllib.parse import urlparse
 
-from osgeo import gdal as osgeo_gdal
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
@@ -218,33 +215,3 @@ def get_mimetype(filename):
     """
 
     return mimetypes.guess_type(filename)[0]
-
-def silent_gdal_error(f):
-    """
-    Decorator function for gdal
-    """
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        osgeo_gdal.PushErrorHandler('CPLQuietErrorHandler')
-        v = f(*args, **kwargs)
-        osgeo_gdal.PopErrorHandler()
-        return v
-
-    return wrapper
-
-
-@silent_gdal_error
-def ignore_gdal_error(inst, fn, *args, **kwargs) -> Any:
-    """
-    Evaluate the function with the object instance.
-
-    :param inst: Object instance
-    :param fn: String function name
-    :param args: List of positional arguments
-    :param kwargs: Keyword arguments
-
-    :returns: Any function evaluation result
-    """
-    value = getattr(inst, fn)(*args, **kwargs)
-    return value
-
