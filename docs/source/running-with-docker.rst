@@ -105,8 +105,8 @@ Summary
 Docker is an easy and reproducible approach to deploying systems.
 
 .. note::
-   Additional Docker approaches are welcome and encouraged -- feel free to `contribute <contributing>`_ to
-   the documentation!
+   Additional approaches are welcome and encouraged; see :ref:`contributing` for more information on
+   how to contribute to and improve the documentation
 
 
 .. _`Docker`: https://www.docker.com

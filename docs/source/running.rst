@@ -146,8 +146,8 @@ pygeoapi has many approaches for deploying depending on your requirements.  Choo
 and modify accordingly.
 
 .. note::
-   Additional approaches are welcome and encouraged -- feel free to `contribute <contributing>`_ to
-   the documentation!
+   Additional approaches are welcome and encouraged; see :ref:`contributing` for more information on
+   how to contribute to and improve the documentation
 
 
 .. _`WSGI`: https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface

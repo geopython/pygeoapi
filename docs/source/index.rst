@@ -21,6 +21,7 @@ pygeoapi |release| documentation
    running
    running-with-docker
    tour
+   openapi
    data-publishing/index
    plugins
    development
@@ -30,7 +31,6 @@ pygeoapi |release| documentation
    further-reading
    license
 
-   openapi
    api-documentation
 
 Indices and tables

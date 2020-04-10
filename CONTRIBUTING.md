@@ -1,6 +1,6 @@
 # Contributing to pygeoapi
 
-We welcome contributions to pygeoapi, in the form of issues, bug fixes, or
+We welcome contributions to pygeoapi, in the form of issues, bug fixes, documentation or
 suggestions for enhancements. This document sets out our guidelines and best
 practices for such contributions.
 
@@ -57,7 +57,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 
 ### GitHub Commit Access
 
-* Proposals to provide developers with GitHub commit access shall be emailed to the pygeoapi [mailing list](https://lists.osgeo.org/mailman/listinfo/pygeoapi). Proposals shall be approved by the pygeoapi development team.  Committers shall be added by the project admin.
+* Proposals to provide developers with GitHub commit access shall be emailed to the pygeoapi [mailing list](https://lists.osgeo.org/mailman/listinfo/pygeoapi). Proposals shall be approved by the pygeoapi Project Steering Committee (PSC).  Committers shall be added by the project admin.
 * Removal of commit access shall be handled in the same manner.
 
 ### GitHub Pull Requests
@@ -94,9 +94,10 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * __Please follow the coding conventions and style used in the pygeoapi repository.__ 
 * pygeoapi endeavours to follow the
   [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines.
+* 80 characters
+* spaces, not tabs
 
 ## Suggesting Enhancements
 
 We welcome suggestions for enhancements, but reserve the right to reject them
 if they do not follow future plans for pygeoapi.
-
