@@ -195,7 +195,7 @@ class OGRProvider(BaseProvider):
                     open_options=self._list_open_options())
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
-                    {source_type}'.format(source_type)
+                    {}'.format(source_type)
                 LOGGER.error(msg)
                 self.conn = _ignore_gdal_error(
                     self.gdal, 'OpenEx', self.data_def['source'],
@@ -206,7 +206,7 @@ class OGRProvider(BaseProvider):
                 self.conn = self.driver.Open(self.data_def['source'], 0)
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
-                    {source_type}'.format(source_type)
+                    {}'.format(source_type)
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
                 # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa 
