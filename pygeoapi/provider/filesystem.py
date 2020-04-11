@@ -171,16 +171,22 @@ class FileSystemProvider(BaseProvider):
 
         elif resource_type == 'file':
             filename = os.path.basename(data_path)
+
             id_ = os.path.splitext(filename)[0]
-            content['id'] = id_
-            content['type'] = 'Feature'
-            content['properties'] = {}
-            content['assets'] = {}
+            url = '{}/{}{}'.format(baseurl, urlpath, filename.replace(id_, ''))
+
+            content = {
+                'id': id_,
+                'type': 'Feature',
+                'properties': {},
+                'links': [],
+                'assets': {}
+            }
 
             content.update(_describe_file(data_path))
 
             content['assets']['default'] = {
-                'href': './{}'.format(filename)
+                'href': url
             }
 
         content['links'].extend(child_links)
@@ -200,10 +206,25 @@ def _describe_file(filepath):
     :returns: `dict` of GeoJSON item
     """
 
-    import fiona
-    import rasterio
+    content = {
+        'bbox': None,
+        'geometry': None,
+        'properties': {}
+    }
 
-    content = {'properties': {}}
+    try:
+        import rasterio
+        LOGGER.warning('rasterio not found. Cannot derive geospatial gproperties')  # noqa
+    except ImportError as err:
+        LOGGER.warning(err)
+        return content
+
+    try:
+        import fiona
+    except ImportError as err:
+        LOGGER.warning('fiona not found. Cannot derive geospatial properties')
+        LOGGER.warning(err)
+        return content
 
     try:  # raster
         LOGGER.debug('Testing raster data detection')
@@ -229,22 +250,27 @@ def _describe_file(filepath):
     except rasterio.errors.RasterioIOError:
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
-        content['bbox'] = [
-            d.bounds[0],
-            d.bounds[1],
-            d.bounds[2],
-            d.bounds[3]
-        ]
-        content['geometry'] = {
-            'type': 'Polygon',
-            'coordinates': [[
-                [d.bounds[0], d.bounds[1]],
-                [d.bounds[0], d.bounds[3]],
-                [d.bounds[2], d.bounds[3]],
-                [d.bounds[2], d.bounds[1]],
-                [d.bounds[0], d.bounds[1]]
-            ]]
-        }
+
+        if d.schema['geometry'] not in [None, 'None']:
+            content['bbox'] = [
+                d.bounds[0],
+                d.bounds[1],
+                d.bounds[2],
+                d.bounds[3]
+            ]
+            content['geometry'] = {
+                'type': 'Polygon',
+                'coordinates': [[
+                    [d.bounds[0], d.bounds[1]],
+                    [d.bounds[0], d.bounds[3]],
+                    [d.bounds[2], d.bounds[3]],
+                    [d.bounds[2], d.bounds[1]],
+                    [d.bounds[0], d.bounds[1]]
+                ]]
+            }
+        for k, v in d.schema['properties'].items():
+            content['properties'][k] = v
+
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
             content['assets'] = {}
@@ -252,5 +278,4 @@ def _describe_file(filepath):
                 content['assets'][suffix] = {
                     'href': './{}.{}'.format(id_, suffix)
                 }
-
     return content

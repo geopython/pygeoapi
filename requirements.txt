@@ -1,8 +1,6 @@
 click
-fiona
 Flask
 python-dateutil
 pytz
 PyYAML
-rasterio
 unicodecsv

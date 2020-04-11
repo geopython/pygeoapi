@@ -88,7 +88,8 @@
 
 {% block extrafoot %}
     <script>
-    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
+    //var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 2);
+    var map = L.map('items-map').setView([{{ 0 }}, {{ 0 }}], 1);
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,

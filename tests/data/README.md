@@ -33,14 +33,22 @@ This directory provides test data to demonstrate functionality.
 - Copyright (c) 1996-2008 Regents of the University of Minnesota
 
 ### `poi_portugal.gpkg`
+
 - source: OpenStreetMap - Natural GIS
 - URL: [http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities](http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities)
 - Data obtained from WFS instance of NaturalGIS company (http://www.naturalgis.pt/en/) and converted to geopackage
 - Upstream data from OpenStreetMap extract for Portugal
 
 ### `hotosm_bdi_waterways.sql.gz`
+
 - source: OpenStreetMap - Humanitarian OpenStreetMap Team (HOT)
 - URL: [hotosm_bdi_waterways](https://data.humdata.org/dataset/hotosm_bdi_waterways)
 - Waterways of Burundi
 - Date of dataset: Sep 01, 2018 
 - Location: Burundi, Africa
+
+### `CMC_glb_*.grib2`
+
+- source: [Meteorological Service of Canada Datamrt](https://eccc-msc.github.io/open-data/msc-datamart/readme_en)
+- URL: https://dd.weather.gc.ca/model_gem_global/15km/grib2/lat_lon/00/000
+- License: https://eccc-msc.github.io/open-data/licence/readme_en/
