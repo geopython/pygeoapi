@@ -173,7 +173,9 @@ class FileSystemProvider(BaseProvider):
             filename = os.path.basename(data_path)
 
             id_ = os.path.splitext(filename)[0]
-            url = '{}/{}{}'.format(baseurl, urlpath, filename.replace(id_, ''))
+            if urlpath:
+                filename = filename.replace(id_, '')
+            url = '{}/{}{}'.format(baseurl, urlpath, filename)
 
             content = {
                 'id': id_,
@@ -214,7 +216,7 @@ def _describe_file(filepath):
 
     try:
         import rasterio
-        LOGGER.warning('rasterio not found. Cannot derive geospatial gproperties')  # noqa
+        LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
     except ImportError as err:
         LOGGER.warning(err)
         return content

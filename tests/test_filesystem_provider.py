@@ -57,4 +57,4 @@ def test_query(config):
 
     r = p.get_data_path(baseurl, urlpath, '/poi_portugal')
     assert r['geometry']['type'] == 'Polygon'
-    assert r['assets']['default']['href'] == './poi_portugal.gpkg'
+    assert r['assets']['default']['href'] == 'http://example.org/stac/poi_portugal.gpkg'  # noqa
