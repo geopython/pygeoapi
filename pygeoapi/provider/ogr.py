@@ -626,26 +626,50 @@ class ESRIJSONHelper(SourceHelper):
         Enable paged access to dataset (OGR Driver-specific)
 
         """
-
         if startindex < 0:
             return
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', 'ON')
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_START_INDEX', str(startindex))
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', str(limit))
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=True)
+        self.startindex = startindex
+        self.limit = limit
 
     def disable_paging(self):
         """
         Disable paged access to dataset (OGR Driver-specific)
         """
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', None)
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', None)
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=False)
+
+    def get_layer(self):
+        """
+        Gets OGR Layer from opened OGR dataset.
+        When startindex defined 1 or greater will invoke
+        OGR SQL SELECT with LIMIT and OFFSET and return
+        as Layer as ResultSet from ExecuteSQL on dataset.
+        :return: OGR layer object
+        """
+        if self.startindex <= 0:
+            return SourceHelper.get_layer(self)
+
+        self.close()
+
+        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+            ds_name=self.provider.layer_name,
+            limit=self.limit,
+            offset=self.startindex)
+        self.result_set = self.provider.conn.ExecuteSQL(sql)
+
+        # Reset since needs to be set each time explicitly
+        self.startindex = -1
+        self.limit = -1
+
+        if not self.result_set:
+            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
+                self.provider.layer_name)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return self.result_set
 
 
 class WFSHelper(SourceHelper):
