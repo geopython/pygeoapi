@@ -153,6 +153,18 @@ def to_json(dict_):
     return json.dumps(dict_, default=json_serial)
 
 
+def get_path_basename(urlpath):
+    """
+    Helper function to derive file basename
+
+    :param urlpath: URL path
+
+    :returns: string of basename of URL path
+    """
+
+    return os.path.basename(urlpath)
+
+
 def json_serial(obj):
     """
     helper function to convert to JSON non-default
@@ -198,8 +210,15 @@ def render_j2_template(config, template, data):
     """
 
     env = Environment(loader=FileSystemLoader(TEMPLATES))
+
     env.filters['to_json'] = to_json
     env.globals.update(to_json=to_json)
+
+    env.filters['get_path_basename'] = get_path_basename
+    env.globals.update(get_path_basename=get_path_basename)
+
+    env.filters['get_breadcrumbs'] = get_breadcrumbs
+    env.globals.update(get_breadcrumbs=get_breadcrumbs)
 
     template = env.get_template(template)
     return template.render(config=config, data=data, version=__version__)
@@ -215,3 +234,30 @@ def get_mimetype(filename):
     """
 
     return mimetypes.guess_type(filename)[0]
+
+
+def get_breadcrumbs(urlpath):
+    """
+    helper function to make breadcrumbs from a URL path
+
+    :param urlpath: URL path
+
+    :returns: `list` of `dict` objects of labels and links
+    """
+
+    links = []
+
+    tokens = urlpath.split('/')
+
+    s = ''
+    for t in tokens:
+        if s:
+            s += '/' + t
+        else:
+            s = t
+        links.append({
+            'href': s,
+            'title': t,
+        })
+
+    return links

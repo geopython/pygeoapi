@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,6 +33,7 @@ Returns content from plugins and sets reponses
 from datetime import datetime
 import json
 import logging
+import os
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
@@ -44,7 +45,8 @@ from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderConnectionError, ProviderQueryError)
+    ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
+    ProviderQueryError)
 from pygeoapi.util import (dategetter, json_serial, render_j2_template,
                            str2bool, TEMPLATES)
 
@@ -941,6 +943,149 @@ class API(object):
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content, default=json_serial)
+
+    @pre_process
+    @jsonldify
+    def get_stac_root(self, headers_, format_):
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        id_ = 'pygeoapi-stac'
+        stac_version = '0.6.2'
+        stac_url = os.path.join(self.config['server']['url'], 'stac')
+
+        content = {
+            'id': id_,
+            'stac_version': stac_version,
+            'title': self.config['metadata']['identification']['title'],
+            'description': self.config['metadata']['identification']['description'],  # noqa
+            'license': self.config['metadata']['license']['name'],
+            'providers': [{
+                'name': self.config['metadata']['provider']['name'],
+                'url': self.config['metadata']['provider']['url'],
+            }],
+            'links': []
+        }
+
+        for key, value in self.config['datasets'].items():
+            if value['provider']['name'] == 'FileSystem':
+                content['links'].append({
+                    'rel': 'collection',
+                    'href': '{}/{}?f=json'.format(stac_url, key),
+                    'type': 'application/json'
+                })
+                content['links'].append({
+                    'rel': 'collection',
+                    'href': '{}/{}'.format(stac_url, key),
+                    'type': 'text/html'
+                })
+
+        if format_ == 'html':  # render
+            headers_['Content-Type'] = 'text/html'
+            content = render_j2_template(self.config, 'stac/root.html',
+                                         content)
+            return headers_, 200, content
+
+        return headers_, 200, json.dumps(content, default=json_serial)
+
+    @pre_process
+    @jsonldify
+    def get_stac_path(self, headers_, format_, path):
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Path: {}'.format(path))
+        dir_tokens = path.split('/')
+        if dir_tokens:
+            dataset = dir_tokens[0]
+
+        if dataset not in self.config['datasets']:
+            exception = {
+                'code': 'NotFound',
+                'description': 'collection not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+
+        LOGGER.debug('Loading provider')
+        try:
+            p = load_plugin('provider',
+                            self.config['datasets'][dataset]['provider'])
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+
+        id_ = '{}-stac'.format(dataset)
+        stac_version = '0.6.2'
+        description = self.config['datasets'][dataset]['description']
+
+        content = {
+            'id': id_,
+            'stac_version': stac_version,
+            'description': description,
+            'links': []
+        }
+        try:
+            stac_data = p.get_data_path(
+                os.path.join(self.config['server']['url'], 'stac'),
+                path,
+                path.replace(dataset, '', 1)
+            )
+        except ProviderNotFoundError as err:
+            LOGGER.error(err)
+            exception = {
+                'code': 'NotFound',
+                'description': 'resource not found'
+            }
+            return headers_, 404, json.dumps(exception)
+        except Exception as err:
+            LOGGER.error(err)
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'data query error'
+            }
+            return headers_, 500, json.dumps(exception)
+
+        if isinstance(stac_data, dict):
+            content.update(stac_data)
+            content['links'].extend(self.config['datasets'][dataset]['links'])
+
+            if format_ == 'html':  # render
+                headers_['Content-Type'] = 'text/html'
+                content['path'] = path
+                if 'assets' in content:  # item view
+                    content = render_j2_template(self.config,
+                                                 'stac/item.html',
+                                                 content)
+                else:
+                    content = render_j2_template(self.config,
+                                                 'stac/catalog.html',
+                                                 content)
+
+                return headers_, 200, content
+
+            return headers_, 200, json.dumps(content, default=json_serial)
+
+        else:  # send back file
+            headers_.pop('Content-Type', None)
+            return headers_, 200, stac_data
 
     @pre_process
     @jsonldify
