@@ -39,7 +39,8 @@ from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderGenericError, ProviderQueryError)
+    BaseProvider, ProviderGenericError,
+    ProviderQueryError, ProviderConnectionError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -193,6 +194,9 @@ class OGRProvider(BaseProvider):
                     self.data_def['source'],
                     self.gdal.OF_VECTOR,
                     open_options=self._list_open_options())
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
                     {}'.format(source_type)
@@ -204,6 +208,9 @@ class OGRProvider(BaseProvider):
         else:
             try:
                 self.conn = self.driver.Open(self.data_def['source'], 0)
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
                     {}'.format(source_type)
@@ -254,6 +261,9 @@ class OGRProvider(BaseProvider):
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
 
+        except RuntimeError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
 
@@ -315,6 +325,9 @@ class OGRProvider(BaseProvider):
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -346,6 +359,9 @@ class OGRProvider(BaseProvider):
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -752,7 +768,13 @@ class GdalErrorHandler:
             self.err_num, level, self.err_msg))
         last_error = osgeo_gdal.GetLastErrorMsg()
         if self.err_level >= osgeo_gdal.CE_Failure:
-            raise ProviderGenericError(last_error)
+            if 'HTTP error code' in last_error:
+                # 500 <= http error ode <=599
+                for i in list(range(500, 599)):
+                    if str(i) in last_error:
+                        raise ProviderConnectionError(last_error)
+            else:
+                raise ProviderGenericError(last_error)
 
 
 def _silent_gdal_error(f):

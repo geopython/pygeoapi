@@ -159,7 +159,7 @@ def config_geonode_gs_WFS():
             },
         },
         'id_field': 'adm0_id',
-        'layer': 'geonode:glb_bnd_adm0_1'
+        'layer': 'geonode:wld_bnd_adm0'
     }
 
 
