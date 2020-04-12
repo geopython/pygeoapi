@@ -1,6 +1,6 @@
 # Contributing to pygeoapi
 
-We welcome contributions to pygeoapi, in the form of issues, bug fixes, or
+We welcome contributions to pygeoapi, in the form of issues, bug fixes, documentation or
 suggestions for enhancements. This document sets out our guidelines and best
 practices for such contributions.
 
@@ -57,7 +57,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 
 ### GitHub Commit Access
 
-* Proposals to provide developers with GitHub commit access shall be emailed to the pygeoapi [mailing list](https://lists.osgeo.org/mailman/listinfo/pygeoapi). Proposals shall be approved by the pygeoapi development team.  Committers shall be added by the project admin.
+* Proposals to provide developers with GitHub commit access shall be emailed to the pygeoapi [mailing list](https://lists.osgeo.org/mailman/listinfo/pygeoapi). Proposals shall be approved by the pygeoapi Project Steering Committee (PSC).  Committers shall be added by the project admin.
 * Removal of commit access shall be handled in the same manner.
 
 ### GitHub Pull Requests
@@ -89,14 +89,27 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
       while, __make sure you rebase or merge to latest ``master``__ to ensure a
         speedier resolution.
 
+### Documentation
+
+* documentation is managed in `docs/`, in reStructuredText format
+* [Sphinx](https://www.sphinx-doc.org) is used to generate the documentation
+* See the [reStructuredText Primer](https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html) on rST markup and syntax
+
+
+### Wiki
+
+* the [pygeoapi wiki](https://github.com/geopython/pygeoapi/wiki) provides working level documentation
+
+
 ### Code Formatting
 
 * __Please follow the coding conventions and style used in the pygeoapi repository.__ 
-* pygeoapi endeavours to follow the
-  [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines.
+* pygeoapi follows the [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines
+* 80 characters
+* spaces, not tabs
+* pygeoapi, instead of PyGeoAPI, pygeoAPI, etc.
 
 ## Suggesting Enhancements
 
 We welcome suggestions for enhancements, but reserve the right to reject them
 if they do not follow future plans for pygeoapi.
-
