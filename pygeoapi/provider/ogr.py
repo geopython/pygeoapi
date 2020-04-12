@@ -625,7 +625,7 @@ class CommonSourceHelper(SourceHelper):
         return self.result_set
 
 
-class ESRIJSONHelper(SourceHelper):
+class ESRIJSONHelper(CommonSourceHelper):
 
     def __init__(self, provider):
         """
@@ -635,7 +635,7 @@ class ESRIJSONHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+        CommonSourceHelper.__init__(self, provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -665,7 +665,7 @@ class ESRIJSONHelper(SourceHelper):
         :return: OGR layer object
         """
         if self.startindex <= 0:
-            return SourceHelper.get_layer(self)
+            return CommonSourceHelper.get_layer(self)
 
         self.close()
 
