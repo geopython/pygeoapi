@@ -318,7 +318,6 @@ def test_get_collection_items(config, api_):
     links = features['links']
     assert len(links) == 5
     assert '/collections/obs/items?f=json' in links[0]['href']
-    print(links)
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
