@@ -187,6 +187,44 @@ def dataset(feature_collection, feature=None):
     return response
 
 
+@APP.route('/stac')
+def stac_catalog_root():
+    """
+    STAC access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_root(
+        request.headers, request.args)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/stac/<path:path>')
+def stac_catalog_path(path):
+    """
+    STAC access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_path(
+        request.headers, request.args, path)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @APP.route('/processes')
 @APP.route('/processes/<name>')
 def describe_processes(name=None):

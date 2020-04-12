@@ -18,7 +18,7 @@ main {
 .crumbs a {
     padding: 0px 6px;
     color:black;
-    text-transform: capitalize;
+/*    text-transform: capitalize;*/
 }
 
 #items-map {

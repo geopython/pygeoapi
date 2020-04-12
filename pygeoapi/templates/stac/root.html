@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} SpatioTemporal Asset Catalog {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="./stac">SpatioTemporal Asset Catalog</a>
+{% endblock %}
+{% block body %}
+
+    <section id="identification">
+      <meta itemprop="url" content="{{ config['server']['url'] }}/stac" />
+      <meta itemprop="name" content="{{ data['title'] | striptags }}" />
+      <meta itemprop="name" content="{{ data['description'] | striptags }}" />
+
+      <h4>STAC Version: {{ data['stac_version'] }}</h4>
+
+    </section>
+
+    <section id="collections" itemscope itemtype="https://schema.org/DataCatalog">
+      <h2>Collections</h2>
+            <table class="striped">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+              </thead>
+              <tbody>
+                {% for k, v in config['datasets'].items() %}
+                {% if v['provider']['name'] == 'FileSystem' %}
+                <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+                  <td data-label="name">
+                    <meta itemprop="url" content="{{ config['server']['url'] }}/stac/{{ k }}" />
+                    <a  title="{{ v['title'] | striptags | truncate }}"
+                      href="{{ config['server']['url'] }}/stac/{{ k }}">
+                      <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
+                  </td>
+                  <td itemprop="description" data-label="description">
+                    {{ v['description'] | striptags | truncate }}
+                  </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+    </section>
+
+{% endblock %}
