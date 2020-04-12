@@ -868,6 +868,13 @@ class API(object):
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
         except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',

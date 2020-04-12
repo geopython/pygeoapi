@@ -39,7 +39,8 @@ from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderGenericError, ProviderQueryError)
+    BaseProvider, ProviderGenericError,
+    ProviderQueryError, ProviderConnectionError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -193,9 +194,12 @@ class OGRProvider(BaseProvider):
                     self.data_def['source'],
                     self.gdal.OF_VECTOR,
                     open_options=self._list_open_options())
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
-                    {source_type}'.format(source_type)
+                    {}'.format(source_type)
                 LOGGER.error(msg)
                 self.conn = _ignore_gdal_error(
                     self.gdal, 'OpenEx', self.data_def['source'],
@@ -204,9 +208,12 @@ class OGRProvider(BaseProvider):
         else:
             try:
                 self.conn = self.driver.Open(self.data_def['source'], 0)
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
             except Exception:
                 msg = 'Ignore errors during the connection for Driver \
-                    {source_type}'.format(source_type)
+                    {}'.format(source_type)
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
                 # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa 
@@ -254,6 +261,9 @@ class OGRProvider(BaseProvider):
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
 
+        except RuntimeError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
 
@@ -315,6 +325,9 @@ class OGRProvider(BaseProvider):
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -346,6 +359,9 @@ class OGRProvider(BaseProvider):
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -609,7 +625,7 @@ class CommonSourceHelper(SourceHelper):
         return self.result_set
 
 
-class ESRIJSONHelper(SourceHelper):
+class ESRIJSONHelper(CommonSourceHelper):
 
     def __init__(self, provider):
         """
@@ -619,33 +635,57 @@ class ESRIJSONHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+        CommonSourceHelper.__init__(self, provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
         Enable paged access to dataset (OGR Driver-specific)
 
         """
-
         if startindex < 0:
             return
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', 'ON')
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_START_INDEX', str(startindex))
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', str(limit))
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=True)
+        self.startindex = startindex
+        self.limit = limit
 
     def disable_paging(self):
         """
         Disable paged access to dataset (OGR Driver-specific)
         """
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', None)
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', None)
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=False)
+
+    def get_layer(self):
+        """
+        Gets OGR Layer from opened OGR dataset.
+        When startindex defined 1 or greater will invoke
+        OGR SQL SELECT with LIMIT and OFFSET and return
+        as Layer as ResultSet from ExecuteSQL on dataset.
+        :return: OGR layer object
+        """
+        if self.startindex <= 0:
+            return CommonSourceHelper.get_layer(self)
+
+        self.close()
+
+        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+            ds_name=self.provider.layer_name,
+            limit=self.limit,
+            offset=self.startindex)
+        self.result_set = self.provider.conn.ExecuteSQL(sql)
+
+        # Reset since needs to be set each time explicitly
+        self.startindex = -1
+        self.limit = -1
+
+        if not self.result_set:
+            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
+                self.provider.layer_name)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return self.result_set
 
 
 class WFSHelper(SourceHelper):
@@ -728,7 +768,13 @@ class GdalErrorHandler:
             self.err_num, level, self.err_msg))
         last_error = osgeo_gdal.GetLastErrorMsg()
         if self.err_level >= osgeo_gdal.CE_Failure:
-            raise ProviderGenericError(last_error)
+            if 'HTTP error code' in last_error:
+                # 500 <= http error ode <=599
+                for i in list(range(500, 599)):
+                    if str(i) in last_error:
+                        raise ProviderConnectionError(last_error)
+            else:
+                raise ProviderGenericError(last_error)
 
 
 def _silent_gdal_error(f):
