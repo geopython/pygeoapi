@@ -31,7 +31,7 @@ import json
 import os
 import sys
 
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 es = Elasticsearch()
 
 if len(sys.argv) < 3:
@@ -71,15 +71,29 @@ settings = {
     }
 }
 
+
+def gendata(data):
+    """
+    Generator function to yield features
+    """
+
+    for f in data['features']:
+        try:
+            f['properties'][id_field] = int(f['properties'][id_field])
+        except ValueError:
+            f['properties'][id_field] = f['properties'][id_field]
+        yield {
+            "_index": index_name,
+            "_id": f['properties'][id_field],
+            "_source": f
+        }
+
+
 # create index
 es.indices.create(index=index_name, body=settings, request_timeout=90)
 
 with open(sys.argv[1]) as fh:
     d = json.load(fh)
 
-for f in d['features']:
-    try:
-        f['properties'][id_field] = int(f['properties'][id_field])
-    except ValueError:
-        f['properties'][id_field] = f['properties'][id_field]
-    res = es.index(index=index_name, id=f['properties'][id_field], body=f)
+    # call generator function to yield features into ES build API
+    helpers.bulk(es, gendata(d))
