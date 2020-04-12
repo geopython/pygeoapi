@@ -1,6 +1,6 @@
 # The MIT License (MIT)
 
-Copyright &copy; 2018-2019 Tom Kralidis
+Copyright &copy; 2018-2020 Tom Kralidis
 
 * * *
 
