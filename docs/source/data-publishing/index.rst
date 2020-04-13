@@ -3,8 +3,8 @@
 Data publishing
 ===============
 
-Let's start working on integrating data into pygeoapi.  pygeoapi provides the capability to
-publish vector data, processes, and exposing filesystems of geosaptial data.
+Let's start working on integrating your data into pygeoapi.  pygeoapi provides the capability to
+publish vector data, processes, and exposing filesystems of geospatial data.
 
 .. toctree::
    :maxdepth: 2

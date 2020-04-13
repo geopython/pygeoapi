@@ -5,9 +5,9 @@ Taking a tour of pygeoapi
 
 At this point, you've installed pygeoapi, set configurations and started the server.
 
-pygeoapi's default configuration comes setup with two simple vector datasets and a sample process.  Note
-that these resources are straightforward examples of pygeoapi's baseline functionality, designed to get
-the user up and running with as little barriers as possible.
+pygeoapi's default configuration comes setup with two simple vector datasets, a STAC collection and a sample
+process.  Note that these resources are straightforward examples of pygeoapi's baseline functionality, designed
+to get the user up and running with as little barriers as possible.
 
 Let's check things out.  In your web browser, go to http://localhost:5000
 
@@ -18,7 +18,7 @@ Overview
 All pygeoapi URLs have HTML and JSON representations.  If you are working through a web browser, HTML
 is always returned as the default, whereas if you are working programmatically, JSON is always returned.
 
-To explicitly ask for HTML or JSON, simply add `f=html` or `f=json` to any URL accordingly.
+To explicitly ask for HTML or JSON, simply add ``f=html`` or ``f=json`` to any URL accordingly.
 
 Each web page provides breadcrumbs for navigating up/down the server's data.  In addition, the upper right
 of the UI always has JSON and JSON-LD links to provide you with the current page in JSON if desired.
@@ -29,7 +29,7 @@ Landing page
 
 http://localhost:5000
 
-The landing page provides a high level overview of the pygeoapi server (contact information, licensing,
+The landing page provides a high level overview of the pygeoapi server (contact information, licensing),
 as well as specific sections to browse data, processes and geospatial files.
 
 
@@ -50,7 +50,7 @@ http://localhost:5000/collections/obs
 Let's drill deeper into a given dataset.  Here we can see the ``obs`` dataset is described along
 with related links (other related HTML pages, dataset download, etc.).
 
-The 'View' section provides the default to start to browse the data.
+The 'View' section provides the default to start browsing the data.
 
 
 Collection items
@@ -59,8 +59,8 @@ Collection items
 http://localhost:5000/collections/obs/items
 
 This page displays a map and tabular view of the data.  Features are clickable on the interactive map,
-allowing the user to drill into more information about the feature.  The tabular also allows for drilling
-into a feature by clicking the link.
+allowing the user to drill into more information about the feature.  The table also allows for drilling
+into a feature by clicking the link in a given table row.
 
 Let's checkout the feature close to `Toronto, Ontario, Canada`_.
 
@@ -83,9 +83,6 @@ This page provides a Web Accessible Folder view of raw geospatial data files.  U
 click to browse directory contentsor inspect files.  Clicking on a file will attempt to display the
 file's properties/metadata, as well as an interactive map with a footprint of the spatial extent of
 the file.
-
-.. todo::
-   Expand with more info once STAC is integrated.
 
 
 Processes

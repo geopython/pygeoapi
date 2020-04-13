@@ -50,7 +50,7 @@ class OGRProvider(BaseProvider):
     OGR Provider. Uses GDAL/OGR Python-bindings to access OGR
     Vector sources. References:
     https://pcjericks.github.io/py-gdalogr-cookbook/
-    https://www.gdal.org/ogr_formats.html (per-driver specifics).
+    https://gdal.org/ogr_formats.html (per-driver specifics).
 
     In theory any OGR source type (Driver) could be used, although
     some Source Types are Driver-specific handling. This is handled
@@ -596,7 +596,7 @@ class CommonSourceHelper(SourceHelper):
     def enable_paging(self, startindex=-1, limit=-1):
         """
         Enable paged access to dataset (OGR Driver-specific)
-        using OGR SQL https://www.gdal.org/ogr_sql.html
+        using OGR SQL https://gdal.org/user/ogr_sql_dialect.html
         e.g. SELECT * FROM poly LIMIT 10 OFFSET 30
 
         """

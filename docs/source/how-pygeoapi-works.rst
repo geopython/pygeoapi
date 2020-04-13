@@ -3,7 +3,7 @@
 How pygeoapi works
 ==================
 
-pygeoapi is an Python-based HTTP server implementation of the OGC API standards.  As a server
+pygeoapi is a Python-based HTTP server implementation of the OGC API standards.  As a server
 implementation, pygeoapi listens to HTTP requests from web browsers, mobile or desktop applications
 and provides responses accordingly.
 

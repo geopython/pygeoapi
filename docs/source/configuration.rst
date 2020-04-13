@@ -43,7 +43,7 @@ The ``server`` section provides directives on binding and high level tuning.
     encoding: utf-8  # default server encoding
     language: en-US  # default server language
     cors: true  # boolean on whether server should support CORS
-    pretty_print: true  # whether JSON responses should be pretty printed
+    pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of features to return
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
@@ -59,7 +59,7 @@ The ``logging`` section provides directives for logging messages which are usefu
 .. code-block:: yaml
 
   logging:
-      level: ERROR # the logging level (see https://docs.python.org/3/library/logging.html#logging-levels)
+      level: ERROR  # the logging level (see https://docs.python.org/3/library/logging.html#logging-levels)
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
 
 .. note::
