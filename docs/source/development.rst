@@ -6,14 +6,14 @@ Development
 Codebase
 --------
 
-The pygeoapi codebase exists at https://github.com/geopython/pygeoapi
+The pygeoapi codebase exists at https://github.com/geopython/pygeoapi.
 
 
 Testing
 -------
 
 pygeoapi uses `pytest <https://docs.pytest.org>`_ for managing its automated tests.  Tests
-exist in ``tests`` and are developed for providers, formatters, processes, asl well as the
+exist in ``/tests`` and are developed for providers, formatters, processes, as well as the
 overall API.
 
 Tests can be run locally as part of development workflow.  They are also run on pygeoapi’s

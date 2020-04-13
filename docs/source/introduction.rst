@@ -11,12 +11,12 @@ Features
 - out of the box modern OGC API server
 - certified OGC Compliant and Reference Implementation for OGC API - Features
 - additionally implements OGC API - Processes and SpatioTemporal Asset Library
-- out of the data provider plugins for GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
+- out of the box data provider plugins for GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
 - easy to use OpenAPI / Swagger documentation for developers
 - supports JSON, GeoJSON, HTML and CSV output
 - supports data filtering by spatial, temporal or attribute queries
-- easy to install: install a full implementation via pip or git
-- simply YAML configuration
+- easy to install: install a full implementation via ``pip`` or ``git``
+- simple YAML configuration
 - easy to deploy: via UbuntuGIS or the official Docker image
 - flexible: built on a robust plugin framework to build custom data connections, formats and processes
 - supports any Python web framework (included are Flask [default], Starlette)

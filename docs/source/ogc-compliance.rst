@@ -15,5 +15,5 @@ The pygeoapi CITE instance is at https://demo.pygeoapi.io/cite
 Setting up your own CITE testing instance
 -----------------------------------------
 
-Please see the pygeoapi `OGC Compliance <https://github.com/geopython/pygeoapi/wiki/OGC-Compliance>`_
-for up to date information as well as and technical details on setting up your own CITE instance.
+Please see the pygeoapi `OGC Compliance <https://github.com/geopython/pygeoapi/wiki/OGCCompliance>`_
+for up to date information as well as technical details on setting up your own CITE instance.
