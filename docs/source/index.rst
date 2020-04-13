@@ -1,5 +1,9 @@
 .. _index:
 
+.. image:: /_static/pygeoapi-logo.png
+   :scale: 50%
+   :alt: pygeoapi logo
+
 pygeoapi |release| documentation
 ==================================
 
