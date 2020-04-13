@@ -106,7 +106,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
           role: pointOfContact
 
 ``resources``
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 The ``resources`` section lists 1 or more dataset collections to be published by the server.
 
