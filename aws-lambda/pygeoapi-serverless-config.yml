@@ -81,8 +81,9 @@ metadata:
         instructions: During hours of service.  Off on weekends.
         role: pointOfContact
 
-datasets:
+resources:
     obs:
+        type: collection
         title: Observations
         description: My cool observations
         keywords:
@@ -116,6 +117,7 @@ datasets:
                 y_field: lat
 
     ne_110m_populated_places_simple:
+        type: collection
         title: Populated Places
         description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
         keywords:
@@ -143,6 +145,7 @@ datasets:
             id_field: geonameid
 
     lakes:
+        type: collection
         title: Large Lakes
         description: lakes of the world, public domain
         keywords:
@@ -167,6 +170,7 @@ datasets:
             id_field: id
 
     countries:
+        type: collection
         title: Countries in the world
         description: Countries of the world
         keywords:
@@ -191,6 +195,7 @@ datasets:
             id_field: ogc_fid
             table: ne_110m_admin_0_countries
     poi:
+        type: collection
         title: Portuguese point of interrest
         description: Portuguese points of interrest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands
         keywords:
@@ -222,6 +227,7 @@ datasets:
             table: poi_portugal
 
     hotosm_bdi_waterways:
+        type: collection
         title: Waterways of Burundi
         description: Waterways of Burundi, Africa. Dataset timestamp  1st Sep 2018 - Humanitarian OpenStreetMap Team (HOT)
         keywords:
@@ -256,6 +262,7 @@ datasets:
             table: hotosm_bdi_waterways
 
     dutch_georef_stations:
+        type: collection
         title: Dutch Georef Stations via OGR WFS
         description: Locations of RD/GNSS-reference stations from Dutch Kadaster PDOK a.k.a RDInfo. Uses MapServer WFS v2 backend via OGRProvider.
         keywords:
@@ -301,7 +308,7 @@ datasets:
             id_field: gml_id
             layer: rdinfo:stations
 
-processes:
     hello-world:
+        type: process
         processor:
             name: HelloWorld

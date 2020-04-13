@@ -17,7 +17,7 @@
               </tr>
               </thead>
               <tbody>
-                {% for k, v in config['datasets'].items() %}
+                {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'collection').items() %}
                 <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
                   <td data-label="name">
                     <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />

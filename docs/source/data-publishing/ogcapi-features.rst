@@ -145,7 +145,7 @@ GeoPackage file:
 Data access examples
 --------------------
 
-- list all datasets
+- list all collections
   - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo

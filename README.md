@@ -35,15 +35,15 @@ Try the swagger ui at `http://localhost:5000/openapi`
 or
 
 ```bash
-# feature collection metadata
+# collection metadata
 curl http://localhost:5000/
 # conformance
 curl http://localhost:5000/conformance
-# feature collection
+# collection
 curl http://localhost:5000/collections/countries
-# feature collection limit 100
+# collection limit 100
 curl http://localhost:5000/collections/countries/items?limit=100
-# feature
+# collection item
 curl http://localhost:5000/collections/countries/items/1
 # number of hits
 curl http://localhost:5000/collections/countries/items?resulttype=hits

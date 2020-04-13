@@ -480,7 +480,7 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
-    api_.config['datasets']['obs']['extents'].pop('temporal')
+    api_.config['resources']['obs']['extents'].pop('temporal')
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')

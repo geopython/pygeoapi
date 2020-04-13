@@ -35,7 +35,7 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import yaml_load
+from pygeoapi.util import filter_dict_by_key_value, yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -198,8 +198,8 @@ def get_oas_30(cfg):
 
     paths['/collections'] = {
         'get': {
-            'summary': 'Feature Collections',
-            'description': 'Feature Collections',
+            'summary': 'Collections',
+            'description': 'Collections',
             'tags': ['server'],
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
@@ -276,10 +276,10 @@ def get_oas_30(cfg):
     items_f['schema']['enum'].append('csv')
 
     LOGGER.debug('setting up datasets')
-    for k, v in cfg['datasets'].items():
-        if v['provider']['name'] == 'FileSystem':
-            continue
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
 
+    for k, v in collections.items():
         collection_name_path = '/collections/{}'.format(k)
         tag = {
             'name': k,
@@ -298,7 +298,7 @@ def get_oas_30(cfg):
 
         paths[collection_name_path] = {
             'get': {
-                'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
+                'summary': 'Get collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -317,7 +317,7 @@ def get_oas_30(cfg):
 
         paths[items_path] = {
             'get': {
-                'summary': 'Get {} features'.format(v['title']),
+                'summary': 'Get {} items'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -336,7 +336,7 @@ def get_oas_30(cfg):
             }
         }
 
-        p = load_plugin('provider', cfg['datasets'][k]['provider'])
+        p = load_plugin('provider', collections[k]['provider'])
 
         if p.fields:
             queryables_path = '{}/queryables'.format(collection_name_path)
@@ -446,7 +446,7 @@ def get_oas_30(cfg):
         }
     }
 
-    processes = cfg.get('processes', {})
+    processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
 
     if processes:
         for k, v in processes.items():

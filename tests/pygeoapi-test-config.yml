@@ -80,8 +80,9 @@ metadata:
         instructions: During hours of service.  Off on weekends.
         role: pointOfContact
 
-datasets:
+resources:
     obs:
+        type: collection
         title: Observations
         description: My cool observations
         keywords:
@@ -125,7 +126,7 @@ datasets:
                 x_field: long
                 y_field: lat
 
-processes:
     hello-world:
+        type: process
         processor:
             name: HelloWorld

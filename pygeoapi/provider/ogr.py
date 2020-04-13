@@ -145,8 +145,8 @@ class OGRProvider(BaseProvider):
                                                 'EPSG:4326').split(':')[1])
 
         # Optional coordinate transformation inward (requests) and
-        # outward (responses) when the source layers and WFS3 collections
-        # differ in EPSG-codes.
+        # outward (responses) when the source layers and
+        # OGC API - Features collections differ in EPSG-codes.
         self.transform_in = None
         self.transform_out = None
         if self.source_srs != self.target_srs:

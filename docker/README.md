@@ -2,7 +2,7 @@
 
 Docker Image `geopython/pygeoapi:latest` and versions are [available from DockerHub](https://hub.docker.com/r/geopython/pygeoapi).
 
-Each Docker Image contains a default configuration [default.config.yml](default.config.yml) with the project's test data and WFS3/OGC API Features datasets.
+Each Docker Image contains a default configuration [default.config.yml](default.config.yml) with the project's test data and OGC API dataset collections. 
 
 You can override this default config via Docker Volume mapping or by extending the Docker Image and copying in your config. See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi) for the latter method. 
 
