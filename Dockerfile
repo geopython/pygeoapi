@@ -4,7 +4,7 @@
 #          Just van den Broecke <justb4@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
 #
@@ -62,8 +62,8 @@ ARG ADD_PIP_PACKAGES=""
 # ENV settings
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
-	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils git" \
-	DEB_PACKAGES="locales libgdal26 python3-gdal libsqlite3-mod-spatialite curl ${ADD_DEB_PACKAGES}" \
+	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils curl git unzip" \
+	DEB_PACKAGES="locales libgdal26 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ADD . /pygeoapi
@@ -90,6 +90,10 @@ RUN \
 	&& pip3 install -r requirements-dev.txt \
 	&& pip3 install -r requirements-provider.txt \
 	&& pip3 install -e . \
+	# OGC schemas local setup
+	&& mkdir /schemas.opengis.net \
+	&& curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
+	&& unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
 	# Cleanup TODO: remove unused Locales and TZs
 	&& pip3 uninstall --yes wheel \
 	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
@@ -101,4 +105,3 @@ COPY ./docker/entrypoint.sh /entrypoint.sh
 
 WORKDIR /pygeoapi
 ENTRYPOINT ["/entrypoint.sh"]
-
