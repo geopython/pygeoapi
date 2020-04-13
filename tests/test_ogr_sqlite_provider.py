@@ -183,3 +183,25 @@ def test_query_bbox_with_startindex_4326(config_sqlite_4326):
     assert geometry is not None
     assert properties['straatnaam'] == 'Egypte'
     assert properties['huisnummer'] == '4'
+
+
+def test_query_with_property_filtering(config_sqlite_4326):
+    """Testing query with property filtering"""
+
+    p = OGRProvider(config_sqlite_4326)
+
+    feature_collection = p.query(
+        properties=[
+            ('straatnaam', 'Arnhemseweg')
+        ]
+    )
+
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) > 1
+
+    for feature in features:
+        assert 'properties' in feature
+        assert 'straatnaam' in feature['properties']
+
+        assert feature['properties']['straatnaam'] == 'Arnhemseweg'
