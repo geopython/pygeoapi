@@ -5,6 +5,7 @@
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %} /
     <a href="{{ data['dataset_path'] }}">{{ link['title'] }}</a>
+    {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
 / <a href="{{ data['items_path']}}">Items</a>
@@ -16,9 +17,10 @@
 
 {% block body %}
   <section id="items"></section>
-    <div class="row col-sm-12">
-        <h2>Items</h2>
-    </div>
+  <section id="collection">
+    <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
+    <p>Items in this collection.</p>
+  </section>  
   <section id="items">
     {% if data['features'] %}
     <div class="row">
