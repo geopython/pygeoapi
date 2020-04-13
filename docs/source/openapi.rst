@@ -15,7 +15,7 @@ pygeoapi supports OpenAPI version 3.0.2.
 As described in :ref:`administration`, the pygeoapi OpenAPI document is automatically generated based on the
 configuration file:
 
-The API is accessible at `/openapi` endpoint, providing a Swagger-based webpage of the API description..
+The API is accessible at the ``/openapi`` endpoint, providing a Swagger-based webpage of the API description..
 
 .. seealso::
    the pygeoapi demo OpenAPI/Swagger endpoint at https://demo.pygeoapi.io/master/openapi
@@ -29,7 +29,7 @@ Accessing the Swagger webpage we have the following structure:
 .. image:: /_static/openapi_intro_page.png
 
 
-Notice that each dataset is represented as a RESTful endpoint under `collections`.
+Notice that each dataset is represented as a RESTful endpoint under ``collections``.
 
 In this example we will test ``GET`` capability of data concerning windmills in the Netherlands.  Let's start by
 accessing the service's dataset collections:

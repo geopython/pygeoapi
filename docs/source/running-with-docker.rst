@@ -4,10 +4,10 @@ Docker
 ======
 
 pygeoapi provides an official `Docker`_ image which is made available on the `geopython Docker Hub`_.  Additional
-Docker examples can be found in the `pygeoapi GitHub repository`_, each with sample configurations, test data
-and deployment scenarios and provider backends.
+Docker examples can be found in the `pygeoapi GitHub repository`_, each with sample configurations, test data,
+deployment scenarios and provider backends.
 
-The `pygeoapi demo server`_ runs various Docker images which also serve as `useful examples`_.
+The `pygeoapi demo server`_ runs various services from Docker images which also serve as `useful examples`_.
 
 .. note::
    Both Docker and `Docker Compose`_ are required on your system to run pygeoapi images.
@@ -25,7 +25,7 @@ To run with the default built-in configuration and data:
    # or simply
    docker run -p 5000:80 -it geopython/pygeoapi
 
-...then browse to **http://localhost:5000**
+...then browse to http://localhost:5000
 
 You can also run all unit tests to verify:
 
@@ -113,5 +113,5 @@ Docker is an easy and reproducible approach to deploying systems.
 .. _`geopython Docker Hub`: https://hub.docker.com/r/geopython/pygeoapi
 .. _`pygeoapi GitHub repository`: https://github.com/geopython/pygeoapi
 .. _`pygeoapi demo server`: https://demo.pygeoapi.io
-.. _`useful examples`: https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
+.. _`useful examples`: https://github.com/geopython/demo.pygeoapi.io/tree/master/services
 .. _`Docker Compose`: https://docs.docker.com/compose/

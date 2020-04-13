@@ -86,7 +86,7 @@ The below template provides a minimal example (let's call the file ``mycooldata.
 For brevity, the above code will always return the single feature of the dataset.  In reality, the plugin
 developer would connect to a data source with capabilities to run queries and return relevant a result set,
 as well as implement the ``get`` method accordingly.  As long as the plugin implements the API contract of
-its base provider, functionality is left to the provider implementation.
+its base provider, all other functionality is left to the provider implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
 
@@ -97,7 +97,7 @@ The following methods are options to connect the plugin to pygeoapi:
 
 **Option 1**: Update in core pygeoapi:
 
-- copy mycooldata.py into ``pygeoapi/provider``
+- copy ``mycooldata.py`` into ``pygeoapi/provider``
 - update the plugin registry in ``pygeoapi/plugin.py:PLUGINS['provider']`` with the plugin's
   shortname (say ``MyCoolData``) and dotted path to the class (i.e. ``pygeoapi.provider.mycooldata.MyCoolDataProvider``)
 - specify in your dataset provider configuration as follows:
@@ -110,10 +110,10 @@ The following methods are options to connect the plugin to pygeoapi:
        id_field: stn_id
 
 
-** Option 2**: implement outside of pygeoapi and add to configuration (recommended)
+**Option 2**: implement outside of pygeoapi and add to configuration (recommended)
 
-- create a Python package of the mycooldata.py module (see `Cookiecutter`_ as an example)
-- install your Python package onto your system (`python setup.py install`).  At this point your new package
+- create a Python package of the ``mycooldata.py`` module (see `Cookiecutter`_ as an example)
+- install your Python package onto your system (``python setup.py install``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
 - specify in your dataset provider configuration as follows:
 
