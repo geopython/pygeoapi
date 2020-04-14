@@ -34,7 +34,7 @@ You can also run all unit tests to verify:
    docker run -it geopython/pygeoapi test
 
 
-overriding the default configuration
+Overriding the default configuration
 ------------------------------------
 
 Normally you would override the ``default.config.yml`` with your own ``pygeoapi`` configuration.
@@ -67,7 +67,7 @@ Or you can create a ``Dockerfile`` extending the base image and **copy** in your
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
 
-deploying on a sub-path
+Deploying on a sub-path
 -----------------------
 
 By default the ``pygeoapi`` Docker image will run from the ``root`` path (``/``).  If you need to run from a
