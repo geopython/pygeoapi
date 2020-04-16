@@ -78,9 +78,9 @@ def test_get_agol(config_ArcGIS_ESRIJSON):
     """Testing query for a specific object"""
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
-    result = p.get('78232831')
-    assert result['id'] == 78232831
-    assert '2605' in result['properties']['fulladdr']
+    result = p.get('78320235')
+    assert result['id'] == 78320235
+    assert '4S631' in result['properties']['fulladdr']
 
 
 def test_query_hits_agol(config_ArcGIS_ESRIJSON):
@@ -143,7 +143,7 @@ def test_query_with_startindex(config_ArcGIS_ESRIJSON):
     feature = features[0]
     properties = feature.get('properties', None)
     assert properties is not None
-    assert feature['id'] == 78220641
+    assert feature['id'] == 78320245
     assert '1364' in properties['fulladdr']
     geometry = feature.get('geometry', None)
     assert geometry is not None
