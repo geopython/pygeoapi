@@ -348,6 +348,48 @@ datasets:
 
             id_field: objectid
 
+    cases_italy_per_region_from_github:
+        title: "Cases in Italy - DPC GitHub"
+        description: "Current situation within Italy, number of cases with variation per Italy, provided by ESRI, source data from DPC."
+        keywords: [Daily, Cases Variation, Region]
+        crs:
+            - CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: "GitHub DPC repository - COVID-19 raw data for Italy"
+              href: https://github.com/pcm-dpc/COVID-19
+              hreflang: it-IT
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2020-01-01T00:00:00Z
+                end: # or empty
+
+        provider:
+            name: OGR
+            data:
+                source_type: CSV
+                source: /vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv
+                source_srs: EPSG:4326
+                target_srs: EPSG:4326
+                source_capabilities:
+                    paging: True
+                open_options:
+                    X_POSSIBLE_NAMES: long
+                    Y_POSSIBLE_NAMES: lat
+                gdal_ogr_options:
+                    EMPTY_AS_NULL: NO
+                    GDAL_CACHEMAX: 64
+                    # GDAL_HTTP_PROXY: (optional proxy)
+                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                    CPL_DEBUG: NO
+            id_field: fid
+            time_field: data
+            layer: dpc-covid19-ita-regioni
+
 processes:
     hello-world:
         processor:
