@@ -623,7 +623,7 @@ class CommonSourceHelper(SourceHelper):
 
         self.close()
 
-        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+        sql = 'SELECT * FROM "{ds_name}" LIMIT {limit} OFFSET {offset}'.format(
             ds_name=self.provider.layer_name,
             limit=self.limit,
             offset=self.startindex)
