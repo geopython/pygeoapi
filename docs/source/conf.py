@@ -220,4 +220,4 @@ texinfo_documents = [
 ]
 
 # crossref to Python docs
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+# intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
