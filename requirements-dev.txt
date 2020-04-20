@@ -22,4 +22,5 @@ ndg-httpsclient
 pyasn1
 
 # Read the docs
+sphix==3.0.1
 sphinx_rtd_theme
