@@ -32,6 +32,7 @@
 # https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0
 
 import logging
+import random
 
 import pytest
 from pygeoapi.provider.ogr import OGRProvider
@@ -65,6 +66,20 @@ def config_ArcGIS_ESRIJSON():
     }
 
 
+@pytest.fixture()
+def config_random_id(config_ArcGIS_ESRIJSON):
+    p = OGRProvider(config_ArcGIS_ESRIJSON)
+    # Get bunch of features to randomly have an id
+    feature_collection = p.query(startindex=0, limit=10, resulttype='results')
+    features = feature_collection.get('features', None)
+    features_list = []
+    for feature in features:
+        features_list.append(feature['id'])
+    selected_id = random.choice(features_list)
+    fulladdr = p.get(selected_id)['properties']['fulladdr']
+    return (selected_id, fulladdr.split(' ')[0])
+
+
 def test_get_fields_agol(config_ArcGIS_ESRIJSON):
     """Testing field types"""
 
@@ -74,13 +89,14 @@ def test_get_fields_agol(config_ArcGIS_ESRIJSON):
     assert results['municipality'] == 'string'
 
 
-def test_get_agol(config_ArcGIS_ESRIJSON):
+def test_get_agol(config_ArcGIS_ESRIJSON, config_random_id):
     """Testing query for a specific object"""
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
-    result = p.get('78320235')
-    assert result['id'] == 78320235
-    assert '4S631' in result['properties']['fulladdr']
+    id, addr_number = config_random_id
+    result = p.get(id)
+    assert result['id'] == id
+    assert addr_number in result['properties']['fulladdr']
 
 
 def test_query_hits_agol(config_ArcGIS_ESRIJSON):
@@ -143,7 +159,6 @@ def test_query_with_startindex(config_ArcGIS_ESRIJSON):
     feature = features[0]
     properties = feature.get('properties', None)
     assert properties is not None
-    assert feature['id'] == 78320245
-    assert '1364' in properties['fulladdr']
+    assert properties['fulladdr'] is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
