@@ -33,7 +33,9 @@ import logging
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +78,15 @@ def test_get(config_poi_portugal):
     result = p.get(536678593)
     assert result['id'] == 536678593
     assert 'cafe' in result['properties']['fclass']
+
+
+def test_get_not_existing_feature_raise_exception(
+    config_poi_portugal
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_poi_portugal)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 # Testing with GeoPackage files with identical features

@@ -33,6 +33,7 @@ import logging
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
 
 LOGGER = logging.getLogger(__name__)
@@ -101,6 +102,15 @@ def test_get_4326(config_shapefile_4326):
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
     assert 'Mosselsepad' in result['properties']['straatnaam']
+
+
+def test_get_not_existing_feature_raise_exception(
+    config_shapefile_4326
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_shapefile_4326)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_28992(config_shapefile_28992):

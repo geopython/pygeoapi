@@ -34,7 +34,10 @@
 import logging
 
 import pytest
+
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +86,15 @@ def test_get_vsicurl(config_vsicurl_csv):
     result = p.get('32')
     assert result['id'] == 32
     assert '11' in result['properties']['codice_regione']
+
+
+def test_get_not_existing_feature_raise_exception(
+    config_vsicurl_csv
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_vsicurl_csv)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_vsicurl(config_vsicurl_csv):

@@ -35,7 +35,10 @@ import logging
 import random
 
 import pytest
+
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -97,6 +100,15 @@ def test_get_agol(config_ArcGIS_ESRIJSON, config_random_id):
     result = p.get(id)
     assert result['id'] == id
     assert addr_number in result['properties']['fulladdr']
+
+
+def test_get_agol_not_existing_feature_raise_exception(
+    config_ArcGIS_ESRIJSON
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_ArcGIS_ESRIJSON)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_agol(config_ArcGIS_ESRIJSON):
