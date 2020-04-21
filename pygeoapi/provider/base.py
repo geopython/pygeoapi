@@ -135,6 +135,11 @@ class ProviderQueryError(ProviderGenericError):
     pass
 
 
+class ProviderItemNotFoundError(ProviderGenericError):
+    """provider query error"""
+    pass
+
+
 class ProviderNotFoundError(ProviderGenericError):
     """provider not found error"""
     pass

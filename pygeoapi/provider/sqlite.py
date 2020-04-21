@@ -36,7 +36,8 @@ import logging
 import os
 import json
 from pygeoapi.plugin import InvalidPluginError
-from pygeoapi.provider.base import BaseProvider, ProviderConnectionError
+from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
+                                    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -137,17 +138,20 @@ class SQLiteGPKGProvider(BaseProvider):
         :returns: `dict` of GeoJSON Feature
         """
 
-        rd = dict(row_data)  # sqlite3.Row is doesnt support pop
-        feature = {
-            'type': 'Feature'
-        }
-        feature["geometry"] = json.loads(
-            rd.pop('AsGeoJSON({})'.format(self.geom_col))
-            )
-        feature['properties'] = rd
-        feature['id'] = feature['properties'].pop(self.id_field)
+        if row_data:
+            rd = dict(row_data)  # sqlite3.Row is doesnt support pop
+            feature = {
+                'type': 'Feature'
+            }
+            feature["geometry"] = json.loads(
+                rd.pop('AsGeoJSON({})'.format(self.geom_col))
+                )
+            feature['properties'] = rd
+            feature['id'] = feature['properties'].pop(self.id_field)
 
-        return feature
+            return feature
+        else:
+            return None
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
@@ -325,7 +329,12 @@ class SQLiteGPKGProvider(BaseProvider):
         row_data = self.cursor.execute(sql_query, (identifier, )).fetchone()
 
         feature = self.__response_feature(row_data)
-        return feature
+        if feature:
+            return feature
+        else:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
 
     def __repr__(self):
         return '<SQLiteGPKGProvider> {}, {}'.format(self.data, self.table)

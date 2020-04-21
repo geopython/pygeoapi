@@ -32,7 +32,7 @@ import logging
 import os
 import uuid
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -133,8 +133,9 @@ class GeoJSONProvider(BaseProvider):
                 return feature
 
         # default, no match
-        LOGGER.error('feature {} not found'.format(identifier))
-        return None
+        err = 'item {} not found'.format(identifier)
+        LOGGER.error(err)
+        raise ProviderItemNotFoundError(err)
 
     def create(self, new_feature):
         """Create a new feature

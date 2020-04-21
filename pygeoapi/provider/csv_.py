@@ -32,7 +32,8 @@ import csv
 import itertools
 import logging
 
-from pygeoapi.provider.base import BaseProvider, ProviderQueryError
+from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
+                                    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -145,8 +146,13 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of single GeoJSON feature
         """
-
-        return self._load(identifier=identifier)
+        item = self._load(identifier=identifier)
+        if item:
+            return item
+        else:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
 
     def __repr__(self):
         return '<CSVProvider> {}'.format(self.data)

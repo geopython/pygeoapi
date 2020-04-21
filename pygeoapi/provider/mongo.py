@@ -34,7 +34,7 @@ from pymongo import MongoClient
 from pymongo import GEOSPHERE
 from pymongo import ASCENDING, DESCENDING
 from pymongo.collection import ObjectId
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -149,7 +149,12 @@ class MongoProvider(BaseProvider):
         """
         featurelist, matchcount = self._get_feature_list(
                                     {'_id': ObjectId(identifier)})
-        return featurelist[0] if featurelist else None
+        if featurelist:
+            return featurelist[0]
+        else:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
 
     def create(self, new_feature):
         """Create a new feature
