@@ -46,7 +46,7 @@ from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderQueryError)
+    ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.util import (dategetter, json_serial, render_j2_template,
                            str2bool, TEMPLATES)
 
@@ -875,6 +875,13 @@ class API(object):
             }
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
+        except ProviderItemNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
         except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',

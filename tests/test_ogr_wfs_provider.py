@@ -32,10 +32,13 @@
 # Needs to be run like: python3 -m pytest
 
 import logging
-from pygeoapi.provider.base import ProviderQueryError
 
 import pytest
+
+from pygeoapi.provider.base import (
+    ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -228,6 +231,24 @@ def test_get_gs_with_geojson_output_too_complex_raise_exception(
         'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
     with pytest.raises(ProviderQueryError):
         p.get(272)
+
+
+def test_get_gs_not_existing_feature_raise_exception(
+    config_GeoServer_WFS
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_GeoServer_WFS)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
+
+
+def test_get_ms_not_existing_feature_raise_exception(
+    config_MapServer_WFS
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_MapServer_WFS)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_ms(config_MapServer_WFS):

@@ -40,7 +40,8 @@ from osgeo import osr as osgeo_osr
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError,
-    ProviderQueryError, ProviderConnectionError)
+    ProviderQueryError, ProviderConnectionError,
+    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -370,7 +371,7 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter("{field} = '{id}'".format(
                 field=self.id_field, id=identifier))
 
-            ogr_feature = self._get_next_feature(layer)
+            ogr_feature = self._get_next_feature(layer, identifier)
             result = self._ogr_feature_to_json(ogr_feature)
 
         except RuntimeError as err:
@@ -379,6 +380,9 @@ class OGRProvider(BaseProvider):
         except ProviderConnectionError as err:
             LOGGER.error(err)
             raise ProviderConnectionError(err)
+        except ProviderItemNotFoundError as err:
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -411,14 +415,19 @@ class OGRProvider(BaseProvider):
         class_ = getattr(module, classname)
         self.source_helper = class_(self)
 
-    def _get_next_feature(self, layer):
+    def _get_next_feature(self, layer, feature_id):
         try:
             # Ignore gdal error
             next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
-            if all(val is None for val in next_feature.items().values()):
-                self.gdal.Error(
-                    self.gdal.CE_Failure, 1, "Object properties are all null"
-                )
+            if next_feature:
+                if all(val is None for val in next_feature.items().values()):
+                    self.gdal.Error(
+                        self.gdal.CE_Failure, 1,
+                        "Object properties are all null"
+                    )
+            else:
+                raise ProviderItemNotFoundError(
+                    "item {} not found".format(feature_id))
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())

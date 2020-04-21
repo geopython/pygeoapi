@@ -29,6 +29,7 @@
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 
 
@@ -92,9 +93,14 @@ def test_query(config):
 
 def test_get(config):
     p = ElasticsearchProvider(config)
-    results = p.get('404')
-    assert results is None
 
     result = p.get('3413829')
     assert result['id'] == 3413829
     assert result['properties']['ls_name'] == 'Reykjavik'
+
+
+def test_get_not_existing_item_raise_exception(config):
+    """Testing query for a not existing object"""
+    p = ElasticsearchProvider(config)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('404')
