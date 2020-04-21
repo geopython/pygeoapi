@@ -406,7 +406,7 @@ def test_get_collection_items(config, api_):
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {
-            'sortby': 'stn_id',
+            'sortby': 'bad-property',
             'stn_id': '35'
         }, 'obs')
 
@@ -425,7 +425,7 @@ def test_get_collection_items(config, api_):
         req_headers, {'sortby': 'stn_id:A'}, 'obs')
     features = json.loads(response)
     # FIXME? this test errors out currently
-    assert code == 400
+    assert code == 200
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'csv'}, 'obs')
