@@ -227,6 +227,25 @@ def test_describe_collections(config, api_):
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
+def test_get_collection_queryables(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {}, 'notfound')
+    assert code == 400
+
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'html'}, 'obs')
+    assert rsp_headers['Content-Type'] == 'text/html'
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 6
+
+
 def test_describe_collections_json_ld(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_collections(

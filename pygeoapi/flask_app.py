@@ -99,6 +99,7 @@ def root():
     headers, status_code, content = api_.root(request.headers, request.args)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -119,6 +120,7 @@ def openapi():
                                                  openapi)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -137,6 +139,7 @@ def conformance():
                                                      request.args)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -147,9 +150,10 @@ def conformance():
 @APP.route('/collections/<name>')
 def describe_collections(name=None):
     """
-    OGC open api collections  access point
+    OGC open api collections access point
 
     :param name: identifier of collection name
+
     :returns: HTTP response
     """
 
@@ -157,6 +161,28 @@ def describe_collections(name=None):
         request.headers, request.args, name)
 
     response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<name>/queryables')
+def get_collection_queryables(name=None):
+    """
+    OGC open api collections querybles access point
+
+    :param name: identifier of collection name
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_queryables(
+        request.headers, request.args, name)
+
+    response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 

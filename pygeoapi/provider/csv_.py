@@ -53,6 +53,25 @@ class CSVProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
+        self.fields = self.get_fields()
+
+    def get_fields(self):
+        """
+         Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        LOGGER.debug('Treating all columns as string types')
+        with open(self.data) as ff:
+            LOGGER.debug('Serializing DictReader')
+            data_ = csv.DictReader(ff)
+            fields = {}
+            for f in data_.fieldnames:
+                fields[f] = {
+                    'type': 'string'
+                }
+            return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime=None, properties=[]):
