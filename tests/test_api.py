@@ -245,6 +245,16 @@ def test_get_collection_queryables(config, api_):
     assert 'queryables' in queryables
     assert len(queryables['queryables']) == 6
 
+    # test with provider filtered properties
+    api_.config['datasets']['obs']['provider']['properties'] = ['stn_id']
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 1
+
 
 def test_describe_collections_json_ld(config, api_):
     req_headers = make_req_headers()

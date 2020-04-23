@@ -505,10 +505,18 @@ class API(object):
         }
 
         for k, v in p.fields.items():
-            queryables['queryables'].append({
-                'queryable': k,
-                'type': v['type']
-            })
+            show_field = False
+            if p.properties:
+                if k in p.properties:
+                    show_field = True
+            else:
+                show_field = True
+
+            if show_field:
+                queryables['queryables'].append({
+                    'queryable': k,
+                    'type': v['type']
+                })
 
         if format_ == 'html':  # render
             queryables['title'] = self.config['datasets'][dataset]['title']
