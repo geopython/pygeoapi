@@ -227,6 +227,35 @@ def test_describe_collections(config, api_):
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
+def test_get_collection_queryables(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {}, 'notfound')
+    assert code == 400
+
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'html'}, 'obs')
+    assert rsp_headers['Content-Type'] == 'text/html'
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 6
+
+    # test with provider filtered properties
+    api_.config['datasets']['obs']['provider']['properties'] = ['stn_id']
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 1
+
+
 def test_describe_collections_json_ld(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_collections(
@@ -387,7 +416,7 @@ def test_get_collection_items(config, api_):
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {
-            'sortby': 'stn_id',
+            'sortby': 'bad-property',
             'stn_id': '35'
         }, 'obs')
 
@@ -406,7 +435,7 @@ def test_get_collection_items(config, api_):
         req_headers, {'sortby': 'stn_id:A'}, 'obs')
     features = json.loads(response)
     # FIXME? this test errors out currently
-    assert code == 400
+    assert code == 200
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'csv'}, 'obs')

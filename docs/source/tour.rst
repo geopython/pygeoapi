@@ -52,6 +52,16 @@ with related links (other related HTML pages, dataset download, etc.).
 
 The 'View' section provides the default to start browsing the data.
 
+The 'Queryables' section provides a link to the dataset's properties.
+
+
+Collection queryables
+---------------------
+
+http://localhost:5000/collections/obs/queryables
+
+The queryables endpoint provides a list of queryable properties and their associated datatypes.
+
 
 Collection items
 ----------------

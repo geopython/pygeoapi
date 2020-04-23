@@ -338,6 +338,26 @@ def get_oas_30(cfg):
 
         p = load_plugin('provider', cfg['datasets'][k]['provider'])
 
+        if p.fields:
+            queryables_path = '{}/queryables'.format(collection_name_path)
+
+            paths[queryables_path] = {
+                'get': {
+                    'summary': 'Get {} queryables'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
         if p.time_field is not None:
             paths[items_path]['get']['parameters'].append(
                 {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa

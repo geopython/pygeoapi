@@ -65,6 +65,12 @@ def config():
 
 def test_query(fixture, config):
     p = CSVProvider(config)
+
+    fields = p.get_fields()
+    assert len(fields) == 6
+    assert fields['value']['type'] == 'string'
+    assert fields['stn_id']['type'] == 'string'
+
     results = p.query()
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
