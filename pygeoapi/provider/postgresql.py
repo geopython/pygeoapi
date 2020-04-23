@@ -55,7 +55,7 @@ from psycopg2.extras import RealDictCursor
 LOGGER = logging.getLogger(__name__)
 
 
-class DatabaseConnection(object):
+class DatabaseConnection:
     """Database connection class to be used as 'with' statement.
      The class returns a connection object.
     """

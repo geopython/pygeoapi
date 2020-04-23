@@ -32,7 +32,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseFormatter(object):
+class BaseFormatter:
     """generic Formatter ABC"""
 
     def __init__(self, formatter_def):

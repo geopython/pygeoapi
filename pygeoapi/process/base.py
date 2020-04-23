@@ -32,7 +32,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseProcessor(object):
+class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
     def __init__(self, processor_def, process_metadata):
