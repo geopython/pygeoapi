@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
-{% block crumbs %}{{ super() }} 
+{% block crumbs %}{{ super() }}
 / <a href="../collections">Collections</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}

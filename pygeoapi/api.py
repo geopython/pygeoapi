@@ -304,7 +304,7 @@ class API:
         for k, v in collections.items():
             collection = {'links': []}
             collection['id'] = k
-            collection['itemType'] = 'feature'
+            collection['itemType'] = 'Feature'
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']

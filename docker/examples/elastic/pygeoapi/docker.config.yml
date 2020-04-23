@@ -172,7 +172,7 @@ resources:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
             id_field: id
-     
+
     countries:
         type: collection
         title: Countries in the world
@@ -193,7 +193,7 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider: 
+        provider:
             name: SQLiteGPKG
             data: tests/data/ne_110m_admin_0_countries.sqlite
             id_field: ogc_fid

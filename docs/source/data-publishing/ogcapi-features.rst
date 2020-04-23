@@ -104,7 +104,7 @@ PostgreSQL
 
    provider:
        name: PostgreSQL
-       data: 
+       data:
            host: 127.0.0.1
            dbname: test
            user: postgres
@@ -151,7 +151,7 @@ Data access examples
   - http://localhost:5000/collections/foo
 - browse features
   - http://localhost:5000/collections/foo/items
-- paging 
+- paging
   - http://localhost:5000/collections/foo/items?startIndex=10&limit=10
 - CSV outputs
   - http://localhost:5000/collections/foo/items?f=csv

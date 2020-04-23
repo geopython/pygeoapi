@@ -220,7 +220,7 @@ class OGRProvider(BaseProvider):
                     {}'.format(source_type)
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
-                # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa 
+                # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa
                 self.conn = _ignore_gdal_error(
                     self.driver, 'Open', self.data_def['source'], 0)
         if not self.conn:

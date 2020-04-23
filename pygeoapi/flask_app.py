@@ -189,21 +189,21 @@ def get_collection_queryables(name=None):
     return response
 
 
-@APP.route('/collections/<feature_collection>/items')
-@APP.route('/collections/<feature_collection>/items/<feature>')
-def dataset(feature_collection, feature=None):
+@APP.route('/collections/<collection_id>/items')
+@APP.route('/collections/<collection_id>/items/<item_id>')
+def dataset(collection_id, item_id=None):
     """
-    OGC open api collections/{dataset}/items/{feature}  access point
+    OGC open api collections/{dataset}/items/{item} access point
 
     :returns: HTTP response
     """
 
-    if feature is None:
+    if item_id is None:
         headers, status_code, content = api_.get_collection_items(
-            request.headers, request.args, feature_collection)
+            request.headers, request.args, collection_id)
     else:
         headers, status_code, content = api_.get_collection_item(
-            request.headers, request.args, feature_collection, feature)
+            request.headers, request.args, collection_id, item_id)
 
     response = make_response(content, status_code)
 

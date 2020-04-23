@@ -62,7 +62,7 @@ Or you can create a ``Dockerfile`` extending the base image and **copy** in your
 
 .. code-block:: dockerfile
 
-   FROM geopython/pygeoapi:latest   
+   FROM geopython/pygeoapi:latest
    COPY ./my.config.yml /pygeoapi/local.config.yml
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
@@ -72,7 +72,7 @@ Deploying on a sub-path
 
 By default the ``pygeoapi`` Docker image will run from the ``root`` path (``/``).  If you need to run from a
 sub-path and have all internal URLs properly configured, you can set the ``SCRIPT_NAME`` environment variable.
-  
+
 For example to run with ``my.config.yml`` on ``http://localhost:5000/mypygeoapi``:
 
 .. code-block:: bash

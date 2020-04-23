@@ -21,8 +21,8 @@ If applicable, add screenshots to help explain your problem.
 
 **Environment**
  - OS:
- - Python version: 
- - pygeoapi version: 
+ - Python version:
+ - pygeoapi version:
 
 **Additional context**
 Add any other context about the problem here.

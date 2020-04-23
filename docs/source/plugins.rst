@@ -54,7 +54,7 @@ The below template provides a minimal example (let's call the file ``mycooldata.
 
    class MyCoolDataProvider(BaseProvider):
        """My cool data provider"""
-      
+
        def __init__(self, provider_def):
            """Inherit from parent class"""
 
