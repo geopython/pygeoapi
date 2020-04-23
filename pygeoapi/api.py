@@ -448,6 +448,86 @@ class API(object):
 
         return headers_, 200, json.dumps(fcm, default=json_serial)
 
+    @pre_process
+    @jsonldify
+    def get_collection_queryables(self, headers_, format_, dataset=None):
+        """
+        Provide collection queryables
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: name of collection
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if any([dataset is None,
+                dataset not in self.config['datasets'].keys()]):
+
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Creating collection queryables')
+        LOGGER.debug('Loading provider')
+        try:
+            p = load_plugin('provider',
+                            self.config['datasets'][dataset]['provider'])
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+
+        queryables = {
+            'queryables': []
+        }
+
+        for k, v in p.fields.items():
+            show_field = False
+            if p.properties:
+                if k in p.properties:
+                    show_field = True
+            else:
+                show_field = True
+
+            if show_field:
+                queryables['queryables'].append({
+                    'queryable': k,
+                    'type': v['type']
+                })
+
+        if format_ == 'html':  # render
+            queryables['title'] = self.config['datasets'][dataset]['title']
+            headers_['Content-Type'] = 'text/html'
+            content = render_j2_template(self.config, 'queryables.html',
+                                         queryables)
+
+            return headers_, 200, content
+
+        return headers_, 200, json.dumps(queryables, default=json_serial)
+
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
         Queries feature collection

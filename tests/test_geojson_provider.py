@@ -67,6 +67,12 @@ def config():
 
 def test_query(fixture, config):
     p = GeoJSONProvider(config)
+
+    fields = p.get_fields()
+    assert len(fields) == 2
+    assert fields['id']['type'] == 'string'
+    assert fields['name']['type'] == 'string'
+
     results = p.query()
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1

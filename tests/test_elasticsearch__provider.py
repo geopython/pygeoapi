@@ -44,6 +44,13 @@ def config():
 
 def test_query(config):
     p = ElasticsearchProvider(config)
+
+    fields = p.get_fields()
+    assert len(fields) == 37
+    assert fields['scalerank']['type'] == 'long'
+    assert fields['changed']['type'] == 'float'
+    assert fields['ls_name']['type'] == 'string'
+
     results = p.query()
     assert len(results['features']) == 10
     assert results['numberMatched'] == 242

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }} 
+/ <a href="../../collections">Collections</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="./{{ data['id'] }}queryables">Queryables</a>
+{% endblock %}
+{% block body %}
+    <section id="collection" itemscope itemtype="https://schema.org/Dataset">
+      <span itemprop="includedInDataCatalog" itemscope itemtype="https://schema.org/DataCatalog">
+        <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
+        <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
+        <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
+      </span>
+      <h1 itemprop="name">{{ data['title'] }}</h1>
+      <meta itemprop="url" content="{{ config['server']['url'] }}" />
+      <p itemprop="description">{{ data['description'] }}</p>
+      <p itemprop="keywords">
+        {% for kw in data['keywords'] %}
+          <mark class="tag">{{ kw }}</mark>
+        {% endfor %}
+      </p>
+      <h3>Queryables</h3>
+      <ul>
+      {% for queryable in data['queryables'] %}
+        <li>{{ queryable['queryable'] }} (<code>{{ queryable['type'] }}</code>)</li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}
