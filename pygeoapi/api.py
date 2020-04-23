@@ -92,7 +92,7 @@ def pre_process(func):
     return inner
 
 
-class API(object):
+class API:
     """API object"""
 
     def __init__(self, config):
