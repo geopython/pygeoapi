@@ -487,7 +487,7 @@ class API:
             return headers_, 400, json.dumps(exception)
 
         if any([dataset is None,
-                dataset not in self.config['datasets'].keys()]):
+                dataset not in self.config['resources'].keys()]):
 
             exception = {
                 'code': 'InvalidParameterValue',
@@ -500,7 +500,7 @@ class API:
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider',
-                            self.config['datasets'][dataset]['provider'])
+                            self.config['resources'][dataset]['provider'])
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -535,7 +535,7 @@ class API:
                 })
 
         if format_ == 'html':  # render
-            queryables['title'] = self.config['datasets'][dataset]['title']
+            queryables['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config, 'queryables.html',
                                          queryables)
