@@ -53,7 +53,7 @@ paging and sorting:
 
 .. image:: /_static/openapi_get_item.png
 
-For each feature in our dataset we have a specific identifier.  Notice that the identifier is not part of the GeoJSON
+For each item in our dataset we have a specific identifier.  Notice that the identifier is not part of the GeoJSON
 properties, but is provided as a GeoJSON root property of ``id``.
 
 .. image:: /_static/openapi_get_item_id.png

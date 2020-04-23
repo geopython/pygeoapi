@@ -43,7 +43,7 @@ The ``server`` section provides directives on binding and high level tuning.
     language: en-US  # default server language
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
-    limit: 10  # server limit on number of features to return
+    limit: 10  # server limit on number of items to return
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
@@ -193,7 +193,7 @@ Linked Data
     :align: left
     :alt: JSON-LD support
 
-pygeoapi supports structured metadata about a deployed instance, and is also capable of presenting feature data as
+pygeoapi supports structured metadata about a deployed instance, and is also capable of presenting data as
 structured data. `JSON-LD`_ equivalents are available for each HTML page, and are embedded
 as data blocks within the corresponding page for search engine optimisation (SEO).  Tools such as the
 `Google Structured Data Testing Tool`_ can be used to check the structured representations.
@@ -205,11 +205,11 @@ This metadata is included automatically, and is sufficient for inclusion in majo
 For collections, at the level of an item or items, by default the JSON-LD representation adds:
 
 - The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each feature in a collection, that is the URL for that feature (resolving to its HTML representation
+- An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
   in pygeoapi)
 
 .. note::
-   While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your features to be
+   While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.
 
 pygeoapi currently allows for the extension of the ``@context`` to allow properties to be aliased to terms from
@@ -248,7 +248,7 @@ also expressed as `<https://schema.org/DateTime>`_.
 
 This example demonstrates how to use this feature with a CSV data provider, using included sample data. The
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
-``@context``.  Relationships between features can be expressed but is dependent on such relationships being expressed
+``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
 
 Summary

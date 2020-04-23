@@ -931,7 +931,7 @@ class API:
     @pre_process
     def get_collection_item(self, headers_, format_, dataset, identifier):
         """
-        Get a single item
+        Get a single collection item
 
         :param headers_: copy of HEADERS object
         :param format_: format of requests,
