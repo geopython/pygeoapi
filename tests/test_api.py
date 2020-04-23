@@ -246,7 +246,7 @@ def test_get_collection_queryables(config, api_):
     assert len(queryables['queryables']) == 6
 
     # test with provider filtered properties
-    api_.config['datasets']['obs']['provider']['properties'] = ['stn_id']
+    api_.config['resources']['obs']['provider']['properties'] = ['stn_id']
 
     rsp_headers, code, response = api_.get_collection_queryables(
         req_headers, {'f': 'json'}, 'obs')
