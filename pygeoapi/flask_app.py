@@ -189,6 +189,27 @@ def get_collection_queryables(name=None):
     return response
 
 
+@APP.route('/collections/<name>/tiles')
+def get_collection_tiles(name=None):
+    """
+    OGC open api collections tiles access point
+
+    :param name: identifier of collection name
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.args, name)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @APP.route('/collections/<collection_id>/items')
 @APP.route('/collections/<collection_id>/items/<item_id>')
 def dataset(collection_id, item_id=None):

@@ -174,6 +174,29 @@ async def get_collection_queryables(request: Request, name=None):
     return response
 
 
+@app.route('/collections/{name}/tiles')
+@app.route('/collections/{name}/tiles/')
+async def get_collection_tiles(request: Request, name=None):
+    """
+    OGC open api collections tiles access point
+
+    :param name: identifier of collection name
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @app.route('/collections/{collection_id}/items')
 @app.route('/collections/{collection_id}/items/')
 @app.route('/collections/{collection_id}/items/{item_id}')
