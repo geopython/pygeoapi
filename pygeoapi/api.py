@@ -66,7 +66,9 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/core',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections'
 ]
 
 
@@ -277,7 +279,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_collections(self, headers_, format_, dataset=None):
+    def describe_collections(self, headers_, format_, dataset=None, tiles=None):
         """
         Provide collection metadata
 
@@ -285,6 +287,7 @@ class API:
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: name of collection
+        :param tiles: tiles of the collection
 
         :returns: tuple of headers, status code, content
         """
@@ -348,6 +351,8 @@ class API:
                 }
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
+            
+            tiles = v.get('tiles', {})
 
             for link in v['links']:
                 lnk = {
@@ -384,6 +389,23 @@ class API:
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
             })
+            
+            if tiles:
+                LOGGER.debug('Adding tiles link')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'tiles',
+                    'title': 'Tiles as JSON',
+                    'href': '{}/collections/{}/tiles?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'tiles',
+                    'title': 'Tiles as HTML',
+                    'href': '{}/collections/{}/tiles?f=html'.format(
+                        self.config['server']['url'], k)
+                })
 
             if collection_data_type == 'feature':
                 LOGGER.debug('Adding feature based links')
@@ -561,6 +583,87 @@ class API:
             return headers_, 200, content
 
         return headers_, 200, json.dumps(queryables, default=json_serial)
+
+    @pre_process
+    @jsonldify
+    def get_collection_tiles(self, headers_, format_, dataset=None):
+        """
+        Provide collection queryables
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: name of collection
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Creating collection tiles')
+        LOGGER.debug('Loading provider')
+        breakpoint()
+        try:
+            p = load_plugin('provider',
+                            self.config['resources'][dataset]['tiles']['provider'])
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, json.dumps(exception)
+
+        tiles = {
+            'tiles': []
+        }
+
+        for k, v in p.fields.items():
+            show_field = False
+            if p.properties:
+                if k in p.properties:
+                    show_field = True
+            else:
+                show_field = True
+
+            if show_field:
+                tiles['tiles'].append({
+                    'tile': k,
+                    'type': v['type']
+                })
+
+        if format_ == 'html':  # render
+            tiles['title'] = self.config['resources'][dataset]['title']
+            headers_['Content-Type'] = 'text/html'
+            content = render_j2_template(self.config, 'tiles.html',
+                                         tiles)
+
+            return headers_, 200, content
+
+        return headers_, 200, json.dumps(tiles, default=json_serial)
 
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
