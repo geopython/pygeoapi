@@ -159,7 +159,7 @@ class BaseTileProvider:
         raise NotImplementedError()
 
 
-    def get_tile_service(self, baseurl, servicepath, tile_type):
+    def get_tile_services(self, baseurl, servicepath, tile_type):
         """
         Gets tile service description
 
@@ -173,7 +173,7 @@ class BaseTileProvider:
         raise NotImplementedError()
 
 
-    def get_metadata_service(self, baseurl, servicepath):
+    def get_metadata_services(self, baseurl, servicepath):
         """
         Gets tile service description
 
