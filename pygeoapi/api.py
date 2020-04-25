@@ -622,8 +622,8 @@ class API:
         tiles = {
             'title': dataset,
             'description': self.config['resources'][dataset]['description'],
-            'links': [{}],
-            'tileMatrixSetLinks': [{}]
+            'links': [],
+            'tileMatrixSetLinks': []
         }
 
         tiles['links'].append({
@@ -648,7 +648,8 @@ class API:
                 self.config['server']['url'], dataset)
         })
 
-        for service in p.services['links']:
+        for service in p.get_tile_services(
+            baseurl=self.config['server']['url'])['links']:
             tiles['links'].append(service)
         for scheme in p.schemes['tileMatrixSetLinks']:
             tiles['tileMatrixSetLinks'].append(scheme)
@@ -656,6 +657,7 @@ class API:
         if format_ == 'html':  # render
             tiles['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
+            print(tiles)
             content = render_j2_template(self.config, 'tiles.html',
                                          tiles)
 
