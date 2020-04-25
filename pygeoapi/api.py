@@ -351,7 +351,7 @@ class API:
                 }
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
-            
+
             tiles = v.get('tiles', {})
 
             for link in v['links']:
@@ -618,10 +618,10 @@ class API:
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
-        breakpoint()
         try:
             p = load_plugin('provider',
-                            self.config['resources'][dataset]['tiles']['provider'])
+                            self.config['resources'][dataset]['tiles']['provider'],
+                            tiles=True)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -638,22 +638,36 @@ class API:
             return headers_, 500, json.dumps(exception)
 
         tiles = {
-            'tiles': []
+            'title': dataset,
+            'description': self.config['resources'][dataset]['description'],
+            'links': [{}],
+            'tileMatrixSetLinks': [{}]
         }
 
-        for k, v in p.fields.items():
-            show_field = False
-            if p.properties:
-                if k in p.properties:
-                    show_field = True
-            else:
-                show_field = True
+        tiles['links'].append({
+            'type': 'application/json',
+            'rel': 'self' if format_ == 'json' else 'alternate',
+            'title': 'This document as JSON',
+            'href': '{}/collections/{}/tiles?f=jsonld'.format(
+                self.config['server']['url'], dataset)
+        })
+        tiles['links'].append({
+            'type': 'application/ld+json',
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+            'title': 'This document as RDF (JSON-LD)',
+            'href': '{}/collections/{}/tiles?f=jsonld'.format(
+                self.config['server']['url'], dataset)
+        })
+        tiles['links'].append({
+            'type': 'text/html',
+            'rel': 'self' if format_ == 'html' else 'alternate',
+            'title': 'This document as HTML',
+            'href': '{}/collections/{}/tiles?f=html'.format(
+                self.config['server']['url'], dataset)
+        })
 
-            if show_field:
-                tiles['tiles'].append({
-                    'tile': k,
-                    'type': v['type']
-                })
+        tiles['links'].append(p.service['links'])
+        tiles['tileMatrixSetLinks'].append(p.schemes['tileMatrixSetLinks'])
 
         if format_ == 'html':  # render
             tiles['title'] = self.config['resources'][dataset]['title']

@@ -58,12 +58,13 @@ PLUGINS = {
 }
 
 
-def load_plugin(plugin_type, plugin_def):
+def load_plugin(plugin_type, plugin_def, tiles=False):
     """
     loads plugin by name
 
     :param plugin_type: type of plugin (provider, formatter)
     :param plugin_def: plugin definition
+    :param 
 
     :returns: plugin object
     """
@@ -75,7 +76,10 @@ def load_plugin(plugin_type, plugin_def):
         LOGGER.exception(msg)
         raise InvalidPluginError(msg)
 
-    plugin_list = PLUGINS[plugin_type]
+    if tiles:
+        plugin_list = PLUGINS[plugin_type]['tiles']
+    else:
+        plugin_list = PLUGINS[plugin_type]
 
     LOGGER.debug('Plugins: {}'.format(plugin_list))
 
