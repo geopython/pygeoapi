@@ -120,6 +120,72 @@ class BaseProvider:
         return '<BaseProvider> {}'.format(self.type)
 
 
+class BaseTileProvider:
+    """generic Provider ABC"""
+
+    def __init__(self, provider_def):
+        """
+        Initialize object
+
+        :param provider_def: provider definition
+
+        :returns: pygeoapi.providers.base.BaseTileProvider
+        """
+
+        self.name = provider_def['name']
+        self.source = provider_def['source']
+        self.format_types = provider_def['format_type']
+        self.tiling_schemes = provider_def['schemes']
+        self.fields = {}
+
+
+    def get_fields(self):
+        """
+        Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        raise NotImplementedError()
+
+
+    def get_tiling_schemes(self):
+        """
+        Get provider field information (names, types)
+
+        :returns: dict of tiling schemes
+        """
+
+        raise NotImplementedError()
+
+
+    def get_tile_service(self, baseurl, servicepath, tile_type):
+        """
+        Gets tile service description
+
+        :param baseurl: base URL of endpoint
+        :param servicepath: base path of URL
+        :param tile_type: tile format type
+
+        :returns: `dict` of file listing or `dict` of GeoJSON item or raw file
+        """
+
+        raise NotImplementedError()
+
+
+    def get_metadata_service(self, baseurl, servicepath):
+        """
+        Gets tile service description
+
+        :param baseurl: base URL of endpoint
+        :param servicepath: base path of URL
+
+        :returns: `dict` of the metadata description
+        """
+
+        raise NotImplementedError()
+
+
 class ProviderGenericError(Exception):
     """provider generic error"""
     pass
