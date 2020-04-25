@@ -57,28 +57,26 @@ class MVTProvider(BaseTileProvider):
         #     LOGGER.error(msg)
         #     raise ProviderConnectionError(msg)
         self.schemes = self.get_tiling_schemes()
-        self.service = self.get_tile_service()
+        self.services = self.get_tile_services()
     
     
     def get_tiling_schemes(self):
         
-        content = {}
-        
-        tileMatrixSetLinks = [{
+        tileMatrixSetLinks = {
+            'tileMatrixSetLinks': [{
                 'tileMatrixSet': 'WorldCRS84Quad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'
-            },{
+            },
+            {
                 'tileMatrixSet': 'WebMercatorQuad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'
-            }
-        ]
+            }]
+        }
         
-        content.update(tileMatrixSetLinks=tileMatrixSetLinks)
-        
-        return content
+        return tileMatrixSetLinks
     
 
-    def get_tile_service(self, baseurl=None, servicepath=None,
+    def get_tile_services(self, baseurl=None, servicepath=None,
                          tile_type=None):
         """
         Gets mvt service description
@@ -92,30 +90,40 @@ class MVTProvider(BaseTileProvider):
 
         url = urlparse(self.source)
         baseurl = baseurl or '{}://{}'.format(url.scheme, url.netloc)
-        servicepath = servicepath or url.path
         # @TODO: support multiple types
         tile_type = tile_type or self.format_types[0]
-        serviceurl = urljoin(urljoin(baseurl, servicepath), tile_type)
+        servicepath = \
+            servicepath or \
+                '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                    url.path.split('/{z}/{x}/{y}')[0],
+                    'tileMatrixSetId',
+                    'tileMatrix',
+                    'tileRow',
+                    'tileCol',
+                    tile_type)
 
-        content = {
+        service_url = urljoin(baseurl, servicepath)
+        service_metadata = urljoin(
+            service_url.split('/{tileMatrix}/{tileRow}/{tileCol}')[0],
+            'metadata')
+
+        links = {
             'links': [{
-                'rel': 'item',
-                # {tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}.pbf
-                'href': serviceurl,
-                'title': 'This collection as Mapbox vector tiles',
                 'type': 'application/vnd.mapbox-vector-tile',
+                'rel': 'item',
+                'title': 'This collection as Mapbox vector tiles',
+                'href': service_url,
                 'templated': True
             }, {
-                'rel': 'describedby',
-                # tiles/{tileMatrixSetId}/metadata
-                'href': serviceurl,
-                'title': 'Metadata for this collection in the TileJSON format',
                 'type': 'application/json',
+                'rel': 'describedby',
+                'title': 'Metadata for this collection in the TileJSON format',
+                'href': service_metadata,
                 'templated': True
             }]
         }
 
-        return content
+        return links
 
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.source)

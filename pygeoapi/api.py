@@ -648,8 +648,10 @@ class API:
                 self.config['server']['url'], dataset)
         })
 
-        tiles['links'].append(p.service['links'])
-        tiles['tileMatrixSetLinks'].append(p.schemes['tileMatrixSetLinks'])
+        for service in p.services['links']:
+            tiles['links'].append(service)
+        for scheme in p.schemes['tileMatrixSetLinks']:
+            tiles['tileMatrixSetLinks'].append(scheme)
 
         if format_ == 'html':  # render
             tiles['title'] = self.config['resources'][dataset]['title']
