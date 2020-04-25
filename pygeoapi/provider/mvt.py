@@ -27,9 +27,7 @@
 #
 # =================================================================
 
-import io
 import logging
-import os
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.provider.base import (BaseTileProvider, ProviderConnectionError,
