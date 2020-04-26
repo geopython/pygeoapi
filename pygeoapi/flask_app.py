@@ -210,6 +210,33 @@ def get_collection_tiles(name=None):
     return response
 
 
+@APP.route('/collections/<name>/tiles/<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+def get_collection_items_tiles(name=None, tileMatrixSetId=None,
+                tileMatrix=None, tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service
+
+    :param name: identifier of collection name
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tileMatrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_items_tiles(
+        request.headers, request.args, name,
+        tileMatrixSetId, tileMatrix, tileRow, tileCol)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @APP.route('/collections/<collection_id>/items')
 @APP.route('/collections/<collection_id>/items/<item_id>')
 def dataset(collection_id, item_id=None):
