@@ -15,11 +15,14 @@ to the given directory and specifying allowed file types:
 
 .. code-block:: yaml
 
-   provider:
-       name: FileSystem
-       data: /Users/tomkralidis/Dev/data/gdps
-       file_types:
-           - .grib2
+   my-stac-resource:
+       type: stac-collection
+       ...
+       provider:
+           name: FileSystem
+           data: /Users/tomkralidis/Dev/data/gdps
+           file_types:
+               - .grib2
 
 
 .. note::

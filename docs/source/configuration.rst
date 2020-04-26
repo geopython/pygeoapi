@@ -16,8 +16,7 @@ pygeoapi configuration contains the following core sections:
 - ``server``: server-wide settings
 - ``logging``: logging configuration
 - ``metadata``: server-wide metadata (contact, licensing, etc.)
-- ``datasets``: dataset collections offered by server
-- ``processes``: processes offered by server
+- ``resources``: dataset collections, processes and stac-collections offered by the server
 
 .. note::
    `Standard YAML mechanisms <https://en.wikipedia.org/wiki/YAML#Advanced_components>`_ can be used (anchors, references, etc.) for reuse and compactness.
@@ -44,7 +43,7 @@ The ``server`` section provides directives on binding and high level tuning.
     language: en-US  # default server language
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
-    limit: 10  # server limit on number of features to return
+    limit: 10  # server limit on number of items to return
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
@@ -106,15 +105,21 @@ The ``metadata`` section provides settings for overall service metadata and desc
           instructions: During hours of service. Off on weekends.
           role: pointOfContact
 
-``datasets``
-^^^^^^^^^^^^
+``resources``
+^^^^^^^^^^^^^
 
-The ``datasets`` section lists 1 or more dataset collections to be published by the server.
+The ``resources`` section lists 1 or more dataset collections to be published by the server.
+
+The ``resource.type`` property is required.  Allowed types are:
+- ``collection``
+- ``process``
+- ``stac-collection``
 
 .. code-block:: yaml
 
-  datasets:
+  resources:
       obs:
+          type: collection  # REQUIRED (collection, process, or stac-collection)
           title: Observations  # title of dataset
           description: My cool observations  # abstract of dataset
           keywords:  # list of related keywords
@@ -151,25 +156,17 @@ The ``datasets`` section lists 1 or more dataset collections to be published by 
                   - stn_id
                   - value
 
+      hello-world:  # name of process
+          type: collection  # REQUIRED (collection, process, or stac-collection)
+          processor:
+              name: HelloWorld  # Python path of process defition
+
+
 .. seealso::
    `Linked Data`_ for optionally configuring linked data datasets
 
 .. seealso::
    :ref:`plugins` for more information on plugins
-
-
-``processes``
-^^^^^^^^^^^^^
-
-.. code-block:: yaml
-
-  processes:
-      hello-world:  # name of process
-          processor:
-              name: HelloWorld  # Python path of process defition
-
-.. note::
-   See :ref:`plugins` for more information on plugins
 
 
 Using environment variables
@@ -196,7 +193,7 @@ Linked Data
     :align: left
     :alt: JSON-LD support
 
-pygeoapi supports structured metadata about a deployed instance, and is also capable of presenting feature data as
+pygeoapi supports structured metadata about a deployed instance, and is also capable of presenting data as
 structured data. `JSON-LD`_ equivalents are available for each HTML page, and are embedded
 as data blocks within the corresponding page for search engine optimisation (SEO).  Tools such as the
 `Google Structured Data Testing Tool`_ can be used to check the structured representations.
@@ -208,11 +205,11 @@ This metadata is included automatically, and is sufficient for inclusion in majo
 For collections, at the level of an item or items, by default the JSON-LD representation adds:
 
 - The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each feature in a collection, that is the URL for that feature (resolving to its HTML representation
+- An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
   in pygeoapi)
 
 .. note::
-   While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your features to be
+   While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.
 
 pygeoapi currently allows for the extension of the ``@context`` to allow properties to be aliased to terms from
@@ -251,7 +248,7 @@ also expressed as `<https://schema.org/DateTime>`_.
 
 This example demonstrates how to use this feature with a CSV data provider, using included sample data. The
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
-``@context``.  Relationships between features can be expressed but is dependent on such relationships being expressed
+``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
 
 Summary
