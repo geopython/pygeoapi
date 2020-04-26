@@ -649,7 +649,11 @@ class API:
         })
 
         for service in p.get_tile_services(
-            baseurl=self.config['server']['url'])['links']:
+            baseurl=self.config['server']['url'],
+            servicepath=\
+                '/collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'.format(
+                    dataset, 'tileMatrixSetId',
+                    'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
         for scheme in p.schemes['tileMatrixSetLinks']:
             tiles['tileMatrixSetLinks'].append(scheme)
