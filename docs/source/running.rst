@@ -25,11 +25,11 @@ Flask WSGI
 Web Server Gateway Interface (WSGI) is a standard for how web servers communicate with Python applications.  By
 having a WSGI server, HTTP requests are processed into threads/processes for better performance.  Flask is a WSGI
 implementation which pygeoapi utilizes to communicate with the core API.
- 
+
 .. code-block:: bash
- 
+
    HTTP request <--> Flask (pygeoapi/flask_app.py) <--> pygeoapi API (pygeoapi/api.py)
-   
+
 
 The Flask WSGI server can be run as follows:
 
@@ -116,7 +116,7 @@ Gunicorn and Flask
 Gunicorn and Flask is simple to run:
 
 .. code-block:: bash
-   
+
    gunicorn pygeoapi.flask_app:APP
 
 .. note::

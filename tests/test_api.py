@@ -246,7 +246,7 @@ def test_get_collection_queryables(config, api_):
     assert len(queryables['queryables']) == 6
 
     # test with provider filtered properties
-    api_.config['datasets']['obs']['provider']['properties'] = ['stn_id']
+    api_.config['resources']['obs']['provider']['properties'] = ['stn_id']
 
     rsp_headers, code, response = api_.get_collection_queryables(
         req_headers, {'f': 'json'}, 'obs')
@@ -480,7 +480,7 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
-    api_.config['datasets']['obs']['extents'].pop('temporal')
+    api_.config['resources']['obs']['extents'].pop('temporal')
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
@@ -605,15 +605,13 @@ def test_describe_processes(config, api_):
     assert len(process['outputTransmission']) == 1
     assert len(process['jobControlOptions']) == 1
 
-    api_.config['processes'] = {}
+    api_.config['resources'] = {}
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
         req_headers, {}, 'foo')
     processes = json.loads(response)
     assert len(processes['processes']) == 0
-
-    api_.config.pop('processes')
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
@@ -645,7 +643,7 @@ def test_execute_process(config, api_):
 
     assert response['outputs'][0]['value'] == 'test'
 
-    api_.config['processes'] = {}
+    api_.config['resources'] = {}
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(req_headers, {},
@@ -653,8 +651,6 @@ def test_execute_process(config, api_):
                                                        'hello-world')
     response = json.loads(response)
     assert response['code'] == 'NotFound'
-
-    api_.config.pop('processes')
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(req_headers, {},

@@ -220,6 +220,9 @@ def render_j2_template(config, template, data):
     env.filters['get_breadcrumbs'] = get_breadcrumbs
     env.globals.update(get_breadcrumbs=get_breadcrumbs)
 
+    env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
+    env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
+
     template = env.get_template(template)
     return template.render(config=config, data=data, version=__version__)
 
@@ -261,3 +264,17 @@ def get_breadcrumbs(urlpath):
         })
 
     return links
+
+
+def filter_dict_by_key_value(dict_, key, value):
+    """
+    helper generator function to filter a dict by a dict key
+
+    :param dict_: ``dict``
+    :param key: dict key
+    :param value: dict key value
+
+    :returns: filtered ``dict``
+    """
+
+    return {k: v for (k, v) in dict_.items() if v[key] == value}

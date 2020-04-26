@@ -1,5 +1,5 @@
 pygeoapi (0.7.0-1~bionic0) bionic; urgency=medium
-  
+
   * Numerous CITE compliance fixes
   * Elasticsearch: update provider to support ES7
   * MongoDB provider implementation

@@ -84,8 +84,9 @@ metadata:
         instructions: During hours of service.  Off on weekends.
         role: pointOfContact
 
-datasets:
+resources:
     obs:
+        type: collection
         title: Observations
         description: My cool observations
         keywords:
@@ -119,6 +120,7 @@ datasets:
                 y_field: long
 
     ne_110m_populated_places_simple:
+        type: collection
         title: Populated Places
         description: Point symbols with name attributes. Includes all admin-0 capitals and some other major cities. We favor regional significance over population census in determining our selection of places. Use the scale rankings to filter the number of towns that appear on your map.
         keywords:
@@ -147,6 +149,7 @@ datasets:
             id_field: geonameid
 
     lakes:
+        type: collection
         title: Large Lakes
         description: lakes of the world, public domain
         keywords:
@@ -169,8 +172,9 @@ datasets:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
             id_field: id
-     
+
     countries:
+        type: collection
         title: Countries in the world
         description: Countries of the world
         keywords:
@@ -189,13 +193,13 @@ datasets:
             temporal:
                 begin:
                 end: null  # or empty
-        provider: 
+        provider:
             name: SQLiteGPKG
             data: tests/data/ne_110m_admin_0_countries.sqlite
             id_field: ogc_fid
             table: ne_110m_admin_0_countries
 
-processes:
     hello-world:
+        type: process
         processor:
             name: HelloWorld

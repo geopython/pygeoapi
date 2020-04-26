@@ -80,8 +80,9 @@ metadata:
         instructions: During hours of service. Off on weekends.
         role: pointOfContact
 
-datasets:
+resources:
     obs:
+        type: collection
         title: Observations
         description: My cool observations
         keywords:
@@ -119,6 +120,7 @@ datasets:
                 y_field: lat
 
     lakes:
+        type: collection
         title: Large Lakes
         description: lakes of the world, public domain
         keywords:
@@ -142,6 +144,7 @@ datasets:
             id_field: id
 
     test-data:
+        type: stac-collection
         title: pygeoapi test data
         description: pygeoapi test data
         keywords:
@@ -165,7 +168,7 @@ datasets:
                 - .csv
                 - .grib2
 
-processes:
     hello-world:
+        type: process
         processor:
             name: HelloWorld

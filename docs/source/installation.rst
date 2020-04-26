@@ -61,7 +61,7 @@ Conda
 
 .. code-block:: bash
 
-   conda install -c conda-forge pygeoapi 
+   conda install -c conda-forge pygeoapi
 
 UbuntuGIS
 ---------

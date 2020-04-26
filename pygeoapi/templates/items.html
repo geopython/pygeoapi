@@ -20,7 +20,7 @@
   <section id="collection">
     <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
     <p>Items in this collection.</p>
-  </section>  
+  </section>
   <section id="items">
     {% if data['features'] %}
     <div class="row">

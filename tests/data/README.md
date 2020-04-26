@@ -28,7 +28,7 @@ This directory provides test data to demonstrate functionality.
 ### `obs.csv`
 
 - source: MapServer msautotest suite
-- URL: [https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv](https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv) 
+- URL: [https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv](https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv)
 - Copyright (c) 2008-2018 Open Source Geospatial Foundation
 - Copyright (c) 1996-2008 Regents of the University of Minnesota
 
@@ -44,7 +44,7 @@ This directory provides test data to demonstrate functionality.
 - source: OpenStreetMap - Humanitarian OpenStreetMap Team (HOT)
 - URL: [hotosm_bdi_waterways](https://data.humdata.org/dataset/hotosm_bdi_waterways)
 - Waterways of Burundi
-- Date of dataset: Sep 01, 2018 
+- Date of dataset: Sep 01, 2018
 - Location: Burundi, Africa
 
 ### `CMC_glb_*.grib2`

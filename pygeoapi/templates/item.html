@@ -11,13 +11,13 @@
     {% endif %}
 {%- endmacro %}
 {% block title %}{{ super() }} {{ data['title'] }} - {{ data['id'] }}{% endblock %}
-{% block crumbs %}{{ super() }} 
+{% block crumbs %}{{ super() }}
 / <a href="../../../collections">Collections</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
 /  <a href="{{ link['href'] }}">{{ link['title'] }}</a>
   {% endif %}
-{% endfor %}     
+{% endfor %}
 / <a href="../items">Items</a>
 / <a href="./{{ data['id'] }}">Item {{ data['id'] }}</a>
 {% endblock %}

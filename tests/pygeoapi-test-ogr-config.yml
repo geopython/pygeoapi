@@ -80,9 +80,9 @@ metadata:
         instructions: During hours of service.  Off on weekends.
         role: pointOfContact
 
-datasets:
-
+resources:
     dutch_georef_stations:
+        type: collection
         title: Dutch Georef Stations via OGR WFS
         description: Locations of RD/GNSS-reference stations from Dutch Kadaster PDOK a.k.a RDInfo. Uses MapServer WFS v2 backend via OGRProvider.
         keywords:
@@ -130,6 +130,7 @@ datasets:
 
     # Warning: this layer contains about 10 million addresses, the backend WFS seems not optimized
     dutch_addresses:
+        type: collection
         title: Dutch Addresses via OGR WFS
         description: All Dutch addresses as derived from the key registry BAG. Uses GeoServer WFS v2 backend via OGRProvider. SLOW BACKEND!
         keywords:
@@ -176,6 +177,7 @@ datasets:
             layer: inspireadressen:inspireadressen
 
     utah_city_locations:
+        type: collection
         title: Cities in Utah via OGR WFS
         description: Data from the state of Utah. Standard demo dataset from the deegree WFS server that is used as backend WFS.
         keywords:
@@ -221,6 +223,7 @@ datasets:
             layer: app:SGID93_LOCATION_UDOTMap_CityLocations
 
     unesco_pois_italy:
+        type: collection
         title: Unesco POIs in Italy via OGR WFS
         description: Unesco Points of Interest in Italy. Using GeoSolutions GeoServer WFS demo-server as backend WFS.
         keywords:
@@ -265,6 +268,7 @@ datasets:
             layer: unesco:Unesco_point
 
     ogr_gpkg_poi:
+        type: collection
         title: Portuguese Points of Interest via OGR GPKG
         description: Portuguese Points of Interest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands. Uses GeoPackage backend via OGR provider.
         keywords:
@@ -311,6 +315,7 @@ datasets:
 
 
     sf_311incidents:
+        type: collection
         title: SF 311Incidents via OGR ESRI Feature Server
         description: OGR Provider - ESRI Feature Server - SF 311Incidents
         keywords:
@@ -390,7 +395,7 @@ datasets:
             time_field: data
             layer: dpc-covid19-ita-regioni
 
-processes:
     hello-world:
+        type: process
         processor:
             name: HelloWorld
