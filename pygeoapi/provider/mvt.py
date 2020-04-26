@@ -100,7 +100,7 @@ class MVTProvider(BaseTileProvider):
 
         service_url = urljoin(baseurl, servicepath)
         service_metadata = urljoin(
-            service_url.split('/{tileMatrix}/{tileRow}/{tileCol}')[0],
+            service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
 
         links = {
