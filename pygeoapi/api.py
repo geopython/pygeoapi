@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -44,9 +46,11 @@ from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
-from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
+from pygeoapi.provider.base import (ProviderGenericError,
+    ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
+from pygeoapi.provider.tile import (ProviderTileQueryError,
+                                    ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            json_serial, render_j2_template, TEMPLATES, to_json)
@@ -589,7 +593,7 @@ class API:
     @jsonldify
     def get_collection_tiles(self, headers_, format_, dataset=None):
         """
-        Provide collection queryables
+        Provide collection tiles
 
         :param headers_: copy of HEADERS object
         :param format_: format of requests,
@@ -1073,6 +1077,93 @@ class API:
             return headers_, 200, content
 
         return headers_, 200, json.dumps(content, default=json_serial)
+
+    @pre_process
+    def get_collection_items_tiles(self, headers_, format_,
+                                   dataset, matrix_id,
+                                   z_idx, y_idx, x_idx):
+        """
+        Get collection items tiles
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: dataset name
+        :param matrix_id: matrix identifier
+        :param z_idx: z index
+        :param y_idx: y index
+        :param x_idx: x index
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in ['mvt']:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Processing tiles')
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Loading provider')
+        p = load_plugin('provider',
+                        self.config['resources'][dataset]['tiles']['provider'],
+                        tiles=True)
+
+        try:
+            LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
+                matrix_id, z_idx, y_idx, x_idx))
+            content = p.get_tiles(matrix_id, z_idx, y_idx, x_idx, format_)
+        # @TODO: figure out if the spec requires to return json errors
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderTilesetIdNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'Tileset id not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+        except ProviderTileQueryError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'Tile not found'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+
+        if content is None:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
 
     @pre_process
     def get_collection_item(self, headers_, format_, dataset, identifier):
