@@ -68,9 +68,7 @@ class CSVProvider(BaseProvider):
             data_ = csv.DictReader(ff)
             fields = {}
             for f in data_.fieldnames:
-                fields[f] = {
-                    'type': 'string'
-                }
+                fields[f] = 'string'
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',

@@ -346,6 +346,21 @@ class API:
 
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
+                'type': 'application/json',
+                'rel': 'queryables',
+                'title': 'Queryables for this collection as JSON',
+                'href': '{}/collections/{}/queryables?f=json'.format(
+                    self.config['server']['url'], k)
+            })
+            collection['links'].append({
+                'type': 'text/html',
+                'rel': 'queryables',
+                'title': 'Queryables for this collection as HTML',
+                'href': '{}/collections/{}/queryables?f=html'.format(
+                    self.config['server']['url'], k)
+            })
+
+            collection['links'].append({
                 'type': 'application/geo+json',
                 'rel': 'items',
                 'title': 'Features as GeoJSON',
@@ -515,7 +530,7 @@ class API:
             if show_field:
                 queryables['queryables'].append({
                     'queryable': k,
-                    'type': v['type']
+                    'type': v
                 })
 
         if format_ == 'html':  # render
