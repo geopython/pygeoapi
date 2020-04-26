@@ -30,8 +30,9 @@
 import logging
 from urllib.parse import urlparse, urljoin
 
-from pygeoapi.provider.base import (BaseTileProvider, ProviderConnectionError,
-                                    ProviderNotFoundError)
+from pygeoapi.provider.tile import BaseTileProvider
+from pygeoapi.provider.base import ProviderConnectionError, ProviderNotFoundError
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,6 +121,9 @@ class MVTProvider(BaseTileProvider):
         }
 
         return links
+
+    def get_tiles(self, layer, z, y, x, format):
+        pass
 
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.source)
