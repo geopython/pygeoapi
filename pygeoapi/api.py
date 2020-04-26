@@ -1126,7 +1126,9 @@ class API:
         try:
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
-            content = p.get_tiles(matrix_id, z_idx, y_idx, x_idx, format_)
+            content = p.get_tiles(layer=None, tileset=matrix_id,
+                                  z=z_idx, y=y_idx, x=x_idx, format=format_)
+            return headers_, 200, content
         # @TODO: figure out if the spec requires to return json errors
         except ProviderConnectionError as err:
             exception = {
