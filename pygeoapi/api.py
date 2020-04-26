@@ -630,7 +630,7 @@ class API:
             'type': 'application/json',
             'rel': 'self' if format_ == 'json' else 'alternate',
             'title': 'This document as JSON',
-            'href': '{}/collections/{}/tiles?f=jsonld'.format(
+            'href': '{}/collections/{}/tiles?f=json'.format(
                 self.config['server']['url'], dataset)
         })
         tiles['links'].append({
