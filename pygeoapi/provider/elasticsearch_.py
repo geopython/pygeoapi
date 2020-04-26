@@ -109,7 +109,7 @@ class ElasticsearchProvider(BaseProvider):
                     type_ = 'string'
                 else:
                     type_ = v['type']
-                fields_[k] = {'type': type_}
+                fields_[k] = type_
 
         return fields_
 
@@ -210,7 +210,7 @@ class ElasticsearchProvider(BaseProvider):
 
                 sp = sort['property']
 
-                if self.fields[sp]['type'] == 'string':
+                if self.fields[sp] == 'string':
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:

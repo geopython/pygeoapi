@@ -47,9 +47,9 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 37
-    assert fields['scalerank']['type'] == 'long'
-    assert fields['changed']['type'] == 'float'
-    assert fields['ls_name']['type'] == 'string'
+    assert fields['scalerank'] == 'long'
+    assert fields['changed'] == 'float'
+    assert fields['ls_name'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 10
