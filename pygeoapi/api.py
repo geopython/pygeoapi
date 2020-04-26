@@ -279,7 +279,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_collections(self, headers_, format_, dataset=None, tiles=None):
+    def describe_collections(self, headers_, format_, dataset=None,
+                             tiles=None):
         """
         Provide collection metadata
 
@@ -389,7 +390,7 @@ class API:
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
             })
-            
+
             if tiles:
                 LOGGER.debug('Adding tiles link')
                 collection['links'].append({
@@ -619,9 +620,10 @@ class API:
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
-            p = load_plugin('provider',
-                            self.config['resources'][dataset]['tiles']['provider'],
-                            tiles=True)
+            p = load_plugin(
+                'provider',
+                self.config['resources'][dataset]['tiles']['provider'],
+                tiles=True)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -668,9 +670,9 @@ class API:
 
         for service in p.get_tile_services(
             baseurl=self.config['server']['url'],
-            servicepath=\
-                '/collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'.format(
-                    dataset, 'tileMatrixSetId',
+            servicepath=
+            '/collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
+            .format(dataset, 'tileMatrixSetId',
                     'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
         for scheme in p.schemes['tileMatrixSetLinks']:

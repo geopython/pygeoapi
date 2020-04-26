@@ -56,26 +56,24 @@ class MVTProvider(BaseTileProvider):
         #     raise ProviderConnectionError(msg)
         self.schemes = self.get_tiling_schemes()
         self.services = self.get_tile_services()
-    
-    
+
     def get_tiling_schemes(self):
-        
+
         tileMatrixSetLinks = {
             'tileMatrixSetLinks': [{
                 'tileMatrixSet': 'WorldCRS84Quad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
             },
             {
                 'tileMatrixSet': 'WebMercatorQuad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
             }]
         }
-        
+
         return tileMatrixSetLinks
-    
 
     def get_tile_services(self, baseurl=None, servicepath=None,
-                         tile_type=None):
+                          tile_type=None):
         """
         Gets mvt service description
 
@@ -83,7 +81,7 @@ class MVTProvider(BaseTileProvider):
         :param servicepath: base path of URL
         :param tile_type: tile format type
 
-        :returns: `dict` 
+        :returns: `dict` of item tile service
         """
 
         url = urlparse(self.source)
@@ -92,13 +90,13 @@ class MVTProvider(BaseTileProvider):
         tile_type = tile_type or self.format_types[0]
         servicepath = \
             servicepath or \
-                '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                    url.path.split('/{z}/{x}/{y}')[0],
-                    'tileMatrixSetId',
-                    'tileMatrix',
-                    'tileRow',
-                    'tileCol',
-                    tile_type)
+            '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                url.path.split('/{z}/{x}/{y}')[0],
+                'tileMatrixSetId',
+                'tileMatrix',
+                'tileRow',
+                'tileCol',
+                tile_type)
 
         service_url = urljoin(baseurl, servicepath)
         service_metadata = urljoin(
@@ -126,17 +124,16 @@ class MVTProvider(BaseTileProvider):
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.source)
 
+    def _describe_service(self):
+        """
+        Helper function to describe a vector tile service
 
-def _describe_service(self):
-    """
-    Helper function to describe a vector tile service
+        :param layer: path to file
 
-    :param layer: path to file
+        :returns: `dict` of JSON metadata
+        """
 
-    :returns: `dict` of JSON metadata
-    """
+        content = {
+        }
 
-    content = {
-    }
-
-    return content
+        return content

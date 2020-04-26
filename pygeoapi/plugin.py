@@ -64,7 +64,7 @@ def load_plugin(plugin_type, plugin_def, tiles=False):
 
     :param plugin_type: type of plugin (provider, formatter)
     :param plugin_def: plugin definition
-    :param 
+    :param tiles: plugin type for tiles
 
     :returns: plugin object
     """
