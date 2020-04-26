@@ -80,9 +80,7 @@ class GeoJSONProvider(BaseProvider):
                 data = json.loads(src.read())
             fields = {}
             for f in data['features'][0]['properties'].keys():
-                fields[f] = {
-                    'type': 'string'
-                }
+                fields[f] = 'string'
             return fields
 
     def _load(self):
