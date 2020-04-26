@@ -138,7 +138,6 @@ class BaseTileProvider:
         self.tiling_schemes = provider_def['schemes']
         self.fields = {}
 
-
     def get_fields(self):
         """
         Get provider field information (names, types)
@@ -148,7 +147,6 @@ class BaseTileProvider:
 
         raise NotImplementedError()
 
-
     def get_tiling_schemes(self):
         """
         Get provider field information (names, types)
@@ -157,7 +155,6 @@ class BaseTileProvider:
         """
 
         raise NotImplementedError()
-
 
     def get_tile_services(self, baseurl, servicepath, tile_type):
         """
@@ -171,7 +168,6 @@ class BaseTileProvider:
         """
 
         raise NotImplementedError()
-
 
     def get_metadata_services(self, baseurl, servicepath):
         """

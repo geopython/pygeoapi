@@ -42,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
-    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/ogc-api-tiles.yaml' #noqa
+    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/ogc-api-tiles.yaml'  # noqa
 }
 
 
