@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+import httpx
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.provider.tile import BaseTileProvider
@@ -122,8 +123,26 @@ class MVTProvider(BaseTileProvider):
 
         return links
 
-    def get_tiles(self, layer, z, y, x, format):
-        pass
+    def get_tiles(self, layer=None, tileset=None,
+                  z=None, y=None, x=None, format='pbf'):
+        """
+        Gets tile
+
+        :param layer: mvt tile layer
+        :param tileset: mvt tileset
+        :param z: z index
+        :param y: y index
+        :param x: x index
+        :param format: tile format
+
+        :returns: an encoded mvt tile
+        """
+
+        with httpx.Client(base_url=self.source) as tile_api:
+            resp = tile_api.get(
+                '/ne_110m_lakes/{z}/{y}/{x}.pbf'.format(z=z, y=y, x=x))
+            resp.raise_for_status()
+            return resp.content
 
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.source)
