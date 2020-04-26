@@ -116,7 +116,7 @@ class MVTProvider(BaseTileProvider):
                 'type': 'application/json',
                 'rel': 'describedby',
                 'title': 'Metadata for this collection in the TileJSON format',
-                'href': service_metadata,
+                'href': '{}?f=json'.format(service_metadata),
                 'templated': True
             }]
         }
