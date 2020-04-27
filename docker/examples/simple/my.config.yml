@@ -58,7 +58,7 @@ metadata:
             - data
             - api
         keywords_type: theme
-        terms_of_service: None
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: http://example.org
     license:
         name: CC-BY 4.0 license
