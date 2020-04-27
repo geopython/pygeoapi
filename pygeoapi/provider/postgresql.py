@@ -101,6 +101,7 @@ class DatabaseConnection:
                 search_path={}'.format(",".join(search_path))
                 LOGGER.debug('Using search path: {} '.format(search_path))
             self.conn = psycopg2.connect(**self.conn_dic)
+            self.conn.set_client_encoding('utf8')
 
         except psycopg2.OperationalError:
             LOGGER.error("Couldn't connect to Postgis using:{}".format(
