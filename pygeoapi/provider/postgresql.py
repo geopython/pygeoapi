@@ -301,7 +301,7 @@ class PostgreSQLProvider(BaseProvider):
             Identifier(self.id_field),
         ), (identifier,))
         item = cursor.fetchall()
-        id_ = item[0]['id']
+        id_ = item[0]['id'] if item else identifier
         return id_
 
     def get_next(self, cursor, identifier):
@@ -320,7 +320,7 @@ class PostgreSQLProvider(BaseProvider):
             Identifier(self.id_field),
         ), (identifier,))
         item = cursor.fetchall()
-        id_ = item[0]['id']
+        id_ = item[0]['id'] if item else identifier
         return id_
 
     def get(self, identifier):
