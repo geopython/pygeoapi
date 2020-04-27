@@ -398,7 +398,7 @@ def get_oas_30(cfg):
                 'explode': False
             })
 
-        paths['{}/items/{{itemId}}'.format(collection_name_path)] = {
+        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
                 'summary': 'Get {} item by id'.format(v['title']),
                 'description': v['description'],
