@@ -81,7 +81,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
               - data
               - api
           keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist). Accepted values are discipline, temporal, place, theme, stratum
-          terms_of_service: null  # terms of service
+          terms_of_service: https://creativecommons.org/licenses/by/4.0/  # terms of service
           url: http://example.org  # informative URL about the service
       license:  # licensing details
           name: CC-BY 4.0 license
