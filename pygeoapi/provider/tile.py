@@ -47,7 +47,7 @@ class BaseTileProvider:
         """
 
         self.name = provider_def['name']
-        self.source = provider_def['source']
+        self.data = provider_def['data']
         self.format_types = provider_def['format_type']
         self.tiling_schemes = provider_def['schemes']
         self.fields = {}
