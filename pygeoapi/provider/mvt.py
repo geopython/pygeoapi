@@ -53,7 +53,7 @@ class MVTProvider(BaseTileProvider):
         BaseTileProvider.__init__(self, provider_def)
 
         # if not os.path.exists(self.data):
-        #     msg = 'Service does not exist: {}'.format(self.source)
+        #     msg = 'Service does not exist: {}'.format(self.data)
         #     LOGGER.error(msg)
         #     raise ProviderConnectionError(msg)
         self.schemes = self.get_tiling_schemes()
@@ -86,7 +86,7 @@ class MVTProvider(BaseTileProvider):
         :returns: `dict` of item tile service
         """
 
-        url = urlparse(self.source)
+        url = urlparse(self.data)
         baseurl = baseurl or '{}://{}'.format(url.scheme, url.netloc)
         # @TODO: support multiple types
         tile_type = tile_type or self.format_types[0]
@@ -138,14 +138,14 @@ class MVTProvider(BaseTileProvider):
         :returns: an encoded mvt tile
         """
 
-        with httpx.Client(base_url=self.source) as tile_api:
+        with httpx.Client(base_url=self.data) as tile_api:
             resp = tile_api.get(
                 '/ne_110m_lakes/{z}/{y}/{x}.pbf'.format(z=z, y=y, x=x))
             resp.raise_for_status()
             return resp.content
 
     def __repr__(self):
-        return '<MVTProvider> {}'.format(self.source)
+        return '<MVTProvider> {}'.format(self.data)
 
     def _describe_service(self):
         """
