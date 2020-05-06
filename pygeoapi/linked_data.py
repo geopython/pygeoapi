@@ -179,7 +179,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         '{}/collections/{}/items/{}' if identifier
         else '{}/collections/{}/items'
     ).format(
-        *[config['server']['url'], dataset, data['properties']['uri']
+        *[config['server']['url'], dataset, data['properties']['uri']]
     )
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
