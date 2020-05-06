@@ -178,9 +178,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     data['id'] = (
         '{uri}' if identifier
         else '{url}/collections/{ds}/items'
-    ).format(
-        *[uri=data['properties']['uri'],url=config['server']['url'], ds=dataset]
-    )
+    ).format(uri=data['properties']['uri'],url=config['server']['url'], ds=dataset)
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
     defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
