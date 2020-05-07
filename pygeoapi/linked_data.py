@@ -175,12 +175,14 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['resources'][dataset].get('context', [])
-    data['id'] = (
-        '{}/collections/{}/items/{}' if identifier
-        else '{}/collections/{}/items'
-    ).format(
-        *[config['server']['url'], dataset, identifier]
-    )
+    uri = data['properties'].get('uri')
+    if identifier and uri:
+        data['id'] = '{}'.format(uri)
+    elif identifier: 
+        data['id'] = '{}/collections/{}/items/{}'.format(config['server']['url'],dataset,identifier)
+    else:
+        data['id'] = '{}/collections/{}/items'.format(config['server']['url'],dataset)
+        
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
     defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
@@ -188,6 +190,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         "@context": [defaultVocabulary, *(context or [])],
         **data
     }
+    ldjsonData.pop('geometry')
     isCollection = identifier is None
     if isCollection:
         for i, feature in enumerate(data['features']):
