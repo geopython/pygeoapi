@@ -175,12 +175,13 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['resources'][dataset].get('context', [])
-    if identifier and data['properties']['uri']:
-        data['id'] = '{}'.format(uri=data['properties']['uri'])
+    uri = data['properties'].get('uri')
+    if identifier and uri:
+        data['id'] = '{}'.format(uri)
     elif identifier: 
-        data['id'] = '{url}/collections/{ds}/items/{identifier}'.format(url=config['server']['url'],ds=dataset,identifier=identifier)
+        data['id'] = '{}/collections/{}/items/{}'.format(config['server']['url'],dataset,identifier)
     else:
-        data['id'] = '{url}/collections/{ds}/items'.format(url=config['server']['url'],ds=dataset)
+        data['id'] = '{}/collections/{}/items'.format(config['server']['url'],dataset)
         
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
