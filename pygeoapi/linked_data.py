@@ -190,6 +190,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         "@context": [defaultVocabulary, *(context or [])],
         **data
     }
+    ldjsonData.pop('geometry')
     isCollection = identifier is None
     if isCollection:
         for i, feature in enumerate(data['features']):
