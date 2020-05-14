@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
-{% block crumbs %}{{ super() }} 
+{% block crumbs %}{{ super() }}
 / <a href="../collections">Collections</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
@@ -19,6 +19,15 @@
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
       </p>
+      <h3>Queryables</h3>
+      <ul>
+        <li>
+          <div>
+            <meta itemprop="encodingFormat" content="text/html" />
+            <a title="Display Queryables" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
+              Display Queryables of "{{ data['title'] }}</a>"</div>
+        </li>
+      </ul>
       <h3>View</h3>
       <ul>
         <li>

@@ -31,6 +31,7 @@
 import json
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.geojson import GeoJSONProvider
 
 
@@ -66,6 +67,12 @@ def config():
 
 def test_query(fixture, config):
     p = GeoJSONProvider(config)
+
+    fields = p.get_fields()
+    assert len(fields) == 2
+    assert fields['id'] == 'string'
+    assert fields['name'] == 'string'
+
     results = p.query()
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
@@ -78,6 +85,15 @@ def test_get(fixture, config):
     results = p.get('123-456')
     assert isinstance(results, dict)
     assert 'Dinagat' in results['properties']['name']
+
+
+def test_get_not_existing_item_raise_exception(
+    fixture, config
+):
+    """Testing query for a not existing object"""
+    p = GeoJSONProvider(config)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_delete(fixture, config):
@@ -139,7 +155,8 @@ def test_update_safe_id(fixture, config):
     p.update('123-456', new_feature)
 
     # Don't let the id change, should not exist
-    assert p.get('SOMETHING DIFFERENT') is None
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('SOMETHING DIFFERENT')
 
     # Should still be at the old id
     results = p.get('123-456')

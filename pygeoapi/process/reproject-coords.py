@@ -78,7 +78,7 @@ PROCESS_METADATA = {
     }, {
         'id': 'time',
         'title': 'Time (decimal year)',
-        'abstract': 'To support time-dependent datum transformations, given that the M-coordinate of the WKT input will be ignored, the time for the transformation should be specified with this parameter (as a decimal year, e.g. 2020.0).',
+        'abstract': 'To support time-dependent datum transformations, given that the M-coordinate of the WKT input will be ignored, the time for the transformation should be specified with this parameter (as a decimal year, e.g. 2020.0). This M-value will be assumed for all vertices of the geometry.',
         'input': {
             'literalDataDomain': {
                 'dataType': 'float',
@@ -578,8 +578,7 @@ def singlepart_geom_transformation(transformer, geom, params):
         **trans_kwargs
     }
     if not geom.has_z:
-        # GEOS does not understand M, but to allow for t
-        ime-dependent
+        # GEOS does not understand M, but to allow for time-dependent
         # transformations, M must be used to represent time, and then
         # removed from the output - because GEOS re-interprets M as Z
         # see https://github.com/Toblerity/Shapely/issues/882

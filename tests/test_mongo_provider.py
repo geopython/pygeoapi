@@ -29,6 +29,7 @@
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.mongo import MongoProvider
 
 monogourl = 'mongodb://localhost:27017/testdb'
@@ -100,13 +101,19 @@ def test_query(config):
 def test_get(config):
     p = MongoProvider(config)
     init(p)
-    results = p.get('123456789012345678901234')
-    assert results is None
 
     res = p.query(properties=[['nameascii', 'Reykjavik']])
     result = p.get(res['features'][0]['id'])
     assert isinstance(result, dict)
     assert 'Reykjavik' in result['properties']['ls_name']
+
+
+def test_get_not_existing_item_raise_exception(config):
+    """Testing query for a not existing object"""
+    p = MongoProvider(config)
+    init(p)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('123456789012345678901234')
 
 
 def test_get_fields(config):
@@ -211,7 +218,8 @@ def test_update_safe_id(config):
     p.update(res['features'][0]['id'], updated_feature)
 
     # Don't let the id change, should not exist
-    assert p.get('123456789012345678901234') is None
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('123456789012345678901234')
 
     # Should still be at the old id
     results = p.get(res['features'][0]['id'])

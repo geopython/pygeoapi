@@ -61,12 +61,12 @@ CMD ["/usr/share/elasticsearch/bin/elasticsearch"]
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-# we need to run this on host 
+# we need to run this on host
 #sudo sysctl -w vm.max_map_count=262144
 #check indices
 #http://localhost:9200/_cat/indices?v
 #check spatial data
 #http://localhost:9200/ne_110m_populated_places_simple/
 #This docker compose was inspired on:
-#https://discuss.elastic.co/t/best-practice-for-creating-an-index-when-an-es-docker-container-starts/126651 
+#https://discuss.elastic.co/t/best-practice-for-creating-an-index-when-an-es-docker-container-starts/126651
 #docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" es:latest

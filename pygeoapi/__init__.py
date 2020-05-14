@@ -48,12 +48,7 @@ cli.version = __version__
 @click.option('--starlette', 'server', flag_value="starlette")
 @click.pass_context
 def serve(ctx, server):
-    """Run the server with different daemon type
-
-    :param server: `string` of server type
-    :returns void
-
-    """
+    """Run the server with different daemon type (--flask is the default)"""
 
     if server == "flask":
         from pygeoapi.flask_app import serve as serve_flask

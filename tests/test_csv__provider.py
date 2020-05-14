@@ -29,6 +29,7 @@
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csv_ import CSVProvider
 
 
@@ -64,6 +65,12 @@ def config():
 
 def test_query(fixture, config):
     p = CSVProvider(config)
+
+    fields = p.get_fields()
+    assert len(fields) == 6
+    assert fields['value'] == 'string'
+    assert fields['stn_id'] == 'string'
+
     results = p.query()
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
@@ -92,9 +99,14 @@ def test_query(fixture, config):
 
 def test_get(fixture, config):
     p = CSVProvider(config)
-    results = p.get('404')
-    assert results is None
 
     result = p.get('964')
     assert result['id'] == '964'
     assert result['properties']['value'] == '99.9'
+
+
+def test_get_not_existing_item_raise_exception(fixture, config):
+    """Testing query for a not existing object"""
+    p = CSVProvider(config)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('404')

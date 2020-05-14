@@ -1,5 +1,7 @@
 elasticsearch==7.1.0
+fiona
 GDAL>=3.0.0
-psycopg2
-pymongo
+psycopg2-binary==2.8.4
+pymongo==3.10.1
+rasterio
 tinydb>=3.15.2

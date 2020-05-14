@@ -32,7 +32,8 @@ import csv
 import itertools
 import logging
 
-from pygeoapi.provider.base import BaseProvider, ProviderQueryError
+from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
+                                    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,23 @@ class CSVProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
+        self.fields = self.get_fields()
+
+    def get_fields(self):
+        """
+         Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        LOGGER.debug('Treating all columns as string types')
+        with open(self.data) as ff:
+            LOGGER.debug('Serializing DictReader')
+            data_ = csv.DictReader(ff)
+            fields = {}
+            for f in data_.fieldnames:
+                fields[f] = 'string'
+            return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime=None, properties=[]):
@@ -145,8 +163,13 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of single GeoJSON feature
         """
-
-        return self._load(identifier=identifier)
+        item = self._load(identifier=identifier)
+        if item:
+            return item
+        else:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
 
     def __repr__(self):
         return '<CSVProvider> {}'.format(self.data)

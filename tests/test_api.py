@@ -208,7 +208,7 @@ def test_describe_collections(config, api_):
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
-    assert len(collection['links']) == 8
+    assert len(collection['links']) == 10
     assert collection['extent'] == {
         'spatial': {
             'bbox': [[-180, -90, 180, 90]],
@@ -227,6 +227,35 @@ def test_describe_collections(config, api_):
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
+def test_get_collection_queryables(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {}, 'notfound')
+    assert code == 400
+
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'html'}, 'obs')
+    assert rsp_headers['Content-Type'] == 'text/html'
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 6
+
+    # test with provider filtered properties
+    api_.config['resources']['obs']['provider']['properties'] = ['stn_id']
+
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req_headers, {'f': 'json'}, 'obs')
+    queryables = json.loads(response)
+
+    assert 'queryables' in queryables
+    assert len(queryables['queryables']) == 1
+
+
 def test_describe_collections_json_ld(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_collections(
@@ -241,7 +270,7 @@ def test_describe_collections_json_ld(config, api_):
     assert len(expanded['http://schema.org/dataset']) == 1
     dataset = expanded['http://schema.org/dataset'][0]
     assert dataset['@type'][0] == 'http://schema.org/Dataset'
-    assert len(dataset['http://schema.org/distribution']) == 8
+    assert len(dataset['http://schema.org/distribution']) == 10
     assert all(dist['@type'][0] == 'http://schema.org/DataDownload'
                for dist in dataset['http://schema.org/distribution'])
 
@@ -318,7 +347,6 @@ def test_get_collection_items(config, api_):
     links = features['links']
     assert len(links) == 5
     assert '/collections/obs/items?f=json' in links[0]['href']
-    print(links)
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
@@ -388,7 +416,7 @@ def test_get_collection_items(config, api_):
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {
-            'sortby': 'stn_id',
+            'sortby': 'bad-property',
             'stn_id': '35'
         }, 'obs')
 
@@ -407,7 +435,7 @@ def test_get_collection_items(config, api_):
         req_headers, {'sortby': 'stn_id:A'}, 'obs')
     features = json.loads(response)
     # FIXME? this test errors out currently
-    assert code == 400
+    assert code == 200
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'f': 'csv'}, 'obs')
@@ -452,7 +480,7 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
-    api_.config['datasets']['obs']['extents'].pop('temporal')
+    api_.config['resources']['obs']['extents'].pop('temporal')
 
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
@@ -613,46 +641,14 @@ def test_describe_processes(config, api_):
     assert code == 200
     assert rsp_headers['Content-Type'] == 'application/json'
 
-    # Reset config to have no defined processes
-    api_.config['processes'] = {}
-
     # Test for undefined process
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'foo')
+        req_headers, {}, 'goodbye-world')
     data = json.loads(response)
     assert code == 404
     assert data['code'] == 'NoSuchProcess'
     assert rsp_headers['Content-Type'] == 'application/json'
-
-    # Test for description of all processes
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {})
-    data = json.loads(response)
-    assert code == 200
-    assert len(data['processes']) == 0
-    assert rsp_headers['Content-Type'] == 'application/json'
-
-    # Reset config to have no mention of processes at all
-    api_.config.pop('processes')
-
-    # Test for undefined process
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'foo')
-    data = json.loads(response)
-    assert code == 404
-    assert data['code'] == 'NoSuchProcess'
-    assert rsp_headers['Content-Type'] == 'application/json'
-
-    # Test for description of all processes
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {})
-    data = json.loads(response)
-    assert code == 200
-    assert len(data['processes']) == 0
-    assert rsp_headers['Content-Type'] == 'application/json'
-
 
 def test_execute_process(config, api_):
     req_headers = make_req_headers()
@@ -781,23 +777,9 @@ def test_execute_process(config, api_):
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'invalid request data'
 
-    # Reset config to have no defined processes
-    api_.config['processes'] = {}
-
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
-    response = json.loads(response)
-    assert code == 404
-    assert 'Location' not in rsp_headers
-    assert response['code'] == 'NoSuchProcess'
-
-    # Reset config to have no mention of processes at all
-    api_.config.pop('processes')
-
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
+        'POST', req_headers, {}, json.dumps(req_body), 'goodbye-world')
     response = json.loads(response)
     assert code == 404
     assert 'Location' not in rsp_headers

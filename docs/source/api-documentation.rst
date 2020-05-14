@@ -1,22 +1,17 @@
-.. _code:
+.. _api-documentation:
 
+API documentation
+=================
 
-
-Code documentation
-==================
-
-Top level code documentation. Follow link in section for module/class member information
-
+Top level code documentation. Follow the links in each section for module/class member information.
 
 API
 ---
-
 
 .. automodule:: pygeoapi.api
    :members:
    :private-members:
    :special-members:
-
 
 
 flask_app
@@ -27,21 +22,18 @@ flask_app
    :members:
    :private-members:
    :special-members:
-   
 
 
 Logging
 -------
-
 
 .. automodule:: pygeoapi.log
    :show-inheritance:
    :members:
    :private-members:
    :special-members:
-   
-   
-   
+
+
 OpenAPI
 -------
 
@@ -50,20 +42,21 @@ OpenAPI
    :members:
    :private-members:
    :special-members:
-   
-   
+
+
 Plugins
 -------
 
-.. note:: Please consult section :ref:`plugins`
-
+.. seealso::
+   :ref:`plugins`
 
 .. automodule:: pygeoapi.plugin
    :show-inheritance:
    :members:
    :private-members:
    :special-members:
-   
+
+
 Utils
 -----
 
@@ -72,11 +65,10 @@ Utils
    :members:
    :private-members:
    :special-members:
-   
-   
+
+
 Formatter package
 -----------------
-
 
 .. automodule:: pygeoapi.formatter
    :show-inheritance:
@@ -84,8 +76,10 @@ Formatter package
    :private-members:
    :special-members:
 
+
 Base class
 ^^^^^^^^^^
+
 .. automodule:: pygeoapi.formatter.base
    :show-inheritance:
    :members:
@@ -102,7 +96,7 @@ csv
    :private-members:
    :special-members:
 
- 
+
 Process package
 ---------------
 
@@ -112,6 +106,7 @@ Process package
    :private-members:
    :special-members:
 
+
 Base class
 ^^^^^^^^^^
 
@@ -120,6 +115,7 @@ Base class
    :members:
    :private-members:
    :special-members:
+
 
 hello_world
 ^^^^^^^^^^^
@@ -131,20 +127,17 @@ Hello world example process
    :members:
    :private-members:
    :special-members:
-   
+
 .. _data Provider:
 
 Provider
 --------
-
-
 
 .. automodule:: pygeoapi.provider
    :show-inheritance:
    :members:
    :private-members:
    :special-members:
-
 
 
 Base class
@@ -155,7 +148,7 @@ Base class
    :members:
    :private-members:
    :special-members:
-   
+
 
 CSV provider
 ^^^^^^^^^^^^
@@ -164,7 +157,8 @@ CSV provider
    :show-inheritance:
    :members:
    :private-members:
-   
+
+
 Elasticsearch provider
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -172,8 +166,8 @@ Elasticsearch provider
    :show-inheritance:
    :members:
    :private-members:
-   
-   
+
+
 GeoJSON
 ^^^^^^^
 
@@ -182,7 +176,7 @@ GeoJSON
    :members:
    :private-members:
 
-   
+
 OGR
 ^^^
 
@@ -190,7 +184,7 @@ OGR
    :show-inheritance:
    :members:
    :private-members:
-   
+
 
 postgresql
 ^^^^^^^^^^
@@ -199,8 +193,8 @@ postgresql
    :show-inheritance:
    :members:
    :private-members:
-   
-   
+
+
 sqlite/geopackage
 ^^^^^^^^^^^^^^^^^
 

@@ -151,28 +151,89 @@ async def describe_collections(request: Request, name=None):
     return response
 
 
-@app.route('/collections/{feature_collection}/items')
-@app.route('/collections/{feature_collection}/items/')
-@app.route('/collections/{feature_collection}/items/{feature}')
-@app.route('/collections/{feature_collection}/items/{feature}/')
-async def dataset(request: Request, feature_collection=None, feature=None):
+@app.route('/collections/{name}/queryables')
+@app.route('/collections/{name}/queryables/')
+async def get_collection_queryables(request: Request, name=None):
     """
-    OGC open api collections/{dataset}/items/{feature}  access point
+    OGC open api collections queryables access point
+
+    :param name: identifier of collection name
 
     :returns: Starlette HTTP Response
     """
 
-    if 'feature_collection' in request.path_params:
-        feature_collection = request.path_params['feature_collection']
-    if 'feature' in request.path_params:
-        feature = request.path_params['feature']
-    if feature is None:
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    headers, status_code, content = api_.get_collection_queryables(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{collection_id}/items')
+@app.route('/collections/{collection_id}/items/')
+@app.route('/collections/{collection_id}/items/{item_id}')
+@app.route('/collections/{collection_id}/items/{item_id}/')
+async def dataset(request: Request, collection_id=None, item_id=None):
+    """
+    OGC open api collections/{dataset}/items/{item_id}  access point
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+    if 'item_id' in request.path_params:
+        item_id = request.path_params['item_id']
+    if item_id is None:
         headers, status_code, content = api_.get_collection_items(
             request.headers, request.query_params,
-            feature_collection, pathinfo=request.scope['path'])
+            collection_id, pathinfo=request.scope['path'])
     else:
         headers, status_code, content = api_.get_collection_item(
-            request.headers, request.query_params, feature_collection, feature)
+            request.headers, request.query_params, collection_id, item_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/stac')
+async def stac_catalog_root(request: Request):
+    """
+    STAC access point
+    :returns: Starlette HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_root(
+        request.headers, request.query_params)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/stac/{path:path}')
+async def stac_catalog_path(request: Request):
+    """
+    STAC access point
+    :returns: Starlette HTTP response
+    """
+
+    path = request.path_params["path"]
+
+    headers, status_code, content = api_.get_stac_path(
+        request.headers, request.query_params, path)
 
     response = Response(content=content, status_code=status_code)
 

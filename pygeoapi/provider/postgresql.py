@@ -48,14 +48,14 @@ import json
 import psycopg2
 from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError
+    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
 from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
 
 
-class DatabaseConnection(object):
+class DatabaseConnection:
     """Database connection class to be used as 'with' statement.
      The class returns a connection object.
     """
@@ -101,6 +101,7 @@ class DatabaseConnection(object):
                 search_path={}'.format(",".join(search_path))
                 LOGGER.debug('Using search path: {} '.format(search_path))
             self.conn = psycopg2.connect(**self.conn_dic)
+            self.conn.set_client_encoding('utf8')
 
         except psycopg2.OperationalError:
             LOGGER.error("Couldn't connect to Postgis using:{}".format(
@@ -301,7 +302,7 @@ class PostgreSQLProvider(BaseProvider):
             Identifier(self.id_field),
         ), (identifier,))
         item = cursor.fetchall()
-        id_ = item[0]['id']
+        id_ = item[0]['id'] if item else identifier
         return id_
 
     def get_next(self, cursor, identifier):
@@ -320,7 +321,7 @@ class PostgreSQLProvider(BaseProvider):
             Identifier(self.id_field),
         ), (identifier,))
         item = cursor.fetchall()
-        id_ = item[0]['id']
+        id_ = item[0]['id'] if item else identifier
         return id_
 
     def get(self, identifier):
@@ -353,12 +354,20 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
-            row_data = cursor.fetchall()[0]
+            results = cursor.fetchall()
+            row_data = None
+            if results:
+                row_data = results[0]
             feature = self.__response_feature(row_data)
 
-            feature['prev'] = self.get_previous(cursor, identifier)
-            feature['next'] = self.get_next(cursor, identifier)
-            return feature
+            if feature:
+                feature['prev'] = self.get_previous(cursor, identifier)
+                feature['next'] = self.get_next(cursor, identifier)
+                return feature
+            else:
+                err = 'item {} not found'.format(identifier)
+                LOGGER.error(err)
+                raise ProviderItemNotFoundError(err)
 
     def __response_feature(self, row_data):
         """
@@ -369,17 +378,20 @@ class PostgreSQLProvider(BaseProvider):
         :returns: `dict` of GeoJSON Feature
         """
 
-        rd = dict(row_data)
-        feature = {
-            'type': 'Feature'
-        }
-        feature["geometry"] = json.loads(
-            rd.pop('st_asgeojson'))
+        if row_data:
+            rd = dict(row_data)
+            feature = {
+                'type': 'Feature'
+            }
+            feature["geometry"] = json.loads(
+                rd.pop('st_asgeojson'))
 
-        feature['properties'] = rd
-        feature['id'] = feature['properties'].get(self.id_field)
+            feature['properties'] = rd
+            feature['id'] = feature['properties'].get(self.id_field)
 
-        return feature
+            return feature
+        else:
+            return None
 
     def __response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number

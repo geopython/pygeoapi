@@ -33,6 +33,7 @@ import logging
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
 
 LOGGER = logging.getLogger(__name__)
@@ -74,6 +75,15 @@ def test_get_4326(config_sqlite_4326):
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
     assert 'Mosselsepad' in result['properties']['straatnaam']
+
+
+def test_get_not_existing_feature_raise_exception(
+    config_sqlite_4326
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_sqlite_4326)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_4326(config_sqlite_4326):
@@ -183,3 +193,25 @@ def test_query_bbox_with_startindex_4326(config_sqlite_4326):
     assert geometry is not None
     assert properties['straatnaam'] == 'Egypte'
     assert properties['huisnummer'] == '4'
+
+
+def test_query_with_property_filtering(config_sqlite_4326):
+    """Testing query with property filtering"""
+
+    p = OGRProvider(config_sqlite_4326)
+
+    feature_collection = p.query(
+        properties=[
+            ('straatnaam', 'Arnhemseweg')
+        ]
+    )
+
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) > 1
+
+    for feature in features:
+        assert 'properties' in feature
+        assert 'straatnaam' in feature['properties']
+
+        assert feature['properties']['straatnaam'] == 'Arnhemseweg'

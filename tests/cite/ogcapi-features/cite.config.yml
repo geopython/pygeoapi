@@ -27,7 +27,7 @@ metadata:
             - data
             - api
         keywords_type: theme
-        terms_of_service: null
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: https://pygeoapi.io
     license:
         name: CC-BY 4.0 license
@@ -51,8 +51,9 @@ metadata:
         instructions: During hours of service. Off on weekends.
         role: pointOfContact
 
-datasets:
+resources:
     canada-hydat-daily-mean-02hc003:
+        type: collection
         title: Daily Mean of Water Level or Flow
         description: The daily mean is the average of all unit values for a given day.
         keywords: [Daily, Daily Mean, Water Level, Flow, Discharge]

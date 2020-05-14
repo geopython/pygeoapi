@@ -32,10 +32,13 @@
 # Needs to be run like: python3 -m pytest
 
 import logging
-from pygeoapi.provider.base import ProviderQueryError
 
 import pytest
+
+from pygeoapi.provider.base import (
+    ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -159,7 +162,7 @@ def config_geonode_gs_WFS():
             },
         },
         'id_field': 'adm0_id',
-        'layer': 'geonode:glb_bnd_adm0_1'
+        'layer': 'geonode:wld_bnd_adm0'
     }
 
 
@@ -228,6 +231,24 @@ def test_get_gs_with_geojson_output_too_complex_raise_exception(
         'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
     with pytest.raises(ProviderQueryError):
         p.get(272)
+
+
+def test_get_gs_not_existing_feature_raise_exception(
+    config_GeoServer_WFS
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_GeoServer_WFS)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
+
+
+def test_get_ms_not_existing_feature_raise_exception(
+    config_MapServer_WFS
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_MapServer_WFS)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 def test_query_hits_ms(config_MapServer_WFS):
@@ -420,6 +441,46 @@ def test_query_with_startindex(config_MapServer_WFS):
     assert '101696.68' in properties['xrd']
     geometry = feature.get('geometry', None)
     assert geometry is not None
+
+
+def test_query_with_property_filtering_gs(config_GeoServer_WFS):
+    """Testing query with property filtering on geoserver backend"""
+
+    p = OGRProvider(config_GeoServer_WFS)
+
+    feature_collection = p.query(
+        properties=[
+            ('postcode', '9711LM'),
+            ('huisnummer', 106),
+        ]
+    )
+
+    for feature in feature_collection['features']:
+        assert 'properties' in feature
+        assert 'postcode' in feature['properties']
+        assert 'huisnummer' in feature['properties']
+
+        assert feature['properties']['postcode'] == '9711LM'
+        assert feature['properties']['huisnummer'] == 106
+
+
+def test_query_with_property_filtering_ms(config_MapServer_WFS):
+    """Testing query with property filtering on mapserver backend"""
+
+    p = OGRProvider(config_MapServer_WFS)
+
+    feature_collection = p.query(
+        properties=[
+            ('station', '21'),
+        ]
+    )
+
+    for feature in feature_collection['features']:
+        assert 'properties' in feature
+        assert 'station' in feature['properties']
+
+        assert feature['properties']['station'] == '21'
+
 #
 # # OK, but backend GeoServer PDOK WFS takes too much time....
 # # def test_query_with_limit_gs(config_GeoServer_WFS):

@@ -33,7 +33,9 @@ import logging
 
 import pytest
 
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +78,15 @@ def test_get(config_poi_portugal):
     result = p.get(536678593)
     assert result['id'] == 536678593
     assert 'cafe' in result['properties']['fclass']
+
+
+def test_get_not_existing_feature_raise_exception(
+    config_poi_portugal
+):
+    """Testing query for a not existing object"""
+    p = OGRProvider(config_poi_portugal)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)
 
 
 # Testing with GeoPackage files with identical features
@@ -362,3 +373,25 @@ def test_query_bbox_with_startindex_4326(config_gpkg_4326):
     assert geometry is not None
     assert properties['straatnaam'] == 'Egypte'
     assert properties['huisnummer'] == '6'
+
+
+def test_query_with_property_filtering(config_gpkg_4326):
+    """Testing query with property filtering"""
+
+    p = OGRProvider(config_gpkg_4326)
+
+    feature_collection = p.query(
+        properties=[
+            ('straatnaam', 'Arnhemseweg')
+        ]
+    )
+
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert len(features) > 1
+
+    for feature in features:
+        assert 'properties' in feature
+        assert 'straatnaam' in feature['properties']
+
+        assert feature['properties']['straatnaam'] == 'Arnhemseweg'

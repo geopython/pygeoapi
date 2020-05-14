@@ -3,62 +3,67 @@
 OpenAPI
 =======
 
+The `OpenAPI specification <https://swagger.io/docs/specification/about/>`_ is an open specification for RESTful
+endpoints.  OGC API specifications leverage OpenAPI to describe the API in great detail with developer focus.
 
-`OpenAPI spec <https://swagger.io/docs/specification/about/>`_ is an open specification for REST end points, currentely OGC services are being redefined using such specification.
-The REST structure and payload are defined using yaml file structures, the file structure is described here: `<https://swagger.io/docs/specification/basic-structure/>`_
+The RESTful structure and payload are defined using JSON or YAML file structures (pygeoapi uses YAML).  The basic
+structure is described here: `<https://swagger.io/docs/specification/basic-structure/>`_
 
-pygeoapi REST end points descriptions on OpenAPI standard are automatically generated based on the configuration file:
+The official OpenAPI specification can be found `on GitHub <https://github.com/OAI/OpenAPI-Specification/tree/master/versions>`_.
+pygeoapi supports OpenAPI version 3.0.2.
 
- 
-.. code-block:: console
+As described in :ref:`administration`, the pygeoapi OpenAPI document is automatically generated based on the
+configuration file:
 
-   pygeoapi generate-openapi-document -c local.config.yml > openapi.yml
-   
+The API is accessible at the ``/openapi`` endpoint, providing a Swagger-based webpage of the API description..
 
-The api will them be accessible at `/openapi` endpoint.
-
-For api demo please check: `<https://demo.pygeoapi.io/master/openapi>`_
-
-The api page has REST description but also integrated clients that can be used to send requests to the REST end points and  see the response provided
+.. seealso::
+   the pygeoapi demo OpenAPI/Swagger endpoint at https://demo.pygeoapi.io/master/openapi
 
 
 Using OpenAPI
 -------------
 
-Acessing the openAPI webpage we have the following structure:
+Accessing the Swagger webpage we have the following structure:
 
 .. image:: /_static/openapi_intro_page.png
 
-Please notice that **each dataset** will be represented as a REST end point under `collections`
 
+Notice that each dataset is represented as a RESTful endpoint under ``collections``.
 
-In this example we will test and `GET`  data concerning windmills in the Netherlands, first we will check the avaiable datasets,
-by accessing the service's collections:
-
+In this example we will test ``GET`` capability of data concerning windmills in the Netherlands.  Let's start by
+accessing the service's dataset collections:
 
 .. image:: /_static/openapi_get_collections.png
 
-The service collection metadata will contain a description of the collections provided by the server
+The service collection metadata will contain a description of each collection:
 
 .. image:: /_static/openapi_get_collections_result.png
 
-The dataset `dutch_windmills` will be available on the `collections` end point, in the following example we'll obtain the specific metadata of the dataset
+Here, we see that the ``dutch_windmills`` dataset is be available.  Next, let's obtain the specific metadata of the
+dataset:
 
 .. image:: /_static/openapi_get_collection.png
 
 .. image:: /_static/openapi_get_collection_result.png
 
-
-features/items composing the data are agregated on the `/items` end point, in this REST end point it is possible to obtain all dataset, or restrict
-it features/items to a **numerical limit**, **bounding box**, **time stamp**, **pagging** (start index) 
+We also see that the dataset has an ``items`` endpoint which provides all data, along with specific parameters for
+filtering,
+paging and sorting:
 
 .. image:: /_static/openapi_get_item.png
 
-For each feature in dataset we have a **specific identifier** (notice that the identifier is not part of the JSON properties),
+For each item in our dataset we have a specific identifier.  Notice that the identifier is not part of the GeoJSON
+properties, but is provided as a GeoJSON root property of ``id``.
 
 .. image:: /_static/openapi_get_item_id.png
 
-This identifier can be used to obtain a specific item from the dataset using the `items\{id}` end point as follows:
+This identifier can be used to obtain a specific item from the dataset using the ``items{id}`` endpoint as follows:
 
 .. image:: /_static/openapi_get_item_id2.png
 
+Summary
+-------
+
+Using pygeoapi's OpenAPI and Swagger endpoints provides a useful user interface to query data, as well as for
+developers to easily understand pygeoapi when building downstream applications.

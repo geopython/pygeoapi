@@ -32,6 +32,8 @@
 # Needs to be run like: python3 -m pytest
 
 import pytest
+
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
 
@@ -120,3 +122,10 @@ def test_get(config):
     assert 'properties' in result
     assert 'id' in result
     assert 'Kanyosha' in result['properties']['name']
+
+
+def test_get_not_existing_item_raise_exception(config):
+    """Testing query for a not existing object"""
+    p = PostgreSQLProvider(config)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)

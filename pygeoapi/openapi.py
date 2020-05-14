@@ -35,7 +35,7 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import yaml_load
+from pygeoapi.util import filter_dict_by_key_value, yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -198,8 +198,8 @@ def get_oas_30(cfg):
 
     paths['/collections'] = {
         'get': {
-            'summary': 'Feature Collections',
-            'description': 'Feature Collections',
+            'summary': 'Collections',
+            'description': 'Collections',
             'tags': ['server'],
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
@@ -276,7 +276,10 @@ def get_oas_30(cfg):
     items_f['schema']['enum'].append('csv')
 
     LOGGER.debug('setting up datasets')
-    for k, v in cfg['datasets'].items():
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
+
+    for k, v in collections.items():
         collection_name_path = '/collections/{}'.format(k)
         tag = {
             'name': k,
@@ -295,7 +298,7 @@ def get_oas_30(cfg):
 
         paths[collection_name_path] = {
             'get': {
-                'summary': 'Get feature collection metadata'.format(v['title']),  # noqa
+                'summary': 'Get collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -314,7 +317,7 @@ def get_oas_30(cfg):
 
         paths[items_path] = {
             'get': {
-                'summary': 'Get {} features'.format(v['title']),
+                'summary': 'Get {} items'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -333,7 +336,27 @@ def get_oas_30(cfg):
             }
         }
 
-        p = load_plugin('provider', cfg['datasets'][k]['provider'])
+        p = load_plugin('provider', collections[k]['provider'])
+
+        if p.fields:
+            queryables_path = '{}/queryables'.format(collection_name_path)
+
+            paths[queryables_path] = {
+                'get': {
+                    'summary': 'Get {} queryables'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
 
         if p.time_field is not None:
             paths[items_path]['get']['parameters'].append(
@@ -377,7 +400,7 @@ def get_oas_30(cfg):
 
         paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
             'get': {
-                'summary': 'Get {} feature by id'.format(v['title']),
+                'summary': 'Get {} item by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -393,6 +416,21 @@ def get_oas_30(cfg):
             }
         }
 
+    LOGGER.debug('setting up STAC')
+    paths['/stac'] = {
+        'get': {
+            'summary': 'SpatioTemporal Asset Catalog',
+            'description': 'SpatioTemporal Asset Catalog',
+            'tags': ['stac'],
+            'parameters': [],
+            'responses': {
+                200: {'$ref': '#/components/responses/200'},
+                'default': {'$ref': '#/components/responses/default'}
+            }
+        }
+    }
+
+    LOGGER.debug('setting up processes')
     paths['/processes'] = {
         'get': {
             'summary': 'Processes',
@@ -410,7 +448,8 @@ def get_oas_30(cfg):
 
     LOGGER.debug('setting up processes')
 
-    processes = {k: v for k, v in cfg.get('processes', {}).items() if 'processor' in v}
+    # processes = {k: v for k, v in cfg.get('processes', {}).items() if 'processor' in v}
+    processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
 
     if processes:
         for k, v in processes.items():

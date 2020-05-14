@@ -99,6 +99,7 @@ def root():
     headers, status_code, content = api_.root(request.headers, request.args)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -119,6 +120,7 @@ def openapi():
                                                  openapi)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -137,6 +139,7 @@ def conformance():
                                                      request.args)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
@@ -147,9 +150,10 @@ def conformance():
 @APP.route('/collections/<name>')
 def describe_collections(name=None):
     """
-    OGC open api collections  access point
+    OGC open api collections access point
 
     :param name: identifier of collection name
+
     :returns: HTTP response
     """
 
@@ -157,27 +161,87 @@ def describe_collections(name=None):
         request.headers, request.args, name)
 
     response = make_response(content, status_code)
+
     if headers:
         response.headers = headers
 
     return response
 
 
-@APP.route('/collections/<feature_collection>/items')
-@APP.route('/collections/<feature_collection>/items/<feature>')
-def dataset(feature_collection, feature=None):
+@APP.route('/collections/<name>/queryables')
+def get_collection_queryables(name=None):
     """
-    OGC open api collections/{dataset}/items/{feature}  access point
+    OGC open api collections querybles access point
+
+    :param name: identifier of collection name
 
     :returns: HTTP response
     """
 
-    if feature is None:
+    headers, status_code, content = api_.get_collection_queryables(
+        request.headers, request.args, name)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<collection_id>/items')
+@APP.route('/collections/<collection_id>/items/<item_id>')
+def dataset(collection_id, item_id=None):
+    """
+    OGC open api collections/{dataset}/items/{item} access point
+
+    :returns: HTTP response
+    """
+
+    if item_id is None:
         headers, status_code, content = api_.get_collection_items(
-            request.headers, request.args, feature_collection)
+            request.headers, request.args, collection_id)
     else:
         headers, status_code, content = api_.get_collection_item(
-            request.headers, request.args, feature_collection, feature)
+            request.headers, request.args, collection_id, item_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/stac')
+def stac_catalog_root():
+    """
+    STAC access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_root(
+        request.headers, request.args)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/stac/<path:path>')
+def stac_catalog_path(path):
+    """
+    STAC access point
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_path(
+        request.headers, request.args, path)
 
     response = make_response(content, status_code)
 

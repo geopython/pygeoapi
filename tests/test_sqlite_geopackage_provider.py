@@ -34,6 +34,8 @@
 # (Arguments as py.test and set external variables to the correct config path)
 
 import pytest
+
+from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.sqlite import SQLiteGPKGProvider
 
 
@@ -149,3 +151,17 @@ def test_get_geopackage(config_geopackage):
     assert 'properties' in result
     assert 'id' in result
     assert 'Académico' in result['properties']['name']
+
+
+def test_get_sqlite_not_existing_item_raise_exception(config_sqlite):
+    """Testing query for a not existing object"""
+    p = SQLiteGPKGProvider(config_sqlite)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(1234567890)
+
+
+def test_get_geopackage_not_existing_item_raise_exception(config_geopackage):
+    """Testing query for a not existing object"""
+    p = SQLiteGPKGProvider(config_geopackage)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(-1)

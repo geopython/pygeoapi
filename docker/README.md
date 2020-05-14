@@ -2,9 +2,9 @@
 
 Docker Image `geopython/pygeoapi:latest` and versions are [available from DockerHub](https://hub.docker.com/r/geopython/pygeoapi).
 
-Each Docker Image contains a default configuration [default.config.yml](default.config.yml) with the project's test data and WFS3/OGC API Features datasets.
+Each Docker Image contains a default configuration [default.config.yml](default.config.yml) with the project's test data and OGC API dataset collections.
 
-You can override this default config via Docker Volume mapping or by extending the Docker Image and copying in your config. See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi) for the latter method. 
+You can override this default config via Docker Volume mapping or by extending the Docker Image and copying in your config. See an [example for the geoapi demo server](https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi) for the latter method.
 
 https://github.com/geopython/demo.pygeoapi.io/tree/master/services Depending on your config you may need specific backends to be available.
 
@@ -19,9 +19,9 @@ So the chain is:
 
 ```
 
-There are a number of examples at [several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples). 
+There are a number of examples at [several examples](https://github.com/geopython/pygeoapi/blob/master/docker/examples).
 
-### Installation 
+### Installation
 
 Install Docker (Ubuntu)
 
@@ -51,11 +51,11 @@ Run/Create Container
 $ sudo docker run --name geoapi -p 5000:80 -v $(pwd)/my.config.yml:/pygeoapi/local.config.yml -it geopython/pygeoapi
 ```
 
-Go to http://localhost:5000/ and should be up and running. 
+Go to http://localhost:5000/ and should be up and running.
 
 ## Running - Basics
 
-By default this Image will start a `pygeoapi` Docker Container 
+By default this Image will start a `pygeoapi` Docker Container
 using `gunicorn` on internal port 80.
 
 To run with default built-in config and data:
@@ -64,7 +64,7 @@ To run with default built-in config and data:
 	docker run -p 5000:80 -it geopython/pygeoapi run
 	# or simply
 	docker run -p 5000:80 -it geopython/pygeoapi
-	
+
     # then browse to http://localhost:5000/
 ```
 
@@ -111,13 +111,13 @@ COPY ./my.config.yml /pygeoapi/local.config.yml
 
 See how the demo server is setup this way at
 https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
- 
+
 ## Running - Running on a sub-path
 
 By default the `pygeoapi` Docker Image will run from the `root` path `/`.
 If you need to run from a sub-path and have all internal URLs correct
 you need to set `SCRIPT_NAME` environment variable.
-  
+
 For example to run with `my.config.yml` on http://localhost:5000/mypygeoapi:
 
 ```
@@ -140,7 +140,7 @@ services:
 
     ports:
       - "5000:80"
-      
+
     environment:
      - SCRIPT_NAME=/pygeoapi
 

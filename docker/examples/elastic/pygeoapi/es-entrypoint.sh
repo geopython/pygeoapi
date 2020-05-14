@@ -31,7 +31,7 @@
 # =================================================================
 
 set +e
- 
+
 echo  "Waiting for ElasticSearch container..."
 
 # First wait for ES to be up and then execute the original pygeoapi entrypoint.

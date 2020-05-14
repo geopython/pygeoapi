@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,7 +32,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseProvider(object):
+class BaseProvider:
     """generic Provider ABC"""
 
     def __init__(self, provider_def):
@@ -46,9 +46,10 @@ class BaseProvider(object):
 
         self.name = provider_def['name']
         self.data = provider_def['data']
-        self.id_field = provider_def['id_field']
+        self.id_field = provider_def.get('id_field', None)
         self.time_field = provider_def.get('time_field')
         self.properties = provider_def.get('properties', [])
+        self.file_types = provider_def.get('file_types', [])
         self.fields = {}
 
     def get_fields(self):
@@ -56,6 +57,19 @@ class BaseProvider(object):
         Get provider field information (names, types)
 
         :returns: dict of fields
+        """
+
+        raise NotImplementedError()
+
+    def get_data_path(self, baseurl, urlpath, dirpath):
+        """
+        Gets directory listing or file description or raw file dump
+
+        :param baseurl: base URL of endpoint
+        :param urlpath: base path of URL
+        :param dirpath: directory basepath (equivalent of URL)
+
+        :returns: `dict` of file listing or `dict` of GeoJSON item or raw file
         """
 
         raise NotImplementedError()
@@ -107,20 +121,30 @@ class BaseProvider(object):
 
 
 class ProviderGenericError(Exception):
-    """Generic error"""
+    """provider generic error"""
     pass
 
 
 class ProviderConnectionError(ProviderGenericError):
-    """query / backend error"""
+    """provider connection error"""
     pass
 
 
 class ProviderQueryError(ProviderGenericError):
-    """query / backend error"""
+    """provider query error"""
+    pass
+
+
+class ProviderItemNotFoundError(ProviderGenericError):
+    """provider query error"""
+    pass
+
+
+class ProviderNotFoundError(ProviderGenericError):
+    """provider not found error"""
     pass
 
 
 class ProviderVersionError(ProviderGenericError):
-    """Incorrect provider version"""
+    """provider incorrect version error"""
     pass

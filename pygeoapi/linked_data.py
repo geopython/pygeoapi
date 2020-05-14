@@ -174,7 +174,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
-    context = config['datasets'][dataset].get('context', [])
+    context = config['resources'][dataset].get('context', [])
     data['id'] = (
         '{}/collections/{}/items/{}' if identifier
         else '{}/collections/{}/items'

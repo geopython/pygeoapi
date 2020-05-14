@@ -32,7 +32,7 @@ import logging
 import os
 import uuid
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +65,23 @@ class GeoJSONProvider(BaseProvider):
     def __init__(self, provider_def):
         """initializer"""
         BaseProvider.__init__(self, provider_def)
+        self.fields = self.get_fields()
+
+    def get_fields(self):
+        """
+         Get provider field information (names, types)
+
+        :returns: dict of fields
+        """
+
+        LOGGER.debug('Treating all columns as string types')
+        if os.path.exists(self.data):
+            with open(self.data) as src:
+                data = json.loads(src.read())
+            fields = {}
+            for f in data['features'][0]['properties'].keys():
+                fields[f] = 'string'
+            return fields
 
     def _load(self):
         """Load and validate the source GeoJSON file
@@ -133,8 +150,9 @@ class GeoJSONProvider(BaseProvider):
                 return feature
 
         # default, no match
-        LOGGER.error('feature {} not found'.format(identifier))
-        return None
+        err = 'item {} not found'.format(identifier)
+        LOGGER.error(err)
+        raise ProviderItemNotFoundError(err)
 
     def create(self, new_feature):
         """Create a new feature

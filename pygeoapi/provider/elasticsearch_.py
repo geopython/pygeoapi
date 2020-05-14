@@ -34,7 +34,8 @@ from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderQueryError)
+                                    ProviderQueryError,
+                                    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class ElasticsearchProvider(BaseProvider):
                     type_ = 'string'
                 else:
                     type_ = v['type']
-                fields_[k] = {'type': type_}
+                fields_[k] = type_
 
         return fields_
 
@@ -209,7 +210,7 @@ class ElasticsearchProvider(BaseProvider):
 
                 sp = sort['property']
 
-                if self.fields[sp]['type'] == 'string':
+                if self.fields[sp] == 'string':
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:
@@ -322,7 +323,7 @@ class ElasticsearchProvider(BaseProvider):
             result = self.es.search(index=self.index_name, body=query)
             if len(result['hits']['hits']) == 0:
                 LOGGER.error(err)
-                return None
+                raise ProviderItemNotFoundError(err)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result['hits']['hits'][0])
         except Exception as err:

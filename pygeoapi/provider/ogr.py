@@ -31,13 +31,17 @@
 
 import importlib
 import logging
+import functools
+from typing import Any
 
 from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderGenericError, ProviderQueryError)
+    BaseProvider, ProviderGenericError,
+    ProviderQueryError, ProviderConnectionError,
+    ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ class OGRProvider(BaseProvider):
     OGR Provider. Uses GDAL/OGR Python-bindings to access OGR
     Vector sources. References:
     https://pcjericks.github.io/py-gdalogr-cookbook/
-    https://www.gdal.org/ogr_formats.html (per-driver specifics).
+    https://gdal.org/ogr_formats.html (per-driver specifics).
 
     In theory any OGR source type (Driver) could be used, although
     some Source Types are Driver-specific handling. This is handled
@@ -141,8 +145,8 @@ class OGRProvider(BaseProvider):
                                                 'EPSG:4326').split(':')[1])
 
         # Optional coordinate transformation inward (requests) and
-        # outward (responses) when the source layers and WFS3 collections
-        # differ in EPSG-codes.
+        # outward (responses) when the source layers and
+        # OGC API - Features collections differ in EPSG-codes.
         self.transform_in = None
         self.transform_out = None
         if self.source_srs != self.target_srs:
@@ -174,6 +178,9 @@ class OGRProvider(BaseProvider):
         self.driver = None
         self.conn = None
 
+        LOGGER.debug('Grabbing field information')
+        self.fields = self.get_fields()
+
     def _list_open_options(self):
         return [
             f"{key}={str(value)}" for key, value in self.open_options.items()]
@@ -186,12 +193,36 @@ class OGRProvider(BaseProvider):
             LOGGER.error(msg)
             raise Exception(msg)
         if self.open_options:
-            self.conn = self.gdal.OpenEx(
-                self.data_def['source'],
-                self.gdal.OF_VECTOR,
-                open_options=self._list_open_options())
+            try:
+                self.conn = self.gdal.OpenEx(
+                    self.data_def['source'],
+                    self.gdal.OF_VECTOR,
+                    open_options=self._list_open_options())
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
+            except Exception:
+                msg = 'Ignore errors during the connection for Driver \
+                    {}'.format(source_type)
+                LOGGER.error(msg)
+                self.conn = _ignore_gdal_error(
+                    self.gdal, 'OpenEx', self.data_def['source'],
+                    self.gdal.OF_VECTOR,
+                    open_options=self._list_open_options())
         else:
-            self.conn = self.driver.Open(self.data_def['source'], 0)
+            try:
+                self.conn = self.driver.Open(self.data_def['source'], 0)
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
+            except Exception:
+                msg = 'Ignore errors during the connection for Driver \
+                    {}'.format(source_type)
+                LOGGER.error(msg)
+                # ignore errors for ESRIJSON not having geometry member
+                # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa
+                self.conn = _ignore_gdal_error(
+                    self.driver, 'Open', self.data_def['source'], 0)
         if not self.conn:
             msg = 'Cannot open OGR Source: %s' % self.data_def['source']
             LOGGER.error(msg)
@@ -230,10 +261,20 @@ class OGRProvider(BaseProvider):
                 fieldName = field_defn.GetName()
                 fieldTypeCode = field_defn.GetType()
                 fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
+
                 fields[fieldName] = fieldType.lower()
+
+                if fields[fieldName] == 'integer64':
+                    fields[fieldName] = 'integer'
+                elif fields[fieldName] == 'real':
+                    fields[fieldName] = 'number'
+
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
 
+        except RuntimeError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
 
@@ -282,6 +323,20 @@ class OGRProvider(BaseProvider):
                 # layer.SetSpatialFilterRect(
                 # float(minx), float(miny), float(maxx), float(maxy))
 
+            if properties:
+                LOGGER.debug('processing properties')
+
+                attribute_filter = ' and '.join(
+                    map(
+                        lambda x: '{} = \'{}\''.format(x[0], x[1]),
+                        properties
+                    )
+                )
+
+                LOGGER.debug(attribute_filter)
+
+                layer.SetAttributeFilter(attribute_filter)
+
             # Make response based on resulttype specified
             if resulttype == 'hits':
                 LOGGER.debug('hits only specified')
@@ -295,6 +350,9 @@ class OGRProvider(BaseProvider):
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -320,12 +378,18 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter("{field} = '{id}'".format(
                 field=self.id_field, id=identifier))
 
-            ogr_feature = self._get_next_feature(layer)
+            ogr_feature = self._get_next_feature(layer, identifier)
             result = self._ogr_feature_to_json(ogr_feature)
 
         except RuntimeError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            raise ProviderConnectionError(err)
+        except ProviderItemNotFoundError as err:
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
         except Exception as err:
             LOGGER.error(err)
             raise ProviderGenericError(err)
@@ -358,17 +422,19 @@ class OGRProvider(BaseProvider):
         class_ = getattr(module, classname)
         self.source_helper = class_(self)
 
-    def _get_next_feature(self, layer):
+    def _get_next_feature(self, layer, feature_id):
         try:
-            # Make gdal error handler silent
-            self.gdal.PushErrorHandler('CPLQuietErrorHandler')
-            next_feature = layer.GetNextFeature()
-            # Restore error handler
-            self.gdal.PopErrorHandler()
-            if all(val is None for val in next_feature.items().values()):
-                self.gdal.Error(
-                    self.gdal.CE_Failure, 1, "Object properties are all null"
-                )
+            # Ignore gdal error
+            next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
+            if next_feature:
+                if all(val is None for val in next_feature.items().values()):
+                    self.gdal.Error(
+                        self.gdal.CE_Failure, 1,
+                        "Object properties are all null"
+                    )
+            else:
+                raise ProviderItemNotFoundError(
+                    "item {} not found".format(feature_id))
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())
@@ -407,11 +473,8 @@ class OGRProvider(BaseProvider):
         layer.ResetReading()
 
         try:
-            # Make gdal error handler silent
-            self.gdal.PushErrorHandler('CPLQuietErrorHandler')
-            ogr_feature = layer.GetNextFeature()
-            # Restore error handler
-            self.gdal.PopErrorHandler()
+            # Ignore gdal error
+            ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             count = 0
             while ogr_feature is not None:
                 json_feature = self._ogr_feature_to_json(ogr_feature)
@@ -422,11 +485,8 @@ class OGRProvider(BaseProvider):
                 if count == limit:
                     break
 
-                # Make gdal error handler silent
-                self.gdal.PushErrorHandler('CPLQuietErrorHandler')
-                ogr_feature = layer.GetNextFeature()
-                # Restore error handler
-                self.gdal.PopErrorHandler()
+                # Ignore gdal error
+                ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
 
             return feature_collection
         except RuntimeError as gdalerr:
@@ -485,7 +545,6 @@ class SourceHelper:
         Default action to get a Layer object from opened OGR Driver.
         :return:
         """
-
         layer = self.provider.conn.GetLayerByName(self.provider.layer_name)
 
         if not layer:
@@ -553,7 +612,7 @@ class CommonSourceHelper(SourceHelper):
     def enable_paging(self, startindex=-1, limit=-1):
         """
         Enable paged access to dataset (OGR Driver-specific)
-        using OGR SQL https://www.gdal.org/ogr_sql.html
+        using OGR SQL https://gdal.org/user/ogr_sql_dialect.html
         e.g. SELECT * FROM poly LIMIT 10 OFFSET 30
 
         """
@@ -580,7 +639,7 @@ class CommonSourceHelper(SourceHelper):
 
         self.close()
 
-        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+        sql = 'SELECT * FROM "{ds_name}" LIMIT {limit} OFFSET {offset}'.format(
             ds_name=self.provider.layer_name,
             limit=self.limit,
             offset=self.startindex)
@@ -599,7 +658,7 @@ class CommonSourceHelper(SourceHelper):
         return self.result_set
 
 
-class ESRIJSONHelper(SourceHelper):
+class ESRIJSONHelper(CommonSourceHelper):
 
     def __init__(self, provider):
         """
@@ -609,33 +668,57 @@ class ESRIJSONHelper(SourceHelper):
 
         :returns: pygeoapi.providers.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+        CommonSourceHelper.__init__(self, provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
         Enable paged access to dataset (OGR Driver-specific)
 
         """
-
         if startindex < 0:
             return
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', 'ON')
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_START_INDEX', str(startindex))
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', str(limit))
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=True)
+        self.startindex = startindex
+        self.limit = limit
 
     def disable_paging(self):
         """
         Disable paged access to dataset (OGR Driver-specific)
         """
 
-        self.provider.gdal.SetConfigOption(
-            'ESRIJSON_FEATURE_SERVER_PAGING', None)
-        self.provider.gdal.SetConfigOption(
-            'OGR_ESRIJSON_PAGE_SIZE', None)
+        self.provider.open_options.update(FEATURE_SERVER_PAGING=False)
+
+    def get_layer(self):
+        """
+        Gets OGR Layer from opened OGR dataset.
+        When startindex defined 1 or greater will invoke
+        OGR SQL SELECT with LIMIT and OFFSET and return
+        as Layer as ResultSet from ExecuteSQL on dataset.
+        :return: OGR layer object
+        """
+        if self.startindex <= 0:
+            return CommonSourceHelper.get_layer(self)
+
+        self.close()
+
+        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
+            ds_name=self.provider.layer_name,
+            limit=self.limit,
+            offset=self.startindex)
+        self.result_set = self.provider.conn.ExecuteSQL(sql)
+
+        # Reset since needs to be set each time explicitly
+        self.startindex = -1
+        self.limit = -1
+
+        if not self.result_set:
+            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
+                self.provider.layer_name)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return self.result_set
 
 
 class WFSHelper(SourceHelper):
@@ -716,5 +799,42 @@ class GdalErrorHandler:
 
         LOGGER.error('Error Number: %s, Type: %s, Msg: %s' % (
             self.err_num, level, self.err_msg))
+        last_error = osgeo_gdal.GetLastErrorMsg()
         if self.err_level >= osgeo_gdal.CE_Failure:
-            raise ProviderGenericError(osgeo_gdal.GetLastErrorMsg())
+            if 'HTTP error code' in last_error:
+                # 500 <= http error ode <=599
+                for i in list(range(500, 599)):
+                    if str(i) in last_error:
+                        raise ProviderConnectionError(last_error)
+            else:
+                raise ProviderGenericError(last_error)
+
+
+def _silent_gdal_error(f):
+    """
+    Decorator function for gdal
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        osgeo_gdal.PushErrorHandler('CPLQuietErrorHandler')
+        v = f(*args, **kwargs)
+        osgeo_gdal.PopErrorHandler()
+        return v
+
+    return wrapper
+
+
+@_silent_gdal_error
+def _ignore_gdal_error(inst, fn, *args, **kwargs) -> Any:
+    """
+    Evaluate the function with the object instance.
+
+    :param inst: Object instance
+    :param fn: String function name
+    :param args: List of positional arguments
+    :param kwargs: Keyword arguments
+
+    :returns: Any function evaluation result
+    """
+    value = getattr(inst, fn)(*args, **kwargs)
+    return value

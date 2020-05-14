@@ -4,7 +4,7 @@
 #          Just van den Broecke <justb4@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
 #
@@ -62,9 +62,12 @@ ARG ADD_PIP_PACKAGES=""
 # ENV settings
 ENV TZ=${TZ} \
 	DEBIAN_FRONTEND="noninteractive" \
-	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils git" \
-	DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils libpq-dev ${ADD_DEB_PACKAGES}" \
-	PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	# DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils git" \
+	# DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils libpq-dev ${ADD_DEB_PACKAGES}" \
+	# PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils curl git unzip" \
+	DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite python3-distutils ${ADD_DEB_PACKAGES}" \
+	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ENV LANG=${LANG}
 
@@ -82,8 +85,9 @@ RUN \
 	&& dpkg-reconfigure --frontend=noninteractive locales \
 	&& update-locale LANG=${LANG} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
-	python3 -m pip install --upgrade pip \
-	python3 -m pip install --upgrade setuptools \
+	# Upgrade pip3 and install packages
+	&& python3 -m pip install --upgrade pip \
+	# python3 -m pip install --upgrade setuptools \
 	&& python3 -m pip install ${PIP_PACKAGES} \
 	# # Install pygeoapi
 	&& cd /pygeoapi \
@@ -92,7 +96,12 @@ RUN \
 	&& python3 -m pip install -r requirements-provider.txt \
 	&& python3 -m pip install -r requirements-processes.txt \
 	&& python3 -m pip install -e . \
-	&& python3 -m pip uninstall --yes wheel \
+	# OGC schemas local setup
+	&& mkdir /schemas.opengis.net \
+	&& curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
+	&& unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
+	# Cleanup TODO: remove unused Locales and TZs
+	&& pip3 uninstall --yes wheel \
 	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
 	&& apt autoremove -y  \
 	&& rm -rf /var/lib/apt/lists/*

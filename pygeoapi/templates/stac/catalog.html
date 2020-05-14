@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} stac/{{ data['path'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ config['server']['url'] }}/stac">SpatioTemporal Asset Catalog</a>
+{% for link in get_breadcrumbs(data['path']) %}
+/ <a class="crumbs-path" href="{{config['server']['url'] }}/stac/{{ link['href'] }}">{{ link['title'] }}</a>
+{% endfor %}
+{% endblock %}
+
+{% block body %}
+
+  <section id="links">
+    <h2>Links</h2>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for link in data['links'] %}
+        {% if link['type'] == 'text/html' and link['rel'] in ['child', 'item'] %}
+        <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+          <td data-label="name">
+            <meta itemprop="url" content="{{ link['href'] }}"/>
+            <a title="{{ link['href'] }}" href="{{ link['href'] }}">
+             <span itemprop="name">{{ link['href'] | get_path_basename }}</span></a>
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}
