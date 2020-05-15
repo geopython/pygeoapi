@@ -1362,6 +1362,11 @@ class API:
             return headers_, 400, json.dumps(exception)
 
         try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+        try:
             data = json.loads(data)
         except (json.decoder.JSONDecodeError, TypeError) as e:
             # Input does not appear to be valid JSON
