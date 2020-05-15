@@ -52,7 +52,7 @@ PLUGINS = {
     },
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
-        'Reprojector': 'pygeoapi.process.reproject-coords.WKTReprojectorProcessor'
+        'Reprojector': 'wkt_reprojector_plugin.WKTReprojectorProcessor'
     },
     'process_manager': {
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
