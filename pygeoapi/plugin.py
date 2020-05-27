@@ -51,11 +51,11 @@ PLUGINS = {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
-        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
-        'Reprojector': 'wkt_reprojector_plugin.WKTReprojectorProcessor'
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
     },
     'process_manager': {
-        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
+        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager',
+        'Redis': 'pygeoapi.process.manager.redis_.RedisManager'
     }
 }
 

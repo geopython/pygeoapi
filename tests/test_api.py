@@ -35,7 +35,7 @@ import pytest
 
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
-from pygeoapi.api import API, check_format
+from pygeoapi.api import API, check_format, check_async
 from pygeoapi.util import yaml_load
 from pyld import jsonld
 
@@ -785,6 +785,18 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert response['code'] == 'NoSuchProcess'
 
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {'sync-execute': True}, json.dumps(req_body), 'hello-world')
+    response = json.loads(response)
+    assert code == 201
+
+    # req_headers = make_req_headers()
+    # rsp_headers, code, response = api_.execute_process(
+    #     'POST', req_headers, {'async-execute': True}, json.dumps(req_body), 'hello-world')
+    # response = json.loads(response)
+    # assert code == 202
+
 
 def test_check_format():
     args = {'f': 'html'}
@@ -843,3 +855,38 @@ def test_check_format():
     req_headers = make_req_headers(HTTP_ACCEPT='text/html')
     args['f'] = 'json'
     assert check_format(args, req_headers) == 'json'
+
+def test_check_async():
+    args = {}
+    req_headers = {}
+
+    assert check_async(args, req_headers) is False
+
+    args['f'] = 'html'
+    assert check_async(args, req_headers) is False
+
+    args['sync-execute'] = 'True'
+    assert check_async(args, req_headers) is False
+
+    req_headers['async-execute'] = 'True'
+    assert check_async(args, req_headers) is False # Args precede headers
+
+    args['async-execute'] = 'True'
+    assert check_async(args, req_headers) is True # Async precedes sync
+
+    args = {}
+    req_headers['async-execute'] = 'True'
+    assert check_async(args, req_headers) is True
+
+    req_headers['sync-execute'] = 'True'
+    assert check_async(args, req_headers) is True # Async precedes sync
+
+    args['async-execute'] = 'True'
+    args['sync-execute'] = 'True'
+    assert check_async(args, req_headers) is True # Async precedes sync
+
+    args['async-execute'] = 'True'
+    args['sync-execute'] = 'False'
+    req_headers['async-execute'] = 'True'
+    req_headers['sync-execute'] = 'False'
+    assert check_async(args, req_headers) is True

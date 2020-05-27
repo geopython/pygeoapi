@@ -108,10 +108,12 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return doc_id
 
-    def update_job(self, job_id, update_dict):
+    def update_job(self, processid, job_id, update_dict):
         """
         Updates a job
 
+        :param processid: process identifier
+        :param job_id: job identifier
         :param update_dict: `dict` of property updates
 
         :returns: `bool` of status result
@@ -128,7 +130,7 @@ class TinyDBManager(BaseManager):
         """
         raise NotImplementedError()
 
-    def get_job_result(self, processid, jobid):
+    def get_job_result(self, processid, job_id):
         """
         Get a single job
 
@@ -140,24 +142,9 @@ class TinyDBManager(BaseManager):
 
         self.connect()
         query = tinydb.Query()
-        r = self.db.search((query.processid == processid) & (query.identifier == jobid))
+        r = self.db.search((query.processid == processid) & (query.identifier == job_id))
 
         return r[0] if r else None
 
-    def add_job_result(self, processid, jobid):
-        """
-        Add a job result
-
-        :param processid: process identifier
-        :param jobid: job identifier
-
-        :returns: `bool` of add job result result
-        """
-
     def __repr__(self):
         return '<TinyDBManager> {}'.format(self.name)
-
-
-class ManagerExecuteError(Exception):
-    """query / backend error"""
-    pass

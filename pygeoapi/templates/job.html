@@ -45,7 +45,7 @@
               </div>
               <div class="duration">
                 <h4><label for="progress">Progress</label></h4>
-                <progress id="progress" class="inline" value="{{data.job.progress*10}}" max="1000"></progress>
+                <progress id="progress" class="inline" value="{{data.job.progress|int*10}}" max="1000"></progress>
                 <h4><label for="runtime">Runtime</label></h4>
                 <p><span id="runtime">{{ data.job.process_start_datetime|duration(data.job.process_end_datetime) }}</span></p>
                 <h4><label for="starttime">Started processing</label></h4>

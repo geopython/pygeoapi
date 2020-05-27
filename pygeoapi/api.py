@@ -1274,6 +1274,7 @@ class API:
                     continue
                 metadata = deepcopy(_process.metadata)
                 metadata['itemType'] = ['process']
+                # TODO introspection for async/sync-execute
                 metadata['jobControlOptions'] = ['sync-execute']
                 metadata['outputTransmission'] = ['value']
                 metadata['links'] = metadata.get('links', list())
@@ -1393,16 +1394,8 @@ class API:
             self.config['server']['url'], process_id, job_id)
         headers_['Location'] = url
 
-        if 'sync-execute' in args and args['sync-execute'] == 'false':
-            LOGGER.debug('asynchronous execution specified')
-            _process = multiprocessing.Process(
-                target=self._execute_handler,
-                args=(process, job_id, data_dict, True))
-            _process.start()
-            return headers_, 201, ''
-        else:
-            LOGGER.debug('synchronous execution')
-            outputs, status = self._execute_handler(process, job_id, data_dict)
+        LOGGER.debug('synchronous execution')
+        outputs, status = self._execute_handler(process, job_id, data_dict)
 
         if status == JobStatus.failed:
             response = outputs
@@ -1584,32 +1577,30 @@ class API:
             return headers_, 200, response
         return headers_, 200, json.dumps(result, sort_keys=True, indent=4, default=json_serial)
 
-    def _execute_handler(self, p, job_id, data_dict, async_=False):
+    def _execute_handler(self, p, job_id, data_dict):
         """
         Process execution handler
 
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
-        :param async_: `bool` whether to return or dispatch results
 
-        :returns: tuple of response payload and status, or None if `async` is `True`
+        :returns: tuple of response payload and status
         """
-
-        process_start_datetime = datetime.utcnow().strftime(DATETIME_FORMAT)
 
         filename = '{}-{}'.format(p.metadata['id'], job_id)
         job_filename = os.path.join(self.manager.output_dir, filename) # TODO FIXME
 
+        processid = p.metadata['id']
         current_status = JobStatus.accepted
         job_metadata = {
             'identifier': job_id,
-            'processid': p.metadata['id'],
-            'process_start_datetime': process_start_datetime,
+            'processid': processid,
+            'process_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
             'process_end_datetime': None,
             'status': current_status.value,
             'location': None,
-            'message': 'Process accepted',
+            'message': 'Job accepted and ready for execution',
             'progress': 5
         }
         self.manager.add_job(job_metadata)
@@ -1617,9 +1608,9 @@ class API:
         try:
             current_status = JobStatus.running
             outputs = p.execute(data_dict)
-            self.manager.update_job(job_id, {
+            self.manager.update_job(processid, job_id, {
                 'status': current_status.value,
-                'message': 'Process running',
+                'message': 'Writing job output',
                 'progress': 95
             })
 
@@ -1631,11 +1622,11 @@ class API:
                 'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': job_filename,
-                'message': 'Process complete',
+                'message': 'Job complete',
                 'progress': 100
             }
 
-            self.manager.update_job(job_id, job_update_metadata)
+            self.manager.update_job(processid, job_id, job_update_metadata)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -1661,12 +1652,39 @@ class API:
                 'message': f'{code}: {outputs["description"]}'
             }
 
-            self.manager.update_job(job_id, job_metadata)
+            self.manager.update_job(processid, job_id, job_metadata)
 
-        if not async_:
-            return outputs, current_status
-        return
+        return outputs, current_status
 
+def check_async(args, headers):
+    """
+    Check execution mode requested from arguments or headers. Returns
+    True if asynchronous execution is requested, False otherwise.
+    Arguments take precedence over headers.
+
+    The args and headers considered are labelled "sync-execute" and
+    "async-execute". These are not part of the existing specification, which
+    does not currently state how async/sync "exection modes" are to be specified
+    by clients. Therefore this function is liable to change.
+
+    Note that since args and headers are serialised, the expected values
+    representing the Boolean cases True and False are properly the string
+    literals "True" and "False", which are equivalent to `str(True)` and
+    `str(False)`.
+
+    :param args: dict of request keyword value pairs
+    :param headers: dict of request headers
+
+    :returns: bool
+    """
+    async_arg = args.get('async-execute', None) == 'True'
+    if async_arg:
+        return True
+    async_header = headers.get('async-execute', None) == 'True'
+    sync_arg = args.get('sync-execute', None) == 'True'
+    if async_header and not sync_arg:
+        return True
+    return False
 
 def check_format(args, headers):
     """

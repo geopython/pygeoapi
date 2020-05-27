@@ -20,7 +20,7 @@ function submitJob(url) {
   xhr.open('POST', url, true);
   xhr.setRequestHeader('Content-type', 'application/json');
   xhr.onreadystatechange = function() {
-    if (this.readyState = this.DONE && xhr.status == 201) {
+    if (this.readyState = this.DONE && (xhr.status == 201 || xhr.status == 202)) {
       if (this.onreadystatechange) {
         xhr.onreadystatechange = null;
       }

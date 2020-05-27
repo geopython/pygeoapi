@@ -128,7 +128,7 @@
         </div>
         <div class="col-sm-12 col-md-6">
           <section id='process-example input-group'>
-            <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs')" method="post">
+            <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs?sync-execute=True')" method="post">
               <h2>Submit a job</h2>
               <li>
                 <!-- TODO placeholder with description -->
