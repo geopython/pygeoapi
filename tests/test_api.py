@@ -53,7 +53,7 @@ def get_test_file_path(filename):
 
 def make_req_headers(**kwargs):
     environ = create_environ('/collections/obs/items',
-                             'http://localhost:5000/')
+                             'http://172.21.0.3/')
     environ.update(kwargs)
     request = Request(environ)
     return request.headers
@@ -610,8 +610,9 @@ def test_describe_processes(config, api_):
     assert len(process['inputs']) == 2
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
-    assert len(process['jobControlOptions']) == 1
-    assert process['jobControlOptions'][0] == 'sync-execute'
+    assert len(process['jobControlOptions']) == 2
+    assert 'sync-execute' in process['jobControlOptions']
+    assert 'async-execute' in process['jobControlOptions']
 
     # Check HTML response when requested in headers
     req_headers = make_req_headers(HTTP_ACCEPT='text/html')
@@ -787,16 +788,16 @@ def test_execute_process(config, api_):
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {'sync-execute': True}, json.dumps(req_body), 'hello-world')
+        'POST', req_headers, {'sync-execute': 'True'}, json.dumps(req_body), 'hello-world')
     response = json.loads(response)
     assert code == 201
 
-    # req_headers = make_req_headers()
-    # rsp_headers, code, response = api_.execute_process(
-    #     'POST', req_headers, {'async-execute': True}, json.dumps(req_body), 'hello-world')
-    # response = json.loads(response)
-    # assert code == 202
-
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.execute_process(
+        'POST', req_headers, {'async-execute': 'True'}, json.dumps(req_body), 'hello-world')
+    assert 'Location' in rsp_headers
+    assert response == ''
+    assert code == 202
 
 def test_check_format():
     args = {'f': 'html'}
