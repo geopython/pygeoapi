@@ -53,7 +53,7 @@ def get_test_file_path(filename):
 
 def make_req_headers(**kwargs):
     environ = create_environ('/collections/obs/items',
-                             'http://172.21.0.3/')
+                             'http:/localhost:5000/')
     environ.update(kwargs)
     request = Request(environ)
     return request.headers
