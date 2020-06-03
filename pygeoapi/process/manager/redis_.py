@@ -104,7 +104,8 @@ class RedisManager(BaseManager):
             return redis.Redis(connection_pool=self.db)
         except redis.exceptions.ConnectionError as exc:
             # TODO - wait, retry, return 503 (Service Unavailable)?
-            raise exc
+            LOGGER.debug(exc)
+            raise ManagerExecuteError('Redis connection error')
 
     def destroy(self):
         """
