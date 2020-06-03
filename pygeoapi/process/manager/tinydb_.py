@@ -124,6 +124,17 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return True
 
+    def delete_job(self, processid, job_id):
+        """
+        Deletes a job
+
+        :param processid: process identifier
+        :param job_id: job identifier
+
+        :return `bool` of status result
+        """
+        raise NotImplementedError()
+
     def delete_jobs(self, max_jobs, older_than):
         """
         TODO
@@ -145,6 +156,32 @@ class TinyDBManager(BaseManager):
         r = self.db.search((query.processid == processid) & (query.identifier == job_id))
 
         return r[0] if r else None
+
+    def get_job_output(self, processid, job_id):
+        """
+        Get a job's status, and actual output of executing the process
+
+        :param processid: process identifier
+        :param jobid: job identifier
+
+        :returns: tuple of JobStatus and the process output as a `dict`
+        """
+        job_result = self.get_job_result(processid, job_id)
+        if not job_result:
+            # processs/job does not exist
+            return None, None
+        location = job_result.get('location', None)
+        job_status = JobStatus[job_result['status']]
+        if not job_status == JobStatus.successful:
+            # Job is incomplete
+            return job_status, None
+        if not location:
+            # Job data was not written for some reason
+            # TODO log/raise exception?
+            return job_status, {}
+        with io.open(location, 'r') as fh:
+            result = json.load(fh)
+        return job_status, result
 
     def __repr__(self):
         return '<TinyDBManager> {}'.format(self.name)

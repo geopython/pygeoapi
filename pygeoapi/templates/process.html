@@ -128,7 +128,7 @@
         </div>
         <div class="col-sm-12 col-md-6">
           <section id='process-example input-group'>
-            <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs?sync-execute=True')" method="post">
+            <form class="form-style-1" onsubmit="return submitJob('{{config.server.url}}/processes/{{data.id}}/jobs');" method="post">
               <h2>Submit a job</h2>
               <li>
                 <!-- TODO placeholder with description -->
@@ -187,8 +187,9 @@
               </li>
               <li>
                 <div class="button-group">
-                  <input type="submit" value="Submit job" class="shadowed">
-                  <input type="reset" class="shadowed" value="Reset form">
+                  <input type="submit" onclick="submitButtonClick(this)" name="sync" title="Synchronous processing" value="Process now" class="shadowed">
+                  <input type="submit" onclick="submitButtonClick(this)" name="async" title="Asynchronous processing" value="Add to queue" class="shadowed">
+                  <input type="reset" class="shadowed" title="Return all fields to their default values" value="Reset form">
                 <div>
               </li>
             </form>

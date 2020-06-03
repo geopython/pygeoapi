@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% block refresh_js %}
+<script src="{{ config['server']['url']}}/static/js/refreshPage.js"></script>
+{% endblock %}
 {% block title %}{{ super() }} Jobs {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../processes">Processes</a>

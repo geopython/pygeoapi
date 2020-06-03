@@ -31,7 +31,6 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
@@ -73,6 +72,14 @@ class BaseProcessor:
         # TODO inputs that are not literalDataDomain
         return input['input']['literalDataDomain']['valueDefinition']['defaultValue']
 
-class ProcessorExecuteError(Exception):
+class ProcessorGenericError(Exception):
+    """processor generic error"""
+    pass
+
+class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
+    pass
+
+class ProcessorNotFoundError(ProcessorGenericError):
+    """processor not found error"""
     pass

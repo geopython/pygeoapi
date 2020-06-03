@@ -27,11 +27,19 @@
 #
 # =================================================================
 
+from collections.abc import Mapping
+from datetime import datetime
+import io
+import json
 import logging
+import os
 
 import redis
 
-from pygeoapi.process.manager.base import BaseManager, ManagerExecuteError
+from pygeoapi.util import JobStatus
+from pygeoapi.process.manager.base import (
+    BaseManager, ManagerExecuteError, DATETIME_FORMAT
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -136,7 +144,6 @@ class RedisManager(BaseManager):
 
         :returns: `bool` of add job result
         """
-        # TODO maybe don't use a hash, but rather single values, with prefixes
         db = self._connect()
         job_id = job_metadata.get('identifier')
         processid = job_metadata.get('processid')
@@ -180,6 +187,88 @@ class RedisManager(BaseManager):
                     raise ManagerExecuteError('Update atomicity error')
         return hmset_status
 
+    def _execute_handler(self, p, job_id, data_dict):
+        processid = p.metadata['id']
+        current_status = JobStatus.accepted
+        job_metadata = {
+            'identifier': job_id,
+            'processid': processid,
+            'process_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+            'process_end_datetime': None,
+            'status': current_status.value,
+            'location': None,
+            'message': 'Job accepted and ready for execution',
+            'progress': 5
+        }
+        self.add_job(job_metadata)
+
+        try:
+            current_status = JobStatus.running
+            outputs = list(map(dict_remove_none, p.execute(data_dict)))
+            self.update_job(processid, job_id, {
+                'status': current_status.value,
+                'message': 'Writing job output',
+                'progress': 95
+            })
+
+            # Write output to redis as serialised JSON
+            db = self._connect()
+            output_key = f'output:{make_key(processid, job_id)}'
+            db.set(output_key, json.dumps(outputs, sort_keys=True, indent=4))
+
+            current_status = JobStatus.finished
+            job_update_metadata = {
+                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'status': current_status.value,
+                'location': output_key,
+                'message': 'Job complete',
+                'progress': 100
+            }
+
+            self.update_job(processid, job_id, job_update_metadata)
+
+        except Exception as err:
+            # TODO assess correct exception type and description to help users
+            # NOTE, the /results endpoint should return the error HTTP status
+            # for jobs that failed, ths specification says that failing jobs
+            # must still be able to be retrieved with their error message
+            # intact, and the correct HTTP error status at the /results
+            # endpoint, even if the /result endpoint correctly returns the
+            # failure information (i.e. what one might assume is a 200
+            # response).
+            LOGGER.exception(err)
+            current_status = JobStatus.failed
+            code = 'InvalidParameterValue'
+            status_code = 400
+            outputs = {
+                'code': code,
+                'description': str(err) # NOTE this is optional and internal exceptions aren't useful for (or safe to show) end-users
+            }
+            LOGGER.error(outputs)
+            job_metadata = {
+                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'status': current_status.value,
+                'location': None,
+                'message': f'{code}: {outputs["description"]}'
+            }
+
+            self.update_job(processid, job_id, job_metadata)
+
+        return outputs, current_status
+
+    def execute_process(self, p, job_id, data_dict, sync=True):
+        """
+        Process execution handler
+
+        :param p: `pygeoapi.process` object
+        :param job_id: job identifier
+        :param data_dict: `dict` of data parameters
+        :param sync: `bool` specifying sync or async processing.
+
+        :returns: tuple of response payload and status
+        """
+        return super(RedisManager, self).execute_process(p, job_id, data_dict, sync=sync)
+
     def delete_job(self, processid, job_id):
         """
         Deletes a job
@@ -191,7 +280,8 @@ class RedisManager(BaseManager):
         """
         db = self._connect()
         key = make_key(processid, job_id)
-        del_status = db.delete(key)
+        output_key = f'output:{key}'
+        del_status = db.delete(key, output_key)
         return del_status
 
     def delete_jobs(self, max_jobs, older_than):
@@ -212,6 +302,21 @@ class RedisManager(BaseManager):
         db = self._connect()
         key = make_key(processid, job_id)
         return db.hgetall(key)
+
+    def get_job_output(self, processid, job_id):
+        job_result = self.get_job_result(processid, job_id)
+        if not job_result:
+            # processs/job does not exist
+            return None, None
+        job_status = JobStatus[job_result['status']]
+        if not job_status == JobStatus.successful:
+            # Job is incomplete
+            return job_status, None
+        db = self._connect()
+        key = job_result.get('location', f'output:{make_key(processid, job_id)}')
+        result = json.loads(db.get(key))
+        return job_status, result
+
 
     def __repr__(self):
         return '<RedisManager> {}'.format(self.name)

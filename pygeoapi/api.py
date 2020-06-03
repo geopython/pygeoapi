@@ -32,9 +32,7 @@ Returns content from plugins and sets reponses
 
 from datetime import datetime
 import json
-import io
 import logging
-import multiprocessing
 import os
 import uuid
 import urllib.parse
@@ -47,6 +45,9 @@ from pygeoapi import __version__
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
+from pygeoapi.process.base import (
+    ProcessorExecuteError, ProcessorNotFoundError
+)
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -1274,8 +1275,7 @@ class API:
                     continue
                 metadata = deepcopy(_process.metadata)
                 metadata['itemType'] = ['process']
-                # TODO introspection for async/sync-execute
-                metadata['jobControlOptions'] = ['sync-execute']
+                metadata['jobControlOptions'] = ['sync-execute', 'async-execute']
                 metadata['outputTransmission'] = ['value']
                 metadata['links'] = metadata.get('links', list())
                 metadata['links'].append(process_jobs_link(process_id))
@@ -1313,9 +1313,6 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        if not self.manager:
-            raise Exception('No manager, no execution!')
-
         headers_ = HEADERS.copy()
 
         format_ = check_format(args, headers_)
@@ -1340,6 +1337,15 @@ class API:
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
+        if not self.manager:
+            LOGGER.debug('Process manager is undefined')
+            # raise ProcessorNotFoundError()
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'No processing service defined'
+            }
+            return headers_, 500, json.dumps(exception)
 
         process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
 
@@ -1369,24 +1375,27 @@ class API:
             pass
         try:
             data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as e:
+        except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            LOGGER.debug(data)
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'invalid request data'
             }
-            LOGGER.info(exception)
+            LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
         try:
             data_dict = {_input['id']: _input['value'] for _input in data.get('inputs', [])}
-        except KeyError:
+        except KeyError as err:
             # Return 4XX client error for missing 'id' or 'value' in an input
+            LOGGER.error(err)
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'invalid request data'
             }
-            LOGGER.info(exception)
+            LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
         job_id = str(uuid.uuid1())
@@ -1394,8 +1403,22 @@ class API:
             self.config['server']['url'], process_id, job_id)
         headers_['Location'] = url
 
-        LOGGER.debug('synchronous execution')
-        outputs, status = self._execute_handler(process, job_id, data_dict)
+        outputs, status = None, None
+        sync = not check_async(args, headers)
+        if callable(getattr(self.manager, "execute_process", None)):
+            try:
+                LOGGER.debug(f'Manager execution, {"a" if not sync else ""}synchronous execution requested')
+                outputs, status = self.manager.execute_process(process, job_id, data_dict, sync=sync)
+            except ProcessorExecuteError as err:
+                exception = {
+                    'code': 'NoApplicableCode',
+                    'description': 'Processing error'
+                }
+                LOGGER.error(err)
+                return headers_, 500, json.dumps(exception)
+            else:
+                if not sync and status == JobStatus.accepted:
+                    return headers_, 202, ''
 
         if status == JobStatus.failed:
             response = outputs
@@ -1488,8 +1511,8 @@ class API:
             return headers_, 200, render_j2_template(self.config, 'job.html', {
                 'process': {'id': process_id, 'title': process.metadata['title']},
                 'job': {
-                    'process_start_datetime': job_result['process_start_datetime'],
-                    'process_end_datetime': job_result['process_end_datetime'],
+                    'process_start_datetime': job_result.get('process_start_datetime', None),
+                    'process_end_datetime': job_result.get('process_end_datetime', None),
                     'progress': job_result.get('progress', 100 if status == JobStatus.finished else 0),
                     **response}
             })
@@ -1528,30 +1551,33 @@ class API:
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        job_result = self.manager.get_job_result(process_id, job_id)
-        if not job_result:
+        status, job_output = self.manager.get_job_output(process_id, job_id)
+
+        if not status:
             exception = {
                 'code': 'NoSuchJob',
                 'description': 'job not found'
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
-        status = JobStatus[job_result['status']]
+
         if status == JobStatus.running:
             exception = {
-                'code': 'JobNotReady',
+                'code': 'ResultNotReady',
                 'description': 'job still running'
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
         elif status == JobStatus.accepted:
             # NOTE: this case is not mentioned in the specification
             exception = {
-                'code': 'JobNotReady',
+                'code': 'ResultNotReady',
                 'description': 'job accepted but not yet running'
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
         elif status == JobStatus.failed:
             code = 'InvalidParameterValue' # TODO this must correspond to actual failure reason
             http_status = 400 # TODO this must correspond to actual failure reason
@@ -1561,9 +1587,6 @@ class API:
             }
             LOGGER.info(exception)
             return headers_, http_status, json.dumps(exception)
-        location = job_result['location']
-        with io.open(location, 'r') as fh:
-            result = json.load(fh)
 
         format_ = check_format(args, headers_)
 
@@ -1572,89 +1595,10 @@ class API:
             response = render_j2_template(self.config, 'jobresult.html', {
                 'process': {'id': process_id, 'title': process.metadata['title']},
                 'job': {'id': job_id},
-                'result': result
+                'result': job_output
             })
             return headers_, 200, response
-        return headers_, 200, json.dumps(result, sort_keys=True, indent=4, default=json_serial)
-
-    def _execute_handler(self, p, job_id, data_dict):
-        """
-        Process execution handler
-
-        :param p: `pygeoapi.process` object
-        :param job_id: job identifier
-        :param data_dict: `dict` of data parameters
-
-        :returns: tuple of response payload and status
-        """
-
-        filename = '{}-{}'.format(p.metadata['id'], job_id)
-        job_filename = os.path.join(self.manager.output_dir, filename) # TODO FIXME
-
-        processid = p.metadata['id']
-        current_status = JobStatus.accepted
-        job_metadata = {
-            'identifier': job_id,
-            'processid': processid,
-            'process_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
-            'process_end_datetime': None,
-            'status': current_status.value,
-            'location': None,
-            'message': 'Job accepted and ready for execution',
-            'progress': 5
-        }
-        self.manager.add_job(job_metadata)
-
-        try:
-            current_status = JobStatus.running
-            outputs = p.execute(data_dict)
-            self.manager.update_job(processid, job_id, {
-                'status': current_status.value,
-                'message': 'Writing job output',
-                'progress': 95
-            })
-
-            with io.open(job_filename, 'w') as fh:
-                fh.write(json.dumps(outputs, sort_keys=True, indent=4))
-
-            current_status = JobStatus.finished
-            job_update_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': job_filename,
-                'message': 'Job complete',
-                'progress': 100
-            }
-
-            self.manager.update_job(processid, job_id, job_update_metadata)
-
-        except Exception as err:
-            # TODO assess correct exception type and description to help users
-            # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
-            # must still be able to be retrieved with their error message
-            # intact, and the correct HTTP error status at the /results
-            # endpoint, even if the /result endpoint correctly returns the
-            # failure information (i.e. what one might assume is a 200
-            # response).
-            current_status = JobStatus.failed
-            code = 'InvalidParameterValue'
-            status_code = 400
-            outputs = {
-                'code': code,
-                'description': str(err) # NOTE this is optional and internal exceptions aren't useful for (or safe to show) end-users
-            }
-            LOGGER.error(outputs)
-            job_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': None,
-                'message': f'{code}: {outputs["description"]}'
-            }
-
-            self.manager.update_job(processid, job_id, job_metadata)
-
-        return outputs, current_status
+        return headers_, 200, json.dumps(job_output, sort_keys=True, indent=4, default=json_serial)
 
 def check_async(args, headers):
     """
@@ -1664,8 +1608,8 @@ def check_async(args, headers):
 
     The args and headers considered are labelled "sync-execute" and
     "async-execute". These are not part of the existing specification, which
-    does not currently state how async/sync "exection modes" are to be specified
-    by clients. Therefore this function is liable to change.
+    does not currently state how async/sync "exection modes" are to be
+    specified by clients. Therefore this function is likely to change.
 
     Note that since args and headers are serialised, the expected values
     representing the Boolean cases True and False are properly the string
@@ -1680,9 +1624,11 @@ def check_async(args, headers):
     async_arg = args.get('async-execute', None) == 'True'
     if async_arg:
         return True
-    async_header = headers.get('async-execute', None) == 'True'
     sync_arg = args.get('sync-execute', None) == 'True'
-    if async_header and not sync_arg:
+    if sync_arg:
+        return False
+    async_header = headers.get('async-execute', None) == 'True'
+    if async_header:
         return True
     return False
 
