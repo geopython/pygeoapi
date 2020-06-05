@@ -145,7 +145,7 @@ def test_root_structured_data(config, api_):
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
-    assert root['@context'] == 'https://schema.org'
+    assert root['@context'] == 'https://schema.org/docs/jsonldcontext.jsonld'
     expanded = jsonld.expand(root)[0]
     assert '@type' in expanded
     assert 'http://schema.org/DataCatalog' in expanded['@type']
