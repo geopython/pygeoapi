@@ -112,3 +112,7 @@ ENV/
 
 
 .DS_Store
+
+#Config file and generated openapi doc
+local.config.yml
+openapi.yml
