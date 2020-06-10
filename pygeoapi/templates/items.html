@@ -87,7 +87,26 @@
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
                   {% if loop.index < 5 %}
-                  <td data-label="{{ k }}">{{ v | urlize(20) }}</td>
+                  <td data-label="{{ k }}">
+                    {% if v is string %}
+                      {{ v | truncate(120) | urlize(20) }}
+                    {% else %}
+                      {% if v is iterable %}
+                        {% for kv in v %}
+                          {% if loop.index < 9 %}
+                            {% if loop.index > 1 %}, {% endif %}
+                            {% if kv is string %}
+                              {{ kv | truncate(50) | urlize(20) }}
+                            {% else %}
+                              {{ v }}
+                            {% endif %}
+                          {% endif %}
+                        {% endfor %}
+                      {% else %}
+                        {{ v }}
+                      {% endif %}
+                    {% endif %}    
+                  </td>
                   {% endif %}
                   {% endfor %}
               </tr>
