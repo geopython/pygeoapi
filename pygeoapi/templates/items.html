@@ -16,12 +16,30 @@
 {% endblock %}
 
 {% block body %}
-  <section id="items"></section>
-  <section id="collection">
-    <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
-    <p>Items in this collection.</p>
-  </section>
   <section id="items">
+
+    <div class="row">
+      <div class="col-sm-12 col-md-6">
+        <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
+        <p>Items in this collection.</p>
+      </div>
+      <div class="col-sm-12 col-md-6">
+        <FORM action="{% for l in data['links'] if l.rel == 'self' %} {{ l['url'] }} {% endfor %}" method="GET">
+          <select onchange="document.getElementById('filterfield').name=this.value;" style="height:40px;width:120px">
+            <option>Select ...</option>
+            {% for k, v in data['features'][0]['properties'].items() %}
+              <option value="{{ k }}">{{ k }}</option>
+            {% endfor %}
+          </select>
+          <select style="height:40px;width:60px">
+            <option>=</option>
+          </select>
+          <input type="text" id="filterfield" value="" />
+          <input type="submit" value="Filter"/>
+        </FORM>
+      </div>
+    </div>
+
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
