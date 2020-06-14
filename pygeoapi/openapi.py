@@ -222,6 +222,21 @@ def get_oas_30(cfg):
     )
 
     oas['components'] = {
+        "schemas": {
+            "nameValuePairObj": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+			        },
+                    "value": {
+                        "oneOf": 
+                        [{"type": "string"},
+                        {"type": "object"}]
+			        }
+		        }
+	        }
+        },
         'responses': {
             '200': {
                 'description': 'successful operation',
@@ -333,6 +348,36 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
+            },
+            'post': {
+                'summary': 'Create {} item'.format(v['title']),
+                'description': v['description'],
+                'tags': [k],
+                'requestBody': {
+                    'required': True,
+                    'content': {
+                        'application/geo+json': {
+                            'schema': {
+                                '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                            }
+                        }
+                    }
+                },
+                'responses': {
+                    201: {
+                        'description': 'Created {} item'.format(v['title']),
+                        'headers': {
+                            'Location': {
+                                'schema': {
+                                    'type': 'string'
+                                }
+                            }
+                        }
+                    },
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
             }
         }
 
@@ -413,7 +458,105 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            }
+            },
+            'patch': {
+                'summary': 'Update {} item by id'.format(v['title']),
+                'description': v['description'],
+                'tags': [k],
+                'parameters': [
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                ],
+                'requestBody': {
+                    'required': True,
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'properties': {
+                                    'add': {
+                                        'type': 'array',
+                                        'items': {
+                                            '$ref': '#/components/schemas/nameValuePairObj'
+                                        }
+                                    },
+                                    'modify': {
+                                        'type': 'array',
+                                        'items': {
+                                            '$ref': '#/components/schemas/nameValuePairObj'
+                                        }
+                                    },
+                                    'remove': {
+                                        'type': 'array',
+                                        'items': {
+                                            'type': 'string'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                'responses': {
+                    200: {
+                        'description': 'Modified  {} item'.format(v['title']),
+                        'headers': {
+                            'Location': {
+                                'schema': {
+                                    'type': 'string',
+                                }
+                            }
+                        },
+                        'content': {
+                            'application/geo+json': {
+                                'schema': {
+                                    '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                                }
+                            }
+                        }   
+                    },
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+            },
+            'put': {
+                'summary': 'Replace {} item by id'.format(v['title']),
+                'description': 'lakes of the world, public domain',
+                'tags': [k],
+                'parameters': [
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                ],
+                'requestBody': {
+                    'required': True,
+                    'content': {
+                        'application/geo+json': {
+                            'schema': {
+                                '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                            }
+                        }
+                    }
+                },
+                'responses': {
+                    200: {'$ref': '#/components/responses/200'},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+            },
+            'delete': {
+                'summary': 'Delete {} item by id'.format(v['title']),
+                'description': 'lakes of the world, public domain',
+                'tags': [k],
+                'parameters': [
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                ],
+                'responses': {
+                    200: {'$ref': '#/components/responses/200'},  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+            }          
         }
 
     LOGGER.debug('setting up STAC')
