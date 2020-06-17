@@ -328,6 +328,15 @@ def get_oas_30(cfg):
             }
         }
 
+        data_provider = load_plugin('provider', collections[k]['provider'])
+        fields = data_provider.fields
+        prop = dict()
+        for key in fields:
+            if key != 'id':
+                prop[key] = {'type' : fields[key]}
+        geom = {'$ref': '{}#/components/schemas/geometryGeoJSON'.format(OPENAPI_YAML['oapif'])}
+        form = {"type": {"type":"string", "enum":["Feature"]}, "geometry":geom, "properties":{"type":"object", "properties":prop}}
+
         items_path = '{}/items'.format(collection_name_path)
 
         paths[items_path] = {
@@ -358,7 +367,8 @@ def get_oas_30(cfg):
                     'content': {
                         'application/geo+json': {
                             'schema': {
-                                '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                                'type': 'object',
+                                'properties': form
                             }
                         }
                     }
@@ -531,7 +541,8 @@ def get_oas_30(cfg):
                     'content': {
                         'application/geo+json': {
                             'schema': {
-                                '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                                'type': 'object',
+                                'properties': form
                             }
                         }
                     }
