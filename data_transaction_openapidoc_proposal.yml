@@ -130,7 +130,7 @@ paths:
     get:
       description: lakes of the world, public domain
       parameters:
-      - &id001
+      - &id002
         description: The optional f parameter indicates the output format which the
           server shall provide as part of the response document.  The default format
           is GeoJSON.
@@ -211,7 +211,27 @@ paths:
         content:
           application/geo+json:
             schema:
-              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+              properties: &id001
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/geometryGeoJSON
+                properties:
+                  properties:
+                    admin:
+                      type: string
+                    featureclass:
+                      type: string
+                    name:
+                      type: string
+                    name_alt:
+                      type: string
+                    scalerank:
+                      type: string
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
         required: true
       responses:
         201:
@@ -314,7 +334,8 @@ paths:
         content:
           application/geo+json:
             schema:
-              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+              properties: *id001
+              type: object
         required: true
       responses:
         200:
@@ -332,7 +353,7 @@ paths:
     get:
       description: lakes of the world, public domain
       parameters:
-      - *id001
+      - *id002
       responses:
         200:
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
@@ -366,7 +387,7 @@ paths:
     get:
       description: My cool observations
       parameters:
-      - *id001
+      - *id002
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
       - $ref: '#/components/parameters/sortby'
@@ -431,7 +452,27 @@ paths:
         content:
           application/geo+json:
             schema:
-              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+              properties: &id003
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/geometryGeoJSON
+                properties:
+                  properties:
+                    datetime:
+                      type: string
+                    lat:
+                      type: string
+                    long:
+                      type: string
+                    stn_id:
+                      type: string
+                    value:
+                      type: string
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
         required: true
       responses:
         201:
@@ -534,7 +575,8 @@ paths:
         content:
           application/geo+json:
             schema:
-              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+              properties: *id003
+              type: object
         required: true
       responses:
         200:
@@ -552,7 +594,7 @@ paths:
     get:
       description: My cool observations
       parameters:
-      - *id001
+      - *id002
       responses:
         200:
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
@@ -682,3 +724,4 @@ tags:
   name: lakes
 - description: Hello World process
   name: hello-world
+
