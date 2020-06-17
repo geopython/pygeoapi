@@ -142,7 +142,7 @@ async def describe_collections(request: Request, name=None):
     if 'name' in request.path_params:
         name = request.path_params['name']
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.query_params, name)
+        request.headers, request.query_params, dataset=name)
 
     response = Response(content=content, status_code=status_code)
     if headers:

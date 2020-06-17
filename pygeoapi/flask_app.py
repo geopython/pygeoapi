@@ -158,7 +158,7 @@ def describe_collections(name=None):
     """
 
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.args, name)
+        request.headers, request.args, dataset=name)
 
     response = make_response(content, status_code)
 

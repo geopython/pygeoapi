@@ -278,3 +278,57 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+def check_format(args, headers):
+    """
+    check format requested from arguments or headers
+
+    :param args: dict of request keyword value pairs
+    :param headers: dict of request headers
+
+    :returns: format value
+    """
+
+    # Optional f=html or f=json query param
+    # overrides accept
+    format_ = args.get('f')
+    if format_:
+        return format_
+
+    # Format not specified: get from accept headers
+    # format_ = 'text/html'
+    headers_ = None
+    if 'accept' in headers.keys():
+        headers_ = headers['accept']
+    elif 'Accept' in headers.keys():
+        headers_ = headers['Accept']
+
+    format_ = None
+    if headers_:
+        headers_ = headers_.split(',')
+
+        if 'text/html' in headers_:
+            format_ = 'html'
+        elif 'application/ld+json' in headers_:
+            format_ = 'jsonld'
+        elif 'application/json' in headers_:
+            format_ = 'json'
+
+    return format_
+
+def list_get(array, index, default=None):
+    """
+    Get the value at array[index], returning default if
+    that position does not exist in array.
+
+    Like dict.get('foo') but for lists, e.g.
+    list_get(array, 4) will return array[4] or None, without
+    raising an IndexError.
+
+    :param array: list of any length
+    :param index: integer
+    :param default: any value, defaults to None
+
+    :returns: array[index] or default
+    """
+    return next(iter(array[index:index+1]), default)

@@ -107,11 +107,12 @@
 {% block extrafoot %}
 {% if data['features'] %}
     <script>
-    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
+    var map = L.map('items-map');
     map.addLayer(new L.TileLayer(
-        '{{ config['server']['map']['url'] }}', {
-            maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
+        '{{ config["server"]["map"]["url"] }}', {
+            maxZoom: '{{ config["server"]["map"]["maxZoom"] or 18 }}',
+            attribution: '{{ config["server"]["map"]["attribution"] }}',
+            subdomains: '{{ config["server"]["map"]["subdomains"] or "abc"}}'
         }
     ));
     var geojson_data = {{ data['features'] |to_json }};

@@ -5,16 +5,10 @@
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="collection" itemscope itemtype="https://schema.org/Dataset">
-      <span itemprop="includedInDataCatalog" itemscope itemtype="https://schema.org/DataCatalog">
-        <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
-        <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
-        <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
-      </span>
-      <h1 itemprop="name">{{ data['title'] }}</h1>
-      <meta itemprop="url" content="{{ config['server']['url'] }}" />
-      <p itemprop="description">{{ data['description'] }}</p>
-      <p itemprop="keywords">
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <p>
         {% for kw in data['keywords'] %}
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
@@ -23,27 +17,24 @@
       <ul>
         <li>
           <div>
-            <meta itemprop="encodingFormat" content="text/html" />
-            <a title="Display Queryables" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
+            <a title="Display Queryables" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
               Display Queryables of "{{ data['title'] }}</a>"</div>
         </li>
       </ul>
       <h3>View</h3>
       <ul>
         <li>
-          <div itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
-            <meta itemprop="encodingFormat" content="text/html" />
-            <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
+          <div>
+            <a title="Browse Items" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
               Browse through the items of "{{ data['title'] }}</a>"</div>
         </li>
       </ul>
       <h3>Links</h3>
       <ul>
       {% for link in data['links'] %}
-          <li itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
-            <a itemprop="contentURL" title="{{ link['rel'] }}" href="{{ link['href'] }}">
-            <span itemprop="name">{{ link['title'] }}</span> (<span itemprop="encodingFormat">{{ link['type'] }}</span>)
-            <meta itemprop="inLanguage" content="{{ link['hreflang'] }}" />
+          <li>
+            <a title="{{ link['rel'] }}" href="{{ link['href'] }}">
+            <span>{{ link['title'] }}</span> (<span>{{ link['type'] }}</span>)
             </a></li>
       {% endfor %}
       </ul>
