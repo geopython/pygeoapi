@@ -880,8 +880,6 @@ class API:
                     self.config['server']['url'].rstrip('/'),
                     pathinfo.strip('/')])
             else:
-                LOGGER.debug(requestHeaders)
-                LOGGER.debug(requestHeaders.get('PATH_INFO'))
                 path_info = '/'.join([
                     self.config['server']['url'].rstrip('/'),
                     requestHeaders.environ['PATH_INFO'].strip('/')])
