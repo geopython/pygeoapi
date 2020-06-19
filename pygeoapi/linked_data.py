@@ -63,7 +63,7 @@ def inspect_config(func):
     return inner
 
 @inspect_config
-def _build_root_jsonld(**kwargs):
+def _build_root_jsonld(cls, **kwargs):
     """
     Builds the pygeoapi root JSON-LD metadata, a https://schema.org/WebSite
 
@@ -120,10 +120,13 @@ def _build_root_jsonld(**kwargs):
     }
 
 @inspect_config
-def _build_collections_jsonld(**kwargs):
+def _build_collections_jsonld(cls, **kwargs):
     """
     Builds the /collection JSON-LD representation,
     a https://schema.org/DataCatalog
+
+    Adopts recommendations from:
+    https://developers.google.com/search/docs/data-types/dataset#publication
 
     :returns: dict
     """
@@ -166,11 +169,20 @@ def _build_collections_jsonld(**kwargs):
     }
 
 @inspect_config
-def _describe_collection(cls, parentId, collectionId, collection):
+def _describe_collection(cls, parentId, collectionId, collection, **kwargs):
     """
     Builds the JSON-LD representation of a single /collection/{id},
     an instance of https://schema.org/Dataset, including some DataDownload
     distributions (links)
+
+    Adopts recommendations from:
+    https://developers.google.com/search/docs/data-types/dataset
+    https://developers.google.com/search/docs/data-types/dataset#download
+
+    In particular, a "link" for a dataset are considered a "distribution",
+    which provide a mechanism to get the actual data (and not a landing page).
+    A distribution must be of type DataDownload, and include an encodingFormat
+    and a contentURL.
 
     :returns: dict
     """
@@ -223,6 +235,8 @@ def _describe_collection(cls, parentId, collectionId, collection):
         'inLanguage': defaultLang
     })
 
+    sameAsLinks = [l['href'] for l in filter(lambda l: l['rel'] == 'canonical', collection.get('links', []))]
+
     return {
         "@context": [
             "https://schema.org",
@@ -233,6 +247,7 @@ def _describe_collection(cls, parentId, collectionId, collection):
         "@type": "Dataset",
         "@id": id, # TODO allow PID
         "url": id,
+        "sameAs": sameAsLinks[0] if len(sameAsLinks) > 1 else (sameAsLinks or None),
         "includedInDataCatalog": {
             "@id": parentId,
             "@type": "DataCatalog",
@@ -272,9 +287,6 @@ def _build_queryables_jsonld(cls, queryables, dataset, **kwargs):
     # TODO while this keeps the JSON API contract, this still needs work
     # TODO inspect the collection context, if defined, same as GeoJSON
     cfg = itemgetter('cfg')(kwargs)
-    LOGGER.debug(queryables)
-    LOGGER.debug(type(queryables))
-    LOGGER.debug([cls, dataset, cfg])
     return {
         "@context": [
             "https://schema.org",
