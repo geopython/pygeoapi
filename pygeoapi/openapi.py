@@ -531,7 +531,7 @@ def get_oas_30(cfg):
             },
             'put': {
                 'summary': 'Replace {} item by id'.format(v['title']),
-                'description': 'lakes of the world, public domain',
+                'description': v['description'],
                 'tags': [k],
                 'parameters': [
                     {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
@@ -556,7 +556,7 @@ def get_oas_30(cfg):
             },
             'delete': {
                 'summary': 'Delete {} item by id'.format(v['title']),
-                'description': 'lakes of the world, public domain',
+                'description': v['description'],
                 'tags': [k],
                 'parameters': [
                     {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
