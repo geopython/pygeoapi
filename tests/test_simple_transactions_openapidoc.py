@@ -1,6 +1,6 @@
 from pygeoapi.openapi import get_oas_30
 
-geoJSONdataPath = "data/countries.geojson"
+geoJSONdataPath = "tests/data/countries.geojson"
 
 cfg = {
   "server": {
