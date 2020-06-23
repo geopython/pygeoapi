@@ -36,7 +36,7 @@ import pytest
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from pygeoapi.api import API, check_format
-from pygeoapi.util import yaml_load, replace_token_jsonld
+from pygeoapi.util import yaml_load
 from pyld import jsonld
 
 LOGGER = logging.getLogger(__name__)
@@ -502,8 +502,7 @@ def test_get_collection_items_json_ld(config, api_):
     collection = json.loads(response)
 
     assert '@context' in collection
-    assert collection['@context'][0] == \
-           replace_token_jsonld(config['metadata']['default_vocabulary'], 'attoken-')
+    assert collection['@context'][0] == config['metadata']['default_vocabulary']
     assert len(collection['@context']) > 1
     assert 'schema' in collection['@context'][1]
     assert collection['@context'][1]['schema'] == 'https://schema.org/'
@@ -564,8 +563,7 @@ def test_get_collection_item_json_ld(config, api_):
     assert rsp_headers['Content-Type'] == 'application/ld+json'
     feature = json.loads(response)
     assert '@context' in feature
-    assert feature['@context'][0] == \
-           replace_token_jsonld(config['metadata']['default_vocabulary'], 'attoken-')
+    assert feature['@context'][0] == config['metadata']['default_vocabulary']
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'

@@ -91,18 +91,18 @@ metadata:
         Point: geojson:Point
         Polygon: geojson:Polygon
         bbox:
-            attoken-container: attoken-list
-            attoken-id: geojson:bbox
+            '@container': '@list'
+            '@id': geojson:bbox
         coordinates:
-            attoken-container: attoken-list
-            attoken-id: geojson:coordinates
+            '@container': '@list'
+            '@id': geojson:coordinates
         features:
-            attoken-container: attoken-set
-            attoken-id: geojson:features
+            '@container': '@set'
+            '@id': geojson:features
         geometry: geojson:geometry
-        id: attoken-id
+        id: '@id'
         properties: geojson:properties
-        type: attoken-type
+        type: '@type'
         description: http://purl.org/dc/terms/description
         title: http://purl.org/dc/terms/title
 

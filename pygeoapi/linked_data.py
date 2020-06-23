@@ -33,7 +33,7 @@ Returns content as linked data representations
 import json
 import logging
 
-from pygeoapi.util import is_url, replace_token_jsonld
+from pygeoapi.util import is_url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -179,7 +179,13 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     """
 
     context = config['resources'][dataset].get('context', [])
-    uri = data['features'][0]['properties'].get('uri') if 'properties' in data else None
+
+    if 'properties' in data:
+        uri = data['properties'].get('uri')
+    elif 'features' in data:
+        uri = data['features'][0]['properties'].get('uri')
+    else:
+        uri = None
 
     if identifier and uri:
         data['id'] = '{}'.format(uri)
@@ -194,14 +200,15 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     default_vocabulary = config['metadata']['default_vocabulary']
     jsonld_data = {
         "@context": [default_vocabulary, *(context or [])],
-        **data
+        **data,
+        "geometry": {"schema:encodingFormat": "application/geo+json",
+                     "schema:url": data['id'] + '?f=json'},
     }
 
-    if 'geometry' in jsonld_data:
-        jsonld_data['geometry'] = data['id'] + '?f=json'
+    if 'schema' not in jsonld_data['@context']:
+        jsonld_data['@context'].append({"schema": "https://schema.org"})
 
-    is_collection = identifier is None
-    if is_collection:
+    if identifier is None:
         for i, feature in enumerate(data['features']):
             feature_id = feature.get(
                 'id', None

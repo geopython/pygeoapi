@@ -279,28 +279,3 @@ def filter_dict_by_key_value(dict_, key, value):
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
-
-def replace_token_jsonld(obj, replace_token):
-    """
-        recursive helper to convert tokens in python dict
-        to @ for jsonld properties since doing so in yaml
-        parsing is dangerous
-
-        :param obj: ``dict`` or dict value
-
-        :returns: modified``dict``
-    """
-
-    if isinstance(obj, dict):
-        for key, value in obj.items():
-            if replace_token in key:
-                new_key = key.replace(replace_token, '@')
-                obj[new_key] = obj.pop(key)
-                key = new_key
-            obj[key] = replace_token_jsonld(value, replace_token)
-        return obj
-    else:
-        if isinstance(obj, str) and replace_token in obj:
-            return obj.replace(replace_token, '@')
-        else:
-            return obj
