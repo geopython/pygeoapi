@@ -172,7 +172,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         :returns: sqlite3.Cursor
         """
-
+        print(self.data)
         if (os.path.exists(self.data)):
             conn = sqlite3.connect(self.data)
         else:
