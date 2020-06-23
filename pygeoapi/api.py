@@ -672,9 +672,9 @@ class API:
                 'temporal' in collections[dataset]['extents']):
             te = collections[dataset]['extents']['temporal']
 
-            if te['begin'].tzinfo is None:
+            if te['begin'] is not None and te['begin'].tzinfo is None:
                 te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
-            if te['end'].tzinfo is None:
+            if te['end'] is not None and te['end'].tzinfo is None:
                 te['end'] = te['end'].replace(tzinfo=pytz.UTC)
 
             if '/' in datetime_:  # envelope
