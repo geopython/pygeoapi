@@ -74,9 +74,9 @@ def _build_root_jsonld(cls, **kwargs):
         'cfg', 'meta', 'contact', 'provider', 'ident'
     )(kwargs)
     return {
-        # "@context": "https://schema.org/docs/jsonldcontext.jsonld",
         "@context": [
             "https://schema.org",
+            "https://schema.org/docs/jsonldcontext.jsonld",
             {
                 "title": "name" # To keep API consistent with ordinary JSON interface
             }
@@ -143,7 +143,7 @@ def _build_collections_jsonld(cls, **kwargs):
     }
     return {
         "@context": [
-            "https://schema.org",
+            "https://schema.org/docs/jsonldcontext.jsonld",
             {
                 "collections": "dataset",
                 "links": "distribution"
@@ -240,6 +240,7 @@ def _describe_collection(cls, parentId, collectionId, collection, **kwargs):
     return {
         "@context": [
             "https://schema.org",
+            "https://schema.org/docs/jsonldcontext.jsonld",
             {
                 "links": "distribution"
             } # To keep API consistent with ordinary JSON interface
@@ -290,6 +291,7 @@ def _build_queryables_jsonld(cls, queryables, dataset, **kwargs):
     return {
         "@context": [
             "https://schema.org",
+            "https://schema.org/docs/jsonldcontext.jsonld",
             {
                 "queryables": "definedTerm",
                 "queryable": "name"
@@ -335,7 +337,7 @@ def jsonldify(func):
         if func.__name__ == 'root':
             fcmld = {**fcmld, **_build_root_jsonld(cls)}
         elif func.__name__ == 'describe_collections':
-            dataset = kwargs.get('dataset', list_get(args, 3))
+            dataset = kwargs.get('dataset', None)
             if dataset:
                 # Describe one collection
                 _collections = {**fcmld, **_build_collections_jsonld(cls)}.get('collections', [])
@@ -443,8 +445,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
 
-    # defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
-    defaultVocabulary = {
+    inlinedVocabulary = {
         "geojson": "https://purl.org/geojson/vocab#",
         "Feature": "geojson:Feature",
         "FeatureCollection": "geojson:FeatureCollection",
@@ -474,7 +475,11 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     } # inlined, see https://github.com/geopython/pygeoapi/issues/457
 
     ldjsonData = {
-        "@context": [defaultVocabulary, *(context or [])],
+        "@context": [
+            # "https://geojson.org/geojson-ld/geojson-context.jsonld",
+            inlinedVocabulary,
+            *(context or [])
+        ],
         **data
     }
     isCollection = identifier is None
@@ -491,4 +496,5 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             else:
                 feature['id'] = '{}/{}'.format(data['id'], featureId)
 
+    ldjsonData.pop('links')
     return json.dumps(ldjsonData)

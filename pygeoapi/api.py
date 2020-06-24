@@ -189,13 +189,14 @@ class API:
         return responseHeaders, 200, json.dumps(fcm)
 
     @pre_process
-    def openapi(self, requestHeaders, format_, openapi):
+    def openapi(self, requestHeaders, format_, args, openapi):
         """
         Provide OpenAPI document
 
         :param requestHeaders: request headers (immutable)
         :param format_: format of requests, pre checked by
                         pre_process decorator
+        :param args: dict of HTTP request parameters
         :param openapi: dict of OpenAPI definition
 
         :returns: tuple of headers, status code, content
@@ -225,13 +226,14 @@ class API:
         return responseHeaders, 200, json.dumps(openapi)
 
     @pre_process
-    def conformance(self, requestHeaders, format_):
+    def conformance(self, requestHeaders, format_, args):
         """
         Provide conformance definition
 
         :param requestHeaders: request headers (immutable)
         :param format_: format of requests,
                         pre checked by pre_process decorator
+        :param args: dict of HTTP request parameters
 
         :returns: tuple of headers, status code, content
         """
@@ -265,6 +267,7 @@ class API:
         :param requestHeaders: request headers (immutable)
         :param format_: format of requests,
                         pre checked by pre_process decorator
+        :param args: dict of HTTP request parameters
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
