@@ -143,7 +143,7 @@ def jsonldify_collection(cls, collection):
             *interval[0]
         )
     }
-    dataset['url'] = dataset['@id']
+    dataset['schema:url'] = dataset['@id']
 
     links = collection.get('links', [])
 
@@ -180,12 +180,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
 
     context = config['resources'][dataset].get('context', [])
 
-    if 'properties' in data:
-        uri = data['properties'].get('uri')
-    elif 'features' in data:
-        uri = data['features'][0]['properties'].get('uri')
-    else:
-        uri = None
+    uri = data['properties'].get('uri') if 'properties' in data else None
 
     if identifier and uri:
         data['id'] = '{}'.format(uri)
@@ -198,28 +193,30 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
 
     default_vocabulary = config['metadata']['default_vocabulary']
+
     jsonld_data = {
         "@context": [default_vocabulary, *(context or [])],
-        **data,
-        "geometry": {"schema:encodingFormat": "application/geo+json",
-                     "schema:url": data['id'] + '?f=json'},
+        **data
     }
 
-    if 'schema' not in jsonld_data['@context']:
+    if "schema" not in jsonld_data['@context']:
         jsonld_data['@context'].append({"schema": "https://schema.org"})
 
-    if identifier is None:
+    isCollection = identifier is None
+    if isCollection:
         for i, feature in enumerate(data['features']):
-            feature_id = feature.get(
+            featureId = feature.get(
                 'id', None
             ) or feature.get('properties', {}).get('id', None)
-            if feature_id is None:
+            if featureId is None:
                 continue
-            feature_uri = feature.get('properties', {}).get('uri', None)
             # Note: @id or https://schema.org/url or both or something else?
-            if is_url(str(feature_id)):
-                feature['id'] = feature_id
+            if is_url(str(featureId)):
+                feature['id'] = featureId
             else:
-                feature['id'] = '{}/{}'.format(feature_uri or data['id'], feature_id)
+                feature['id'] = '{}/{}'.format(data['id'], featureId)
+    else:
+        jsonld_data["geometry"] = {"schema:encodingFormat": "application/geo+json",
+                     "schema:url": data['id'] + '?f=json'}
 
     return json.dumps(jsonld_data)

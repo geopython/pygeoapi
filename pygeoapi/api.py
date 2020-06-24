@@ -450,9 +450,9 @@ class API:
         if format_ == 'jsonld':
             jsonld = self.fcmld.copy()
             if dataset is not None:
-                jsonld['dataset'] = jsonldify_collection(self, fcm)
+                jsonld['schema:dataset'] = jsonldify_collection(self, fcm)
             else:
-                jsonld['dataset'] = list(
+                jsonld['schema:dataset'] = list(
                     map(
                         lambda collection: jsonldify_collection(
                             self, collection

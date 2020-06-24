@@ -493,7 +493,6 @@ def test_get_collection_items(config, api_):
 
 def test_get_collection_items_json_ld(config, api_):
     req_headers = make_req_headers()
-    print(req_headers)
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {
             'f': 'jsonld',
