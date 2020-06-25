@@ -1025,7 +1025,7 @@ class API:
             'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}?f=jsonld'.format(content_link, dataset, identifier)
+            'href': '{}?f=jsonld'.format(content_link)
             }, {
             'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',

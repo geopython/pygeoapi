@@ -224,8 +224,6 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
          "geometry": "geojson:geometry",
          "id": "@id",
          "properties": "geojson:properties",
-         "type": "@type",
-         "description": "http://purl.org/dc/terms/description",
          "title": "http://purl.org/dc/terms/title"
     }
 
@@ -250,7 +248,8 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
                 feature['id'] = featureId
             else:
                 feature_uri = feature.get('properties', {}).get('uri', None)
-                feature['id'] = feature_uri or '{}/{}'.format(data['id'], featureId)
+                feature['id'] = feature_uri or '{}/{}' \
+                    .format(data['id'], featureId)
     else:
         if jsonld_data["geometry"]["type"] != "Point":
             jsonld_data["geometry"] = {
