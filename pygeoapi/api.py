@@ -346,6 +346,7 @@ class API:
                 collection['links'].append(lnk)
 
             LOGGER.debug('Adding JSON and HTML link relations')
+
             collection['links'].append({
                 'type': 'application/json',
                 'rel': 'queryables',
@@ -412,6 +413,7 @@ class API:
             fcm['collections'].append(collection)
 
         if dataset is None:
+
             fcm['links'].append({
                 'type': 'application/json',
                 'rel': 'self' if not format
@@ -1006,24 +1008,29 @@ class API:
             LOGGER.error(exception)
             return headers_, 404, json.dumps(exception)
 
+        # Currently "uri" is a magic property, eventually we should have this
+        # be in the config so a user can override the use of a URI.
+        uri = content.get('properties', {}).get('uri', None)
+        content_link = (uri or "{}/collections/{}/items/{}"
+                        .format(self.config['server']['url'],
+                                dataset,
+                                identifier))
+
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items/{}?f=json'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=json'.format(content_link)
             }, {
             'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items/{}?f=jsonld'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=jsonld'.format(content_link, dataset, identifier)
             }, {
             'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items/{}?f=html'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=html'.format(content_link)
             }, {
             'rel': 'collection',
             'type': 'application/json',
@@ -1033,13 +1040,11 @@ class API:
             }, {
             'rel': 'prev',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}'.format(content_link)
             }, {
             'rel': 'next',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}'.format(content_link)
             }
         ]
 
