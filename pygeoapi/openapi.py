@@ -228,14 +228,20 @@ def get_oas_30(cfg):
                 "properties": {
                     "name": {
                         "type": "string"
-			        },
+                    },
                     "value": {
-                        "oneOf": 
-                        [{"type": "string"},
-                        {"type": "object"}]
-			        }
-		        }
-	        }
+                        "oneOf":
+                        [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
+                    }
+                }
+            }
         },
         'responses': {
             '200': {
@@ -333,9 +339,19 @@ def get_oas_30(cfg):
         prop = dict()
         for key in fields:
             if key != data_provider.id_field:
-                prop[key] = {'type' : fields[key]}
-        geom = {'$ref': '{}#/components/schemas/geometryGeoJSON'.format(OPENAPI_YAML['oapif'])}
-        form = {"type": {"type":"string", "enum":["Feature"]}, "geometry":geom, "properties":{"type":"object", "properties":prop}}
+                prop[key] = {'type': fields[key]}
+        geom = {'$ref': '{}#/components/schemas/geometryGeoJSON'.format(OPENAPI_YAML['oapif'])}  # noqa
+        form = {
+                    "type": {
+                        "type": "string",
+                        "enum": ["Feature"]
+                    },
+                    "geometry": geom,
+                    "properties": {
+                        "type": "object",
+                        "properties": prop
+                    }
+                }
 
         items_path = '{}/items'.format(collection_name_path)
 
@@ -474,7 +490,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
                 ],
                 'requestBody': {
                     'required': True,
@@ -486,13 +502,13 @@ def get_oas_30(cfg):
                                     'add': {
                                         'type': 'array',
                                         'items': {
-                                            '$ref': '#/components/schemas/nameValuePairObj'
+                                            '$ref': '#/components/schemas/nameValuePairObj'  # noqa
                                         }
                                     },
                                     'modify': {
                                         'type': 'array',
                                         'items': {
-                                            '$ref': '#/components/schemas/nameValuePairObj'
+                                            '$ref': '#/components/schemas/nameValuePairObj'  # noqa
                                         }
                                     },
                                     'remove': {
@@ -519,10 +535,10 @@ def get_oas_30(cfg):
                         'content': {
                             'application/geo+json': {
                                 'schema': {
-                                    '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])
+                                    '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])  # noqa
                                 }
                             }
-                        }   
+                        }
                     },
                     400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -534,7 +550,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
                 ],
                 'requestBody': {
                     'required': True,
@@ -559,7 +575,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
                 ],
                 'responses': {
                     200: {'$ref': '#/components/responses/200'},  # noqa
@@ -567,7 +583,7 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            }          
+            }
         }
 
     LOGGER.debug('setting up STAC')
