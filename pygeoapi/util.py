@@ -278,4 +278,3 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
-

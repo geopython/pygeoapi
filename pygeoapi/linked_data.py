@@ -148,18 +148,20 @@ def jsonldify_collection(cls, collection):
     links = collection.get('links', [])
 
     if links:
-        dataset['schema:distribution'] = list(map(lambda link: {k: v for k, v in {
-            "@type": "schema:DataDownload",
-            "schema:contentURL": link['href'],
-            "schema:encodingFormat": link['type'],
-            "schema:description": link['title'],
-            "schema:inLanguage": link.get(
-                'schema:hreflang', cls.config.get('server', {}).get('language', None)
-            ),
-            "schema:author": link['rel'] if link.get(
-                'rel', None
-            ) == 'author' else None
-        }.items() if v is not None}, links))
+        dataset['schema:distribution'] = \
+            list(map(lambda link: {k: v for k, v in {
+                "@type": "schema:DataDownload",
+                "schema:contentURL": link['href'],
+                "schema:encodingFormat": link['type'],
+                "schema:description": link['title'],
+                "schema:inLanguage": link.get(
+                    'schema:hreflang', cls.config.get('server', {})
+                    .get('language', None)
+                ),
+                "schema:author": link['rel'] if link.get(
+                    'rel', None
+                ) == 'author' else None
+            }.items() if v is not None}, links))
 
     return dataset
 
@@ -180,26 +182,59 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
 
     context = config['resources'][dataset].get('context', [])
 
-    uri = data['properties'].get('uri') if 'properties' in data else None
+    # Currently "uri" is a magic property, eventually we should have this
+    # be in the config so a user can override the use of a URI.
+    uri = data.get('properties', {}).get('uri', None)
 
     if identifier and uri:
         data['id'] = '{}'.format(uri)
     elif identifier:
-        data['id'] = '{}/collections/{}/items/{}'.format(config['server']['url'],dataset,identifier)
+        data['id'] = '{}/collections/{}/items/{}'\
+            .format(config['server']['url'], dataset, identifier)
     else:
-        data['id'] = '{}/collections/{}/items'.format(config['server']['url'],dataset)
+        data['id'] = '{}/collections/{}/items'\
+            .format(config['server']['url'], dataset)
 
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
 
-    default_vocabulary = config['metadata']['default_vocabulary']
+    default_vocabulary = {
+         "geojson": "https://purl.org/geojson/vocab#",
+         "Feature": "geojson:Feature",
+         "FeatureCollection": "geojson:FeatureCollection",
+         "GeometryCollection": "geojson:GeometryCollection",
+         "LineString": "geojson:LineString",
+         "MultiLineString": "geojson:MultiLineString",
+         "MultiPoint": "geojson:MultiPoint",
+         "MultiPolygon": "geojson:MultiPolygon",
+         "Point": "geojson:Point",
+         "Polygon": "geojson:Polygon",
+         "bbox": {
+             "@container": "@list",
+             "@id": "geojson:bbox"
+         },
+         "coordinates": {
+             "@container": "@list",
+             "@id": "geojson:coordinates"
+         },
+         "features": {
+             "@container": "@set",
+             "@id": "geojson:features"
+         },
+         "geometry": "geojson:geometry",
+         "id": "@id",
+         "properties": "geojson:properties",
+         "type": "@type",
+         "description": "http://purl.org/dc/terms/description",
+         "title": "http://purl.org/dc/terms/title"
+    }
 
     jsonld_data = {
         "@context": [default_vocabulary, *(context or [])],
         **data
     }
 
-    if "schema" not in jsonld_data['@context']:
+    if 'schema' not in jsonld_data['@context']:
         jsonld_data['@context'].append({"schema": "https://schema.org"})
 
     isCollection = identifier is None
@@ -214,9 +249,12 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             if is_url(str(featureId)):
                 feature['id'] = featureId
             else:
-                feature['id'] = '{}/{}'.format(data['id'], featureId)
+                feature_uri = feature.get('properties', {}).get('uri', None)
+                feature['id'] = feature_uri or '{}/{}'.format(data['id'], featureId)
     else:
-        jsonld_data["geometry"] = {"schema:encodingFormat": "application/geo+json",
-                     "schema:url": data['id'] + '?f=json'}
+        if jsonld_data["geometry"]["type"] != "Point":
+            jsonld_data["geometry"] = {
+                "schema:encodingFormat": "application/geo+json",
+                "schema:url": data['id'] + '?f=json'}
 
     return json.dumps(jsonld_data)

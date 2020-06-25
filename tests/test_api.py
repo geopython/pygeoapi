@@ -59,6 +59,38 @@ def make_req_headers(**kwargs):
     return request.headers
 
 
+defaultVocabulary = {
+         "geojson": "https://purl.org/geojson/vocab#",
+         "Feature": "geojson:Feature",
+         "FeatureCollection": "geojson:FeatureCollection",
+         "GeometryCollection": "geojson:GeometryCollection",
+         "LineString": "geojson:LineString",
+         "MultiLineString": "geojson:MultiLineString",
+         "MultiPoint": "geojson:MultiPoint",
+         "MultiPolygon": "geojson:MultiPolygon",
+         "Point": "geojson:Point",
+         "Polygon": "geojson:Polygon",
+         "bbox": {
+             "@container": "@list",
+             "@id": "geojson:bbox"
+         },
+         "coordinates": {
+             "@container": "@list",
+             "@id": "geojson:coordinates"
+         },
+         "features": {
+             "@container": "@set",
+             "@id": "geojson:features"
+         },
+         "geometry": "geojson:geometry",
+         "id": "@id",
+         "properties": "geojson:properties",
+         "type": "@type",
+         "description": "http://purl.org/dc/terms/description",
+         "title": "http://purl.org/dc/terms/title"
+}
+
+
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
@@ -144,7 +176,8 @@ def test_root_structured_data(config, api_):
 
     assert isinstance(root, dict)
     assert 'schema:description' in root
-    assert root['schema:description'] == 'pygeoapi provides an API to geospatial data'
+    assert root['schema:description'] == \
+           'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
     assert root['@context'] == {'schema': 'https://schema.org/'}
@@ -153,15 +186,16 @@ def test_root_structured_data(config, api_):
     assert '@type' in expanded
     assert 'https://schema.org/DataCatalog' in expanded['@type']
     assert 'https://schema.org/description' in expanded
-    assert root['schema:description'] == expanded['https://schema.org/description'][0][
-        '@value']
+    assert root['schema:description'] == \
+        expanded['https://schema.org/description'][0]['@value']
     assert 'https://schema.org/keywords' in expanded
     assert len(expanded['https://schema.org/keywords']) == 3
     assert '@value' in expanded['https://schema.org/keywords'][0].keys()
     assert 'https://schema.org/provider' in expanded
     assert expanded['https://schema.org/provider'][0]['@type'][
         0] == 'https://schema.org/Organization'
-    assert expanded['https://schema.org/name'][0]['@value'] == root['schema:name']
+    assert expanded['https://schema.org/name'][0]['@value'] == \
+        root['schema:name']
 
 
 def test_conformance(config, api_):
@@ -502,7 +536,7 @@ def test_get_collection_items_json_ld(config, api_):
     collection = json.loads(response)
 
     assert '@context' in collection
-    assert collection['@context'][0] == config['metadata']['default_vocabulary']
+    assert collection['@context'][0] == defaultVocabulary
     assert len(collection['@context']) > 1
     assert 'schema' in collection['@context'][1]
     assert collection['@context'][1]['schema'] == 'https://schema.org/'
@@ -563,7 +597,7 @@ def test_get_collection_item_json_ld(config, api_):
     assert rsp_headers['Content-Type'] == 'application/ld+json'
     feature = json.loads(response)
     assert '@context' in feature
-    assert feature['@context'][0] == config['metadata']['default_vocabulary']
+    assert feature['@context'][0] == defaultVocabulary
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'
