@@ -85,9 +85,7 @@ defaultVocabulary = {
          "geometry": "geojson:geometry",
          "id": "@id",
          "properties": "geojson:properties",
-         "type": "@type",
-         "description": "http://purl.org/dc/terms/description",
-         "title": "http://purl.org/dc/terms/title"
+         "type": "@type"
 }
 
 

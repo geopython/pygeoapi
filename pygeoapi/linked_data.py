@@ -224,7 +224,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
          "geometry": "geojson:geometry",
          "id": "@id",
          "properties": "geojson:properties",
-         "title": "http://purl.org/dc/terms/title"
+         "type": "@type",
     }
 
     jsonld_data = {
