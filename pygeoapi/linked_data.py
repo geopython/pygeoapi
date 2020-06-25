@@ -249,8 +249,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             if is_url(str(featureId)):
                 feature['id'] = featureId
             else:
-                feature_uri = feature.get('properties', {}).get('uri', None)
-                feature['id'] = feature_uri or '{}/{}'.format(data['id'], featureId)
+                feature['id'] = '{}/{}'.format(data['id'], featureId)
     else:
         if jsonld_data["geometry"]["type"] != "Point":
             jsonld_data["geometry"] = {
