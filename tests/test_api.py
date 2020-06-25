@@ -108,6 +108,7 @@ def test_api_exception(config, api_):
 def test_root(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.root(req_headers, {})
+
     root = json.loads(response)
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -133,6 +134,7 @@ def test_root(config, api_):
 
 
 def test_root_structured_data(config, api_):
+
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.root(req_headers, {"f": "jsonld"})
     root = json.loads(response)
@@ -141,25 +143,24 @@ def test_root_structured_data(config, api_):
     assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
 
     assert isinstance(root, dict)
-    assert 'description' in root
-    assert root['description'] == 'pygeoapi provides an API to geospatial data'
+    assert 'schema:description' in root
+    assert root['schema:description'] == 'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
-    # assert root['@context'] == 'https://schema.org/docs/jsonldcontext.jsonld'
-    assert root['@context'] == [
-        'https://schema.org/docs/jsonldcontext.jsonld',
-        {'title': 'name'}
-    ]
+    assert root['@context'] == {
+        "schema": "https://schema.org/",
+        "url": "schema:url"
+    }
     expanded = jsonld.expand(root)[0]
     assert '@type' in expanded
-    assert 'http://schema.org/WebSite' in expanded['@type']
-    assert 'http://schema.org/description' in expanded
-    assert root['description'] == expanded['http://schema.org/description'][0][
+    assert 'https://schema.org/WebSite' in expanded['@type']
+    assert 'https://schema.org/description' in expanded
+    assert 'https://schema.org/provider' in expanded
+    assert root['schema:description'] == expanded['https://schema.org/description'][0][
         '@value']
-    assert 'http://schema.org/provider' in expanded
-    assert expanded['http://schema.org/provider'][0]['@type'][
-        0] == 'http://schema.org/Organization'
-    assert expanded['http://schema.org/name'][0]['@value'] == root['title']
+    assert expanded['https://schema.org/provider'][0]['@type'][
+        0] == 'https://schema.org/Organization'
+    assert expanded['https://schema.org/name'][0]['@value'] == root['schema:name']
 
 
 def test_conformance(config, api_):
@@ -267,23 +268,26 @@ def test_describe_collections_json_ld(config, api_):
     expanded = jsonld.expand(collection)[0]
     # Metadata is about a schema:DataCollection that contains a schema:Dataset
     assert not expanded['@id'].endswith('obs')
-    assert 'http://schema.org/dataset' in expanded
-    assert len(expanded['http://schema.org/dataset']) == 1
-    dataset = expanded['http://schema.org/dataset'][0]
-    assert dataset['@type'][0] == 'http://schema.org/Dataset'
-    assert len(dataset['http://schema.org/distribution']) > 0
-    assert all(dist['@type'][0] == 'http://schema.org/DataDownload'
-               for dist in dataset['http://schema.org/distribution'])
+    assert 'https://schema.org/dataset' in expanded
+    assert len(expanded['https://schema.org/dataset']) == 1
+    dataset = expanded['https://schema.org/dataset'][0]
+    assert dataset['@type'][0] == 'https://schema.org/Dataset'
+    assert len(dataset['https://schema.org/distribution']) > 0
+    assert all(dist['@type'][0] == 'https://schema.org/DataDownload'
+               for dist in dataset['https://schema.org/distribution'])
 
-    assert 'http://schema.org/Place' in dataset[
-        'http://schema.org/spatialCoverage'][0]['@type']
-    assert 'http://schema.org/GeoShape' in dataset[
-        'http://schema.org/spatialCoverage'][0]['http://schema.org/geo'][0]['@type']
-    assert dataset['http://schema.org/spatialCoverage'][0]['http://schema.org/geo'][
-        0]['http://schema.org/box'][0]['@value'] == '-180 -90 180 90'
+    assert len(expanded['https://schema.org/keywords']) == 3
+    assert '@value' in expanded['https://schema.org/keywords'][0].keys()
 
-    assert 'http://schema.org/temporalCoverage' in dataset
-    assert dataset['http://schema.org/temporalCoverage'][0][
+    assert 'https://schema.org/Place' in dataset[
+        'https://schema.org/spatialCoverage'][0]['@type']
+    assert 'https://schema.org/GeoShape' in dataset[
+        'https://schema.org/spatialCoverage'][0]['https://schema.org/geo'][0]['@type']
+    assert dataset['https://schema.org/spatialCoverage'][0]['https://schema.org/geo'][
+        0]['https://schema.org/box'][0]['@value'] == '-180 -90 180 90'
+
+    assert 'https://schema.org/temporalCoverage' in dataset
+    assert dataset['https://schema.org/temporalCoverage'][0][
         '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
 
 
@@ -497,13 +501,15 @@ def test_get_collection_items_json_ld(config, api_):
     collection = json.loads(response)
 
     assert '@context' in collection
-    # assert collection['@context'][
-    #     0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
+    assert 'Feature' in collection['@context'][0]
+    assert collection['@context'][0]['Feature'] == 'geojson:Feature'
     assert len(collection['@context']) > 1
     assert 'schema' in collection['@context'][1]
     assert collection['@context'][1]['schema'] == 'https://schema.org/'
     expanded = jsonld.expand(collection)[0]
     featuresUri = 'https://purl.org/geojson/vocab#features'
+    assert featuresUri in expanded
+    assert expanded[featuresUri][0]['@type'][0] == 'https://purl.org/geojson/vocab#Feature'
     assert len(expanded[featuresUri]) == 2
     geometryUri = 'https://purl.org/geojson/vocab#geometry'
     assert all((geometryUri in f) for f in expanded[featuresUri])
@@ -559,8 +565,6 @@ def test_get_collection_item_json_ld(config, api_):
     assert rsp_headers['Content-Type'] == 'application/ld+json'
     feature = json.loads(response)
     assert '@context' in feature
-    # assert feature['@context'][
-    #     0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'

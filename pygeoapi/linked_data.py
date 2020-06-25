@@ -74,47 +74,44 @@ def _build_root_jsonld(cls, **kwargs):
         'cfg', 'meta', 'contact', 'provider', 'ident'
     )(kwargs)
     return {
-        "@context": [
-            "https://schema.org",
-            "https://schema.org/docs/jsonldcontext.jsonld",
-            {
-                "title": "name" # To keep API consistent with ordinary JSON interface
-            }
-        ],
-        "@type": "WebSite",
+        "@context": {
+            "schema": "https://schema.org/",
+            "url": "schema:url"
+        },
+        "@type": "schema:WebSite",
         "@id": cfg['server'].get('pid', cfg['server']['url']),
-        "url": cfg['server']['url'],
-        "title": ident.get('title', None),
-        "description": ident.get('description', None),
+        "schema:url": cfg['server']['url'],
+        "schema:name": ident.get('title', None),
+        "schema:description": ident.get('description', None),
         # "termsOfService": ident.get('terms_of_service', None),
-        "license": {
-            "@type": "CreativeWork",
+        "schema:license": {
+            "@type": "schema:CreativeWork",
             **meta.get('license', {})
         },
-        "provider": {
-            "@type": "Organization", # TODO allow Person
-            "name": provider.get('name', None),
-            "url": provider.get('url', None),
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": contact.get('address', None),
-                "postalCode": contact.get('postalcode', None),
-                "addressLocality": contact.get('city', None),
-                "addressRegion": contact.get('stateorprovince', None),
-                "addressCountry": contact.get('country', None)
+        "schema:provider": {
+            "@type": "schema:Organization", # TODO allow Person
+            "schema:name": provider.get('name', None),
+            "schema:url": provider.get('url', None),
+            "schema:address": {
+                "@type": "schema:PostalAddress",
+                "schema:streetAddress": contact.get('address', None),
+                "schema:postalCode": contact.get('postalcode', None),
+                "schema:addressLocality": contact.get('city', None),
+                "schema:addressRegion": contact.get('stateorprovince', None),
+                "schema:addressCountry": contact.get('country', None)
             },
             "contactPoint": {
-                "@type": "Contactpoint",
-                "email": contact.get('email', None),
-                "telephone": contact.get('phone', None),
-                "faxNumber": contact.get('fax', None),
-                "url": contact.get('url', None),
-                "hoursAvailable": {
-                    "opens": contact.get('hours', None),
-                    "description": contact.get('instructions', None)
+                "@type": "schema:Contactpoint",
+                "schema:email": contact.get('email', None),
+                "schema:telephone": contact.get('phone', None),
+                "schema:faxNumber": contact.get('fax', None),
+                "schema:url": contact.get('url', None),
+                "schema:hoursAvailable": {
+                    "schema:opens": contact.get('hours', None),
+                    "schema:description": contact.get('instructions', None)
                 },
-                "contactType": contact.get('role', None),
-                "description": contact.get('position', None)
+                "schema:contactType": contact.get('role', None),
+                "schema:description": contact.get('position', None)
             }
         }
     }
@@ -141,25 +138,27 @@ def _build_collections_jsonld(cls, **kwargs):
         "@type": "CreativeWork",
         **meta.get('license', {})
     }
+    if 'url' in license:
+        license['schema:url'] = license.pop('url')
+    if 'name' in license:
+        license['schema:name'] = license.pop('name')
     return {
-        "@context": [
-            "https://schema.org/docs/jsonldcontext.jsonld",
-            {
-                "collections": "dataset",
-                "links": "distribution"
-            } # To keep API consistent with ordinary JSON interface
-        ],
-        "@type": "DataCatalog",
-        "@id": id, # TODO allow PID
-        "url": id,
-        "isPartOf": {
-            "@type": "WebSite",
-            "@id": cfg['server'].get('pid', cfg['server']['url']),
-            "url": cfg['server']['url']
+        "@context": {
+            "schema": "https://schema.org/"
         },
-        "license": license,
-        "keywords": ident.get('keywords', None),
-        "collections": list(
+        "@type": "schema:DataCatalog",
+        "@id": id, # TODO allow PID
+        "schema:name": ident.get('title', None),
+        "schema:description": ident.get('description', None),
+        "schema:url": id,
+        "schema:isPartOf": {
+            "@type": "schema:WebSite",
+            "@id": cfg['server'].get('pid', cfg['server']['url']),
+            "schema:url": cfg['server']['url']
+        },
+        "schema:license": license,
+        "schema:keywords": ident.get('keywords', None),
+        "schema:dataset": list(
             map(
                 lambda collectionId: _describe_collection(
                     cls, id, collectionId, collections[collectionId]
@@ -200,81 +199,85 @@ def _describe_collection(cls, parentId, collectionId, collection, **kwargs):
     links = []
     for _link in collection.get('links', []):
         link = {
-            '@type': 'DataDownload',
-            'encodingFormat': _link['type'],
-            'description': _link['title'],
-            'contentURL': _link['href']
+            '@type': 'schema:DataDownload',
+            'schema:encodingFormat': _link['type'],
+            'schema:description': _link['title'],
+            'schema:contentURL': _link['href']
         }
         if 'hreflang' in _link:
-            link['inLanguage'] = _link['hreflang']
+            link['schema:inLanguage'] = _link['hreflang']
+        if 'rel' in link and link['rel'] == 'author':
+            link['schema:author'] = {
+                '@type': 'schema:Organization',
+                'schema:url': _link['href']
+            }
+            link.pop('schema:contentURL')
         links.append(link)
 
     defaultLang = cfg['server'].get('language')
     links.append({
-        "@type": "DataDownload",
-        'encodingFormat': 'application/geo+json',
-        'description': 'Items as GeoJSON',
-        'contentURL': '{}/collections/{}/items?f=json'.format(
+        "@type": "schema:DataDownload",
+        'schema:encodingFormat': 'application/geo+json',
+        'schema:description': 'Items as GeoJSON',
+        'schema:contentURL': '{}/collections/{}/items?f=json'.format(
             cfg['server']['url'], collectionId),
-        'inLanguage': defaultLang
+        'schema:inLanguage': defaultLang
     })
     links.append({
-        "@type": "DataDownload",
-        'encodingFormat': 'application/ld+json',
-        'description': 'Items as RDF (GeoJSON-LD)',
-        'contentURL': '{}/collections/{}/items?f=jsonld'.format(
+        "@type": "schema:DataDownload",
+        'schema:encodingFormat': 'application/ld+json',
+        'schema:description': 'Items as RDF (GeoJSON-LD)',
+        'schema:contentURL': '{}/collections/{}/items?f=jsonld'.format(
             cfg['server']['url'], collectionId),
-        'inLanguage': defaultLang
+        'schema:inLanguage': defaultLang
     })
     links.append({
-        "@type": "DataDownload",
-        'encodingFormat': 'text/html',
-        'description': 'Items as HTML',
-        'contentURL': '{}/collections/{}/items?f=html'.format(
+        "@type": "schema:DataDownload",
+        'schema:encodingFormat': 'text/html',
+        'schema:description': 'Items as HTML',
+        'schema:contentURL': '{}/collections/{}/items?f=html'.format(
             cfg['server']['url'], collectionId),
-        'inLanguage': defaultLang
+        'schema:inLanguage': defaultLang
     })
 
     sameAsLinks = [l['href'] for l in filter(lambda l: l['rel'] == 'canonical', collection.get('links', []))]
 
+    license = collection.get('license', {}).get('url') or {
+        "@type": "schema:CreativeWork",
+        **meta.get('license', {})
+    }
+    if 'url' in license:
+        license['schema:url'] = license.pop('url')
+    if 'name' in license:
+        license['schema:name'] = license.pop('name')
     return {
-        "@context": [
-            "https://schema.org",
-            "https://schema.org/docs/jsonldcontext.jsonld",
-            {
-                "links": "distribution"
-            } # To keep API consistent with ordinary JSON interface
-        ],
-        "@type": "Dataset",
+        "@type": "schema:Dataset",
         "@id": id, # TODO allow PID
-        "url": id,
-        "sameAs": sameAsLinks[0] if len(sameAsLinks) > 1 else (sameAsLinks or None),
-        "includedInDataCatalog": {
+        "schema:url": id,
+        "schema:sameAs": sameAsLinks[0] if len(sameAsLinks) > 1 else (sameAsLinks or None),
+        "schema:includedInDataCatalog": {
             "@id": parentId,
             "@type": "DataCatalog",
-            "url": parentId
+            "schema:url": parentId
         },
-        "isPartOf": {
-            "@type": "WebSite",
+        "schema:isPartOf": {
+            "@type": "schema:WebSite",
             "@id": cfg['server'].get('pid', cfg['server']['url']),
-            "url": cfg['server']['url']
+            "schema:url": cfg['server']['url']
         },
-        "name": collection['title'], # REQUIRED for Google Dataset Search
-        "description": collection['description'], # REQUIRED for Google Dataset Search
-        "license": collection.get('license', {}).get('url') or {
-            "@type": "CreativeWork",
-            **meta.get('license', {})
-        }, # RECOMMENDED for Google Dataset Search
-        "keywords": collection.get('keywords'), # RECOMMENDED for Google Dataset Search
-        "spatialCoverage": None if (not hascrs84 or not bbox) else {
-            "@type": "Place",
-            "geo": {
-                "@type": "GeoShape",
-                "box": '{} {} {} {}'.format(*bbox)
+        "schema:name": collection['title'], # REQUIRED for Google Dataset Search
+        "schema:description": collection['description'], # REQUIRED for Google Dataset Search
+        "schema:license": license, # RECOMMENDED for Google Dataset Search
+        "schema:keywords": collection.get('keywords'), # RECOMMENDED for Google Dataset Search
+        "schema:spatialCoverage": None if (not hascrs84 or not bbox) else {
+            "@type": "schema:Place",
+            "schema:geo": {
+                "@type": "schema:GeoShape",
+                "schema:box": '{} {} {} {}'.format(*bbox)
             }
         },
-        "temporalCoverage": "{}/{}".format(*interval),
-        "links": links
+        "schema:temporalCoverage": "{}/{}".format(*interval),
+        "schema:distribution": links
     }
 
 @inspect_config
@@ -290,21 +293,20 @@ def _build_queryables_jsonld(cls, queryables, dataset, **kwargs):
     cfg = itemgetter('cfg')(kwargs)
     return {
         "@context": [
-            "https://schema.org",
-            "https://schema.org/docs/jsonldcontext.jsonld",
             {
-                "queryables": "definedTerm",
-                "queryable": "name"
+                "schema": "https://schema.org/",
+                "queryables": "schema:definedTerm",
+                "queryable": "schema:name"
             }
         ],
-        "@type": "DefinedTermSet",
+        "@type": "schema:DefinedTermSet",
         "@id": '{}/collections/{}/queryables'.format(
             cfg['server']['url'], dataset
         ),
-        "url": '{}/collections/{}/queryables'.format(
+        "schema:url": '{}/collections/{}/queryables'.format(
             cfg['server']['url'], dataset
         ),
-        "name": "queryables",
+        "schema:name": "queryables",
         "queryables": list(map(lambda q: {
             "@type": "DefinedTerm",
             "queryable": q['queryable']
@@ -340,8 +342,11 @@ def jsonldify(func):
             dataset = kwargs.get('dataset', None)
             if dataset:
                 # Describe one collection
-                _collections = {**fcmld, **_build_collections_jsonld(cls)}.get('collections', [])
-                fcmld = next(iter([c for c in _collections if c['url'].endswith('/{}'.format(dataset))]), {})
+                _collections = {**fcmld, **_build_collections_jsonld(cls)}
+                fcmld = {
+                    '@context': {**_collections['@context']},
+                    **next(iter([c for c in _collections.get('schema:dataset', []) if c['schema:url'].endswith('/{}'.format(dataset))]), {})
+                }
             else:
                 fcmld = {**fcmld, **_build_collections_jsonld(cls)}
         elif func.__name__ == 'get_collection_queryables':
@@ -436,16 +441,23 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['resources'][dataset].get('context', [])
-    data['id'] = (
-        '{}/collections/{}/items/{}' if identifier
-        else '{}/collections/{}/items'
-    ).format(
-        *[config['server']['url'], dataset, identifier]
-    )
-    if data.get('timeStamp', False):
-        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+
+    _data = {**data}
+
+    uri = _data.get('properties', {}).get('uri', None)
+
+    if identifier and uri:
+        _data['id'] = '{}'.format(uri)
+    elif identifier:
+        _data['id'] = '{}/collections/{}/items/{}'.format(config['server']['url'],dataset, identifier)
+    else:
+        _data['id'] = '{}/collections/{}/items'.format(config['server']['url'], dataset)
+
+    if _data.get('timeStamp', False):
+        _data['https://schema.org/sdDatePublished'] = _data.pop('timeStamp')
 
     inlinedVocabulary = {
+        "schema": "https://schema.org/",
         "geojson": "https://purl.org/geojson/vocab#",
         "Feature": "geojson:Feature",
         "FeatureCollection": "geojson:FeatureCollection",
@@ -480,11 +492,12 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             inlinedVocabulary,
             *(context or [])
         ],
-        **data
+        **_data
     }
+
     isCollection = identifier is None
     if isCollection:
-        for i, feature in enumerate(data['features']):
+        for i, feature in enumerate(_data['features']):
             featureId = feature.get(
                 'id', None
             ) or feature.get('properties', {}).get('id', None)
@@ -494,7 +507,17 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
             if is_url(str(featureId)):
                 feature['id'] = featureId
             else:
-                feature['id'] = '{}/{}'.format(data['id'], featureId)
+                feature['id'] = '{}/{}'.format(_data['id'], featureId)
+    else:
+        if _data.get('geometry', {}).get('type', None) != 'Point':
+            # ldjsonData["geometry"] = {
+            #     "schema:encodingFormat": "application/geo+json",
+            #     "schema:url": f'{_data["id"]}?f=json'
+            # }
+
+            # Omit non-point geometries from JSON-LD representation as they
+            # are not valid JSON-LD
+            ldjsonData.pop('geometry', None)
 
     ldjsonData.pop('links')
     return json.dumps(ldjsonData)

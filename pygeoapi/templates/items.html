@@ -84,7 +84,12 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
-                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
+                {% if 'uri' in ft['properties'].keys() %}
+                    <td data-label="id"><a href="{{ ft['properties']['uri']}}">{{ ft.id }}</a></td>
+                {%  else %}
+                    <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
+                {%  endif %}
+
                   {% for k, v in ft['properties'].items() %}
                   {% if loop.index < 5 %}
                   <td data-label="{{ k }}">{{ v | urlize(20) }}</td>
