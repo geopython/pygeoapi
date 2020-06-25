@@ -340,7 +340,10 @@ def get_oas_30(cfg):
         for key in fields:
             if key != data_provider.id_field:
                 prop[key] = {'type': fields[key]}
-        geom = {'$ref': '{}#/components/schemas/geometryGeoJSON'.format(OPENAPI_YAML['oapif'])}  # noqa
+
+        oapif = OPENAPI_YAML['oapif']
+        geojson = '{}#/components/schemas/geometryGeoJSON'.format(oapif)
+        geom = {'$ref': geojson}
         form = {
                     "type": {
                         "type": "string",
@@ -352,6 +355,8 @@ def get_oas_30(cfg):
                         "properties": prop
                     }
                 }
+        feature_id = '{}#/components/parameters/featureId'.format(oapif)
+        nvpo = '#/components/schemas/nameValuePairObj'
 
         items_path = '{}/items'.format(collection_name_path)
 
@@ -475,7 +480,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    {'$ref': feature_id},
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
@@ -490,7 +495,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    {'$ref': feature_id}
                 ],
                 'requestBody': {
                     'required': True,
@@ -502,13 +507,13 @@ def get_oas_30(cfg):
                                     'add': {
                                         'type': 'array',
                                         'items': {
-                                            '$ref': '#/components/schemas/nameValuePairObj'  # noqa
+                                            '$ref': nvpo
                                         }
                                     },
                                     'modify': {
                                         'type': 'array',
                                         'items': {
-                                            '$ref': '#/components/schemas/nameValuePairObj'  # noqa
+                                            '$ref': nvpo
                                         }
                                     },
                                     'remove': {
@@ -550,7 +555,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    {'$ref': feature_id}
                 ],
                 'requestBody': {
                     'required': True,
@@ -575,7 +580,7 @@ def get_oas_30(cfg):
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    {'$ref': feature_id}
                 ],
                 'responses': {
                     200: {'$ref': '#/components/responses/200'},  # noqa
