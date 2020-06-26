@@ -37,7 +37,7 @@ import click
 from flask import Flask, make_response, request, send_from_directory
 
 from pygeoapi.api import API
-from pygeoapi.util import get_mimetype, yaml_load
+from pygeoapi.util import get_mimetype, set_locale, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -49,6 +49,8 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+set_locale(CONFIG['server'])
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):

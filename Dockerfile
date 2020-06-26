@@ -54,16 +54,17 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
 
 # ARGS
-ARG TIMEZONE="Europe/London"
-ARG LOCALE="en_US.UTF-8"
+ARG TZ="Etc/UTC"
+ARG LANG="en_US.UTF-8"
 ARG ADD_DEB_PACKAGES=""
 ARG ADD_PIP_PACKAGES=""
 
 # ENV settings
-ENV TZ=${TIMEZONE} \
+ENV TZ=${TZ} \
+	LANG=${LANG} \
 	DEBIAN_FRONTEND="noninteractive" \
 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils curl git unzip" \
-	DEB_PACKAGES="locales libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
+	DEB_PACKAGES="locales locales-all libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ADD . /pygeoapi
@@ -72,14 +73,13 @@ ADD . /pygeoapi
 RUN \
 	# Install dependencies
 	apt-get update \
+	&& apt-get upgrade -y \
 	&& apt-get --no-install-recommends install -y ${DEB_BUILD_DEPS} ${DEB_PACKAGES} \
 	# Timezone
-	&& cp /usr/share/zoneinfo/${TZ} /etc/localtime\
 	&& dpkg-reconfigure tzdata \
 	# Locale
-	&& sed -i -e "s/# ${LOCALE} UTF-8/${LOCALE} UTF-8/" /etc/locale.gen \
 	&& dpkg-reconfigure --frontend=noninteractive locales \
-	&& update-locale LANG=${LOCALE} \
+	&& update-locale LANG=${LANG} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
 	# Upgrade pip3 and install packages
 	&& python3 -m pip install --upgrade pip \

@@ -41,7 +41,7 @@ from starlette.responses import Response
 import uvicorn
 
 from pygeoapi.api import API
-from pygeoapi.util import yaml_load
+from pygeoapi.util import set_locale, yaml_load
 
 app = Starlette()
 app.mount('/static', StaticFiles(
@@ -54,6 +54,8 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+set_locale(CONFIG['server'])
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):

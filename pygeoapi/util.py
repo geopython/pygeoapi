@@ -32,6 +32,7 @@
 from datetime import date, datetime, time
 from decimal import Decimal
 import json
+import locale
 import logging
 import mimetypes
 import os
@@ -278,3 +279,20 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+def set_locale(config):
+    """
+    Inspects pygeoapi configuration, and environment variables, for appropriate
+    locale values (language and encoding), and sets LC_ALL.
+
+    :param config: dict of server configuration
+    """
+    default_locale = os.environ.get('lang').split('.')
+    default_lang = default_locale[0] or 'en_US'
+    default_encoding = default_locale[1] or 'UTF-8'
+
+    lang = config.get('language', default_lang).replace('-', '_')
+    encoding = config.get('encoding', default_encoding).upper()
+    set_locale = locale.setlocale(locale.LC_ALL, (lang, encoding))
+    LOGGER.info('Set locale: {}'.format(set_locale))
+    return set_locale
