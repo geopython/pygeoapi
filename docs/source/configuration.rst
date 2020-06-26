@@ -151,6 +151,7 @@ The ``resource.type`` property is required.  Allowed types are:
               name: CSV
               data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
               id_field: id  # required for vector data, the field corresponding to the ID
+              uri_field: uri # optional: useful if you have a persistent identifier (PID) or other external HTTP URI to represent a feature that you want to use in preference to the generated pygeoapi HTTP URL
               time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
               properties:  # optional: only return the following properties, in order
                   - stn_id
@@ -205,8 +206,9 @@ This metadata is included automatically, and is sufficient for inclusion in majo
 For collections, at the level of an item or items, by default the JSON-LD representation adds:
 
 - The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
-  in pygeoapi)
+- An ``@id`` for each item in a collection, that is the URL for that item (by default, resolving to its HTML representation
+  in pygeoapi. If a ``uri_field`` is specified in the collection's metadata, the value of the ``uri_field`` property will
+  be used instead; use ``uri_field`` to support persistent identifiers for your features.)
 
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
