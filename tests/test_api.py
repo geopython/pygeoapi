@@ -144,7 +144,8 @@ def test_root_structured_data(config, api_):
 
     assert isinstance(root, dict)
     assert 'schema:description' in root
-    assert root['schema:description'] == 'pygeoapi provides an API to geospatial data'
+    assert root['schema:description'] == \
+           'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
     assert root['@context'] == {
