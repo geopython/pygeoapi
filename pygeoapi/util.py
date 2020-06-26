@@ -198,7 +198,7 @@ def is_url(urlstring):
         return False
 
 
-def render_j2_template(config, template, data):
+def render_j2_template(config, template, data, **kwargs):
     """
     render Jinja2 template
 
@@ -224,7 +224,7 @@ def render_j2_template(config, template, data):
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
     template = env.get_template(template)
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=config, data=data, version=__version__, **kwargs)
 
 
 def get_mimetype(filename):
@@ -279,12 +279,16 @@ def filter_dict_by_key_value(dict_, key, value):
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
-def check_format(args, headers):
+def check_format(args, requestHeaders):
     """
-    check format requested from arguments or headers
+    Checks format requested from arguments or request headers
+
+    FIXME: this does not handle quality values
+    https://developer.mozilla.org/en-US/docs/Glossary/quality_values
+    i.e. it ignores client's specifity and priority.
 
     :param args: dict of request keyword value pairs
-    :param headers: dict of request headers
+    :param requestHeaders: request headers (immutable)
 
     :returns: format value
     """
@@ -296,23 +300,19 @@ def check_format(args, headers):
         return format_
 
     # Format not specified: get from accept headers
-    # format_ = 'text/html'
-    headers_ = None
-    if 'accept' in headers.keys():
-        headers_ = headers['accept']
-    elif 'Accept' in headers.keys():
-        headers_ = headers['Accept']
+    acceptHeaders = requestHeaders.get('accept') or requestHeaders.get('Accept')
+
+    if not acceptHeaders:
+        return None
 
     format_ = None
-    if headers_:
-        headers_ = headers_.split(',')
-
-        if 'text/html' in headers_:
-            format_ = 'html'
-        elif 'application/ld+json' in headers_:
-            format_ = 'jsonld'
-        elif 'application/json' in headers_:
-            format_ = 'json'
+    acceptHeaders = acceptHeaders.split(',')
+    if 'text/html' in acceptHeaders:
+        format_ = 'html'
+    elif 'application/ld+json' in acceptHeaders:
+        format_ = 'jsonld'
+    elif 'application/json' in acceptHeaders:
+        format_ = 'json'
 
     return format_
 

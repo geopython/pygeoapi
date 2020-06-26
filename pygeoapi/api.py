@@ -40,14 +40,15 @@ from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__
-from pygeoapi.linked_data import (geojson2geojsonld, jsonldify)
+from pygeoapi.linked_data import jsonldify
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value, json_serial,
-                           render_j2_template, str2bool, TEMPLATES)
+                           render_j2_template, str2bool, check_format, is_url,
+                           TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -288,7 +289,6 @@ class API:
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
-
         if all([dataset is not None, dataset not in collections.keys()]):
             exception = {
                 'code': 'InvalidParameterValue',
@@ -874,22 +874,19 @@ class API:
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
 
+        uri_field = self.config['resources'][dataset].get('provider', {}).get('uri_field', None)
+        _path = pathinfo or requestHeaders.environ['PATH_INFO']
+        base_path = '/'.join(map(lambda s: s.strip('/'), [
+            self.config['server']['url'], _path
+        ]))
+        content['features'] = list(map(lambda f: _feature_identifier(f, base_path, uri_field), content['features']))
+
         if format_ == 'html':  # render
             responseHeaders['Content-Type'] = 'text/html'
 
-            # For constructing proper URIs to items
-            if pathinfo:
-                path_info = '/'.join([
-                    self.config['server']['url'].rstrip('/'),
-                    pathinfo.strip('/')])
-            else:
-                path_info = '/'.join([
-                    self.config['server']['url'].rstrip('/'),
-                    requestHeaders.environ['PATH_INFO'].strip('/')])
-
-            content['items_path'] = path_info
-            content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
-            content['collections_path'] = '/'.join(path_info.split('/')[:-2])
+            content['items_path'] = base_path
+            content['dataset_path'] = '/'.join(base_path.split('/')[:-1])
+            content['collections_path'] = '/'.join(base_path.split('/')[:-2])
             content['startindex'] = startindex
 
             content = render_j2_template(self.config, 'items.html',
@@ -923,7 +920,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_item(self, requestHeaders, format_, args, dataset, identifier):
+    def get_collection_item(self, requestHeaders, format_, args, dataset, identifier, pathinfo=None):
         """
         Get a single collection item
 
@@ -1001,24 +998,31 @@ class API:
             LOGGER.error(exception)
             return responseHeaders, 404, json.dumps(exception)
 
+        uri_field = self.config['resources'][dataset].get('provider', {}).get('uri_field', None)
+        _path = pathinfo or requestHeaders.environ['PATH_INFO']
+        base_path = '/'.join(map(lambda s: s.strip('/'), [
+            self.config['server']['url'], _path
+        ]))
+        content = _feature_identifier(content, base_path, uri_field)
+
+        id_field = self.config['resources'][dataset].get('provider', {}).get('id_field')
+        short_id = content['properties'][id_field]
+
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items/{}?f=json'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=json'.format(content['id'])
             }, {
             'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items/{}?f=jsonld'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=jsonld'.format(content['id'])
             }, {
             'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items/{}?f=html'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=html'.format(content['id'])
             }, {
             'rel': 'collection',
             'type': 'application/json',
@@ -1028,13 +1032,11 @@ class API:
             }, {
             'rel': 'prev',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': content['id'] # FIXME
             }, {
             'rel': 'next',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': content['id'] # FIXME
             }
         ]
 
@@ -1043,7 +1045,7 @@ class API:
 
             content['title'] = collections[dataset]['title']
             content = render_j2_template(self.config, 'item.html',
-                                         content)
+                                         content, short_id=short_id)
             return responseHeaders, 200, content
 
         elif format_ == 'jsonld':
@@ -1332,40 +1334,25 @@ class API:
             LOGGER.error(exception)
             return responseHeaders, 400, json.dumps(exception)
 
-
-def check_format(args, requestHeaders):
+def _feature_identifier(feature, base_path, uri_field=None):
     """
-    check format requested from arguments or request headers
+    Determines the feature.id value for a GeoJSON feature, based preferentially
+    on the uri_field specified in configuration, and secondarily on the id_field
+    In either case, the ultimate ID is expected to be a fully-formed URI that
+    will not requrie further templating, except to add query parameters.
 
-    FIXME: this does not handle quality values
-    https://developer.mozilla.org/en-US/docs/Glossary/quality_values
-    i.e. it ignores client's specifity and priority.
+    :param feature: GeoJSON feature, which is not mutated.
+    :param uri_field: optional property containing an identifying URI, such as a
+                      persistant identifier (PID)
 
-    :param args: dict of request keyword value pairs
-    :param requestHeaders: request headers (immutable)
-
-    :returns: format value
+    :returns: dict, copy of input `feature` with a transformed `properties.id`
     """
-
-    # Optional f=html or f=json query param
-    # overrides accept
-    format_ = args.get('f')
-    if format_:
-        return format_
-
-    # Format not specified: get from accept headers
-    acceptHeaders = requestHeaders.get('accept') or requestHeaders.get('Accept')
-
-    if not acceptHeaders:
-        return None
-
-    format_ = None
-    acceptHeaders = acceptHeaders.split(',')
-    if 'text/html' in acceptHeaders:
-        format_ = 'html'
-    elif 'application/ld+json' in acceptHeaders:
-        format_ = 'jsonld'
-    elif 'application/json' in acceptHeaders:
-        format_ = 'json'
-
-    return format_
+    feature_id = str(feature['id']).strip('/')
+    base = base_path.strip('/')
+    if uri_field:
+        id = feature['properties'][uri_field]
+    elif base.endswith(feature_id) and is_url(base):
+        id = base
+    else:
+        id = '/'.join([base, feature_id])
+    return {**feature, 'id': id}

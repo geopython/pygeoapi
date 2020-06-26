@@ -101,7 +101,7 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data_, startindex, startindex+limit):
                 feature = {'type': 'Feature'}
-                feature['id'] = row.pop(self.id_field)
+                feature['id'] = row.get(self.id_field)
                 feature['geometry'] = {
                     'type': 'Point',
                     'coordinates': [

@@ -376,7 +376,7 @@ def jsonldify(func):
                 return responseHeaders, status, content
             dataset = kwargs.get('dataset', list_get(args, 4))
             identifier = kwargs.get('identifier', list_get(args, 5))
-            content = geojson2geojsonld(
+            content = _geojson_transform_jsonld(
                 cls.config, content, dataset, identifier=identifier
             )
             return responseHeaders, status, content
@@ -427,47 +427,58 @@ def jsonldify(func):
 #     }
 #     return process_ld
 
-def geojson2geojsonld(config, data, dataset, identifier=None):
+def _geojson_transform_jsonld(config, data, dataset, identifier=None):
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
     read from, and extended by, the pygeoapi configuration for a particular
     dataset.
 
     :param config: dict of configuration
-    :param data: dict of data:
+    :param data: dict of data
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['resources'][dataset].get('context', [])
+    uri_field = config['resources'][dataset].get('provider', {}).get('uri_field', None)
+    id_field = config['resources'][dataset].get('provider', {}).get('id_field', None)
 
     _data = {**data}
+    _data.pop('links', None)
 
-    uri = _data.get('properties', {}).get('uri', None)
+    host = config['server']['url']
 
-    if identifier and uri:
-        _data['id'] = '{}'.format(uri)
-    elif identifier:
-        _data['id'] = '{}/collections/{}/items/{}'.format(config['server']['url'],dataset, identifier)
+    isCollection = identifier is None
+    url_base = '{}/collections/{}/items'.format(host, dataset)
+    fallback_url = '{}/{}'.format(url_base, identifier)
+
+    if isCollection:
+        for feature in _data['features']:
+            feature['properties']['id'] = _data['id']
+            if feature['geometry']['type'] == 'Point': continue
+            feature.pop('geometry')
     else:
-        _data['id'] = '{}/collections/{}/items'.format(config['server']['url'], dataset)
+        if _data['geometry']['type'] != 'Point':
+            _data.pop('geometry')
+        _data['properties']['id'] = _data['id']
 
     if _data.get('timeStamp', False):
         _data['https://schema.org/sdDatePublished'] = _data.pop('timeStamp')
 
+    # NOTE: non-point geometries are dropped from JSON-LD output
     inlinedVocabulary = {
         "schema": "https://schema.org/",
         "geojson": "https://purl.org/geojson/vocab#",
         "Feature": "geojson:Feature",
         "FeatureCollection": "geojson:FeatureCollection",
-        "GeometryCollection": "geojson:GeometryCollection",
-        "LineString": "geojson:LineString",
-        "MultiLineString": "geojson:MultiLineString",
-        "MultiPoint": "geojson:MultiPoint",
-        "MultiPolygon": "geojson:MultiPolygon",
+        # "GeometryCollection": "geojson:GeometryCollection",
+        # "LineString": "geojson:LineString",
+        # "MultiLineString": "geojson:MultiLineString",
+        # "MultiPoint": "geojson:MultiPoint",
+        # "MultiPolygon": "geojson:MultiPolygon",
         "Point": "geojson:Point",
-        "Polygon": "geojson:Polygon",
+        # "Polygon": "geojson:Polygon",
         "bbox": {
             "@container": "@list",
             "@id": "geojson:bbox"
@@ -495,29 +506,4 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
         **_data
     }
 
-    isCollection = identifier is None
-    if isCollection:
-        for i, feature in enumerate(_data['features']):
-            featureId = feature.get(
-                'id', None
-            ) or feature.get('properties', {}).get('id', None)
-            if featureId is None:
-                continue
-            # Note: @id or https://schema.org/url or both or something else?
-            if is_url(str(featureId)):
-                feature['id'] = featureId
-            else:
-                feature['id'] = '{}/{}'.format(_data['id'], featureId)
-    else:
-        if _data.get('geometry', {}).get('type', None) != 'Point':
-            # ldjsonData["geometry"] = {
-            #     "schema:encodingFormat": "application/geo+json",
-            #     "schema:url": f'{_data["id"]}?f=json'
-            # }
-
-            # Omit non-point geometries from JSON-LD representation as they
-            # are not valid JSON-LD
-            ldjsonData.pop('geometry', None)
-
-    ldjsonData.pop('links')
     return json.dumps(ldjsonData)

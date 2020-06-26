@@ -73,10 +73,10 @@
           <table class="striped">
             <thead>
             <tr>
-                <th>id</th>
+                <th>URI</th>
                 {% for k, v in data['features'][0]['properties'].items() %}
                 {% if loop.index < 5 %}
-                <td>{{ k }}</td>
+                <th>{{ k }}</th>
                 {% endif %}
                 {% endfor %}
             </tr>
@@ -84,12 +84,7 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
-                {% if 'uri' in ft['properties'].keys() %}
-                    <td data-label="id"><a href="{{ ft['properties']['uri']}}">{{ ft.id }}</a></td>
-                {%  else %}
-                    <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
-                {%  endif %}
-
+                  <td data-label="uri"><a href="{{ ft.id }}">{{ ft.id }}</a></td>
                   {% for k, v in ft['properties'].items() %}
                   {% if loop.index < 5 %}
                   <td data-label="{{ k }}">{{ v | urlize(20) }}</td>
@@ -123,8 +118,7 @@
     var geojson_data = {{ data['features'] |to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
-            var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';
-            var html = '<span><a href="' + url + '">' + feature.id + '</a></span>';
+            var html = '<span><a href="' + feature.id + '">' + feature.id + '</a></span>';
             layer.bindPopup(html);
         }
     });

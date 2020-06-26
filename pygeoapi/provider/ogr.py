@@ -448,7 +448,7 @@ class OGRProvider(BaseProvider):
 
         json_feature = ogr_feature.ExportToJson(as_object=True)
         try:
-            json_feature['id'] = json_feature['properties'].pop(self.id_field)
+            json_feature['id'] = json_feature['properties'].get(self.id_field)
         except Exception as err:
             LOGGER.error(err)
             json_feature['id'] = ogr_feature.GetFID()
