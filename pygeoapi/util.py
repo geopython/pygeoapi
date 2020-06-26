@@ -293,6 +293,6 @@ def set_locale(config):
 
     lang = config.get('language', default_lang).replace('-', '_')
     encoding = config.get('encoding', default_encoding).upper()
-    set_locale = locale.setlocale(locale.LC_ALL, (lang, encoding))
-    LOGGER.info('Set locale: {}'.format(set_locale))
-    return set_locale
+    server_locale = locale.setlocale(locale.LC_ALL, (lang, encoding))
+    LOGGER.info('Set locale: {}'.format(server_locale))
+    return server_locale
