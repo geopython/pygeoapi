@@ -455,7 +455,7 @@ def _geojson_transform_jsonld(config, data, dataset, identifier=None):
 
     if isCollection:
         for feature in _data['features']:
-            feature['properties']['id'] = _data['id']
+            feature['properties']['id'] = feature['id']
             if feature['geometry']['type'] == 'Point': continue
             feature.pop('geometry')
     else:
