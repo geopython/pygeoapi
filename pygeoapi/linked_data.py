@@ -268,7 +268,7 @@ def _describe_collection(cls, parentId, collectionId, collection, **kwargs):
         "schema:name": collection['title'], # REQUIRED for Google Dataset Search
         "schema:description": collection['description'], # REQUIRED for Google Dataset Search
         "schema:license": license, # RECOMMENDED for Google Dataset Search
-        "schema:keywords": collection.get('keywords'), # RECOMMENDED for Google Dataset Search
+        "schema:keywords": collection.get('keywords', None), # RECOMMENDED for Google Dataset Search
         "schema:spatialCoverage": None if (not hascrs84 or not bbox) else {
             "@type": "schema:Place",
             "schema:geo": {
