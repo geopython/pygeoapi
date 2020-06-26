@@ -67,6 +67,8 @@ ENV TZ=${TZ} \
 	DEB_PACKAGES="locales locales-all libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
+ENV LANG=${LANG}
+
 ADD . /pygeoapi
 
 # Run all installs
