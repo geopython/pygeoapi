@@ -36,6 +36,7 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+
 def test_str2bool():
 
     default = {
@@ -52,6 +53,7 @@ def test_str2bool():
     default['ogc_schemas_location'] = '/opt/schemas.opengis.net'
     osl = get_ogc_schemas_location(default)
 
+
 def get_test_file_path(filename):
     """helper function to open test file safely"""
     if os.path.isfile(filename):
@@ -59,9 +61,10 @@ def get_test_file_path(filename):
     else:
         return 'tests/{}'.format(filename)
 
+
 @pytest.fixture()
 def config():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+    with open(get_test_file_path('pygeoapi-config-local-openapi.yml')) as fh:
         return yaml_load(fh)
 
 
@@ -69,108 +72,184 @@ def config():
 def get_oas_30_(config):
     return get_oas_30(config)
 
+
 def test_simple_transactions(get_oas_30_):
     """assertions for simple transactions schemas in openapidoc"""
 
     assert isinstance(get_oas_30_, dict)
+    components = get_oas_30_['components']
+    assert isinstance(components, dict)
+    schemas = components['schemas']
+    assert isinstance(schemas, dict)
+    paths = get_oas_30_['paths']
+    assert isinstance(paths, dict)
+    items = paths['/collections/obs/items']
+    assert isinstance(items, dict)
+    feature = paths['/collections/obs/items/{featureId}']
+    assert isinstance(feature, dict)
 
-    ############################ components ################################################################
+    # ----------------------------- components --------------------------------
 
-    #assertion for nameValuePairObj schema
-    assert 'nameValuePairObj' in get_oas_30_['components']['schemas']
-    assert 'name' in get_oas_30_['components']['schemas']['nameValuePairObj']['properties']
-    assert 'value' in get_oas_30_['components']['schemas']['nameValuePairObj']['properties']
+    # assertion for nameValuePairObj schema
+    assert 'nameValuePairObj' in schemas
+    assert 'name' in schemas['nameValuePairObj']['properties']
+    assert 'value' in schemas['nameValuePairObj']['properties']
 
-    ############################### post ###################################################################
+    # -------------------------------- post -----------------------------------
 
-    #assertion for post
-    assert 'post' in get_oas_30_['paths']['/collections/obs/items']
-    assert isinstance(get_oas_30_['paths']['/collections/obs/items']['post'], dict)
+    # assertion for post
+    assert 'post' in items
+    post = items['post']
+    assert isinstance(post, dict)
 
-    #assertion for post attributes
-    postAttrib = ['summary', 'description', 'tags', 'requestBody', 'responses']
+    # assertion for post attributes
+    postAttrib = ['summary',
+                  'description',
+                  'tags',
+                  'requestBody',
+                  'responses']
     for attrib in postAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items']['post']
+        assert attrib in post
 
-    #assertion for post request attributes
-    postReqAttrib = ['required', 'content']
+    # assertion for post request attributes
+    postReqAttrib = ['required',
+                     'content']
+    postReq = post['requestBody']
     for attrib in postReqAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items']['post']['requestBody']
+        assert attrib in postReq
 
-    #assertion for post request content attributes
-    postReqContentAttrib = ['type', 'geometry', 'properties']
+    # assertion for post request content attributes
+    postReqContentAttrib = ['type',
+                            'geometry',
+                            'properties']
+    postReqContent = postReq['content']
+    postReqContentSchema = postReqContent['application/geo+json']['schema']
     for attrib in postReqContentAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items']['post']['requestBody']['content']['application/geo+json']['schema']['properties']     
+        assert attrib in postReqContentSchema['properties']
 
-    #assertion for post response attributes
-    postRespAttrib = [201, 400, 404, 500]
+    # assertion for post response attributes
+    postRespAttrib = [201,
+                      400,
+                      404,
+                      500]
+    postResp = post['responses']
     for attrib in postRespAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items']['post']['responses']
+        assert attrib in postResp
 
-    ############################### patch ##################################################################
+    # -------------------------------- patch ----------------------------------
 
-    #assertion for patch
-    assert 'patch' in get_oas_30_['paths']['/collections/obs/items/{featureId}']
-    assert isinstance(get_oas_30_['paths']['/collections/obs/items/{featureId}']['patch'], dict)
+    # assertion for patch
+    assert 'patch' in feature
+    patch = feature['patch']
+    assert isinstance(patch, dict)
 
-    #assertion for patch attributes
-    patchAttrib = ['summary', 'description', 'tags', 'parameters', 'requestBody', 'responses']
+    # assertion for patch attributes
+    patchAttrib = ['summary',
+                   'description',
+                   'tags',
+                   'parameters',
+                   'requestBody',
+                   'responses']
     for attrib in patchAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['patch']
+        assert attrib in patch
 
-    #assertion for patch request attributes
-    patchReqAttrib = ['required', 'content']
+    # assertion for patch request attributes
+    patchReqAttrib = ['required',
+                      'content']
+    patchReq = patch['requestBody']
+    assert isinstance(patchReq, dict)
     for attrib in patchReqAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['patch']['requestBody']
+        assert attrib in patchReq
 
-    #assertion for patch request content attributes
-    patchReqContentAttrib = ['add', 'modify', 'remove']
+    # assertion for patch request content attributes
+    patchReqContentAttrib = ['add',
+                             'modify',
+                             'remove']
+    patchReqContent = patchReq['content']
+    assert isinstance(patchReqContent, dict)
+    patchReqContentSchema = patchReqContent['application/json']['schema']
+    assert isinstance(patchReqContentSchema, dict)
     for attrib in patchReqContentAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['patch']['requestBody']['content']['application/json']['schema']['properties']       
+        assert attrib in patchReqContentSchema['properties']
 
-    #assertion for patch response attributes
-    patchRespAttrib = [200, 400, 404, 500]
+    # assertion for patch response attributes
+    patchRespAttrib = [200,
+                       400,
+                       404,
+                       500]
+    patchResp = patch['responses']
+    assert isinstance(patchResp, dict)
     for attrib in patchRespAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['patch']['responses']
+        assert attrib in patchResp
 
-    ############################### put ###################################################################
+    # --------------------------------- put -----------------------------------
 
-    #assertion for put
-    assert 'put' in get_oas_30_['paths']['/collections/obs/items/{featureId}']
-    assert isinstance(get_oas_30_['paths']['/collections/obs/items/{featureId}']['put'], dict)
+    # assertion for put
+    assert 'put' in feature
+    put = feature['put']
+    assert isinstance(put, dict)
 
-    #assertion for put attributes
-    putAttrib = ['summary', 'description', 'tags', 'parameters', 'requestBody', 'responses']
+    # assertion for put attributes
+    putAttrib = ['summary',
+                 'description',
+                 'tags',
+                 'parameters',
+                 'requestBody',
+                 'responses']
     for attrib in putAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['put']
+        assert attrib in put
 
-    #assertion for put request attributes
-    putReqAttrib = ['required', 'content']
+    # assertion for put request attributes
+    putReqAttrib = ['required',
+                    'content']
+    putReq = put['requestBody']
+    assert isinstance(putReq, dict)
     for attrib in putReqAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['put']['requestBody']
+        assert attrib in putReq
 
-    #assertion for put request content attributes
-    putReqContentAttrib = ['type', 'geometry', 'properties']
+    # assertion for put request content attributes
+    putReqContentAttrib = ['type',
+                           'geometry',
+                           'properties']
+    putReqContent = putReq['content']
+    assert isinstance(putReqContent, dict)
+    putReqContentSchema = putReqContent['application/geo+json']['schema']
+    assert isinstance(putReqContentSchema, dict)
     for attrib in putReqContentAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['put']['requestBody']['content']['application/geo+json']['schema']['properties']      
+        assert attrib in putReqContentSchema['properties']
 
-    #assertion for put response attributes
-    putRespAttrib = [200, 400, 404, 500]
+    # assertion for put response attributes
+    putRespAttrib = [200,
+                     400,
+                     404,
+                     500]
+    putResp = put['responses']
+    assert isinstance(putResp, dict)
     for attrib in putRespAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['put']['responses']
+        assert attrib in putResp
 
-    ############################### delete ################################################################
+    # -------------------------------- delete ---------------------------------
 
-    #assertion for delete
-    assert 'delete' in get_oas_30_['paths']['/collections/obs/items/{featureId}']
-    assert isinstance(get_oas_30_['paths']['/collections/obs/items/{featureId}']['delete'], dict)
+    # assertion for delete
+    assert 'delete' in feature
+    delete = feature['delete']
+    assert isinstance(delete, dict)
 
-    #assertion for delete attributes
-    deleteAttrib = ['summary', 'description', 'tags', 'parameters', 'responses']
+    # assertion for delete attributes
+    deleteAttrib = ['summary',
+                    'description',
+                    'tags',
+                    'parameters',
+                    'responses']
     for attrib in deleteAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['delete']  
+        assert attrib in delete
 
-    #assertion for delete response attributes
-    deleteRespAttrib = [200, 400, 404, 500]
+    # assertion for delete response attributes
+    deleteRespAttrib = [200,
+                        400,
+                        404,
+                        500]
+    deleteResp = delete['responses']
+    assert isinstance(deleteResp, dict)
     for attrib in deleteRespAttrib:
-        assert attrib in get_oas_30_['paths']['/collections/obs/items/{featureId}']['delete']['responses']
+        assert attrib in deleteResp
