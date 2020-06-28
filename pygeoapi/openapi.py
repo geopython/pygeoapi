@@ -473,8 +473,7 @@ def get_oas_30(cfg):
 
             paths[process_name_path] = {
                 'get': {
-                    'summary': 'Get process metadata'.format(
-                        p.metadata['title']),
+                    'summary': 'Get process metadata',
                     'description': p.metadata['description'],
                     'tags': [k],
                     'parameters': [

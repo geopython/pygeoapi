@@ -66,7 +66,7 @@ ENV TZ=${TZ} \
 	# DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils libpq-dev ${ADD_DEB_PACKAGES}" \
 	# PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils curl git unzip" \
-	DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite python3-distutils ${ADD_DEB_PACKAGES}" \
+	DEB_PACKAGES="locales locales-all libgdal27 python3-gdal libsqlite3-mod-spatialite python3-distutils ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 ENV LANG=${LANG}

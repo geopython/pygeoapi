@@ -118,10 +118,10 @@ def test_root(config, api_):
     assert root['links'][0]['rel'] == 'self'
     assert root['links'][0]['type'] == 'application/json'
     assert root['links'][0]['href'].endswith('?f=json')
-    assert any(l['href'].endswith('f=jsonld') and l['rel'] == 'alternate'
-               for l in root['links'])
-    assert any(l['href'].endswith('f=html') and l['rel'] == 'alternate'
-               for l in root['links'])
+    assert any(link['href'].endswith('f=jsonld') and link['rel'] == 'alternate'
+               for link in root['links'])
+    assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
+               for link in root['links'])
     assert len(root['links']) == 7
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
@@ -145,7 +145,7 @@ def test_root_structured_data(config, api_):
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
-    assert root['@context'] == 'https://schema.org'
+    assert root['@context'] == 'https://schema.org/docs/jsonldcontext.jsonld'
     expanded = jsonld.expand(root)[0]
     assert '@type' in expanded
     assert 'http://schema.org/DataCatalog' in expanded['@type']

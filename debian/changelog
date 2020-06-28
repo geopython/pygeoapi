@@ -1,3 +1,19 @@
+pygeoapi (0.8.0-1~bionic0) bionic; urgency=medium
+
+  * Support for ES7
+  * New SQLite/GPKG provider
+  * GDAL3 support
+  * STAC support added
+  * Enabled property filtering on ogr provider
+  * Added CSV support via OGR
+  * Implemented configurable OGC schema locations
+  * Updated to resource-specific configuration
+  * OpenAPI generation improvements
+  * Added queryables endpoint support
+  * Various provider updates/fixes
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Fri, 05 Jun 2020 17:00:00 +0200
+
 pygeoapi (0.7.0-1~bionic0) bionic; urgency=medium
 
   * Numerous CITE compliance fixes

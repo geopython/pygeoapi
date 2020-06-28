@@ -29,9 +29,10 @@
 #
 # =================================================================
 
+import functools
 import importlib
 import logging
-import functools
+import os
 from typing import Any
 
 from osgeo import gdal as osgeo_gdal
@@ -67,6 +68,8 @@ class OGRProvider(BaseProvider):
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
         '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
+    os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
+        'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
 
     # Setting for traditional CRS axis order.
     OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
