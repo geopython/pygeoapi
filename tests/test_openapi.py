@@ -31,7 +31,7 @@ from pygeoapi.openapi import get_ogc_schemas_location
 from pygeoapi.openapi import get_oas_30
 import pytest
 import os
-from pygeoapi.util import yaml_load
+from pygeoapi.util import yaml_load, filter_dict_by_key_value
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ def get_oas_30_(config):
     return get_oas_30(config)
 
 
-def test_simple_transactions(get_oas_30_):
+def test_simple_transactions(get_oas_30_, config):
     """assertions for simple transactions schemas in openapidoc"""
 
     assert isinstance(get_oas_30_, dict)
@@ -83,10 +83,6 @@ def test_simple_transactions(get_oas_30_):
     assert isinstance(schemas, dict)
     paths = get_oas_30_['paths']
     assert isinstance(paths, dict)
-    items = paths['/collections/obs/items']
-    assert isinstance(items, dict)
-    feature = paths['/collections/obs/items/{featureId}']
-    assert isinstance(feature, dict)
 
     # ----------------------------- components --------------------------------
 
@@ -95,161 +91,180 @@ def test_simple_transactions(get_oas_30_):
     assert 'name' in schemas['nameValuePairObj']['properties']
     assert 'value' in schemas['nameValuePairObj']['properties']
 
-    # -------------------------------- post -----------------------------------
+    collections = filter_dict_by_key_value(config['resources'],
+                                           'type',
+                                           'collection')
 
-    # assertion for post
-    assert 'post' in items
-    post = items['post']
-    assert isinstance(post, dict)
+    for k, _ in collections.items():
 
-    # assertion for post attributes
-    postAttrib = ['summary',
-                  'description',
-                  'tags',
-                  'requestBody',
-                  'responses']
-    for attrib in postAttrib:
-        assert attrib in post
+        # check if data transactions are enabled
+        if collections[k]['data_transaction_support'] is True:
+            itemPath = '/collections/{}/items'.format(k)
+            fIdPath = '/collections/{}/items/{{featureId}}'.format(k)
 
-    # assertion for post request attributes
-    postReqAttrib = ['required',
-                     'content']
-    postReq = post['requestBody']
-    for attrib in postReqAttrib:
-        assert attrib in postReq
+            items = paths[itemPath]
+            assert isinstance(items, dict)
+            feature = paths[fIdPath]
+            assert isinstance(feature, dict)
 
-    # assertion for post request content attributes
-    postReqContentAttrib = ['type',
-                            'geometry',
-                            'properties']
-    postReqContent = postReq['content']
-    postReqContentSchema = postReqContent['application/geo+json']['schema']
-    for attrib in postReqContentAttrib:
-        assert attrib in postReqContentSchema['properties']
+            # -------------------------------- post ---------------------------
 
-    # assertion for post response attributes
-    postRespAttrib = [201,
-                      400,
-                      404,
-                      500]
-    postResp = post['responses']
-    for attrib in postRespAttrib:
-        assert attrib in postResp
+            # assertion for post
+            assert 'post' in items
+            post = items['post']
+            assert isinstance(post, dict)
 
-    # -------------------------------- patch ----------------------------------
+            # assertion for post attributes
+            postAttrib = ['summary',
+                          'description',
+                          'tags',
+                          'requestBody',
+                          'responses']
+            for attrib in postAttrib:
+                assert attrib in post
 
-    # assertion for patch
-    assert 'patch' in feature
-    patch = feature['patch']
-    assert isinstance(patch, dict)
+            # assertion for post request attributes
+            postReqAttrib = ['required',
+                             'content']
+            postReq = post['requestBody']
+            assert isinstance(postReq, dict)
+            for attrib in postReqAttrib:
+                assert attrib in postReq
 
-    # assertion for patch attributes
-    patchAttrib = ['summary',
-                   'description',
-                   'tags',
-                   'parameters',
-                   'requestBody',
-                   'responses']
-    for attrib in patchAttrib:
-        assert attrib in patch
+            # assertion for post request content attributes
+            postReqContentAttrib = ['type',
+                                    'geometry',
+                                    'properties']
+            postReqContent = postReq['content']['application/geo+json']
+            assert isinstance(postReqContent, dict)
+            postReqContentSchema = postReqContent['schema']
+            assert isinstance(postReqContentSchema, dict)
+            for attrib in postReqContentAttrib:
+                assert attrib in postReqContentSchema['properties']
 
-    # assertion for patch request attributes
-    patchReqAttrib = ['required',
-                      'content']
-    patchReq = patch['requestBody']
-    assert isinstance(patchReq, dict)
-    for attrib in patchReqAttrib:
-        assert attrib in patchReq
+            # assertion for post response attributes
+            postRespAttrib = [201,
+                              400,
+                              404,
+                              500]
+            postResp = post['responses']
+            for attrib in postRespAttrib:
+                assert attrib in postResp
 
-    # assertion for patch request content attributes
-    patchReqContentAttrib = ['add',
-                             'modify',
-                             'remove']
-    patchReqContent = patchReq['content']
-    assert isinstance(patchReqContent, dict)
-    patchReqContentSchema = patchReqContent['application/json']['schema']
-    assert isinstance(patchReqContentSchema, dict)
-    for attrib in patchReqContentAttrib:
-        assert attrib in patchReqContentSchema['properties']
+            # -------------------------------- patch --------------------------
 
-    # assertion for patch response attributes
-    patchRespAttrib = [200,
-                       400,
-                       404,
-                       500]
-    patchResp = patch['responses']
-    assert isinstance(patchResp, dict)
-    for attrib in patchRespAttrib:
-        assert attrib in patchResp
+            # assertion for patch
+            assert 'patch' in feature
+            patch = feature['patch']
+            assert isinstance(patch, dict)
 
-    # --------------------------------- put -----------------------------------
+            # assertion for patch attributes
+            patchAttrib = ['summary',
+                           'description',
+                           'tags',
+                           'parameters',
+                           'requestBody',
+                           'responses']
+            for attrib in patchAttrib:
+                assert attrib in patch
 
-    # assertion for put
-    assert 'put' in feature
-    put = feature['put']
-    assert isinstance(put, dict)
+            # assertion for patch request attributes
+            patchReqAttrib = ['required',
+                              'content']
+            patchReq = patch['requestBody']
+            assert isinstance(patchReq, dict)
+            for attrib in patchReqAttrib:
+                assert attrib in patchReq
 
-    # assertion for put attributes
-    putAttrib = ['summary',
-                 'description',
-                 'tags',
-                 'parameters',
-                 'requestBody',
-                 'responses']
-    for attrib in putAttrib:
-        assert attrib in put
+            # assertion for patch request content attributes
+            patchReqContentAttrib = ['add',
+                                     'modify',
+                                     'remove']
+            patchReqContent = patchReq['content']['application/json']
+            assert isinstance(patchReqContent, dict)
+            patchReqContentSchema = patchReqContent['schema']
+            assert isinstance(patchReqContentSchema, dict)
+            for attrib in patchReqContentAttrib:
+                assert attrib in patchReqContentSchema['properties']
 
-    # assertion for put request attributes
-    putReqAttrib = ['required',
-                    'content']
-    putReq = put['requestBody']
-    assert isinstance(putReq, dict)
-    for attrib in putReqAttrib:
-        assert attrib in putReq
+            # assertion for patch response attributes
+            patchRespAttrib = [200,
+                               400,
+                               404,
+                               500]
+            patchResp = patch['responses']
+            assert isinstance(patchResp, dict)
+            for attrib in patchRespAttrib:
+                assert attrib in patchResp
 
-    # assertion for put request content attributes
-    putReqContentAttrib = ['type',
-                           'geometry',
-                           'properties']
-    putReqContent = putReq['content']
-    assert isinstance(putReqContent, dict)
-    putReqContentSchema = putReqContent['application/geo+json']['schema']
-    assert isinstance(putReqContentSchema, dict)
-    for attrib in putReqContentAttrib:
-        assert attrib in putReqContentSchema['properties']
+            # --------------------------------- put ---------------------------
 
-    # assertion for put response attributes
-    putRespAttrib = [200,
-                     400,
-                     404,
-                     500]
-    putResp = put['responses']
-    assert isinstance(putResp, dict)
-    for attrib in putRespAttrib:
-        assert attrib in putResp
+            # assertion for put
+            assert 'put' in feature
+            put = feature['put']
+            assert isinstance(put, dict)
 
-    # -------------------------------- delete ---------------------------------
+            # assertion for put attributes
+            putAttrib = ['summary',
+                         'description',
+                         'tags',
+                         'parameters',
+                         'requestBody',
+                         'responses']
+            for attrib in putAttrib:
+                assert attrib in put
 
-    # assertion for delete
-    assert 'delete' in feature
-    delete = feature['delete']
-    assert isinstance(delete, dict)
+            # assertion for put request attributes
+            putReqAttrib = ['required',
+                            'content']
+            putReq = put['requestBody']
+            assert isinstance(putReq, dict)
+            for attrib in putReqAttrib:
+                assert attrib in putReq
 
-    # assertion for delete attributes
-    deleteAttrib = ['summary',
-                    'description',
-                    'tags',
-                    'parameters',
-                    'responses']
-    for attrib in deleteAttrib:
-        assert attrib in delete
+            # assertion for put request content attributes
+            putReqContentAttrib = ['type',
+                                   'geometry',
+                                   'properties']
+            putReqContent = putReq['content']['application/geo+json']
+            assert isinstance(putReqContent, dict)
+            putReqContentSchema = putReqContent['schema']
+            assert isinstance(putReqContentSchema, dict)
+            for attrib in putReqContentAttrib:
+                assert attrib in putReqContentSchema['properties']
 
-    # assertion for delete response attributes
-    deleteRespAttrib = [200,
-                        400,
-                        404,
-                        500]
-    deleteResp = delete['responses']
-    assert isinstance(deleteResp, dict)
-    for attrib in deleteRespAttrib:
-        assert attrib in deleteResp
+            # assertion for put response attributes
+            putRespAttrib = [200,
+                             400,
+                             404,
+                             500]
+            putResp = put['responses']
+            assert isinstance(putResp, dict)
+            for attrib in putRespAttrib:
+                assert attrib in putResp
+
+            # -------------------------------- delete -------------------------
+
+            # assertion for delete
+            assert 'delete' in feature
+            delete = feature['delete']
+            assert isinstance(delete, dict)
+
+            # assertion for delete attributes
+            deleteAttrib = ['summary',
+                            'description',
+                            'tags',
+                            'parameters',
+                            'responses']
+            for attrib in deleteAttrib:
+                assert attrib in delete
+
+            # assertion for delete response attributes
+            deleteRespAttrib = [200,
+                                400,
+                                404,
+                                500]
+            deleteResp = delete['responses']
+            assert isinstance(deleteResp, dict)
+            for attrib in deleteRespAttrib:
+                assert attrib in deleteResp

@@ -301,6 +301,10 @@ def get_oas_30(cfg):
                                            'type', 'collection')
 
     for k, v in collections.items():
+
+        # reset data transactions flag
+        transaction = False
+
         collection_name_path = '/collections/{}'.format(k)
         tag = {
             'name': k,
@@ -358,6 +362,10 @@ def get_oas_30(cfg):
         feature_id = '{}#/components/parameters/featureId'.format(oapif)
         nvpo = '#/components/schemas/nameValuePairObj'
 
+        # flag if data transactions are enabled for the collection
+        if collections[k]['data_transaction_support'] is True:
+            transaction = True
+
         items_path = '{}/items'.format(collection_name_path)
 
         paths[items_path] = {
@@ -378,7 +386,10 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            },
+            }
+        }
+
+        post = {
             'post': {
                 'summary': 'Create {} item'.format(v['title']),
                 'description': v['description'],
@@ -411,6 +422,10 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+        # if data transactions are enabled, add post
+        if transaction:
+            paths[items_path].update(post)
 
         p = load_plugin('provider', collections[k]['provider'])
 
@@ -489,7 +504,10 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            },
+            }
+        }
+
+        patch = {
             'patch': {
                 'summary': 'Update {} item by id'.format(v['title']),
                 'description': v['description'],
@@ -549,7 +567,10 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            },
+            }
+        }
+
+        put = {
             'put': {
                 'summary': 'Replace {} item by id'.format(v['title']),
                 'description': v['description'],
@@ -574,7 +595,10 @@ def get_oas_30(cfg):
                     404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                     500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
-            },
+            }
+        }
+
+        delete = {
             'delete': {
                 'summary': 'Delete {} item by id'.format(v['title']),
                 'description': v['description'],
@@ -590,6 +614,12 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+        # if data transactions are enabled, add patch, put and delete
+        if transaction:
+            fIdPath = '{}/items/{{featureId}}'.format(collection_name_path)
+            for verb in [patch, put, delete]:
+                paths[fIdPath].update(verb)
 
     LOGGER.debug('setting up STAC')
     paths['/stac'] = {
