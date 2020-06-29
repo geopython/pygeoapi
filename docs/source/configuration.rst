@@ -251,6 +251,21 @@ implementation of JSON-LD structured data is available for any data provider but
 ``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
 
+
+Data Transactions
+-------
+pygeoapi in compliance with OGC API - Features - Part 4: Simple Transactions supports simple transactions - create, update, replace and delete. Adding transaction support to a resource in pygeoapi creates a RESTful web service interface through which transactions in the underlying data provider can be performed.
+
+Data transaction support can be enabled for a resource by adding ``transactions: true`` to ``extents`` under the resource in the pygeoapi config file:
+
+.. code-block:: yaml
+
+  resources:
+      lakes:
+          extents:
+              transactions: true
+
+
 Summary
 -------
 
