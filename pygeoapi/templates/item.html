@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
-    {% set val = v | string | trim | lower %}
-    {% if val|length and val.endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
+    {% set val = v | string | trim %}
+    {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
         {# Ends with image extension: render img element with link to image #}
         <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
     {% else %}
