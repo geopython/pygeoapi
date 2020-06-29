@@ -97,15 +97,16 @@ def test_simple_transactions(get_oas_30_, config):
 
     for k, _ in collections.items():
 
-        # check if data transactions are enabled
-        if collections[k]['data_transaction_support'] is True:
-            itemPath = '/collections/{}/items'.format(k)
-            fIdPath = '/collections/{}/items/{{featureId}}'.format(k)
+        itemPath = '/collections/{}/items'.format(k)
+        fIdPath = '/collections/{}/items/{{featureId}}'.format(k)
 
-            items = paths[itemPath]
-            assert isinstance(items, dict)
-            feature = paths[fIdPath]
-            assert isinstance(feature, dict)
+        items = paths[itemPath]
+        assert isinstance(items, dict)
+        feature = paths[fIdPath]
+        assert isinstance(feature, dict)
+
+        # check if data transactions are enabled
+        if collections[k]['extents']['transactions'] is True:
 
             # -------------------------------- post ---------------------------
 
@@ -268,3 +269,10 @@ def test_simple_transactions(get_oas_30_, config):
             assert isinstance(deleteResp, dict)
             for attrib in deleteRespAttrib:
                 assert attrib in deleteResp
+
+        else:
+
+            assert 'post' not in items
+            assert 'patch' not in feature
+            assert 'put' not in feature
+            assert 'delete' not in feature
