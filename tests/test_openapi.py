@@ -105,8 +105,24 @@ def test_simple_transactions(get_oas_30_, config):
         feature = paths[fIdPath]
         assert isinstance(feature, dict)
 
-        # check if data transactions are enabled
-        if collections[k]['extents']['transactions'] is True:
+        # data transactions are not specified
+        if 'transactions' not in collections[k]['extents']:
+
+            assert 'post' not in items
+            assert 'patch' not in feature
+            assert 'put' not in feature
+            assert 'delete' not in feature
+
+        # data transactions are disabled
+        elif collections[k]['extents']['transactions'] is False:
+
+            assert 'post' not in items
+            assert 'patch' not in feature
+            assert 'put' not in feature
+            assert 'delete' not in feature
+
+        # data transactions are enabled
+        elif collections[k]['extents']['transactions'] is True:
 
             # -------------------------------- post ---------------------------
 
@@ -269,10 +285,3 @@ def test_simple_transactions(get_oas_30_, config):
             assert isinstance(deleteResp, dict)
             for attrib in deleteRespAttrib:
                 assert attrib in deleteResp
-
-        else:
-
-            assert 'post' not in items
-            assert 'patch' not in feature
-            assert 'put' not in feature
-            assert 'delete' not in feature
