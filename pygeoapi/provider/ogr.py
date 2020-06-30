@@ -427,6 +427,10 @@ class OGRProvider(BaseProvider):
 
     def _get_next_feature(self, layer, feature_id):
         try:
+            if layer.GetFeatureCount() == 0:
+                LOGGER.error("item {} is not found".format(feature_id))
+                raise ProviderItemNotFoundError(
+                    "item {} not found".format(feature_id))
             # Ignore gdal error
             next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             if next_feature:
@@ -436,8 +440,9 @@ class OGRProvider(BaseProvider):
                         "Object properties are all null"
                     )
             else:
-                raise ProviderItemNotFoundError(
-                    "item {} not found".format(feature_id))
+                raise RuntimeError(
+                    "GDAL has returned a null feature for item {}".format(
+                        feature_id))
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())
