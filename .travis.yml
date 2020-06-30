@@ -82,6 +82,8 @@ script:
   - pytest --cov=pygeoapi
   - make -C ./docs html
   - find . -type f -name "*.py" | xargs flake8
+  # run linting openapi document through dockerized spectral cli
+  - docker run --rm -it -v $(pwd):/tmp stoplight/spectral lint "/tmp/pygeoapi-openapi.yml"
   # run docker image with cite configuration
   - docker run -d -p 5001:5001 --network host --add-host="localhost:127.0.0.1" --rm -it -v $(pwd)/tests/cite/ogcapi-features/cite.config.yml:/pygeoapi/local.config.yml --name pygeoapi-travis-master geopython/pygeoapi:latest run
   - docker ps | grep -wq 'pygeoapi-travis-master'
