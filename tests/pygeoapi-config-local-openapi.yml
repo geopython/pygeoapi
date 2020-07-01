@@ -139,8 +139,32 @@ resources:
             temporal:
                 begin: 2011-11-11
                 end: null  # or empty (either means open ended)
+                transactions: false
         provider:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson
             id_field: id
 
+    places:
+        type: collection
+        title: populated places
+        description: populated places of the world, public domain
+        keywords:
+            - places
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        provider:
+            name: GeoJSON
+            data: tests/data/ne_110m_populated_places_simple.geojson
+            id_field: id
