@@ -85,7 +85,7 @@ def test_get_vsicurl(config_vsicurl_csv):
     p = OGRProvider(config_vsicurl_csv)
     result = p.get('32')
     assert result['id'] == 32
-    assert '11' in result['properties']['codice_regione']
+    assert '14' in result['properties']['codice_regione']
 
 
 def test_get_not_existing_feature_raise_exception(
