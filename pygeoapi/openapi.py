@@ -272,6 +272,8 @@ def get_oas_30(cfg):
         }
     }
 
+    cql_filter_exists = False
+
     items_f = deepcopy(oas['components']['parameters']['f'])
     items_f['schema']['enum'].append('csv')
 
@@ -336,6 +338,14 @@ def get_oas_30(cfg):
             }
         }
 
+        # if CQL filter available for collection
+        if 'filters' in collections[k]:
+            paths[items_path]['get']['parameters'].\
+                append({'$ref': '#/components/parameters/filter'})
+            paths[items_path]['get']['parameters'].\
+                append({'$ref': '#/components/parameters/filter-lang'})
+            cql_filter_exists = True
+
         p = load_plugin('provider', collections[k]['provider'])
 
         if p.fields:
@@ -347,7 +357,7 @@ def get_oas_30(cfg):
                     'description': v['description'],
                     'tags': [k],
                     'parameters': [
-                        items_f,
+                        {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
                         200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -415,6 +425,831 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+    # if CQL filter is applicable
+    if cql_filter_exists:
+        paths['/queryables'] = {
+            'get': {
+                'summary': 'Feature Queryables',
+                'description': 'Feature Queryables',
+                'tags': ['server'],
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'responses': {
+                    200: {
+                        '$ref': '#/components/responses/Queryables'
+                    },  # noqa
+                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+            }
+        }
+
+        queryables_response = {
+            'description': 'Dataset Querables',
+            'content': {
+                'application/json': {
+                    'schema': {
+                        '$ref': '#/components/schemas/queryables'
+                    },
+                    'example': {
+                        'queryables': [
+                            {
+                                'queryable': 'elevation',
+                                'title': 'Elevation',
+                                'description': 'The average distance of the road segment above sea level.', # noqa
+                                'type': 'double'
+                            },
+                            {
+                                'queryable': 'nlanes',
+                                'title': 'Temperature',
+                                'description': 'The total number of lanes in all directions.', # noqa
+                                'type': 'integer'
+                            },
+                            {
+                                'queryable': 'geom',
+                                'title': 'Segment Geometry',
+                                'description': 'The geometry of the road segment', # noqa
+                                'type': 'linestring'
+                            },
+                            {
+                                'queryable': 'name',
+                                'title': 'Segment Name',
+                                'description': 'The common name of the road segment.', # noqa
+                                'type': 'string'
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        filter_lang_enum = ['cql-text', 'cql-json']
+
+        filter_extension = {
+            'description': 'The optional filter parameter to provide filters on the collection items', # noqa
+            'explode': False,
+            'in': 'query',
+            'name': 'filter',
+            'required': False,
+            'schema': {
+                'type': 'string'
+            },
+            'style': 'form'
+        }
+        filter_lang_extension = {
+            'description': 'The optional parameter to provide filter lang',
+            'explode': False,
+            'in': 'query',
+            'name': 'filter-lang',
+            'required': False,
+            'schema': {
+                'type': 'string',
+                'enum': filter_lang_enum,
+                'default': 'cql-text'
+            },
+            'style': 'form'
+        }
+
+        schemas = {
+            'queryables': {
+                'type': 'object',
+                'required': [
+                    'queryables'
+                ],
+                'properties': {
+                    'queryables': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'required': [
+                                'queryable',
+                                'type'
+                            ],
+                            'properties': {
+                                'queryable': {
+                                    'description': 'the token that may be used in a CQL predicate', # noqa
+                                    'type': 'string'
+                                },
+                                'title': {
+                                    'description': 'a human readble title for the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'description': {
+                                    'description': 'a human-readable narrative describing the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'language': {
+                                    'description': 'the language used for the title and description', # noqa
+                                    'type': 'string',
+                                    'default': [
+                                        'en'
+                                    ]
+                                },
+                                'type': {
+                                    'description': 'the data type of the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'type-ref': {
+                                    'description': 'a reference to the formal definition of the type', # noqa
+                                    'type': 'string',
+                                    'format': 'url'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            'predicates': {
+                'allOf': [
+                    {
+                        '$ref': '#/components/schemas/logicalExpression'
+                    },
+                    {
+                        '$ref': '#/components/schemas/comparisonExpressions'
+                    },
+                    {
+                        '$ref': '#/components/schemas/spatialExpressions'
+                    },
+                    {
+                        '$ref': '#/components/schemas/temporalExpressions'
+                    }
+                ],
+                'minProperties': 1,
+                'maxProperties': 1,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'logicalExpression': {
+                'properties': {
+                    'and': {
+                        '$ref': '#/components/schemas/and'
+                    },
+                    'or': {
+                        '$ref': '#/components/schemas/or'
+                    },
+                    'not': {
+                        '$ref': '#/components/schemas/not'
+                    }
+                },
+                'minProperties': 1,
+                'maxProperties': 1,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'comparisonExpressions': {
+                'properties': {
+                    'eq': {
+                        '$ref': '#/components/schemas/eq'
+                    },
+                    'lt': {
+                        '$ref': '#/components/schemas/lt'
+                    },
+                    'gt': {
+                        '$ref': '#/components/schemas/gt'
+                    },
+                    'lte': {
+                        '$ref': '#/components/schemas/lte'
+                    },
+                    'gte': {
+                        '$ref': '#/components/schemas/gte'
+                    },
+                    'between': {
+                        '$ref': '#/components/schemas/between'
+                    },
+                    'like': {
+                        '$ref': '#/components/schemas/like'
+                    },
+                    'in': {
+                        '$ref': '#/components/schemas/in'
+                    }
+                },
+                'minProperties': 1,
+                'maxProperties': 1,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'spatialExpressions': {
+                'properties': {
+                    'equals': {
+                        '$ref': '#/components/schemas/equals'
+                    },
+                    'disjoint': {
+                        '$ref': '#/components/schemas/disjoint'
+                    },
+                    'touches': {
+                        '$ref': '#/components/schemas/touches'
+                    },
+                    'within': {
+                        '$ref': '#/components/schemas/within'
+                    },
+                    'overlaps': {
+                        '$ref': '#/components/schemas/overlaps'
+                    },
+                    'crosses': {
+                        '$ref': '#/components/schemas/crosses'
+                    },
+                    'intersects': {
+                        '$ref': '#/components/schemas/intersects'
+                    },
+                    'contains': {
+                        '$ref': '#/components/schemas/contains'
+                    }
+                },
+                'minProperties': 1,
+                'maxProperties': 1,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'temporalExpressions': {
+                'properties': {
+                    'after': {
+                        '$ref': '#/components/schemas/after'
+                    },
+                    'before': {
+                        '$ref': '#/components/schemas/before'
+                    },
+                    'begins': {
+                        '$ref': '#/components/schemas/begins'
+                    },
+                    'begunby': {
+                        '$ref': '#/components/schemas/begunby'
+                    },
+                    'tcontains': {
+                        '$ref': '#/components/schemas/tcontains'
+                    },
+                    'during': {
+                        '$ref': '#/components/schemas/during'
+                    },
+                    'endedby': {
+                        '$ref': '#/components/schemas/endedby'
+                    },
+                    'ends': {
+                        '$ref': '#/components/schemas/ends'
+                    },
+                    'tequals': {
+                        '$ref': '#/components/schemas/tequals'
+                    },
+                    'meets': {
+                        '$ref': '#/components/schemas/meets'
+                    },
+                    'metby': {
+                        '$ref': '#/components/schemas/metby'
+                    },
+                    'toverlaps': {
+                        '$ref': '#/components/schemas/toverlaps'
+                    },
+                    'overlappedby': {
+                        '$ref': '#/components/schemas/overlappedby'
+                    }
+                },
+                'minProperties': 1,
+                'maxProperties': 1,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'and': {
+                '$ref': '#/components/schemas/booleanOperands'
+            },
+            'or': {
+                '$ref': '#/components/schemas/booleanOperands'
+            },
+            'not': {
+                '$ref': '#/components/schemas/predicates'
+            },
+            'eq': {
+                '$ref': '#/components/schemas/scalarOperands'
+            },
+            'lt': {
+                '$ref': '#/components/schemas/scalarOperands'
+            },
+            'gt': {
+                '$ref': '#/components/schemas/scalarOperands'
+            },
+            'lte': {
+                '$ref': '#/components/schemas/scalarOperands'
+            },
+            'gte': {
+                '$ref': '#/components/schemas/scalarOperands'
+            },
+            'between': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'lower': {
+                        '$ref': '#/components/schemas/scalarLiteral'
+                    },
+                    'upper': {
+                        '$ref': '#/components/schemas/scalarLiteral'
+                    }
+                },
+                'required': [
+                    'property',
+                    'lower',
+                    'upper'
+                ],
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'like': {
+                'properties': {
+                    'wildcard': {
+                        'default': '%',
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'singleChar': {
+                        'default': '_',
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'escape': {
+                        'default': '\\\\',
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'nocase': {
+                        'default': True,
+                        'nullable': False,
+                        'type': 'boolean'
+                    },
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'value': {
+                        '$ref': '#/components/schemas/scalarLiteral'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'in': {
+                'properties': {
+                    'nocase': {
+                        'default': True,
+                        'nullable': False,
+                        'type': 'boolean'
+                    },
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'values': {
+                        'items': {
+                            '$ref': '#/components/schemas/scalarLiteral'
+                        },
+                        'nullable': False,
+                        'type': 'array'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'equals': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'disjoint': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'touches': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'within': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'overlaps': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'crosses': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'intersects': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'contains': {
+                '$ref': '#/components/schemas/spatialOperands'
+            },
+            'after': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'before': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'begins': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'begunby': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'tcontains': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'during': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'endedby': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'ends': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'tequals': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'meets': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'metby': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'toverlaps': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'overlappedby': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'anyinteracts': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'tintersects': {
+                '$ref': '#/components/schemas/temporalOperands'
+            },
+            'booleanOperands': {
+                'items': {
+                    '$ref': '#/components/schemas/predicates',
+                    'minItems': 2
+                },
+                'nullable': False,
+                'type': 'array'
+            },
+            'arithmeticOperands': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'function': {
+                        '$ref': '#/components/schemas/function'
+                    },
+                    'value': {
+                        'nullable': False,
+                        'type': 'number'
+                    },
+                    '+': {
+                        '$ref': '#/components/schemas/add'
+                    },
+                    '-': {
+                        '$ref': '#/components/schemas/sub'
+                    },
+                    '*': {
+                        '$ref': '#/components/schemas/mul'
+                    },
+                    '/': {
+                        '$ref': '#/components/schemas/div'
+                    }
+                },
+                'minProperties': 2,
+                'maxProperties': 2,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'add': {
+                '$ref': '#/components/schemas/arithmeticOperands'
+            },
+            'sub': {
+                '$ref': '#/components/schemas/arithmeticOperands'
+            },
+            'mul': {
+                '$ref': '#/components/schemas/arithmeticOperands'
+            },
+            'div': {
+                '$ref': '#/components/schemas/arithmeticOperands'
+            },
+            'scalarOperands': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'function': {
+                        '$ref': '#/components/schemas/function'
+                    },
+                    'value': {
+                        '$ref': '#/components/schemas/scalarLiteral'
+                    },
+                    '+': {
+                        '$ref': '#/components/schemas/add'
+                    },
+                    '-': {
+                        '$ref': '#/components/schemas/sub'
+                    },
+                    '*': {
+                        '$ref': '#/components/schemas/mul'
+                    },
+                    '/': {
+                        '$ref': '#/components/schemas/div'
+                    }
+                },
+                'minProperties': 2,
+                'maxProperties': 2,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'spatialOperands': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'function': {
+                        '$ref': '#/components/schemas/function'
+                    },
+                    'value': {
+                        '$ref': '#/components/schemas/geometryLiteral'
+                    }
+                },
+                'minProperties': 2,
+                'maxProperties': 2,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'temporalOperands': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'function': {
+                        '$ref': '#/components/schemas/function'
+                    },
+                    'value': {
+                        '$ref': '#/components/schemas/temporalLiteral'
+                    }
+                },
+                'minProperties': 2,
+                'maxProperties': 2,
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'function': {
+                'properties': {
+                    'name': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'arguments': {
+                        'items': {
+                            'oneOf': [
+                                {
+                                    'nullable': False,
+                                    'type': 'string'
+                                },
+                                {
+                                    'nullable': False,
+                                    'type': 'number'
+                                },
+                                {
+                                    'nullable': False,
+                                    'type': 'boolean'
+                                },
+                                {
+                                    '$ref': '#/components/schemas/functionObjectArgument' # noqa
+                                }
+                            ]
+                        },
+                        'nullable': False,
+                        'type': 'array'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'functionObjectArgument': {
+                'properties': {
+                    'property': {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    'function': {
+                        '$ref': '#/components/schemas/function'
+                    },
+                    'geometry': {
+                        '$ref': '#/components/schemas/geometryLiteral'
+                    },
+                    'bbox': {
+                        '$ref': '#/components/schemas/bbox'
+                    },
+                    'temporalValue': {
+                        '$ref': '#/components/schemas/temporalLiteral'
+                    },
+                    '+': {
+                        '$ref': '#/components/schemas/add'
+                    },
+                    '-': {
+                        '$ref': '#/components/schemas/sub'
+                    },
+                    '*': {
+                        '$ref': '#/components/schemas/mul'
+                    },
+                    '/': {
+                        '$ref': '#/components/schemas/div'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'scalarLiteral': {
+                'oneOf': [
+                    {
+                        'nullable': False,
+                        'type': 'string'
+                    },
+                    {
+                        'nullable': False,
+                        'type': 'number'
+                    },
+                    {
+                        'nullable': False,
+                        'type': 'boolean'
+                    }
+                ]
+            },
+            'geometryLiteral': {
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'bbox': {
+                'items': {
+                    'minItems': 4,
+                    'maxItems': 6,
+                    'nullable': False,
+                    'type': 'number'
+                },
+                'nullable': False,
+                'type': 'array'
+            },
+            'envelopeLiteral': {
+                'properties': {
+                    'bbox': {
+                        '$ref': '#/components/schemas/bbox'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'temporalLiteral': {
+                'oneOf': [
+                    {
+                        '$ref': '#/components/schemas/timeLiteral'
+                    },
+                    {
+                        '$ref': '#/components/schemas/periodLiteral'
+                    }
+                ]
+            },
+            'timeLiteral': {
+                'pattern': '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-9][0-9](T[0-2][0-9]:[0-5][0-9]:[0-5][0-9](.[0-9]*)?)?', # noqa
+                'nullable': False,
+                'type': 'string'
+            },
+            'periodLiteral': {
+                'items': {
+                    '$ref': '#/components/schemas/timeLiteral',
+                    'minItems': 2,
+                    'maxItems': 2
+                },
+                'nullable': False,
+                'type': 'array'
+            },
+            'capabilities-assertion': {
+                'type': 'object',
+                'required': [
+                    'name',
+                    'operators'
+                ],
+                'properties': {
+                    'name': {
+                        'type': 'string',
+                        'enum': [
+                            'logical',
+                            'comparison',
+                            'spatial',
+                            'temporal',
+                            'arithmetic'
+                        ]
+                    },
+                    'operators': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'string'
+                        }
+                    },
+                    'operands': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'string'
+                        }
+                    }
+                }
+            },
+            'functionDescription': {
+                'type': 'object',
+                'properties': {
+                    'name': {
+                        'type': 'string'
+                    },
+                    'returns': {
+                        'type': 'object',
+                        'properties': {
+                            'type': {
+                                'type': 'string'
+                            },
+                            'typeRef': {
+                                'type': 'string',
+                                'format': 'uri'
+                            }
+                        }
+                    },
+                    'arguments': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'name': {
+                                    'type': 'string'
+                                },
+                                'type': {
+                                    'type': 'string'
+                                },
+                                'typeRef': {
+                                    'type': 'string',
+                                    'format': 'uri'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            'filter-capabilities': {
+                'required': [
+                    'conformance-classes',
+                    'capabilites'
+                ],
+                'properties': {
+                    'conformance-classes': {
+                        'items': {
+                            'format': 'uri',
+                            'nullable': False,
+                            'type': 'string'
+                        },
+                        'nullable': False,
+                        'type': 'array'
+                    },
+                    'capabilities': {
+                        'items': {
+                            '$ref': '#/components/schemas/capabilities-assertion' # noqa
+                        },
+                        'nullable': False,
+                        'type': 'array'
+                    },
+                    'functions': {
+                        'items': {
+                            '$ref': '#/components/schemas/functionDescription'
+                        },
+                        'nullable': False,
+                        'type': 'array'
+                    }
+                },
+                'nullable': False,
+                'type': 'object',
+                'additionalProperties': True
+            }
+        }
+
+        oas['components']['responses']['Queryables'] = queryables_response
+        oas['components']['parameters']['filter-lang'] = filter_lang_extension
+        oas['components']['parameters']['filter'] = filter_extension
+        oas['components']['schemas'] = schemas
 
     LOGGER.debug('setting up STAC')
     paths['/stac'] = {
