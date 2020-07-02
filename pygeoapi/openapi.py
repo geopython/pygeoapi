@@ -153,7 +153,7 @@ def get_oas_30(cfg):
             'summary': 'Landing page',
             'description': 'Landing page',
             'tags': ['server'],
-            'operationId': 'getRoot',
+            'operationId': 'getLandingPage',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
@@ -187,7 +187,7 @@ def get_oas_30(cfg):
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
             'tags': ['server'],
-            'operationId': 'getConformance',
+            'operationId': 'getConformanceDeclaration',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
@@ -310,7 +310,7 @@ def get_oas_30(cfg):
                 'summary': 'Get collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
-                'operationId': 'get{}Collection'.format(k.capitalize()),
+                'operationId': 'describe{}Collection'.format(k.capitalize()),
                 'parameters': [
                     {'$ref': '#/components/parameters/f'}
                 ],
@@ -330,7 +330,7 @@ def get_oas_30(cfg):
                 'summary': 'Get {} items'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
-                'operationId': 'get{}CollectionItems'.format(k.capitalize()),
+                'operationId': 'get{}Features'.format(k.capitalize()),
                 'parameters': [
                     items_f,
                     {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -415,7 +415,7 @@ def get_oas_30(cfg):
                 'summary': 'Get {} item by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
-                'operationId': 'get{}CollectionItem'.format(k.capitalize()),
+                'operationId': 'get{}Feature'.format(k.capitalize()),
                 'parameters': [
                     {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/f'}
@@ -435,7 +435,7 @@ def get_oas_30(cfg):
             'summary': 'SpatioTemporal Asset Catalog',
             'description': 'SpatioTemporal Asset Catalog',
             'tags': ['stac'],
-            'operationId': 'getSTACCatalog',
+            'operationId': 'getStacCatalog',
             'parameters': [],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
@@ -488,7 +488,7 @@ def get_oas_30(cfg):
                     'summary': 'Get process metadata',
                     'description': p.metadata['description'],
                     'tags': [k],
-                    'operationId': 'get{}Process'.format(k.capitalize()),
+                    'operationId': 'describe{}Process'.format(k.capitalize()),
                     'parameters': [
                         {'$ref': '#/components/parameters/f'}
                     ],
