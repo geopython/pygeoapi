@@ -257,7 +257,7 @@ def test_cql_paths(config, cql_paths, is_cql):
                     cql_paths['/collections/'+k+'/queryables']['get']
 
             # assertion for queryables response attributes
-            responses = [200, 400, 404, 500]
+            responses = ['200', '400', '404', '500']
             for response in responses:
                 assert response in cql_paths['/queryables']['get']['responses']
                 assert response in \
