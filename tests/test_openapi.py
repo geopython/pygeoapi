@@ -73,62 +73,60 @@ def get_oas_30_(config):
     return get_oas_30(config)
 
 
-def test_simple_transactions(get_oas_30_, config):
-    """assertions for simple transactions schemas in openapidoc"""
+@pytest.fixture()
+def components(get_oas_30_):
+    return get_oas_30_['components']
 
-    assert isinstance(get_oas_30_, dict)
-    components = get_oas_30_['components']
-    assert isinstance(components, dict)
-    schemas = components['schemas']
-    assert isinstance(schemas, dict)
-    paths = get_oas_30_['paths']
-    assert isinstance(paths, dict)
 
-    # ----------------------------- components --------------------------------
+@pytest.fixture()
+def schemas(components):
+    return components['schemas']
 
-    # assertion for nameValuePairObj schema
+
+@pytest.fixture()
+def paths(get_oas_30_):
+    return get_oas_30_['paths']
+
+
+@pytest.fixture()
+def collections(config):
+    return filter_dict_by_key_value(config['resources'],
+                                    'type',
+                                    'collection')
+
+
+def collection_path(k):
+    return '/collections/{}/items'.format(k)
+
+
+def item_path(k):
+    return '/collections/{}/items/{{featureId}}'.format(k)
+
+
+def supports_transactions(collection):
+    if 'transactions' not in collection['extents']:
+        return False
+    return collection['extents']['transactions']
+
+
+def test_nameValuePairObj(schemas):
     assert 'nameValuePairObj' in schemas
     assert 'name' in schemas['nameValuePairObj']['properties']
     assert 'value' in schemas['nameValuePairObj']['properties']
 
-    collections = filter_dict_by_key_value(config['resources'],
-                                           'type',
-                                           'collection')
 
-    for k, _ in collections.items():
+def test_post(collections, paths):
+    """assertions for post in openapidoc"""
+    for collectionName, collection in collections.items():
 
-        itemPath = '/collections/{}/items'.format(k)
-        fIdPath = '/collections/{}/items/{{featureId}}'.format(k)
+        verbs = paths[collection_path(collectionName)]
+        assert isinstance(verbs, dict)
 
-        items = paths[itemPath]
-        assert isinstance(items, dict)
-        feature = paths[fIdPath]
-        assert isinstance(feature, dict)
-
-        # data transactions are not specified
-        if 'transactions' not in collections[k]['extents']:
-
-            assert 'post' not in items
-            assert 'patch' not in feature
-            assert 'put' not in feature
-            assert 'delete' not in feature
-
-        # data transactions are disabled
-        elif collections[k]['extents']['transactions'] is False:
-
-            assert 'post' not in items
-            assert 'patch' not in feature
-            assert 'put' not in feature
-            assert 'delete' not in feature
-
-        # data transactions are enabled
-        elif collections[k]['extents']['transactions'] is True:
-
-            # -------------------------------- post ---------------------------
+        if supports_transactions(collection):
 
             # assertion for post
-            assert 'post' in items
-            post = items['post']
+            assert 'post' in verbs
+            post = verbs['post']
             assert isinstance(post, dict)
 
             # assertion for post attributes
@@ -168,11 +166,23 @@ def test_simple_transactions(get_oas_30_, config):
             for attrib in postRespAttrib:
                 assert attrib in postResp
 
-            # -------------------------------- patch --------------------------
+    else:
+
+        assert 'post' not in verbs
+
+
+def test_patch(collections, paths):
+    """assertions for patch in openapidoc"""
+    for collectionName, collection in collections.items():
+
+        verbs = paths[item_path(collectionName)]
+        assert isinstance(verbs, dict)
+
+        if supports_transactions(collection):
 
             # assertion for patch
-            assert 'patch' in feature
-            patch = feature['patch']
+            assert 'patch' in verbs
+            patch = verbs['patch']
             assert isinstance(patch, dict)
 
             # assertion for patch attributes
@@ -214,11 +224,23 @@ def test_simple_transactions(get_oas_30_, config):
             for attrib in patchRespAttrib:
                 assert attrib in patchResp
 
-            # --------------------------------- put ---------------------------
+    else:
+
+        assert 'patch' not in verbs
+
+
+def test_put(collections, paths):
+    """assertions for put in openapidoc"""
+    for collectionName, collection in collections.items():
+
+        verbs = paths[item_path(collectionName)]
+        assert isinstance(verbs, dict)
+
+        if supports_transactions(collection):
 
             # assertion for put
-            assert 'put' in feature
-            put = feature['put']
+            assert 'put' in verbs
+            put = verbs['put']
             assert isinstance(put, dict)
 
             # assertion for put attributes
@@ -260,11 +282,23 @@ def test_simple_transactions(get_oas_30_, config):
             for attrib in putRespAttrib:
                 assert attrib in putResp
 
-            # -------------------------------- delete -------------------------
+    else:
+
+        assert 'put' not in verbs
+
+
+def test_delete(collections, paths):
+    """assertions for delete in openapidoc"""
+    for collectionName, collection in collections.items():
+
+        verbs = paths[item_path(collectionName)]
+        assert isinstance(verbs, dict)
+
+        if supports_transactions(collection):
 
             # assertion for delete
-            assert 'delete' in feature
-            delete = feature['delete']
+            assert 'delete' in verbs
+            delete = verbs['delete']
             assert isinstance(delete, dict)
 
             # assertion for delete attributes
@@ -285,3 +319,7 @@ def test_simple_transactions(get_oas_30_, config):
             assert isinstance(deleteResp, dict)
             for attrib in deleteRespAttrib:
                 assert attrib in deleteResp
+
+        else:
+
+            assert 'delete' not in verbs
