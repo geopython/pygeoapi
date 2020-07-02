@@ -105,6 +105,7 @@ resources:
               href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
               hreflang: en-US
         extents:
+            transactions: true
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
