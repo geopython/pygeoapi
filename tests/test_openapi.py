@@ -151,10 +151,10 @@ def post_schema_assertions(verbs):
         assert attrib in postReqContentSchema['properties']
 
     # assertion for post response attributes
-    postRespAttrib = [201,
-                      400,
-                      404,
-                      500]
+    postRespAttrib = ['201',
+                      '400',
+                      '404',
+                      '500']
     postResp = post['responses']
     for attrib in postRespAttrib:
         assert attrib in postResp
@@ -197,10 +197,10 @@ def patch_schema_assertions(verbs):
         assert attrib in patchReqContentSchema['properties']
 
     # assertion for patch response attributes
-    patchRespAttrib = [200,
-                       400,
-                       404,
-                       500]
+    patchRespAttrib = ['200',
+                       '400',
+                       '404',
+                       '500']
     patchResp = patch['responses']
     assert isinstance(patchResp, dict)
     for attrib in patchRespAttrib:
@@ -244,10 +244,10 @@ def put_schema_assertions(verbs):
         assert attrib in putReqContentSchema['properties']
 
     # assertion for put response attributes
-    putRespAttrib = [200,
-                     400,
-                     404,
-                     500]
+    putRespAttrib = ['200',
+                     '400',
+                     '404',
+                     '500']
     putResp = put['responses']
     assert isinstance(putResp, dict)
     for attrib in putRespAttrib:
@@ -272,10 +272,10 @@ def delete_schema_assertions(verbs):
         assert attrib in delete
 
     # assertion for delete response attributes
-    deleteRespAttrib = [200,
-                        400,
-                        404,
-                        500]
+    deleteRespAttrib = ['200',
+                        '400',
+                        '404',
+                        '500']
     deleteResp = delete['responses']
     assert isinstance(deleteResp, dict)
     for attrib in deleteRespAttrib:
