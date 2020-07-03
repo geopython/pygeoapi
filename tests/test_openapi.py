@@ -95,12 +95,12 @@ def collections(config):
                                     'collection')
 
 
-def collection_path(k):
-    return '/collections/{}/items'.format(k)
+def items_path(collName):
+    return '/collections/{}/items'.format(collName)
 
 
-def item_path(k):
-    return '/collections/{}/items/{{featureId}}'.format(k)
+def item_path(collName):
+    return '/collections/{}/items/{{featureId}}'.format(collName)
 
 
 def supports_transactions(collection):
@@ -115,211 +115,198 @@ def test_nameValuePairObj(schemas):
     assert 'value' in schemas['nameValuePairObj']['properties']
 
 
-def test_post(collections, paths):
+def post_schema_assertions(verbs):
     """assertions for post in openapidoc"""
-    for collectionName, collection in collections.items():
+    # assertion for post
+    assert 'post' in verbs
+    post = verbs['post']
+    assert isinstance(post, dict)
 
-        verbs = paths[collection_path(collectionName)]
-        assert isinstance(verbs, dict)
+    # assertion for post attributes
+    postAttrib = ['summary',
+                  'description',
+                  'tags',
+                  'requestBody',
+                  'responses']
+    for attrib in postAttrib:
+        assert attrib in post
 
-        if supports_transactions(collection):
+    # assertion for post request attributes
+    postReqAttrib = ['required',
+                     'content']
+    postReq = post['requestBody']
+    assert isinstance(postReq, dict)
+    for attrib in postReqAttrib:
+        assert attrib in postReq
 
-            # assertion for post
-            assert 'post' in verbs
-            post = verbs['post']
-            assert isinstance(post, dict)
+    # assertion for post request content attributes
+    postReqContentAttrib = ['type',
+                            'geometry',
+                            'properties']
+    postReqContent = postReq['content']['application/geo+json']
+    assert isinstance(postReqContent, dict)
+    postReqContentSchema = postReqContent['schema']
+    assert isinstance(postReqContentSchema, dict)
+    for attrib in postReqContentAttrib:
+        assert attrib in postReqContentSchema['properties']
 
-            # assertion for post attributes
-            postAttrib = ['summary',
-                          'description',
-                          'tags',
-                          'requestBody',
-                          'responses']
-            for attrib in postAttrib:
-                assert attrib in post
-
-            # assertion for post request attributes
-            postReqAttrib = ['required',
-                             'content']
-            postReq = post['requestBody']
-            assert isinstance(postReq, dict)
-            for attrib in postReqAttrib:
-                assert attrib in postReq
-
-            # assertion for post request content attributes
-            postReqContentAttrib = ['type',
-                                    'geometry',
-                                    'properties']
-            postReqContent = postReq['content']['application/geo+json']
-            assert isinstance(postReqContent, dict)
-            postReqContentSchema = postReqContent['schema']
-            assert isinstance(postReqContentSchema, dict)
-            for attrib in postReqContentAttrib:
-                assert attrib in postReqContentSchema['properties']
-
-            # assertion for post response attributes
-            postRespAttrib = [201,
-                              400,
-                              404,
-                              500]
-            postResp = post['responses']
-            for attrib in postRespAttrib:
-                assert attrib in postResp
-
-    else:
-
-        assert 'post' not in verbs
+    # assertion for post response attributes
+    postRespAttrib = [201,
+                      400,
+                      404,
+                      500]
+    postResp = post['responses']
+    for attrib in postRespAttrib:
+        assert attrib in postResp
 
 
-def test_patch(collections, paths):
+def patch_schema_assertions(verbs):
     """assertions for patch in openapidoc"""
-    for collectionName, collection in collections.items():
+    # assertion for patch
+    assert 'patch' in verbs
+    patch = verbs['patch']
+    assert isinstance(patch, dict)
 
-        verbs = paths[item_path(collectionName)]
-        assert isinstance(verbs, dict)
+    # assertion for patch attributes
+    patchAttrib = ['summary',
+                   'description',
+                   'tags',
+                   'parameters',
+                   'requestBody',
+                   'responses']
+    for attrib in patchAttrib:
+        assert attrib in patch
 
-        if supports_transactions(collection):
+    # assertion for patch request attributes
+    patchReqAttrib = ['required',
+                      'content']
+    patchReq = patch['requestBody']
+    assert isinstance(patchReq, dict)
+    for attrib in patchReqAttrib:
+        assert attrib in patchReq
 
-            # assertion for patch
-            assert 'patch' in verbs
-            patch = verbs['patch']
-            assert isinstance(patch, dict)
+    # assertion for patch request content attributes
+    patchReqContentAttrib = ['add',
+                             'modify',
+                             'remove']
+    patchReqContent = patchReq['content']['application/json']
+    assert isinstance(patchReqContent, dict)
+    patchReqContentSchema = patchReqContent['schema']
+    assert isinstance(patchReqContentSchema, dict)
+    for attrib in patchReqContentAttrib:
+        assert attrib in patchReqContentSchema['properties']
 
-            # assertion for patch attributes
-            patchAttrib = ['summary',
-                           'description',
-                           'tags',
-                           'parameters',
-                           'requestBody',
-                           'responses']
-            for attrib in patchAttrib:
-                assert attrib in patch
-
-            # assertion for patch request attributes
-            patchReqAttrib = ['required',
-                              'content']
-            patchReq = patch['requestBody']
-            assert isinstance(patchReq, dict)
-            for attrib in patchReqAttrib:
-                assert attrib in patchReq
-
-            # assertion for patch request content attributes
-            patchReqContentAttrib = ['add',
-                                     'modify',
-                                     'remove']
-            patchReqContent = patchReq['content']['application/json']
-            assert isinstance(patchReqContent, dict)
-            patchReqContentSchema = patchReqContent['schema']
-            assert isinstance(patchReqContentSchema, dict)
-            for attrib in patchReqContentAttrib:
-                assert attrib in patchReqContentSchema['properties']
-
-            # assertion for patch response attributes
-            patchRespAttrib = [200,
-                               400,
-                               404,
-                               500]
-            patchResp = patch['responses']
-            assert isinstance(patchResp, dict)
-            for attrib in patchRespAttrib:
-                assert attrib in patchResp
-
-    else:
-
-        assert 'patch' not in verbs
+    # assertion for patch response attributes
+    patchRespAttrib = [200,
+                       400,
+                       404,
+                       500]
+    patchResp = patch['responses']
+    assert isinstance(patchResp, dict)
+    for attrib in patchRespAttrib:
+        assert attrib in patchResp
 
 
-def test_put(collections, paths):
+def put_schema_assertions(verbs):
     """assertions for put in openapidoc"""
-    for collectionName, collection in collections.items():
+    # assertion for put
+    assert 'put' in verbs
+    put = verbs['put']
+    assert isinstance(put, dict)
 
-        verbs = paths[item_path(collectionName)]
-        assert isinstance(verbs, dict)
+    # assertion for put attributes
+    putAttrib = ['summary',
+                 'description',
+                 'tags',
+                 'parameters',
+                 'requestBody',
+                 'responses']
+    for attrib in putAttrib:
+        assert attrib in put
 
-        if supports_transactions(collection):
+    # assertion for put request attributes
+    putReqAttrib = ['required',
+                    'content']
+    putReq = put['requestBody']
+    assert isinstance(putReq, dict)
+    for attrib in putReqAttrib:
+        assert attrib in putReq
 
-            # assertion for put
-            assert 'put' in verbs
-            put = verbs['put']
-            assert isinstance(put, dict)
+    # assertion for put request content attributes
+    putReqContentAttrib = ['type',
+                           'geometry',
+                           'properties']
+    putReqContent = putReq['content']['application/geo+json']
+    assert isinstance(putReqContent, dict)
+    putReqContentSchema = putReqContent['schema']
+    assert isinstance(putReqContentSchema, dict)
+    for attrib in putReqContentAttrib:
+        assert attrib in putReqContentSchema['properties']
 
-            # assertion for put attributes
-            putAttrib = ['summary',
-                         'description',
-                         'tags',
-                         'parameters',
-                         'requestBody',
-                         'responses']
-            for attrib in putAttrib:
-                assert attrib in put
-
-            # assertion for put request attributes
-            putReqAttrib = ['required',
-                            'content']
-            putReq = put['requestBody']
-            assert isinstance(putReq, dict)
-            for attrib in putReqAttrib:
-                assert attrib in putReq
-
-            # assertion for put request content attributes
-            putReqContentAttrib = ['type',
-                                   'geometry',
-                                   'properties']
-            putReqContent = putReq['content']['application/geo+json']
-            assert isinstance(putReqContent, dict)
-            putReqContentSchema = putReqContent['schema']
-            assert isinstance(putReqContentSchema, dict)
-            for attrib in putReqContentAttrib:
-                assert attrib in putReqContentSchema['properties']
-
-            # assertion for put response attributes
-            putRespAttrib = [200,
-                             400,
-                             404,
-                             500]
-            putResp = put['responses']
-            assert isinstance(putResp, dict)
-            for attrib in putRespAttrib:
-                assert attrib in putResp
-
-    else:
-
-        assert 'put' not in verbs
+    # assertion for put response attributes
+    putRespAttrib = [200,
+                     400,
+                     404,
+                     500]
+    putResp = put['responses']
+    assert isinstance(putResp, dict)
+    for attrib in putRespAttrib:
+        assert attrib in putResp
 
 
-def test_delete(collections, paths):
+def delete_schema_assertions(verbs):
     """assertions for delete in openapidoc"""
-    for collectionName, collection in collections.items():
 
-        verbs = paths[item_path(collectionName)]
-        assert isinstance(verbs, dict)
+    # assertion for delete
+    assert 'delete' in verbs
+    delete = verbs['delete']
+    assert isinstance(delete, dict)
 
-        if supports_transactions(collection):
+    # assertion for delete attributes
+    deleteAttrib = ['summary',
+                    'description',
+                    'tags',
+                    'parameters',
+                    'responses']
+    for attrib in deleteAttrib:
+        assert attrib in delete
 
-            # assertion for delete
-            assert 'delete' in verbs
-            delete = verbs['delete']
-            assert isinstance(delete, dict)
+    # assertion for delete response attributes
+    deleteRespAttrib = [200,
+                        400,
+                        404,
+                        500]
+    deleteResp = delete['responses']
+    assert isinstance(deleteResp, dict)
+    for attrib in deleteRespAttrib:
+        assert attrib in deleteResp
 
-            # assertion for delete attributes
-            deleteAttrib = ['summary',
-                            'description',
-                            'tags',
-                            'parameters',
-                            'responses']
-            for attrib in deleteAttrib:
-                assert attrib in delete
 
-            # assertion for delete response attributes
-            deleteRespAttrib = [200,
-                                400,
-                                404,
-                                500]
-            deleteResp = delete['responses']
-            assert isinstance(deleteResp, dict)
-            for attrib in deleteRespAttrib:
-                assert attrib in deleteResp
+def check_transaction_schemas_present(collName, paths):
+    itemsPathVerbs = paths[items_path(collName)]
+    post_schema_assertions(itemsPathVerbs)
+
+    itemPathVerbs = paths[item_path(collName)]
+    patch_schema_assertions(itemPathVerbs)
+    put_schema_assertions(itemPathVerbs)
+    delete_schema_assertions(itemPathVerbs)
+
+
+def check_transaction_schemas_abscent(collName, paths):
+    itemsPathVerbs = paths[items_path(collName)]
+    assert 'post' not in itemsPathVerbs
+
+    itemPathVerbs = paths[item_path(collName)]
+    assert 'patch' not in itemPathVerbs
+    assert 'put' not in itemPathVerbs
+    assert 'delete' not in itemPathVerbs
+
+
+def test_transaction_a_b(collections, paths):
+    for collName, collCont in collections.items():
+
+        if supports_transactions(collCont):
+            check_transaction_schemas_present(collName, paths)
 
         else:
-
-            assert 'delete' not in verbs
+            check_transaction_schemas_abscent(collName, paths)
