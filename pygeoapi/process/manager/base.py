@@ -121,6 +121,26 @@ class BaseManager(object):
 
         raise NotImplementedError()
 
+    def _execute_handler_async(self, p, job_id, data_dict):
+        """
+        This private execution handler executes a process in a background thread
+        using multiprocessing.dummy
+        https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.dummy
+
+        :param p: `pygeoapi.process` object
+        :param job_id: job identifier
+        :param data_dict: `dict` of data parameters
+
+        :returns: tuple of None (i.e. initial response payload)
+                  and JobStatus.accepted (i.e. initial job status)
+        """
+        _process = dummy.Process(
+            target=self._execute_handler,
+            args=(p, job_id, data_dict)
+        )
+        _process.start()
+        return None, JobStatus.accepted
+
     def _execute_handler(self, p, job_id, data_dict):
         """
         This private exeution handler writes output to disk as a process output
@@ -216,12 +236,7 @@ class BaseManager(object):
             return self._execute_handler(p, job_id, data_dict)
 
         LOGGER.debug('Asynchronous execution')
-        _process = dummy.Process(
-            target=self._execute_handler,
-            args=(p, job_id, data_dict)
-        )
-        _process.start()
-        return None, JobStatus.accepted
+        return self._execute_handler_async(p, job_id, data_dict)
 
     def get_job_status(self, p, job_id, data_dict):
         """
