@@ -55,7 +55,11 @@ def test_str2bool():
 
 
 def get_test_file_path(filename):
-    """helper function to open test file safely"""
+    """
+    Helper function to open test file safely
+    :param filename: file path
+    :returns: corrected file path
+    """
     if os.path.isfile(filename):
         return filename
     else:
@@ -64,249 +68,323 @@ def get_test_file_path(filename):
 
 @pytest.fixture()
 def config():
+    """
+    Get pygeoapi configuration
+    :returns: pygeoapi configuration dict
+    """
     with open(get_test_file_path('pygeoapi-config-local-openapi.yml')) as fh:
         return yaml_load(fh)
 
 
 @pytest.fixture()
 def get_oas_30_(config):
+    """
+    Generate OpenAPI 3.0 document from pygeoapi configuration
+    :param config: pygeoapi configuration dict
+    :returns: OpenAPI definition dict
+    """
     return get_oas_30(config)
 
 
 @pytest.fixture()
 def components(get_oas_30_):
+    """
+    Get components from OpenAPI document
+    :param get_oas_30_: OpenAPI definition dict
+    :returns: components dict
+    """
     return get_oas_30_['components']
 
 
 @pytest.fixture()
 def schemas(components):
+    """
+    Get schemas from components
+    :param components: components dict
+    :returns: schemas dict
+    """
     return components['schemas']
 
 
 @pytest.fixture()
 def paths(get_oas_30_):
+    """
+    Get paths from OpenAPI document
+    :param get_oas_30_: OpenAPI definition dict
+    :returns: paths dict
+    """
     return get_oas_30_['paths']
 
 
 @pytest.fixture()
 def collections(config):
+    """
+    Get collections from pygeoapi configuration
+    :param config: pygeoapi configuration dict
+    :returns: collections dict
+    """
     return filter_dict_by_key_value(config['resources'],
                                     'type',
                                     'collection')
 
 
-def items_path(collName):
-    return '/collections/{}/items'.format(collName)
+def items_path(coll_name):
+    """
+    Generate items path from collection name
+    :param coll_name: collection name
+    :returns: items path
+    """
+    return '/collections/{}/items'.format(coll_name)
 
 
-def item_path(collName):
-    return '/collections/{}/items/{{featureId}}'.format(collName)
+def item_path(coll_name):
+    """
+    Generate item path from collection name
+    :param coll_name: collection name
+    :returns: item path
+    """
+    return '/collections/{}/items/{{featureId}}'.format(coll_name)
 
 
 def supports_transactions(collection):
+    """
+    Check if given collection supports transactions
+    :param collection: collection dict
+    :returns: boolean value
+    """
     if 'transactions' not in collection['extents']:
         return False
     return collection['extents']['transactions']
 
 
-def test_nameValuePairObj(schemas):
+def test_name_value_pair_obj(schemas):
+    """
+    Assertions for nameValuePairObj in OpenAPI document
+    :param schemas: schemas dict
+    """
     assert 'nameValuePairObj' in schemas
     assert 'name' in schemas['nameValuePairObj']['properties']
     assert 'value' in schemas['nameValuePairObj']['properties']
 
 
 def post_schema_assertions(verbs):
-    """assertions for post in openapidoc"""
+    """
+    Assertions for post schema in OpenAPI document
+    :param verbs: verbs dict
+    """
     # assertion for post
     assert 'post' in verbs
     post = verbs['post']
     assert isinstance(post, dict)
 
     # assertion for post attributes
-    postAttrib = ['summary',
-                  'description',
-                  'tags',
-                  'requestBody',
-                  'responses']
-    for attrib in postAttrib:
+    post_attrib = ['summary',
+                   'description',
+                   'tags',
+                   'requestBody',
+                   'responses']
+    for attrib in post_attrib:
         assert attrib in post
 
     # assertion for post request attributes
-    postReqAttrib = ['required',
-                     'content']
-    postReq = post['requestBody']
-    assert isinstance(postReq, dict)
-    for attrib in postReqAttrib:
-        assert attrib in postReq
+    post_req_attrib = ['required',
+                       'content']
+    post_req = post['requestBody']
+    assert isinstance(post_req, dict)
+    for attrib in post_req_attrib:
+        assert attrib in post_req
 
     # assertion for post request content attributes
-    postReqContentAttrib = ['type',
-                            'geometry',
-                            'properties']
-    postReqContent = postReq['content']['application/geo+json']
-    assert isinstance(postReqContent, dict)
-    postReqContentSchema = postReqContent['schema']
-    assert isinstance(postReqContentSchema, dict)
-    for attrib in postReqContentAttrib:
-        assert attrib in postReqContentSchema['properties']
+    post_req_content_attrib = ['type',
+                               'geometry',
+                               'properties']
+    post_req_content = post_req['content']['application/geo+json']
+    assert isinstance(post_req_content, dict)
+    post_req_content_schema = post_req_content['schema']
+    assert isinstance(post_req_content_schema, dict)
+    for attrib in post_req_content_attrib:
+        assert attrib in post_req_content_schema['properties']
 
     # assertion for post response attributes
-    postRespAttrib = ['201',
-                      '400',
-                      '404',
-                      '500']
-    postResp = post['responses']
-    for attrib in postRespAttrib:
-        assert attrib in postResp
+    post_resp_attrib = ['201',
+                        '400',
+                        '404',
+                        '500']
+    post_resp = post['responses']
+    for attrib in post_resp_attrib:
+        assert attrib in post_resp
 
 
 def patch_schema_assertions(verbs):
-    """assertions for patch in openapidoc"""
+    """
+    Assertions for patch schema in OpenAPI document
+    :param verbs: verbs dict
+    """
     # assertion for patch
     assert 'patch' in verbs
     patch = verbs['patch']
     assert isinstance(patch, dict)
 
     # assertion for patch attributes
-    patchAttrib = ['summary',
-                   'description',
-                   'tags',
-                   'parameters',
-                   'requestBody',
-                   'responses']
-    for attrib in patchAttrib:
+    patch_attrib = ['summary',
+                    'description',
+                    'tags',
+                    'parameters',
+                    'requestBody',
+                    'responses']
+    for attrib in patch_attrib:
         assert attrib in patch
 
     # assertion for patch request attributes
-    patchReqAttrib = ['required',
-                      'content']
-    patchReq = patch['requestBody']
-    assert isinstance(patchReq, dict)
-    for attrib in patchReqAttrib:
-        assert attrib in patchReq
+    patch_req_attrib = ['required',
+                        'content']
+    patch_req = patch['requestBody']
+    assert isinstance(patch_req, dict)
+    for attrib in patch_req_attrib:
+        assert attrib in patch_req
 
     # assertion for patch request content attributes
-    patchReqContentAttrib = ['add',
-                             'modify',
-                             'remove']
-    patchReqContent = patchReq['content']['application/json']
-    assert isinstance(patchReqContent, dict)
-    patchReqContentSchema = patchReqContent['schema']
-    assert isinstance(patchReqContentSchema, dict)
-    for attrib in patchReqContentAttrib:
-        assert attrib in patchReqContentSchema['properties']
+    patch_req_content_attrib = ['add',
+                                'modify',
+                                'remove']
+    patch_req_content = patch_req['content']['application/json']
+    assert isinstance(patch_req_content, dict)
+    patch_req_content_schema = patch_req_content['schema']
+    assert isinstance(patch_req_content_schema, dict)
+    for attrib in patch_req_content_attrib:
+        assert attrib in patch_req_content_schema['properties']
 
     # assertion for patch response attributes
-    patchRespAttrib = ['200',
-                       '400',
-                       '404',
-                       '500']
-    patchResp = patch['responses']
-    assert isinstance(patchResp, dict)
-    for attrib in patchRespAttrib:
-        assert attrib in patchResp
+    patch_resp_attrib = ['200',
+                         '400',
+                         '404',
+                         '500']
+    patch_resp = patch['responses']
+    assert isinstance(patch_resp, dict)
+    for attrib in patch_resp_attrib:
+        assert attrib in patch_resp
 
 
 def put_schema_assertions(verbs):
-    """assertions for put in openapidoc"""
+    """
+    Assertions for put schema in OpenAPI document
+    :param verbs: verbs dict
+    """
     # assertion for put
     assert 'put' in verbs
     put = verbs['put']
     assert isinstance(put, dict)
 
     # assertion for put attributes
-    putAttrib = ['summary',
-                 'description',
-                 'tags',
-                 'parameters',
-                 'requestBody',
-                 'responses']
-    for attrib in putAttrib:
+    put_attrib = ['summary',
+                  'description',
+                  'tags',
+                  'parameters',
+                  'requestBody',
+                  'responses']
+    for attrib in put_attrib:
         assert attrib in put
 
     # assertion for put request attributes
-    putReqAttrib = ['required',
-                    'content']
-    putReq = put['requestBody']
-    assert isinstance(putReq, dict)
-    for attrib in putReqAttrib:
-        assert attrib in putReq
+    put_req_attrib = ['required',
+                      'content']
+    put_req = put['requestBody']
+    assert isinstance(put_req, dict)
+    for attrib in put_req_attrib:
+        assert attrib in put_req
 
     # assertion for put request content attributes
-    putReqContentAttrib = ['type',
-                           'geometry',
-                           'properties']
-    putReqContent = putReq['content']['application/geo+json']
-    assert isinstance(putReqContent, dict)
-    putReqContentSchema = putReqContent['schema']
-    assert isinstance(putReqContentSchema, dict)
-    for attrib in putReqContentAttrib:
-        assert attrib in putReqContentSchema['properties']
+    put_req_content_attrib = ['type',
+                              'geometry',
+                              'properties']
+    put_req_content = put_req['content']['application/geo+json']
+    assert isinstance(put_req_content, dict)
+    put_req_content_schema = put_req_content['schema']
+    assert isinstance(put_req_content_schema, dict)
+    for attrib in put_req_content_attrib:
+        assert attrib in put_req_content_schema['properties']
 
     # assertion for put response attributes
-    putRespAttrib = ['200',
-                     '400',
-                     '404',
-                     '500']
-    putResp = put['responses']
-    assert isinstance(putResp, dict)
-    for attrib in putRespAttrib:
-        assert attrib in putResp
+    put_resp_attrib = ['200',
+                       '400',
+                       '404',
+                       '500']
+    put_resp = put['responses']
+    assert isinstance(put_resp, dict)
+    for attrib in put_resp_attrib:
+        assert attrib in put_resp
 
 
 def delete_schema_assertions(verbs):
-    """assertions for delete in openapidoc"""
-
+    """
+    Assertions for delete schema in OpenAPI document
+    :param verbs: verbs dict
+    """
     # assertion for delete
     assert 'delete' in verbs
     delete = verbs['delete']
     assert isinstance(delete, dict)
 
     # assertion for delete attributes
-    deleteAttrib = ['summary',
-                    'description',
-                    'tags',
-                    'parameters',
-                    'responses']
-    for attrib in deleteAttrib:
+    delete_attrib = ['summary',
+                     'description',
+                     'tags',
+                     'parameters',
+                     'responses']
+    for attrib in delete_attrib:
         assert attrib in delete
 
     # assertion for delete response attributes
-    deleteRespAttrib = ['200',
-                        '400',
-                        '404',
-                        '500']
-    deleteResp = delete['responses']
-    assert isinstance(deleteResp, dict)
-    for attrib in deleteRespAttrib:
-        assert attrib in deleteResp
+    delete_resp_attrib = ['200',
+                          '400',
+                          '404',
+                          '500']
+    delete_resp = delete['responses']
+    assert isinstance(delete_resp, dict)
+    for attrib in delete_resp_attrib:
+        assert attrib in delete_resp
 
 
-def check_transaction_schemas_present(collName, paths):
-    itemsPathVerbs = paths[items_path(collName)]
-    post_schema_assertions(itemsPathVerbs)
+def check_transaction_schemas_present(coll_name, paths):
+    """
+    Assertions for precense of transaction schemas
+    :param coll_name: collection name
+    :param paths: paths dict
+    """
+    items_path_verbs = paths[items_path(coll_name)]
+    post_schema_assertions(items_path_verbs)
 
-    itemPathVerbs = paths[item_path(collName)]
-    patch_schema_assertions(itemPathVerbs)
-    put_schema_assertions(itemPathVerbs)
-    delete_schema_assertions(itemPathVerbs)
+    item_path_verbs = paths[item_path(coll_name)]
+    patch_schema_assertions(item_path_verbs)
+    put_schema_assertions(item_path_verbs)
+    delete_schema_assertions(item_path_verbs)
 
 
-def check_transaction_schemas_abscent(collName, paths):
-    itemsPathVerbs = paths[items_path(collName)]
-    assert 'post' not in itemsPathVerbs
+def check_transaction_schemas_abscent(coll_name, paths):
+    """
+    Assertions for abcense of transaction schemas
+    :param coll_name: collection name
+    :param paths: paths dict
+    """
+    items_path_verbs = paths[items_path(coll_name)]
+    assert 'post' not in items_path_verbs
 
-    itemPathVerbs = paths[item_path(collName)]
-    assert 'patch' not in itemPathVerbs
-    assert 'put' not in itemPathVerbs
-    assert 'delete' not in itemPathVerbs
+    item_path_verbs = paths[item_path(coll_name)]
+    assert 'patch' not in item_path_verbs
+    assert 'put' not in item_path_verbs
+    assert 'delete' not in item_path_verbs
 
 
 def test_transaction_a_b(collections, paths):
-    for collName, collCont in collections.items():
+    """
+    Assertions for transaction schemas in OpenAPI document
+    :param collections: collections dict
+    :param paths: paths dict
+    """
+    for coll_name, coll_cont in collections.items():
 
-        if supports_transactions(collCont):
-            check_transaction_schemas_present(collName, paths)
+        if supports_transactions(coll_cont):
+            check_transaction_schemas_present(coll_name, paths)
 
         else:
-            check_transaction_schemas_abscent(collName, paths)
+            check_transaction_schemas_abscent(coll_name, paths)
