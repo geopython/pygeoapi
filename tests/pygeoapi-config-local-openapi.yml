@@ -111,6 +111,7 @@ resources:
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
+        extensions:
             transactions: true
         provider:
             name: CSV
@@ -139,7 +140,8 @@ resources:
             temporal:
                 begin: 2011-11-11
                 end: null  # or empty (either means open ended)
-                transactions: false
+        extensions:
+            transactions: false
         provider:
             name: GeoJSON
             data: tests/data/ne_110m_lakes.geojson

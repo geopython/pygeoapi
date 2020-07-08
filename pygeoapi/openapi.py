@@ -373,9 +373,10 @@ def get_oas_30(cfg):
         nvpo = '#/components/schemas/nameValuePairObj'
 
         # flag if data transactions is specified and enabled for the collection
-        if 'transactions' in collections[k]['extents']:
-            if collections[k]['extents']['transactions'] is True:
-                transaction = True
+        if 'extensions' in collections[k]:
+            if 'transactions' in collections[k]['extensions']:
+                if collections[k]['extensions']['transactions']:
+                    transaction = True
 
         items_path = '{}/items'.format(collection_name_path)
 

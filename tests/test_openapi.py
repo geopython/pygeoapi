@@ -152,9 +152,11 @@ def supports_transactions(collection):
     :param collection: collection dict
     :returns: boolean value
     """
-    if 'transactions' not in collection['extents']:
+    if 'extensions' not in collection:
         return False
-    return collection['extents']['transactions']
+    if 'transactions' not in collection['extensions']:
+        return False
+    return collection['extensions']['transactions']
 
 
 def test_name_value_pair_obj(schemas):
