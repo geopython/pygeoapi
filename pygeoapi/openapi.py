@@ -216,6 +216,25 @@ def get_oas_30(cfg):
         }
     }
 
+    paths['/queryables'] = {
+        'get': {
+            'summary': 'Feature Queryables',
+            'description': 'Feature Queryables',
+            'tags': ['server'],
+            'parameters': [
+                {'$ref': '#/components/parameters/f'}
+            ],
+            'responses': {
+                '200': {
+                    '$ref': '#/components/responses/Queryables'
+                },  # noqa
+                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+            }
+        }
+    }
+
     oas['tags'].append({
             'name': 'server',
             'description': cfg['metadata']['identification']['description'],
@@ -238,6 +257,45 @@ def get_oas_30(cfg):
             'default': {
                 'description': 'Unexpected error',
                 'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
+            },
+            'Queryables':
+            {
+                'description': 'Dataset Querables',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/queryables'
+                        },
+                        'example': {
+                            'queryables': [
+                                {
+                                    'queryable': 'elevation',
+                                    'title': 'Elevation',
+                                    'description': 'The average distance of the road segment above sea level.', # noqa
+                                    'type': 'double'
+                                },
+                                {
+                                    'queryable': 'nlanes',
+                                    'title': 'Temperature',
+                                    'description': 'The total number of lanes in all directions.', # noqa
+                                    'type': 'integer'
+                                },
+                                {
+                                    'queryable': 'geom',
+                                    'title': 'Segment Geometry',
+                                    'description': 'The geometry of the road segment', # noqa
+                                    'type': 'linestring'
+                                },
+                                {
+                                    'queryable': 'name',
+                                    'title': 'Segment Name',
+                                    'description': 'The common name of the road segment.', # noqa
+                                    'type': 'string'
+                                }
+                            ]
+                        }
+                    }
+                }
             }
         },
         'parameters': {
@@ -277,6 +335,56 @@ def get_oas_30(cfg):
                 },
                 'style': 'form',
                 'explode': False
+            }
+        },
+        'schemas': {
+            'queryables': {
+                'type': 'object',
+                'required': [
+                    'queryables'
+                ],
+                'properties': {
+                    'queryables': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'required': [
+                                'queryable',
+                                'type'
+                            ],
+                            'properties': {
+                                'queryable': {
+                                    'description': 'the token that may be used in a CQL predicate', # noqa
+                                    'type': 'string'
+                                },
+                                'title': {
+                                    'description': 'a human readble title for the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'description': {
+                                    'description': 'a human-readable narrative describing the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'language': {
+                                    'description': 'the language used for the title and description', # noqa
+                                    'type': 'string',
+                                    'default': [
+                                        'en'
+                                    ]
+                                },
+                                'type': {
+                                    'description': 'the data type of the queryable', # noqa
+                                    'type': 'string'
+                                },
+                                'type-ref': {
+                                    'description': 'a reference to the formal definition of the type', # noqa
+                                    'type': 'string',
+                                    'format': 'url'
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -441,63 +549,7 @@ def get_oas_30(cfg):
 
     # if CQL filter is applicable
     if cql_filter_exists:
-        paths['/queryables'] = {
-            'get': {
-                'summary': 'Feature Queryables',
-                'description': 'Feature Queryables',
-                'tags': ['server'],
-                'parameters': [
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'responses': {
-                    '200': {
-                        '$ref': '#/components/responses/Queryables'
-                    },  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
-                }
-            }
-        }
 
-        queryables_response = {
-            'description': 'Dataset Querables',
-            'content': {
-                'application/json': {
-                    'schema': {
-                        '$ref': '#/components/schemas/queryables'
-                    },
-                    'example': {
-                        'queryables': [
-                            {
-                                'queryable': 'elevation',
-                                'title': 'Elevation',
-                                'description': 'The average distance of the road segment above sea level.', # noqa
-                                'type': 'double'
-                            },
-                            {
-                                'queryable': 'nlanes',
-                                'title': 'Temperature',
-                                'description': 'The total number of lanes in all directions.', # noqa
-                                'type': 'integer'
-                            },
-                            {
-                                'queryable': 'geom',
-                                'title': 'Segment Geometry',
-                                'description': 'The geometry of the road segment', # noqa
-                                'type': 'linestring'
-                            },
-                            {
-                                'queryable': 'name',
-                                'title': 'Segment Name',
-                                'description': 'The common name of the road segment.', # noqa
-                                'type': 'string'
-                            }
-                        ]
-                    }
-                }
-            }
-        }
         filter_lang_enum = ['cql-text', 'cql-json']
 
         filter_extension = {
@@ -526,54 +578,6 @@ def get_oas_30(cfg):
         }
 
         schemas = {
-            'queryables': {
-                'type': 'object',
-                'required': [
-                    'queryables'
-                ],
-                'properties': {
-                    'queryables': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'required': [
-                                'queryable',
-                                'type'
-                            ],
-                            'properties': {
-                                'queryable': {
-                                    'description': 'the token that may be used in a CQL predicate', # noqa
-                                    'type': 'string'
-                                },
-                                'title': {
-                                    'description': 'a human readble title for the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'description': {
-                                    'description': 'a human-readable narrative describing the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'language': {
-                                    'description': 'the language used for the title and description', # noqa
-                                    'type': 'string',
-                                    'default': [
-                                        'en'
-                                    ]
-                                },
-                                'type': {
-                                    'description': 'the data type of the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'type-ref': {
-                                    'description': 'a reference to the formal definition of the type', # noqa
-                                    'type': 'string',
-                                    'format': 'url'
-                                }
-                            }
-                        }
-                    }
-                }
-            },
             'predicates': {
                 'allOf': [
                     {
@@ -1259,10 +1263,9 @@ def get_oas_30(cfg):
             }
         }
 
-        oas['components']['responses']['Queryables'] = queryables_response
         oas['components']['parameters']['filter-lang'] = filter_lang_extension
         oas['components']['parameters']['filter'] = filter_extension
-        oas['components']['schemas'] = schemas
+        oas['components']['schemas'].update(schemas)
 
     LOGGER.debug('setting up STAC')
     paths['/stac'] = {
