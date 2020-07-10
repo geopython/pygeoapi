@@ -265,34 +265,6 @@ def get_oas_30(cfg):
                     'application/json': {
                         'schema': {
                             '$ref': '#/components/schemas/queryables'
-                        },
-                        'example': {
-                            'queryables': [
-                                {
-                                    'queryable': 'elevation',
-                                    'title': 'Elevation',
-                                    'description': 'The average distance of the road segment above sea level.', # noqa
-                                    'type': 'double'
-                                },
-                                {
-                                    'queryable': 'nlanes',
-                                    'title': 'Temperature',
-                                    'description': 'The total number of lanes in all directions.', # noqa
-                                    'type': 'integer'
-                                },
-                                {
-                                    'queryable': 'geom',
-                                    'title': 'Segment Geometry',
-                                    'description': 'The geometry of the road segment', # noqa
-                                    'type': 'linestring'
-                                },
-                                {
-                                    'queryable': 'name',
-                                    'title': 'Segment Name',
-                                    'description': 'The common name of the road segment.', # noqa
-                                    'type': 'string'
-                                }
-                            ]
                         }
                     }
                 }
