@@ -37,7 +37,10 @@ import click
 from flask import Flask, make_response, request, send_from_directory
 
 from pygeoapi.api import API
-from pygeoapi.util import get_mimetype, yaml_load
+from pygeoapi.util import get_mimetype, yaml_load, filter_dict_by_key_value
+
+import re
+
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
@@ -189,21 +192,52 @@ def get_collection_queryables(name=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/items')
-@APP.route('/collections/<collection_id>/items/<item_id>')
-def dataset(collection_id, item_id=None):
+def supports_transactions(collection):
+    """
+    Check if given collection supports transactions
+    :param collection: collection dict
+    :returns: boolean value
+    """
+    if 'extensions' not in CONFIG['resources'][collection]:
+        return False
+    if 'transactions' not in CONFIG['resources'][collection]['extensions']:
+        return False
+    return CONFIG['resources'][collection]['extensions']['transactions']
+
+
+def dataset(item_id=None):
     """
     OGC open api collections/{dataset}/items/{item} access point
 
     :returns: HTTP response
     """
+    # -------- find collection id from request object -------------
+    path = request.__dict__['environ']['PATH_INFO']
+    coll_id_pattern = re.compile("/collections/(.*)/items")
+    collection_id = coll_id_pattern.findall(path)[0]
+    # -------------------------------------------------------------
 
-    if item_id is None:
-        headers, status_code, content = api_.get_collection_items(
-            request.headers, request.args, collection_id)
-    else:
-        headers, status_code, content = api_.get_collection_item(
-            request.headers, request.args, collection_id, item_id)
+    verb = request.__dict__['environ']['REQUEST_METHOD']
+
+    if verb == 'GET':
+        if item_id is None:
+            headers, status_code, content = api_.get_collection_items(
+                request.headers, request.args, collection_id)
+        else:
+            headers, status_code, content = api_.get_collection_item(
+                request.headers, request.args, collection_id, item_id)
+
+    if verb == 'POST':
+        raise NotImplementedError()
+
+    if verb == 'PATCH':
+        raise NotImplementedError()
+
+    if verb == 'PUT':
+        raise NotImplementedError()
+
+    if verb == 'DELETE':
+        raise NotImplementedError()
 
     response = make_response(content, status_code)
 
@@ -211,6 +245,29 @@ def dataset(collection_id, item_id=None):
         response.headers = headers
 
     return response
+
+
+# ------------ dynamic routing based on transactions flag --------------
+collections = filter_dict_by_key_value(CONFIG['resources'],
+                                       'type', 'collection')
+coll_support_trans = list(filter(supports_transactions, collections))
+# route get for both paths of every collection
+for collection_id in collections:
+    APP.add_url_rule('/collections/'+collection_id+'/items',
+                     'dataset', dataset,
+                     methods=['GET'])
+    APP.add_url_rule('/collections/'+collection_id+'/items/<item_id>',
+                     'dataset', dataset,
+                     methods=['GET'])
+# route transaction verbs selectively for each path and each collection
+for collection_id in coll_support_trans:
+    APP.add_url_rule('/collections/'+collection_id+'/items',
+                     'dataset', dataset,
+                     methods=['POST'])
+    APP.add_url_rule('/collections/'+collection_id+'/items/<item_id>',
+                     'dataset', dataset,
+                     methods=['PATCH', 'PUT', 'DELETE'])
+# ------------------------------------------------------------------------
 
 
 @APP.route('/stac')
