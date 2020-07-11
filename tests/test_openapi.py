@@ -61,7 +61,9 @@ def test_str2bool():
 def get_test_file_path(filename):
     """
     Helper function to open test file safely
+
     :param filename: file path
+
     :returns: corrected file path
     """
 
@@ -74,6 +76,7 @@ def get_test_file_path(filename):
 def config():
     """
     Get the OpenAPI Document configuration
+
     :returns: OpenAPI configuration YAML dict
     """
     with open(get_test_file_path('pygeoapi-test-openapi-config.yml')) as config_file: # noqa
@@ -84,7 +87,9 @@ def config():
 def get_oas_30_(config):
     """
     Get the generated OpenAPI 3.0 Document
+
     :param config: configuration object
+
     :returns: OpenAPI definition YAML dict
     """
     return get_oas_30(config)
@@ -94,7 +99,9 @@ def get_oas_30_(config):
 def get_collections(config):
     """
     Get the collection resources from config file
+
     :param config: configuration object
+
     :returns: list of collection objects
     """
     collections = filter_dict_by_key_value(config['resources'], 'type', 'collection') # noqa
@@ -105,7 +112,9 @@ def get_collections(config):
 def is_cql(get_collections):
     """
     Checks whether any colelction resource supports feature filter
+
     :param get_collections: collection object
+
     :returns: boolean value
     """
     for k, _ in get_collections.items():
@@ -118,7 +127,9 @@ def is_cql(get_collections):
 def get_cql_components(get_oas_30_):
     """
     Get the generated OpenAPI 3.0 Document
+
     :param get_oas_30_: OpenAPI 3.0 Document object
+
     :returns: OpenAPI Document components YAML dict
     """
     openapi_components = get_oas_30_.get('components', None)
@@ -129,7 +140,9 @@ def get_cql_components(get_oas_30_):
 def get_cql_schemas(get_cql_components):
     """
     Get the schemas from OpenAPI 3.0 Document
+
     :param get_cql_components: OpenAPI 3.0 Document components object
+
     :returns: OpenAPI Document schemas YAML dict
     """
     openapi_schemas = get_cql_components.get('schemas', None)
@@ -139,6 +152,7 @@ def get_cql_schemas(get_cql_components):
 def test_cql_paths(config, get_oas_30_, get_collections, is_cql):
     """
     Assertions for CQL paths in OpenAPI 3.0 Document
+
     :param config: configuration object
     :param get_oas_30_: OpenAPI 3.0 Document object
     :param get_collections: collection object
@@ -171,6 +185,7 @@ def test_cql_paths(config, get_oas_30_, get_collections, is_cql):
 def test_cql_filters_parameters(get_cql_components, is_cql):
     """
     Assertions for CQL parameters in OpenAPI 3.0 Document
+
     :param get_cql_components: OpenAPI 3.0 Document components
     :param is_cql: boolean value
     """
@@ -213,6 +228,7 @@ def test_cql_filters_parameters(get_cql_components, is_cql):
 def test_cql_filters_logical_expressions(get_cql_schemas, is_cql):
     """
     Assertions for CQL logical expressions schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -234,6 +250,7 @@ def test_cql_filters_logical_expressions(get_cql_schemas, is_cql):
 def test_cql_filters_comparison_expressions(get_cql_schemas, is_cql):
     """
     Assertions for CQL comparison expressions schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -256,6 +273,7 @@ def test_cql_filters_comparison_expressions(get_cql_schemas, is_cql):
 def test_cql_filters_spatial_expressions(get_cql_schemas, is_cql):
     """
     Assertions for CQL spatial expressions schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -287,6 +305,7 @@ def test_cql_filters_spatial_expressions(get_cql_schemas, is_cql):
 def test_cql_filters_temporal_expressions(get_cql_schemas, is_cql):
     """
     Assertions for CQL temporal expressions schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -324,6 +343,7 @@ def test_cql_filters_temporal_expressions(get_cql_schemas, is_cql):
 def test_cql_filters_arithmetic_operands(get_cql_schemas, is_cql):
     """
     Assertions for CQL arithmetic operands schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -357,6 +377,7 @@ def test_cql_filters_arithmetic_operands(get_cql_schemas, is_cql):
 def test_cql_filters_functions(get_cql_schemas, is_cql):
     """
     Assertions for CQL functions schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -373,6 +394,7 @@ def test_cql_filters_functions(get_cql_schemas, is_cql):
 def test_cql_filters_function_obj_args(get_cql_schemas, is_cql):
     """
     Assertions for CQL function object arguments schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -399,6 +421,7 @@ def test_cql_filters_function_obj_args(get_cql_schemas, is_cql):
 def test_cql_filters_capabilities_assertion(get_cql_schemas, is_cql):
     """
     Assertions for CQL capabilities assertion schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -415,6 +438,7 @@ def test_cql_filters_capabilities_assertion(get_cql_schemas, is_cql):
 def test_cql_filters_function_description(get_cql_schemas, is_cql):
     """
     Assertions for CQL function description schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -432,6 +456,7 @@ def test_cql_filters_function_description(get_cql_schemas, is_cql):
 def test_cql_filters_capabilities(get_cql_schemas, is_cql):
     """
     Assertions for CQL filter capabilities schema in OpenAPI 3.0 Document
+
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
     """
@@ -449,6 +474,7 @@ def test_cql_filters_capabilities(get_cql_schemas, is_cql):
 def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
     """
     Assertions for queryable paths
+
     :param get_oas_30_: OpenAPI 3.0 Document object
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value
@@ -491,6 +517,7 @@ def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
 def test_cql_queryables_response(get_cql_components, get_cql_schemas):
     """
     Assertions for queryable responses and schemas
+    
     :param get_cql_components: OpenAPI 3.0 Document components
     :param get_collections: collection object
     :param is_cql: boolean value
@@ -562,6 +589,7 @@ def test_cql_queryables_response(get_cql_components, get_cql_schemas):
 def test_auxiliary_openapi_extensions(get_cql_components, get_cql_schemas, is_cql):  # noqa
     """
     Assertions for auxiliary extensions in OpenAPI 3.0 Document
+
     :param get_cql_components: OpenAPI 3.0 Document components
     :param get_cql_schemas: OpenAPI 3.0 Document schemas
     :param is_cql: boolean value

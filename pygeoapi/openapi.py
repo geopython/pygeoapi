@@ -64,9 +64,11 @@ def get_ogc_schemas_location(server_config):
 def gen_media_type_object(media_type, api_type, path):
     """
     Generates an OpenAPI Media Type Object
+
     :param media_type: MIME type
     :param api_type: OGC API type
     :param path: local path of OGC API parameter or schema definition
+
     :returns: `dict` of media type object
     """
 
@@ -87,9 +89,11 @@ def gen_media_type_object(media_type, api_type, path):
 def gen_response_object(description, media_type, api_type, path):
     """
     Generates an OpenAPI Response Object
+
     :param description: text description of response
     :param media_type: MIME type
     :param api_type: OGC API type
+
     :returns: `dict` of response object
     """
 
@@ -104,8 +108,10 @@ def gen_response_object(description, media_type, api_type, path):
 def get_oas_30(cfg):
     """
     Generates an OpenAPI 3.0 Document
+
     :param cfg: configuration object
     :returns: OpenAPI definition YAML dict
+    
     """
 
     paths = {}
@@ -1345,8 +1351,10 @@ def get_oas_30(cfg):
 def get_oas(cfg, version='3.0'):
     """
     Stub to generate OpenAPI Document
+
     :param cfg: configuration object
     :param version: version of OpenAPI (default 3.0)
+
     :returns: OpenAPI definition YAML dict
     """
 
