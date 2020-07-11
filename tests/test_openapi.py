@@ -530,18 +530,33 @@ def test_cql_queryables_response(get_cql_components, get_cql_schemas):
     assert queryables_schema['properties']['queryables'].get('type', None) is not None # noqa
     assert queryables_schema['properties']['queryables'].get('items', None) is not None # noqa
 
-    queryables_schema_prop = queryables_schema['properties']['queryables']['items']['properties'] # noqa
+    assert '#/components/schemas/queryable' in queryables_schema['properties']['queryables']['items']['$ref']  # noqa
+
+    queryable_schema = get_cql_schemas.get('queryable', None)
+    # assertion for queryable schema
+    assert queryable_schema is not None
+
+    assert isinstance(queryable_schema, dict)
+
+    queryable_schema_keys = ['type', 'required', 'properties']
+    # assertion for queryable schema keys
+    for queryable_schema_key in queryable_schema_keys:
+        assert queryable_schema_key in queryable_schema # noqa
+
+    # assertion for queryable schema properties
+    queryable_schema_prop = queryable_schema['properties']
+
     params = ['queryable', 'title', 'description', 'language', 'type', 'type-ref'] # noqa
     for param in params:
-        assert param in queryables_schema_prop
+        assert param in queryable_schema_prop
         param_props = ['description', 'type']
         for param_prop in param_props:
-            assert param_prop in queryables_schema_prop[param]
+            assert param_prop in queryable_schema_prop[param]
             if param == 'language':
-                assert 'default' in queryables_schema_prop[param]
+                assert 'default' in queryable_schema_prop[param]
             if param == 'type-ref':
-                assert 'format' in queryables_schema_prop[param]
-                assert queryables_schema_prop[param]['format'] == 'url'
+                assert 'format' in queryable_schema_prop[param]
+                assert queryable_schema_prop[param]['format'] == 'url'
 
 
 def test_auxiliary_openapi_extensions(get_cql_components, get_cql_schemas, is_cql):  # noqa
