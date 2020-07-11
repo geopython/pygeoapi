@@ -64,11 +64,9 @@ def get_ogc_schemas_location(server_config):
 def gen_media_type_object(media_type, api_type, path):
     """
     Generates an OpenAPI Media Type Object
-
     :param media_type: MIME type
     :param api_type: OGC API type
     :param path: local path of OGC API parameter or schema definition
-
     :returns: `dict` of media type object
     """
 
@@ -89,11 +87,9 @@ def gen_media_type_object(media_type, api_type, path):
 def gen_response_object(description, media_type, api_type, path):
     """
     Generates an OpenAPI Response Object
-
     :param description: text description of response
     :param media_type: MIME type
     :param api_type: OGC API type
-
     :returns: `dict` of response object
     """
 
@@ -108,9 +104,7 @@ def gen_response_object(description, media_type, api_type, path):
 def get_oas_30(cfg):
     """
     Generates an OpenAPI 3.0 Document
-
     :param cfg: configuration object
-
     :returns: OpenAPI definition YAML dict
     """
 
@@ -216,25 +210,6 @@ def get_oas_30(cfg):
         }
     }
 
-    paths['/queryables'] = {
-        'get': {
-            'summary': 'Feature Queryables',
-            'description': 'Feature Queryables',
-            'tags': ['server'],
-            'parameters': [
-                {'$ref': '#/components/parameters/f'}
-            ],
-            'responses': {
-                '200': {
-                    '$ref': '#/components/responses/Queryables'
-                },  # noqa
-                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
-            }
-        }
-    }
-
     oas['tags'].append({
             'name': 'server',
             'description': cfg['metadata']['identification']['description'],
@@ -258,8 +233,7 @@ def get_oas_30(cfg):
                 'description': 'Unexpected error',
                 'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
             },
-            'Queryables':
-            {
+            'Queryables': {
                 'description': 'Dataset Querables',
                 'content': {
                     'application/json': {
@@ -452,7 +426,7 @@ def get_oas_30(cfg):
                         {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
-                        '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '200': {'$ref': '#/components/responses/Queryables'},  # noqa
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
@@ -521,6 +495,22 @@ def get_oas_30(cfg):
 
     # if CQL filter is applicable
     if cql_filter_exists:
+        paths['/queryables'] = {
+            'get': {
+                'summary': 'Feature Queryables',
+                'description': 'Feature Queryables',
+                'tags': ['server'],
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'responses': {
+                    '200': {'$ref': '#/components/responses/Queryables'},  # noqa
+                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+            }
+        }
 
         filter_lang_enum = ['cql-text', 'cql-json']
 
@@ -535,6 +525,7 @@ def get_oas_30(cfg):
             },
             'style': 'form'
         }
+
         filter_lang_extension = {
             'description': 'The optional parameter to provide filter lang',
             'explode': False,
@@ -549,7 +540,7 @@ def get_oas_30(cfg):
             'style': 'form'
         }
 
-        schemas = {
+        cql_schemas = {
             'predicates': {
                 'allOf': [
                     {
@@ -1237,7 +1228,7 @@ def get_oas_30(cfg):
 
         oas['components']['parameters']['filter-lang'] = filter_lang_extension
         oas['components']['parameters']['filter'] = filter_extension
-        oas['components']['schemas'].update(schemas)
+        oas['components']['schemas'].update(cql_schemas)
 
     LOGGER.debug('setting up STAC')
     paths['/stac'] = {
@@ -1354,10 +1345,8 @@ def get_oas_30(cfg):
 def get_oas(cfg, version='3.0'):
     """
     Stub to generate OpenAPI Document
-
     :param cfg: configuration object
     :param version: version of OpenAPI (default 3.0)
-
     :returns: OpenAPI definition YAML dict
     """
 
