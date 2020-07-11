@@ -234,12 +234,10 @@ def get_oas_30(cfg):
                 'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
             },
             'Queryables': {
-                'description': 'Dataset Querables',
+                'description': 'successful queryables operation',
                 'content': {
                     'application/json': {
-                        'schema': {
-                            '$ref': '#/components/schemas/queryables'
-                        }
+                        'schema': {'$ref': '#/components/schemas/queryables'}
                     }
                 }
             }
@@ -284,6 +282,44 @@ def get_oas_30(cfg):
             }
         },
         'schemas': {
+            # TODO: change this schema once OGC will definitively publish it
+            'queryable': {
+                'type': 'object',
+                'required': [
+                    'queryable',
+                    'type'
+                ],
+                'properties': {
+                    'queryable': {
+                        'description': 'the token that may be used in a CQL predicate', # noqa
+                        'type': 'string'
+                    },
+                    'title': {
+                        'description': 'a human readable title for the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'description': {
+                        'description': 'a human-readable narrative describing the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'language': {
+                        'description': 'the language used for the title and description', # noqa
+                        'type': 'string',
+                        'default': [
+                            'en'
+                        ]
+                    },
+                    'type': {
+                        'description': 'the data type of the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'type-ref': {
+                        'description': 'a reference to the formal definition of the type', # noqa
+                        'type': 'string',
+                        'format': 'url'
+                    }
+                }
+            },
             'queryables': {
                 'type': 'object',
                 'required': [
@@ -292,43 +328,7 @@ def get_oas_30(cfg):
                 'properties': {
                     'queryables': {
                         'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'required': [
-                                'queryable',
-                                'type'
-                            ],
-                            'properties': {
-                                'queryable': {
-                                    'description': 'the token that may be used in a CQL predicate', # noqa
-                                    'type': 'string'
-                                },
-                                'title': {
-                                    'description': 'a human readble title for the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'description': {
-                                    'description': 'a human-readable narrative describing the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'language': {
-                                    'description': 'the language used for the title and description', # noqa
-                                    'type': 'string',
-                                    'default': [
-                                        'en'
-                                    ]
-                                },
-                                'type': {
-                                    'description': 'the data type of the queryable', # noqa
-                                    'type': 'string'
-                                },
-                                'type-ref': {
-                                    'description': 'a reference to the formal definition of the type', # noqa
-                                    'type': 'string',
-                                    'format': 'url'
-                                }
-                            }
-                        }
+                        'items': {'$ref': '#/components/schemas/queryable'}
                     }
                 }
             }
@@ -426,7 +426,7 @@ def get_oas_30(cfg):
                         {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
-                        '200': {'$ref': '#/components/responses/Queryables'},  # noqa
+                        '200': {'$ref': '#/components/responses/Queryables'},
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
