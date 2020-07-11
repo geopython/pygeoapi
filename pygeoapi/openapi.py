@@ -111,7 +111,7 @@ def get_oas_30(cfg):
 
     :param cfg: configuration object
     :returns: OpenAPI definition YAML dict
-    
+
     """
 
     paths = {}
@@ -1368,7 +1368,9 @@ def get_oas(cfg, version='3.0'):
 @click.pass_context
 @click.option('--config', '-c', 'config_file', help='configuration file')
 def generate_openapi_document(ctx, config_file):
-    """Generate OpenAPI Document"""
+    """
+    Generate OpenAPI Document
+    """
 
     if config_file is None:
         raise click.ClickException('--config/-c required')

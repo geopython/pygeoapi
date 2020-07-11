@@ -517,7 +517,7 @@ def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
 def test_cql_queryables_response(get_cql_components, get_cql_schemas):
     """
     Assertions for queryable responses and schemas
-    
+
     :param get_cql_components: OpenAPI 3.0 Document components
     :param get_collections: collection object
     :param is_cql: boolean value
