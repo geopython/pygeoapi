@@ -515,7 +515,7 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                '200': {'$ref': '#/components/responses/200'},
+                '200': {'$ref': '{}/responses/ProcessCollection.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -566,6 +566,7 @@ def get_oas_30(cfg):
                     'operationId': 'get{}Jobs'.format(k.capitalize()),
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     }
                 },
@@ -575,9 +576,22 @@ def get_oas_30(cfg):
                     'description': p.metadata['description'],
                     'tags': [k],
                     'operationId': 'execute{}Job'.format(k.capitalize()),
-                    'parameters': [],
+                    'parameters': [{
+                        'name': 'response',
+                        'in': 'query',
+                        'description': 'Response type',
+                        'required': False,
+                        'schema': {
+                            'type': 'string',
+                            'enum': ['raw', 'document'],
+                            'default': 'document'
+                        }
+                    }],
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
+                        '201': {'$ref': '{}/responses/ExecuteAsync.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '500': {'$ref': '{}/responses/ServerError.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     },
                     'requestBody': {

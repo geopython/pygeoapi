@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -642,6 +642,14 @@ def test_execute_process(config, api_):
     response = json.loads(response)
 
     assert response['outputs'][0]['value'] == 'test'
+
+    args = {'response': 'raw'}
+    rsp_headers, code, response = api_.execute_process(req_headers, args,
+                                                       json.dumps(req_body),
+                                                       'hello-world')
+    response = json.loads(response)
+
+    assert response[0]['value'] == 'test'
 
     api_.config['resources'] = {}
 
