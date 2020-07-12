@@ -29,6 +29,12 @@ Processing examples
   - http://localhost:5000/processes
 - describe the ``hello-world`` process
   - http://localhost:5000/processes/hello-world
+- show all jobs for the ``hello-world`` process
+  - http://localhost:5000/processes/hello-world/jobs
+- execute a job for the ``hello-world`` process
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
+- execute a job for the ``hello-world`` process with a raw response
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs?response=raw" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
 
 
 .. todo:: add more examples once OAPIP implementation is complete
