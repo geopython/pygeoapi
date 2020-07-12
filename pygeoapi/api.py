@@ -48,7 +48,7 @@ from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value, json_serial,
-                           render_j2_template, str2bool, TEMPLATES)
+                           render_j2_template, TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1320,13 +1320,17 @@ class API:
         try:
             outputs = p.execute(data_dict)
             m = p.metadata
-            if 'raw' in args and str2bool(args['raw']):
+            if 'response' in args and args['response'] == 'raw':
                 headers_['Content-Type'] = \
                     m['outputs'][0]['output']['formats'][0]['mimeType']
-                response = outputs
+                if 'json' in headers_['Content-Type']:
+                    response = to_json(outputs)
+                else:
+                    response = outputs
             else:
                 response['outputs'] = outputs
-            return headers_, 201, json.dumps(response)
+                response = to_json(response)
+            return headers_, 200, response
         except Exception as err:
             exception = {
                 'code': 'InvalidParameterValue',
