@@ -19,6 +19,7 @@
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
       </p>
+      {% if data['itemType'] == 'Feature' %}
       <h3>Queryables</h3>
       <ul>
         <li>
@@ -37,6 +38,7 @@
               Browse through the items of "{{ data['title'] }}</a>"</div>
         </li>
       </ul>
+      {% endif  %}
       <h3>Links</h3>
       <ul>
       {% for link in data['links'] %}
