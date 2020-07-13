@@ -93,8 +93,9 @@ resources:
                 begin: 1850-01-01
                 end: null # or empty
 
-        provider:
-            name: Elasticsearch
-            data: http://localhost:9200/canada-hydat-daily-mean-02hc003
-            id_field: IDENTIFIER
-            time_field: DATE
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: http://localhost:9200/canada-hydat-daily-mean-02hc003
+              id_field: IDENTIFIER
+              time_field: DATE
