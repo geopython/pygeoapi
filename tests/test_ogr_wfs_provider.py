@@ -137,7 +137,7 @@ def config_geonode_gs_WFS():
         'data': {
             'source_type': 'WFS',
             'source':
-                'WFS:https://geonode.wfp.org/geoserver/wfs?',
+                'WFS:https://geonode.wfp.org/geoserver/wfs',
             'source_srs': 'EPSG:4326',
             'target_srs': 'EPSG:4326',
             'source_capabilities': {

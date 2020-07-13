@@ -29,7 +29,8 @@
 
 """Generic util functions used in the code"""
 
-from datetime import date, datetime, time, timedelta
+import base64
+from datetime import date, datetime, time
 import dateutil.parser
 from decimal import Decimal
 from enum import Enum
@@ -205,6 +206,13 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
+    elif isinstance(obj, bytes):
+        try:
+            LOGGER.debug('Returning as UTF-8 decoded bytes')
+            return obj.decode('utf-8')
+        except UnicodeDecodeError:
+            LOGGER.debug('Returning as base64 encoded JSON object')
+            return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
 

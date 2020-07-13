@@ -53,7 +53,8 @@ from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value, json_serial,
-                           render_j2_template, str2bool, JobStatus, TEMPLATES)
+                           render_j2_template, str2bool, to_json, JobStatus,
+                           TEMPLATES)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1423,14 +1424,18 @@ class API:
         if status == JobStatus.failed:
             response = outputs
 
-        if 'raw' in args and str2bool(args['raw']):
+        if 'response' in args and args['response'] == 'raw':
             headers_['Content-Type'] = \
                 process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
-            response = outputs
+            if format == 'json':
+                response = to_json(outputs)
+            else:
+                response = outputs
+
         elif status != JobStatus.failed:
             response['outputs'] = outputs
 
-        return headers_, 201, json.dumps(response, default=json_serial)
+        return headers_, 200, to_json(response)
 
     def retrieve_job_status(self, headers, args, data, process_id, job_id):
         """

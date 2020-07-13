@@ -41,7 +41,7 @@ function submitJob(url) {
         jobResultsSection.appendChild(span);
         jobResultsSection.scrollIntoView();
       }
-    } else if (xhr.readyState == XMLHttpRequest.DONE && (xhr.status === 201 || xhr.status === 202)) {
+    } else if (xhr.readyState == XMLHttpRequest.DONE && (xhr.status === 200 || xhr.status === 202)) {
       if (this.onreadystatechange) {
         xhr.onreadystatechange = null;
       }
@@ -53,7 +53,7 @@ function submitJob(url) {
       h3.innerHTML = jobId;
       let span = document.createElement('span');
       span.classList.add('toast');
-      const creationMessage = xhr.status == 201 ? 'is available!' : 'was created!'
+      const creationMessage = xhr.status == 200 ? 'is available!' : 'was created!'
       span.innerHTML = 'Job <a target="_blank" href="' + responseLocation + '">' + jobId + '</a> <span class="icon-link inverse"></span> ' + creationMessage + '</span>';
       jobResultsSection.appendChild(h3);
       jobResultsSection.appendChild(span);
@@ -66,7 +66,7 @@ function submitJob(url) {
         'target': '_blank',
         'href': responseLocation
       }];
-      if (xhr.status === 201) {
+      if (xhr.status === 200) {
         // Synchronous execution, so the results exist too
         responseElements.push({
           'innerHTML': 'Job results',

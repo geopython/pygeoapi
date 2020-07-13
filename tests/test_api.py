@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -718,7 +718,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert len(data['outputs']) == 1
     assert data['outputs'][0]['id'] == 'echo'
@@ -727,21 +727,21 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body_2), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert data['outputs'][0]['value'] == 'Hello Tést!'
 
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body_3), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert data['outputs'][0]['value'] == 'Hello Tést! This is a test.'
 
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body_4), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     # TODO inspect Location URI and asset 400 status
@@ -749,7 +749,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body_5), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     # TODO inspect Location URI and asset 400 status
@@ -757,7 +757,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body_6), 'hello-world')
     data = json.loads(response)
-    assert code == 201
+    assert code == 200
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'Cannot process without a name'
@@ -777,7 +777,6 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'invalid request data'
-
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {}, json.dumps(req_body), 'goodbye-world')
@@ -790,7 +789,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(
         'POST', req_headers, {'sync-execute': 'True'}, json.dumps(req_body), 'hello-world')
     response = json.loads(response)
-    assert code == 201
+    assert code == 200
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
