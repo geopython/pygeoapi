@@ -107,13 +107,14 @@ resources:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
                 trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
-        provider:
-            name: CSV
-            data: tests/data/obs.csv
-            id_field: id
-            geometry:
-                x_field: long
-                y_field: lat
+        providers:
+            - type: feature
+              name: CSV
+              data: tests/data/obs.csv
+              id_field: id
+              geometry:
+                  x_field: long
+                  y_field: lat
 
     hello-world:
         type: process
