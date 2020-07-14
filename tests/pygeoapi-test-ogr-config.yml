@@ -104,29 +104,30 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: WFS
-                source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
-                source_srs: EPSG:28992
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                source_options:
-#                    OGR_WFS_VERSION: 1.1.0
-                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: gml_id
-            layer: rdinfo:stations
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: WFS
+                  source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+                  source_srs: EPSG:28992
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  source_options:
+  #                    OGR_WFS_VERSION: 1.1.0
+                      OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: gml_id
+              layer: rdinfo:stations
 
     # Warning: this layer contains about 10 million addresses, the backend WFS seems not optimized
     dutch_addresses:
@@ -152,29 +153,30 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: WFS
-                source: WFS:http://geodata.nationaalgeoregister.nl/inspireadressen/wfs?
-                source_srs: EPSG:28992
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                source_options:
-#                    OGR_WFS_VERSION: 2.0.0
-                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: gml_id
-            layer: inspireadressen:inspireadressen
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: WFS
+                  source: WFS:http://geodata.nationaalgeoregister.nl/inspireadressen/wfs?
+                  source_srs: EPSG:28992
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  source_options:
+  #                    OGR_WFS_VERSION: 2.0.0
+                      OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: gml_id
+              layer: inspireadressen:inspireadressen
 
     utah_city_locations:
         type: collection
@@ -198,29 +200,30 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: WFS
-                source: WFS:http://demo.deegree.org/utah-workspace/services/wfs?TYPENAME=app:SGID93_LOCATION_UDOTMap_CityLocations
-                source_srs: EPSG:26912
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                source_options:
-#                    OGR_WFS_VERSION: 2.0.0
-                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: NAME
-            layer: app:SGID93_LOCATION_UDOTMap_CityLocations
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: WFS
+                  source: WFS:http://demo.deegree.org/utah-workspace/services/wfs?TYPENAME=app:SGID93_LOCATION_UDOTMap_CityLocations
+                  source_srs: EPSG:26912
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  source_options:
+  #                    OGR_WFS_VERSION: 2.0.0
+                      OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: NAME
+              layer: app:SGID93_LOCATION_UDOTMap_CityLocations
 
     unesco_pois_italy:
         type: collection
@@ -243,29 +246,30 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: WFS
-                source: WFS:https://demo.geo-solutions.it/geoserver/wfs
-                source_srs: EPSG:32632
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                source_options:
-#                    OGR_WFS_VERSION: 1.1.0
-                    OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: gml_id
-            layer: unesco:Unesco_point
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: WFS
+                  source: WFS:https://demo.geo-solutions.it/geoserver/wfs
+                  source_srs: EPSG:32632
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  source_options:
+  #                    OGR_WFS_VERSION: 1.1.0
+                      OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: gml_id
+              layer: unesco:Unesco_point
 
     ogr_gpkg_poi:
         type: collection
@@ -293,25 +297,26 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: GPKG
-                source: tests/data/poi_portugal.gpkg
-                source_srs: EPSG:4326
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: osm_id
-            layer: poi_portugal
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: GPKG
+                  source: tests/data/poi_portugal.gpkg
+                  source_srs: EPSG:4326
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: osm_id
+              layer: poi_portugal
 
 
     sf_311incidents:
@@ -334,24 +339,25 @@ resources:
             temporal:
                 begin:
                 end: null  # or empty
-        provider:
-            name: OGR
-            data:
-                source_type: ESRIJSON
-                source: ESRIJSON:http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json
-                source_srs: EPSG:4326
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-
-            id_field: objectid
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: ESRIJSON
+                  source: ESRIJSON:http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json
+                  source_srs: EPSG:4326
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+  
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+  
+              id_field: objectid
 
     cases_italy_per_region_from_github:
         title: "Cases in Italy - DPC GitHub"
@@ -373,27 +379,28 @@ resources:
                 begin: 2020-01-01T00:00:00Z
                 end: # or empty
 
-        provider:
-            name: OGR
-            data:
-                source_type: CSV
-                source: /vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv
-                source_srs: EPSG:4326
-                target_srs: EPSG:4326
-                source_capabilities:
-                    paging: True
-                open_options:
-                    X_POSSIBLE_NAMES: long
-                    Y_POSSIBLE_NAMES: lat
-                gdal_ogr_options:
-                    EMPTY_AS_NULL: NO
-                    GDAL_CACHEMAX: 64
-                    # GDAL_HTTP_PROXY: (optional proxy)
-                    # GDAL_PROXY_AUTH: (optional auth for remote WFS)
-                    CPL_DEBUG: NO
-            id_field: fid
-            time_field: data
-            layer: dpc-covid19-ita-regioni
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: CSV
+                  source: /vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv
+                  source_srs: EPSG:4326
+                  target_srs: EPSG:4326
+                  source_capabilities:
+                      paging: True
+                  open_options:
+                      X_POSSIBLE_NAMES: long
+                      Y_POSSIBLE_NAMES: lat
+                  gdal_ogr_options:
+                      EMPTY_AS_NULL: NO
+                      GDAL_CACHEMAX: 64
+                      # GDAL_HTTP_PROXY: (optional proxy)
+                      # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                      CPL_DEBUG: NO
+              id_field: fid
+              time_field: data
+              layer: dpc-covid19-ita-regioni
 
     hello-world:
         type: process

@@ -35,7 +35,8 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import filter_dict_by_key_value, yaml_load
+from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
+                           yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -407,7 +408,8 @@ def get_oas_30(cfg):
             }
         }
 
-        p = load_plugin('provider', collections[k]['provider'])
+        p = load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'feature'))
 
         if p.fields:
             queryables_path = '{}/queryables'.format(collection_name_path)

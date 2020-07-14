@@ -306,7 +306,7 @@ def get_breadcrumbs(urlpath):
 
 def filter_dict_by_key_value(dict_, key, value):
     """
-    helper generator function to filter a dict by a dict key
+    helper function to filter a dict by a dict key
 
     :param dict_: ``dict``
     :param key: dict key
@@ -316,6 +316,46 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+def get_provider_by_type(providers, provider_type):
+    """
+    helper function to load a provider by a provider type
+
+    :param providers: ``list`` of providers
+    :param provider_type: type of provider (feature)
+
+    :returns: provider based on type
+    """
+
+    LOGGER.debug('Searching for provider type {}'.format(provider_type))
+    try:
+        p = (next(d for i, d in enumerate(providers)
+                  if d['type'] == provider_type))
+    except StopIteration:
+        raise RuntimeError('Cannot find provider type')
+
+    return p
+
+
+def get_provider_default(providers):
+    """
+    helper function to get a resource's default provider
+
+    :param providers: ``list`` of providers
+
+    :returns: filtered ``dict``
+    """
+
+    try:
+        default = (next(d for i, d in enumerate(providers) if 'default' in d
+                   and d['default'] is True))
+        LOGGER.debug('found default provider type')
+    except StopIteration:
+        LOGGER.debug('no default provider type.  Returning first provider')
+        default = providers[0]
+
+    LOGGER.debug('Default provider: {}'.format(default['type']))
+    return default
 
 class JobStatus(Enum):
     """

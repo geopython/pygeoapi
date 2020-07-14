@@ -90,9 +90,9 @@ if (OGC_SCHEMAS_LOCATION is not None and
 
 
 @APP.route('/')
-def root():
+def landing_page():
     """
-    HTTP root content of pygeoapi. Intro page access point
+    OGC API landing page endpoint
 
     :returns: HTTP response
     """
@@ -109,7 +109,7 @@ def root():
 @APP.route('/openapi')
 def openapi():
     """
-    OpenAPI access point
+    OpenAPI endpoint
 
     :returns: HTTP response
     """
@@ -130,7 +130,7 @@ def openapi():
 @APP.route('/conformance')
 def conformance():
     """
-    OGC open api conformance access point
+    OGC API conformance endpoint
 
     :returns: HTTP response
     """
@@ -147,18 +147,18 @@ def conformance():
 
 
 @APP.route('/collections')
-@APP.route('/collections/<name>')
-def describe_collections(name=None):
+@APP.route('/collections/<collection_id>')
+def describe_collections(collection_id=None):
     """
-    OGC open api collections access point
+    OGC API collections endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -168,18 +168,18 @@ def describe_collections(name=None):
     return response
 
 
-@APP.route('/collections/<name>/queryables')
-def get_collection_queryables(name=None):
+@APP.route('/collections/<collection_id>/queryables')
+def get_collection_queryables(collection_id=None):
     """
-    OGC open api collections querybles access point
+    OGC API collections querybles endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.get_collection_queryables(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -193,7 +193,10 @@ def get_collection_queryables(name=None):
 @APP.route('/collections/<collection_id>/items/<item_id>')
 def dataset(collection_id, item_id=None):
     """
-    OGC open api collections/{dataset}/items/{item} access point
+    OGC API collections items endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
 
     :returns: HTTP response
     """
@@ -216,7 +219,7 @@ def dataset(collection_id, item_id=None):
 @APP.route('/stac')
 def stac_catalog_root():
     """
-    STAC access point
+    STAC root endpoint
 
     :returns: HTTP response
     """
@@ -235,7 +238,9 @@ def stac_catalog_root():
 @APP.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
-    STAC access point
+    STAC path endpoint
+
+    :param path: path
 
     :returns: HTTP response
     """
@@ -252,18 +257,17 @@ def stac_catalog_path(path):
 
 
 @APP.route('/processes', methods=['GET'])
-@APP.route('/processes/<name>', methods=['GET'])
-def describe_processes(name=None):
+@APP.route('/processes/<process_id>')
+def describe_processes(process_id=None):
     """
-    OGC WPS REST server respource to retrieve a process collection, or a process
-    description. (Experimental.)
+    OGC API - Processes description endpoint
 
-    :param name: identifier of process to describe; if None, retrieves the
-        collection of processes
+    :param process_id: process identifier
+
     :returns: HTTP response
     """
     headers, status_code, content = api_.describe_processes(
-        request.headers, request.args, name)
+        request.headers, request.args, process_id)
 
     response = make_response(content, status_code)
 
@@ -273,26 +277,26 @@ def describe_processes(name=None):
     return response
 
 
-@APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
-@APP.route('/processes/<name>/jobs/<job_id>', methods=['GET'])
-def execute_process(name=None, job_id=None):
+@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@APP.route('/processes/<process_id>/jobs/<job_id>', methods=['GET'])
+def execute_process(process_id=None, job_id=None):
     """
-    OGC WPS REST server resource to obtain information about jobs submitted
-    as instances of a particular process. If a particular job_id is submitted,
-    returns additional information about that particular job. (Experimental.)
-    :param name: identifier of process to execute
-    :param job_id: unique server-generated ID of job
+    OGC API - Processes jobs endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier (server-generated)
+
     :returns: HTTP response
     """
     if not job_id:
         # Request a new job (POST)
         # Get array of all job IDs (GET)
         headers, status_code, content = api_.execute_process(
-            request.method, request.headers, request.args, request.data, name)
+            request.method, request.headers, request.args, request.data, process_id)
     else:
         # Return status of a specific job
         headers, status_code, content = api_.retrieve_job_status(
-            request.headers, request.args, request.data, name, job_id
+            request.headers, request.args, request.data, process_id, job_id
         )
 
     response = make_response(content, status_code)
@@ -302,20 +306,23 @@ def execute_process(name=None, job_id=None):
 
     return response
 
-@APP.route('/processes/<name>/jobs/<job_id>/results', methods=['GET'])
-def retrieve_job_result(name=None, job_id=None):
+@APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
+def retrieve_job_result(process_id=None, job_id=None):
     """
-    OGC WPS REST server resource to obtain the results of a particualar job (an
-    instance of a process). Under synchronous execution, these results would
-    have been returned to the client already (but can be requested again). Under
-    asyncronous execution, this is the endpoint a client hits to obtain their
-    results, via a Location header. (Experimental.)
-    :param name: identifier of process to inspect
-    :param job_id: unique ID of particular job executed under this process
+    OGC API - Processes job result endpoint
+
+    Under synchronous execution, these results would have been returned to the
+    client already (but can be requested again). Under asyncronous execution,
+    this is the endpoint a client hits to obtain their results, via a Location
+    header.
+
+    :param process_id: process identifier
+    :param job_id: job identifier (server-generated)
+
     :returns: HTTP response
     """
     headers, status_code, content = api_.retrieve_job_result(
-        request.method, request.headers, request.args, request.data, name, job_id
+        request.method, request.headers, request.args, request.data, process_id, job_id
     )
 
     response = make_response(content, status_code)
@@ -335,11 +342,11 @@ def serve(ctx, server=None, debug=False):
 
     :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
-    :returns void
 
+    :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    # setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
 
