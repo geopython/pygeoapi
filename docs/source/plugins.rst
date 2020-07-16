@@ -111,10 +111,11 @@ The following methods are options to connect the plugin to pygeoapi:
 
 .. code-block:: yaml
 
-   provider:
-       name: MyCoolData
-       data: /path/to/file
-       id_field: stn_id
+   providers:
+       - type: feature
+         name: MyCoolData
+         data: /path/to/file
+         id_field: stn_id
 
 
 **Option 2**: implement outside of pygeoapi and add to configuration (recommended)
@@ -126,10 +127,11 @@ The following methods are options to connect the plugin to pygeoapi:
 
 .. code-block:: yaml
 
-   provider:
-       name: mycooldatapackage.mycooldata.MyCoolDataProvider
-       data: /path/to/file
-       id_field: stn_id
+   providers:
+       - type: feature
+         name: mycooldatapackage.mycooldata.MyCoolDataProvider
+         data: /path/to/file
+         id_field: stn_id
 
 Example: custom pygeoapi formatter
 ----------------------------------

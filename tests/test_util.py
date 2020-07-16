@@ -115,3 +115,45 @@ def test_get_breadcrumbs():
 def test_path_basename():
     assert util.get_path_basename('/path/to/file.txt') == 'file.txt'
     assert util.get_path_basename('/path/to/dir') == 'dir'
+
+
+def test_filter_dict_by_key_value():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        d = util.yaml_load(fh)
+
+    collections = util.filter_dict_by_key_value(d['resources'],
+                                                'type', 'collection')
+    assert len(collections) == 1
+
+    notfound = util.filter_dict_by_key_value(d['resources'],
+                                             'type', 'foo')
+
+    assert len(notfound) == 0
+
+
+def test_get_provider_by_type():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        d = util.yaml_load(fh)
+
+    p = util.get_provider_by_type(d['resources']['obs']['providers'],
+                                  'feature')
+
+    assert isinstance(p, dict)
+    assert p['type'] == 'feature'
+    assert p['name'] == 'CSV'
+
+    with pytest.raises(RuntimeError):
+        p = util.get_provider_by_type(d['resources']['obs']['providers'],
+                                      'something-else')
+
+
+def test_get_provider_default():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        d = util.yaml_load(fh)
+
+    pd = util.get_provider_default(d['resources']['obs']['providers'])
+
+    assert pd['type'] == 'feature'
+    assert pd['name'] == 'CSV'
+
+    pd = util.get_provider_default(d['resources']['obs']['providers'])

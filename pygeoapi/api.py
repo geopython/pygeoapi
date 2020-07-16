@@ -47,8 +47,9 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
-from pygeoapi.util import (dategetter, filter_dict_by_key_value, json_serial,
-                           render_j2_template, str2bool, TEMPLATES)
+from pygeoapi.util import (dategetter, filter_dict_by_key_value,
+                           get_provider_by_type, get_provider_default,
+                           json_serial, render_j2_template, TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -302,9 +303,12 @@ class API:
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
+            collection_data_type = get_provider_default(
+                v['providers'])['type']
+
             collection = {'links': []}
             collection['id'] = k
-            collection['itemType'] = 'Feature'
+            collection['itemType'] = collection_data_type.capitalize()
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
@@ -348,42 +352,6 @@ class API:
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
                 'type': 'application/json',
-                'rel': 'queryables',
-                'title': 'Queryables for this collection as JSON',
-                'href': '{}/collections/{}/queryables?f=json'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'text/html',
-                'rel': 'queryables',
-                'title': 'Queryables for this collection as HTML',
-                'href': '{}/collections/{}/queryables?f=html'.format(
-                    self.config['server']['url'], k)
-            })
-
-            collection['links'].append({
-                'type': 'application/geo+json',
-                'rel': 'items',
-                'title': 'items as GeoJSON',
-                'href': '{}/collections/{}/items?f=json'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'application/ld+json',
-                'rel': 'items',
-                'title': 'items as RDF (GeoJSON-LD)',
-                'href': '{}/collections/{}/items?f=jsonld'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'text/html',
-                'rel': 'items',
-                'title': 'Items as HTML',
-                'href': '{}/collections/{}/items?f=html'.format(
-                    self.config['server']['url'], k)
-            })
-            collection['links'].append({
-                'type': 'application/json',
                 'rel': 'self' if not format_
                 or format_ == 'json' else 'alternate',
                 'title': 'This document as JSON',
@@ -404,6 +372,44 @@ class API:
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
             })
+
+            if collection_data_type == 'feature':
+                LOGGER.debug('Adding feature based links')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'queryables',
+                    'title': 'Queryables for this collection as JSON',
+                    'href': '{}/collections/{}/queryables?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'queryables',
+                    'title': 'Queryables for this collection as HTML',
+                    'href': '{}/collections/{}/queryables?f=html'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'application/geo+json',
+                    'rel': 'items',
+                    'title': 'items as GeoJSON',
+                    'href': '{}/collections/{}/items?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'application/ld+json',
+                    'rel': 'items',
+                    'title': 'items as RDF (GeoJSON-LD)',
+                    'href': '{}/collections/{}/items?f=jsonld'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'items',
+                    'title': 'Items as HTML',
+                    'href': '{}/collections/{}/items?f=html'.format(
+                        self.config['server']['url'], k)
+                })
 
             if dataset is not None and k == dataset:
                 fcm = collection
@@ -499,8 +505,8 @@ class API:
         LOGGER.debug('Creating collection queryables')
         LOGGER.debug('Loading provider')
         try:
-            p = load_plugin('provider',
-                            self.config['resources'][dataset]['provider'])
+            p = load_plugin('provider', get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'feature'))
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -723,8 +729,8 @@ class API:
 
         LOGGER.debug('Loading provider')
         try:
-            p = load_plugin('provider',
-                            collections[dataset]['provider'])
+            p = load_plugin('provider', get_provider_by_type(
+                collections[dataset]['providers'], 'feature'))
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -909,8 +915,9 @@ class API:
             content = formatter.write(
                 data=content,
                 options={
-                    'provider_def':
-                        collections[dataset]['provider']
+                    'provider_def': get_provider_by_type(
+                                        collections[dataset]['providers'],
+                                        'feature')
                 }
             )
 
@@ -964,7 +971,8 @@ class API:
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading provider')
-        p = load_plugin('provider', collections[dataset]['provider'])
+        p = load_plugin('provider', get_provider_by_type(
+            collections[dataset]['providers'], 'feature'))
 
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
@@ -1141,7 +1149,8 @@ class API:
 
         LOGGER.debug('Loading provider')
         try:
-            p = load_plugin('provider', stac_collections[dataset]['provider'])
+            p = load_plugin('provider', get_provider_by_type(
+                stac_collections[dataset]['providers'], 'stac'))
         except ProviderConnectionError as err:
             LOGGER.error(err)
             exception = {
@@ -1320,13 +1329,17 @@ class API:
         try:
             outputs = p.execute(data_dict)
             m = p.metadata
-            if 'raw' in args and str2bool(args['raw']):
+            if 'response' in args and args['response'] == 'raw':
                 headers_['Content-Type'] = \
                     m['outputs'][0]['output']['formats'][0]['mimeType']
-                response = outputs
+                if 'json' in headers_['Content-Type']:
+                    response = to_json(outputs)
+                else:
+                    response = outputs
             else:
                 response['outputs'] = outputs
-            return headers_, 201, json.dumps(response)
+                response = to_json(response)
+            return headers_, 200, response
         except Exception as err:
             exception = {
                 'code': 'InvalidParameterValue',

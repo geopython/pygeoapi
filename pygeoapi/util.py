@@ -29,6 +29,7 @@
 
 """Generic util functions used in the code"""
 
+import base64
 from datetime import date, datetime, time
 from decimal import Decimal
 import json
@@ -175,6 +176,13 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
+    elif isinstance(obj, bytes):
+        try:
+            LOGGER.debug('Returning as UTF-8 decoded bytes')
+            return obj.decode('utf-8')
+        except UnicodeDecodeError:
+            LOGGER.debug('Returning as base64 encoded JSON object')
+            return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
 
@@ -268,7 +276,7 @@ def get_breadcrumbs(urlpath):
 
 def filter_dict_by_key_value(dict_, key, value):
     """
-    helper generator function to filter a dict by a dict key
+    helper function to filter a dict by a dict key
 
     :param dict_: ``dict``
     :param key: dict key
@@ -278,3 +286,44 @@ def filter_dict_by_key_value(dict_, key, value):
     """
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+
+def get_provider_by_type(providers, provider_type):
+    """
+    helper function to load a provider by a provider type
+
+    :param providers: ``list`` of providers
+    :param provider_type: type of provider (feature)
+
+    :returns: provider based on type
+    """
+
+    LOGGER.debug('Searching for provider type {}'.format(provider_type))
+    try:
+        p = (next(d for i, d in enumerate(providers)
+                  if d['type'] == provider_type))
+    except StopIteration:
+        raise RuntimeError('Cannot find provider type')
+
+    return p
+
+
+def get_provider_default(providers):
+    """
+    helper function to get a resource's default provider
+
+    :param providers: ``list`` of providers
+
+    :returns: filtered ``dict``
+    """
+
+    try:
+        default = (next(d for i, d in enumerate(providers) if 'default' in d
+                   and d['default'] is True))
+        LOGGER.debug('found default provider type')
+    except StopIteration:
+        LOGGER.debug('no default provider type.  Returning first provider')
+        default = providers[0]
+
+    LOGGER.debug('Default provider: {}'.format(default['type']))
+    return default

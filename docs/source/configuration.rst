@@ -111,9 +111,19 @@ The ``metadata`` section provides settings for overall service metadata and desc
 The ``resources`` section lists 1 or more dataset collections to be published by the server.
 
 The ``resource.type`` property is required.  Allowed types are:
+
 - ``collection``
 - ``process``
 - ``stac-collection``
+
+The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each 
+provider requires a ``type`` property.  Allowed types are:
+
+- ``feature``
+
+A collection's default provider can be qualified with ``default: true`` in the provider
+configuration.  If ``default`` is not included, the first provider is assumed to be the
+default.
 
 .. code-block:: yaml
 
@@ -143,18 +153,20 @@ The ``resource.type`` property is required.  Allowed types are:
               temporal:  # optional
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
-          provider:  # required connection information
+          providers:  # list of 1..n required connections information
               # provider name
               # see pygeoapi.plugin for supported providers
               # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
               # see Plugins section for more information
-              name: CSV
-              data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
-              id_field: id  # required for vector data, the field corresponding to the ID
-              time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
-              properties:  # optional: only return the following properties, in order
-                  - stn_id
-                  - value
+              - type: feature # underlying data geospatial type: (allowed values are: feature)
+                default: true  # optional: if not specified, the first provider definition is considered the default
+                name: CSV
+                data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
+                id_field: id  # required for vector data, the field corresponding to the ID
+                time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+                properties:  # optional: only return the following properties, in order
+                    - stn_id
+                    - value
 
       hello-world:  # name of process
           type: collection  # REQUIRED (collection, process, or stac-collection)

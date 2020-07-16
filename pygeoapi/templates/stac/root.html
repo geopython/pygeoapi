@@ -25,7 +25,6 @@
               </thead>
               <tbody>
                 {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'stac-collection').items() %}
-                {% if v['provider']['name'] == 'FileSystem' %}
                 <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
                   <td data-label="name">
                     <meta itemprop="url" content="{{ config['server']['url'] }}/stac/{{ k }}" />
@@ -37,7 +36,6 @@
                     {{ v['description'] | striptags | truncate }}
                   </td>
                 </tr>
-                {% endif %}
                 {% endfor %}
               </tbody>
             </table>
