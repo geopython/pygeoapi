@@ -105,9 +105,11 @@ class CSVProvider(BaseProvider):
             # ===========================================
             # Added for CQL Filter Expression evaluation
 
-            if filter_expression is not None:
+            if filter_expression:
                 ast = pycql.parse(filter_expression)
-                data_list = FilterEvaluator(field_mapping=list(fields.keys()), mapping_choices=data_list).to_filter(ast) # noqa
+                data_list = FilterEvaluator(
+                    field_mapping=list(fields.keys()),
+                    mapping_choices=data_list).to_filter(ast)
 
             # ===========================================
 
@@ -116,7 +118,8 @@ class CSVProvider(BaseProvider):
                 feature_collection['numberMatched'] = len(data_list)
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_list, startindex, startindex+limit): # noqa
+            for row in itertools.islice(data_list, startindex,
+                                        startindex+limit):
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 feature['geometry'] = {
@@ -171,7 +174,8 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of GeoJSON FeatureCollection
         """
-        return self._load(startindex, limit, resulttype, filter_expression=filter_expression) # noqa
+        return self._load(startindex, limit, resulttype,
+                          filter_expression=filter_expression)
 
     def get(self, identifier):
         """

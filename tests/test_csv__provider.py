@@ -33,7 +33,7 @@ from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csv_ import CSVProvider
 
 
-path = 'pygeoapi-test.csv'
+path = '/tmp/pygeoapi-test.csv'
 
 
 @pytest.fixture()

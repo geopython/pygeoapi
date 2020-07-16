@@ -115,13 +115,13 @@ class FilterEvaluator(object):
 
 
 def to_filter(ast, field_mapping=None, mapping_choices=None):
-    """ Helper function to translate ECQL AST to Django Query expressions.
+    """ Helper function to translate ECQL AST to query expressions.
 
         :param ast: the abstract syntax tree
         :param field_mapping: a dict mapping from the filter name
         :param mapping_choices: a dict mapping field lookups to choices.
         :type ast: :class:`Node`
-        :returns: a query dict
+        :returns: filtered dict
         :rtype: dict
     """
     return FilterEvaluator(field_mapping, mapping_choices).to_filter(ast)

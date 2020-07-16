@@ -13,14 +13,17 @@ def combine(sub_filters, combinator="AND"):
         :rtype: filtered dict
     """
     # check for sub_filters being the evaluation result of multiple sub_filters
-    assert isinstance(sub_filters, tuple)
+    if not isinstance(sub_filters, tuple):
+        raise AssertionError("Invalid sub_filters value")
 
     # check for sub_filter being the list of filtered dataset
     for sub_filter in sub_filters:
-        assert isinstance(sub_filter, list)
+        if not isinstance(sub_filter, list):
+            raise AssertionError("Invalid sub_filter value")
 
     # check for appropriate type of combinator
-    assert combinator in ("AND", "OR")
+    if combinator not in ("AND", "OR"):
+        raise AssertionError("Invalid logical combinator %s " % combinator)
 
     mapping_list = []
     intersection = []
@@ -49,6 +52,7 @@ def negate(sub_filter):  # TODO!!
         :return: the negated filter
         :rtype:
     """
+    pass
 
 
 # Comparison operators dictionary
@@ -78,25 +82,23 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         :return: a comparison expression filter
         :rtype: dict
     """
-    # check for lhs to be a field name
-    assert lhs in field_mapping
-    # assert rhs  # TODO!!
-
     # check for valid type of comparison operator
-    assert op in OP_TO_COMP
-    comp = OP_TO_COMP[op]
+    if op not in OP_TO_COMP:
+        raise AssertionError("Invalid operator %s " % op)
+    try:
+        comp = OP_TO_COMP[op]
+        mapping_list = []
+        if comp:
+            for row in mapping_choices:
+                # perform comparison operation
+                if eval(row[lhs] + comp + str(rhs)):
+                    mapping_list.append(row)
 
-    mapping_list = []
-    if comp:
-        for row in mapping_choices:
-            # check for field to be present in dataset
-            assert lhs in row
-
-            # perform comparison operation
-            if eval(row[lhs] + comp + str(rhs)):
-                mapping_list.append(row)
-
-    return mapping_list
+        return mapping_list
+    except KeyError as e:
+        raise AssertionError("Invalid field value %s" % e)
+    except Exception:
+        raise AssertionError("Invalid operation")
 
 
 def between(lhs, low, high, not_=False):  # TODO!!
@@ -115,6 +117,7 @@ def between(lhs, low, high, not_=False):  # TODO!!
         :return:
         :rtype:
     """
+    pass
 
 
 def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
@@ -137,6 +140,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def contains(lhs, items, not_=False, mapping_choices=None):  # TODO!!
@@ -155,6 +159,7 @@ def contains(lhs, items, not_=False, mapping_choices=None):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def null(lhs, not_=False):  # TODO!!
@@ -168,6 +173,7 @@ def null(lhs, not_=False):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def temporal(lhs, time_or_period, op):  # TODO!!
@@ -186,6 +192,7 @@ def temporal(lhs, time_or_period, op):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def time_interval(time_or_period, containment='overlaps',
@@ -193,6 +200,7 @@ def time_interval(time_or_period, containment='overlaps',
                   end_time_field='end_time'):  # TODO!!
     """
     """
+    pass
 
 
 UNITS_LOOKUP = {
@@ -223,6 +231,7 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):  # TODO!!
@@ -243,6 +252,7 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):  # TODO!!
         :return: a comparison expression result
         :rtype:
     """
+    pass
 
 
 def attribute(name, field_mapping=None):  # TODO!!
@@ -254,9 +264,11 @@ def attribute(name, field_mapping=None):  # TODO!!
         :type mapping_choices:
         :rtype:
     """
-    assert name in field_mapping
-    field = name
-    return field
+    if name in field_mapping:
+        field = name
+        return field
+    else:
+        raise AssertionError("Invalid field value %s " % name)
 
 
 def literal(value):
@@ -282,3 +294,4 @@ def arithmetic(lhs, rhs, op):  # TODO!!
                     ``"+"``, ``"-"``, ``"*"``, ``"/"``
         :rtype:
     """
+    pass
