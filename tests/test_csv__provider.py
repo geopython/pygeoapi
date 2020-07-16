@@ -33,7 +33,7 @@ from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csv_ import CSVProvider
 
 
-path = '/tmp/pygeoapi-test.csv'
+path = 'pygeoapi-test.csv'
 
 
 @pytest.fixture()
@@ -90,6 +90,28 @@ def test_query(fixture, config):
     assert results['features'][0]['id'] == '238'
 
     assert len(results['features'][0]['properties']) == 3
+
+    # ===========================
+    # Sample CQL filter test case
+
+    results = p.query(filter_expression='stn_id < 2147 AND id > 377')
+    assert len(results['features']) == 1
+
+    results = p.query(filter_expression='stn_id < 2147 OR id > 377')
+    assert len(results['features']) == 3
+
+    results = p.query(filter_expression='stn_id = 35')
+    assert len(results['features']) == 2
+
+    results = p.query(filter_expression='stn_id <> 35')
+    assert len(results['features']) == 3
+
+    results = p.query(filter_expression='stn_id <> 35 AND id >= 238 OR id <= 964') # noqa
+    assert len(results['features']) == 3
+
+    results = p.query(filter_expression='stn_id <> 35 AND id > 238 AND id < 964') # noqa
+    assert len(results['features']) == 1
+    # ===========================
 
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)

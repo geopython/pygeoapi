@@ -32,6 +32,9 @@ import csv
 import itertools
 import logging
 
+import pycql
+from pygeoapi.evaluate import FilterEvaluator
+
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
@@ -72,7 +75,8 @@ class CSVProvider(BaseProvider):
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], datetime=None, properties=[]):
+              identifier=None, bbox=[], datetime=None, properties=[],
+              filter_expression=None):
         """
         Load CSV data
 
@@ -80,6 +84,7 @@ class CSVProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param properties: list of tuples (name, value)
+        :param filter_expression: string of filter expression
 
         :returns: dict of GeoJSON FeatureCollection
         """
@@ -94,12 +99,24 @@ class CSVProvider(BaseProvider):
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
+            data_list = list(data_)
+            fields = self.fields
+
+            # ===========================================
+            # Added for CQL Filter Expression evaluation
+
+            if filter_expression is not None:
+                ast = pycql.parse(filter_expression)
+                data_list = FilterEvaluator(field_mapping=list(fields.keys()), mapping_choices=data_list).to_filter(ast) # noqa
+
+            # ===========================================
+
             if resulttype == 'hits':
                 LOGGER.debug('Returning hits only')
-                feature_collection['numberMatched'] = len(list(data_))
+                feature_collection['numberMatched'] = len(data_list)
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_, startindex, startindex+limit):
+            for row in itertools.islice(data_list, startindex, startindex+limit): # noqa
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 feature['geometry'] = {
@@ -138,7 +155,8 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[],
+              filter_expression=None):
         """
         CSV query
 
@@ -149,11 +167,11 @@ class CSVProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param filter_expression: string of a filter expression
 
         :returns: dict of GeoJSON FeatureCollection
         """
-
-        return self._load(startindex, limit, resulttype)
+        return self._load(startindex, limit, resulttype, filter_expression=filter_expression) # noqa
 
     def get(self, identifier):
         """
