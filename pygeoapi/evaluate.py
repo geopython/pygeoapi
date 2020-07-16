@@ -1,16 +1,11 @@
-import pycql
-# from . import filters
-from pycql import parse
-from pycql.ast import *
-import pygeoapi.filters as filters
-
 from pycql.ast import (
     NotConditionNode, CombinationConditionNode, ComparisonPredicateNode,
-    BetweenPredicateNode, BetweenPredicateNode, LikePredicateNode,
+    BetweenPredicateNode, LikePredicateNode, ArithmeticExpressionNode,
     InPredicateNode, NullPredicateNode, TemporalPredicateNode,
     SpatialPredicateNode, BBoxPredicateNode, AttributeExpression,
-    LiteralExpression, ArithmeticExpressionNode,
+    LiteralExpression
 )
+import pygeoapi.filters as filters
 
 
 class FilterEvaluator(object):
@@ -89,7 +84,7 @@ class FilterEvaluator(object):
                 to_filter(node.distance),
                 to_filter(node.units)
             )
-        
+
         # evaluation for BBox Predicate Node
         elif isinstance(node, BBoxPredicateNode):
             return filters.bbox(
