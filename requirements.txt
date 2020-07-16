@@ -4,3 +4,4 @@ python-dateutil
 pytz
 PyYAML
 unicodecsv
+pycql
