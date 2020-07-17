@@ -98,12 +98,13 @@ class GeoJSONProvider(BaseProvider):
             data = {
                 'type': 'FeatureCollection',
                 'features': []}
-
+        '''
         # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
         for i in data['features']:
             i['id'] = i['properties'][self.id_field]
+        '''
 
         return data
 
@@ -155,52 +156,141 @@ class GeoJSONProvider(BaseProvider):
         raise ProviderItemNotFoundError(err)
 
     def create(self, new_feature):
-        """Create a new feature
+        """
+        create a new feature item
 
         :param new_feature: new GeoJSON feature dictionary
+
+        :returns: feature id
         """
         all_data = self._load()
 
-        # Hijack the feature id and make sure it's unique
-        new_feature['properties']['id'] = str(uuid.uuid4())
+        if 'id' in new_feature['properties']:
+            try:
+                self.get(str(new_feature['properties']['id']))
+                new_feature['properties']['id'] = str(uuid.uuid4())
+            except ProviderItemNotFoundError:
+                pass
+        else:
+            new_feature['properties']['id'] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
         with open(self.data, 'w') as dst:
-            dst.write(json.dumps(all_data))
+            dst.write(json.dumps(all_data, indent=2, sort_keys=True))
 
-    def update(self, identifier, new_feature):
-        """Updates an existing feature id with new_feature
+        return new_feature['properties']['id']
+
+    def replace(self, identifier, new_feature):
+        """
+        replace an existing feature item with new_feature item
 
         :param identifier: feature id
         :param new_feature: new GeoJSON feature dictionary
+
+        :returns: feature item
         """
 
         all_data = self._load()
-        for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
-                # ensure new_feature retains id
-                new_feature['properties']['id'] = identifier
-                all_data['features'][i] = new_feature
+
+        found_feature = False
+        for index, feature in enumerate(all_data['features']):
+            if str(feature['properties']['id']) == identifier:
+                found_feature = True
                 break
 
-        with open(self.data, 'w') as dst:
-            dst.write(json.dumps(all_data))
+        if not found_feature:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+        else:
+            new_feature['properties']['id'] = identifier
+            all_data['features'][index] = new_feature
+            with open(self.data, 'w') as dst:
+                dst.write(json.dumps(all_data, indent=2, sort_keys=True))
+
+    def update(self, identifier, updates):
+        """
+        update an existing feature item
+
+        :param identifier: feature id
+        :param new_feature: new GeoJSON feature dictionary
+
+        :returns: feature item
+        """
+
+        all_data = self._load()
+
+        found_feature = False
+        for feature in all_data['features']:
+            if str(feature['properties']['id']) == identifier:
+                found_feature = True
+                break
+
+        if not found_feature:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+        else:
+            # not allowed to modify/remove id field
+            for index, name_val_pair in enumerate(updates['modify']):
+                if name_val_pair['name'] == 'id':
+                    updates['modify'].pop(index)
+            for index, attrib in enumerate(updates['remove']):
+                if attrib == 'id':
+                    updates['remove'].pop(index)
+            # add an attribute if its not already prescent in the feature
+            for name_val_pair in updates['add']:
+                name = name_val_pair['name']
+                value = name_val_pair['value']
+                if name not in feature['properties']:
+                    feature['properties'][name] = value
+                else:
+                    pass
+            # modify an attribute if its  already prescent in the feature
+            for name_val_pair in updates['modify']:
+                name = name_val_pair['name']
+                value = name_val_pair['value']
+                if name in feature['properties']:
+                    feature['properties'][name] = value
+                else:
+                    pass
+            # delete an attribute if its prescent in the feature
+            for name in updates['remove']:
+                if name in feature['properties']:
+                    feature['properties'].pop(name)
+                else:
+                    pass
+
+            all_data['features'][index] = feature
+
+            with open(self.data, 'w') as dst:
+                dst.write(json.dumps(all_data, indent=2, sort_keys=True))
+            return feature
 
     def delete(self, identifier):
-        """Updates an existing feature id with new_feature
+        """
+        deletes an existing feature item
 
         :param identifier: feature id
         """
 
         all_data = self._load()
-        for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
-                all_data['features'].pop(i)
+
+        found_feature = False
+        for index, feature in enumerate(all_data['features']):
+            if str(feature['properties']['id']) == identifier:
+                found_feature = True
                 break
 
-        with open(self.data, 'w') as dst:
-            dst.write(json.dumps(all_data))
+        if not found_feature:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+        else:
+            all_data['features'].pop(index)
+            with open(self.data, 'w') as dst:
+                dst.write(json.dumps(all_data, indent=2, sort_keys=True))
 
     def __repr__(self):
         return '<GeoJSONProvider> {}'.format(self.data)

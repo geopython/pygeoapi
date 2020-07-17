@@ -1059,6 +1059,239 @@ class API:
 
         return headers_, 200, json.dumps(content, default=json_serial)
 
+    # ------------------------ POST --------------------------------------
+    def create_collection_item(self, req_body, dataset):
+        """
+        Create a collection item
+
+        :param req_body: request payload
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = {'X-Powered-By': 'pygeoapi {}'.format(__version__),
+                    'Content-Type': 'application/json'}
+        content = ""
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception), content
+
+        LOGGER.debug('Loading provider')
+        p = load_plugin('provider', collections[dataset]['provider'])
+
+        try:
+            LOGGER.debug('Creating feature')
+
+            identifier = p.create(req_body)
+
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception), content
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception), content
+
+        feature_path = '/collections/' + dataset + '/items/' + str(identifier)
+        headers_['Location'] = feature_path
+        return headers_, 201, content
+
+    # --------------------------------------------------------------------
+    # ------------------------ PUT -------------------------------------
+    def replace_collection_item(self, req_body, dataset, identifier):
+        """
+        Replace a collection item
+
+        :param req_body: request payload
+        :param dataset: dataset name
+        :param identifier: item id
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = {'X-Powered-By': 'pygeoapi {}'.format(__version__),
+                    'Content-Type': 'application/json'}
+
+        content = ""
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception), content
+
+        LOGGER.debug('Loading provider')
+        p = load_plugin('provider', collections[dataset]['provider'])
+
+        try:
+            LOGGER.debug('Replacing feature')
+
+            p.replace(identifier, req_body)
+
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderItemNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+
+        return headers_, 200, content
+
+    # -------------------------------------------------------------------
+    # ------------------------- PATCH -------------------------------------
+    def update_collection_item(self, req_body, dataset, identifier):
+        """
+        Update a collection item
+
+        :param req_body: request payload
+        :param dataset: dataset name
+        :param identifier: item id
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = {'X-Powered-By': 'pygeoapi {}'.format(__version__),
+                    'Content-Type': 'application/geo+json'}
+        content = ""
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception), content
+
+        LOGGER.debug('Loading provider')
+        p = load_plugin('provider', collections[dataset]['provider'])
+
+        try:
+            LOGGER.debug('Updating feature')
+
+            content = p.update(identifier, req_body)
+
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderItemNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+
+        feature_path = '/collections/' + dataset + '/items/' + identifier
+        headers_['Location'] = feature_path
+        return headers_, 200, content
+
+    # --------------------------------------------------------------------
+    # ------------------------ DELETE ------------------------------------
+    def remove_collection_item(self, dataset, identifier):
+        """
+        Update a collection item
+
+        :param dataset: dataset name
+        :param identifier: item id
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = {'X-Powered-By': 'pygeoapi {}'.format(__version__),
+                    'Content-Type': 'application/json'}
+        content = ""
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception), content
+
+        LOGGER.debug('Loading provider')
+        p = load_plugin('provider', collections[dataset]['provider'])
+
+        try:
+            LOGGER.debug('Updating feature')
+
+            p.delete(identifier)
+
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+        except ProviderItemNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, json.dumps(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, json.dumps(exception)
+
+        return headers_, 200, content
+
+    # --------------------------------------------------------------------
+
     @pre_process
     @jsonldify
     def get_stac_root(self, headers_, format_):

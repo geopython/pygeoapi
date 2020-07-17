@@ -212,12 +212,12 @@ def dataset(item_id=None):
     :returns: HTTP response
     """
     # -------- find collection id from request object -------------
-    path = request.__dict__['environ']['PATH_INFO']
+    path = request.path
     coll_id_pattern = re.compile("/collections/(.*)/items")
     collection_id = coll_id_pattern.findall(path)[0]
     # -------------------------------------------------------------
 
-    verb = request.__dict__['environ']['REQUEST_METHOD']
+    verb = request.method
 
     if verb == 'GET':
         if item_id is None:
@@ -227,17 +227,23 @@ def dataset(item_id=None):
             headers, status_code, content = api_.get_collection_item(
                 request.headers, request.args, collection_id, item_id)
 
-    if verb == 'POST':
-        raise NotImplementedError()
+    req_body = request.get_json()
 
-    if verb == 'PATCH':
-        raise NotImplementedError()
+    if verb == 'POST':
+        headers, status_code, content = api_.create_collection_item(
+                req_body, collection_id)
 
     if verb == 'PUT':
-        raise NotImplementedError()
+        headers, status_code, content = api_.replace_collection_item(
+                req_body, collection_id, item_id)
+
+    if verb == 'PATCH':
+        headers, status_code, content = api_.update_collection_item(
+                req_body, collection_id, item_id)
 
     if verb == 'DELETE':
-        raise NotImplementedError()
+        headers, status_code, content = api_.remove_collection_item(
+                collection_id, item_id)
 
     response = make_response(content, status_code)
 
