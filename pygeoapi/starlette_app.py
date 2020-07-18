@@ -137,7 +137,9 @@ async def conformance(request: Request):
 async def describe_collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
+
     :param collection_id: collection identifier
+
     :returns: Starlette HTTP Response
     """
 
@@ -158,7 +160,9 @@ async def describe_collections(request: Request, collection_id=None):
 async def get_collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
+
     :param collection_id: collection identifier
+
     :returns: Starlette HTTP Response
     """
 
@@ -177,7 +181,9 @@ async def get_collection_queryables(request: Request, collection_id=None):
 def supports_transactions(collection):
     """
     Check if given collection supports transactions
+
     :param collection: collection dict
+
     :returns: boolean value
     """
     if 'extensions' not in CONFIG['resources'][collection]:
@@ -190,9 +196,9 @@ def supports_transactions(collection):
 async def dataset(request: Request, item_id=None):
     """
     OGC API collections items endpoint
+
     :param collection_id: collection identifier
     :param item_id: item identifier
-    :returns: Starlette HTTP Response
     """
     path = request.scope['path']
     coll_id_pattern = re.compile("/collections/(.*)/items")
@@ -215,7 +221,7 @@ async def dataset(request: Request, item_id=None):
         try:
             req_body = await request.json()
         except JSONDecodeError:
-            print('cannot parse request body')
+            pass
 
     if verb == 'POST':
         headers, status_code, content = api_.create_collection_item(
@@ -297,7 +303,9 @@ async def stac_catalog_root(request: Request):
 async def stac_catalog_path(request: Request):
     """
     STAC endpoint
+
     :param path: path
+
     :returns: Starlette HTTP response
     """
 
@@ -321,7 +329,9 @@ async def stac_catalog_path(request: Request):
 async def describe_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
+
     :param process_id: identifier of process to describe
+
     :returns: Starlette HTTP Response
     """
     headers, status_code, content = api_.describe_processes(
@@ -340,7 +350,9 @@ async def describe_processes(request: Request, process_id=None):
 async def execute_process(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
+
     :param process_id: identifier of process to execute
+
     :returns: Starlette HTTP Response
     """
 

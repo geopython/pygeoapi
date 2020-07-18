@@ -35,7 +35,8 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import filter_dict_by_key_value, yaml_load
+from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
+                           yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -231,27 +232,6 @@ def get_oas_30(cfg):
     )
 
     oas['components'] = {
-        "schemas": {
-            "nameValuePairObj": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "value": {
-                        "oneOf":
-                        [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
-                    }
-                }
-            }
-        },
         'responses': {
             '200': {
                 'description': 'successful operation',
@@ -259,6 +239,14 @@ def get_oas_30(cfg):
             'default': {
                 'description': 'Unexpected error',
                 'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
+            },
+            'Queryables': {
+                'description': 'successful queryables operation',
+                'content': {
+                    'application/json': {
+                        'schema': {'$ref': '#/components/schemas/queryables'}
+                    }
+                }
             }
         },
         'parameters': {
@@ -298,6 +286,77 @@ def get_oas_30(cfg):
                 },
                 'style': 'form',
                 'explode': False
+            }
+        },
+        'schemas': {
+            # TODO: change this schema once OGC will definitively publish it
+            "nameValuePairObj": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "oneOf":
+                        [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
+                    }
+                }
+            },
+            'queryable': {
+                'type': 'object',
+                'required': [
+                    'queryable',
+                    'type'
+                ],
+                'properties': {
+                    'queryable': {
+                        'description': 'the token that may be used in a CQL predicate', # noqa
+                        'type': 'string'
+                    },
+                    'title': {
+                        'description': 'a human readable title for the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'description': {
+                        'description': 'a human-readable narrative describing the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'language': {
+                        'description': 'the language used for the title and description', # noqa
+                        'type': 'string',
+                        'default': [
+                            'en'
+                        ]
+                    },
+                    'type': {
+                        'description': 'the data type of the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'type-ref': {
+                        'description': 'a reference to the formal definition of the type', # noqa
+                        'type': 'string',
+                        'format': 'url'
+                    }
+                }
+            },
+            'queryables': {
+                'type': 'object',
+                'required': [
+                    'queryables'
+                ],
+                'properties': {
+                    'queryables': {
+                        'type': 'array',
+                        'items': {'$ref': '#/components/schemas/queryable'}
+                    }
+                }
             }
         }
     }
@@ -348,7 +407,8 @@ def get_oas_30(cfg):
             }
         }
 
-        data_provider = load_plugin('provider', collections[k]['provider'])
+        data_provider = load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'feature'))
         fields = data_provider.fields
         prop = dict()
         for key in fields:
@@ -440,7 +500,8 @@ def get_oas_30(cfg):
         if transaction:
             paths[items_path].update(post)
 
-        p = load_plugin('provider', collections[k]['provider'])
+        p = load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'feature'))
 
         if p.fields:
             queryables_path = '{}/queryables'.format(collection_name_path)
@@ -455,7 +516,7 @@ def get_oas_30(cfg):
                         items_f,
                     ],
                     'responses': {
-                        '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '200': {'$ref': '#/components/responses/Queryables'},
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
@@ -510,7 +571,7 @@ def get_oas_30(cfg):
                 'tags': [k],
                 'operationId': 'get{}Feature'.format(k.capitalize()),
                 'parameters': [
-                    {'$ref': feature_id},
+                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
@@ -662,7 +723,7 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                '200': {'$ref': '#/components/responses/200'},
+                '200': {'$ref': '{}/responses/ProcessCollection.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -713,6 +774,7 @@ def get_oas_30(cfg):
                     'operationId': 'get{}Jobs'.format(k.capitalize()),
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     }
                 },
@@ -722,9 +784,22 @@ def get_oas_30(cfg):
                     'description': p.metadata['description'],
                     'tags': [k],
                     'operationId': 'execute{}Job'.format(k.capitalize()),
-                    'parameters': [],
+                    'parameters': [{
+                        'name': 'response',
+                        'in': 'query',
+                        'description': 'Response type',
+                        'required': False,
+                        'schema': {
+                            'type': 'string',
+                            'enum': ['raw', 'document'],
+                            'default': 'document'
+                        }
+                    }],
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
+                        '201': {'$ref': '{}/responses/ExecuteAsync.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '500': {'$ref': '{}/responses/ServerError.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     },
                     'requestBody': {

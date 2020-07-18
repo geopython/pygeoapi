@@ -93,9 +93,9 @@ if (OGC_SCHEMAS_LOCATION is not None and
 
 
 @APP.route('/')
-def root():
+def landing_page():
     """
-    HTTP root content of pygeoapi. Intro page access point
+    OGC API landing page endpoint
 
     :returns: HTTP response
     """
@@ -112,7 +112,7 @@ def root():
 @APP.route('/openapi')
 def openapi():
     """
-    OpenAPI access point
+    OpenAPI endpoint
 
     :returns: HTTP response
     """
@@ -133,7 +133,7 @@ def openapi():
 @APP.route('/conformance')
 def conformance():
     """
-    OGC open api conformance access point
+    OGC API conformance endpoint
 
     :returns: HTTP response
     """
@@ -150,18 +150,18 @@ def conformance():
 
 
 @APP.route('/collections')
-@APP.route('/collections/<name>')
-def describe_collections(name=None):
+@APP.route('/collections/<collection_id>')
+def describe_collections(collection_id=None):
     """
-    OGC open api collections access point
+    OGC API collections endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -171,18 +171,18 @@ def describe_collections(name=None):
     return response
 
 
-@APP.route('/collections/<name>/queryables')
-def get_collection_queryables(name=None):
+@APP.route('/collections/<collection_id>/queryables')
+def get_collection_queryables(collection_id=None):
     """
-    OGC open api collections querybles access point
+    OGC API collections querybles endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
     headers, status_code, content = api_.get_collection_queryables(
-        request.headers, request.args, name)
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -207,7 +207,10 @@ def supports_transactions(collection):
 
 def dataset(item_id=None):
     """
-    OGC open api collections/{dataset}/items/{item} access point
+    OGC API collections items endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
 
     :returns: HTTP response
     """
@@ -279,7 +282,7 @@ for collection_id in coll_support_trans:
 @APP.route('/stac')
 def stac_catalog_root():
     """
-    STAC access point
+    STAC root endpoint
 
     :returns: HTTP response
     """
@@ -298,7 +301,9 @@ def stac_catalog_root():
 @APP.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
-    STAC access point
+    STAC path endpoint
+
+    :param path: path
 
     :returns: HTTP response
     """
@@ -315,16 +320,17 @@ def stac_catalog_path(path):
 
 
 @APP.route('/processes')
-@APP.route('/processes/<name>')
-def describe_processes(name=None):
+@APP.route('/processes/<process_id>')
+def describe_processes(process_id=None):
     """
-    OGC open api processes access point (experimental)
+    OGC API - Processes description endpoint
 
-    :param name: identifier of process to describe
+    :param process_id: process identifier
+
     :returns: HTTP response
     """
     headers, status_code, content = api_.describe_processes(
-        request.headers, request.args, name)
+        request.headers, request.args, process_id)
 
     response = make_response(content, status_code)
 
@@ -334,12 +340,13 @@ def describe_processes(name=None):
     return response
 
 
-@APP.route('/processes/<name>/jobs', methods=['GET', 'POST'])
-def execute_process(name=None):
+@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+def execute_process(process_id=None):
     """
-    OGC open api jobs from processes access point (experimental)
+    OGC API - Processes jobs endpoint
 
-    :param name: identifier of process to execute
+    :param process_id: process identifier
+
     :returns: HTTP response
     """
 
@@ -347,7 +354,7 @@ def execute_process(name=None):
         headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
         headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, name)
+            request.headers, request.args, request.data, process_id)
 
     response = make_response(content, status_code)
 
@@ -367,8 +374,8 @@ def serve(ctx, server=None, debug=False):
 
     :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
-    :returns void
 
+    :returns: void
     """
 
 #    setup_logger(CONFIG['logging'])

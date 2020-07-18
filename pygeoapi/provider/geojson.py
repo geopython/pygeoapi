@@ -165,21 +165,23 @@ class GeoJSONProvider(BaseProvider):
         """
         all_data = self._load()
 
-        if 'id' in new_feature['properties']:
-            try:
-                self.get(str(new_feature['properties']['id']))
-                new_feature['properties']['id'] = str(uuid.uuid4())
-            except ProviderItemNotFoundError:
-                pass
+        id_field = self.id_field
+        id = new_feature['properties'][id_field]
+        new_feature['properties'][id_field] = str(id)
+        if id_field in new_feature['properties']:
+            identifier = str(new_feature['properties'][id_field])
+            for feature in all_data['features']:
+                if str(feature['properties'][id_field]) == identifier:
+                    new_feature['properties'][id_field] = str(uuid.uuid4())
         else:
-            new_feature['properties']['id'] = str(uuid.uuid4())
+            new_feature['properties'][id_field] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data, indent=2, sort_keys=True))
 
-        return new_feature['properties']['id']
+        return new_feature['properties'][id_field]
 
     def replace(self, identifier, new_feature):
         """
@@ -193,9 +195,10 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
 
+        id_field = self.id_field
         found_feature = False
         for index, feature in enumerate(all_data['features']):
-            if str(feature['properties']['id']) == identifier:
+            if str(feature['properties'][id_field]) == str(identifier):
                 found_feature = True
                 break
 
@@ -204,7 +207,7 @@ class GeoJSONProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
         else:
-            new_feature['properties']['id'] = identifier
+            new_feature['properties'][id_field] = identifier
             all_data['features'][index] = new_feature
             with open(self.data, 'w') as dst:
                 dst.write(json.dumps(all_data, indent=2, sort_keys=True))
@@ -221,9 +224,10 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
 
+        id_field = self.id_field
         found_feature = False
-        for feature in all_data['features']:
-            if str(feature['properties']['id']) == identifier:
+        for index, feature in enumerate(all_data['features']):
+            if str(feature['properties'][id_field]) == identifier:
                 found_feature = True
                 break
 
@@ -233,12 +237,12 @@ class GeoJSONProvider(BaseProvider):
             raise ProviderItemNotFoundError(err)
         else:
             # not allowed to modify/remove id field
-            for index, name_val_pair in enumerate(updates['modify']):
-                if name_val_pair['name'] == 'id':
-                    updates['modify'].pop(index)
-            for index, attrib in enumerate(updates['remove']):
-                if attrib == 'id':
-                    updates['remove'].pop(index)
+            for i, name_val_pair in enumerate(updates['modify']):
+                if name_val_pair['name'] == id_field:
+                    updates['modify'].pop(i)
+            for i, attrib in enumerate(updates['remove']):
+                if attrib == id_field:
+                    updates['remove'].pop(i)
             # add an attribute if its not already prescent in the feature
             for name_val_pair in updates['add']:
                 name = name_val_pair['name']
@@ -277,9 +281,10 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
 
+        id_field = self.id_field
         found_feature = False
         for index, feature in enumerate(all_data['features']):
-            if str(feature['properties']['id']) == identifier:
+            if str(feature['properties'][id_field]) == identifier:
                 found_feature = True
                 break
 
