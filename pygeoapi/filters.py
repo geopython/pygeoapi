@@ -1,6 +1,13 @@
 # from operator import and_, or_, add, sub, mul, truediv
 # from datetime import datetime, timedelta
 # from functools import reduce
+import logging
+from pygeoapi.exception import (CQLExceptionAttribute,
+                                CQLExceptionComparisonOperator,
+                                CQLExceptionLogicalCombinator,
+                                CQLExceptionSubFilters)
+
+LOGGER = logging.getLogger(__name__)
 
 
 def combine(sub_filters, combinator="AND"):
@@ -12,36 +19,43 @@ def combine(sub_filters, combinator="AND"):
         :return: the combined filter
         :rtype: filtered dict
     """
-    # check for sub_filters being the evaluation result of multiple sub_filters
-    if not isinstance(sub_filters, tuple):
-        raise AssertionError("Invalid sub_filters value")
+    try:
+        # check for sub-filters type
+        if not isinstance(sub_filters, tuple):
+            raise CQLExceptionSubFilters("Invalid sub-filter expression")
 
-    # check for sub_filter being the list of filtered dataset
-    for sub_filter in sub_filters:
-        if not isinstance(sub_filter, list):
-            raise AssertionError("Invalid sub_filter value")
+        for sub_filter in sub_filters:
+            if not isinstance(sub_filter, list):
+                raise CQLExceptionSubFilters("Invalid sub-filter expression")
 
-    # check for appropriate type of combinator
-    if combinator not in ("AND", "OR"):
-        raise AssertionError("Invalid logical combinator %s " % combinator)
+        # check for appropriate type of combinator
+        if combinator not in ("AND", "OR"):
+            raise CQLExceptionLogicalCombinator("Invalid logical \
+                                                combinator %s " % combinator)
 
-    mapping_list = []
-    intersection = []
-    union = []
+        mapping_list = []
+        intersection = []
+        union = []
 
-    for row in sub_filters[0]:
-        if row in sub_filters[1]:
-            intersection.append(row)
+        for row in sub_filters[0]:
+            if row in sub_filters[1]:
+                intersection.append(row)
+            else:
+                union.append(row)
+
+        # perform combination operation
+        if combinator == "AND":
+            mapping_list = intersection
         else:
-            union.append(row)
+            mapping_list = union + sub_filters[1]
 
-    # perform combination operation
-    if combinator == "AND":
-        mapping_list = intersection
-    else:
-        mapping_list = union + sub_filters[1]
+        return mapping_list
 
-    return mapping_list
+    except CQLExceptionSubFilters as err:
+        LOGGER.error(err)
+
+    except CQLExceptionLogicalCombinator as err:
+        LOGGER.error(err)
 
 
 def negate(sub_filter):  # TODO!!
@@ -82,10 +96,15 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         :return: a comparison expression filter
         :rtype: dict
     """
-    # check for valid type of comparison operator
-    if op not in OP_TO_COMP:
-        raise AssertionError("Invalid operator %s " % op)
     try:
+        # check for valid type of comparison operator
+        if op not in OP_TO_COMP:
+            raise CQLExceptionComparisonOperator("Invalid comparison \
+                                                operator %s " % op)
+
+        if lhs not in field_mapping:
+            raise CQLExceptionAttribute("Invalid field value %s " % lhs)
+
         comp = OP_TO_COMP[op]
         mapping_list = []
         if comp:
@@ -95,10 +114,12 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
                     mapping_list.append(row)
 
         return mapping_list
-    except KeyError as e:
-        raise AssertionError("Invalid field value %s" % e)
-    except Exception:
-        raise AssertionError("Invalid operation")
+
+    except CQLExceptionAttribute as err:
+        LOGGER.error(err)
+
+    except CQLExceptionComparisonOperator as err:
+        LOGGER.error(err)
 
 
 def between(lhs, low, high, not_=False):  # TODO!!
@@ -264,11 +285,15 @@ def attribute(name, field_mapping=None):  # TODO!!
         :type mapping_choices:
         :rtype:
     """
-    if name in field_mapping:
-        field = name
-        return field
-    else:
-        raise AssertionError("Invalid field value %s " % name)
+    try:
+        if name in field_mapping:
+            field = name
+            return field
+        else:
+            raise CQLExceptionAttribute("Invalid field value %s " % name)
+
+    except CQLExceptionAttribute as err:
+        LOGGER.error(err)
 
 
 def literal(value):

@@ -38,6 +38,8 @@ from pygeoapi.evaluate import FilterEvaluator
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
+from pygeoapi.exception import (CQLExceptionEmptyList)
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -112,40 +114,44 @@ class CSVProvider(BaseProvider):
                     mapping_choices=data_list).to_filter(ast)
 
             # ===========================================
+            try:
+                if resulttype == 'hits':
+                    LOGGER.debug('Returning hits only')
+                    feature_collection['numberMatched'] = len(data_list)
+                    return feature_collection
+                LOGGER.debug('Slicing CSV rows')
+                for row in itertools.islice(data_list, startindex,
+                                            startindex+limit):
+                    feature = {'type': 'Feature'}
+                    feature['id'] = row.pop(self.id_field)
+                    feature['geometry'] = {
+                        'type': 'Point',
+                        'coordinates': [
+                            float(row.pop(self.geometry_x)),
+                            float(row.pop(self.geometry_y))
+                        ]
+                    }
+                    if self.properties:
+                        feature['properties'] = OrderedDict()
+                        for p in self.properties:
+                            try:
+                                feature['properties'][p] = row[p]
+                            except KeyError as err:
+                                LOGGER.error(err)
+                                raise ProviderQueryError()
+                    else:
+                        feature['properties'] = row
 
-            if resulttype == 'hits':
-                LOGGER.debug('Returning hits only')
-                feature_collection['numberMatched'] = len(data_list)
-                return feature_collection
-            LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_list, startindex,
-                                        startindex+limit):
-                feature = {'type': 'Feature'}
-                feature['id'] = row.pop(self.id_field)
-                feature['geometry'] = {
-                    'type': 'Point',
-                    'coordinates': [
-                        float(row.pop(self.geometry_x)),
-                        float(row.pop(self.geometry_y))
-                    ]
-                }
-                if self.properties:
-                    feature['properties'] = OrderedDict()
-                    for p in self.properties:
-                        try:
-                            feature['properties'][p] = row[p]
-                        except KeyError as err:
-                            LOGGER.error(err)
-                            raise ProviderQueryError()
-                else:
-                    feature['properties'] = row
+                    if identifier is not None and feature['id'] == identifier:
+                        found = True
+                        result = feature
+                    feature_collection['features'].append(feature)
+                    feature_collection['numberMatched'] = \
+                        len(feature_collection['features'])
 
-                if identifier is not None and feature['id'] == identifier:
-                    found = True
-                    result = feature
-                feature_collection['features'].append(feature)
-                feature_collection['numberMatched'] = \
-                    len(feature_collection['features'])
+            except TypeError as err:
+                LOGGER.error(err)
+                raise CQLExceptionEmptyList()
 
         if identifier is not None and not found:
             return None

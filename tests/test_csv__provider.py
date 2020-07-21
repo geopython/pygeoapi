@@ -91,28 +91,6 @@ def test_query(fixture, config):
 
     assert len(results['features'][0]['properties']) == 3
 
-    # ===========================
-    # Sample CQL filter test case
-
-    results = p.query(filter_expression='stn_id < 2147 AND id > 377')
-    assert len(results['features']) == 1
-
-    results = p.query(filter_expression='stn_id < 2147 OR id > 377')
-    assert len(results['features']) == 3
-
-    results = p.query(filter_expression='stn_id = 35')
-    assert len(results['features']) == 2
-
-    results = p.query(filter_expression='stn_id <> 35')
-    assert len(results['features']) == 3
-
-    results = p.query(filter_expression='stn_id <> 35 AND id >= 238 OR id <= 964') # noqa
-    assert len(results['features']) == 3
-
-    results = p.query(filter_expression='stn_id <> 35 AND id > 238 AND id < 964') # noqa
-    assert len(results['features']) == 1
-    # ===========================
-
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)
     results = p.query()
@@ -129,6 +107,95 @@ def test_get(fixture, config):
 
 def test_get_not_existing_item_raise_exception(fixture, config):
     """Testing query for a not existing object"""
+
     p = CSVProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get('404')
+
+# test on common comparisons operations
+
+
+def test_eq(config):
+    """Testing query for equals `=` CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='id = 377')
+    assert len(results['features']) == 1
+
+
+def test_ne(config):
+    """Testing query for not-equals `<>`  CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='id <> 355')
+    assert len(results['features']) == 5
+
+
+def test_lt(config):
+    """Testing query for less-than `<` CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id < 604')
+    assert len(results['features']) == 2
+
+
+def test_le(config):
+    """Testing query for less-than-equals-to `<=` CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id <= 604')
+    assert len(results['features']) == 3
+
+
+def test_gt(config):
+    """Testing query for greater-than `>` CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='id > 964')
+    assert len(results['features']) == 0
+
+
+def test_ge(config):
+    """Testing query for greater-than-equals-to `>=` CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='id >= 964')
+    assert len(results['features']) == 1
+
+# test on logical operators
+
+
+def test_and(config):
+    """Testing query for multiple sub-filters combined by `AND`
+    in CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id < 2147 AND id > 377')
+    assert len(results['features']) == 1
+
+
+def test_or(config):
+    """Testing query for multiple sub-filters combined by `OR`
+    in CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id < 2147 OR id > 377')
+    assert len(results['features']) == 3
+
+
+def test_and_or(config):
+    """Testing query for multiple sub-filters combined by `AND` and `OR`
+    in CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id <> 35 AND id >= 238 OR id <= 964') # noqa
+    assert len(results['features']) == 3
+
+
+def test_and_and(config):
+    """Testing query for multiple sub-filters combined by multiple `AND`
+    in CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(filter_expression='stn_id <> 35 AND id > 238 AND id < 964') # noqa
+    assert len(results['features']) == 1
