@@ -1,3 +1,10 @@
+"""
+Defining custom exceptions that might be raised due to the
+implementation of CQL filter expressions in pygeoapi
+
+"""
+
+
 class CQLException(Exception):
     """CQL filter generic exception"""
     pass
@@ -15,12 +22,21 @@ class CQLExceptionSubFilters(CQLException):
 
 class CQLExceptionLogicalCombinator(CQLException):
     """CQL filter having invalid logical combinator exception"""
-
     pass
 
 
-class CQLExceptionComparisonOperator(CQLException):
+class CQLExceptionCombination(CQLException):
+    """CQL filter having invalid combination operation"""
+    pass
+
+
+class CQLExceptionComparator(CQLException):
     """CQL filter having invalid comparison operator exception"""
+    pass
+
+
+class CQLExceptionComparison(CQLException):
+    """CQL filter having invalid caomparison operation"""
     pass
 
 

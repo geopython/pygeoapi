@@ -1,3 +1,11 @@
+"""
+For implementing CQL filter expressions in pygeoapi.
+Acts as an abstract layer between the data providers
+and CQL filter.
+
+"""
+
+from pycql import parse
 from pycql.ast import (
     NotConditionNode, CombinationConditionNode, ComparisonPredicateNode,
     BetweenPredicateNode, LikePredicateNode, ArithmeticExpressionNode,
@@ -8,13 +16,57 @@ from pycql.ast import (
 import pygeoapi.filters as filters
 
 
-class FilterEvaluator(object):
+class CQLParser():
+    """ CQL Filter Parser """
+
+    def __init__(self, filter_expression):
+        """
+        Initialize object
+
+        :param filter_expression: a CQL filter expression
+
+        :returns: string expression
+        """
+
+        self.filter_expression = filter_expression
+
+    def create_ast(self):
+        """
+        Create an Abstract Syntax Tree of the CQL filter expression
+        by parsing the expression
+
+        :returns: Abstract Syntax Tree
+        """
+
+        ast = parse(self.filter_expression)
+        return ast
+
+
+class CQLFilterEvaluator():
+    """ CQL Filter Evaluator """
+
     def __init__(self, field_mapping=None, mapping_choices=None):
+        """
+        Initialize object
+
+        :param field_mapping: list of field values
+        :param mapping_choices: list of features
+
+        :returns: string expression
+        """
+
         self.field_mapping = field_mapping
         self.mapping_choices = mapping_choices
 
-    # recursive call for filter evaluation
     def to_filter(self, node):
+        """
+        To translate ECQL Abstract Syntax Tree to query expressions
+
+        :param node: Abstract Syntax Tree nodes
+
+        :returns: list of filtered features
+        """
+
         to_filter = self.to_filter
 
         # evaluation for Not Condition Predicate Node
@@ -115,13 +167,15 @@ class FilterEvaluator(object):
 
 
 def to_filter(ast, field_mapping=None, mapping_choices=None):
-    """ Helper function to translate ECQL AST to query expressions.
-
-        :param ast: the abstract syntax tree
-        :param field_mapping: a dict mapping from the filter name
-        :param mapping_choices: a dict mapping field lookups to choices.
-        :type ast: :class:`Node`
-        :returns: filtered dict
-        :rtype: dict
     """
-    return FilterEvaluator(field_mapping, mapping_choices).to_filter(ast)
+    Helper function to translate ECQL AST to query expressions.
+
+    :param ast: the abstract syntax tree
+    :param field_mapping: list of field values
+    :param mapping_choices: list of features
+    :type ast: :class:`Node`
+
+    :returns: list of filtered features
+    """
+
+    return CQLFilterEvaluator(field_mapping, mapping_choices).to_filter(ast)

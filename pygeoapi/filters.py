@@ -1,38 +1,39 @@
-# from operator import and_, or_, add, sub, mul, truediv
-# from datetime import datetime, timedelta
-# from functools import reduce
+"""
+For evaluating CQL filter queries from Abstract Syntax Tree
+"""
+
 import logging
+from typing import Tuple
+import enum
+
 from pygeoapi.exception import (CQLExceptionAttribute,
-                                CQLExceptionComparisonOperator,
-                                CQLExceptionLogicalCombinator,
-                                CQLExceptionSubFilters)
+                                CQLExceptionCombination,
+                                CQLExceptionComparison,
+                                CQLExceptionComparator
+                                )
 
 LOGGER = logging.getLogger(__name__)
 
 
-def combine(sub_filters, combinator="AND"):
-    """ Combine filters using a logical combinator
+class Combinator(enum.Enum):
+    """ Enum for logical operators """
+    AND = "AND"
+    OR = "OR"
 
-        :param sub_filters: the filters to combine
-        :param combinator: a string: "AND" / "OR"
-        :type sub_filters: list of filtered dict
-        :return: the combined filter
-        :rtype: filtered dict
+
+def combine(sub_filters: Tuple, combination: Combinator = Combinator.AND):
     """
+    Combine filters using a logical combinator
+
+    :param sub_filters: the filters to combine
+    :param combinator: a string: "AND" / "OR"
+    :type sub_filters: tuple of multiple sub-filter result
+
+    :return: the combined filter
+    :rtype: filtered dict
+    """
+
     try:
-        # check for sub-filters type
-        if not isinstance(sub_filters, tuple):
-            raise CQLExceptionSubFilters("Invalid sub-filter expression")
-
-        for sub_filter in sub_filters:
-            if not isinstance(sub_filter, list):
-                raise CQLExceptionSubFilters("Invalid sub-filter expression")
-
-        # check for appropriate type of combinator
-        if combinator not in ("AND", "OR"):
-            raise CQLExceptionLogicalCombinator("Invalid logical \
-                                                combinator %s " % combinator)
-
         mapping_list = []
         intersection = []
         union = []
@@ -44,18 +45,16 @@ def combine(sub_filters, combinator="AND"):
                 union.append(row)
 
         # perform combination operation
-        if combinator == "AND":
+        if combination == "AND":
             mapping_list = intersection
         else:
             mapping_list = union + sub_filters[1]
 
         return mapping_list
 
-    except CQLExceptionSubFilters as err:
+    except IndexError as err:
         LOGGER.error(err)
-
-    except CQLExceptionLogicalCombinator as err:
-        LOGGER.error(err)
+        raise CQLExceptionCombination()
 
 
 def negate(sub_filter):  # TODO!!
@@ -70,7 +69,7 @@ def negate(sub_filter):  # TODO!!
 
 
 # Comparison operators dictionary
-OP_TO_COMP = {
+Comparator = {
     "<": "<",
     "<=": "<=",
     ">": ">",
@@ -86,7 +85,7 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         :param lhs: the field to compare
         :type lhs: string
         :param rhs: the filter expression
-        :type rhs: int/float
+        :type rhs: literal
         :param op: a string denoting the operation. one of ``"<"``, ``"<="``,
                    ``">"``, ``">="``, ``"<>"``, ``"="``
         :type op: str
@@ -96,16 +95,9 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         :return: a comparison expression filter
         :rtype: dict
     """
+
     try:
-        # check for valid type of comparison operator
-        if op not in OP_TO_COMP:
-            raise CQLExceptionComparisonOperator("Invalid comparison \
-                                                operator %s " % op)
-
-        if lhs not in field_mapping:
-            raise CQLExceptionAttribute("Invalid field value %s " % lhs)
-
-        comp = OP_TO_COMP[op]
+        comp = Comparator[op]
         mapping_list = []
         if comp:
             for row in mapping_choices:
@@ -115,11 +107,9 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
 
         return mapping_list
 
-    except CQLExceptionAttribute as err:
-        LOGGER.error(err)
-
-    except CQLExceptionComparisonOperator as err:
-        LOGGER.error(err)
+    except KeyError as err:
+        LOGGER.error("Invalid field name or operator %s " % err)
+        raise CQLExceptionComparison()
 
 
 def between(lhs, low, high, not_=False):  # TODO!!
@@ -276,15 +266,19 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):  # TODO!!
     pass
 
 
-def attribute(name, field_mapping=None):  # TODO!!
-    """ Create an attribute lookup expression using a field mapping dictionary.
-
-        :param name: the field filter name
-        :type name: str
-        :param field_mapping: the dictionary to use as a lookup.
-        :type mapping_choices:
-        :rtype:
+def attribute(name, field_mapping=None):
     """
+    Create an attribute lookup expression using a field mapping dictionary.
+
+    :param name: the field filter name
+    :type name: str
+    :param field_mapping: the dictionary to use as a lookup.
+    :type mapping_choices:
+
+    :return: field name
+    :rtype:
+    """
+
     try:
         if name in field_mapping:
             field = name
@@ -297,6 +291,16 @@ def attribute(name, field_mapping=None):  # TODO!!
 
 
 def literal(value):
+    """
+    Returns the literal value of the node
+
+    :param value: data value
+    :type name: str, int, float
+
+    :return: data value
+    :rtype: str, int, float
+    """
+
     return value
 
 

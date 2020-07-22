@@ -32,8 +32,7 @@ import csv
 import itertools
 import logging
 
-import pycql
-from pygeoapi.evaluate import FilterEvaluator
+from pygeoapi.cql_evaluate import (CQLParser, CQLFilterEvaluator)
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
@@ -108,8 +107,8 @@ class CSVProvider(BaseProvider):
             # Added for CQL Filter Expression evaluation
 
             if filter_expression:
-                ast = pycql.parse(filter_expression)
-                data_list = FilterEvaluator(
+                ast = CQLParser(filter_expression).create_ast()
+                data_list = CQLFilterEvaluator(
                     field_mapping=list(fields.keys()),
                     mapping_choices=data_list).to_filter(ast)
 
