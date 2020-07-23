@@ -29,9 +29,10 @@
 #
 # =================================================================
 
+import functools
 import importlib
 import logging
-import functools
+import os
 from typing import Any
 
 from osgeo import gdal as osgeo_gdal
@@ -67,6 +68,8 @@ class OGRProvider(BaseProvider):
         'WFS': 'pygeoapi.provider.ogr.WFSHelper',
         '*': 'pygeoapi.provider.ogr.CommonSourceHelper'
     }
+    os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
+        'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
 
     # Setting for traditional CRS axis order.
     OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
@@ -424,6 +427,10 @@ class OGRProvider(BaseProvider):
 
     def _get_next_feature(self, layer, feature_id):
         try:
+            if layer.GetFeatureCount() == 0:
+                LOGGER.error("item {} is not found".format(feature_id))
+                raise ProviderItemNotFoundError(
+                    "item {} not found".format(feature_id))
             # Ignore gdal error
             next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             if next_feature:
@@ -433,8 +440,9 @@ class OGRProvider(BaseProvider):
                         "Object properties are all null"
                     )
             else:
-                raise ProviderItemNotFoundError(
-                    "item {} not found".format(feature_id))
+                raise RuntimeError(
+                    "GDAL has returned a null feature for item {}".format(
+                        feature_id))
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())

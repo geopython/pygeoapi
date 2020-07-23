@@ -72,11 +72,13 @@ api_ = API(CONFIG)
 
 
 @app.route('/')
-async def root(request: Request):
+async def landing_page(request: Request):
     """
-    HTTP root content of pygeoapi. Intro page access point
+    OGC API landing page endpoint
+
     :returns: Starlette HTTP Response
     """
+
     headers, status_code, content = api_.root(
         request.headers, request.query_params)
 
@@ -91,10 +93,11 @@ async def root(request: Request):
 @app.route('/openapi/')
 async def openapi(request: Request):
     """
-    OpenAPI access point
+    OpenAPI endpoint
 
     :returns: Starlette HTTP Response
     """
+
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
         openapi = yaml_load(ff)
 
@@ -112,7 +115,7 @@ async def openapi(request: Request):
 @app.route('/conformance/')
 async def conformance(request: Request):
     """
-    OGC open api conformance access point
+    OGC API conformance endpoint
 
     :returns: Starlette HTTP Response
     """
@@ -129,20 +132,21 @@ async def conformance(request: Request):
 
 @app.route('/collections')
 @app.route('/collections/')
-@app.route('/collections/{name}')
-@app.route('/collections/{name}/')
-async def describe_collections(request: Request, name=None):
+@app.route('/collections/{collection_id}')
+@app.route('/collections/{collection_id}/')
+async def describe_collections(request: Request, collection_id=None):
     """
-    OGC open api collections  access point
+    OGC API collections endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
+
     :returns: Starlette HTTP Response
     """
 
-    if 'name' in request.path_params:
-        name = request.path_params['name']
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
     headers, status_code, content = api_.describe_collections(
-        request.headers, request.query_params, name)
+        request.headers, request.query_params, collection_id)
 
     response = Response(content=content, status_code=status_code)
     if headers:
@@ -151,21 +155,21 @@ async def describe_collections(request: Request, name=None):
     return response
 
 
-@app.route('/collections/{name}/queryables')
-@app.route('/collections/{name}/queryables/')
-async def get_collection_queryables(request: Request, name=None):
+@app.route('/collections/{collection_id}/queryables')
+@app.route('/collections/{collection_id}/queryables/')
+async def get_collection_queryables(request: Request, collection_id=None):
     """
-    OGC open api collections queryables access point
+    OGC API collections queryables endpoint
 
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: Starlette HTTP Response
     """
 
-    if 'name' in request.path_params:
-        name = request.path_params['name']
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
     headers, status_code, content = api_.get_collection_queryables(
-        request.headers, request.query_params, name)
+        request.headers, request.query_params, collection_id)
 
     response = Response(content=content, status_code=status_code)
     if headers:
@@ -240,7 +244,10 @@ def get_collection_items_tiles(request: Request, name=None, tileMatrixSetId=None
 @app.route('/collections/{collection_id}/items/{item_id}/')
 async def dataset(request: Request, collection_id=None, item_id=None):
     """
-    OGC open api collections/{dataset}/items/{item_id}  access point
+    OGC API collections items endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
 
     :returns: Starlette HTTP Response
     """
@@ -268,7 +275,8 @@ async def dataset(request: Request, collection_id=None, item_id=None):
 @app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
-    STAC access point
+    STAC root endpoint
+
     :returns: Starlette HTTP response
     """
 
@@ -286,7 +294,10 @@ async def stac_catalog_root(request: Request):
 @app.route('/stac/{path:path}')
 async def stac_catalog_path(request: Request):
     """
-    STAC access point
+    STAC endpoint
+
+    :param path: path
+
     :returns: Starlette HTTP response
     """
 
@@ -305,17 +316,18 @@ async def stac_catalog_path(request: Request):
 
 @app.route('/processes')
 @app.route('/processes/')
-@app.route('/processes/{name}')
-@app.route('/processes/{name}/')
-async def describe_processes(request: Request, name=None):
+@app.route('/processes/{process_id}')
+@app.route('/processes/{process_id}/')
+async def describe_processes(request: Request, process_id=None):
     """
-    OGC open api processes access point (experimental)
+    OGC API - Processes description endpoint
 
-    :param name: identifier of process to describe
+    :param process_id: identifier of process to describe
+
     :returns: Starlette HTTP Response
     """
     headers, status_code, content = api_.describe_processes(
-        request.headers, request.query_params, name)
+        request.headers, request.query_params, process_id)
 
     response = Response(content=content, status_code=status_code)
 
@@ -325,13 +337,14 @@ async def describe_processes(request: Request, name=None):
     return response
 
 
-@app.route('/processes/{name}/jobs', methods=['GET', 'POST'])
-@app.route('/processes/{name}/jobs/', methods=['GET', 'POST'])
-async def execute_process(request: Request, name=None):
+@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+async def execute_process(request: Request, process_id=None):
     """
-    OGC open api jobs from processes access point (experimental)
+    OGC API - Processes jobs endpoint
 
-    :param name: identifier of process to execute
+    :param process_id: identifier of process to execute
+
     :returns: Starlette HTTP Response
     """
 
@@ -339,7 +352,7 @@ async def execute_process(request: Request, name=None):
         headers, status_code, content = ({}, 200, "[]")
     elif request.method == 'POST':
         headers, status_code, content = api_.execute_process(
-            request.headers, request.query_params, request.data, name)
+            request.headers, request.query_params, request.data, process_id)
 
     response = Response(content=content, status_code=status_code)
 
@@ -359,7 +372,8 @@ def serve(ctx, server=None, debug=False):
 
     :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
-    :returns void
+
+    :returns: void
     """
 
 #    setup_logger(CONFIG['logging'])

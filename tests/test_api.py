@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -118,10 +118,10 @@ def test_root(config, api_):
     assert root['links'][0]['rel'] == 'self'
     assert root['links'][0]['type'] == 'application/json'
     assert root['links'][0]['href'].endswith('?f=json')
-    assert any(l['href'].endswith('f=jsonld') and l['rel'] == 'alternate'
-               for l in root['links'])
-    assert any(l['href'].endswith('f=html') and l['rel'] == 'alternate'
-               for l in root['links'])
+    assert any(link['href'].endswith('f=jsonld') and link['rel'] == 'alternate'
+               for link in root['links'])
+    assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
+               for link in root['links'])
     assert len(root['links']) == 7
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
@@ -145,7 +145,7 @@ def test_root_structured_data(config, api_):
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
     assert '@context' in root
-    assert root['@context'] == 'https://schema.org'
+    assert root['@context'] == 'https://schema.org/docs/jsonldcontext.jsonld'
     expanded = jsonld.expand(root)[0]
     assert '@type' in expanded
     assert 'http://schema.org/DataCatalog' in expanded['@type']
@@ -246,7 +246,7 @@ def test_get_collection_queryables(config, api_):
     assert len(queryables['queryables']) == 6
 
     # test with provider filtered properties
-    api_.config['resources']['obs']['provider']['properties'] = ['stn_id']
+    api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
 
     rsp_headers, code, response = api_.get_collection_queryables(
         req_headers, {'f': 'json'}, 'obs')
@@ -642,6 +642,14 @@ def test_execute_process(config, api_):
     response = json.loads(response)
 
     assert response['outputs'][0]['value'] == 'test'
+
+    args = {'response': 'raw'}
+    rsp_headers, code, response = api_.execute_process(req_headers, args,
+                                                       json.dumps(req_body),
+                                                       'hello-world')
+    response = json.loads(response)
+
+    assert response[0]['value'] == 'test'
 
     api_.config['resources'] = {}
 

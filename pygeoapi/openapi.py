@@ -35,7 +35,8 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import filter_dict_by_key_value, yaml_load
+from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
+                           yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -154,13 +155,14 @@ def get_oas_30(cfg):
             'summary': 'Landing page',
             'description': 'Landing page',
             'tags': ['server'],
+            'operationId': 'getLandingPage',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
-                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                '200': {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -170,12 +172,13 @@ def get_oas_30(cfg):
             'summary': 'This document',
             'description': 'This document',
             'tags': ['server'],
+            'operationId': 'getOpenapi',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {'$ref': '#/components/responses/200'},
-                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '200': {'$ref': '#/components/responses/200'},
+                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -186,13 +189,14 @@ def get_oas_30(cfg):
             'summary': 'API conformance definition',
             'description': 'API conformance definition',
             'tags': ['server'],
+            'operationId': 'getConformanceDeclaration',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
-                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                '200': {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
@@ -202,23 +206,29 @@ def get_oas_30(cfg):
             'summary': 'Collections',
             'description': 'Collections',
             'tags': ['server'],
+            'operationId': 'getCollections',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
-                400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                '200': {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
             }
         }
     }
 
     oas['tags'].append({
-        'name': 'server',
-        'description': cfg['metadata']['identification']['description'],
-        'externalDocs': {
-            'description': 'information',
-            'url': cfg['metadata']['identification']['url']}
+            'name': 'server',
+            'description': cfg['metadata']['identification']['description'],
+            'externalDocs': {
+                'description': 'information',
+                'url': cfg['metadata']['identification']['url']}
+        }
+    )
+    oas['tags'].append({
+            'name': 'stac',
+            'description': 'SpatioTemporal Asset Catalog'
         }
     )
 
@@ -228,8 +238,16 @@ def get_oas_30(cfg):
                 'description': 'successful operation',
             },
             'default': {
-               'description': 'Unexpected error',
-               'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
+                'description': 'Unexpected error',
+                'content': gen_media_type_object('application/json', 'oapip', 'schemas/exception.yaml')  # noqa
+            },
+            'Queryables': {
+                'description': 'successful queryables operation',
+                'content': {
+                    'application/json': {
+                        'schema': {'$ref': '#/components/schemas/queryables'}
+                    }
+                }
             }
         },
         'parameters': {
@@ -270,6 +288,58 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             }
+        },
+        'schemas': {
+            # TODO: change this schema once OGC will definitively publish it
+            'queryable': {
+                'type': 'object',
+                'required': [
+                    'queryable',
+                    'type'
+                ],
+                'properties': {
+                    'queryable': {
+                        'description': 'the token that may be used in a CQL predicate', # noqa
+                        'type': 'string'
+                    },
+                    'title': {
+                        'description': 'a human readable title for the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'description': {
+                        'description': 'a human-readable narrative describing the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'language': {
+                        'description': 'the language used for the title and description', # noqa
+                        'type': 'string',
+                        'default': [
+                            'en'
+                        ]
+                    },
+                    'type': {
+                        'description': 'the data type of the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'type-ref': {
+                        'description': 'a reference to the formal definition of the type', # noqa
+                        'type': 'string',
+                        'format': 'url'
+                    }
+                }
+            },
+            'queryables': {
+                'type': 'object',
+                'required': [
+                    'queryables'
+                ],
+                'properties': {
+                    'queryables': {
+                        'type': 'array',
+                        'items': {'$ref': '#/components/schemas/queryable'}
+                    }
+                }
+            }
         }
     }
 
@@ -302,14 +372,15 @@ def get_oas_30(cfg):
                 'summary': 'Get collection metadata'.format(v['title']),  # noqa
                 'description': v['description'],
                 'tags': [k],
+                'operationId': 'describe{}Collection'.format(k.capitalize()),
                 'parameters': [
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
-                    200: {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    '200': {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
@@ -321,6 +392,7 @@ def get_oas_30(cfg):
                 'summary': 'Get {} items'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
+                'operationId': 'get{}Features'.format(k.capitalize()),
                 'parameters': [
                     items_f,
                     {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -329,15 +401,16 @@ def get_oas_30(cfg):
                     {'$ref': '#/components/parameters/startindex'}
                 ],
                 'responses': {
-                    200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
 
-        p = load_plugin('provider', collections[k]['provider'])
+        p = load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'feature'))
 
         if p.fields:
             queryables_path = '{}/queryables'.format(collection_name_path)
@@ -347,14 +420,15 @@ def get_oas_30(cfg):
                     'summary': 'Get {} queryables'.format(v['title']),
                     'description': v['description'],
                     'tags': [k],
+                    'operationId': 'get{}Queryables'.format(k.capitalize()),
                     'parameters': [
                         items_f,
                     ],
                     'responses': {
-                        200: {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                        '200': {'$ref': '#/components/responses/Queryables'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                     }
                 }
             }
@@ -404,15 +478,16 @@ def get_oas_30(cfg):
                 'summary': 'Get {} item by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
+                'operationId': 'get{}Feature'.format(k.capitalize()),
                 'parameters': [
                     {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     {'$ref': '#/components/parameters/f'}
                 ],
                 'responses': {
-                    200: {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    400: {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    404: {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    500: {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
         }
@@ -423,9 +498,10 @@ def get_oas_30(cfg):
             'summary': 'SpatioTemporal Asset Catalog',
             'description': 'SpatioTemporal Asset Catalog',
             'tags': ['stac'],
+            'operationId': 'getStacCatalog',
             'parameters': [],
             'responses': {
-                200: {'$ref': '#/components/responses/200'},
+                '200': {'$ref': '#/components/responses/200'},
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -437,11 +513,12 @@ def get_oas_30(cfg):
             'summary': 'Processes',
             'description': 'Processes',
             'tags': ['server'],
+            'operationId': 'getProcesses',
             'parameters': [
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                200: {'$ref': '#/components/responses/200'},
+                '200': {'$ref': '{}/responses/ProcessCollection.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -471,15 +548,15 @@ def get_oas_30(cfg):
 
             paths[process_name_path] = {
                 'get': {
-                    'summary': 'Get process metadata'.format(
-                        p.metadata['title']),
+                    'summary': 'Get process metadata',
                     'description': p.metadata['description'],
                     'tags': [k],
+                    'operationId': 'describe{}Process'.format(k.capitalize()),
                     'parameters': [
                         {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
-                        200: {'$ref': '#/components/responses/200'},
+                        '200': {'$ref': '#/components/responses/200'},
                         'default': {'$ref': '#/components/responses/default'}
                     }
                 }
@@ -489,8 +566,10 @@ def get_oas_30(cfg):
                     'summary': 'Retrieve job list for process',
                     'description': p.metadata['description'],
                     'tags': [k],
+                    'operationId': 'get{}Jobs'.format(k.capitalize()),
                     'responses': {
-                        200: {'$ref': '#/components/responses/200'},
+                        '200': {'$ref': '#/components/responses/200'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     }
                 },
@@ -499,9 +578,23 @@ def get_oas_30(cfg):
                         p.metadata['title']),
                     'description': p.metadata['description'],
                     'tags': [k],
-                    'parameters': [],
+                    'operationId': 'execute{}Job'.format(k.capitalize()),
+                    'parameters': [{
+                        'name': 'response',
+                        'in': 'query',
+                        'description': 'Response type',
+                        'required': False,
+                        'schema': {
+                            'type': 'string',
+                            'enum': ['raw', 'document'],
+                            'default': 'document'
+                        }
+                    }],
                     'responses': {
-                        200: {'$ref': '#/components/responses/200'},
+                        '200': {'$ref': '#/components/responses/200'},
+                        '201': {'$ref': '{}/responses/ExecuteAsync.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        '500': {'$ref': '{}/responses/ServerError.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     },
                     'requestBody': {

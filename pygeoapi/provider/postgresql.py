@@ -237,7 +237,7 @@ class PostgreSQLProvider(BaseProvider):
                     cursor.execute(sql_query)
                 except Exception as err:
                     LOGGER.error('Error executing sql_query: {}: {}'.format(
-                        sql_query.as_string(cursor)), err)
+                        sql_query.as_string(cursor), err))
                     raise ProviderQueryError()
 
                 hits = cursor.fetchone()["hits"]
