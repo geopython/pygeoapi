@@ -1264,7 +1264,7 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/f'}
             ],
             'responses': {
-                '200': {'$ref': '{}/responses/ProcessCollection.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                '200': {'$ref': '{}/responses/ProcessList.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
