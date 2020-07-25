@@ -101,13 +101,13 @@ def test_api(config, api_, openapi):
 
 def test_api_exception(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {'f': 'foo'})
+    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'foo'})
     assert code == 400
 
 
 def test_root(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {})
+    rsp_headers, code, response = api_.landing_page(req_headers, {})
     root = json.loads(response)
 
     assert rsp_headers['Content-Type'] == 'application/json'
