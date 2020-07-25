@@ -47,8 +47,10 @@ from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (ProviderGenericError,
-    ProviderConnectionError, ProviderNotFoundError,
-    ProviderQueryError, ProviderItemNotFoundError)
+                                    ProviderConnectionError,
+                                    ProviderNotFoundError,
+                                    ProviderQueryError,
+                                    ProviderItemNotFoundError)
 from pygeoapi.provider.tile import (ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
@@ -662,10 +664,10 @@ class API:
 
         for service in p.get_tile_services(
             baseurl=self.config['server']['url'],
-            servicepath=
-            '/collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
-            .format(dataset, 'tileMatrixSetId',
-                    'tileMatrix', 'tileRow', 'tileCol'))['links']:
+            servicepath='\
+                /collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
+                .format(dataset, 'tileMatrixSetId',
+                        'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
         for scheme in p.schemes['tileMatrixSetLinks']:
             tiles['tileMatrixSetLinks'].append(scheme)

@@ -3,7 +3,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
 #
-# Copyright (c) 2019 Francesco Bartoli
+# Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -201,10 +201,13 @@ async def get_collection_tiles(request: Request, name=None):
     return response
 
 
-@app.route('/collections/{name}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
-@app.route('/collections/{name}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
-def get_collection_items_tiles(request: Request, name=None, tileMatrixSetId=None,
-                               tile_matrix=None, tileRow=None, tileCol=None):
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
+def get_collection_items_tiles(request: Request, name=None,
+                               tileMatrixSetId=None, tile_matrix=None,
+                               tileRow=None, tileCol=None):
     """
     OGC open api collection tiles service
 
