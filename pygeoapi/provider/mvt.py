@@ -32,7 +32,8 @@ import httpx
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.provider.tile import BaseTileProvider
-from pygeoapi.provider.base import ProviderConnectionError, ProviderNotFoundError
+# from pygeoapi.provider.base import (ProviderConnectionError,
+#                                     ProviderNotFoundError)
 
 
 LOGGER = logging.getLogger(__name__)
