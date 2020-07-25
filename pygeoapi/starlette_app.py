@@ -79,7 +79,7 @@ async def landing_page(request: Request):
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.root(
+    headers, status_code, content = api_.landing_page(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -134,7 +134,7 @@ async def conformance(request: Request):
 @app.route('/collections/')
 @app.route('/collections/{collection_id}')
 @app.route('/collections/{collection_id}/')
-async def describe_collections(request: Request, collection_id=None):
+async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
 
@@ -157,7 +157,7 @@ async def describe_collections(request: Request, collection_id=None):
 
 @app.route('/collections/{collection_id}/queryables')
 @app.route('/collections/{collection_id}/queryables/')
-async def get_collection_queryables(request: Request, collection_id=None):
+async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
 
@@ -182,7 +182,7 @@ async def get_collection_queryables(request: Request, collection_id=None):
 @app.route('/collections/{collection_id}/items/')
 @app.route('/collections/{collection_id}/items/{item_id}')
 @app.route('/collections/{collection_id}/items/{item_id}/')
-async def dataset(request: Request, collection_id=None, item_id=None):
+async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
 
@@ -203,6 +203,54 @@ async def dataset(request: Request, collection_id=None, item_id=None):
     else:
         headers, status_code, content = api_.get_collection_item(
             request.headers, request.query_params, collection_id, item_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes')
+@app.route('/processes/')
+@app.route('/processes/{process_id}')
+@app.route('/processes/{process_id}/')
+async def processes(request: Request, process_id=None):
+    """
+    OGC API - Processes description endpoint
+
+    :param process_id: identifier of process to describe
+
+    :returns: Starlette HTTP Response
+    """
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.query_params, process_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+async def process_jobs(request: Request, process_id=None):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param process_id: identifier of process to execute
+
+    :returns: Starlette HTTP Response
+    """
+
+    if request.method == 'GET':
+        headers, status_code, content = ({}, 200, "[]")
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.query_params, request.data, process_id)
 
     response = Response(content=content, status_code=status_code)
 
@@ -245,54 +293,6 @@ async def stac_catalog_path(request: Request):
 
     headers, status_code, content = api_.get_stac_path(
         request.headers, request.query_params, path)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes')
-@app.route('/processes/')
-@app.route('/processes/{process_id}')
-@app.route('/processes/{process_id}/')
-async def describe_processes(request: Request, process_id=None):
-    """
-    OGC API - Processes description endpoint
-
-    :param process_id: identifier of process to describe
-
-    :returns: Starlette HTTP Response
-    """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.query_params, process_id)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
-@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
-async def execute_process(request: Request, process_id=None):
-    """
-    OGC API - Processes jobs endpoint
-
-    :param process_id: identifier of process to execute
-
-    :returns: Starlette HTTP Response
-    """
-
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.query_params, request.data, process_id)
 
     response = Response(content=content, status_code=status_code)
 
