@@ -115,7 +115,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def root(self, headers_, format_):
+    def landing_page(self, headers_, format_):
         """
         Provide API
 
@@ -197,7 +197,7 @@ class API:
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
 
-            content = render_j2_template(self.config, 'root.html', fcm)
+            content = render_j2_template(self.config, 'landing_page.html', fcm)
             return headers_, 200, content
 
         if format_ == 'jsonld':
