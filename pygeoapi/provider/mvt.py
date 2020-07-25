@@ -66,8 +66,7 @@ class MVTProvider(BaseTileProvider):
             'tileMatrixSetLinks': [{
                 'tileMatrixSet': 'WorldCRS84Quad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
-            },
-            {
+            }, {
                 'tileMatrixSet': 'WebMercatorQuad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
             }]
