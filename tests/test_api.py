@@ -128,13 +128,14 @@ def test_root(config, api_):
     assert 'description' in root
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
-    rsp_headers, code, response = api_.root(req_headers, {'f': 'html'})
+    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'html'})
     assert rsp_headers['Content-Type'] == 'text/html'
 
 
 def test_root_structured_data(config, api_):
     req_headers = make_req_headers()
-    rsp_headers, code, response = api_.root(req_headers, {"f": "jsonld"})
+    rsp_headers, code, response = api_.landing_page(
+        req_headers, {"f": "jsonld"})
     root = json.loads(response)
 
     assert rsp_headers['Content-Type'] == 'application/ld+json'
