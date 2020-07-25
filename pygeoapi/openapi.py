@@ -417,38 +417,41 @@ def get_oas_30(cfg):
         }
 
     LOGGER.debug('setting up STAC')
-    paths['/stac'] = {
-        'get': {
-            'summary': 'SpatioTemporal Asset Catalog',
-            'description': 'SpatioTemporal Asset Catalog',
-            'tags': ['stac'],
-            'parameters': [],
-            'responses': {
-                200: {'$ref': '#/components/responses/200'},
-                'default': {'$ref': '#/components/responses/default'}
+    stac_collections = filter_dict_by_key_value(cfg['resources'],
+                                                'type', 'stac-collection')
+    if stac_collections:
+        paths['/stac'] = {
+            'get': {
+                'summary': 'SpatioTemporal Asset Catalog',
+                'description': 'SpatioTemporal Asset Catalog',
+                'tags': ['stac'],
+                'parameters': [],
+                'responses': {
+                    200: {'$ref': '#/components/responses/200'},
+                    'default': {'$ref': '#/components/responses/default'}
+                }
             }
         }
-    }
 
     LOGGER.debug('setting up processes')
-    paths['/processes'] = {
-        'get': {
-            'summary': 'Processes',
-            'description': 'Processes',
-            'tags': ['server'],
-            'parameters': [
-                {'$ref': '#/components/parameters/f'}
-            ],
-            'responses': {
-                200: {'$ref': '#/components/responses/200'},
-                'default': {'$ref': '#/components/responses/default'}
-            }
-        }
-    }
-
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
 
     if processes:
+        paths['/processes'] = {
+            'get': {
+                'summary': 'Processes',
+                'description': 'Processes',
+                'tags': ['server'],
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'responses': {
+                    200: {'$ref': '#/components/responses/200'},
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            }
+        }
+
         for k, v in processes.items():
             p = load_plugin('process', v['processor'])
 

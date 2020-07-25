@@ -50,18 +50,22 @@
       <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service</a>
     </p>
   </section>
+  {% if data['stac'] %}
   <section id="collections">
     <h2>SpatioTemporal Assets</h2>
     <p>
       <a href="{{ config['server']['url'] }}/stac?f=html">View the SpatioTemporal Assets in this service</a>
     </p>
   </section>
+  {% endif %}
+  {% if data['processes'] %}
   <section id="processes">
       <h2>Processes</h2>
       <p>
         <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
       </p>
   </section>
+  {% endif %}
   <section id="openapi">
       <h2>API Definition</h2>
       <p>

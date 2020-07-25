@@ -184,6 +184,18 @@ class API:
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
+
+            fcm['processes'] = False
+            fcm['stac'] = False
+
+            if filter_dict_by_key_value(self.config['resources'],
+                                        'type', 'process'):
+                fcm['processes'] = True
+
+            if filter_dict_by_key_value(self.config['resources'],
+                                        'type', 'stac-collection'):
+                fcm['stac'] = True
+
             content = render_j2_template(self.config, 'root.html', fcm)
             return headers_, 200, content
 
@@ -1159,6 +1171,7 @@ class API:
             'id': id_,
             'stac_version': stac_version,
             'description': description,
+            'extent': stac_collections[dataset]['extents'],
             'links': []
         }
         try:
