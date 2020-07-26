@@ -113,13 +113,14 @@ resources:
                 end: 2007-10-30T08:57:29Z
         extensions:
             transactions: true
-        provider:
-            name: CSV
-            data: tests/data/obs.csv
-            id_field: id
-            geometry:
-                x_field: long
-                y_field: lat
+        providers:
+            - type: feature
+              name: CSV
+              data: tests/data/obs.csv
+              id_field: id
+              geometry:
+                  x_field: long
+                  y_field: lat
 
     lakes:
         type: collection
@@ -142,10 +143,11 @@ resources:
                 end: null  # or empty (either means open ended)
         extensions:
             transactions: false
-        provider:
-            name: GeoJSON
-            data: tests/data/ne_110m_lakes.geojson
-            id_field: id
+        providers:
+            - type: feature
+              name: GeoJSON
+              data: tests/data/ne_110m_lakes.geojson
+              id_field: id
 
     places:
         type: collection
@@ -166,7 +168,8 @@ resources:
             temporal:
                 begin: 2011-11-11
                 end: null  # or empty (either means open ended)
-        provider:
-            name: GeoJSON
-            data: tests/data/ne_110m_populated_places_simple.geojson
-            id_field: id
+        providers:
+            - type: feature           
+              name: GeoJSON
+              data: tests/data/ne_110m_populated_places_simple.geojson
+              id_field: id

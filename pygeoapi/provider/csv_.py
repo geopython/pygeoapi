@@ -31,11 +31,23 @@ from collections import OrderedDict
 import csv
 import itertools
 import logging
+import uuid
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
+
+
+def set_type(s):
+    try:
+        s = int(s)
+    except:   # noqa
+        try:
+            s = float(s)
+        except:    # noqa
+            pass
+    return s
 
 
 class CSVProvider(BaseProvider):
@@ -49,7 +61,6 @@ class CSVProvider(BaseProvider):
 
         :returns: pygeoapi.providers.csv_.CSVProvider
         """
-
         BaseProvider.__init__(self, provider_def)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
@@ -170,6 +181,235 @@ class CSVProvider(BaseProvider):
             err = 'item {} not found'.format(identifier)
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
+
+    def create(self, new_feature):
+        """
+        create a new feature item
+
+        :param new_feature: new GeoJSON feature dictionary
+
+        :returns: feature id
+        """
+        id_field = self.id_field
+        with open(self.data) as csv_file:
+            curr = [{k: set_type(v) for k, v in row.items()}
+                    for row in csv.DictReader(csv_file, skipinitialspace=True)]
+
+        curr_cols = set(curr[0].keys())
+        new_cols = set(new_feature['properties'].keys()).union({id_field,
+                                                               'lat', 'long'})
+        # if given data has extra properties not in provider
+        if bool(new_cols - curr_cols):
+            err = 'payload schema invalid'
+            raise ProviderQueryError(err)
+        else:
+            # copy properties of the given data
+            feature = new_feature['properties']
+            for k in feature:
+                feature[k] = set_type(feature[k])
+            # copy latitude and longitude of given data
+            lat = new_feature['geometry']['coordinates'][1]
+            lon = new_feature['geometry']['coordinates'][0]
+            feature['lat'] = set_type(lat)
+            feature['long'] = set_type(lon)
+            # set id of given data
+            if id_field in new_feature:
+                feature[id_field] = str(new_feature[id_field])
+                for f in curr:
+                    if str(f[id_field]) == feature[id_field]:
+                        feature[id_field] = str(uuid.uuid4())
+            else:
+                feature[id_field] = str(uuid.uuid4())
+            # append given data to provider data items
+            curr.append(feature)
+
+            # writing new set of data items to csv file
+            try:
+                with open(self.data, 'w') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=curr[0].keys())
+                    writer.writeheader()
+                    for data in curr:
+                        writer.writerow(data)
+            except IOError:
+                print("I/O error")
+
+            # return id of the new data item added
+            return new_feature['properties'][id_field]
+
+    def replace(self, identifier, new_feature):
+        """
+        replace an existing feature item with new_feature item
+
+        :param identifier: feature id
+        :param new_feature: new GeoJSON feature dictionary
+        """
+        id_field = self.id_field
+        with open(self.data) as csv_file:
+            curr = [{k: set_type(v) for k, v in row.items()}
+                    for row in csv.DictReader(csv_file, skipinitialspace=True)]
+
+        curr_cols = set(curr[0].keys())
+        new_cols = set(new_feature['properties'].keys()).union({id_field,
+                                                               'lat', 'long'})
+        index = -1
+        for i, f in enumerate(curr):
+            if str(f[id_field]) == str(identifier):
+                index = i
+
+        # if given identifier is not prescent in the data provider
+        if index == -1:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+
+        else:
+            # if given data item has extra properties not in provider
+            if bool(new_cols - curr_cols):
+                err = 'payload schema invalid'
+                raise ProviderQueryError(err)
+            else:
+                # copy properties of the given data
+                feature = new_feature['properties']
+                for k in feature:
+                    feature[k] = set_type(feature[k])
+                # copy latitude and longitude of given data
+                lat = new_feature['geometry']['coordinates'][1]
+                lon = new_feature['geometry']['coordinates'][0]
+                feature['lat'] = set_type(lat)
+                feature['long'] = set_type(lon)
+                # set id of given data
+                feature[id_field] = set_type(identifier)
+                # replace the data items
+                curr[index] = feature
+
+                # writing new set of data items to csv file
+                try:
+                    with open(self.data, 'w') as csvfile:
+                        writer = csv.DictWriter(csvfile,
+                                                fieldnames=curr[0].keys())
+                        writer.writeheader()
+                        for data in curr:
+                            writer.writerow(data)
+                except IOError:
+                    print("I/O error")
+
+    def update(self, identifier, updates):
+        """
+        update an existing feature item
+
+        :param identifier: feature id
+        :param updates: updates dictionary
+
+        :returns: feature item
+        """
+        id_field = self.id_field
+
+        with open(self.data) as csv_file:
+            curr = [{k: set_type(v) for k, v in row.items()}
+                    for row in csv.DictReader(csv_file, skipinitialspace=True)]
+
+        found_feature = False
+        for index, feature in enumerate(curr):
+            if str(feature[id_field]) == identifier:
+                found_feature = True
+                break
+
+        if not found_feature:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+        else:
+            add_set = set()
+            # add an attribute only if its not already prescent in the feature
+            for name_val_pair in updates['add']:
+                name = name_val_pair['name']
+                value = name_val_pair['value']
+                add_set.add(name)
+                if name not in feature:
+                    feature[name] = value
+                else:
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
+            # modify an attribute only if its  already prescent in the feature
+            for name_val_pair in updates['modify']:
+                name = name_val_pair['name']
+                value = name_val_pair['value']
+                if name in feature and name not in {id_field, 'lat', 'long'}:
+                    feature[name] = value
+                else:
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
+            # delete an attribute only if its prescent in the feature
+            for name in updates['remove']:
+                if name in feature:
+                    feature[name] = ''
+                else:
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
+            curr[index] = feature
+
+            # clean up empty attributes
+            remove_set = set()
+            for attrib in curr[0].keys():
+                empt = True
+                for feature in curr:
+                    if feature[attrib] != '':
+                        empt = False
+                        break
+                if empt:
+                    remove_set.add(attrib)
+            for attrib in remove_set:
+                for feature in curr:
+                    feature.pop(attrib)
+
+            # writing new set of data items to csv file
+            new_fields = set(curr[0].keys()).union(add_set)-remove_set
+            try:
+                with open(self.data, 'w') as csvfile:
+                    writer = csv.DictWriter(csvfile,
+                                            fieldnames=new_fields)
+                    writer.writeheader()
+                    for data in curr:
+                        writer.writerow(data)
+            except IOError:
+                print("I/O error")
+
+            return self._load(identifier=identifier)
+
+    def delete(self, identifier):
+        """
+        deletes an existing feature item
+
+        :param identifier: feature id
+        """
+        id_field = self.id_field
+
+        with open(self.data) as csv_file:
+            curr = [{k: set_type(v) for k, v in row.items()}
+                    for row in csv.DictReader(csv_file, skipinitialspace=True)]
+
+        found_feature = False
+        for index, feature in enumerate(curr):
+            if str(feature[id_field]) == identifier:
+                found_feature = True
+                break
+
+        if not found_feature:
+            err = 'item {} not found'.format(identifier)
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+        else:
+            curr.pop(index)
+
+            try:
+                with open(self.data, 'w') as csvfile:
+                    writer = csv.DictWriter(csvfile,
+                                            fieldnames=curr[0].keys())
+                    writer.writeheader()
+                    for data in curr:
+                        writer.writerow(data)
+            except IOError:
+                print("I/O error")
 
     def __repr__(self):
         return '<CSVProvider> {}'.format(self.data)

@@ -32,7 +32,8 @@ import logging
 import os
 import uuid
 
-from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
+from pygeoapi.provider.base import (BaseProvider, ProviderItemNotFoundError,
+                                    ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -189,8 +190,6 @@ class GeoJSONProvider(BaseProvider):
 
         :param identifier: feature id
         :param new_feature: new GeoJSON feature dictionary
-
-        :returns: feature item
         """
 
         all_data = self._load()
@@ -217,7 +216,7 @@ class GeoJSONProvider(BaseProvider):
         update an existing feature item
 
         :param identifier: feature id
-        :param new_feature: new GeoJSON feature dictionary
+        :param updates: updates dictionary
 
         :returns: feature item
         """
@@ -250,7 +249,8 @@ class GeoJSONProvider(BaseProvider):
                 if name not in feature['properties']:
                     feature['properties'][name] = value
                 else:
-                    pass
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
             # modify an attribute if its  already prescent in the feature
             for name_val_pair in updates['modify']:
                 name = name_val_pair['name']
@@ -258,13 +258,15 @@ class GeoJSONProvider(BaseProvider):
                 if name in feature['properties']:
                     feature['properties'][name] = value
                 else:
-                    pass
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
             # delete an attribute if its prescent in the feature
             for name in updates['remove']:
                 if name in feature['properties']:
                     feature['properties'].pop(name)
                 else:
-                    pass
+                    err = 'payload schema invalid'
+                    raise ProviderQueryError(err)
 
             all_data['features'][index] = feature
 
