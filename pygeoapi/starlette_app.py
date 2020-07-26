@@ -81,7 +81,7 @@ async def landing_page(request: Request):
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.root(
+    headers, status_code, content = api_.landing_page(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -134,7 +134,7 @@ async def conformance(request: Request):
 @app.route('/collections/')
 @app.route('/collections/{collection_id}')
 @app.route('/collections/{collection_id}/')
-async def describe_collections(request: Request, collection_id=None):
+async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
 
@@ -157,7 +157,7 @@ async def describe_collections(request: Request, collection_id=None):
 
 @app.route('/collections/{collection_id}/queryables')
 @app.route('/collections/{collection_id}/queryables/')
-async def get_collection_queryables(request: Request, collection_id=None):
+async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
 
@@ -193,7 +193,7 @@ def supports_transactions(collection):
     return CONFIG['resources'][collection]['extensions']['transactions']
 
 
-async def dataset(request: Request, item_id=None):
+async def collection_items(request: Request, item_id=None):
     """
     OGC API collections items endpoint
 
@@ -246,45 +246,83 @@ async def dataset(request: Request, item_id=None):
 
     return response
 
-# ------------ dynamic routing based on transactions flag --------------
-collections = filter_dict_by_key_value(CONFIG['resources'],
-                                       'type', 'collection')
-coll_support_trans = list(filter(supports_transactions, collections))
-# route get for both paths of every collection
-for collection_id in collections:
-    app.add_route('/collections/'+collection_id+'/items',
-                  dataset,
+#  dynamic routing based on transactions flag
+coll = filter_dict_by_key_value(CONFIG['resources'],
+                                'type', 'collection')
+coll_support_trans = list(filter(supports_transactions, coll))
+for collection_id in coll:
+    app.add_route('/collections/'+collection_id+'/items', collection_items,
                   methods=['GET'])
-    app.add_route('/collections/'+collection_id+'/items/',
-                  dataset,
+    app.add_route('/collections/'+collection_id+'/items/', collection_items,
                   methods=['GET'])
     app.add_route('/collections/'+collection_id+'/items/{item_id}',
-                  dataset,
-                  methods=['GET'])
+                  collection_items, methods=['GET'])
     app.add_route('/collections/'+collection_id+'/items/{item_id}/',
-                  dataset,
-                  methods=['GET'])
-# route transaction verbs selectively for each path and each collection
+                  collection_items, methods=['GET'])
 for collection_id in coll_support_trans:
     app.add_route('/collections/'+collection_id+'/items',
-                  dataset,
-                  methods=['POST'])
+                  collection_items, methods=['POST'])
     app.add_route('/collections/'+collection_id+'/items/',
-                  dataset,
-                  methods=['POST'])
+                  collection_items, methods=['POST'])
     app.add_route('/collections/'+collection_id+'/items/{item_id}',
-                  dataset,
-                  methods=['PATCH', 'PUT', 'DELETE'])
+                  collection_items, methods=['PATCH', 'PUT', 'DELETE'])
     app.add_route('/collections/'+collection_id+'/items/{item_id}/',
-                  dataset,
-                  methods=['PATCH', 'PUT', 'DELETE'])
-# ------------------------------------------------------------------------
+                  collection_items, methods=['PATCH', 'PUT', 'DELETE'])
+
+
+@app.route('/processes/{process_id}/')
+@app.route('/processes/{process_id}')
+@app.route('/processes/')
+@app.route('/processes')
+async def processes(request: Request, process_id=None):
+    """
+    OGC API - Processes description endpoint
+
+    :param process_id: identifier of process to describe
+
+    :returns: Starlette HTTP Response
+    """
+
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.query_params, process_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+    return response
+
+
+@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+async def process_jobs(request: Request, process_id=None):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param process_id: identifier of process to execute
+
+    :returns: Starlette HTTP Response
+    """
+
+    if request.method == 'GET':
+        headers, status_code, content = ({}, 200, "[]")
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.query_params, request.data, process_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
 
 
 @app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
     STAC root endpoint
+
     :returns: Starlette HTTP response
     """
 
@@ -315,58 +353,8 @@ async def stac_catalog_path(request: Request):
         request.headers, request.query_params, path)
 
     response = Response(content=content, status_code=status_code)
-
     if headers:
         response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes')
-@app.route('/processes/')
-@app.route('/processes/{process_id}')
-@app.route('/processes/{process_id}/')
-async def describe_processes(request: Request, process_id=None):
-    """
-    OGC API - Processes description endpoint
-
-    :param process_id: identifier of process to describe
-
-    :returns: Starlette HTTP Response
-    """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.query_params, process_id)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
-@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
-async def execute_process(request: Request, process_id=None):
-    """
-    OGC API - Processes jobs endpoint
-
-    :param process_id: identifier of process to execute
-
-    :returns: Starlette HTTP Response
-    """
-
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.query_params, request.data, process_id)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
     return response
 
 
@@ -377,8 +365,10 @@ def serve(ctx, server=None, debug=False):
     """
     Serve pygeoapi via Starlette. Runs pygeoapi
     as a uvicorn server. Not recommend for production.
+
     :param server: `string` of server type
     :param debug: `bool` of whether to run in debug mode
+
     :returns: void
     """
 

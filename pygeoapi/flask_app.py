@@ -99,7 +99,8 @@ def landing_page():
 
     :returns: HTTP response
     """
-    headers, status_code, content = api_.root(request.headers, request.args)
+    headers, status_code, content = api_.landing_page(
+        request.headers, request.args)
 
     response = make_response(content, status_code)
 
@@ -151,7 +152,7 @@ def conformance():
 
 @APP.route('/collections')
 @APP.route('/collections/<collection_id>')
-def describe_collections(collection_id=None):
+def collections(collection_id=None):
     """
     OGC API collections endpoint
 
@@ -172,7 +173,7 @@ def describe_collections(collection_id=None):
 
 
 @APP.route('/collections/<collection_id>/queryables')
-def get_collection_queryables(collection_id=None):
+def collection_queryables(collection_id=None):
     """
     OGC API collections querybles endpoint
 
@@ -195,9 +196,12 @@ def get_collection_queryables(collection_id=None):
 def supports_transactions(collection):
     """
     Check if given collection supports transactions
+
     :param collection: collection dict
+
     :returns: boolean value
     """
+
     if 'extensions' not in CONFIG['resources'][collection]:
         return False
     if 'transactions' not in CONFIG['resources'][collection]['extensions']:
@@ -257,11 +261,11 @@ def dataset(item_id=None):
 
 
 # ------------ dynamic routing based on transactions flag --------------
-collections = filter_dict_by_key_value(CONFIG['resources'],
-                                       'type', 'collection')
-coll_support_trans = list(filter(supports_transactions, collections))
+coll = filter_dict_by_key_value(CONFIG['resources'],
+                                'type', 'collection')
+coll_support_trans = list(filter(supports_transactions, coll))
 # route get for both paths of every collection
-for collection_id in collections:
+for collection_id in coll:
     APP.add_url_rule('/collections/'+collection_id+'/items',
                      'dataset', dataset,
                      methods=['GET'])
@@ -277,6 +281,51 @@ for collection_id in coll_support_trans:
                      'dataset', dataset,
                      methods=['PATCH', 'PUT', 'DELETE'])
 # ------------------------------------------------------------------------
+
+
+@APP.route('/processes')
+@APP.route('/processes/<process_id>')
+def processes(process_id=None):
+    '''
+    OGC API - Processes jobs endpoint
+
+    :param process_id: process identifier
+
+    :returns: HTTP response
+    '''
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.args, process_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+def process_jobs(process_id=None):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param process_id: process identifier
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        headers, status_code, content = ({}, 200, "[]")
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.args, request.data, process_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
 
 
 @APP.route('/stac')
@@ -310,51 +359,6 @@ def stac_catalog_path(path):
 
     headers, status_code, content = api_.get_stac_path(
         request.headers, request.args, path)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
-@APP.route('/processes')
-@APP.route('/processes/<process_id>')
-def describe_processes(process_id=None):
-    """
-    OGC API - Processes description endpoint
-
-    :param process_id: process identifier
-
-    :returns: HTTP response
-    """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.args, process_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
-@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
-def execute_process(process_id=None):
-    """
-    OGC API - Processes jobs endpoint
-
-    :param process_id: process identifier
-
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, process_id)
 
     response = make_response(content, status_code)
 
