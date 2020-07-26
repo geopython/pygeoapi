@@ -347,7 +347,10 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
-            tiles = v.get('tiles', {})
+            # get providers type
+            providers_type = {
+                provider['type']: provider for provider in v['providers']}
+            tiles = providers_type.get('tiles', {})
 
             for link in v['links']:
                 lnk = {
@@ -614,9 +617,12 @@ class API:
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
+            dataset_providers = {
+                provider['type']: provider for provider in self.config[
+                    'resources'][dataset]['providers']}
             p = load_plugin(
                 'provider',
-                self.config['resources'][dataset]['tiles']['provider'],
+                dataset_providers['tiles'],
                 tiles=True)
         except ProviderConnectionError:
             exception = {
@@ -664,10 +670,10 @@ class API:
 
         for service in p.get_tile_services(
             baseurl=self.config['server']['url'],
-            servicepath='\
-                /collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
-                .format(dataset, 'tileMatrixSetId',
-                        'tileMatrix', 'tileRow', 'tileCol'))['links']:
+            servicepath='/collections/{}/\
+tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
+            .format(dataset, 'tileMatrixSetId',
+                    'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
         for scheme in p.schemes['tileMatrixSetLinks']:
             tiles['tileMatrixSetLinks'].append(scheme)
@@ -1109,8 +1115,11 @@ class API:
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading provider')
+        dataset_providers = {
+                provider['type']: provider for provider in self.config[
+                    'resources'][dataset]['providers']}
         p = load_plugin('provider',
-                        self.config['resources'][dataset]['tiles']['provider'],
+                        dataset_providers['tiles'],
                         tiles=True)
 
         try:
