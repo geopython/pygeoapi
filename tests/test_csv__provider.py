@@ -27,24 +27,32 @@
 #
 # =================================================================
 
-import os
-
 import pytest
 
-from pygeoapi.provider.base import ProviderItemNotFoundError
+from pygeoapi.provider.base import (ProviderItemNotFoundError,
+                                    ProviderGenericError)
 from pygeoapi.provider.csv_ import CSVProvider
 
 
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
+path = '/tmp/test.csv'
 
 
-path = get_test_file_path('data/obs.csv')
+def are_same(value1, value2):
+    return str(value1) == str(value2)
+
+
+@pytest.fixture()
+def fixture():
+    data = 'id,stn_id,datetime,value,lat,long\n'\
+        '371,35,"2001-10-30T14:24:55Z",89.9,45,-75\n'\
+        '377,35,"2002-10-30T18:31:38Z",93.9,45,-75\n'\
+        '238,2147,"2007-10-30T08:57:29Z",103.5,43,-79\n'\
+        '297,2147,"2003-10-30T07:37:29Z",93.5,43,-79\n'\
+        '964,604,"2000-10-30T18:24:39Z",99.9,49,-122\n'
+
+    with open(path, 'w') as fh:
+        fh.write(data)
+    return path
 
 
 @pytest.fixture()
@@ -60,7 +68,7 @@ def config():
     }
 
 
-def test_query(config):
+def test_query(fixture, config):
     p = CSVProvider(config)
 
     fields = p.get_fields()
@@ -94,16 +102,164 @@ def test_query(config):
     assert len(results['features'][0]['properties']) == 2
 
 
-def test_get(config):
+def test_get(fixture, config):
     p = CSVProvider(config)
 
-    result = p.get('964')
-    assert result['id'] == '964'
-    assert result['properties']['value'] == '99.9'
+    result = p.get('371')
+    assert result['id'] == '371'
+    assert result['properties']['value'] == '89.9'
+    assert result['properties']['stn_id'] == '35'
+    assert result['properties']['datetime'] == '2001-10-30T14:24:55Z'
 
 
-def test_get_not_existing_item_raise_exception(config):
+def test_get_not_existing_item_raise_exception(fixture, config):
     """Testing query for a not existing object"""
     p = CSVProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get('404')
+
+
+def test_delete(config):
+    p = CSVProvider(config)
+
+    prev_count = len(p.query()['features'])
+    p.delete('371')
+    curr_count = len(p.query()['features'])
+
+    assert curr_count == prev_count - 1
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('371')
+
+
+def test_delete_non_existing_item_raise_exception(fixture, config):
+    p = CSVProvider(config)
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.delete('NON EXISTING ID')
+
+
+def test_create(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'id': '123-456',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50
+        }
+    }
+
+    prev_count = len(p.query()['features'])
+    p.create(new_feature)
+    curr_count = len(p.query()['features'])
+    assert curr_count == prev_count + 1
+
+    feature = p.get(new_feature['id'])
+    assert are_same(feature['properties']['stn_id'],
+                    new_feature['properties']['stn_id'])
+    assert are_same(feature['geometry']['coordinates'][0],
+                    new_feature['geometry']['coordinates'][0])
+    assert are_same(feature['geometry']['coordinates'][0],
+                    new_feature['geometry']['coordinates'][0])
+
+
+def test_replace(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50
+        }
+    }
+
+    # count of features shouldnt change
+    prev_count = len(p.query()['features'])
+    p.replace('377', new_feature)
+    curr_count = len(p.query()['features'])
+    assert curr_count == prev_count
+
+    # new_feature properties should overwrite feature properties
+    feature = p.get('377')
+    assert are_same(feature['properties']['stn_id'],
+                    new_feature['properties']['stn_id'])
+    assert are_same(feature['geometry']['coordinates'][0],
+                    new_feature['geometry']['coordinates'][0])
+    assert are_same(feature['geometry']['coordinates'][0],
+                    new_feature['geometry']['coordinates'][0])
+
+
+def test_replace_safe_id(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'id': 'SOMETHING DIFFERENT',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50
+        }
+    }
+
+    p.replace('377', new_feature)
+    # Don't let the id change, should not exist
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('SOMETHING DIFFERENT')
+    # Should still be at the old id
+    results = p.get('377')
+    assert are_same(results['properties']['stn_id'],
+                    new_feature['properties']['stn_id'])
+
+
+def test_update(fixture, config):
+    p = CSVProvider(config)
+    updates = {'add':
+               [{'name': 'name', 'value': 'abc'}],
+               'modify':
+               [{'name': 'stn_id', 'value': 4545}],
+               'remove':
+               ['datetime']
+               }
+
+    updated_feature = p.update('377', updates)
+
+    assert 'name' in updated_feature['properties']
+    assert are_same(updated_feature['properties']['name'], 'abc')
+    assert are_same(updated_feature['properties']['stn_id'], '4545')
+    assert ('datetime' not in updated_feature['properties']) or \
+        (updated_feature['properties']['datetime'] == '')
+
+    results = p.get('377')
+    assert 'name' in results['properties']
+    assert are_same(results['properties']['name'], 'abc')
+    assert are_same(results['properties']['stn_id'], '4545')
+    assert ('datetime' not in updated_feature['properties']) or \
+        (updated_feature['properties']['datetime'] == '')
+
+
+def test_update_invalid_updates_raise_exception(fixture, config):
+    p = CSVProvider(config)
+    invalid_add = {"add": [{'name': 'value', 'value': 77}],
+                   "modify": [], "remove": []}
+    invalid_modify = {"add": [], "modify": [{"name": "count", "value": 54}],
+                      "remove": []}
+    invalid_remove = {"add": [], "modify": [], "remove": ["cost"]}
+
+    prev_results = p.get('377')
+
+    with pytest.raises(ProviderGenericError):
+        p.update('377', invalid_add)
+        p.update('377', invalid_modify)
+        p.update('377', invalid_remove)
+
+    results = p.get('377')
+    assert results == prev_results

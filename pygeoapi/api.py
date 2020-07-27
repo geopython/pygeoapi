@@ -1118,14 +1118,15 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception), content
+            return headers_, 500, json.dumps(exception)
+
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'generic error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception), content
+            return headers_, 500, json.dumps(exception)
 
         feature_path = '/collections/' + dataset + '/items/' + str(identifier)
         headers_['Location'] = feature_path
