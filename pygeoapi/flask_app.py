@@ -41,6 +41,8 @@ from pygeoapi.util import get_mimetype, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
+APP.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 * 1024 # 1 GB max file upload
+APP.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 CONFIG = None
 
@@ -291,8 +293,11 @@ def execute_process(process_id=None, job_id=None):
     if not job_id:
         # Request a new job (POST)
         # Get array of all job IDs (GET)
+        # TODO review use of "document" label as magical
+        data = request.data or request.form.get('document')
         headers, status_code, content = api_.execute_process(
-            request.method, request.headers, request.args, request.data, process_id)
+            request.method, request.headers, request.args, data, process_id,
+            files=request.files)
     else:
         # Return status of a specific job
         headers, status_code, content = api_.retrieve_job_status(

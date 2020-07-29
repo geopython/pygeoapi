@@ -40,6 +40,7 @@ import mimetypes
 import os
 import re
 from urllib.parse import urlparse
+from werkzeug.utils import secure_filename
 
 from jinja2 import Environment, FileSystemLoader
 import yaml
@@ -50,6 +51,9 @@ LOGGER = logging.getLogger(__name__)
 
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
+
+ALLOWED_UPLOAD_EXTENSIONS = {'csv', 'shp', 'json', 'geojson', 'gpkg'}
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -356,6 +360,43 @@ def get_provider_default(providers):
 
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
+
+def allowed_file(filename):
+    '''
+    Checks the extension of a proposed filename and returns a Boolean
+    representing whether that file (extension) is acceptable for upload.
+    Does not actually add security, as only considers the file extension,
+    which can be deliberately misleading.
+
+    :param filename: `str` filename
+
+    :returns: `bool`
+    '''
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
+
+def get_safe_filepath(unsafe_filename, *additional_paths):
+    '''
+    Function that takes a filename from user upload, and returns a safe version
+    of that filename, prepended by the path to where that file is stored on disk
+    for later use (e.g. by a processing algorithm).
+
+    :param unsafe_filename: raw string filename (consider as unsafe user input)
+    :param additional_paths: additional arguments (all strings) that each
+                             represent the name of a subdirectory under which
+                             the ultimate file will belong.
+
+    :returns: str of complete filepath
+    '''
+    # TODO user-scope file uploads?
+    # TODO delete old files? https://docs.python.org/3.8/library/tempfile.html#tempfile.TemporaryDirectory
+    # ^ That would allow the use of a context manager by the child process,
+    #   that deletes the dir when it is complete
+    filename = secure_filename(unsafe_filename)
+    if not allowed_file(filename):
+        raise Exception("Filetype not acceptable")
+    file_path = os.path.join(UPLOAD_FOLDER, *additional_paths, filename)
+    return file_path
 
 class JobStatus(Enum):
     """

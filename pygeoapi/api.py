@@ -54,8 +54,8 @@ from pygeoapi.provider.base import (
     ProviderQueryError, ProviderItemNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-                           JobStatus, json_serial, render_j2_template,
-                           TEMPLATES, to_json)
+                           get_safe_filepath, JobStatus, json_serial,
+                           render_j2_template, TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1310,7 +1310,7 @@ class API:
 
         return headers_, 200, json.dumps(response, default=json_serial)
 
-    def execute_process(self, method, headers, args, data, process_id):
+    def execute_process(self, method, headers, args, data, process_id, files=None):
         """
         Execute process
 
@@ -1319,6 +1319,7 @@ class API:
         :param args: dict of HTTP request parameters
         :param data: process data
         :param process_id: id of process
+        :param files: file uploads
 
         :returns: tuple of headers, status code, content
         """
@@ -1368,7 +1369,7 @@ class API:
             response = [job['identifier'] for job in jobs]
             return headers_, 200, json.dumps(response, default=json_serial)
 
-        elif method == 'POST' and not data:
+        if method == 'POST' and not data and not isFormData:
             # TODO not all processes require input, e.g. time-depenendent or
             # random value generators
             exception = {
@@ -1397,7 +1398,16 @@ class API:
             return headers_, 400, json.dumps(exception)
 
         try:
-            data_dict = {_input['id']: _input['value'] for _input in data.get('inputs', [])}
+            data_dict = {}
+            for input in data.get('inputs', []):
+                id = input['id']
+                value = input['value']
+                if id not in data_dict:
+                    data_dict[id] = value
+                elif id in data_dict and isinstance(data_dict[id], list):
+                    data_dict[id].append(value)
+                else:
+                    data_dict[id] = [data_dict[id], value]
         except KeyError as err:
             # Return 4XX client error for missing 'id' or 'value' in an input
             LOGGER.error(err)
@@ -1407,11 +1417,47 @@ class API:
             }
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
+        else:
+            LOGGER.debug(data_dict)
 
         job_id = str(uuid.uuid1())
         url = '{}/processes/{}/jobs/{}'.format(
             self.config['server']['url'], process_id, job_id)
         headers_['Location'] = url
+
+        if method == 'POST' and files:
+            for _, file in files.items():
+                filename = file.filename
+                try:
+                    file_path = get_safe_filepath(filename, process_id, job_id)
+                except Exception as exc:
+                    LOGGER.debug(exc)
+                    exception = {
+                        'code': 'NoApplicableCode',
+                        'description': 'File type not acceptable'
+                    }
+                    LOGGER.info(exception)
+                    return headers_, 415, json.dumps(exception)
+                file_dir = os.path.dirname(file_path)
+                try:
+                    mode = 0o644 # Owner can read/write, group and others can read
+                    os.makedirs(file_dir, mode=mode, exist_ok=True)
+                    file.save(file_path)
+                except Exception as exc:
+                    LOGGER.exception(exc)
+                    exception = {
+                        'code': 'NoApplicableCode',
+                        'description': 'File upload failed'
+                    }
+                    LOGGER.info(exception)
+                    return headers_, 500, json.dumps(exception)
+                else:
+                    # Update name of file in upload data with the new path
+                    for id, value in data_dict.items():
+                        if value == filename:
+                            data_dict[id] = file_path
+                        elif type(value) is 'list' and filename in value:
+                            data_dict[id] = [v if filename != v else file_path for v in value]
 
         outputs, status = None, None
         sync = not check_async(args, headers)
