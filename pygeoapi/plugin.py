@@ -46,7 +46,7 @@ PLUGINS = {
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'tiles': {
-            'MVT': 'pygeoapi.provider.mvt.MVTProvider'
+            'MVTTileProvider': 'pygeoapi.provider.mvt.MVTProvider'
         }
     },
     'formatter': {
