@@ -36,14 +36,15 @@ import yaml
 
 from pygeoapi.plugin import load_plugin
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           yaml_load)
+                           filter_providers_by_type, yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
-    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/ogc-api-tiles.yaml'  # noqa
+    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
+    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/map-tiles.yaml'  # noqa
 }
 
 
@@ -491,6 +492,75 @@ def get_oas_30(cfg):
                 }
             }
         }
+
+        LOGGER.debug('setting up OATiles')
+        tiles_extension = filter_providers_by_type(
+            collections[k]['providers'], 'tiles')
+        if tiles_extension:
+            oas['components']['responses'].update({
+                    'Tiles': {
+                        'description': 'Retrieves the tiles description for this collection',
+                        'content': {
+                            'application/json': {
+                                'schema': {'$ref': '#/components/schemas/tiles'}
+                            }
+                        }
+                    }
+                }    
+            )
+            
+            oas['components']['schemas'].update({
+                    'tilematrixsetlink': {
+                        'type': 'object',
+                        'required': ['tileMatrixSet'],
+                        'properties': {
+                            'tileMatrixSet': {
+                                'type': 'string'
+                            },
+                            'tileMatrixSetURI': {
+                                'type': 'string'
+                            }
+                        }
+                    },
+                    'tiles': {
+                        'type': 'object',
+                        'required': [
+                            'tileMatrixSetLinks',
+                            'links'
+                        ],
+                        'properties': {
+                            'tileMatrixSetLinks': {
+                                'type': 'array',
+                                'items': {'$ref': '#/components/schemas/tilematrixsetlink'}
+                            },
+                            'links': {
+                                'type': 'array',
+                                'items': {'$ref': '{}#/components/schemas/link'.format(OPENAPI_YAML['oapit'])},  # noqa
+                            }
+                        }
+                    }
+                }
+            )
+
+            tiles_path = '{}/tiles'.format(collection_name_path)
+
+            paths[tiles_path] = {
+                'get': {
+                    'summary': 'Fetch a {} tiles description'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'describe{}Tiles'.format(k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/Tiles'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
 
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],
