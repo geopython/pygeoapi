@@ -32,11 +32,16 @@ import json
 import pytest
 
 from pygeoapi.provider.base import (ProviderItemNotFoundError,
-                                    ProviderGenericError)
+                                    ProviderSchemaError,
+                                    ProviderItemAlreadyExistsError)
 from pygeoapi.provider.geojson import GeoJSONProvider
 
 
 path = '/tmp/test.geojson'
+
+
+def are_same(value1, value2):
+    return str(value1) == str(value2)
 
 
 @pytest.fixture()
@@ -122,7 +127,7 @@ def test_create(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': '123-456',
+        'id': '789',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]
@@ -140,6 +145,43 @@ def test_create(fixture, config):
     assert 'Null' in results['features'][1]['properties']['name']
 
 
+def test_create_existing_item_raise_exception(fixture, config):
+    p = GeoJSONProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'id': '123-456',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'name': 'Null Island'
+        }
+    }
+
+    with pytest.raises(ProviderItemAlreadyExistsError):
+        p.create(new_feature)
+
+
+def test_create_invalid_schema_raise_exception(fixture, config):
+    p = GeoJSONProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'id': '567',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'name': 'Caimen Island',
+            'i_am_an_alien': 1
+        }
+    }
+
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
+
+
 def test_replace(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
@@ -149,7 +191,6 @@ def test_replace(fixture, config):
             'coordinates': [0.0, 0.0]
         },
         'properties': {
-            'id': '123-456',
             'name': 'Null Island'
         }
     }
@@ -160,25 +201,39 @@ def test_replace(fixture, config):
     assert 'Null' in results['properties']['name']
 
 
-def test_replace_safe_id(fixture, config):
+def test_replace_non_existing_item_raise_exception(fixture, config):
     p = GeoJSONProvider(config)
     new_feature = {
         'type': 'Feature',
         'geometry': {
             'type': 'Point',
-            'coordinates': [0.0, 0.0]},
+            'coordinates': [0.0, 0.0]
+        },
         'properties': {
-            'id': 'SOMETHING DIFFERENT',
-            'name': 'Null Island'}}
+            'name': 'Null Island'
+        }
+    }
 
-    # Don't let the id change, should not exist
     with pytest.raises(ProviderItemNotFoundError):
-        p.get('SOMETHING DIFFERENT')
+        p.replace('NON EXISTING ID', new_feature)
 
-    p.replace('123-456', new_feature)
-    # Should still be at the old id
-    results = p.get('123-456')
-    assert 'Null' in results['properties']['name']
+
+def test_replace_invalid_schema_raise_exception(fixture, config):
+    p = GeoJSONProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50,
+            'i_am_an_alien': 1
+        }
+    }
+
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
 
 
 def test_update(fixture, config):
@@ -205,6 +260,20 @@ def test_update(fixture, config):
     assert 'area' not in results['properties']
 
 
+def test_update_non_existing_item_raise_exception(fixture, config):
+    p = GeoJSONProvider(config)
+    updates = {"add":
+               [{"name": "nearby", "value": "shutter island"}],
+               "modify":
+               [{"name": "name", "value": "atlantis"}],
+               "remove":
+               ["area"]
+               }
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.update('NON EXISTING ID', updates)
+
+
 def test_update_invalid_updates_raise_exception(fixture, config):
     p = GeoJSONProvider(config)
     invalid_add = {"add": [{"name": "name", "value": "shutter island"}],
@@ -215,7 +284,7 @@ def test_update_invalid_updates_raise_exception(fixture, config):
 
     prev_results = p.get('123-456')
 
-    with pytest.raises(ProviderGenericError):
+    with pytest.raises(ProviderSchemaError):
         p.update('123-456', invalid_add)
         p.update('123-456', invalid_modify)
         p.update('123-456', invalid_remove)

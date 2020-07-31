@@ -46,7 +46,8 @@ from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderQueryError, ProviderItemNotFoundError)
+    ProviderQueryError, ProviderItemNotFoundError, ProviderSchemaError,
+    ProviderItemAlreadyExistsError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            json_serial, render_j2_template, TEMPLATES, to_json)
@@ -1079,7 +1080,6 @@ class API:
 
         return headers_, 200, json.dumps(content, default=json_serial)
 
-    # ------------------------ POST --------------------------------------
     def create_collection_item(self, req_body, dataset):
         """
         Create a collection item
@@ -1089,7 +1089,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         headers_ = {'X-Powered-By': 'pygeoapi {}'.format(__version__),
                     'Content-Type': 'application/json'}
         content = ""
@@ -1120,6 +1119,24 @@ class API:
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
 
+        except ProviderSchemaError as err:
+            exception = {
+                'code': 'InvalidPayloadSchema',
+                'description':
+                'payload schema not in accordance with provider schema'
+            }
+            LOGGER.error(err)
+            return headers_, 400, json.dumps(exception)
+
+        except ProviderItemAlreadyExistsError as err:
+            exception = {
+                'code': 'ProviderItemAlreadyExists',
+                'description':
+                'the id you have provided already exists'
+            }
+            LOGGER.error(err)
+            return headers_, 400, json.dumps(exception)
+
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1130,10 +1147,9 @@ class API:
 
         feature_path = '/collections/' + dataset + '/items/' + str(identifier)
         headers_['Location'] = feature_path
+
         return headers_, 201, content
 
-    # --------------------------------------------------------------------
-    # ------------------------ PUT -------------------------------------
     def replace_collection_item(self, req_body, dataset, identifier):
         """
         Replace a collection item
@@ -1175,6 +1191,16 @@ class API:
             }
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
+
+        except ProviderSchemaError as err:
+            exception = {
+                'code': 'InvalidPayloadSchema',
+                'description':
+                'payload schema not in accordance with provider schema'
+            }
+            LOGGER.error(err)
+            return headers_, 400, json.dumps(exception)
+
         except ProviderItemNotFoundError:
             exception = {
                 'code': 'NotFound',
@@ -1182,6 +1208,7 @@ class API:
             }
             LOGGER.error(exception)
             return headers_, 404, json.dumps(exception)
+
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1192,8 +1219,6 @@ class API:
 
         return headers_, 200, content
 
-    # -------------------------------------------------------------------
-    # ------------------------- PATCH -------------------------------------
     def update_collection_item(self, req_body, dataset, identifier):
         """
         Update a collection item
@@ -1234,6 +1259,16 @@ class API:
             }
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
+
+        except ProviderSchemaError as err:
+            exception = {
+                'code': 'InvalidPayloadSchema',
+                'description':
+                'payload schema not in accordance with provider schema'
+            }
+            LOGGER.error(err)
+            return headers_, 400, json.dumps(exception)
+
         except ProviderItemNotFoundError:
             exception = {
                 'code': 'NotFound',
@@ -1241,6 +1276,7 @@ class API:
             }
             LOGGER.error(exception)
             return headers_, 404, json.dumps(exception)
+
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1253,8 +1289,6 @@ class API:
         headers_['Location'] = feature_path
         return headers_, 200, content
 
-    # --------------------------------------------------------------------
-    # ------------------------ DELETE ------------------------------------
     def remove_collection_item(self, dataset, identifier):
         """
         Update a collection item
@@ -1310,8 +1344,6 @@ class API:
             return headers_, 500, json.dumps(exception)
 
         return headers_, 200, content
-
-    # --------------------------------------------------------------------
 
     @pre_process
     @jsonldify

@@ -78,6 +78,7 @@ api_ = API(CONFIG)
 async def landing_page(request: Request):
     """
     OGC API landing page endpoint
+
     :returns: Starlette HTTP Response
     """
 
@@ -96,6 +97,7 @@ async def landing_page(request: Request):
 async def openapi(request: Request):
     """
     OpenAPI endpoint
+
     :returns: Starlette HTTP Response
     """
 
@@ -117,6 +119,7 @@ async def openapi(request: Request):
 async def conformance(request: Request):
     """
     OGC API conformance endpoint
+
     :returns: Starlette HTTP Response
     """
 
@@ -372,7 +375,7 @@ def serve(ctx, server=None, debug=False):
     :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    # setup_logger(CONFIG['logging'])
     uvicorn.run(
         app, debug=True,
         host=api_.config['server']['bind']['host'],

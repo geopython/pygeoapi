@@ -35,7 +35,8 @@ import uuid
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError,
-                                    ProviderGenericError)
+                                    ProviderSchemaError,
+                                    ProviderItemAlreadyExistsError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,7 +120,10 @@ class CSVProvider(BaseProvider):
                             LOGGER.error(err)
                             raise ProviderQueryError()
                 else:
-                    feature['properties'] = row
+                    feature['properties'] = dict()
+                    for prop in row:
+                        if row[prop] != '':
+                            feature['properties'][prop] = row[prop]
 
                 if identifier is not None and feature['id'] == identifier:
                     found = True
@@ -166,6 +170,12 @@ class CSVProvider(BaseProvider):
         """
         item = self._load(identifier=identifier)
         if item:
+            print(item)
+            props = item.pop('properties')
+            item['properties'] = dict()
+            for prop in props:
+                if props[prop] != '':
+                    item['properties'][prop] = props[prop]
             return item
         else:
             err = 'item {} not found'.format(identifier)
@@ -191,14 +201,13 @@ class CSVProvider(BaseProvider):
 
         # if given data has extra properties not in schema
         if bool(new_cols - curr_cols):
-            err = 'payload schema invalid'
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
             LOGGER.error(err)
-            raise ProviderGenericError(err)
+            raise ProviderSchemaError(err)
         else:
             # copy properties of the given data
             feature = new_feature['properties']
-            for k in feature:
-                feature[k] = feature[k]
             # copy latitude and longitude of given data
             lat = new_feature['geometry']['coordinates'][1]
             lon = new_feature['geometry']['coordinates'][0]
@@ -210,8 +219,10 @@ class CSVProvider(BaseProvider):
                 # if id is already used in the provider
                 for f in curr:
                     if str(f[id_field]) == feature[id_field]:
-                        # set a randomly generated id
-                        feature[id_field] = str(uuid.uuid4())
+                        err = 'provider item {} already exists'\
+                            .format(feature[id_field])
+                        LOGGER.error(err)
+                        raise ProviderItemAlreadyExistsError(err)
             else:
                 # set a randomly generated id
                 feature[id_field] = str(uuid.uuid4())
@@ -260,9 +271,10 @@ class CSVProvider(BaseProvider):
         else:
             # if given data item has extra properties not in schema
             if bool(new_cols - curr_cols):
-                err = 'payload schema invalid'
+                err = 'properties {} not prescent in provider schema'\
+                    .format(new_cols - curr_cols)
                 LOGGER.error(err)
-                raise ProviderGenericError(err)
+                raise ProviderSchemaError(err)
             else:
                 # copy properties of the given data
                 feature = new_feature['properties']
@@ -275,14 +287,33 @@ class CSVProvider(BaseProvider):
                 feature['long'] = lon
                 # set id of given data
                 feature[id_field] = identifier
+                # set empty for remaining attributes
+                for attrib in curr_cols - new_cols:
+                    feature[attrib] = ''
                 # replace the data items
                 curr[index] = feature
+
+                # clean up empty attributes
+                remove_set = set()
+                for attrib in curr[0].keys():
+                    empt = True
+                    for feature in curr:
+                        if feature[attrib] != '':
+                            empt = False
+                            break
+                    if empt:
+                        remove_set.add(attrib)
+                for attrib in remove_set:
+                    for feature in curr:
+                        feature.pop(attrib)
+
+                new_fields = set(curr[0].keys())-remove_set
 
                 # writing new set of data items to csv file
                 try:
                     with open(self.data, 'w') as csvfile:
                         writer = csv.DictWriter(csvfile,
-                                                fieldnames=curr[0].keys())
+                                                fieldnames=new_fields)
                         writer.writeheader()
                         for data in curr:
                             writer.writerow(data)
@@ -315,36 +346,42 @@ class CSVProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
         else:
-            add_set = set()
-            # add an attribute only if its not already prescent in the feature
-            for name_val_pair in updates['add']:
-                name = name_val_pair['name']
-                value = name_val_pair['value']
-                add_set.add(name)
-                if name not in feature:
-                    feature[name] = value
-                else:
-                    err = 'payload schema invalid'
-                    LOGGER.error(err)
-                    raise ProviderGenericError(err)
-            # modify an attribute only if its  already prescent in the feature
-            for name_val_pair in updates['modify']:
-                name = name_val_pair['name']
-                value = name_val_pair['value']
-                if name in feature and name not in {id_field, 'lat', 'long'}:
-                    feature[name] = value
-                else:
-                    err = 'payload schema invalid'
-                    LOGGER.error(err)
-                    raise ProviderGenericError(err)
-            # delete an attribute only if its prescent in the feature
-            for name in updates['remove']:
-                if name in feature:
-                    feature[name] = ''
-                else:
-                    err = 'payload schema invalid'
-                    LOGGER.error(err)
-                    raise ProviderGenericError(err)
+            if 'add' in updates:
+                add_set = set()
+                # add the attribute if its not in the feature
+                for name_val_pair in updates['add']:
+                    name = name_val_pair['name']
+                    value = name_val_pair['value']
+                    add_set.add(name)
+                    if name not in feature:
+                        feature[name] = value
+                    else:
+                        err = 'property {} already exists'.format(name)
+                        LOGGER.error(err)
+                        raise ProviderSchemaError(err)
+            if 'modify' in updates:
+                # modify an attribute only if its already prescent
+                for name_val_pair in updates['modify']:
+                    name = name_val_pair['name']
+                    value = name_val_pair['value']
+                    if name in feature and name not in {id_field,
+                                                        'lat', 'long'}:
+                        feature[name] = value
+                    else:
+                        err = 'property {} already exists'.format(name)
+                        LOGGER.error(err)
+                        raise ProviderSchemaError(err)
+            if 'remove' in updates:
+                # delete an attribute only if its prescent
+                for name in updates['remove']:
+                    if name in feature:
+                        feature[name] = ''
+                    else:
+                        err = 'property {} already exists for given provider \
+                            item'.format(name)
+                        LOGGER.error(err)
+                        raise ProviderSchemaError(err)
+
             curr[index] = feature
 
             # clean up empty attributes

@@ -57,7 +57,9 @@ def test_str2bool():
 def get_test_file_path(filename):
     """
     Helper function to open test file safely
+
     :param filename: file path
+
     :returns: corrected file path
     """
     if os.path.isfile(filename):
@@ -70,6 +72,7 @@ def get_test_file_path(filename):
 def config():
     """
     Get pygeoapi configuration
+
     :returns: pygeoapi configuration dict
     """
     with open(get_test_file_path('pygeoapi-config-local-openapi.yml')) as fh:
@@ -80,7 +83,9 @@ def config():
 def get_oas_30_(config):
     """
     Generate OpenAPI 3.0 document from pygeoapi configuration
+
     :param config: pygeoapi configuration dict
+
     :returns: OpenAPI definition dict
     """
     return get_oas_30(config)
@@ -90,7 +95,9 @@ def get_oas_30_(config):
 def components(get_oas_30_):
     """
     Get components from OpenAPI document
+
     :param get_oas_30_: OpenAPI definition dict
+
     :returns: components dict
     """
     return get_oas_30_['components']
@@ -100,7 +107,9 @@ def components(get_oas_30_):
 def schemas(components):
     """
     Get schemas from components
+
     :param components: components dict
+
     :returns: schemas dict
     """
     return components['schemas']
@@ -110,7 +119,9 @@ def schemas(components):
 def paths(get_oas_30_):
     """
     Get paths from OpenAPI document
+
     :param get_oas_30_: OpenAPI definition dict
+
     :returns: paths dict
     """
     return get_oas_30_['paths']
@@ -120,7 +131,9 @@ def paths(get_oas_30_):
 def collections(config):
     """
     Get collections from pygeoapi configuration
+
     :param config: pygeoapi configuration dict
+
     :returns: collections dict
     """
     return filter_dict_by_key_value(config['resources'],
@@ -131,7 +144,9 @@ def collections(config):
 def items_path(coll_name):
     """
     Generate items path from collection name
+
     :param coll_name: collection name
+
     :returns: items path
     """
     return '/collections/{}/items'.format(coll_name)
@@ -140,7 +155,9 @@ def items_path(coll_name):
 def item_path(coll_name):
     """
     Generate item path from collection name
+
     :param coll_name: collection name
+
     :returns: item path
     """
     return '/collections/{}/items/{{featureId}}'.format(coll_name)
@@ -149,7 +166,9 @@ def item_path(coll_name):
 def supports_transactions(collection):
     """
     Check if given collection supports transactions
+
     :param collection: collection dict
+
     :returns: boolean value
     """
     if 'extensions' not in collection:
@@ -172,6 +191,7 @@ def test_name_value_pair_obj(schemas):
 def post_schema_assertions(verbs):
     """
     Assertions for post schema in OpenAPI document
+
     :param verbs: verbs dict
     """
     # assertion for post
@@ -220,6 +240,7 @@ def post_schema_assertions(verbs):
 def patch_schema_assertions(verbs):
     """
     Assertions for patch schema in OpenAPI document
+
     :param verbs: verbs dict
     """
     # assertion for patch
@@ -320,6 +341,7 @@ def put_schema_assertions(verbs):
 def delete_schema_assertions(verbs):
     """
     Assertions for delete schema in OpenAPI document
+
     :param verbs: verbs dict
     """
     # assertion for delete
@@ -350,6 +372,7 @@ def delete_schema_assertions(verbs):
 def check_transaction_schemas_present(coll_name, paths):
     """
     Assertions for precense of transaction schemas
+
     :param coll_name: collection name
     :param paths: paths dict
     """
@@ -365,6 +388,7 @@ def check_transaction_schemas_present(coll_name, paths):
 def check_transaction_schemas_abscent(coll_name, paths):
     """
     Assertions for abcense of transaction schemas
+
     :param coll_name: collection name
     :param paths: paths dict
     """
@@ -380,6 +404,7 @@ def check_transaction_schemas_abscent(coll_name, paths):
 def test_transaction_a_b(collections, paths):
     """
     Assertions for transaction schemas in OpenAPI document
+
     :param collections: collections dict
     :param paths: paths dict
     """

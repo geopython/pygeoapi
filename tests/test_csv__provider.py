@@ -30,7 +30,8 @@
 import pytest
 
 from pygeoapi.provider.base import (ProviderItemNotFoundError,
-                                    ProviderGenericError)
+                                    ProviderSchemaError,
+                                    ProviderItemAlreadyExistsError)
 from pygeoapi.provider.csv_ import CSVProvider
 
 
@@ -167,6 +168,42 @@ def test_create(fixture, config):
                     new_feature['geometry']['coordinates'][0])
 
 
+def test_create_existing_item_raise_exception(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'id': '964',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50
+        }
+    }
+
+    with pytest.raises(ProviderItemAlreadyExistsError):
+        p.create(new_feature)
+
+
+def test_create_invalid_schema_raise_exception(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50,
+            'i_am_an_alien': 1
+        }
+    }
+
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
+
+
 def test_replace(fixture, config):
     p = CSVProvider(config)
     new_feature = {
@@ -196,11 +233,10 @@ def test_replace(fixture, config):
                     new_feature['geometry']['coordinates'][0])
 
 
-def test_replace_safe_id(fixture, config):
+def test_replace_non_existing_item_raise_exception(fixture, config):
     p = CSVProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': 'SOMETHING DIFFERENT',
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]
@@ -210,14 +246,26 @@ def test_replace_safe_id(fixture, config):
         }
     }
 
-    p.replace('377', new_feature)
-    # Don't let the id change, should not exist
     with pytest.raises(ProviderItemNotFoundError):
-        p.get('SOMETHING DIFFERENT')
-    # Should still be at the old id
-    results = p.get('377')
-    assert are_same(results['properties']['stn_id'],
-                    new_feature['properties']['stn_id'])
+        p.replace('NON EXISTING ID', new_feature)
+
+
+def test_replace_invalid_schema_raise_exception(fixture, config):
+    p = CSVProvider(config)
+    new_feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [0.0, 0.0]
+        },
+        'properties': {
+            'stn_id': 50,
+            'i_am_an_alien': 1
+        }
+    }
+
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
 
 
 def test_update(fixture, config):
@@ -246,6 +294,20 @@ def test_update(fixture, config):
         (updated_feature['properties']['datetime'] == '')
 
 
+def test_update_non_existing_item_raise_exception(fixture, config):
+    p = CSVProvider(config)
+    updates = {'add':
+               [{'name': 'name', 'value': 'abc'}],
+               'modify':
+               [{'name': 'stn_id', 'value': 4545}],
+               'remove':
+               ['datetime']
+               }
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.update('NON EXISTING ID', updates)
+
+
 def test_update_invalid_updates_raise_exception(fixture, config):
     p = CSVProvider(config)
     invalid_add = {"add": [{'name': 'value', 'value': 77}],
@@ -256,7 +318,7 @@ def test_update_invalid_updates_raise_exception(fixture, config):
 
     prev_results = p.get('377')
 
-    with pytest.raises(ProviderGenericError):
+    with pytest.raises(ProviderSchemaError):
         p.update('377', invalid_add)
         p.update('377', invalid_modify)
         p.update('377', invalid_remove)

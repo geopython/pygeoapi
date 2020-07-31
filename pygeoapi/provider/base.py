@@ -148,3 +148,13 @@ class ProviderNotFoundError(ProviderGenericError):
 class ProviderVersionError(ProviderGenericError):
     """provider incorrect version error"""
     pass
+
+
+class ProviderSchemaError(ProviderGenericError):
+    """provider incorrect schema error"""
+    pass
+
+
+class ProviderItemAlreadyExistsError(ProviderGenericError):
+    """provider incorrect schema error"""
+    pass

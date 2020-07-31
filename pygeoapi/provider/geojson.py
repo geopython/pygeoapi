@@ -31,9 +31,11 @@ import json
 import logging
 import os
 import uuid
+import copy
 
 from pygeoapi.provider.base import (BaseProvider, ProviderItemNotFoundError,
-                                    ProviderGenericError)
+                                    ProviderSchemaError,
+                                    ProviderItemAlreadyExistsError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -84,6 +86,12 @@ class GeoJSONProvider(BaseProvider):
                 fields[f] = 'string'
             return fields
 
+    def get_all_fields(self, dict):
+        fields = set()
+        for f in dict:
+            fields = fields.union(set(f['properties'].keys()))
+        return fields
+
     def _load(self):
         """Load and validate the source GeoJSON file
         at self.data
@@ -95,6 +103,40 @@ class GeoJSONProvider(BaseProvider):
         if os.path.exists(self.data):
             with open(self.data) as src:
                 data = json.loads(src.read())
+            return data
+
+        else:
+            data = {
+                'type': 'FeatureCollection',
+                'features': []}
+        '''
+        # Must be a FeatureCollection
+        assert data['type'] == 'FeatureCollection'
+        # All features must have ids, TODO must be unique strings
+        for i in data['features']:
+            i['id'] = i[self.id_field]
+        '''
+
+        return data
+
+    def _load_without_null(self):
+        """Load and validate the source GeoJSON file
+        at self.data
+
+        Yes loading from disk, deserializing and validation
+        happens on every request. This is not efficient.
+        """
+
+        if os.path.exists(self.data):
+            with open(self.data) as src:
+                data = json.loads(src.read())
+            mod_data = copy.deepcopy(data)
+            for index, feature in enumerate(data['features']):
+                for prop in feature['properties']:
+                    if feature['properties'][prop] == '':
+                        mod_data['features'][index]['properties'].pop(prop)
+            return mod_data
+
         else:
             data = {
                 'type': 'FeatureCollection',
@@ -126,7 +168,7 @@ class GeoJSONProvider(BaseProvider):
         """
 
         # TODO filter by bbox without resorting to third-party libs
-        data = self._load()
+        data = self._load_without_null()
 
         data['numberMatched'] = len(data['features'])
 
@@ -147,7 +189,7 @@ class GeoJSONProvider(BaseProvider):
         :returns: dict of single GeoJSON feature
         """
 
-        all_data = self._load()
+        all_data = self._load_without_null()
         for feature in all_data['features']:
             if str(feature[self.id_field]) == identifier:
                 return feature
@@ -166,16 +208,33 @@ class GeoJSONProvider(BaseProvider):
         :returns: feature id
         """
         all_data = self._load()
-
         id_field = self.id_field
 
-        if id_field in new_feature:
-            for feature in all_data['features']:
-                if str(feature[id_field]) == str(new_feature[id_field]):
-                    new_feature[id_field] = str(uuid.uuid4())
-                    break
+        curr_cols = self.get_all_fields(self._load()['features'])
+        new_cols = set(new_feature['properties'].keys())
+
+        # if given data has extra properties not in schema
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
         else:
-            new_feature[id_field] = str(uuid.uuid4())
+            # set id in feature root
+            if id_field in new_feature:
+                for feature in all_data['features']:
+                    # if id in request is already prescent in provider
+                    if str(feature[id_field]) == str(new_feature[id_field]):
+                        err = 'provider item {} already exists'\
+                            .format(feature[id_field])
+                        LOGGER.error(err)
+                        raise ProviderItemAlreadyExistsError(err)
+            else:
+                # generate random id
+                new_feature[id_field] = str(uuid.uuid4())
+            # set missing properties to empty
+            for prop in curr_cols - new_cols:
+                new_feature['properties'][prop] = ''
 
         all_data['features'].append(new_feature)
 
@@ -189,28 +248,56 @@ class GeoJSONProvider(BaseProvider):
         replace an existing feature item with new_feature item
 
         :param identifier: feature id
-
         :param new_feature: new GeoJSON feature dictionary
         """
-
         all_data = self._load()
-
         id_field = self.id_field
-        found_feature = False
-        for index, feature in enumerate(all_data['features']):
-            if str(feature[id_field]) == str(identifier):
-                found_feature = True
-                break
 
-        if not found_feature:
-            err = 'item {} not found'.format(identifier)
+        curr_cols = self.get_all_fields(self._load()['features'])
+        new_cols = set(new_feature['properties'].keys())
+
+        # if given data has extra properties not in schema
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
             LOGGER.error(err)
-            raise ProviderItemNotFoundError(err)
+            raise ProviderSchemaError(err)
         else:
-            new_feature[id_field] = identifier
-            all_data['features'][index] = new_feature
-            with open(self.data, 'w') as dst:
-                dst.write(json.dumps(all_data, indent=2, sort_keys=True))
+            found_feature = False
+            for index, feature in enumerate(all_data['features']):
+                if str(feature[id_field]) == str(identifier):
+                    found_feature = True
+                    break
+
+            if not found_feature:
+                err = 'item {} not found'.format(identifier)
+                LOGGER.error(err)
+                raise ProviderItemNotFoundError(err)
+            else:
+                new_feature[id_field] = identifier
+                # set missing properties to empty
+                for prop in curr_cols - new_cols:
+                    new_feature['properties'][prop] = ''
+                all_data['features'][index] = new_feature
+
+            # clean up empty attributes
+            remove_set = set()
+            for attrib in curr_cols:
+                empt = True
+                for feature in all_data['features']:
+                    if feature['properties'][attrib] != '':
+                        empt = False
+                        break
+                if empt:
+                    remove_set.add(attrib)
+            for attrib in remove_set:
+                for feature in all_data['features']:
+                    print(attrib)
+                    print(feature)
+                    feature['properties'].pop(attrib)
+
+        with open(self.data, 'w') as dst:
+            dst.write(json.dumps(all_data, indent=2, sort_keys=True))
 
     def update(self, identifier, updates):
         """
@@ -224,6 +311,7 @@ class GeoJSONProvider(BaseProvider):
         """
 
         all_data = self._load()
+        curr_cols = self.get_all_fields(self._load()['features'])
 
         id_field = self.id_field
         found_feature = False
@@ -237,37 +325,76 @@ class GeoJSONProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
         else:
+
             # add an attribute if its not already prescent in the feature
             for name_val_pair in updates['add']:
                 name = name_val_pair['name']
                 value = name_val_pair['value']
-                if name not in feature['properties']:
+                if name not in curr_cols:
+                    for f in all_data['features']:
+                        f['properties'][name] = ''
                     feature['properties'][name] = value
                 else:
-                    err = 'payload schema invalid'
-                    raise ProviderGenericError(err)
+                    err = 'property {} already exists for given provider item'\
+                        .format(name)
+                    LOGGER.error(err)
+                    raise ProviderSchemaError(err)
+
             # modify an attribute if its  already prescent in the feature
             for name_val_pair in updates['modify']:
                 name = name_val_pair['name']
                 value = name_val_pair['value']
-                if name in feature['properties']:
+                if name in self.get_all_fields(all_data['features']):
                     feature['properties'][name] = value
                 else:
-                    err = 'payload schema invalid'
-                    raise ProviderGenericError(err)
+                    err = 'property {} doesnt exists for given provider item'\
+                        .format(name)
+                    raise ProviderSchemaError(err)
+
             # delete an attribute if its prescent in the feature
             for name in updates['remove']:
-                if name in feature['properties']:
-                    feature['properties'].pop(name)
+                if name in curr_cols and \
+                   feature['properties'][name] != '':
+                    feature['properties'][name] = ''
+                    empt = True
+                    for f in all_data['features']:
+                        if f['properties'][name] != '':
+                            empt = False
+                            break
+                    if empt:
+                        for f in all_data['features']:
+                            f['properties'].pop(name)
                 else:
-                    err = 'payload schema invalid'
-                    raise ProviderGenericError(err)
+                    err = 'property {} doesnt exists for given \
+                        provider item'.format(name)
+                    raise ProviderSchemaError(err)
 
             all_data['features'][index] = feature
 
+            curr_cols = self.get_all_fields(all_data['features'])
+            # clean up empty attributes
+            remove_set = set()
+            for attrib in curr_cols:
+                empt = True
+                for feature in all_data['features']:
+                    if feature['properties'][attrib] != '':
+                        empt = False
+                        break
+                if empt:
+                    remove_set.add(attrib)
+            for attrib in remove_set:
+                for feature in all_data['features']:
+                    feature['properties'].pop(attrib)
+
             with open(self.data, 'w') as dst:
                 dst.write(json.dumps(all_data, indent=2, sort_keys=True))
-            return feature
+
+            feature = all_data['features'][index]
+            mod_feature = copy.deepcopy(feature)
+            for prop in feature['properties']:
+                if feature['properties'][prop] == '':
+                    mod_feature['properties'].pop(prop)
+            return mod_feature
 
     def delete(self, identifier):
         """
@@ -291,6 +418,22 @@ class GeoJSONProvider(BaseProvider):
             raise ProviderItemNotFoundError(err)
         else:
             all_data['features'].pop(index)
+
+            curr_cols = self.get_all_fields(all_data['features'])
+            # clean up empty attributes
+            remove_set = set()
+            for attrib in curr_cols:
+                empt = True
+                for feature in all_data['features']:
+                    if feature['properties'][attrib] != '':
+                        empt = False
+                        break
+                if empt:
+                    remove_set.add(attrib)
+            for attrib in remove_set:
+                for feature in all_data['features']:
+                    feature['properties'].pop(attrib)
+
             with open(self.data, 'w') as dst:
                 dst.write(json.dumps(all_data, indent=2, sort_keys=True))
 

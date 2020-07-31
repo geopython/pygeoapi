@@ -122,12 +122,12 @@ def openapi():
 
     headers, status_code, content = api_.openapi(request.headers, request.args,
                                                  openapi)
-
     response = make_response(content, status_code)
 
     if headers:
         response.headers = headers
 
+    print(response.__dict__)
     return response
 
 
@@ -218,11 +218,11 @@ def dataset(item_id=None):
 
     :returns: HTTP response
     """
-    # -------- find collection id from request object -------------
+
+    # find collection id from request object
     path = request.path
     coll_id_pattern = re.compile("/collections/(.*)/items")
     collection_id = coll_id_pattern.findall(path)[0]
-    # -------------------------------------------------------------
 
     verb = request.method
 
@@ -260,7 +260,7 @@ def dataset(item_id=None):
     return response
 
 
-# ------------ dynamic routing based on transactions flag --------------
+# dynamic routing based on transactions flag
 coll = filter_dict_by_key_value(CONFIG['resources'],
                                 'type', 'collection')
 coll_support_trans = list(filter(supports_transactions, coll))
@@ -280,7 +280,6 @@ for collection_id in coll_support_trans:
     APP.add_url_rule('/collections/'+collection_id+'/items/<item_id>',
                      'dataset', dataset,
                      methods=['PATCH', 'PUT', 'DELETE'])
-# ------------------------------------------------------------------------
 
 
 @APP.route('/processes')
