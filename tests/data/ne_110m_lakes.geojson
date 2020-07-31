@@ -1,18 +1,7 @@
 {
-  "type": "FeatureCollection",
   "features": [
     {
-      "type": "Feature",
-      "properties": {
-        "id": 0,
-        "scalerank": 0,
-        "name": "Lake Baikal",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Baikal",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -172,21 +161,21 @@
               52.79998159444554
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 0,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Baikal",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Baikal",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 1,
-        "scalerank": 0,
-        "name": "Lake Winnipeg",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipeg",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -238,21 +227,21 @@
               53.92978343364277
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 1,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Winnipeg",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipeg",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 2,
-        "scalerank": 0,
-        "name": "Great Slave Lake",
-        "name_alt": "https://en.wikipedia.org/wiki/Great_Slave_Lake",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -356,21 +345,21 @@
               61.9723932969562
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 2,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Great Slave Lake",
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Slave_Lake",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 3,
-        "scalerank": 0,
-        "name": "L. Ontario",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ontario",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -442,21 +431,21 @@
               43.25410431576152
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 3,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "L. Ontario",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ontario",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 4,
-        "scalerank": 0,
-        "name": "L. Erie",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Erie",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -536,21 +525,21 @@
               42.08001577409016
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 4,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "L. Erie",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Erie",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 5,
-        "scalerank": 0,
-        "name": "Lake Superior",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Superior",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -678,21 +667,21 @@
               48.00998973244721
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 5,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Superior",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Superior",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 6,
-        "scalerank": 0,
-        "name": "Lake Victoria",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Victoria",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -772,21 +761,21 @@
               0.128157863766091
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 6,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Victoria",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Victoria",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 7,
-        "scalerank": 0,
-        "name": "Lake Ladoga",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ladoga",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -850,21 +839,21 @@
               61.22608226179696
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 7,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Ladoga",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Ladoga",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 8,
-        "scalerank": 0,
-        "name": "Balqash K\u00f6li",
-        "name_alt": "Lake\rBalkhash",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -972,21 +961,21 @@
               46.748619696634876
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 8,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Balqash K\u00f6li",
+        "name_alt": "Lake\rBalkhash",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 9,
-        "scalerank": 0,
-        "name": "Lake Tanganyika",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tanganyika",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1078,21 +1067,21 @@
               -8.578339125201033
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 9,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Tanganyika",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tanganyika",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 10,
-        "scalerank": 0,
-        "name": "Lake Malawi",
-        "name_alt": "Lake Nyasa",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1176,21 +1165,21 @@
               -14.277474460510291
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 10,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Malawi",
+        "name_alt": "Lake Nyasa",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 11,
-        "scalerank": 0,
-        "name": "Aral Sea",
-        "name_alt": "https://en.wikipedia.org/wiki/Aral_Sea",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1290,21 +1279,21 @@
               44.264636949229114
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 11,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Aral Sea",
+        "name_alt": "https://en.wikipedia.org/wiki/Aral_Sea",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 12,
-        "scalerank": 1,
-        "name": "V\u00e4nern",
-        "name_alt": null,
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1364,21 +1353,21 @@
               59.20491364199721
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 12,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "V\u00e4nern",
+        "name_alt": null,
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 13,
-        "scalerank": 1,
-        "name": "Lake Okeechobee",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Okeechobee",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1406,21 +1395,21 @@
               26.788959458924822
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 13,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Okeechobee",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Okeechobee",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 14,
-        "scalerank": 1,
-        "name": "Lago de Nicaragua",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Nicaragua",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1456,21 +1445,21 @@
               11.147898667846633
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 14,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lago de Nicaragua",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Nicaragua",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 15,
-        "scalerank": 1,
-        "name": "Lake Tana",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tana",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1506,21 +1495,21 @@
               11.850594794151519
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 15,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Tana",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Tana",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 16,
-        "scalerank": 1,
-        "name": "Lago Titicaca",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Titicaca",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1592,21 +1581,21 @@
               -16.126198825752063
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 16,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lago Titicaca",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Titicaca",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 17,
-        "scalerank": 1,
-        "name": "Lake Winnipegosis",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipegosis",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1690,21 +1679,21 @@
               53.1258531764781
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 17,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Winnipegosis",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Winnipegosis",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 18,
-        "scalerank": 1,
-        "name": "Lake Onega",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Onega",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1804,21 +1793,21 @@
               62.2802298041189
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 18,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Onega",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Onega",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 19,
-        "scalerank": 1,
-        "name": "Great Salt Lake",
-        "name_alt": "https://en.wikipedia.org/wiki/Great_Salt_Lake",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1862,21 +1851,21 @@
               41.34124949804567
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 19,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Great Salt Lake",
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Salt_Lake",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 20,
-        "scalerank": 1,
-        "name": "Great Bear Lake",
-        "name_alt": "https://en.wikipedia.org/wiki/Great_Bear_Lake",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -1980,21 +1969,21 @@
               66.22368419052789
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 20,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Great Bear Lake",
+        "name_alt": "https://en.wikipedia.org/wiki/Great_Bear_Lake",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 21,
-        "scalerank": 1,
-        "name": "Lake Athabasca",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Athabasca",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -2034,21 +2023,21 @@
               59.03763703066841
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 21,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Lake Athabasca",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Athabasca",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 22,
-        "scalerank": 1,
-        "name": "Reindeer Lake",
-        "name_alt": "https://en.wikipedia.org/wiki/Reindeer_Lake",
-        "admin": null,
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -2112,21 +2101,21 @@
               58.01403025983099
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 22,
+      "properties": {
+        "admin": null,
+        "featureclass": "Lake",
+        "name": "Reindeer Lake",
+        "name_alt": "https://en.wikipedia.org/wiki/Reindeer_Lake",
+        "scalerank": 1
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 23,
-        "scalerank": 0,
-        "name": "Lake Huron",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Huron",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -2258,21 +2247,21 @@
               45.590137437515665
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 23,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Huron",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Huron",
+        "scalerank": 0
+      },
+      "type": "Feature"
     },
     {
-      "type": "Feature",
-      "properties": {
-        "id": 24,
-        "scalerank": 0,
-        "name": "Lake Michigan",
-        "name_alt": "https://en.wikipedia.org/wiki/Lake_Michigan",
-        "admin": "admin-0",
-        "featureclass": "Lake"
-      },
       "geometry": {
-        "type": "Polygon",
         "coordinates": [
           [
             [
@@ -2404,8 +2393,191 @@
               46.03000722918408
             ]
           ]
-        ]
-      }
+        ],
+        "type": "Polygon"
+      },
+      "id": 24,
+      "properties": {
+        "admin": "admin-0",
+        "featureclass": "Lake",
+        "name": "Lake Michigan",
+        "name_alt": "https://en.wikipedia.org/wiki/Lake_Michigan",
+        "scalerank": 0
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              106.57998579307912,
+              52.79998159444554
+            ],
+            [
+              106.53998823448521,
+              52.93999888774037
+            ],
+            [
+              107.0800069519353,
+              53.18001007751998
+            ],
+            [
+              107.2999935242018,
+              53.37999787048953
+            ],
+            [
+              107.59997521365611,
+              53.51998932556822
+            ],
+            [
+              108.03994835818912,
+              53.859968573616456
+            ],
+            [
+              108.37997928266967,
+              54.25999583598784
+            ],
+            [
+              109.05270307824526,
+              55.027597561251326
+            ],
+            [
+              109.19346967980832,
+              55.53560272889659
+            ],
+            [
+              109.50699059452313,
+              55.73091380474372
+            ],
+            [
+              109.92980716353523,
+              55.7129562445223
+            ],
+            [
+              109.70000206913326,
+              54.980003567110515
+            ],
+            [
+              109.66000451053935,
+              54.71999359803395
+            ],
+            [
+              109.47996382043448,
+              54.33999095317566
+            ],
+            [
+              109.31997358605884,
+              53.81999685323869
+            ],
+            [
+              109.22003136600637,
+              53.619983222052994
+            ],
+            [
+              108.99999311730755,
+              53.78002513286093
+            ],
+            [
+              108.60001753136845,
+              53.4399942083804
+            ],
+            [
+              108.800005324338,
+              53.37999787048953
+            ],
+            [
+              108.76000776574409,
+              53.200008856816936
+            ],
+            [
+              108.45997439985749,
+              53.14001251892607
+            ],
+            [
+              108.17999148970011,
+              52.79998159444554
+            ],
+            [
+              107.79996300662566,
+              52.579995022179034
+            ],
+            [
+              107.31999230349876,
+              52.42000478780339
+            ],
+            [
+              106.64003380740229,
+              52.32001089131862
+            ],
+            [
+              106.1000150899522,
+              52.03997630472897
+            ],
+            [
+              105.740037062607,
+              51.759993394571595
+            ],
+            [
+              105.24001590375084,
+              51.52000804300813
+            ],
+            [
+              104.81998986208251,
+              51.46001170511727
+            ],
+            [
+              104.30002160036167,
+              51.50000926371118
+            ],
+            [
+              103.7600028829116,
+              51.60000316019595
+            ],
+            [
+              103.6200114278329,
+              51.73999461527464
+            ],
+            [
+              103.85999677939637,
+              51.85998729105637
+            ],
+            [
+              104.39996382041414,
+              51.85998729105637
+            ],
+            [
+              105.05997521364597,
+              52.0000045843512
+            ],
+            [
+              105.4800012553143,
+              52.28001333272471
+            ],
+            [
+              105.98002241417046,
+              52.51999868428817
+            ],
+            [
+              106.26000532432784,
+              52.619992580772944
+            ],
+            [
+              106.57998579307912,
+              52.79998159444554
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "id": "9999",
+      "properties": {
+        "name": "Lake Baikal - erer",
+        "scalerank": 1,
+        "trr": "ryry"
+      },
+      "type": "Feature"
     }
-  ]
+  ],
+  "type": "FeatureCollection"
 }
