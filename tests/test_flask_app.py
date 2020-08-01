@@ -20,19 +20,6 @@ def test_landing_page(app, client):
     assert res.headers['Content-Type'] == 'application/json'
 
 
-# Facing CORS issue with this function
-'''
-def test_openapi(app, client):
-    res = client.get('/openapi')
-    assert res.status_code == 200
-    assert res.headers['Content-Type'] == 'application/json'
-    assert 'components' in json.loads(res.data.decode('utf-8'))
-    assert 'paths' in json.loads(res.data.decode('utf-8'))
-    assert 'tags' in json.loads(res.data.decode('utf-8'))
-    assert 'servers' in json.loads(res.data.decode('utf-8'))
-'''
-
-
 def test_dataset_get(app, client):
     get_res = client.get('/collections/lakes/items/0')
     assert get_res.status_code == 200
