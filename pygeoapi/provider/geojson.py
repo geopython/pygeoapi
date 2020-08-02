@@ -195,12 +195,11 @@ class GeoJSONProvider(BaseProvider):
                 new_feature[self.id_field] = identifier
                 all_data['features'][i] = new_feature
                 break
-
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def delete(self, identifier):
-        """Updates an existing feature id with new_feature
+        """Deletes an existing feature
 
         :param identifier: feature id
         """
