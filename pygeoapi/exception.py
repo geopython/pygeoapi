@@ -40,6 +40,26 @@ class CQLExceptionComparison(CQLException):
     pass
 
 
+class CQLExceptionBetween(CQLException):
+    """CQL filter having invalid between operation"""
+    pass
+
+
+class CQLExceptionNull(CQLException):
+    """CQL filter having invalid null operation"""
+    pass
+
+
+class CQLExceptionIn(CQLException):
+    """CQL filter having invalid IN operation"""
+    pass
+
+
+class CQLExceptionLike(CQLException):
+    """CQL filter having invalid LIKE operation"""
+    pass
+
+
 class CQLExceptionAttribute(CQLException):
     """CQL filter having invalid attribute exception"""
     pass

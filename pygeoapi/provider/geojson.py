@@ -33,6 +33,9 @@ import os
 import uuid
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
+from pygeoapi.cql_evaluate import (CQLParser, CQLFilterEvaluator)
+from pygeoapi.util import get_filter_fields
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -102,13 +105,12 @@ class GeoJSONProvider(BaseProvider):
         # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
-        for i in data['features']:
-            i['id'] = i['properties'][self.id_field]
 
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[],
+              filter_expression=None):
         """
         query the provider
 
@@ -119,12 +121,21 @@ class GeoJSONProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param filter_expression: string of filter expression
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
 
         # TODO filter by bbox without resorting to third-party libs
         data = self._load()
+
+        if filter_expression:
+            cql_ast = CQLParser(filter_expression).create_ast()
+            feature_set = data['features']
+            fields_name = get_filter_fields(feature_set)
+            feature_set = CQLFilterEvaluator(list(fields_name),
+                                             feature_set).to_filter(cql_ast)
+            data['features'] = feature_set
 
         data['numberMatched'] = len(data['features'])
 
@@ -141,12 +152,13 @@ class GeoJSONProvider(BaseProvider):
         query the provider by id
 
         :param identifier: feature id
+
         :returns: dict of single GeoJSON feature
         """
 
         all_data = self._load()
         for feature in all_data['features']:
-            if str(feature['properties'][self.id_field]) == identifier:
+            if str(feature[self.id_field]) == identifier:
                 return feature
 
         # default, no match
@@ -162,7 +174,7 @@ class GeoJSONProvider(BaseProvider):
         all_data = self._load()
 
         # Hijack the feature id and make sure it's unique
-        new_feature['properties']['id'] = str(uuid.uuid4())
+        new_feature[self.id_field] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
@@ -178,9 +190,9 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
+            if feature[self.id_field] == identifier:
                 # ensure new_feature retains id
-                new_feature['properties']['id'] = identifier
+                new_feature[self.id_field] = identifier
                 all_data['features'][i] = new_feature
                 break
 
@@ -195,7 +207,7 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature['properties']['id'] == identifier:
+            if feature[self.id_field] == identifier:
                 all_data['features'].pop(i)
                 break
 

@@ -32,12 +32,11 @@ import csv
 import itertools
 import logging
 
-from pygeoapi.cql_evaluate import (CQLParser, CQLFilterEvaluator)
-
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
-from pygeoapi.exception import (CQLExceptionEmptyList)
+from pygeoapi.cql_evaluate import (CQLParser, CQLFilterEvaluator)
+from pygeoapi.util import get_filter_fields
 
 LOGGER = logging.getLogger(__name__)
 
@@ -100,57 +99,61 @@ class CSVProvider(BaseProvider):
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
-            data_list = list(data_)
-            fields = self.fields
+            dataset = list(data_)
+            count = len(dataset)
 
-            # ===========================================
-            # Added for CQL Filter Expression evaluation
+            if resulttype == 'hits' and not filter_expression:
+                LOGGER.debug('Returning hits only')
+                feature_collection['numberMatched'] = count
+                return feature_collection
 
-            if filter_expression:
-                ast = CQLParser(filter_expression).create_ast()
-                data_list = CQLFilterEvaluator(
-                    field_mapping=list(fields.keys()),
-                    mapping_choices=data_list).to_filter(ast)
+            LOGGER.debug('Slicing CSV rows')
+            for row in itertools.islice(dataset, 0, count):
+                feature = {'type': 'Feature'}
+                feature['id'] = row.pop(self.id_field)
+                feature['geometry'] = {
+                    'type': 'Point',
+                    'coordinates': [
+                        float(row.pop(self.geometry_x)),
+                        float(row.pop(self.geometry_y))
+                    ]
+                }
+                if self.properties:
+                    feature['properties'] = OrderedDict()
+                    for p in self.properties:
+                        try:
+                            feature['properties'][p] = row[p]
+                        except KeyError as err:
+                            LOGGER.error(err)
+                            raise ProviderQueryError()
+                else:
+                    feature['properties'] = row
 
-            # ===========================================
-            try:
-                if resulttype == 'hits':
-                    LOGGER.debug('Returning hits only')
-                    feature_collection['numberMatched'] = len(data_list)
-                    return feature_collection
-                LOGGER.debug('Slicing CSV rows')
-                for row in itertools.islice(data_list, startindex,
-                                            startindex+limit):
-                    feature = {'type': 'Feature'}
-                    feature['id'] = row.pop(self.id_field)
-                    feature['geometry'] = {
-                        'type': 'Point',
-                        'coordinates': [
-                            float(row.pop(self.geometry_x)),
-                            float(row.pop(self.geometry_y))
-                        ]
-                    }
-                    if self.properties:
-                        feature['properties'] = OrderedDict()
-                        for p in self.properties:
-                            try:
-                                feature['properties'][p] = row[p]
-                            except KeyError as err:
-                                LOGGER.error(err)
-                                raise ProviderQueryError()
-                    else:
-                        feature['properties'] = row
+                if identifier is not None and feature['id'] == identifier:
+                    found = True
+                    result = feature
+                feature_collection['features'].append(feature)
+                feature_collection['numberMatched'] = \
+                    len(feature_collection['features'])
 
-                    if identifier is not None and feature['id'] == identifier:
-                        found = True
-                        result = feature
-                    feature_collection['features'].append(feature)
-                    feature_collection['numberMatched'] = \
-                        len(feature_collection['features'])
+        if filter_expression:
+            cql_ast = CQLParser(filter_expression).create_ast()
+            feature_set = feature_collection['features']
+            fields_name = get_filter_fields(feature_set)
+            feature_set = CQLFilterEvaluator(list(fields_name),
+                                             feature_set).to_filter(cql_ast)
 
-            except TypeError as err:
-                LOGGER.error(err)
-                raise CQLExceptionEmptyList()
+            feature_collection['features'] = feature_set
+
+            feature_collection['numberMatched'] = len(feature_collection
+                                                      ['features'])
+
+            if resulttype == 'hits':
+                feature_collection['features'] = []
+                return feature_collection
+
+        feature_collection['features'] = \
+            feature_collection['features'][startindex:startindex + limit]
 
         if identifier is not None and not found:
             return None
@@ -175,11 +178,13 @@ class CSVProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
-        :param filter_expression: string of a filter expression
+        :param filter_expression: string of filter expression
 
         :returns: dict of GeoJSON FeatureCollection
         """
-        return self._load(startindex, limit, resulttype,
+
+        return self._load(startindex=startindex, limit=limit,
+                          resulttype=resulttype,
                           filter_expression=filter_expression)
 
     def get(self, identifier):
@@ -190,6 +195,7 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of single GeoJSON feature
         """
+
         item = self._load(identifier=identifier)
         if item:
             return item

@@ -327,3 +327,19 @@ def get_provider_default(providers):
 
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
+
+
+def get_filter_fields(feature_set):
+    """
+    helper function to get a resource's field name
+
+    :param feature_set: ``list`` of features
+
+    :returns: field ``list``
+    """
+
+    mapping_choices = list(feature_set[0].keys())
+    mapping_choices = mapping_choices + (list(feature_set[0]
+                                              ['properties'].keys()))
+
+    return mapping_choices

@@ -51,6 +51,8 @@ from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            json_serial, render_j2_template, TEMPLATES, to_json)
 
+from pygeoapi.cql_evaluate import CQLParser
+
 LOGGER = logging.getLogger(__name__)
 
 #: Return headers for requests (e.g:X-Powered-By)
@@ -566,7 +568,8 @@ class API:
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime', 'sortby']
+                               'resulttype', 'datetime', 'sortby',
+                               'filter', 'filter-lang']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -727,6 +730,23 @@ class API:
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
+        # processing cql filter query parameter
+        LOGGER.debug('Processing filter parameter')
+
+        try:
+            filter_expression = args.get('filter')
+            if (filter_expression):
+                CQLParser(filter_expression).cql_validation()
+            import pdb; pdb.set_trace()
+
+        except Exception:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid CQL filter expression'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider', get_provider_by_type(
@@ -794,12 +814,15 @@ class API:
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
+        LOGGER.debug('filter: {}'.format(filter_expression))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
-                              sortby=sortby)
+                              sortby=sortby,
+                              filter_expression=filter_expression)
+
         except ProviderConnectionError as err:
             exception = {
                 'code': 'NoApplicableCode',

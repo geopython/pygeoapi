@@ -9,7 +9,8 @@ import enum
 from pygeoapi.exception import (CQLExceptionAttribute,
                                 CQLExceptionCombination,
                                 CQLExceptionComparison,
-                                CQLExceptionComparator
+                                CQLExceptionBetween, CQLExceptionNull,
+                                CQLExceptionIn
                                 )
 
 LOGGER = logging.getLogger(__name__)
@@ -37,7 +38,6 @@ def combine(sub_filters: Tuple, combination: Combinator = Combinator.AND):
         mapping_list = []
         intersection = []
         union = []
-
         for row in sub_filters[0]:
             if row in sub_filters[1]:
                 intersection.append(row)
@@ -79,7 +79,7 @@ Comparator = {
 }
 
 
-def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
+def compare(lhs, rhs, op, mapping_choices=None):
     """ Compare a filter with an expression using a comparison operation
 
         :param lhs: the field to compare
@@ -89,21 +89,32 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         :param op: a string denoting the operation. one of ``"<"``, ``"<="``,
                    ``">"``, ``">="``, ``"<>"``, ``"="``
         :type op: str
-        :param mapping_choices: a list of dict to lookup potential choices
-                                for a certain field.
+        :param mapping_choices: a list of feature dict set to lookup
+                                potential choices for a certain field
         :type mapping_choices: list
-        :return: a comparison expression filter
-        :rtype: dict
+        :return: filtered feature set
+        :rtype: list
     """
 
     try:
         comp = Comparator[op]
         mapping_list = []
+
         if comp:
             for row in mapping_choices:
+                matched = False
+
                 # perform comparison operation
-                if eval(row[lhs] + comp + str(rhs)):
-                    mapping_list.append(row)
+                if lhs in row.keys():
+                    field_value = row[lhs]
+                    matched = True
+                if lhs in row['properties'].keys():
+                    field_value = row['properties'][lhs]
+                    matched = True
+
+                if matched:
+                    if eval(str(field_value) + comp + str(rhs)):
+                        mapping_list.append(row)
 
         return mapping_list
 
@@ -112,23 +123,55 @@ def compare(lhs, rhs, op, mapping_choices=None, field_mapping=None):
         raise CQLExceptionComparison()
 
 
-def between(lhs, low, high, not_=False):  # TODO!!
+def between(lhs, low, high, not_=False, mapping_choices=None):
     """ Create a filter to match elements that have a value within a certain
         range.
 
         :param lhs: the field to compare
-        :type lhs:
+        :type lhs: string
         :param low: the lower value of the range
-        :type low:
+        :type low: literal
         :param high: the upper value of the range
-        :type high:
+        :type high: literal
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :return:
-        :rtype:
+        :param mapping_choices: a list of feature dict set to lookup
+                                potential choices for a certain field
+        :type mapping_choices: list
+        :return: filtered feature set
+        :rtype: list
     """
-    pass
+
+    try:
+        mapping_list = []
+
+        for row in mapping_choices:
+            matched = False
+
+            # perform between operation
+            if lhs in row.keys():
+                field_value = row[lhs]
+                matched = True
+            if lhs in row['properties'].keys():
+                field_value = row['properties'][lhs]
+                matched = True
+
+            if matched:
+                if not not_:
+                    if float(field_value) >= low and \
+                            float(field_value) <= high:
+                        mapping_list.append(row)
+                else:
+                    if float(field_value) < low or \
+                            float(field_value) > high:
+                        mapping_list.append(row)
+
+        return mapping_list
+
+    except KeyError as err:
+        LOGGER.error("Invalid field name or operator %s " % err)
+        raise CQLExceptionBetween()
 
 
 def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
@@ -136,7 +179,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
         wildcard expressions.
 
         :param lhs: the field to compare
-        :type lhs:
+        :type lhs: string
         :param rhs: the wildcard pattern: a string containing any number of '%'
                     characters as wildcards.
         :type rhs: str
@@ -145,46 +188,130 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a list of dict to lookup potential choices
-                                for a certain field.
+        :param mapping_choices: a list of feature dict set to lookup
+                                potential choices for a certain field
         :type mapping_choices: list
-        :return: a comparison expression result
-        :rtype:
+        :return: filtered feature set
+        :rtype: list
     """
+
+    # try:
+    #     mapping_list=[]
+
+    #     for row in mapping_choices:
+    #         matched = False
+
+    #         if lhs in row.keys():
+    #             field_value = row[lhs]
+    #             matched = True
+    #         if lhs in row['properties'].keys():
+    #             field_value = row['properties'][lhs]
+    #             matched = True
+
+    #         len = len(rhs)
+    #         pos = rhs.find('%')
+
+    #         if pos != -1:
+    #             if pos == 0 and field_value.endswith(rhs[1:]):
+    #                 mapping_list.append(row)
+    #             elif pos == len - 1 and
+    #               field_value.startswith(rhs[:len - 2]):
+    #                 mapping_list.append(row)
+
+    #         pos = rhs.find('_')
+
+    # except KeyError as err:
+    #     LOGGER.error("Invalid field name or operation %s " % err)
+    #     raise CQLExceptionLike()
+
     pass
 
 
-def contains(lhs, items, not_=False, mapping_choices=None):  # TODO!!
+def contains(lhs, items, not_=False, mapping_choices=None):
     """ Create a filter to match elements attribute to be in a list of choices.
 
         :param lhs: the field to compare
-        :type lhs:
+        :type lhs: string
         :param items: a list of choices
         :type items: list
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a list of dict to lookup potential choices
-                                for a certain field.
+        :param mapping_choices: a list of feature dict set to lookup
+                                potential choices for a certain field
         :type mapping_choices: list
-        :return: a comparison expression result
-        :rtype:
+        :return: filtered feature set
+        :rtype: list
     """
-    pass
+
+    try:
+        mapping_list = []
+
+        for row in mapping_choices:
+            matched = False
+
+            if lhs in row.keys():
+                field_value = row[lhs]
+                matched = True
+            if lhs in row['properties'].keys():
+                field_value = row['properties'][lhs]
+                matched = True
+
+            if matched:
+                if not_:
+                    if field_value not in items:
+                        mapping_list.append(row)
+                else:
+                    if field_value in items:
+                        mapping_list.append(row)
+
+        return mapping_list
+
+    except KeyError as err:
+        LOGGER.error("Invalid field name or operator %s " % err)
+        raise CQLExceptionIn()
 
 
-def null(lhs, not_=False):  # TODO!!
+def null(lhs, not_=False, mapping_choices=None):
     """ Create a filter to match elements whose attribute is (not) null
 
         :param lhs: the field to compare
-        :type lhs:
+        :type lhs: string
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :return: a comparison expression result
-        :rtype:
+        :param mapping_choices: a list of feature dict set to lookup
+                                potential choices for a certain field
+        :type mapping_choices: list
+        :return: filtered feature set
+        :rtype: list
     """
-    pass
+
+    try:
+        mapping_list = []
+
+        for row in mapping_choices:
+            matched = False
+            if lhs in row.keys():
+                field_value = row[lhs]
+                matched = True
+            if lhs in row['properties'].keys():
+                field_value = row['properties'][lhs]
+                matched = True
+            if matched:
+                if not_:
+                    if field_value is not None and field_value != 'null':
+                        mapping_list.append(row)
+                else:
+                    if (field_value is not None and field_value == 'null') or \
+                            field_value is None:
+                        mapping_list.append(row)
+
+        return mapping_list
+
+    except KeyError as err:
+        LOGGER.error("Invalid field name or operator %s " % err)
+        raise CQLExceptionNull()
 
 
 def temporal(lhs, time_or_period, op):  # TODO!!
@@ -273,10 +400,10 @@ def attribute(name, field_mapping=None):
     :param name: the field filter name
     :type name: str
     :param field_mapping: the dictionary to use as a lookup.
-    :type mapping_choices:
+    :type mapping_choices: list of feature dict set
 
     :return: field name
-    :rtype:
+    :rtype: `string`
     """
 
     try:
@@ -288,6 +415,7 @@ def attribute(name, field_mapping=None):
 
     except CQLExceptionAttribute as err:
         LOGGER.error(err)
+        raise CQLExceptionAttribute()
 
 
 def literal(value):

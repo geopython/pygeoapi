@@ -41,6 +41,13 @@ class CQLParser():
         ast = parse(self.filter_expression)
         return ast
 
+    def cql_validation(self):
+        """
+        Finds the validity of the CQL filter expression
+        """
+
+        _ = self.create_ast()
+
 
 class CQLFilterEvaluator():
     """ CQL Filter Evaluator """
@@ -66,9 +73,7 @@ class CQLFilterEvaluator():
 
         :returns: list of filtered features
         """
-
         to_filter = self.to_filter
-
         # evaluation for Not Condition Predicate Node
         if isinstance(node, NotConditionNode):
             return filters.negate(to_filter(node.sub_node))
@@ -83,14 +88,14 @@ class CQLFilterEvaluator():
         elif isinstance(node, ComparisonPredicateNode):
             return filters.compare(
                 to_filter(node.lhs), to_filter(node.rhs), node.op,
-                self.mapping_choices, self.field_mapping
+                self.mapping_choices
             )
 
         # evaluation for Between Predicate Node
         elif isinstance(node, BetweenPredicateNode):
             return filters.between(
                 to_filter(node.lhs), to_filter(node.low), to_filter(node.high),
-                node.not_
+                node.not_, self.mapping_choices
             )
 
         # evaluation for Between Predicate Node
@@ -119,7 +124,7 @@ class CQLFilterEvaluator():
         # evaluation for Null Predicate Node
         elif isinstance(node, NullPredicateNode):
             return filters.null(
-                to_filter(node.lhs), node.not_
+                to_filter(node.lhs), node.not_, self.mapping_choices
             )
 
         # evaluation for Temporal Predicate Node
