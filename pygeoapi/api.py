@@ -749,7 +749,6 @@ class API:
             filter_expression = args.get('filter')
             if (filter_expression):
                 CQLParser(filter_expression).cql_validation()
-            import pdb; pdb.set_trace()
 
         except Exception:
             exception = {
