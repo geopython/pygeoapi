@@ -63,6 +63,7 @@ install:
   - pip3 install -r requirements.txt
   - pip3 install -r requirements-dev.txt
   - pip3 install -r requirements-provider.txt
+  - pip3 install -r requirements-starlette.txt
   - python3 setup.py install
   # verify docker build
   - docker build -t geopython/pygeoapi:latest .
