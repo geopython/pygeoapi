@@ -102,11 +102,23 @@ def compare(lhs, rhs, op, mapping_choices=None):
         if comp:
             # perform comparison operation
             if lhs in mapping_choices[0].keys():
-                mapping_list = list(filter(lambda record, lhs=lhs, comp=comp, rhs=rhs: eval(str(record[lhs]) + comp + str(rhs)), mapping_choices))
-                
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, comp=comp, rhs=rhs:
+                        eval(str(record[lhs]) + comp + str(rhs)),
+                        mapping_choices
+                    )
+                )
+
             if lhs in mapping_choices[0]['properties'].keys():
-                mapping_list = list(filter(lambda record, lhs=lhs, comp=comp, rhs=rhs: eval(str(record['properties'][lhs]) + comp + str(rhs)), mapping_choices))
-                
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, comp=comp, rhs=rhs:
+                        eval(str(record['properties'][lhs]) + comp + str(rhs)),
+                        mapping_choices
+                    )
+                )
+
         return mapping_list
 
     except KeyError as err:
@@ -139,15 +151,43 @@ def between(lhs, low, high, not_=False, mapping_choices=None):
         # perform between operation
         if lhs in mapping_choices[0].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: not (float(record[lhs]) >= low and float(record[lhs]) <= high), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, low=low, high=high:
+                        not (float(record[lhs]) >= low
+                             and float(record[lhs]) <= high),
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: float(record[lhs]) >= low and float(record[lhs]) <= high, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, low=low, high=high:
+                        float(record[lhs]) >= low
+                        and float(record[lhs]) <= high,
+                        mapping_choices
+                    )
+                )
 
         if lhs in mapping_choices[0]['properties'].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: not (float(record['properties'][lhs]) >= low and float(record[lhs]) <= high), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, low=low, high=high:
+                        not (float(record['properties'][lhs]) >= low
+                             and float(record[lhs]) <= high),
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: float(record['properties'][lhs]) >= low and float(record[lhs]) <= high, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, low=low, high=high:
+                        float(record['properties'][lhs]) >= low
+                        and float(record[lhs]) <= high,
+                        mapping_choices
+                    )
+                )
 
         return mapping_list
 
@@ -230,15 +270,39 @@ def contains(lhs, items, not_=False, mapping_choices=None):
         mapping_list = []
         if lhs in mapping_choices[0].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record[lhs] not in items, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, items=items:
+                        record[lhs] not in items,
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record[lhs] in items, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, items=items:
+                        record[lhs] in items,
+                        mapping_choices
+                    )
+                )
 
         if lhs in mapping_choices[0]['properties'].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record['properties'][lhs] not in items, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, items=items:
+                        record['properties'][lhs] not in items,
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record['properties'][lhs] in items, mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs, items=items:
+                        record['properties'][lhs] in items,
+                        mapping_choices
+                    )
+                )
 
         return mapping_list
 
@@ -266,15 +330,45 @@ def null(lhs, not_=False, mapping_choices=None):
         mapping_list = []
         if lhs in mapping_choices[0].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs: (record[lhs] is not None and record[lhs] != 'null'), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs:
+                        (record[lhs] is not None
+                         and record[lhs] != 'null'),
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs: ((record[lhs] is not None and record[lhs] == 'null') or record[lhs] is None), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs:
+                        ((record[lhs] is not None
+                          and record[lhs] == 'null')
+                         or record[lhs] is None),
+                        mapping_choices
+                    )
+                )
 
         if lhs in mapping_choices[0]['properties'].keys():
             if not_:
-                mapping_list = list(filter(lambda record, lhs=lhs: (record['properties'][lhs] is not None and record['properties'][lhs] != 'null'), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs:
+                        (record['properties'][lhs] is not None
+                         and record['properties'][lhs] != 'null'),
+                        mapping_choices
+                    )
+                )
             else:
-                mapping_list = list(filter(lambda record, lhs=lhs: ((record['properties'][lhs] is not None and record['properties'][lhs] == 'null') or record['properties'][lhs] is None), mapping_choices))
+                mapping_list = list(
+                    filter(
+                        lambda record, lhs=lhs:
+                        ((record['properties'][lhs] is not None
+                          and record['properties'][lhs] == 'null')
+                         or record['properties'][lhs] is None),
+                        mapping_choices
+                    )
+                )
 
         return mapping_list
 
