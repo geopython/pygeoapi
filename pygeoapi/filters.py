@@ -99,23 +99,14 @@ def compare(lhs, rhs, op, mapping_choices=None):
     try:
         comp = Comparator[op]
         mapping_list = []
-
         if comp:
-            for row in mapping_choices:
-                matched = False
-
-                # perform comparison operation
-                if lhs in row.keys():
-                    field_value = row[lhs]
-                    matched = True
-                if lhs in row['properties'].keys():
-                    field_value = row['properties'][lhs]
-                    matched = True
-
-                if matched:
-                    if eval(str(field_value) + comp + str(rhs)):
-                        mapping_list.append(row)
-
+            # perform comparison operation
+            if lhs in mapping_choices[0].keys():
+                mapping_list = list(filter(lambda record, lhs=lhs, comp=comp, rhs=rhs: eval(str(record[lhs]) + comp + str(rhs)), mapping_choices))
+                
+            if lhs in mapping_choices[0]['properties'].keys():
+                mapping_list = list(filter(lambda record, lhs=lhs, comp=comp, rhs=rhs: eval(str(record['properties'][lhs]) + comp + str(rhs)), mapping_choices))
+                
         return mapping_list
 
     except KeyError as err:
@@ -145,27 +136,18 @@ def between(lhs, low, high, not_=False, mapping_choices=None):
 
     try:
         mapping_list = []
+        # perform between operation
+        if lhs in mapping_choices[0].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: not (float(record[lhs]) >= low and float(record[lhs]) <= high), mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: float(record[lhs]) >= low and float(record[lhs]) <= high, mapping_choices))
 
-        for row in mapping_choices:
-            matched = False
-
-            # perform between operation
-            if lhs in row.keys():
-                field_value = row[lhs]
-                matched = True
-            if lhs in row['properties'].keys():
-                field_value = row['properties'][lhs]
-                matched = True
-
-            if matched:
-                if not not_:
-                    if float(field_value) >= low and \
-                            float(field_value) <= high:
-                        mapping_list.append(row)
-                else:
-                    if float(field_value) < low or \
-                            float(field_value) > high:
-                        mapping_list.append(row)
+        if lhs in mapping_choices[0]['properties'].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: not (float(record['properties'][lhs]) >= low and float(record[lhs]) <= high), mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs, low=low, high=high: float(record['properties'][lhs]) >= low and float(record[lhs]) <= high, mapping_choices))
 
         return mapping_list
 
@@ -246,24 +228,17 @@ def contains(lhs, items, not_=False, mapping_choices=None):
 
     try:
         mapping_list = []
+        if lhs in mapping_choices[0].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record[lhs] not in items, mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record[lhs] in items, mapping_choices))
 
-        for row in mapping_choices:
-            matched = False
-
-            if lhs in row.keys():
-                field_value = row[lhs]
-                matched = True
-            if lhs in row['properties'].keys():
-                field_value = row['properties'][lhs]
-                matched = True
-
-            if matched:
-                if not_:
-                    if field_value not in items:
-                        mapping_list.append(row)
-                else:
-                    if field_value in items:
-                        mapping_list.append(row)
+        if lhs in mapping_choices[0]['properties'].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record['properties'][lhs] not in items, mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs, items=items: record['properties'][lhs] in items, mapping_choices))
 
         return mapping_list
 
@@ -289,23 +264,17 @@ def null(lhs, not_=False, mapping_choices=None):
 
     try:
         mapping_list = []
+        if lhs in mapping_choices[0].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs: (record[lhs] is not None and record[lhs] != 'null'), mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs: ((record[lhs] is not None and record[lhs] == 'null') or record[lhs] is None), mapping_choices))
 
-        for row in mapping_choices:
-            matched = False
-            if lhs in row.keys():
-                field_value = row[lhs]
-                matched = True
-            if lhs in row['properties'].keys():
-                field_value = row['properties'][lhs]
-                matched = True
-            if matched:
-                if not_:
-                    if field_value is not None and field_value != 'null':
-                        mapping_list.append(row)
-                else:
-                    if (field_value is not None and field_value == 'null') or \
-                            field_value is None:
-                        mapping_list.append(row)
+        if lhs in mapping_choices[0]['properties'].keys():
+            if not_:
+                mapping_list = list(filter(lambda record, lhs=lhs: (record['properties'][lhs] is not None and record['properties'][lhs] != 'null'), mapping_choices))
+            else:
+                mapping_list = list(filter(lambda record, lhs=lhs: ((record['properties'][lhs] is not None and record['properties'][lhs] == 'null') or record['properties'][lhs] is None), mapping_choices))
 
         return mapping_list
 
