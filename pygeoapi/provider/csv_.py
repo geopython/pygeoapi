@@ -31,6 +31,7 @@ from collections import OrderedDict
 import csv
 import itertools
 import logging
+import os
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
@@ -74,20 +75,43 @@ class CSVProvider(BaseProvider):
                 fields[f] = 'string'
             return fields
 
-    def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], datetime=None, properties=[],
-              filter_expression=None):
+    def _load(self, identifier=None):
         """
         Load CSV data
+
+        :param identifier: feature id
+        """
+
+        if os.path.exists(self.data):
+            with open(self.data) as ff:
+                LOGGER.debug('Serializing DictReader')
+                data_ = csv.DictReader(ff)
+                dataset = list(data_)
+        else:
+            dataset = None
+
+        return dataset
+
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime=None, properties=[], sortby=[],
+              filter_expression=None, identifier=None,):
+        """
+        CSV query
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
         :param filter_expression: string of filter expression
+        :param identifier: feature id
 
         :returns: dict of GeoJSON FeatureCollection
         """
+
+        dataset = self._load(identifier=identifier)
 
         found = False
         result = None
@@ -96,45 +120,41 @@ class CSVProvider(BaseProvider):
             'features': []
         }
 
-        with open(self.data) as ff:
-            LOGGER.debug('Serializing DictReader')
-            data_ = csv.DictReader(ff)
-            dataset = list(data_)
-            count = len(dataset)
+        count = len(dataset)
 
-            if resulttype == 'hits' and not filter_expression:
-                LOGGER.debug('Returning hits only')
-                feature_collection['numberMatched'] = count
-                return feature_collection
+        if resulttype == 'hits' and not filter_expression:
+            LOGGER.debug('Returning hits only')
+            feature_collection['numberMatched'] = count
+            return feature_collection
 
-            LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(dataset, 0, count):
-                feature = {'type': 'Feature'}
-                feature['id'] = row.pop(self.id_field)
-                feature['geometry'] = {
-                    'type': 'Point',
-                    'coordinates': [
-                        float(row.pop(self.geometry_x)),
-                        float(row.pop(self.geometry_y))
-                    ]
-                }
-                if self.properties:
-                    feature['properties'] = OrderedDict()
-                    for p in self.properties:
-                        try:
-                            feature['properties'][p] = row[p]
-                        except KeyError as err:
-                            LOGGER.error(err)
-                            raise ProviderQueryError()
-                else:
-                    feature['properties'] = row
+        LOGGER.debug('Slicing CSV rows')
+        for row in itertools.islice(dataset, 0, count):
+            feature = {'type': 'Feature'}
+            feature['id'] = row.pop(self.id_field)
+            feature['geometry'] = {
+                'type': 'Point',
+                'coordinates': [
+                    float(row.pop(self.geometry_x)),
+                    float(row.pop(self.geometry_y))
+                ]
+            }
+            if self.properties:
+                feature['properties'] = OrderedDict()
+                for p in self.properties:
+                    try:
+                        feature['properties'][p] = row[p]
+                    except KeyError as err:
+                        LOGGER.error(err)
+                        raise ProviderQueryError()
+            else:
+                feature['properties'] = row
 
-                if identifier is not None and feature['id'] == identifier:
-                    found = True
-                    result = feature
-                feature_collection['features'].append(feature)
-                feature_collection['numberMatched'] = \
-                    len(feature_collection['features'])
+            if identifier is not None and feature['id'] == identifier:
+                found = True
+                result = feature
+            feature_collection['features'].append(feature)
+            feature_collection['numberMatched'] = \
+                len(feature_collection['features'])
 
         if filter_expression:
             cql_ast = CQLParser(filter_expression).create_ast()
@@ -165,28 +185,6 @@ class CSVProvider(BaseProvider):
 
         return feature_collection
 
-    def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[],
-              filter_expression=None):
-        """
-        CSV query
-
-        :param startindex: starting record to return (default 0)
-        :param limit: number of records to return (default 10)
-        :param resulttype: return results or hit limit (default results)
-        :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
-        :param properties: list of tuples (name, value)
-        :param sortby: list of dicts (property, order)
-        :param filter_expression: string of filter expression
-
-        :returns: dict of GeoJSON FeatureCollection
-        """
-
-        return self._load(startindex=startindex, limit=limit,
-                          resulttype=resulttype,
-                          filter_expression=filter_expression)
-
     def get(self, identifier):
         """
         query CSV id
@@ -196,7 +194,7 @@ class CSVProvider(BaseProvider):
         :returns: dict of single GeoJSON feature
         """
 
-        item = self._load(identifier=identifier)
+        item = self.query(identifier=identifier)
         if item:
             return item
         else:
