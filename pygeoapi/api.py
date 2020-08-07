@@ -1443,6 +1443,7 @@ class API:
                     mode = 0o644 # Owner can read/write, group and others can read
                     os.makedirs(file_dir, mode=mode, exist_ok=True)
                     file.save(file_path)
+                    LOGGER.debug(f'wrote {file_path}')
                 except Exception as exc:
                     LOGGER.exception(exc)
                     exception = {
@@ -1456,9 +1457,8 @@ class API:
                     for id, value in data_dict.items():
                         if value == filename:
                             data_dict[id] = file_path
-                        elif type(value) is 'list' and filename in value:
-                            data_dict[id] = [v if filename != v else file_path for v in value]
-
+                        elif isinstance(value, list) and filename in value:
+                            data_dict[id] = [v if v != filename else file_path for v in value]
         outputs, status = None, None
         sync = not check_async(args, headers)
         if callable(getattr(self.manager, "execute_process", None)):

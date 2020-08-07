@@ -337,6 +337,12 @@ def retrieve_job_result(process_id=None, job_id=None):
 
     return response
 
+@APP.route('/processes/<process_id>/jobs/<job_id>/results/<filename>', methods=['GET'])
+def download_file(process_id, job_id, filename):
+    # TODO pass 'mimetype' kwarg
+    dir = os.path.join(APP.config['UPLOAD_FOLDER'], process_id, job_id, 'output')
+    return send_from_directory(dir, filename, as_attachment=True, conditional=True)
+
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
