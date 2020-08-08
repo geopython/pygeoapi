@@ -746,9 +746,9 @@ class API:
         LOGGER.debug('Processing filter parameter')
 
         try:
-            filter_expression = args.get('filter')
-            if (filter_expression):
-                CQLParser(filter_expression).cql_validation()
+            cql_expression = args.get('filter')
+            if (cql_expression):
+                CQLParser(cql_expression).cql_validation()
 
         except Exception:
             exception = {
@@ -825,14 +825,14 @@ class API:
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
-        LOGGER.debug('filter: {}'.format(filter_expression))
+        LOGGER.debug('filter: {}'.format(cql_expression))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime=datetime_, properties=properties,
                               sortby=sortby,
-                              filter_expression=filter_expression)
+                              cql_expression=cql_expression)
 
         except ProviderConnectionError as err:
             exception = {

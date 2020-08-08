@@ -169,7 +169,8 @@ def test_cql_paths(config, get_oas_30_, get_collections, is_cql):
 
         for k, _ in get_collections.items():
             references = []
-            for items_parameters in cql_paths['/collections/'+k+'/items']['get']['parameters']: # noqa
+            _k = '/collections/{}/items'.format(k)
+            for items_parameters in cql_paths[_k]['get']['parameters']: # noqa
                 if '$ref' in items_parameters:
                     references.append(items_parameters['$ref'])
             # if the resource support filter
@@ -491,8 +492,9 @@ def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
 
     # assertion for local queryables path
     for k, _ in get_collections.items():
-        assert '/collections/'+k+'/queryables' in cql_paths is not None
-        assert isinstance(cql_paths['/collections/'+k+'/queryables'], dict)
+        _k = '/collections/{}/queryables'.format(k)
+        assert _k in cql_paths is not None
+        assert isinstance(cql_paths[_k], dict)
 
         # assertion for queryables path attributes
         get_path_attributes = ['summary', 'description', 'tags', 'parameters', 'responses'] # noqa
@@ -501,7 +503,7 @@ def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
                 # root queryables
                 assert get_path_attribute in cql_paths['/queryables']['get']
             # local queryables
-            assert get_path_attribute in cql_paths['/collections/'+k+'/queryables']['get'] # noqa
+            assert get_path_attribute in cql_paths[_k]['get'] # noqa
 
         # assertion for queryables responses attributes
         responses = ['200', '400', '404', '500']
@@ -511,7 +513,7 @@ def test_cql_queryables_path(get_oas_30_, get_collections, is_cql):
                 assert response in cql_paths['/queryables']['get']['responses']
             # local queryables
             assert response in \
-                cql_paths['/collections/' + k + '/queryables']['get']['responses'] # noqa
+                cql_paths[_k]['get']['responses'] # noqa
 
 
 def test_cql_queryables_response(get_cql_components, get_cql_schemas):

@@ -110,7 +110,7 @@ class GeoJSONProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[],
-              filter_expression=None):
+              cql_expression=None):
         """
         query the provider
 
@@ -121,7 +121,7 @@ class GeoJSONProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
-        :param filter_expression: string of filter expression
+        :param cql_expression: string of filter expression
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
@@ -129,8 +129,8 @@ class GeoJSONProvider(BaseProvider):
         # TODO filter by bbox without resorting to third-party libs
         data = self._load()
 
-        if filter_expression:
-            cql_ast = CQLParser(filter_expression).create_ast()
+        if cql_expression:
+            cql_ast = CQLParser(cql_expression).create_ast()
             feature_set = data['features']
             fields_name = get_filter_fields(feature_set)
             feature_set = CQLFilterEvaluator(list(fields_name),

@@ -94,7 +94,7 @@ class CSVProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[],
-              filter_expression=None, identifier=None,):
+              cql_expression=None, identifier=None,):
         """
         CSV query
 
@@ -105,7 +105,7 @@ class CSVProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
-        :param filter_expression: string of filter expression
+        :param cql_expression: string of cql filter expression
         :param identifier: feature id
 
         :returns: dict of GeoJSON FeatureCollection
@@ -122,7 +122,7 @@ class CSVProvider(BaseProvider):
 
         count = len(dataset)
 
-        if resulttype == 'hits' and not filter_expression:
+        if resulttype == 'hits' and not cql_expression:
             LOGGER.debug('Returning hits only')
             feature_collection['numberMatched'] = count
             return feature_collection
@@ -156,8 +156,8 @@ class CSVProvider(BaseProvider):
             feature_collection['numberMatched'] = \
                 len(feature_collection['features'])
 
-        if filter_expression:
-            cql_ast = CQLParser(filter_expression).create_ast()
+        if cql_expression:
+            cql_ast = CQLParser(cql_expression).create_ast()
             feature_set = feature_collection['features']
             fields_name = get_filter_fields(feature_set)
             feature_set = CQLFilterEvaluator(list(fields_name),

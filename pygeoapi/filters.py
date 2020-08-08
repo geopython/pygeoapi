@@ -3,7 +3,6 @@ For evaluating CQL filter queries from Abstract Syntax Tree
 """
 
 import logging
-from typing import Tuple
 import enum
 
 from pygeoapi.exception import (CQLExceptionAttribute,
@@ -22,7 +21,7 @@ class Combinator(enum.Enum):
     OR = "OR"
 
 
-def combine(sub_filters: Tuple, combination: Combinator = Combinator.AND):
+def combine(sub_filters, combination: Combinator = Combinator.AND):
     """
     Combine filters using a logical combinator
 
@@ -122,7 +121,7 @@ def compare(lhs, rhs, op, mapping_choices=None):
         return mapping_list
 
     except KeyError as err:
-        LOGGER.error("Invalid field name or operator %s " % err)
+        LOGGER.error("Invalid field name or operator {}".format(err))
         raise CQLExceptionComparison()
 
 
@@ -192,7 +191,7 @@ def between(lhs, low, high, not_=False, mapping_choices=None):
         return mapping_list
 
     except KeyError as err:
-        LOGGER.error("Invalid field name or operator %s " % err)
+        LOGGER.error("Invalid field name or operator {}".format(err))
         raise CQLExceptionBetween()
 
 
@@ -243,7 +242,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):  # TODO!!
     #         pos = rhs.find('_')
 
     # except KeyError as err:
-    #     LOGGER.error("Invalid field name or operation %s " % err)
+    #     LOGGER.error("Invalid field name or operation {}".format(err))
     #     raise CQLExceptionLike()
 
     pass
@@ -307,7 +306,7 @@ def contains(lhs, items, not_=False, mapping_choices=None):
         return mapping_list
 
     except KeyError as err:
-        LOGGER.error("Invalid field name or operator %s " % err)
+        LOGGER.error("Invalid field name or operator {}".format(err))
         raise CQLExceptionIn()
 
 
@@ -373,7 +372,7 @@ def null(lhs, not_=False, mapping_choices=None):
         return mapping_list
 
     except KeyError as err:
-        LOGGER.error("Invalid field name or operator %s " % err)
+        LOGGER.error("Invalid field name or operator {}".format(err))
         raise CQLExceptionNull()
 
 
@@ -474,7 +473,7 @@ def attribute(name, field_mapping=None):
             field = name
             return field
         else:
-            raise CQLExceptionAttribute("Invalid field value %s " % name)
+            raise CQLExceptionAttribute("Invalid field value {}".format(name))
 
     except CQLExceptionAttribute as err:
         LOGGER.error(err)

@@ -120,7 +120,7 @@ def test_eq(config):
     """Testing query for equals `=` CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id = 377')
+    results = p.query(cql_expression='id = 377')
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
@@ -130,7 +130,7 @@ def test_ne(config):
     """Testing query for not-equals `<>`  CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id <> 355')
+    results = p.query(cql_expression='id <> 355')
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 5
@@ -140,7 +140,7 @@ def test_lt(config):
     """Testing query for less-than `<` CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id < 604')
+    results = p.query(cql_expression='stn_id < 604')
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
     assert results['numberReturned'] == 2
@@ -150,7 +150,7 @@ def test_le(config):
     """Testing query for less-than-equals-to `<=` CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id <= 604')
+    results = p.query(cql_expression='stn_id <= 604')
     assert len(results['features']) == 3
     assert results['numberMatched'] == 3
     assert results['numberReturned'] == 3
@@ -160,7 +160,7 @@ def test_gt(config):
     """Testing query for greater-than `>` CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id > 964')
+    results = p.query(cql_expression='id > 964')
     assert len(results['features']) == 0
     assert results['numberMatched'] == 0
     assert results['numberReturned'] == 0
@@ -170,7 +170,7 @@ def test_ge(config):
     """Testing query for greater-than-equals-to `>=` CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id >= 964')
+    results = p.query(cql_expression='id >= 964')
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
@@ -182,7 +182,7 @@ def test_and(config):
     in CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id < 2147 AND id > 377')
+    results = p.query(cql_expression='stn_id < 2147 AND id > 377')
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
@@ -193,7 +193,7 @@ def test_or(config):
     in CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id < 2147 OR id > 377')
+    results = p.query(cql_expression='stn_id < 2147 OR id > 377')
     assert len(results['features']) == 3
     assert results['numberMatched'] == 3
     assert results['numberReturned'] == 3
@@ -204,7 +204,7 @@ def test_and_or(config):
     in CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id <> 35 AND id >= 238 OR id <= 964') # noqa
+    results = p.query(cql_expression='stn_id <> 35 AND id >= 238 OR id <= 964') # noqa
     assert len(results['features']) == 3
     assert results['numberMatched'] == 3
     assert results['numberReturned'] == 3
@@ -215,7 +215,7 @@ def test_and_and(config):
     in CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='stn_id <> 35 AND id > 238 AND id < 964') # noqa
+    results = p.query(cql_expression='stn_id <> 35 AND id > 238 AND id < 964') # noqa
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
@@ -227,7 +227,7 @@ def test_between(config):
 
     p = CSVProvider(config)
     # inclusive of low and high values
-    results = p.query(filter_expression='id BETWEEN 355 AND 500')
+    results = p.query(cql_expression='id BETWEEN 355 AND 500')
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
     assert results['numberReturned'] == 2
@@ -239,7 +239,7 @@ def test_not_between(config):
 
     p = CSVProvider(config)
     # inclusive of low and high values
-    results = p.query(filter_expression='id NOT BETWEEN 200 AND 300')
+    results = p.query(cql_expression='id NOT BETWEEN 200 AND 300')
     assert len(results['features']) == 3
     assert results['numberMatched'] == 3
     assert results['numberReturned'] == 3
@@ -250,7 +250,7 @@ def test_is_null(config):
     """Testing query for null CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id IS NULL')
+    results = p.query(cql_expression='id IS NULL')
     assert len(results['features']) == 0
     assert results['numberMatched'] == 0
     assert results['numberReturned'] == 0
@@ -261,7 +261,7 @@ def test_is_not_null(config):
     """Testing query for not null CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(filter_expression='id IS NOT NULL')
+    results = p.query(cql_expression='id IS NOT NULL')
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 5
@@ -273,7 +273,7 @@ def test_in(config):
 
     p = CSVProvider(config)
     # inclusive of low and high values
-    results = p.query(filter_expression="id IN ('377','297')")
+    results = p.query(cql_expression="id IN ('377','297')")
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
     assert results['numberReturned'] == 2
@@ -285,7 +285,7 @@ def test_not_in(config):
 
     p = CSVProvider(config)
     # inclusive of low and high values
-    results = p.query(filter_expression="id NOT IN ('377','297')")
+    results = p.query(cql_expression="id NOT IN ('377','297')")
     assert len(results['features']) == 3
     assert results['numberMatched'] == 3
     assert results['numberReturned'] == 3
@@ -296,7 +296,7 @@ def test_limit_filter(config):
     """Testing query for filter, startindex and CQL filter expression"""
 
     p = CSVProvider(config)
-    results = p.query(limit=5, startindex=3, filter_expression='id>100')
+    results = p.query(limit=5, startindex=3, cql_expression='id>100')
     assert len(results['features']) == 2
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 2
