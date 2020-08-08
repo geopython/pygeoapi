@@ -51,8 +51,6 @@ from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            json_serial, render_j2_template, TEMPLATES, to_json)
 
-from pygeoapi.cql_evaluate import CQLParser
-
 LOGGER = logging.getLogger(__name__)
 
 #: Return headers for requests (e.g:X-Powered-By)
@@ -748,7 +746,10 @@ class API:
         try:
             cql_expression = args.get('filter')
             if (cql_expression):
-                CQLParser(cql_expression).cql_validation()
+                parser = load_plugin('cql',
+                                     {'name': 'Parser',
+                                      'cql_expression': cql_expression})
+                parser.cql_validation()
 
         except Exception:
             exception = {

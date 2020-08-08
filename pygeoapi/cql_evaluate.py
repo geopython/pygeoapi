@@ -19,16 +19,16 @@ import pygeoapi.filters as filters
 class CQLParser():
     """ CQL Filter Parser """
 
-    def __init__(self, filter_expression):
+    def __init__(self, cql_def):
         """
         Initialize object
 
-        :param filter_expression: a CQL filter expression
+        :param cql_def: CQL filter definition
 
         :returns: string expression
         """
 
-        self.filter_expression = filter_expression
+        self.cql_expression = cql_def['cql_expression']
 
     def create_ast(self):
         """
@@ -38,7 +38,7 @@ class CQLParser():
         :returns: Abstract Syntax Tree
         """
 
-        ast = parse(self.filter_expression)
+        ast = parse(self.cql_expression)
         return ast
 
     def cql_validation(self):
@@ -52,18 +52,17 @@ class CQLParser():
 class CQLFilterEvaluator():
     """ CQL Filter Evaluator """
 
-    def __init__(self, field_mapping=None, mapping_choices=None):
+    def __init__(self, cql_def):
         """
         Initialize object
 
-        :param field_mapping: list of field values
-        :param mapping_choices: list of features
+        :param cql_def: CQL filter definition
 
         :returns: string expression
         """
 
-        self.field_mapping = field_mapping
-        self.mapping_choices = mapping_choices
+        self.field_mapping = cql_def['field_mapping']
+        self.mapping_choices = cql_def['mapping_choices']
 
     def to_filter(self, node):
         """
@@ -169,18 +168,3 @@ class CQLFilterEvaluator():
 
         # return the Node
         return node
-
-
-def to_filter(ast, field_mapping=None, mapping_choices=None):
-    """
-    Helper function to translate ECQL AST to query expressions.
-
-    :param ast: the abstract syntax tree
-    :param field_mapping: list of field values
-    :param mapping_choices: list of features
-    :type ast: :class:`Node`
-
-    :returns: list of filtered features
-    """
-
-    return CQLFilterEvaluator(field_mapping, mapping_choices).to_filter(ast)

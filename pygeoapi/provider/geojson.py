@@ -33,8 +33,8 @@ import os
 import uuid
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
-from pygeoapi.cql_evaluate import (CQLParser, CQLFilterEvaluator)
 from pygeoapi.util import get_filter_fields
+from pygeoapi.plugin import load_plugin
 
 
 LOGGER = logging.getLogger(__name__)
@@ -130,11 +130,17 @@ class GeoJSONProvider(BaseProvider):
         data = self._load()
 
         if cql_expression:
-            cql_ast = CQLParser(cql_expression).create_ast()
+            parser = load_plugin('cql',
+                                 {'name': 'Parser',
+                                  'cql_expression': cql_expression})
+            cql_ast = parser.create_ast()
             feature_set = data['features']
-            fields_name = get_filter_fields(feature_set)
-            feature_set = CQLFilterEvaluator(list(fields_name),
-                                             feature_set).to_filter(cql_ast)
+            fields_name = list(get_filter_fields(feature_set))
+            evaluator = load_plugin('cql',
+                                    {'name': 'Evaluator',
+                                     'field_mapping': fields_name,
+                                     'mapping_choices': feature_set})
+            feature_set = evaluator.to_filter(cql_ast)
             data['features'] = feature_set
 
         data['numberMatched'] = len(data['features'])
