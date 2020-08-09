@@ -300,3 +300,17 @@ def test_limit_filter(config):
     assert len(results['features']) == 2
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 2
+
+
+# test on LIKE operation
+def test_like(config):
+    """Testing query for filter, startindex and CQL filter expression"""
+
+    pass
+
+
+# test on LIKE operation
+def test_not_like(config):
+    """Testing query for filter, startindex and CQL filter expression"""
+
+    pass

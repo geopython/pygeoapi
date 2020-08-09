@@ -343,3 +343,29 @@ def get_filter_fields(feature_set):
                                               ['properties'].keys()))
 
     return mapping_choices
+
+
+def generate_regex(query_string):
+    """
+    helper function to get regex expression of string
+
+    :param query_string: string
+
+    :returns: regex string
+    """
+
+    regex = None
+
+    if query_string.startswith('%') and query_string.endswith('%'):
+        regex = query_string[1:len(query_string)-1]
+    elif query_string.startswith('%'):
+        regex = query_string[1:len(query_string)] + '$'
+    elif query_string.endswith('%'):
+        regex = '^' + query_string[0:len(query_string)-1]
+    elif '%' in query_string:
+        pos = query_string.index('%')
+        regex = '^' + query_string[:pos] + '(.*?)' + query_string[pos+1:] + '$'
+    elif query_string:
+        regex = '^' + query_string + '$'
+
+    return regex
