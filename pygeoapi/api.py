@@ -455,6 +455,23 @@ class API:
                         self.config['server']['url'], k)
                 })
 
+            if tiles:
+                LOGGER.debug('Adding tiles link')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'tiles',
+                    'title': 'Tiles as JSON',
+                    'href': '{}/collections/{}/tiles?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'tiles',
+                    'title': 'Tiles as HTML',
+                    'href': '{}/collections/{}/tiles?f=html'.format(
+                        self.config['server']['url'], k)
+                })
+
             if dataset is not None and k == dataset:
                 fcm = collection
                 break
