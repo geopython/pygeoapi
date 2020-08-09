@@ -107,14 +107,14 @@ PROCESS_METADATA = {
 class HelloWorldProcessor(BaseProcessor):
     """Hello World Processor example"""
 
-    def __init__(self, provider_def):
+    def __init__(self, processor_def):
         """
         Initialize object
-        :param provider_def: provider definition
+        :param processor_def: provider definition
         :returns: pygeoapi.process.hello_world.HelloWorldProcessor
         """
 
-        BaseProcessor.__init__(self, provider_def, PROCESS_METADATA)
+        BaseProcessor.__init__(self, processor_def, PROCESS_METADATA)
 
     def execute(self, data):
         name = data.get('name')
