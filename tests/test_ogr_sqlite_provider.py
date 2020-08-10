@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 def config_sqlite_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'SQLite',
             'source':

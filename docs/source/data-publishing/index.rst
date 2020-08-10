@@ -19,5 +19,6 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    :name: Data publishing
 
    ogcapi-features
+   ogcapi-coverages
    ogcapi-processes
    stac
