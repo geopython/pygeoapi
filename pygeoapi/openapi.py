@@ -33,6 +33,7 @@ import os
 
 import click
 import yaml
+import copy
 
 from pygeoapi.plugin import load_plugin
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
@@ -409,15 +410,20 @@ def get_oas_30(cfg):
 
         data_provider = load_plugin('provider', get_provider_by_type(
                         collections[k]['providers'], 'feature'))
-        fields = data_provider.fields
+        samp_feat = data_provider.query()['features'][0]
+        samp_prop = samp_feat['properties']
+        samp_geom = samp_feat['geometry']
+        fields = data_provider.get_fields()
         prop = dict()
-        for key in fields:
-            if key != data_provider.id_field:
-                prop[key] = {'type': fields[key]}
-
+        for key in samp_prop:
+            prop[key] = {'type': fields[key],
+                         'example': samp_prop[key]}
+        geom = samp_geom['type']
         oapif = OPENAPI_YAML['oapif']
-        geojson = '{}#/components/schemas/geometryGeoJSON'.format(oapif)
-        geom = {'$ref': geojson}
+        geom_schema = '{}#/components/schemas/{}GeoJSON'\
+                      .format(oapif, geom.lower())
+        geom = {'$ref': geom_schema}
+        id = data_provider.id_field
         form = {
                     "type": {
                         "type": "string",
@@ -429,6 +435,10 @@ def get_oas_30(cfg):
                         "properties": prop
                     }
                 }
+        post_form = copy.deepcopy(form)
+        post_form[id] = {"type": "string",
+                         "example": "some_unique_string",
+                         "required": "false"}
         feature_id = '{}#/components/parameters/featureId'.format(oapif)
         nvpo = '#/components/schemas/nameValuePairObj'
 
@@ -464,7 +474,7 @@ def get_oas_30(cfg):
 
         post = {
             'post': {
-                'summary': 'Create {} item'.format(v['title']),
+                'summary': 'Add a new feature to {}'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'requestBody': {
@@ -473,7 +483,7 @@ def get_oas_30(cfg):
                         'application/geo+json': {
                             'schema': {
                                 'type': 'object',
-                                'properties': form
+                                'properties': post_form
                             }
                         }
                     }
@@ -583,9 +593,15 @@ def get_oas_30(cfg):
             }
         }
 
+        samp_ext_kvp = [{'name': key, 'value': samp_prop[key]}
+                        for key in samp_prop]
+        samp_ext_keys = list(samp_prop.keys())
+        samp_add_kvp = [{'name': 'item1_name', 'value': 'item1_value'},
+                        {'name': 'item2_name', 'value': 'item2_value'}]
         patch = {
             'patch': {
-                'summary': 'Update {} item by id'.format(v['title']),
+                'summary': 'Update properties of an existing feature \
+                    in {} by id'.format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -602,19 +618,22 @@ def get_oas_30(cfg):
                                         'type': 'array',
                                         'items': {
                                             '$ref': nvpo
-                                        }
+                                        },
+                                        'example': samp_add_kvp
                                     },
                                     'modify': {
                                         'type': 'array',
                                         'items': {
                                             '$ref': nvpo
-                                        }
+                                        },
+                                        'example': samp_ext_kvp
                                     },
                                     'remove': {
                                         'type': 'array',
                                         'items': {
                                             'type': 'string'
-                                        }
+                                        },
+                                        'example': samp_ext_keys
                                     }
                                 }
                             }
@@ -648,7 +667,8 @@ def get_oas_30(cfg):
 
         put = {
             'put': {
-                'summary': 'Replace {} item by id'.format(v['title']),
+                'summary': 'Replace an existing feature in {} by id'
+                .format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
@@ -676,7 +696,8 @@ def get_oas_30(cfg):
 
         delete = {
             'delete': {
-                'summary': 'Delete {} item by id'.format(v['title']),
+                'summary': 'Delete an existing feature from {} by id'.
+                format(v['title']),
                 'description': v['description'],
                 'tags': [k],
                 'parameters': [
