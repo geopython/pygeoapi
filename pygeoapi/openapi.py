@@ -291,20 +291,20 @@ def get_oas_30(cfg):
         },
         'schemas': {
             # TODO: change this schema once OGC will definitively publish it
-            "nameValuePairObj": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
+            'nameValuePairObj': {
+                'type': 'object',
+                'properties': {
+                    'name': {
+                        'type': 'string'
                     },
-                    "value": {
-                        "oneOf":
+                    'value': {
+                        'oneOf':
                         [
                             {
-                                "type": "string"
+                                'type': 'string'
                             },
                             {
-                                "type": "object"
+                                'type': 'object'
                             }
                         ]
                     }
@@ -425,20 +425,20 @@ def get_oas_30(cfg):
         geom = {'$ref': geom_schema}
         id = data_provider.id_field
         form = {
-                    "type": {
-                        "type": "string",
-                        "enum": ["Feature"]
+                    'type': {
+                        'type': 'string',
+                        'enum': ['Feature']
                     },
-                    "geometry": geom,
-                    "properties": {
-                        "type": "object",
-                        "properties": prop
+                    'geometry': geom,
+                    'properties': {
+                        'type': 'object',
+                        'properties': prop
                     }
                 }
         post_form = copy.deepcopy(form)
-        post_form[id] = {"type": "string",
-                         "example": "some_unique_string",
-                         "required": "false"}
+        post_form[id] = {'type': 'string',
+                         'example': 'some_unique_string',
+                         'required': 'false'}
         feature_id = '{}#/components/parameters/featureId'.format(oapif)
         nvpo = '#/components/schemas/nameValuePairObj'
 
