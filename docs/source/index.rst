@@ -21,6 +21,7 @@ pygeoapi |release| documentation
    how-pygeoapi-works
    installation
    configuration
+   data-transactions
    administration
    running
    running-with-docker
