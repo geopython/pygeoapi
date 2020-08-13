@@ -8,7 +8,7 @@ Simple transactions employ the standard HTTP verbs - POST, PUT, PATCH and DELETE
 
 Transaction support is optional and is abscent by default. 
 You can enable transaction suport for a collection resource by adding ``transactions: true`` in extensions under the resource in the pygeoapi config file.
-The pygeoapi configuration file pygeoapi-data-transaction-config.yml in root directory of pygeoapi project folder includes an example for enabling transaction support in obs sample dataset.
+The pygeoapi configuration file *pygeoapi-data-transaction-config.yml* in root directory of pygeoapi project folder includes an example for enabling transaction support in *obs* sample dataset.
 
 
 Types of Transaction Requests
@@ -28,8 +28,8 @@ Sample Requests
 
 Insert a new feature item into feature collection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Request method should be ``POST``.
-Request URL should be ``Collection Items URL`` (Eg: `http://localhost:5000/collections/obs/items`).
+Request method should be **POST**.
+Request URL should be **Collection Items URL** (Eg: http://localhost:5000/collections/obs/items).
 Request payload should be in geojson format containing a feature item with same schema as that of items in the collection.
 If the payload contain an id field, then a feature item with that id will be added and else a random id will be generated.
 
@@ -60,9 +60,9 @@ Request Payload:
 
 Replace an existing feature item from feature collection by id
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Request method should be ``PUT``.
-Request URL should be ``Collection Item URL`` (Eg: `http://localhost:5000/collections/obs/items/some_unique_string`).
-Request payload should be in geojson format containing a feature item with same schema as that of items in the collection.
+Request method should be **PUT**.
+Request URL should be **Collection Item URL** (Eg: http://localhost:5000/collections/obs/items/some_unique_string).
+Request payload should be a feature item in geojson format with same schema as that of collection items.
 
 Request Header:
 """""""""""""""
@@ -90,8 +90,8 @@ Request Payload:
 
 Update an existing feature item from feature collection by id
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Request method should be ``PATCH``.
-Request URL should be ``Collection Item URL`` (Eg: `http://localhost:5000/collections/obs/items/some_unique_string`).
+Request method should be **PATCH**
+Request URL should be **Collection Item URL** (Eg: http://localhost:5000/collections/obs/items/some_unique_string).
 Request payload should be in json format which encodes three operations : ``add``, ``modify`` and ``remove``.
 
 Request Header:
@@ -128,8 +128,8 @@ But since ``add`` and ``delete`` operations are schema altering by nature, they 
 
 Remove an existing feature item from feature collection by id
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Request method should be ``DELETE``.
-Request URL should be ``Collection Item URL`` (Eg: `http://localhost:5000/collections/obs/items/some_unique_string`).
+Request method should be **DELETE**.
+Request URL should be **Collection Item URL** (Eg: http://localhost:5000/collections/obs/items/some_unique_string).
 
 Request Header:
 """""""""""""""
