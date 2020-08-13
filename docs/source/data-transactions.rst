@@ -11,18 +11,18 @@ You can enable transaction suport for a collection resource by adding ``transact
 The pygeoapi configuration file pygeoapi-data-transaction-config.yml in root directory of pygeoapi project folder includes an example for enabling transaction support in obs sample dataset.
 
 
-Transaction Requests
---------------------
+Types of Transaction Requests
+-----------------------------
 
 The following request types are supported:
 
-- ``POST`` - Insert a new feature item into feature collection
-- ``PUT`` - Replace an existing feature item from feature collection by id
-- ``PATCH`` - Update an existing feature item from feature collection by id
-- ``DELETE`` - Remove an existing feature item from feature collection by id
+#. Insert a new feature item into feature collection
+#. Replace an existing feature item from feature collection by id
+#. Update an existing feature item from feature collection by id
+#. Remove an existing feature item from feature collection by id
 
 
-Sample requests
+Sample Requests
 ---------------
 
 
