@@ -270,7 +270,7 @@ pygeoapi in compliance with `OGC API - Features - Part 4: Simple Transactions <h
 
 Data transaction support is optional and can be enabled for a collection resource by adding ``transactions: true`` to ``extensions`` under the resource in the pygeoapi config file. If transactions parameter is not set it will be considered as ``transactions: false``.
 
-The default pygeoapi configuration includes an example for the ``obs`` sample dataset:
+The pygeoapi configuration file ``pygeoapi-data-transaction-config.yml`` includes an example for enabling transaction support in ``obs`` sample dataset:
 
 .. code-block:: yaml
 
