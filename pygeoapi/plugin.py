@@ -53,9 +53,8 @@ PLUGINS = {
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
     },
-    'cql': {
-        'Parser': 'pygeoapi.cql_evaluate.CQLParser',
-        'Evaluator': 'pygeoapi.cql_evaluate.CQLFilterEvaluator'
+    'extension': {
+        'CQL': 'pygeoapi.cql.CQLHandler'
     }
 }
 
