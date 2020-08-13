@@ -437,8 +437,7 @@ def get_oas_30(cfg):
                 }
         post_form = copy.deepcopy(form)
         post_form[id] = {'type': 'string',
-                         'example': 'some_unique_string',
-                         'required': 'false'}
+                         'example': 'some_unique_string'}
         feature_id = '{}#/components/parameters/featureId'.format(oapif)
         nvpo = '#/components/schemas/nameValuePairObj'
 

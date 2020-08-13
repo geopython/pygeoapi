@@ -139,8 +139,6 @@ resources:
             temporal:
                 begin: 2011-11-11
                 end: null  # or empty (either means open ended)
-        extensions:
-            transactions: true
         providers:
             - type: feature
               name: GeoJSON
