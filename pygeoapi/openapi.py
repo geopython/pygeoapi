@@ -499,16 +499,18 @@ def get_oas_30(cfg):
         if tiles_extension:
             oas['components']['responses'].update({
                     'Tiles': {
-                        'description': 'Retrieves the tiles description for this collection',
+                        'description': 'Retrieves the tiles description for this collection', # noqa
                         'content': {
                             'application/json': {
-                                'schema': {'$ref': '#/components/schemas/tiles'}
+                                'schema': {
+                                    '$ref': '#/components/schemas/tiles'
+                                }
                             }
                         }
                     }
-                }    
+                }
             )
-            
+
             oas['components']['schemas'].update({
                     'tilematrixsetlink': {
                         'type': 'object',
@@ -531,7 +533,9 @@ def get_oas_30(cfg):
                         'properties': {
                             'tileMatrixSetLinks': {
                                 'type': 'array',
-                                'items': {'$ref': '#/components/schemas/tilematrixsetlink'}
+                                'items': {
+                                    '$ref': '#/components/schemas/tilematrixsetlink' # noqa
+                                }
                             },
                             'links': {
                                 'type': 'array',
@@ -546,7 +550,7 @@ def get_oas_30(cfg):
 
             paths[tiles_path] = {
                 'get': {
-                    'summary': 'Fetch a {} tiles description'.format(v['title']),
+                    'summary': 'Fetch a {} tiles description'.format(v['title']), # noqa
                     'description': v['description'],
                     'tags': [k],
                     'operationId': 'describe{}Tiles'.format(k.capitalize()),
