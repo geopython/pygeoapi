@@ -126,9 +126,11 @@ resources:
               geometry:
                   x_field: long
                   y_field: lat
-        filters:
-            - cql-text
-            - cql-json
+              extensions:
+                - type: CQL
+                  filters:
+                    - cql-text
+                    - cql-json  
             
     lakes:
         type: collection
@@ -154,6 +156,11 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
+              extensions:
+                - type: CQL
+                  filters:
+                    - cql-text
+                    - cql-json  
 
 
     hello-world:
