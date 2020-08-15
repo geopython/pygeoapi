@@ -111,6 +111,8 @@ resources:
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
+        extensions:
+            transactions: true
         providers:
             - type: feature
               name: CSV
@@ -139,6 +141,8 @@ resources:
             temporal:
                 begin: 2011-11-11
                 end: null  # or empty (either means open ended)
+        extensions:
+            transactions: true
         providers:
             - type: feature
               name: GeoJSON
