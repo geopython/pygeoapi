@@ -53,7 +53,7 @@ PLUGINS = {
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
     },
-    'extension': {
+    'extensions': {
         'CQL': 'pygeoapi.cql.CQLHandler'
     }
 }

@@ -35,7 +35,9 @@ import click
 import yaml
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
+from pygeoapi.util import (filter_dict_by_key_value,
+                           get_provider_by_type,
+                           get_extension_by_type,
                            yaml_load)
 
 LOGGER = logging.getLogger(__name__)
@@ -342,8 +344,6 @@ def get_oas_30(cfg):
         }
     }
 
-    cql_filter_exists = False
-
     items_f = deepcopy(oas['components']['parameters']['f'])
     items_f['schema']['enum'].append('csv')
 
@@ -410,16 +410,39 @@ def get_oas_30(cfg):
             }
         }
 
+        providers = get_provider_by_type(collections[k]['providers'],
+                                         'feature')
+        p = load_plugin('provider', providers)
+        cql_filter_exists = False
+
+        # get CQL extension of the collection provider
+        cql_extension = get_extension_by_type(providers, 'CQL')
+
         # if CQL filter available for collection
-        if 'filters' in collections[k]:
+        if 'filters' in cql_extension:
             paths[items_path]['get']['parameters'].\
                 append({'$ref': '#/components/parameters/filter'})
-            paths[items_path]['get']['parameters'].\
-                append({'$ref': '#/components/parameters/filter-lang'})
-            cql_filter_exists = True
 
-        p = load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'feature'))
+            filter_lang_enum = cql_extension['filters']
+            filter_lang_default = 'cql-text'
+
+            filter_lang_parameter = {
+                'description': 'The optional parameter to provide filter lang',
+                'explode': False,
+                'in': 'query',
+                'name': 'filter-lang',
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                    'enum': filter_lang_enum,
+                    'default': filter_lang_default
+                },
+                'style': 'form'
+            }
+
+            paths[items_path]['get']['parameters'].\
+                append(filter_lang_parameter)
+            cql_filter_exists = True
 
         if p.fields:
             queryables_path = '{}/queryables'.format(collection_name_path)
@@ -520,9 +543,7 @@ def get_oas_30(cfg):
             }
         }
 
-        filter_lang_enum = ['cql-text', 'cql-json']
-
-        filter_extension = {
+        filter_parameter = {
             'description': 'The optional filter parameter to provide filters on the collection items', # noqa
             'explode': False,
             'in': 'query',
@@ -530,20 +551,6 @@ def get_oas_30(cfg):
             'required': False,
             'schema': {
                 'type': 'string'
-            },
-            'style': 'form'
-        }
-
-        filter_lang_extension = {
-            'description': 'The optional parameter to provide filter lang',
-            'explode': False,
-            'in': 'query',
-            'name': 'filter-lang',
-            'required': False,
-            'schema': {
-                'type': 'string',
-                'enum': filter_lang_enum,
-                'default': 'cql-text'
             },
             'style': 'form'
         }
@@ -1234,8 +1241,7 @@ def get_oas_30(cfg):
             }
         }
 
-        oas['components']['parameters']['filter-lang'] = filter_lang_extension
-        oas['components']['parameters']['filter'] = filter_extension
+        oas['components']['parameters']['filter'] = filter_parameter
         oas['components']['schemas'].update(cql_schemas)
 
     LOGGER.debug('setting up STAC')

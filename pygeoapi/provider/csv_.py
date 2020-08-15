@@ -93,7 +93,7 @@ class CSVProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[],
-              cql_expression=None, identifier=None, ):
+              cql_expression=None, identifier=None):
         """
         CSV query
 
@@ -158,7 +158,7 @@ class CSVProvider(BaseProvider):
         if cql_expression:
             feature_set = feature_collection['features']
 
-            cql_handler = load_plugin('extension',
+            cql_handler = load_plugin('extensions',
                                       {'name': 'CQL',
                                        'cql_expression': cql_expression,
                                        'feature_set': feature_set})
