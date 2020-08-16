@@ -172,7 +172,7 @@ class MongoProvider(BaseProvider):
             {'_id': ObjectId(identifier)}, {"$set": data})
 
     def delete(self, identifier):
-        """Delets an existing feature
+        """Deletes an existing feature
 
         :param identifier: feature id
         """
