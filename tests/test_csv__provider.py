@@ -314,3 +314,78 @@ def test_not_like(config):
     """Testing query for filter, startindex and CQL filter expression"""
 
     pass
+
+
+# test on spatial operation
+def test_spatial(config):
+    """Testing query for filter, startindex and CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(
+        cql_expression='INTERSECTS(geometry,POINT (-75 45))'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='CONTAINS(geometry,'
+                       'POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0)))'
+    )
+    assert len(results['features']) == 0
+    assert results['numberMatched'] == 0
+    assert results['numberReturned'] == 0
+    results = p.query(
+        cql_expression='WITHIN(geometry,'
+                       'POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0)))'
+    )
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
+    results = p.query(
+        cql_expression='TOUCHES(geometry,LINESTRING(-75 45, -10 10))'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='DISJOINT(geometry,POINT (-75 45))'
+    )
+    assert len(results['features']) == 3
+    assert results['numberMatched'] == 3
+    assert results['numberReturned'] == 3
+    results = p.query(
+        cql_expression='EQUALS(geometry,POINT (-75 45))'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='OVERLAPS(geometry,POINT (-74 45))'
+    )
+    assert len(results['features']) == 0
+    assert results['numberMatched'] == 0
+    assert results['numberReturned'] == 0
+    results = p.query(
+        cql_expression='CROSSES(geometry,LINESTRING(-75 45, -10 10))'
+    )
+    assert len(results['features']) == 0
+    assert results['numberMatched'] == 0
+    assert results['numberReturned'] == 0
+    results = p.query(
+        cql_expression='BEYOND(geometry,POINT(-65 45),10000,meters)'
+    )
+    assert len(results['features']) == 3
+    assert results['numberMatched'] == 3
+    assert results['numberReturned'] == 3
+    results = p.query(
+        cql_expression='DWITHIN(geometry,POINT(-65 45),10,kilometers)'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='RELATE(geometry,POINT (-75 45), "T*****FF*")'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2

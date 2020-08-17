@@ -36,7 +36,7 @@ class CQLExceptionComparator(CQLException):
 
 
 class CQLExceptionComparison(CQLException):
-    """CQL filter having invalid caomparison operation"""
+    """CQL filter having invalid comparison operation"""
     pass
 
 
@@ -57,6 +57,21 @@ class CQLExceptionIn(CQLException):
 
 class CQLExceptionLike(CQLException):
     """CQL filter having invalid LIKE operation"""
+    pass
+
+
+class CQLExceptionSpatial(CQLException):
+    """CQL filter having invalid SPATIAL operation"""
+    pass
+
+
+class CQLExceptionUnits(CQLException):
+    """CQL filter having invalid distance units"""
+    pass
+
+
+class CQLExceptionTemporal(CQLException):
+    """CQL filter having invalid TEMPORAL operation"""
     pass
 
 

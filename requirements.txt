@@ -5,3 +5,4 @@ pytz
 PyYAML
 unicodecsv
 pycql
+shapely
