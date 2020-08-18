@@ -178,6 +178,7 @@ def test_cql_paths(config, get_oas_30_, get_collections,
     :param get_oas_30_: OpenAPI 3.0 Document object
     :param get_collections: collection object
     :param is_cql: boolean value
+    :param get_cql_collections: cql collection dict
     """
     assert isinstance(config, dict)
     assert isinstance(get_oas_30_, dict)
@@ -654,5 +655,5 @@ def test_auxiliary_openapi_extensions(get_cql_components, get_cql_schemas, is_cq
                           'timeLiteral', 'periodLiteral',
                           'capabilities-assertion', 'functionDescription',
                           'filter-capabilities']
-        for filter in filter_schemas:
-            assert get_cql_schemas.get(filter, None) is None
+        for filter_schema in filter_schemas:
+            assert get_cql_schemas.get(filter_schema, None) is None

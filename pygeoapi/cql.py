@@ -14,7 +14,6 @@ from pycql.ast import (
     LiteralExpression
 )
 import pygeoapi.filters as filters
-from pygeoapi.util import get_filter_fields
 
 
 class CQLHandler:
@@ -60,8 +59,8 @@ class CQLHandler:
             :returns: Abstract Syntax Tree
             """
 
-            ast = parse(self.cql_expression)
-            return ast
+            cql_ast = parse(self.cql_expression)
+            return cql_ast
 
         def cql_validation(self):
             """
@@ -95,7 +94,8 @@ class CQLHandler:
             to_filter = self.to_filter
             # evaluation for Not Condition Predicate Node
             if isinstance(node, NotConditionNode):
-                return filters.negate(to_filter(node.sub_node))
+                return filters.negate(to_filter(node.sub_node),
+                                      self.mapping_choices)
 
             # evaluation for Combination Condition Predicate Node
             elif isinstance(node, CombinationConditionNode):
@@ -146,7 +146,8 @@ class CQLHandler:
             # evaluation for Temporal Predicate Node
             elif isinstance(node, TemporalPredicateNode):
                 return filters.temporal(
-                    to_filter(node.lhs), node.rhs, node.op
+                    to_filter(node.lhs), node.rhs,
+                    node.op, self.mapping_choices
                 )
 
             # evaluation for Spatial Predicate Node
@@ -190,6 +191,17 @@ class CQLHandler:
     class CQLFilter:
         """ CQL Filter Executor """
 
+        def __init__(self):
+            """
+            Initialize object
+            """
+
+            self.CQLParser = self.CQLParser
+            self.cql_expression = self.cql_expression
+            self.CQLEvaluator = self.CQLEvaluator
+            self.feature_set = self.feature_set
+            self.CQLFilter = self.CQLFilter
+
         def cql_filter(self):
             """
             Helper function to perform CQL Filter on the feature set
@@ -199,9 +211,24 @@ class CQLHandler:
 
             cql_parser = self.CQLParser(self.cql_expression)
             cql_ast = cql_parser.create_ast()
-            field_mapping = list(get_filter_fields(self.feature_set))
+            field_mapping = list(self.CQLFilter.get_field_mapping(self))
 
             cql_evaluator = self.CQLEvaluator(field_mapping, self.feature_set)
             feature_set = cql_evaluator.to_filter(cql_ast)
 
             return feature_set
+
+        def get_field_mapping(self):
+            """
+            helper function to get a resource's field name
+
+            :param feature_set: ``list`` of features
+
+            :returns: field ``list``
+            """
+
+            field_mapping = list(self.feature_set[0].keys())
+            field_mapping = field_mapping + (list(self.feature_set[0]
+                                                  ['properties'].keys()))
+
+            return field_mapping

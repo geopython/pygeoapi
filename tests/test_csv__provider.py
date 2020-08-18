@@ -176,6 +176,16 @@ def test_ge(config):
     assert results['numberReturned'] == 1
 
 
+def test_not(config):
+    """Testing query for `not` filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(cql_expression='NOT id >= 964')
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
+
+
 # test on logical operators
 def test_and(config):
     """Testing query for multiple sub-filters combined by `AND`
@@ -318,7 +328,7 @@ def test_not_like(config):
 
 # test on spatial operation
 def test_spatial(config):
-    """Testing query for filter, startindex and CQL filter expression"""
+    """Testing query for spatial CQL filter expression"""
 
     p = CSVProvider(config)
     results = p.query(
@@ -389,3 +399,43 @@ def test_spatial(config):
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
     assert results['numberReturned'] == 2
+
+
+def test_temporal(config):
+    """Testing query for spatial CQL filter expression"""
+
+    p = CSVProvider(config)
+
+    results = p.query(
+        cql_expression='datetime BEFORE 2001-10-30T14:24:55Z'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='datetime BEFORE OR DURING '
+                       '2003-01-01T00:00:00Z/2005-01-01T00:00:00Z'
+    )
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
+    results = p.query(
+        cql_expression='datetime DURING '
+                       '2003-01-01T00:00:00Z/2005-01-01T00:00:00Z'
+    )
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
+    results = p.query(
+        cql_expression='datetime DURING OR AFTER '
+                       '2003-01-01T00:00:00Z/2005-01-01T00:00:00Z'
+    )
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+    results = p.query(
+        cql_expression='datetime AFTER 2001-10-30T14:24:55Z'
+    )
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4

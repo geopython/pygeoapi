@@ -65,13 +65,28 @@ class CQLExceptionSpatial(CQLException):
     pass
 
 
+class CQLExceptionSpatialOperator(CQLException):
+    """CQL filter having invalid spatial operator"""
+    pass
+
+
 class CQLExceptionUnits(CQLException):
     """CQL filter having invalid distance units"""
     pass
 
 
+class CQLExceptionPattern(CQLException):
+    """CQL filter having invalid relate pattern"""
+    pass
+
+
 class CQLExceptionTemporal(CQLException):
     """CQL filter having invalid TEMPORAL operation"""
+    pass
+
+
+class CQLExceptionTemporalOperator(CQLException):
+    """CQL filter having invalid temporal operator"""
     pass
 
 
