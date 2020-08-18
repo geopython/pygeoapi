@@ -54,13 +54,12 @@ class RasterioProvider(BaseProvider):
 
         BaseProvider.__init__(self, provider_def)
 
-        self.crs = None
-
         try:
             self._data = rasterio.open(self.data)
             self._coverage_properties = self._get_coverage_properties()
-            self.num_bands = self._coverage_properties['num_bands']
             self.axes = self._coverage_properties['axes']
+            self.crs = self._coverage_properties['bbox_crs']
+            self.num_bands = self._coverage_properties['num_bands']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)

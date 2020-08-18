@@ -59,8 +59,9 @@ class BaseProvider:
         self.fields = {}
 
         # for coverage providers
-        self.num_bands = None
         self.axes = []
+        self.crs = None
+        self.num_bands = None
 
     def get_fields(self):
         """

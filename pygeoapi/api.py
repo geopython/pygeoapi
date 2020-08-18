@@ -506,7 +506,7 @@ class API:
                         self.config['resources'][dataset]['providers'],
                         'coverage'))
 
-                    collection['crs'] = [v['extents']['spatial']['crs']]
+                    collection['crs'] = [p.crs]
                     collection['domainset'] = p.get_coverage_domainset()
                     collection['rangetype'] = p.get_coverage_rangetype()
 
