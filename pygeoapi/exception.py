@@ -10,6 +10,11 @@ class CQLException(Exception):
     pass
 
 
+class CQLExceptionFilterLang(Exception):
+    """CQL filter lang exception"""
+    pass
+
+
 class CQLExceptionEmptyList(CQLException):
     """CQL filter encounters empty feature list exception"""
     pass

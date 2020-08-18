@@ -488,6 +488,136 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'limit': 2,
+                      'filter': 'id>300',
+                      'filter-lang': 'cql-lang'}, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 2
+
+    assert features['features'][1]['properties']['stn_id'] == '35'
+
+    links = features['links']
+    assert len(links) == 5
+    assert '/collections/obs/items?f=json&limit=2&' \
+           'filter=id>300&filter-lang=cql-text' in links[0]['href']
+    assert links[0]['rel'] == 'self'
+    assert '/collections/obs/items?f=jsonld&limit=2&' \
+           'filter=id>300&filter-lang=cql-text' in links[1]['href']
+    assert links[1]['rel'] == 'alternate'
+    assert '/collections/obs/items?f=html&limit=2&' \
+           'filter=id>300&filter-lang=cql-text' in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=2&limit=2&' \
+           'filter=id>300&filter-lang=cql-text' in links[3]['href']
+    assert links[3]['rel'] == 'next'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'limit': 1,
+                      'filter': 'id NOT BETWEEN 200 AND 300',
+                      'filter-lang': 'cql-lang'}, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 1
+
+    assert features['features'][1]['properties']['stn_id'] == '35'
+
+    links = features['links']
+    assert len(links) == 5
+    assert '/collections/obs/items?f=json&limit=1&' \
+           'filter=id NOT BETWEEN 200 AND 300&filter-lang=cql-text'\
+           in links[0]['href']
+    assert links[0]['rel'] == 'self'
+    assert '/collections/obs/items?f=jsonld&limit=1&' \
+           'filter=id NOT BETWEEN 200 AND 300&filter-lang=cql-text'\
+           in links[1]['href']
+    assert links[1]['rel'] == 'alternate'
+    assert '/collections/obs/items?f=html&limit=1&' \
+           'filter=id NOT BETWEEN 200 AND 300&filter-lang=cql-text'\
+           in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=1&limit=1&' \
+           'filter=id NOT BETWEEN 200 AND 300&filter-lang=cql-text'\
+           in links[3]['href']
+    assert links[3]['rel'] == 'next'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'startindex': 2, 'limit': 2,
+                      'filter': 'WITHIN(geometry,POLYGON((-80.0 -80.0,'
+                                '-80.0 50,80.0 50,-80.0 -80.0)))',
+                      'filter-lang': 'cql-lang'}, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 2
+
+    assert features['features'][1]['properties']['stn_id'] == '2147'
+
+    links = features['links']
+    assert len(links) == 5
+    assert '/collections/obs/items?f=json&startindex=2&limit=2&' \
+           'filter=WITHIN(geometry,POLYGON((-80.0 -80.0,-80.0 50,' \
+           '80.0 50,-80.0 -80.0)))&' \
+           'filter-lang=cql-text' in links[0]['href']
+    assert links[0]['rel'] == 'self'
+    assert '/collections/obs/items?f=jsonld&startindex=2&limit=2&' \
+           'filter=WITHIN(geometry,POLYGON((-80.0 -80.0,-80.0 50,' \
+           '80.0 50,-80.0 -80.0)))&' \
+           'filter-lang=cql-text' in links[1]['href']
+    assert links[1]['rel'] == 'alternate'
+    assert '/collections/obs/items?f=html&startindex=2&limit=2&' \
+           'filter=WITHIN(geometry,POLYGON((-80.0 -80.0,-80.0 50,' \
+           '80.0 50,-80.0 -80.0)))&' \
+           'filter-lang=cql-text' in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=0&limit=2&' \
+           'filter=WITHIN(geometry,POLYGON((-80.0 -80.0,-80.0 50,' \
+           '80.0 50,-80.0 -80.0)))&' \
+           'filter-lang=cql-text' in links[3]['href']
+    assert links[3]['rel'] == 'prev'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'startindex': 2, 'limit': 2,
+                      'filter': 'datetime BEFORE OR DURING'
+                                ' 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z',
+                      'filter-lang': 'cql-lang'}, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 2
+
+    assert features['features'][1]['properties']['stn_id'] == '2147'
+
+    links = features['links']
+    assert len(links) == 5
+    assert '/collections/obs/items?f=json&startindex=2&limit=2&' \
+           'filter=datetime BEFORE OR DURING' \
+           ' 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z&' \
+           'filter-lang=cql-text' in links[0]['href']
+    assert links[0]['rel'] == 'self'
+    assert '/collections/obs/items?f=jsonld&startindex=2&limit=2&' \
+           'filter=datetime BEFORE OR DURING' \
+           ' 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z&' \
+           'filter-lang=cql-text' in links[1]['href']
+    assert links[1]['rel'] == 'alternate'
+    assert '/collections/obs/items?f=html&startindex=2&limit=2&' \
+           'filter=datetime BEFORE OR DURING' \
+           ' 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z&' \
+           'filter-lang=cql-text' in links[2]['href']
+    assert links[2]['rel'] == 'alternate'
+    assert '/collections/obs/items?startindex=0&limit=2&' \
+           'filter=datetime BEFORE OR DURING' \
+           ' 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z&' \
+           'filter-lang=cql-text' in links[3]['href']
+    assert links[3]['rel'] == 'prev'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
+
 
 def test_get_collection_items_json_ld(config, api_):
     req_headers = make_req_headers()

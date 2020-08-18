@@ -746,10 +746,11 @@ class API:
         try:
             cql_expression = args.get('filter')
             if (cql_expression):
-                parser = load_plugin('cql',
-                                     {'name': 'Parser',
-                                      'cql_expression': cql_expression})
-                parser.cql_validation()
+                cql_handler = load_plugin(
+                    'extensions',
+                    {'name': 'CQL', 'cql_expression': cql_expression}
+                )
+                cql_handler.cql_validation()
 
         except Exception:
             exception = {

@@ -26,8 +26,10 @@ class CQLHandler:
         :param cql_def: CQL filter definition
         """
 
-        self.cql_expression = cql_def['cql_expression']
-        self.feature_set = cql_def['feature_set']
+        if('cql_expression' in cql_def.keys()):
+            self.cql_expression = cql_def['cql_expression']
+        if('feature_set' in cql_def.keys()):
+            self.feature_set = cql_def['feature_set']
 
     def cql_filter(self):
         """
@@ -38,6 +40,13 @@ class CQLHandler:
 
         feature_set = self.CQLFilter.cql_filter(self)
         return feature_set
+
+    def cql_validation(self):
+        """
+        Finds the validity of the CQL filter expression
+        """
+
+        _ = self.CQLParser.create_ast(self)
 
     class CQLParser:
         """ CQL Filter Parser """
@@ -61,13 +70,6 @@ class CQLHandler:
 
             cql_ast = parse(self.cql_expression)
             return cql_ast
-
-        def cql_validation(self):
-            """
-            Finds the validity of the CQL filter expression
-            """
-
-            _ = self.create_ast()
 
     class CQLEvaluator:
         """ CQL Filter Evaluator """
