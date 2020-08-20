@@ -156,15 +156,15 @@ class CSVProvider(BaseProvider):
                 len(feature_collection['features'])
 
         if cql_expression:
-            feature_set = feature_collection['features']
+            feature_list = feature_collection['features']
 
             cql_handler = load_plugin('extensions',
                                       {'name': 'CQL',
                                        'cql_expression': cql_expression,
-                                       'feature_set': feature_set})
-            feature_set = cql_handler.cql_filter()
+                                       'feature_list': feature_list})
+            feature_list = cql_handler.cql_filter()
 
-            feature_collection['features'] = feature_set
+            feature_collection['features'] = feature_list
             feature_collection['numberMatched'] = len(feature_collection
                                                       ['features'])
 

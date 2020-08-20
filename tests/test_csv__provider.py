@@ -401,6 +401,7 @@ def test_spatial(config):
     assert results['numberReturned'] == 2
 
 
+# test on temporal operation
 def test_temporal(config):
     """Testing query for spatial CQL filter expression"""
 
@@ -436,6 +437,10 @@ def test_temporal(config):
     results = p.query(
         cql_expression='datetime AFTER 2001-10-30T14:24:55Z'
     )
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
+    results = p.query(cql_expression='BBOX(geometry, -90, 40, -60, 45)')
     assert len(results['features']) == 4
     assert results['numberMatched'] == 4
     assert results['numberReturned'] == 4

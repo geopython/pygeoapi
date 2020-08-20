@@ -75,6 +75,11 @@ class CQLExceptionSpatialOperator(CQLException):
     pass
 
 
+class CQLExceptionBBox(CQLException):
+    """CQL filter having invalid bbox operation"""
+    pass
+
+
 class CQLExceptionUnits(CQLException):
     """CQL filter having invalid distance units"""
     pass

@@ -128,15 +128,15 @@ class GeoJSONProvider(BaseProvider):
         data = self._load()
 
         if cql_expression:
-            feature_set = data['features']
+            feature_list = data['features']
 
             cql_handler = load_plugin('extensions',
                                       {'name': 'CQL',
                                        'cql_expression': cql_expression,
-                                       'feature_set': feature_set})
-            feature_set = cql_handler.cql_filter()
+                                       'feature_list': feature_list})
+            feature_list = cql_handler.cql_filter()
 
-            data['features'] = feature_set
+            data['features'] = feature_list
 
         data['numberMatched'] = len(data['features'])
 

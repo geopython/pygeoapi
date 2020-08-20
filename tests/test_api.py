@@ -488,6 +488,17 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
+
+# to get collection based on cql filters
+def test_get_collection_query_cql(api_):
+    """
+    Assertions for collection after applying CQL filters
+
+    :param api_: generated api
+    """
+
+    req_headers = make_req_headers()
+
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'limit': 2,
                       'filter': 'id>300',
