@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_MapServer_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?',
@@ -75,6 +76,7 @@ def config_MapServer_WFS():
 def config_GeoServer_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -105,6 +107,7 @@ def config_GeoServer_WFS():
 def config_geosol_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -134,6 +137,7 @@ def config_geosol_gs_WFS():
 def config_geonode_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':

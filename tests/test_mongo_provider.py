@@ -40,6 +40,7 @@ mongocollection = 'testplaces'
 def config():
     return {
         'name': 'MongoDB',
+        'type': 'feature',
         'data': monogourl,
         'collection': mongocollection
     }
