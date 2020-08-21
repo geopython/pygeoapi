@@ -218,6 +218,7 @@ class RasterioProvider(BaseProvider):
                 LOGGER.debug('Clipping data with bbox')
                 out_image, out_transform = rasterio.mask.mask(
                     _data,
+                    filled=False,
                     shapes=shapes,
                     crop=True,
                     indexes=args['indexes'])
