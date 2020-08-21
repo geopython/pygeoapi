@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Gregory Petrochenkov <gpetrochenkov@usgs.gov>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2020 Gregory Petrochenkov
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,39 +27,46 @@
 #
 # =================================================================
 
-import io
+import xarray
+import numpy as np
 import logging
+import os
+import uuid
 
-import rasterio
-from rasterio.io import MemoryFile
-import rasterio.mask
-
-from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderQueryError)
+from pygeoapi.provider.base import BaseProvider, ProviderConnectionError, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class RasterioProvider(BaseProvider):
-    """Rasterio Provider"""
+class XarrayProvider(BaseProvider):
+    """Provider class backed by local GeoJSON files
+    This is meant to be simple
+    (no external services, no dependencies, no schema)
+    at the expense of performance
+    (no indexing, full serialization roundtrip on each request)
+    Not thread safe, a single server process is assumed
+    This implementation uses the feature 'id' heavily
+    and will override any 'id' provided in the original data.
+    The feature 'properties' will be preserved.
+    TODO:
+    * query method should take bbox
+    * instead of methods returning FeatureCollections,
+    we should be yielding Features and aggregating in the view
+    * there are strict id semantics; all features in the input GeoJSON file
+    must be present and be unique strings. Otherwise it will break.
+    * How to raise errors in the provider implementation such that
+    * appropriate HTTP responses will be raised
+    """
 
     def __init__(self, provider_def):
-        """
-        Initialize object
-
-        :param provider_def: provider definition
-
-        :returns: pygeoapi.providers.rasterio_.RasterioProvider
-        """
-
+        """initializer"""
         BaseProvider.__init__(self, provider_def)
 
         try:
-            self._data = rasterio.open(self.data)
+            zarr = self.data.split('.')[-1] == 'zarr'
+            open_func = xarray.open_zarr if zarr else xarray.open_dataset
+            self._data = open_func(self.data)
             self._coverage_properties = self._get_coverage_properties()
-            self.axes = self._coverage_properties['axes']
-            self.crs = self._coverage_properties['bbox_crs']
-            self.num_bands = self._coverage_properties['num_bands']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -94,7 +101,16 @@ class RasterioProvider(BaseProvider):
                     'upperBound': self._coverage_properties['bbox'][3],
                     'uomLabel': self._coverage_properties['bbox_units'],
                     'resolution': self._coverage_properties['resy']
-                }],
+                },
+                    {
+                        'type': 'RegularAxisType',
+                        'axisLabel': self._coverage_properties['time_label'],
+                        'lowerBound': self._coverage_properties['bbox'][1],
+                        'upperBound': self._coverage_properties['bbox'][3],
+                        'uomLabel': self._coverage_properties['bbox_units'],
+                        'resolution': self._coverage_properties['resy']
+                    }
+                ],
                 'gridLimits': {
                     'type': 'GridLimitsType',
                     'srsName': 'http://www.opengis.net/def/crs/OGC/0/Index2D',
@@ -161,104 +177,53 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, bands=[], subsets={}, format_='json'):
+    def query(self, range_type=[], subsets={}, format_='json'):
         """
-        Extract data from collection collection
+         Extract data from collection collection
 
-        :param bands: list of bands (int)
+        :param range_type: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
+        :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
+        if len(range_type) < 1:
+            range_type = [x for x in ds.variables
+                          if len(ds.variables[x].shape) >= 3]
 
-        args = {
-            'indexes': None
-        }
-        shapes = []
+        data = self._data[[*range_type]]
 
-        if not bands and not subsets and format_ != 'json':
-            LOGGER.debug('No parameters specified, returning native file')
-            with io.open(self.data, 'rb') as fh:
-                return fh.read()
+        if(self._coverage_properties['x_axis_label'] in subsets or
+           self._coverage_properties['y_axis_label'] in subsets or
+           self._coverage_properties['time_axis_label'] in subsets):
 
-        if (self._coverage_properties['x_axis_label'] in subsets and
-                self._coverage_properties['y_axis_label'] in subsets):
-            LOGGER.debug('Creating spatial subset')
+            LOGGER.debug('Creating spatio-temporal subset')
 
-            x = self._coverage_properties['x_axis_label']
-            y = self._coverage_properties['y_axis_label']
+            lon = self._coverage_properties['x_axis_label']
+            lat = self._coverage_properties['y_axis_label']
+            time = self._coverage_properties['time_axis_label']
 
+            query_params = {}
+            for key, val in subsets.items():
+                query_params[key] = slice(val[0], val[1])
 
-            shapes = [{
-               'type': 'Polygon',
-               'coordinates': [[
-                   [subsets[x][0], subsets[y][0]],
-                   [subsets[x][0], subsets[y][1]],
-                   [subsets[x][1], subsets[y][1]],
-                   [subsets[x][1], subsets[y][0]],
-                   [subsets[x][0], subsets[y][0]]
-               ]]
-            }]
+            data = data.sel(query_params)
 
-        if bands:
-            LOGGER.debug('Selecting bands')
-            args['indexes'] = list(map(int, bands))
+            out_meta = {'bbox': [
+                self._data.coords[lon][0], self._data.coords[lon][-1],
+                self._data.coords[lat][0], self._data.coords[lat][-1]],
+                "driver": "Xarray",
+                "height": self._data.dims[lat],
+                "width": self._data.dims[lon],
+                "time_steps": self._data.dims[time],
+                "variables": {var_name:
+                                  {key: val for vdict in attrs for
+                                   k, v in vdict.items()}
+                              for var_name in self._data.variables}
+            }
 
-        with rasterio.open(self.data) as _data:
-            LOGGER.debug('Creating output coverage metadata')
-            out_meta = _data.meta
-
-            if self.options is not None:
-                LOGGER.debug('Adding dataset options')
-                for key, value in self.options.items():
-                    out_meta[key] = value
-
-            if shapes:  # spatial subset
-                LOGGER.debug('Clipping data with bbox')
-                out_image, out_transform = rasterio.mask.mask(
-                    _data,
-                    shapes=shapes,
-                    crop=True,
-                    indexes=args['indexes'])
-
-                out_meta.update({"driver": "GRIB",
-                                 "height": out_image.shape[1],
-                                 "width": out_image.shape[2],
-                                 "transform": out_transform})
-            else:  # no spatial subset
-                LOGGER.debug('Creating data in memory with band selection')
-                out_image = _data.read(indexes=args['indexes'])
-
-            if shapes:
-                out_meta['bbox'] = [
-                    subsets[x][0], subsets[y][0],
-                    subsets[x][1], subsets[y][1]
-                ]
-            else:
-                out_meta['bbox'] = [
-                    _data.bounds.left,
-                    _data.bounds.bottom,
-                    _data.bounds.right,
-                    _data.bounds.top
-                ]
-
-            out_meta['units'] = _data.units
-
-            LOGGER.debug('Serializing data in memory')
-            with MemoryFile() as memfile:
-                with memfile.open(**out_meta) as dest:
-                    dest.write(out_image)
-
-                if format_ == 'json':
-                    LOGGER.debug('Creating output in CoverageJSON')
-                    out_meta['bands'] = args['indexes']
-                    return self.gen_covjson(out_meta, out_image)
-
-                else:  # return data in native format
-                    LOGGER.debug('Returning data in native format')
-                    return memfile.read()
+        return gen_covjson(out_meta, data)
 
     def gen_covjson(self, metadata, data):
         """
@@ -291,7 +256,7 @@ class RasterioProvider(BaseProvider):
                     }
                 },
                 'referencing': [{
-                    'coordinates': ['x', 'y'],
+                    'coordinates': ['x', 'y', 'time'],
                     'system': {
                         'type': self._coverage_properties['crs_type'],
                         'id': self._coverage_properties['bbox_crs']
@@ -302,12 +267,6 @@ class RasterioProvider(BaseProvider):
             'ranges': {}
         }
 
-        if metadata['bands'] is None:  # all bands
-            bands_select = range(1, len(self._data.dtypes) + 1)
-        else:
-            bands_select = metadata['bands']
-
-        LOGGER.debug('bands selected: {}'.format(bands_select))
         for bs in bands_select:
             pm = _get_parameter_metadata(
                 self._data.profile['driver'], self._data.tags(bs))
@@ -352,69 +311,49 @@ class RasterioProvider(BaseProvider):
         :returns: `dict` of coverage properties
         """
 
+        time_var, lat_var, lon_var = [None, None, None]
+        for coord in self._data.coords:
+            if coord.lower() == 'time':
+                time_var = coord
+            if self._data.coords[x].attrs['units'] == 'degrees_north':
+                lat_var = coord
+            if self._data.coords[x].attrs['units'] == 'degrees_east':
+                lon_var = coord
+
+        # It would be preferable to use CF attributes to get width
+        # resolution etc but for now a generic approach is used to asess
+        # all of the attributes based on lat lon vars
         properties = {
             'bbox': [
-                self._data.bounds.left,
-                self._data.bounds.bottom,
-                self._data.bounds.right,
-                self._data.bounds.top
+                self._data.coords[lon_var][0],
+                self._data.bounds[lat_vat][0],
+                self._data.coords[lon_var][-1],
+                self._data.bounds[lat_vat][-1],
             ],
             'bbox_crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
             'crs_type': 'GeographicCRS',
             'bbox_units': 'deg',
-            'x_axis_label': 'Long',
-            'y_axis_label': 'Lat',
-            'width': self._data.width,
-            'height': self._data.height,
-            'resx': self._data.res[0],
-            'resy': self._data.res[1],
-            'num_bands': self._data.count,
-            'tags': self._data.tags()
+            'x_axis_label': lon_var,
+            'y_axis_label': lat_var,
+            'time_axis_label': time_var,
+            'width': self._data.dims[lon_var],
+            'height': self._data.dims[lat_var]
         }
 
-        if self._data.crs is not None:
-            if self._data.crs.is_projected:
-                properties['bbox_crs'] = '{}/{}'.format(
-                    'http://www.opengis.net/def/crs/OGC/1.3/',
-                    self._data.crs.to_epsg())
+        if 'crs' in self._data.variables.keys():
+            properties['bbox_crs'] = '{}/{}'.format(
+                'http://www.opengis.net/def/crs/OGC/1.3/',
+                self._data.crs.epsg_code)
 
-                properties['x_axis_label'] = 'x'
-                properties['y_axis_label'] = 'y'
-                properties['bbox_units'] = self._data.crs.linear_units
-                properties['crs_type'] = 'ProjectedCRS'
+            properties['inverse_flattening'] = self_data.crs.inverse_flattening
+            properties['bbox_units'] = 'degrees'
+            properties['resx'] = self._data.attrs['geospatial_lon_units']
+            properties['resy'] = self._data.attrs['geospatial_lat_units']
+            properties['restime'] = self._data.attrs['time_coverage_resolution']
+            properties['crs_type'] = 'ProjectedCRS'
 
         properties['axes'] = [
             properties['x_axis_label'], properties['y_axis_label']
         ]
 
         return properties
-
-
-def _get_parameter_metadata(driver, band):
-    """
-    Helper function to derive parameter name and units
-
-    :param driver: rasterio/GDAL driver name
-    :param band: int of band number
-
-    :returns: dict of parameter metadata
-    """
-
-    parameter = {
-        'id': None,
-        'description': None,
-        'unit_label': None,
-        'unit_symbol': None,
-        'observed_property_id': None,
-        'observed_property_name': None
-    }
-
-    if driver == 'GRIB':
-        parameter['id'] = band['GRIB_ELEMENT']
-        parameter['description'] = band['GRIB_COMMENT']
-        parameter['unit_label'] = band['GRIB_UNIT']
-        parameter['unit_symbol'] = band['GRIB_UNIT']
-        parameter['observed_property_id'] = band['GRIB_SHORT_NAME']
-        parameter['observed_property_name'] = band['GRIB_COMMENT']
-
-    return parameter
