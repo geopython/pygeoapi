@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 def config_vsicurl_csv():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'CSV',
             'source': '/vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv', # noqa

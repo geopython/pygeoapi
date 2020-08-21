@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_shapefile_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRI Shapefile',
             'source':
@@ -65,6 +66,7 @@ def config_shapefile_4326():
 def config_shapefile_28992():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRI Shapefile',
             'source':

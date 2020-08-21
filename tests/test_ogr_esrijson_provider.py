@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_ArcGIS_ESRIJSON():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRIJSON',
             'source': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&orderByFields=objectid+ASC&f=json', # noqa
