@@ -44,6 +44,7 @@ LOGGER = logging.getLogger(__name__)
 def config_poi_portugal():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source': './tests/data/poi_portugal.gpkg',
@@ -97,6 +98,7 @@ def test_get_not_existing_feature_raise_exception(
 def config_gpkg_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source':
@@ -117,6 +119,7 @@ def config_gpkg_4326():
 def config_gpkg_28992():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source':
