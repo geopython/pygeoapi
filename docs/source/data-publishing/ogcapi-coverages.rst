@@ -15,10 +15,10 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, rangeSubset, subsets
+   :header: Provider, rangeSubset, subset
    :align: left
 
-   rasterio,✔️,✔️,✔️,
+   rasterio,✔️,✔️,
 
 
 Below are specific connection examples based on supported providers.
