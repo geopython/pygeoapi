@@ -18,7 +18,7 @@ parameters.
    :header: Provider, rangeSubset, subset
    :align: left
 
-   rasterio,✔️,✔️,
+   rasterio,✔️,✔️
 
 
 Below are specific connection examples based on supported providers.
