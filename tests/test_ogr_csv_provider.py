@@ -123,7 +123,6 @@ def test_query_bbox_hits_vsicurl(config_vsicurl_csv):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 

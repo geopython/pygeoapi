@@ -138,7 +138,6 @@ def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 
