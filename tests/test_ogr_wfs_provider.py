@@ -308,7 +308,6 @@ def test_query_bbox_hits_ms(config_MapServer_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 
@@ -326,7 +325,6 @@ def test_query_bbox_hits_gs(config_GeoServer_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
@@ -344,7 +342,6 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
