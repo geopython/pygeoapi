@@ -407,10 +407,14 @@ def get_oas_30(cfg):
                 }
             }
         }
-
         data_provider = load_plugin('provider', get_provider_by_type(
                         collections[k]['providers'], 'feature'))
+        id = data_provider.id_field
         samp_feat = data_provider.query()['features'][0]
+        if id in samp_feat:
+            samp_feat.pop(id)
+        else:
+            samp_feat['properties'].pop(id)
         samp_prop = samp_feat['properties']
         samp_geom = samp_feat['geometry']
         fields = data_provider.get_fields()
@@ -423,7 +427,6 @@ def get_oas_30(cfg):
         geom_schema = '{}#/components/schemas/{}GeoJSON'\
                       .format(oapif, geom.lower())
         geom = {'$ref': geom_schema}
-        id = data_provider.id_field
         form = {
                     'type': {
                         'type': 'string',
@@ -436,8 +439,6 @@ def get_oas_30(cfg):
                     }
                 }
         post_form = copy.deepcopy(form)
-        post_form[id] = {'type': 'string',
-                         'example': 'some_unique_string'}
         feature_id = '{}#/components/parameters/featureId'.format(oapif)
         nvpo = '#/components/schemas/nameValuePairObj'
 
@@ -591,12 +592,13 @@ def get_oas_30(cfg):
                 }
             }
         }
-
-        samp_ext_kvp = [{'name': key, 'value': samp_prop[key]}
-                        for key in samp_prop]
-        samp_ext_keys = list(samp_prop.keys())
-        samp_add_kvp = [{'name': 'item1_name', 'value': 'item1_value'},
-                        {'name': 'item2_name', 'value': 'item2_value'}]
+        samp_prop_pairs = samp_prop.items()
+        pairs_iterator = iter(samp_prop_pairs)
+        first_pair = next(pairs_iterator)
+        samp_ext_kvp = [{'name': first_pair[0], 'value': first_pair[1]}]
+        second_pair = next(pairs_iterator)
+        samp_ext_keys = [second_pair[0]]
+        samp_add_kvp = [{'name': 'item_name', 'value': 'item_value'}]
         patch = {
             'patch': {
                 'summary': 'Update properties of an existing feature \

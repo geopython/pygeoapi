@@ -217,7 +217,7 @@ def test_describe_collections(config, api_):
         },
         'temporal': {
             'interval': [
-                ['2000-10-30T18:24:39+00:00', '2007-10-30T08:57:29+00:00']
+                ['2000-10-30T18:24:39', '2007-10-30T08:57:29']
             ],
             'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
         }
@@ -287,7 +287,7 @@ def test_describe_collections_json_ld(config, api_):
 
     assert 'http://schema.org/temporalCoverage' in dataset
     assert dataset['http://schema.org/temporalCoverage'][0][
-        '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
+        '@value'] == '2000-10-30T18:24:39/2007-10-30T08:57:29'
 
 
 def test_get_collection_items(config, api_):
@@ -343,7 +343,7 @@ def test_get_collection_items(config, api_):
     features = json.loads(response)
 
     assert len(features['features']) == 2
-    assert features['features'][1]['properties']['stn_id'] == '35'
+    assert features['features'][1]['properties']['stn_id'] == 35
 
     links = features['links']
     assert len(links) == 5
@@ -370,7 +370,7 @@ def test_get_collection_items(config, api_):
     features = json.loads(response)
 
     assert len(features['features']) == 3
-    assert features['features'][1]['properties']['stn_id'] == '2147'
+    assert features['features'][1]['properties']['stn_id'] == 2147
 
     links = features['links']
     assert len(links) == 5
@@ -529,30 +529,30 @@ def test_get_collection_items_json_ld(config, api_):
 def test_get_collection_item(config, api_):
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'foo'}, 'obs', '371')
+        req_headers, {'f': 'foo'}, 'obs', 371)
 
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'foo', '371')
+        req_headers, {}, 'foo', 371)
 
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'obs', 'notfound')
+        req_headers, {}, 'obs', 9999)
 
     assert code == 404
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'html'}, 'obs', '371')
+        req_headers, {'f': 'html'}, 'obs', 371)
 
     assert rsp_headers['Content-Type'] == 'text/html'
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'obs', '371')
+        req_headers, {}, 'obs', 371)
     feature = json.loads(response)
 
-    assert feature['properties']['stn_id'] == '35'
+    assert feature['properties']['stn_id'] == 35
 
 
 def test_get_collection_item_json_ld(config, api_):
@@ -567,7 +567,7 @@ def test_get_collection_item_json_ld(config, api_):
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'
-    assert feature['properties']['stn_id'] == '35'
+    assert feature['properties']['stn_id'] == 35
     assert feature['id'].startswith('http://')
     assert feature['id'].endswith('/collections/obs/items/371')
     expanded = jsonld.expand(feature)[0]
@@ -577,7 +577,7 @@ def test_get_collection_item_json_ld(config, api_):
         'https://schema.org/identifier'][0][
             '@type'] == 'https://schema.org/Text'
     assert expanded['https://purl.org/geojson/vocab#properties'][0][
-        'https://schema.org/identifier'][0]['@value'] == '35'
+        'https://schema.org/identifier'][0]['@value'] == 35
 
 
 def test_describe_processes(config, api_):

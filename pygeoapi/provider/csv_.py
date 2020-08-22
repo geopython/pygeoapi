@@ -32,6 +32,7 @@ import csv
 import itertools
 import logging
 import uuid
+import copy
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError,
@@ -57,6 +58,19 @@ class CSVProvider(BaseProvider):
         self.geometry_y = provider_def['geometry']['y_field']
         self.fields = self.get_fields()
 
+    def stc(self, s):
+        if s == 'str':
+            return str
+        if s == 'int':
+            return int
+        if s == 'float':
+            return float
+
+    def assign_type(self, k, v):
+        if v != '':
+            v = self.stc(self.fields[k])(v)
+        return v
+
     def get_fields(self):
         """
          Get provider field information (names, types)
@@ -64,13 +78,26 @@ class CSVProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        LOGGER.debug('Treating all columns as string types')
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             fields = {}
-            for f in data_.fieldnames:
-                fields[f] = 'string'
+            samp_data = {}
+            for row in data_:
+                for key in row:
+                    if key not in samp_data and row[key] != '':
+                        samp_data[key] = row[key]
+            for key in samp_data:
+                try:
+                    value = samp_data[key]
+                    samp_data[key] = float(value)
+                    if samp_data[key]-int(samp_data[key]) == 0:
+                        samp_data[key] = int(value)
+                except ValueError:
+                    samp_data[key] = str(value)
+                fields[key] = type(samp_data[key]).__name__
+            fields[self.geometry_x] = float.__name__
+            fields[self.geometry_y] = float.__name__
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
@@ -102,8 +129,11 @@ class CSVProvider(BaseProvider):
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data_, startindex, startindex+limit):
+                for key in row:
+                    if row[key] != '':
+                        row[key] = self.assign_type(key, row[key])
                 feature = {'type': 'Feature'}
-                feature['id'] = row.pop(self.id_field)
+                feature[self.id_field] = row.pop(self.id_field)
                 feature['geometry'] = {
                     'type': 'Point',
                     'coordinates': [
@@ -122,10 +152,11 @@ class CSVProvider(BaseProvider):
                 else:
                     feature['properties'] = dict()
                     for prop in row:
-                        if row[prop] != '':
-                            feature['properties'][prop] = row[prop]
+                        feature['properties'][prop] = row[prop]
 
-                if identifier is not None and feature['id'] == identifier:
+                if identifier is not None and \
+                   feature[self.id_field] == \
+                   self.assign_type(self.id_field, identifier):
                     found = True
                     result = feature
                 feature_collection['features'].append(feature)
@@ -141,6 +172,15 @@ class CSVProvider(BaseProvider):
             feature_collection['features'])
 
         return feature_collection
+
+    def get_unused_int_id(self):
+        feats = self._load()['features']
+        ids = set(map(int, set([feat[self.id_field] for feat in feats])))
+        id = 0
+        while True:
+            if id not in ids:
+                return id
+            id = id + 1
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime=None, properties=[], sortby=[]):
@@ -170,12 +210,9 @@ class CSVProvider(BaseProvider):
         """
         item = self._load(identifier=identifier)
         if item:
-            print(item)
-            props = item.pop('properties')
-            item['properties'] = dict()
-            for prop in props:
-                if props[prop] != '':
-                    item['properties'][prop] = props[prop]
+            for prop in item['properties']:
+                if item['properties'][prop] == '':
+                    item['properties'][prop] = None
             return item
         else:
             err = 'item {} not found'.format(identifier)
@@ -192,12 +229,44 @@ class CSVProvider(BaseProvider):
         """
         id_field = self.id_field
         with open(self.data) as csv_file:
-            curr = [{k: v for k, v in row.items()}
+            curr = [{k: self.assign_type(k, v) for k, v in row.items()}
                     for row in csv.DictReader(csv_file, skipinitialspace=True)]
 
-        curr_cols = set(curr[0].keys())
-        new_cols = set(new_feature['properties'].keys()).union({id_field,
-                                                               'lat', 'long'})
+        curr_cols = set(curr[0].keys()) - {id_field}
+        new_cols = set(new_feature['properties'].keys()).\
+            union({'lat', 'long'}) - {id_field}
+
+        # copy properties of the given data
+        feature = copy.deepcopy(new_feature['properties'])
+        # copy latitude and longitude of given data
+        feature['lat'] = new_feature['geometry']['coordinates'][1]
+        feature['long'] = new_feature['geometry']['coordinates'][0]
+        # initialize id field
+        feature[id_field] = None
+
+        # set id if present in request
+        if id_field in new_feature:
+            feature[id_field] = new_feature[id_field]
+        elif id_field in new_feature['properties']:
+            feature[id_field] = new_feature['properties'][id_field]
+
+        #  check if id already exist
+        if feature[id_field] is not None:
+            for f in curr:
+                if f[id_field] == self.\
+                   assign_type(id_field, feature[id_field]):
+                    err = 'provider item {} already exists'\
+                        .format(feature[id_field])
+                    LOGGER.error(err)
+                    raise ProviderItemAlreadyExistsError(err)
+        else:
+            # set a randomly generated id
+            samp_feat = self.query()['features'][0]
+            try:
+                int(samp_feat[id_field])
+                feature[id_field] = self.get_unused_int_id()
+            except ValueError:
+                feature[id_field] = str(uuid.uuid4())
 
         # if given data has extra properties not in schema
         if bool(new_cols - curr_cols):
@@ -205,42 +274,22 @@ class CSVProvider(BaseProvider):
                 .format(new_cols - curr_cols)
             LOGGER.error(err)
             raise ProviderSchemaError(err)
-        else:
-            # copy properties of the given data
-            feature = new_feature['properties']
-            # copy latitude and longitude of given data
-            lat = new_feature['geometry']['coordinates'][1]
-            lon = new_feature['geometry']['coordinates'][0]
-            feature['lat'] = lat
-            feature['long'] = lon
-            # set id of given data
-            if id_field in new_feature:
-                feature[id_field] = str(new_feature[id_field])
-                # if id is already used in the provider
-                for f in curr:
-                    if str(f[id_field]) == feature[id_field]:
-                        err = 'provider item {} already exists'\
-                            .format(feature[id_field])
-                        LOGGER.error(err)
-                        raise ProviderItemAlreadyExistsError(err)
-            else:
-                # set a randomly generated id
-                feature[id_field] = str(uuid.uuid4())
-            # append given data to provider data items
-            curr.append(feature)
 
-            # writing new set of data items to csv file
-            try:
-                with open(self.data, 'w') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=curr[0].keys())
-                    writer.writeheader()
-                    for data in curr:
-                        writer.writerow(data)
-            except IOError:
-                print("I/O error")
+        # append given data to provider data items
+        curr.append(feature)
 
-            # return id of the new data item added
-            return new_feature['properties'][id_field]
+        # writing new set of data items to csv file
+        try:
+            with open(self.data, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=curr[0].keys())
+                writer.writeheader()
+                for data in curr:
+                    writer.writerow(data)
+        except IOError:
+            LOGGER.error("I/O error")
+
+        # return id of the new data item added
+        return feature[id_field]
 
     def replace(self, identifier, new_feature):
         """
@@ -251,15 +300,15 @@ class CSVProvider(BaseProvider):
         """
         id_field = self.id_field
         with open(self.data) as csv_file:
-            curr = [{k: v for k, v in row.items()}
+            curr = [{k: self.assign_type(k, v) for k, v in row.items()}
                     for row in csv.DictReader(csv_file, skipinitialspace=True)]
 
-        curr_cols = set(curr[0].keys())
-        new_cols = set(new_feature['properties'].keys()).union({id_field,
-                                                               'lat', 'long'})
+        curr_cols = set(curr[0].keys()) - {id_field}
+        new_cols = set(new_feature['properties'].keys())\
+            .union({'lat', 'long'}) - {id_field}
         index = -1
         for i, f in enumerate(curr):
-            if str(f[id_field]) == str(identifier):
+            if f[id_field] == self.assign_type(id_field, identifier):
                 index = i
 
         # if given identifier is not prescent in the data provider
@@ -268,57 +317,55 @@ class CSVProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
 
-        else:
-            # if given data item has extra properties not in schema
-            if bool(new_cols - curr_cols):
-                err = 'properties {} not prescent in provider schema'\
-                    .format(new_cols - curr_cols)
-                LOGGER.error(err)
-                raise ProviderSchemaError(err)
-            else:
-                # copy properties of the given data
-                feature = new_feature['properties']
-                for k in feature:
-                    feature[k] = feature[k]
-                # copy latitude and longitude of given data
-                lat = new_feature['geometry']['coordinates'][1]
-                lon = new_feature['geometry']['coordinates'][0]
-                feature['lat'] = lat
-                feature['long'] = lon
-                # set id of given data
-                feature[id_field] = identifier
-                # set empty for remaining attributes
-                for attrib in curr_cols - new_cols:
-                    feature[attrib] = ''
-                # replace the data items
-                curr[index] = feature
+        # if given data item has extra properties not in schema
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
 
-                # clean up empty attributes
-                remove_set = set()
-                for attrib in curr[0].keys():
-                    empt = True
-                    for feature in curr:
-                        if feature[attrib] != '':
-                            empt = False
-                            break
-                    if empt:
-                        remove_set.add(attrib)
-                for attrib in remove_set:
-                    for feature in curr:
-                        feature.pop(attrib)
+        # copy properties of the given data
+        feature = new_feature['properties']
+        for k in feature:
+            feature[k] = feature[k]
+        # copy latitude and longitude of given data
+        feature['lat'] = new_feature['geometry']['coordinates'][1]
+        feature['long'] = new_feature['geometry']['coordinates'][0]
+        # set id of given data
+        feature[id_field] = identifier
+        # set empty for remaining attributes
+        for attrib in curr_cols - new_cols:
+            feature[attrib] = ''
+        # replace the data items
+        curr[index] = feature
 
-                new_fields = set(curr[0].keys())-remove_set
+        # clean up empty attributes
+        remove_set = set()
+        for attrib in curr[0].keys():
+            empt = True
+            for feature in curr:
+                if feature[attrib] != '':
+                    empt = False
+                    break
+            if empt:
+                remove_set.add(attrib)
+        for attrib in remove_set:
+            for feature in curr:
+                feature.pop(attrib)
 
-                # writing new set of data items to csv file
-                try:
-                    with open(self.data, 'w') as csvfile:
-                        writer = csv.DictWriter(csvfile,
-                                                fieldnames=new_fields)
-                        writer.writeheader()
-                        for data in curr:
-                            writer.writerow(data)
-                except IOError:
-                    print("I/O error")
+        new_fields = set(curr[0].keys())-remove_set
+
+        # writing new set of data items to csv file
+        try:
+            with open(self.data, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile,
+                                        fieldnames=new_fields)
+                writer.writeheader()
+                for data in curr:
+                    writer.writerow(data)
+        except IOError:
+            LOGGER.error("I/O error")
+        self.fields = self.get_fields()
 
     def update(self, identifier, updates):
         """
@@ -332,12 +379,12 @@ class CSVProvider(BaseProvider):
         id_field = self.id_field
 
         with open(self.data) as csv_file:
-            curr = [{k: v for k, v in row.items()}
+            curr = [{k: self.assign_type(k, v) for k, v in row.items()}
                     for row in csv.DictReader(csv_file, skipinitialspace=True)]
 
         found_feature = False
         for index, feature in enumerate(curr):
-            if str(feature[id_field]) == identifier:
+            if feature[id_field] == self.assign_type(id_field, identifier):
                 found_feature = True
                 break
 
@@ -346,8 +393,8 @@ class CSVProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
         else:
+            add_set = set()
             if 'add' in updates:
-                add_set = set()
                 # add the attribute if its not in the feature
                 for name_val_pair in updates['add']:
                     name = name_val_pair['name']
@@ -408,9 +455,10 @@ class CSVProvider(BaseProvider):
                     for data in curr:
                         writer.writerow(data)
             except IOError:
-                print("I/O error")
+                LOGGER.error("I/O error")
+            self.fields = self.get_fields()
 
-            return self._load(identifier=identifier)
+            return self.get(identifier)
 
     def delete(self, identifier):
         """
@@ -421,12 +469,13 @@ class CSVProvider(BaseProvider):
         id_field = self.id_field
 
         with open(self.data) as csv_file:
-            curr = [{k: v for k, v in row.items()}
+            curr = [{k: self.assign_type(k, v) for k, v in row.items()}
                     for row in csv.DictReader(csv_file, skipinitialspace=True)]
 
         found_feature = False
         for index, feature in enumerate(curr):
-            if str(feature[id_field]) == identifier:
+
+            if feature[id_field] == self.assign_type(id_field, identifier):
                 found_feature = True
                 break
 
@@ -460,7 +509,8 @@ class CSVProvider(BaseProvider):
                     for data in curr:
                         writer.writerow(data)
             except IOError:
-                print("I/O error")
+                LOGGER.error("I/O error")
+            self.fields = self.get_fields()
 
     def __repr__(self):
         return '<CSVProvider> {}'.format(self.data)

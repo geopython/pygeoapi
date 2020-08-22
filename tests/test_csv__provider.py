@@ -71,32 +71,23 @@ def config():
 
 def test_query(fixture, config):
     p = CSVProvider(config)
-
     fields = p.get_fields()
     assert len(fields) == 6
-    assert fields['value'] == 'string'
-    assert fields['stn_id'] == 'string'
-
     results = p.query()
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 5
-    assert results['features'][0]['id'] == '371'
-    assert results['features'][0]['properties']['value'] == '89.9'
-
+    assert results['features'][0]['id'] == 371
+    assert results['features'][0]['properties']['value'] == 89.9
     assert results['features'][0]['geometry']['coordinates'][0] == -75.0
     assert results['features'][0]['geometry']['coordinates'][1] == 45.0
-
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '371'
-
+    assert results['features'][0]['id'] == 371
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '238'
-
+    assert results['features'][0]['id'] == 238
     assert len(results['features'][0]['properties']) == 3
-
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)
     results = p.query()
@@ -105,11 +96,10 @@ def test_query(fixture, config):
 
 def test_get(fixture, config):
     p = CSVProvider(config)
-
-    result = p.get('371')
-    assert result['id'] == '371'
-    assert result['properties']['value'] == '89.9'
-    assert result['properties']['stn_id'] == '35'
+    result = p.get(371)
+    assert result['id'] == 371
+    assert result['properties']['value'] == 89.9
+    assert result['properties']['stn_id'] == 35
     assert result['properties']['datetime'] == '2001-10-30T14:24:55Z'
 
 
@@ -117,34 +107,27 @@ def test_get_not_existing_item_raise_exception(fixture, config):
     """Testing query for a not existing object"""
     p = CSVProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
-        p.get('404')
+        p.get(404)
 
 
 def test_delete(config):
     p = CSVProvider(config)
-
-    prev_count = len(p.query()['features'])
-    p.delete('371')
-    curr_count = len(p.query()['features'])
-
-    assert curr_count == prev_count - 1
-
+    p.delete(371)
     with pytest.raises(ProviderItemNotFoundError):
-        p.get('371')
+        p.get(371)
 
 
 def test_delete_non_existing_item_raise_exception(fixture, config):
     p = CSVProvider(config)
-
     with pytest.raises(ProviderItemNotFoundError):
-        p.delete('NON EXISTING ID')
+        p.delete(9999)
 
 
 def test_create(fixture, config):
     p = CSVProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': '123-456',
+        'id': 301,
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]
@@ -153,13 +136,8 @@ def test_create(fixture, config):
             'stn_id': 50
         }
     }
-
-    prev_count = len(p.query()['features'])
     p.create(new_feature)
-    curr_count = len(p.query()['features'])
-    assert curr_count == prev_count + 1
-
-    feature = p.get(new_feature['id'])
+    feature = p.get(301)
     assert are_same(feature['properties']['stn_id'],
                     new_feature['properties']['stn_id'])
     assert are_same(feature['geometry']['coordinates'][0],
@@ -172,7 +150,7 @@ def test_create_existing_item_raise_exception(fixture, config):
     p = CSVProvider(config)
     new_feature = {
         'type': 'Feature',
-        'id': '964',
+        'id': 964,
         'geometry': {
             'type': 'Point',
             'coordinates': [0.0, 0.0]
@@ -181,7 +159,6 @@ def test_create_existing_item_raise_exception(fixture, config):
             'stn_id': 50
         }
     }
-
     with pytest.raises(ProviderItemAlreadyExistsError):
         p.create(new_feature)
 
@@ -199,7 +176,6 @@ def test_create_invalid_schema_raise_exception(fixture, config):
             'i_am_an_alien': 1
         }
     }
-
     with pytest.raises(ProviderSchemaError):
         p.create(new_feature)
 
@@ -216,15 +192,9 @@ def test_replace(fixture, config):
             'stn_id': 50
         }
     }
-
-    # count of features shouldnt change
-    prev_count = len(p.query()['features'])
-    p.replace('377', new_feature)
-    curr_count = len(p.query()['features'])
-    assert curr_count == prev_count
-
+    p.replace(377, new_feature)
     # new_feature properties should overwrite feature properties
-    feature = p.get('377')
+    feature = p.get(377)
     assert are_same(feature['properties']['stn_id'],
                     new_feature['properties']['stn_id'])
     assert are_same(feature['geometry']['coordinates'][0],
@@ -245,9 +215,8 @@ def test_replace_non_existing_item_raise_exception(fixture, config):
             'stn_id': 50
         }
     }
-
     with pytest.raises(ProviderItemNotFoundError):
-        p.replace('NON EXISTING ID', new_feature)
+        p.replace(9999, new_feature)
 
 
 def test_replace_invalid_schema_raise_exception(fixture, config):
@@ -263,7 +232,6 @@ def test_replace_invalid_schema_raise_exception(fixture, config):
             'i_am_an_alien': 1
         }
     }
-
     with pytest.raises(ProviderSchemaError):
         p.create(new_feature)
 
@@ -277,21 +245,18 @@ def test_update(fixture, config):
                'remove':
                ['datetime']
                }
-
-    updated_feature = p.update('377', updates)
-
+    updated_feature = p.update(377, updates)
     assert 'name' in updated_feature['properties']
     assert are_same(updated_feature['properties']['name'], 'abc')
-    assert are_same(updated_feature['properties']['stn_id'], '4545')
+    assert are_same(updated_feature['properties']['stn_id'], 4545)
     assert ('datetime' not in updated_feature['properties']) or \
-        (updated_feature['properties']['datetime'] == '')
-
-    results = p.get('377')
+        (updated_feature['properties']['datetime'] is None)
+    results = p.get(377)
     assert 'name' in results['properties']
     assert are_same(results['properties']['name'], 'abc')
-    assert are_same(results['properties']['stn_id'], '4545')
+    assert are_same(results['properties']['stn_id'], 4545)
     assert ('datetime' not in updated_feature['properties']) or \
-        (updated_feature['properties']['datetime'] == '')
+        (updated_feature['properties']['datetime'] is None)
 
 
 def test_update_non_existing_item_raise_exception(fixture, config):
@@ -303,9 +268,8 @@ def test_update_non_existing_item_raise_exception(fixture, config):
                'remove':
                ['datetime']
                }
-
     with pytest.raises(ProviderItemNotFoundError):
-        p.update('NON EXISTING ID', updates)
+        p.update(9999, updates)
 
 
 def test_update_invalid_updates_raise_exception(fixture, config):
@@ -315,13 +279,10 @@ def test_update_invalid_updates_raise_exception(fixture, config):
     invalid_modify = {"add": [], "modify": [{"name": "count", "value": 54}],
                       "remove": []}
     invalid_remove = {"add": [], "modify": [], "remove": ["cost"]}
-
-    prev_results = p.get('377')
-
+    prev_results = p.get(377)
     with pytest.raises(ProviderSchemaError):
-        p.update('377', invalid_add)
-        p.update('377', invalid_modify)
-        p.update('377', invalid_remove)
-
-    results = p.get('377')
+        p.update(377, invalid_add)
+        p.update(377, invalid_modify)
+        p.update(377, invalid_remove)
+    results = p.get(377)
     assert results == prev_results

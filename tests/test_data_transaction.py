@@ -71,8 +71,8 @@ def test_create_collection_item(config, api_):
         '/collections/obs/items/99'
 
     get_res = api_.get_collection_item(make_req_headers(),
-                                       {'f': 'json'}, 'obs', '99')
-    assert json.loads(get_res[2])['properties']['value'] == '100'
+                                       {'f': 'json'}, 'obs', 99)
+    assert json.loads(get_res[2])['properties']['value'] == 100
 
 
 def test_create_existing_item_raise_exception(config, api_):
@@ -133,11 +133,11 @@ def test_replace_collection_item(config, api_):
         }
     }
     headers, status_code, content = \
-        api_.replace_collection_item(put_payload, 'obs', '99')
+        api_.replace_collection_item(put_payload, 'obs', 99)
     assert status_code == 200
     get_res = api_.get_collection_item(make_req_headers(),
-                                       {'f': 'json'}, 'obs', '99')
-    assert json.loads(get_res[2])['properties']['value'] == '120'
+                                       {'f': 'json'}, 'obs', 99)
+    assert json.loads(get_res[2])['properties']['value'] == 120
 
 
 def test_replace_non_existing_item_raise_exception(config, api_):
@@ -156,7 +156,7 @@ def test_replace_non_existing_item_raise_exception(config, api_):
         }
     }
     headers, status_code, content = \
-        api_.replace_collection_item(put_payload, 'obs', 'i_dont_exist')
+        api_.replace_collection_item(put_payload, 'obs', 9999)
     assert status_code == 404
 
 
@@ -177,7 +177,7 @@ def test_replace_invalid_schema_raise_exception(config, api_):
         }
     }
     headers, status_code, content = \
-        api_.replace_collection_item(put_payload, 'obs', '99')
+        api_.replace_collection_item(put_payload, 'obs', 99)
     assert status_code == 400
 
 
@@ -189,24 +189,26 @@ def test_update_collection_item(config, api_):
     }
 
     headers, status_code, content = \
-        api_.update_collection_item(patch_payload, 'obs', '99')
+        api_.update_collection_item(patch_payload, 'obs', 99)
 
     assert status_code == 200
     assert headers['Content-Type'] == 'application/geo+json'
     assert headers['Location'] == \
         '/collections/obs/items/99'
     assert 'idx' in content['properties']
-    assert content['properties']['idx'] == '1'
-    assert content['properties']["value"] == '150'
-    assert 'datetime' not in content['properties']
+    assert content['properties']['idx'] == 1
+    assert content['properties']["value"] == 150
+    assert 'datetime' not in content['properties'] or\
+           content['properties']['datetime'] is None
 
     get_res = api_.get_collection_item(make_req_headers(),
-                                       {'f': 'json'}, 'obs', '99')
+                                       {'f': 'json'}, 'obs', 99)
     properties = json.loads(get_res[2])['properties']
     assert 'idx' in properties
-    assert properties['idx'] == '1'
-    assert properties["value"] == '150'
-    assert 'datetime' not in content['properties']
+    assert properties['idx'] == 1
+    assert properties["value"] == 150
+    assert 'datetime' not in content['properties'] or\
+           content['properties']['datetime'] is None
 
 
 def test_update_non_existing_item_raise_exception(config, api_):
@@ -216,7 +218,7 @@ def test_update_non_existing_item_raise_exception(config, api_):
         "remove": []
     }
     headers, status_code, content = \
-        api_.update_collection_item(patch_payload, 'obs', 'i_dont_exist')
+        api_.update_collection_item(patch_payload, 'obs', 9999)
     assert status_code == 404
 
 
@@ -227,22 +229,22 @@ def test_update_invalid_schema_raise_exception(config, api_):
         "remove": ["i_dont_exist"]
     }
     headers, status_code, content = \
-        api_.update_collection_item(patch_payload, 'obs', '99')
+        api_.update_collection_item(patch_payload, 'obs', 99)
     assert status_code == 400
 
 
 def test_remove_collection_item(config, api_):
 
     headers, status_code, content = \
-        api_.remove_collection_item('obs', '99')
+        api_.remove_collection_item('obs', 99)
     assert status_code == 200
     get_res = api_.get_collection_item(make_req_headers(),
-                                       {'f': 'json'}, 'obs', '99')
+                                       {'f': 'json'}, 'obs', 99)
     assert get_res[1] == 404
 
 
 def test_remove_non_existing_item_raise_exception(config, api_):
 
     headers, status_code, content = \
-        api_.remove_collection_item('obs', 'i_dont_exist')
+        api_.remove_collection_item('obs', 9999)
     assert status_code == 404

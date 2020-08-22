@@ -15,14 +15,14 @@ def test_dataset_get():
     get_res = client.get('/collections/lakes/items/0')
     assert get_res.status_code == 200
     assert get_res.headers['Content-Type'] == 'application/json'
-    assert json.loads(get_res.content.decode('utf-8'))['id'] == 0
+    assert json.loads(get_res.content.decode('utf-8'))['properties']['id'] == 0
     assert json.loads(get_res.content.decode('utf-8'))['properties']['name']\
         == 'Lake Baikal'
 
 
 def test_dataset_get_non_existing_item():
     client = TestClient(app)
-    get_res = client.get('/collections/lakes/items/i_dont_exist')
+    get_res = client.get('/collections/lakes/items/999999')
     assert get_res.status_code == 404
 
 
@@ -72,7 +72,7 @@ def test_dataset_post_existing_item():
         "type": "Feature",
         "id": 1,
         "properties": {
-            "i_am_foreign": 1,
+            "i_am_an_alien": 1,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -100,7 +100,7 @@ def test_dataset_post_invalid_schema():
         "type": "Feature",
         "id": 999,
         "properties": {
-            "i_am_foreign": 1,
+            "i_am_an_alien": 1,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -175,7 +175,7 @@ def test_dataset_put_non_existing_item():
     }
 
     client = TestClient(app)
-    put_res = client.put('/collections/lakes/items/i_dont_exist',
+    put_res = client.put('/collections/lakes/items/999',
                          json=feature)
     assert put_res.status_code == 404
 
@@ -235,7 +235,7 @@ def test_dataset_patch_non_existing_item():
     }
 
     client = TestClient(app)
-    patch_res = client.patch('/collections/lakes/items/i_dont_exist',
+    patch_res = client.patch('/collections/lakes/items/999',
                              json=updates)
     assert patch_res.status_code == 404
 

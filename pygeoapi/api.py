@@ -1285,7 +1285,7 @@ class API:
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
 
-        feature_path = '/collections/' + dataset + '/items/' + identifier
+        feature_path = '/collections/' + dataset + '/items/' + str(identifier)
         headers_['Location'] = feature_path
         return headers_, 200, content
 

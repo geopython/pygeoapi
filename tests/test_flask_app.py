@@ -24,21 +24,21 @@ def test_dataset_get(app, client):
     get_res = client.get('/collections/lakes/items/0')
     assert get_res.status_code == 200
     assert get_res.headers['Content-Type'] == 'application/json'
-    assert json.loads(get_res.data.decode('utf-8'))['id'] == 0
+    assert json.loads(get_res.data.decode('utf-8'))['properties']['id'] == 0
     assert json.loads(get_res.data.decode('utf-8'))['properties']['name']\
         == 'Lake Baikal'
 
 
 def test_dataset_get_non_existing_item(app, client):
-    get_res = client.get('/collections/lakes/items/i_dont_exist')
+    get_res = client.get('/collections/lakes/items/999999')
     assert get_res.status_code == 404
 
 
 def test_dataset_post(app, client):
     feature = {
         "type": "Feature",
-        "id": 99,
         "properties": {
+            "id": 99,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -49,9 +49,19 @@ def test_dataset_post(app, client):
             "type": "Polygon",
             "coordinates": [
                 [
-                    106.57998579307912,
-                    52.79998159444554
-                ],
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ],
+                    [
+                        -84.75355506055087,
+                        45.924483954444085
+                    ],
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ]
+                ]
             ]
         }
     }
@@ -77,9 +87,8 @@ def test_dataset_post(app, client):
 def test_dataset_post_existing_item(app, client):
     feature = {
         "type": "Feature",
-        "id": 1,
         "properties": {
-            "i_am_foreign": 1,
+            "id": 1,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -90,8 +99,18 @@ def test_dataset_post_existing_item(app, client):
             "type": "Polygon",
             "coordinates": [
                 [
-                    106.57998579307912,
-                    52.79998159444554
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ],
+                    [
+                        -84.75355506055087,
+                        45.924483954444085
+                    ],
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ]
                 ]
             ]
         }
@@ -104,9 +123,9 @@ def test_dataset_post_existing_item(app, client):
 def test_dataset_post_invalid_schema(app, client):
     feature = {
         "type": "Feature",
-        "id": 999,
         "properties": {
-            "i_am_foreign": 1,
+            "id": 999,
+            "i_am_an_alien": 1,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -117,8 +136,18 @@ def test_dataset_post_invalid_schema(app, client):
             "type": "Polygon",
             "coordinates": [
                 [
-                    106.57998579307912,
-                    52.79998159444554
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ],
+                    [
+                        -84.75355506055087,
+                        45.924483954444085
+                    ],
+                    [
+                        -85.53999284538475,
+                        46.03000722918408
+                    ]
                 ]
             ]
         }
@@ -178,7 +207,7 @@ def test_dataset_put_non_existing_item(app, client):
         }
     }
 
-    put_res = client.put('/collections/lakes/items/i_dont_exist',
+    put_res = client.put('/collections/lakes/items/999',
                          json=feature)
     assert put_res.status_code == 404
 
@@ -186,9 +215,8 @@ def test_dataset_put_non_existing_item(app, client):
 def test_dataset_put_invalid_schema(app, client):
     feature = {
         "type": "Feature",
-        "id": 999,
         "properties": {
-            "i_am_foreign": 1,
+            "i_am_an_alien": 1,
             "scalerank": 0,
             "name": "Lake Meza",
             "name_alt": "https://en.wikipedia.org/wiki/Lake_Meza",
@@ -235,7 +263,7 @@ def test_dataset_patch_non_existing_item(app, client):
         "remove": []
     }
 
-    patch_res = client.patch('/collections/lakes/items/i_dont_exist',
+    patch_res = client.patch('/collections/lakes/items/999999',
                              json=updates)
     assert patch_res.status_code == 404
 
