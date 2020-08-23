@@ -1,32 +1,3 @@
-# =================================================================
-#
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
-#
-# Copyright (c) 2019 Tom Kralidis
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-#
-# =================================================================
-
 components:
   parameters:
     f:
@@ -42,6 +13,7 @@ components:
         enum:
         - json
         - html
+        - jsonld
         type: string
       style: form
     sortby:
@@ -73,12 +45,64 @@ components:
   responses:
     '200':
       description: successful operation
+    Queryables:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/queryables'
+      description: successful queryables operation
     default:
       content:
         application/json:
           schema:
             $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/exception.yaml
       description: Unexpected error
+  schemas:
+    nameValuePairObj:
+      properties:
+        name:
+          type: string
+        value:
+          oneOf:
+          - type: string
+          - type: object
+      type: object
+    queryable:
+      properties:
+        description:
+          description: a human-readable narrative describing the queryable
+          type: string
+        language:
+          default:
+          - en
+          description: the language used for the title and description
+          type: string
+        queryable:
+          description: the token that may be used in a CQL predicate
+          type: string
+        title:
+          description: a human readable title for the queryable
+          type: string
+        type:
+          description: the data type of the queryable
+          type: string
+        type-ref:
+          description: a reference to the formal definition of the type
+          format: url
+          type: string
+      required:
+      - queryable
+      - type
+      type: object
+    queryables:
+      properties:
+        queryables:
+          items:
+            $ref: '#/components/schemas/queryable'
+          type: array
+      required:
+      - queryables
+      type: object
 info:
   contact:
     email: you@example.org
@@ -88,7 +112,7 @@ info:
   license:
     name: CC-BY 4.0 license
     url: https://creativecommons.org/licenses/by/4.0/
-  termsOfService: None
+  termsOfService: https://creativecommons.org/licenses/by/4.0/
   title: pygeoapi default instance
   version: 3.0.2
   x-keywords:
@@ -100,70 +124,60 @@ paths:
   /:
     get:
       description: Landing page
+      operationId: getLandingPage
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Landing page
       tags:
       - server
-  /openapi:
-    get:
-      description: This document
-      parameters:
-      - $ref: '#/components/parameters/f'
-      responses:
-        200:
-          $ref: '#/components/responses/200'
-        400:
-          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        default:
-          $ref: '#/components/responses/default'
-      summary: This document
-      tags:
-      - server
   /collections:
     get:
-      description: Feature Collections
+      description: Collections
+      operationId: getCollections
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collections
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
-      summary: Feature Collections
+      summary: Collections
       tags:
       - server
-  /collections/obs:
+  /collections/lakes:
     get:
-      description: My cool observations
+      description: lakes of the world, public domain
+      operationId: describeLakesCollection
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
-      summary: Get feature collection metadata
+      summary: Get collection metadata
       tags:
-      - obs
-  /collections/obs/items:
+      - lakes
+  /collections/lakes/items:
     get:
-      description: My cool observations
+      description: lakes of the world, public domain
+      operationId: getLakesFeatures
       parameters:
-      - description: The optional f parameter indicates the output format which the
+      - &id001
+        description: The optional f parameter indicates the output format which the
           server shall provide as part of the response document.  The default format
           is GeoJSON.
         explode: false
@@ -175,6 +189,7 @@ paths:
           enum:
           - json
           - html
+          - jsonld
           - csv
           type: string
         style: form
@@ -182,59 +197,570 @@ paths:
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
       - $ref: '#/components/parameters/sortby'
       - $ref: '#/components/parameters/startindex'
+      - explode: false
+        in: query
+        name: admin
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: featureclass
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: id
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: name
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: name_alt
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: query
+        name: scalerank
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
-      summary: Get Observations features
+      summary: Get Large Lakes items
       tags:
-      - obs
-  /collections/obs/items/{featureId}:
+      - lakes
+    post:
+      description: lakes of the world, public domain
+      requestBody:
+        content:
+          application/geo+json:
+            schema:
+              properties:
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/polygonGeoJSON
+                properties:
+                  properties:
+                    featureclass:
+                      example: Lake
+                      type: string
+                    name:
+                      example: Lake Baikal
+                      type: string
+                    name_alt:
+                      example: https://en.wikipedia.org/wiki/Lake_Baikal
+                      type: string
+                    scalerank:
+                      example: 0
+                      type: string
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
+        required: true
+      responses:
+        '201':
+          description: Created Large Lakes item
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Add a new feature to Large Lakes
+      tags:
+      - lakes
+  /collections/lakes/items/{featureId}:
+    delete:
+      description: lakes of the world, public domain
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Delete an existing feature from Large Lakes by id
+      tags:
+      - lakes
     get:
-      description: My cool observations
+      description: lakes of the world, public domain
+      operationId: getLakesFeature
       parameters:
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
-      summary: Get Observations feature by id
+      summary: Get Large Lakes item by id
+      tags:
+      - lakes
+    patch:
+      description: lakes of the world, public domain
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                add:
+                  example:
+                  - name: item_name
+                    value: item_value
+                  items:
+                    $ref: '#/components/schemas/nameValuePairObj'
+                  type: array
+                modify:
+                  example:
+                  - name: featureclass
+                    value: Lake
+                  items:
+                    $ref: '#/components/schemas/nameValuePairObj'
+                  type: array
+                remove:
+                  example:
+                  - name
+                  items:
+                    type: string
+                  type: array
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/geo+json:
+              schema:
+                $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+          description: Modified  Large Lakes item
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Update properties of an existing feature                     in Large
+        Lakes by id
+      tags:
+      - lakes
+    put:
+      description: lakes of the world, public domain
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      requestBody:
+        content:
+          application/geo+json:
+            schema:
+              properties:
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/polygonGeoJSON
+                properties:
+                  properties:
+                    featureclass:
+                      example: Lake
+                      type: string
+                    name:
+                      example: Lake Baikal
+                      type: string
+                    name_alt:
+                      example: https://en.wikipedia.org/wiki/Lake_Baikal
+                      type: string
+                    scalerank:
+                      example: 0
+                      type: string
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Replace an existing feature in Large Lakes by id
+      tags:
+      - lakes
+  /collections/lakes/queryables:
+    get:
+      description: lakes of the world, public domain
+      operationId: getLakesQueryables
+      parameters:
+      - *id001
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Large Lakes queryables
+      tags:
+      - lakes
+  /collections/obs:
+    get:
+      description: My cool observations
+      operationId: describeObsCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get collection metadata
+      tags:
+      - obs
+  /collections/obs/items:
+    get:
+      description: My cool observations
+      operationId: getObsFeatures
+      parameters:
+      - *id001
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/sortby'
+      - $ref: '#/components/parameters/startindex'
+      - explode: false
+        in: query
+        name: stn_id
+        required: false
+        schema:
+          type: int
+        style: form
+      - explode: false
+        in: query
+        name: id
+        required: false
+        schema:
+          type: int
+        style: form
+      - explode: false
+        in: query
+        name: long
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: value
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - explode: false
+        in: query
+        name: datetime
+        required: false
+        schema:
+          type: str
+        style: form
+      - explode: false
+        in: query
+        name: lat
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      responses:
+        '200':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations items
+      tags:
+      - obs
+    post:
+      description: My cool observations
+      requestBody:
+        content:
+          application/geo+json:
+            schema:
+              properties:
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/pointGeoJSON
+                properties:
+                  properties:
+                    datetime:
+                      example: '2001-10-30T14:24:55Z'
+                      type: str
+                    stn_id:
+                      example: 35
+                      type: int
+                    value:
+                      example: 89.9
+                      type: float
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
+        required: true
+      responses:
+        '201':
+          description: Created Observations item
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Add a new feature to Observations
+      tags:
+      - obs
+  /collections/obs/items/{featureId}:
+    delete:
+      description: My cool observations
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Delete an existing feature from Observations by id
+      tags:
+      - obs
+    get:
+      description: My cool observations
+      operationId: getObsFeature
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations item by id
+      tags:
+      - obs
+    patch:
+      description: My cool observations
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                add:
+                  example:
+                  - name: item_name
+                    value: item_value
+                  items:
+                    $ref: '#/components/schemas/nameValuePairObj'
+                  type: array
+                modify:
+                  example:
+                  - name: stn_id
+                    value: 35
+                  items:
+                    $ref: '#/components/schemas/nameValuePairObj'
+                  type: array
+                remove:
+                  example:
+                  - value
+                  items:
+                    type: string
+                  type: array
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/geo+json:
+              schema:
+                $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/featureGeoJSON
+          description: Modified  Observations item
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Update properties of an existing feature                     in Observations
+        by id
+      tags:
+      - obs
+    put:
+      description: My cool observations
+      parameters:
+      - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      requestBody:
+        content:
+          application/geo+json:
+            schema:
+              properties:
+                geometry:
+                  $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/schemas/pointGeoJSON
+                properties:
+                  properties:
+                    datetime:
+                      example: '2001-10-30T14:24:55Z'
+                      type: str
+                    stn_id:
+                      example: 35
+                      type: int
+                    value:
+                      example: 89.9
+                      type: float
+                  type: object
+                type:
+                  enum:
+                  - Feature
+                  type: string
+              type: object
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Replace an existing feature in Observations by id
+      tags:
+      - obs
+  /collections/obs/queryables:
+    get:
+      description: My cool observations
+      operationId: getObsQueryables
+      parameters:
+      - *id001
+      responses:
+        '200':
+          $ref: '#/components/responses/Queryables'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Observations queryables
       tags:
       - obs
   /conformance:
     get:
       description: API conformance definition
+      operationId: getConformanceDeclaration
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ConformanceDeclaration
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: API conformance definition
+      tags:
+      - server
+  /openapi:
+    get:
+      description: This document
+      operationId: getOpenapi
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        default:
+          $ref: '#/components/responses/default'
+      summary: This document
       tags:
       - server
   /processes:
     get:
       description: Processes
+      operationId: getProcesses
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
-          $ref: '#/components/responses/200'
+        '200':
+          $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/responses/ProcessList.yaml
         default:
           $ref: '#/components/responses/default'
       summary: Processes
@@ -243,10 +769,11 @@ paths:
   /processes/hello-world:
     get:
       description: Hello World process
+      operationId: describeHello-worldProcess
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/default'
@@ -256,9 +783,12 @@ paths:
   /processes/hello-world/jobs:
     get:
       description: Hello World process
+      operationId: getHello-worldJobs
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
+        '404':
+          $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/responses/NotFound.yaml
         default:
           $ref: '#/components/responses/default'
       summary: Retrieve job list for process
@@ -266,7 +796,18 @@ paths:
       - hello-world
     post:
       description: Hello World process
-      parameters: []
+      operationId: executeHello-worldJob
+      parameters:
+      - description: Response type
+        in: query
+        name: response
+        required: false
+        schema:
+          default: document
+          enum:
+          - raw
+          - document
+          type: string
       requestBody:
         content:
           application/json:
@@ -280,24 +821,46 @@ paths:
         description: Mandatory execute request JSON
         required: true
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
+        '201':
+          $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/responses/ExecuteAsync.yaml
+        '404':
+          $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/responses/NotFound.yaml
+        '500':
+          $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/responses/ServerError.yaml
         default:
           $ref: '#/components/responses/default'
       summary: Process Hello World process execution
       tags:
       - hello-world
+  /stac:
+    get:
+      description: SpatioTemporal Asset Catalog
+      operationId: getStacCatalog
+      parameters: []
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
+      summary: SpatioTemporal Asset Catalog
+      tags:
+      - stac
 servers:
 - description: pygeoapi provides an API to geospatial data
-  url: http://localhost:5000/
+  url: http://localhost:5000
 tags:
 - description: pygeoapi provides an API to geospatial data
   externalDocs:
     description: information
     url: http://example.org
   name: server
+- description: SpatioTemporal Asset Catalog
+  name: stac
 - description: My cool observations
   name: obs
+- description: lakes of the world, public domain
+  name: lakes
 - description: Hello World process
   name: hello-world
-

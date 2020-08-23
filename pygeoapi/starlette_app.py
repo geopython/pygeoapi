@@ -189,11 +189,12 @@ def supports_transactions(collection):
 
     :returns: boolean value
     """
-    if 'extensions' not in CONFIG['resources'][collection]:
-        return False
-    if 'transactions' not in CONFIG['resources'][collection]['extensions']:
-        return False
-    return CONFIG['resources'][collection]['extensions']['transactions']
+    if 'extensions' in CONFIG['resources'][collection]:
+        for item in CONFIG['resources'][collection]['extensions']:
+            if item['type'] == 'transaction' and\
+               item['enabled']:
+                return True
+    return False
 
 
 async def collection_items(request: Request, item_id=None):

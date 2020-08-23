@@ -444,8 +444,9 @@ def get_oas_30(cfg):
 
         # flag if data transactions is specified and enabled for the collection
         if 'extensions' in collections[k]:
-            if 'transactions' in collections[k]['extensions']:
-                if collections[k]['extensions']['transactions']:
+            for item in collections[k]['extensions']:
+                if item['type'] == 'transaction' and\
+                   item['enabled'] is True:
                     transaction = True
 
         items_path = '{}/items'.format(collection_name_path)

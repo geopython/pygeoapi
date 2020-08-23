@@ -111,8 +111,6 @@ resources:
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
-        extensions:
-            transactions: true
         providers:
             - type: feature
               name: CSV
@@ -121,6 +119,9 @@ resources:
               geometry:
                   x_field: long
                   y_field: lat
+        extensions:
+            - type: transaction
+              enabled: true
 
     lakes:
         type: collection

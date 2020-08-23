@@ -171,11 +171,12 @@ def supports_transactions(collection):
 
     :returns: boolean value
     """
-    if 'extensions' not in collection:
-        return False
-    if 'transactions' not in collection['extensions']:
-        return False
-    return collection['extensions']['transactions']
+    if 'extensions' in collection:
+        for item in collection['extensions']:
+            if item['type'] == 'transaction' and\
+               item['enabled']:
+                return True
+    return False
 
 
 def test_name_value_pair_obj(schemas):
