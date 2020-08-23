@@ -268,7 +268,7 @@ Data Transactions
 -----------------
 pygeoapi in compliance with `OGC API - Features - Part 4: Simple Transactions <http://docs.opengeospatial.org/DRAFTS/20-002.html>`_ supports create, update, replace and delete operations. A collection resource supporting data transactions will have POST, PATCH, PUT and DELETE HTTP verbs in its RESTful API.
 
-Data transaction support is optional and can be enabled for a collection resource by adding ``transactions: true`` to ``extensions`` under the resource in the pygeoapi config file. If transactions parameter is not set it will be considered as ``transactions: false``.
+Data transaction support is optional and is disabled by default. It can be enabled for a collection in ``extensions`` under the collection in the pygeoapi config file.
 
 The pygeoapi configuration file ``pygeoapi-data-transaction-config.yml`` includes an example for enabling transaction support in ``obs`` sample dataset:
 
@@ -278,8 +278,8 @@ The pygeoapi configuration file ``pygeoapi-data-transaction-config.yml`` include
       obs:
           type: collection
           extensions:
-              transactions: true
-
+              - type: transaction
+                enabled: true
 
 Summary
 -------

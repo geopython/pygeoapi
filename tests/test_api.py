@@ -286,8 +286,9 @@ def test_describe_collections_json_ld(config, api_):
         0]['http://schema.org/box'][0]['@value'] == '-180,-90 180,90'
 
     assert 'http://schema.org/temporalCoverage' in dataset
+    print(dataset['http://schema.org/temporalCoverage'][0]['@value'])
     assert dataset['http://schema.org/temporalCoverage'][0][
-        '@value'] == '2000-10-30T18:24:39/2007-10-30T08:57:29+00:00'
+        '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
 
 
 def test_get_collection_items(config, api_):
