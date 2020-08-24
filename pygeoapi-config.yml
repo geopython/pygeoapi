@@ -119,9 +119,9 @@ resources:
               geometry:
                   x_field: long
                   y_field: lat
-        extensions:
-            - type: transaction
-              enabled: true
+              extensions:
+                    - type: transaction
+                      enabled: true
 
     lakes:
         type: collection
@@ -147,9 +147,9 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
-        extensions:
-            - type: transaction
-              enabled: true
+              extensions:
+                - type: transaction
+                  enabled: true
 
     test-data:
         type: stac-collection

@@ -171,11 +171,13 @@ def supports_transactions(collection):
 
     :returns: boolean value
     """
-    if 'extensions' in collection:
-        for item in collection['extensions']:
-            if item['type'] == 'transaction' and\
-               item['enabled']:
-                return True
+    for provider in collection['providers']:
+        if provider['type'] == 'feature' and\
+           'extensions' in provider:
+            for extension in provider['extensions']:
+                if extension['type'] == 'transaction' and\
+                   extension['enabled']:
+                    return True
     return False
 
 

@@ -413,7 +413,7 @@ def get_oas_30(cfg):
         samp_feat = data_provider.query()['features'][0]
         if id in samp_feat:
             samp_feat.pop(id)
-        else:
+        elif id in samp_feat['properties']:
             samp_feat['properties'].pop(id)
         samp_prop = samp_feat['properties']
         samp_geom = samp_feat['geometry']
@@ -443,11 +443,14 @@ def get_oas_30(cfg):
         nvpo = '#/components/schemas/nameValuePairObj'
 
         # flag if data transactions is specified and enabled for the collection
-        if 'extensions' in collections[k]:
-            for item in collections[k]['extensions']:
-                if item['type'] == 'transaction' and\
-                   item['enabled'] is True:
-                    transaction = True
+        for provider in collections[k]['providers']:
+            if provider['type'] == 'feature' and\
+              'extensions' in provider:
+                for extension in provider['extensions']:
+                    if extension['type'] == 'transaction' and\
+                       extension['enabled']:
+                        transaction = True
+                        break
 
         items_path = '{}/items'.format(collection_name_path)
 
