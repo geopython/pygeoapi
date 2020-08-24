@@ -7,7 +7,7 @@ pygeoapi supports simple data transactions i.e, modifications that affect a sing
 Simple transactions employ the standard HTTP verbs - POST, PUT, PATCH and DELETE to create, replace, modify and remove features from a collection.
 
 Transaction support is optional and is abscent by default. 
-You can enable transaction suport for a collection resource in extensions under the collection in the pygeoapi config file.
+You can enable transaction suport for a provider of type feature under extensions in the pygeoapi config file.
 The pygeoapi configuration file *pygeoapi-data-transaction-config.yml* in root directory of pygeoapi project folder includes an example for enabling transaction support in *obs* sample dataset.
 
 
