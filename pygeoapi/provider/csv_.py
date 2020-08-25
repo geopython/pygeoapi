@@ -59,11 +59,11 @@ class CSVProvider(BaseProvider):
         self.fields = self.get_fields()
 
     def stc(self, s):
-        if s == 'str':
+        if s == 'string':
             return str
-        if s == 'int':
+        if s == 'integer':
             return int
-        if s == 'float':
+        if s == 'number':
             return float
 
     def assign_type(self, k, v):
@@ -73,7 +73,7 @@ class CSVProvider(BaseProvider):
 
     def get_fields(self):
         """
-         Get provider field information (names, types)
+        Get provider field information (names, types)
 
         :returns: dict of fields
         """
@@ -98,6 +98,14 @@ class CSVProvider(BaseProvider):
                 fields[key] = type(samp_data[key]).__name__
             fields[self.geometry_x] = float.__name__
             fields[self.geometry_y] = float.__name__
+            # convert python types to openapidoc types
+            for field in fields:
+                if fields[field] == 'int':
+                    fields[field] = 'integer'
+                elif fields[field] == 'float':
+                    fields[field] = 'number'
+                elif fields[field] == 'str':
+                    fields[field] = 'string'
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
