@@ -144,14 +144,13 @@ class GeoJSONProvider(BaseProvider):
         """
 
         all_data = self._load()
+        # if matches
         for feature in all_data['features']:
-            if self.id_field in feature:
-                if str(feature[self.id_field]) == identifier:
-                    return feature
-            else:
-                if self.id_field in feature['properties']:
-                    if str(feature['properties'][self.id_field]) == identifier:
-                        return feature
+            if self.id_field in feature and \
+               feature[self.id_field] == identifier or \
+               self.id_field in feature['properties'] and \
+               feature['properties'][self.id_field] == identifier:
+                return feature
         # default, no match
         err = 'item {} not found'.format(identifier)
         LOGGER.error(err)
