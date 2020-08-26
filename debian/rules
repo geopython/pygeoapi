@@ -7,7 +7,7 @@
 export PYBUILD_NAME=pygeoapi
 
 %:
-	dh $@ --with python2,python3 --buildsystem pybuild
+	dh $@ --with python3 --buildsystem pybuild
 
 override_dh_auto_test:
 	@echo "nocheck set, not running tests"
