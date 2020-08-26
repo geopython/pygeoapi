@@ -5,29 +5,11 @@ Maintainer: Tom Kralidis <tomkralidis@gmail.com>
 Uploaders: Angelos Tzotsos <gcpp.kalxas@gmail.com>
 Build-Depends: debhelper (>= 9),
                dh-python,
-               python-all,
-               python-setuptools,
                python3-all,
                python3-setuptools
 Standards-Version: 4.3.0
 Vcs-Git: https://github.com/geopython/pygeoapi.git
 Homepage: https://pygeoapi.io/
-
-Package: python-pygeoapi
-Architecture: all
-Depends: ${python:Depends},
-         python-pkg-resources,
-         python-click,
-         python-dateutil,
-         python-flask,
-         python-tz,
-         python-unicodecsv,
-         python-yaml,
-         ${misc:Depends}
-Suggests: python-elasticsearch, python-fiona, python-geojson, python-rasterio
-Description: pygeoapi provides an API to geospatial data.
- .
- This package the pygeoapi module for Python 2.
 
 Package: python3-pygeoapi
 Architecture: all
