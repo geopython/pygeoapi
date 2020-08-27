@@ -51,6 +51,7 @@ path = get_test_file_path('data/obs.csv')
 def config():
     return {
         'name': 'CSV',
+        'type': 'feature',
         'data': path,
         'id_field': 'id',
         'geometry': {

@@ -10,8 +10,8 @@ Features
 
 - out of the box modern OGC API server
 - certified OGC Compliant and Reference Implementation for OGC API - Features
-- additionally implements OGC API - Processes and SpatioTemporal Asset Library
-- out of the box data provider plugins for GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
+- additionally implements OGC API - Coverages, OGC API - Processes and SpatioTemporal Asset Library
+- out of the box data provider plugins for rasterio, GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
 - easy to use OpenAPI / Swagger documentation for developers
 - supports JSON, GeoJSON, HTML and CSV output
 - supports data filtering by spatial, temporal or attribute queries
@@ -36,6 +36,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
    :widths: 20, 20
 
    `OGC API - Features`_,Reference Implementation
+   `OGC API - Coverages`_,Implementing
    `OGC API - Processes`_,Implementing
    `SpatioTemporal Asset Catalog`_,Implementing
 
@@ -43,5 +44,6 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
 .. _`pygeoapi`: https://pygeoapi.io
 .. _`OGC API`: https://ogcapi.ogc.org
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`OGC API - Processes`: https://github.com/opengeospatial/wps-rest-binding
 .. _`SpatioTemporal Asset Catalog`: https://stacspec.org
