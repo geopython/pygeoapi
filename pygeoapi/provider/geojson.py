@@ -103,7 +103,9 @@ class GeoJSONProvider(BaseProvider):
         # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
-
+        for i in data['features']:
+            if 'id' not in i and self.id_field in i['properties']:
+                i['id'] = i['properties'][self.id_field]
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
@@ -146,9 +148,7 @@ class GeoJSONProvider(BaseProvider):
         all_data = self._load()
         # if matches
         for feature in all_data['features']:
-            id = feature.get(self.id_field, None) or\
-                 feature['properties'].get(self.id_field, None)
-            if id == identifier:
+            if str(feature.get('id')) == identifier:
                 return feature
         # default, no match
         err = 'item {} not found'.format(identifier)
