@@ -37,6 +37,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
 from pygeoapi.plugin import load_plugin
+from pygeoapi.cql_exception import CQLException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -156,13 +157,16 @@ class CSVProvider(BaseProvider):
                 len(feature_collection['features'])
 
         if cql_expression:
-            feature_list = feature_collection['features']
+            try:
+                feature_list = feature_collection['features']
 
-            cql_handler = load_plugin('extensions',
-                                      {'name': 'CQL',
-                                       'cql_expression': cql_expression,
-                                       'feature_list': feature_list})
-            feature_list = cql_handler.cql_filter()
+                cql_handler = load_plugin('extensions',
+                                          {'name': 'CQL',
+                                           'cql_expression': cql_expression,
+                                           'feature_list': feature_list})
+                feature_list = cql_handler.cql_filter()
+            except Exception as err:
+                raise CQLException(err)
 
             feature_collection['features'] = feature_list
             feature_collection['numberMatched'] = len(feature_collection

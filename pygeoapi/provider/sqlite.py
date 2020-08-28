@@ -38,9 +38,10 @@ import json
 from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from pygeoapi.cql_exception import CQLException
+from pygeoapi.plugin import load_plugin
 
 LOGGER = logging.getLogger(__name__)
-
 
 SPATIALITE_EXTENSION = os.getenv('SPATIALITE_LIBRARY_PATH',
                                  'mod_spatialite.so')
@@ -88,12 +89,11 @@ class SQLiteGPKGProvider(BaseProvider):
         """
 
         if not self.fields:
-
             results = self.cursor.execute(
                 'PRAGMA table_info({})'.format(self.table)).fetchall()
             [self.fields.update(
-                {item["name"]:item["type"].lower()}
-                ) for item in results]
+                {item["name"]: item["type"].lower()}
+            ) for item in results]
         return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
@@ -145,7 +145,7 @@ class SQLiteGPKGProvider(BaseProvider):
             }
             feature["geometry"] = json.loads(
                 rd.pop('AsGeoJSON({})'.format(self.geom_col))
-                )
+            )
             feature['properties'] = rd
             feature['id'] = feature['properties'].pop(self.id_field)
 
@@ -242,7 +242,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         self.columns = [item[1] for item in result if item[1]
                         not in [self.geom_col, self.geom_col.upper()]]
-        self.columns = ','.join(self.columns)+',AsGeoJSON({})'.format(
+        self.columns = ','.join(self.columns) + ',AsGeoJSON({})'.format(
             self.geom_col)
 
         if self.application_id:
@@ -251,7 +251,8 @@ class SQLiteGPKGProvider(BaseProvider):
         return cursor
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime=None, properties=[], sortby=[],
+              cql_expression=None):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -270,31 +271,69 @@ class SQLiteGPKGProvider(BaseProvider):
         """
         LOGGER.debug('Querying SQLite/GPKG')
 
-        where_clause, where_values = self.__get_where_clauses(
-            properties=properties, bbox=bbox)
+        if cql_expression:
+            try:
+                field_list = self.get_fields()
+                cql_handler = load_plugin('extensions',
+                                          {'name': 'CQL',
+                                           'cql_expression': cql_expression,
+                                           'feature_list': None,
+                                           'field_list': field_list.keys()})
 
-        if resulttype == 'hits':
+                cql_where_clause = cql_handler.cql_where_clause()
+                cql_where_clause = cql_where_clause.format(self.geom_col)
 
-            sql_query = "SELECT COUNT(*) as hits FROM {} {} ".format(
-                self.table, where_clause)
+                if resulttype == 'hits':
+                    sql_query = "SELECT COUNT(*) as hits FROM {} WHERE " \
+                                "{} ".format(self.table, cql_where_clause)
 
-            res = self.cursor.execute(sql_query, where_values)
+                    res = self.cursor.execute(sql_query)
 
-            hits = res.fetchone()["hits"]
-            return self.__response_feature_hits(hits)
+                    hits = res.fetchone()["hits"]
+                    return self.__response_feature_hits(hits)
 
-        sql_query = "SELECT DISTINCT {} from \
-            {} {} limit ? offset ?".format(
+                sql_query = "SELECT DISTINCT {} from \
+                    {} WHERE {} limit ? offset ?".format(
+                    self.columns, self.table, cql_where_clause)
+
+                end_index = startindex + limit
+
+                LOGGER.debug('SQL Query: {}'.format(sql_query))
+                LOGGER.debug('Start Index: {}'.format(startindex))
+                LOGGER.debug('End Index: {}'.format(end_index))
+
+                row_data = self.cursor.execute(
+                    sql_query, (limit, startindex))
+
+            except Exception as err:
+                LOGGER.debug('Invalid CQL filter evaluation: {}'.format(err))
+                raise CQLException()
+
+        else:
+            where_clause, where_values = self.__get_where_clauses(
+                properties=properties, bbox=bbox)
+
+            if resulttype == 'hits':
+                sql_query = "SELECT COUNT(*) as hits FROM {} {} ".format(
+                    self.table, where_clause)
+
+                res = self.cursor.execute(sql_query, where_values)
+
+                hits = res.fetchone()["hits"]
+                return self.__response_feature_hits(hits)
+
+            sql_query = "SELECT DISTINCT {} from \
+                {} {} limit ? offset ?".format(
                 self.columns, self.table, where_clause)
 
-        end_index = startindex + limit
+            end_index = startindex + limit
 
-        LOGGER.debug('SQL Query: {}'.format(sql_query))
-        LOGGER.debug('Start Index: {}'.format(startindex))
-        LOGGER.debug('End Index: {}'.format(end_index))
+            LOGGER.debug('SQL Query: {}'.format(sql_query))
+            LOGGER.debug('Start Index: {}'.format(startindex))
+            LOGGER.debug('End Index: {}'.format(end_index))
 
-        row_data = self.cursor.execute(
-            sql_query, where_values + (limit, startindex))
+            row_data = self.cursor.execute(
+                sql_query, where_values + (limit, startindex))
 
         feature_collection = {
             'type': 'FeatureCollection',
@@ -321,12 +360,12 @@ class SQLiteGPKGProvider(BaseProvider):
 
         sql_query = 'SELECT {} FROM \
             {} WHERE {}==?;'.format(
-                self.columns, self.table, self.id_field)
+            self.columns, self.table, self.id_field)
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))
         LOGGER.debug('Identifier: {}'.format(identifier))
 
-        row_data = self.cursor.execute(sql_query, (identifier, )).fetchone()
+        row_data = self.cursor.execute(sql_query, (identifier,)).fetchone()
 
         feature = self.__response_feature(row_data)
         if feature:

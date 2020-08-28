@@ -34,6 +34,7 @@ import uuid
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 from pygeoapi.plugin import load_plugin
+from pygeoapi.cql_exception import CQLException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,13 +129,16 @@ class GeoJSONProvider(BaseProvider):
         data = self._load()
 
         if cql_expression:
-            feature_list = data['features']
+            try:
+                feature_list = data['features']
 
-            cql_handler = load_plugin('extensions',
-                                      {'name': 'CQL',
-                                       'cql_expression': cql_expression,
-                                       'feature_list': feature_list})
-            feature_list = cql_handler.cql_filter()
+                cql_handler = load_plugin('extensions',
+                                          {'name': 'CQL',
+                                           'cql_expression': cql_expression,
+                                           'feature_list': feature_list})
+                feature_list = cql_handler.cql_filter()
+            except Exception as err:
+                raise CQLException(err)
 
             data['features'] = feature_list
 

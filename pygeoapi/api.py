@@ -47,6 +47,7 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderQueryError, ProviderItemNotFoundError)
+from pygeoapi.cql_exception import CQLException
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            json_serial, render_j2_template, TEMPLATES, to_json)
@@ -745,7 +746,7 @@ class API:
 
         try:
             cql_expression = args.get('filter')
-            if (cql_expression):
+            if cql_expression:
                 cql_handler = load_plugin(
                     'extensions',
                     {'name': 'CQL', 'cql_expression': cql_expression}
@@ -857,6 +858,13 @@ class API:
             }
             LOGGER.error(err)
             return headers_, 500, json.dumps(exception)
+        except CQLException as err:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid CQL filter expression'
+            }
+            LOGGER.error(err)
+            return headers_, 400, json.dumps(exception)
 
         serialized_query_params = ''
         for k, v in args.items():

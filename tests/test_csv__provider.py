@@ -28,7 +28,7 @@
 # =================================================================
 
 import os
-
+import logging
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
@@ -42,6 +42,9 @@ def get_test_file_path(filename):
         return filename
     else:
         return 'tests/{}'.format(filename)
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 path = get_test_file_path('data/obs.csv')
@@ -116,7 +119,7 @@ def test_get_not_existing_item_raise_exception(config):
 
 
 # test on common comparisons operations
-def test_eq(config):
+def test_cql_eq(config):
     """Testing query for equals `=` CQL filter expression"""
 
     p = CSVProvider(config)
@@ -126,7 +129,7 @@ def test_eq(config):
     assert results['numberReturned'] == 1
 
 
-def test_ne(config):
+def test_cql_ne(config):
     """Testing query for not-equals `<>`  CQL filter expression"""
 
     p = CSVProvider(config)
@@ -136,7 +139,7 @@ def test_ne(config):
     assert results['numberReturned'] == 5
 
 
-def test_lt(config):
+def test_cql_lt(config):
     """Testing query for less-than `<` CQL filter expression"""
 
     p = CSVProvider(config)
@@ -146,7 +149,7 @@ def test_lt(config):
     assert results['numberReturned'] == 2
 
 
-def test_le(config):
+def test_cql_le(config):
     """Testing query for less-than-equals-to `<=` CQL filter expression"""
 
     p = CSVProvider(config)
@@ -156,7 +159,7 @@ def test_le(config):
     assert results['numberReturned'] == 3
 
 
-def test_gt(config):
+def test_cql_gt(config):
     """Testing query for greater-than `>` CQL filter expression"""
 
     p = CSVProvider(config)
@@ -166,7 +169,7 @@ def test_gt(config):
     assert results['numberReturned'] == 0
 
 
-def test_ge(config):
+def test_cql_ge(config):
     """Testing query for greater-than-equals-to `>=` CQL filter expression"""
 
     p = CSVProvider(config)
@@ -176,7 +179,7 @@ def test_ge(config):
     assert results['numberReturned'] == 1
 
 
-def test_not(config):
+def test_cql_not(config):
     """Testing query for `not` filter expression"""
 
     p = CSVProvider(config)
@@ -187,7 +190,7 @@ def test_not(config):
 
 
 # test on logical operators
-def test_and(config):
+def test_cql_and(config):
     """Testing query for multiple sub-filters combined by `AND`
     in CQL filter expression"""
 
@@ -198,7 +201,7 @@ def test_and(config):
     assert results['numberReturned'] == 1
 
 
-def test_or(config):
+def test_cql_or(config):
     """Testing query for multiple sub-filters combined by `OR`
     in CQL filter expression"""
 
@@ -209,7 +212,7 @@ def test_or(config):
     assert results['numberReturned'] == 3
 
 
-def test_and_or(config):
+def test_cql_and_or(config):
     """Testing query for multiple sub-filters combined by `AND` and `OR`
     in CQL filter expression"""
 
@@ -220,7 +223,7 @@ def test_and_or(config):
     assert results['numberReturned'] == 3
 
 
-def test_and_and(config):
+def test_cql_and_and(config):
     """Testing query for multiple sub-filters combined by multiple `AND`
     in CQL filter expression"""
 
@@ -232,7 +235,7 @@ def test_and_and(config):
 
 
 # test on BETWEEN operation
-def test_between(config):
+def test_cql_between(config):
     """Testing query for between CQL filter expression"""
 
     p = CSVProvider(config)
@@ -244,7 +247,7 @@ def test_between(config):
 
 
 # test on NOT BETWEEN operation
-def test_not_between(config):
+def test_cql_not_between(config):
     """Testing query for not between CQL filter expression"""
 
     p = CSVProvider(config)
@@ -256,7 +259,7 @@ def test_not_between(config):
 
 
 # test on IS NULL operation
-def test_is_null(config):
+def test_cql_is_null(config):
     """Testing query for null CQL filter expression"""
 
     p = CSVProvider(config)
@@ -267,7 +270,7 @@ def test_is_null(config):
 
 
 # test on IS NOT NULL operation
-def test_is_not_null(config):
+def test_cql_is_not_null(config):
     """Testing query for not null CQL filter expression"""
 
     p = CSVProvider(config)
@@ -278,7 +281,7 @@ def test_is_not_null(config):
 
 
 # test on IN operation
-def test_in(config):
+def test_cql_in(config):
     """Testing query for IN CQL filter expression"""
 
     p = CSVProvider(config)
@@ -290,7 +293,7 @@ def test_in(config):
 
 
 # test on NOT IN operation
-def test_not_in(config):
+def test_cql_not_in(config):
     """Testing query for not IN CQL filter expression"""
 
     p = CSVProvider(config)
@@ -302,7 +305,7 @@ def test_not_in(config):
 
 
 # test with limit, startindex and CQL filter
-def test_limit_filter(config):
+def test_cql_limit_filter(config):
     """Testing query for filter, startindex and CQL filter expression"""
 
     p = CSVProvider(config)
@@ -313,21 +316,21 @@ def test_limit_filter(config):
 
 
 # test on LIKE operation
-def test_like(config):
+def test_cql_like(config):
     """Testing query for filter, startindex and CQL filter expression"""
 
     pass
 
 
 # test on LIKE operation
-def test_not_like(config):
+def test_cql_not_like(config):
     """Testing query for filter, startindex and CQL filter expression"""
 
     pass
 
 
 # test on spatial operation
-def test_spatial(config):
+def test_cql_spatial(config):
     """Testing query for spatial CQL filter expression"""
 
     p = CSVProvider(config)
@@ -402,7 +405,7 @@ def test_spatial(config):
 
 
 # test on temporal operation
-def test_temporal(config):
+def test_cql_temporal(config):
     """Testing query for spatial CQL filter expression"""
 
     p = CSVProvider(config)
@@ -444,3 +447,45 @@ def test_temporal(config):
     assert len(results['features']) == 4
     assert results['numberMatched'] == 4
     assert results['numberReturned'] == 4
+
+
+def test_cql_hits(config):
+    """Testing result type hits for spatial CQL filter expression"""
+
+    p = CSVProvider(config)
+    results = p.query(
+        resulttype='hits',
+        cql_expression='WITHIN(geometry,'
+                       'POLYGON((-80.0 -80.0,-80.0 50,'
+                       '80.0 50,-80.0 -80.0))) AND id<>371'
+    )
+    assert results['numberMatched'] == 3
+
+
+def test_cql_auxiliary_expressions(config):
+    """Testing for incorrect CQL filter expression"""
+
+    p = CSVProvider(config)
+    try:
+        results = p.query(cql_expression="id>'A'")
+        assert results.get('features', None) is None
+        results = p.query(cql_expression="name@'obs'")
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='JOINS(geometry,POINT(105 52))')
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='INTERSECTS(shape,POINT(105 52))')
+        assert results.get('features', None) is None
+        results = p.query(
+            cql_expression='datetime FOLLOWING 2001-10-30T14:24:55Z'
+        )
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='name LIKE 2')
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='id BETWEEN 2 AND "A"')
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='id IS NULLS')
+        assert results.get('features', None) is None
+        results = p.query(cql_expression='id IN ["A","B"]')
+        assert results.get('features', None) is None
+    except Exception as err:
+        LOGGER.error(err)

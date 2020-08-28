@@ -5,6 +5,7 @@ and CQL filter.
 
 """
 
+import logging
 from pycql import parse
 from pycql.ast import (
     NotConditionNode, CombinationConditionNode, ComparisonPredicateNode,
@@ -12,7 +13,11 @@ from pycql.ast import (
     NullPredicateNode, TemporalPredicateNode, SpatialPredicateNode,
     BBoxPredicateNode, AttributeExpression, LiteralExpression
 )
-import pygeoapi.filters as filters
+from pygeoapi.cql_exception import CQLException
+import pygeoapi.cql_filters as cql_filters
+import pygeoapi.cql_where_clauses as cql_where_clauses
+
+LOGGER = logging.getLogger(__name__)
 
 
 class CQLHandler:
@@ -25,10 +30,9 @@ class CQLHandler:
         :param cql_def: CQL filter definition
         """
 
-        if 'cql_expression' in cql_def.keys():
-            self.cql_expression = cql_def['cql_expression']
-        if 'feature_list' in cql_def.keys():
-            self.feature_list = cql_def['feature_list']
+        self.cql_expression = cql_def.get('cql_expression', None)
+        self.feature_list = cql_def.get('feature_list', None)
+        self.field_list = cql_def.get('field_list', None)
 
     def cql_filter(self):
         """
@@ -37,15 +41,27 @@ class CQLHandler:
         :returns: list of filtered feature list
         """
 
-        feature_list = self.CQLFilter.cql_filter(self)
+        feature_list = self.CQLFilter.get_cql_filtered_list(self)
         return feature_list
+
+    def cql_where_clause(self):
+        """
+        Perform CQL Filter on the feature list
+
+        :returns: list of filtered feature list
+        """
+
+        where_clause = self.CQLFilter.get_cql_where_clause(self)
+        return where_clause
 
     def cql_validation(self):
         """
         Finds the validity of the CQL filter expression
         """
 
-        _ = self.CQLParser.create_ast(self)
+        cql_ast = self.CQLParser.create_ast(self)
+        if cql_ast is None:
+            raise CQLException()
 
     class CQLParser:
         """ CQL Filter Parser """
@@ -73,7 +89,7 @@ class CQLHandler:
     class CQLEvaluator:
         """ CQL Filter Evaluator """
 
-        def __init__(self, field_list, feature_list):
+        def __init__(self, field_list, feature_list, provider):
             """
             Initialize object
 
@@ -83,6 +99,10 @@ class CQLHandler:
 
             self.field_list = field_list
             self.feature_list = feature_list
+            self.provider = provider
+            self.method = cql_where_clauses\
+                if self.provider in ['SQLite', 'PostGreSQL']\
+                else cql_filters
 
         def to_filter(self, node):
             """
@@ -95,70 +115,80 @@ class CQLHandler:
             to_filter = self.to_filter
             # evaluation for Not Condition Predicate Node
             if isinstance(node, NotConditionNode):
-                return filters.negate(self.feature_list,
-                                      to_filter(node.sub_node)
-                                      )
+                return self.method.negate(
+                    self.feature_list,
+                    to_filter(node.sub_node)
+                )
 
             # evaluation for Combination Condition Predicate Node
             elif isinstance(node, CombinationConditionNode):
-                return filters.combine(
+                return self.method.combine(
                     (to_filter(node.lhs), to_filter(node.rhs)),
                     node.op
                 )
 
             # evaluation for Comparison Predicate Node
             elif isinstance(node, ComparisonPredicateNode):
-                return filters.compare(self.feature_list,
-                                       to_filter(node.lhs),
-                                       to_filter(node.rhs),
-                                       node.op
-                                       )
+                return self.method.compare(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    to_filter(node.rhs),
+                    node.op
+                )
 
             # evaluation for Between Predicate Node
             elif isinstance(node, BetweenPredicateNode):
-                return filters.between(self.feature_list,
-                                       to_filter(node.lhs),
-                                       to_filter(node.low),
-                                       to_filter(node.high),
-                                       node.not_
-                                       )
+                return self.method.between(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    to_filter(node.low),
+                    to_filter(node.high),
+                    node.not_
+                )
 
             # evaluation for Like Predicate Node
             elif isinstance(node, LikePredicateNode):
-                return filters.like(self.feature_list,
-                                    to_filter(node.lhs),
-                                    to_filter(node.rhs),
-                                    node.case, node.not_
-                                    )
+                return self.method.like(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    to_filter(node.rhs),
+                    node.case, node.not_
+                )
 
             # evaluation for In Predicate Node
             elif isinstance(node, InPredicateNode):
-                return filters.contains(self.feature_list,
-                                        to_filter(node.lhs), [
-                                            to_filter(sub_node)
-                                            for sub_node in node.sub_nodes
-                                        ], node.not_
-                                        )
+                return self.method.contains(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    [to_filter(sub_node)
+                     for sub_node in node.sub_nodes],
+                    node.not_
+                )
 
             # evaluation for Null Predicate Node
             elif isinstance(node, NullPredicateNode):
-                return filters.is_null(self.feature_list,
-                                       to_filter(node.lhs),
-                                       node.not_
-                                       )
+                return self.method.is_null(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    node.not_
+                )
 
             # evaluation for Temporal Predicate Node
             elif isinstance(node, TemporalPredicateNode):
-                return filters.temporal(self.feature_list,
-                                        to_filter(node.lhs),
-                                        node.rhs, node.op
-                                        )
+                return self.method.temporal(
+                    self.feature_list,
+                    to_filter(node.lhs),
+                    node.rhs,
+                    node.op
+                )
 
             # evaluation for Spatial Predicate Node
             elif isinstance(node, SpatialPredicateNode):
-                return filters.spatial(
+                return self.method.spatial(
                     self.feature_list,
-                    to_filter(node.lhs), to_filter(node.rhs), node.op,
+                    to_filter(node.lhs),
+                    to_filter(node.rhs),
+                    node.op,
                     to_filter(node.pattern),
                     to_filter(node.distance),
                     to_filter(node.units)
@@ -166,7 +196,7 @@ class CQLHandler:
 
             # evaluation for BBox Predicate Node
             elif isinstance(node, BBoxPredicateNode):
-                return filters.bbox(
+                return self.method.bbox(
                     self.feature_list,
                     to_filter(node.lhs),
                     to_filter(node.minx),
@@ -178,7 +208,7 @@ class CQLHandler:
 
             # evaluation for Attribute Expression Node
             elif isinstance(node, AttributeExpression):
-                return filters.attribute(node.name, self.field_list)
+                return self.method.attribute(node.name, self.field_list)
 
             # evaluation for Literal Expression Node
             elif isinstance(node, LiteralExpression):
@@ -199,23 +229,8 @@ class CQLHandler:
             self.cql_expression = self.cql_expression
             self.CQLEvaluator = self.CQLEvaluator
             self.feature_list = self.feature_list
+            self.field_list = self.field_list
             self.CQLFilter = self.CQLFilter
-
-        def cql_filter(self):
-            """
-            Helper function to perform CQL Filter on the feature list
-
-            :returns: list of filtered feature list
-            """
-
-            cql_parser = self.CQLParser(self.cql_expression)
-            cql_ast = cql_parser.create_ast()
-            field_list = list(self.CQLFilter.get_field_list(self))
-
-            cql_evaluator = self.CQLEvaluator(field_list, self.feature_list)
-            feature_list = cql_evaluator.to_filter(cql_ast)
-
-            return feature_list
 
         def get_field_list(self):
             """
@@ -225,9 +240,54 @@ class CQLHandler:
 
             :returns: field ``list``
             """
-
+            if self.field_list:
+                return [x.lower() for x in self.field_list]
             field_list = list(self.feature_list[0].keys())
             field_list = field_list + (list(self.feature_list[0]
                                             ['properties'].keys()))
-
             return field_list
+
+        def get_cql_evaluation(self, provider):
+            """
+            Helper function to evaluate CQL Filter depending on provider
+
+            :returns: evaluated result
+            """
+
+            try:
+                cql_parser = self.CQLParser(self.cql_expression)
+                cql_ast = cql_parser.create_ast()
+                if cql_ast is None:
+                    raise CQLException()
+
+                field_list = list(self.CQLFilter.get_field_list(self))
+                cql_evaluator = self.CQLEvaluator(field_list,
+                                                  self.feature_list,
+                                                  provider)
+                result = cql_evaluator.to_filter(cql_ast)
+                return result
+
+            except Exception as err:
+                LOGGER.error(err)
+                raise CQLException(err)
+
+        def get_cql_filtered_list(self):
+            """
+            Helper function to perform CQL Filter on the feature list
+
+            :returns: list of filtered feature list
+            """
+            filtered_feature_list = self.CQLFilter.\
+                get_cql_evaluation(self, ['CSV', 'GeoJSON'])
+            return filtered_feature_list
+
+        def get_cql_where_clause(self):
+            """
+            Helper function to get where clause for provider
+
+            :returns: string where clause
+            """
+
+            cql_where_clause = self.CQLFilter.\
+                get_cql_evaluation(self, 'SQLite')
+            return cql_where_clause
