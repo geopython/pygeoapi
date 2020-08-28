@@ -411,13 +411,12 @@ def get_oas_30(cfg):
                         collections[k]['providers'], 'feature'))
         id = data_provider.id_field
         samp_feat = data_provider.query()['features'][0]
-        if id in samp_feat:
-            samp_feat.pop(id)
-        elif id in samp_feat['properties']:
-            samp_feat['properties'].pop(id)
+        samp_feat.pop(id, None)
+        samp_feat['properties'].pop(id, None)
         samp_prop = samp_feat['properties']
         samp_geom = samp_feat['geometry']
         fields = data_provider.get_fields()
+        fields.pop(id, None)
         prop = dict()
         for key in samp_prop:
             prop[key] = {'type': fields[key],

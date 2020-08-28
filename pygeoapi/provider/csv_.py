@@ -71,6 +71,14 @@ class CSVProvider(BaseProvider):
             v = self.stc(self.fields[k])(v)
         return v
 
+    def count(self):
+        with open(self.data) as ff:
+            totalrows = 0
+            data_ = csv.DictReader(ff)
+            for row in data_:
+                totalrows += 1
+            return totalrows
+
     def get_fields(self):
         """
         Get provider field information (names, types)
@@ -182,7 +190,7 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def get_unused_int_id(self):
-        feats = self._load()['features']
+        feats = self._load(limit=self.count())['features']
         ids = set(map(int, set([feat[self.id_field] for feat in feats])))
         id = 0
         while True:
