@@ -7,7 +7,6 @@ from datetime import datetime
 
 from pygeoapi.cql_exception import (CQLExceptionAttribute,
                                     CQLExceptionCombination,
-                                    CQLExceptionNull,
                                     CQLExceptionSpatial,
                                     CQLExceptionUnits,
                                     CQLExceptionTemporal,
@@ -196,16 +195,11 @@ def is_null(feature_list, lhs, not_=False):
     :rtype: str
     """
 
-    try:
-        where_clause = "{} IS NULL".format(lhs)
-        if not_:
-            where_clause = "{} IS NOT NULL".format(lhs)
+    where_clause = "{} IS NULL".format(lhs)
+    if not_:
+        where_clause = "{} IS NOT NULL".format(lhs)
 
-        return where_clause
-
-    except Exception as err:
-        LOGGER.error("Invalid 'null' operation: {}".format(err))
-        raise CQLExceptionNull()
+    return where_clause
 
 
 def temporal(feature_list, lhs, time_or_period, op):
@@ -241,12 +235,12 @@ def temporal(feature_list, lhs, time_or_period, op):
                 time_or_period.value, "%Y-%m-%dT%H:%M:%SZ")
             if op == 'BEFORE':
                 where_clause =\
-                    "{date}<={parameter}".format(date='{}',
+                    "{date}<={parameter}".format(date=lhs,
                                                  parameter=query_date_time)
 
             elif op == 'AFTER':
                 where_clause =\
-                    "{date}>={parameter}".format(date='{}',
+                    "{date}>={parameter}".format(date=lhs,
                                                  parameter=query_date_time)
 
         # perform during operation
@@ -255,16 +249,16 @@ def temporal(feature_list, lhs, time_or_period, op):
             low = datetime.strptime(low.value, "%Y-%m-%dT%H:%M:%SZ")
             high = datetime.strptime(high.value, "%Y-%m-%dT%H:%M:%SZ")
             where_clause =\
-                "{date}>={low} AND {date}<={high}".format(date='{}',
+                "{date}>={low} AND {date}<={high}".format(date=lhs,
                                                           low=low,
                                                           high=high)
             if 'BEFORE' in op:
                 where_clause =\
-                    "{date}<={high}".format(date='{}',
+                    "{date}<={high}".format(date=lhs,
                                             high=high)
             elif 'AFTER' in op:
                 where_clause =\
-                    "{date}>={low}".format(date='{}',
+                    "{date}>={low}".format(date=lhs,
                                            low=low)
         return where_clause
 

@@ -12,6 +12,8 @@ from pycql.ast import (
 )
 from pycql.values import Time, Geometry
 from pygeoapi.cql import CQLHandler
+from pygeoapi.cql_filters import combine, compare, between, like,\
+    contains, is_null, temporal, spatial, bbox, literal, attribute
 
 
 def get_test_file_path(filename):

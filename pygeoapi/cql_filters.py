@@ -674,3 +674,15 @@ def attribute(name, field_name=None):
     except Exception as err:
         LOGGER.error(err)
         raise CQLExceptionAttribute()
+
+
+def literal(value):
+    """
+    Returns the literal value of the node
+    :param value: data value
+    :type value: str, int, float
+    :return: data value
+    :rtype: str, int, float
+    """
+
+    return value
