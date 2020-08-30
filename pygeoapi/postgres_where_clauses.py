@@ -227,9 +227,8 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
-    :param field_name: the dictionary to use as a lookup for field names
-    :type field_name: dict
-    :type field_list: list of feature dict set
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :type lhs: str
     :param time_or_period: the time instant or time span to use as a filter
     :type time_or_period: :class:`datetime.datetime` or a tuple of two

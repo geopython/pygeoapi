@@ -396,6 +396,11 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
     """
     Create a temporal filter for the given temporal attribute.
 
+    :param feature_list: a list of feature dict set to lookup
+                            potential choices for a certain field
+    :type feature_list: list
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :param lhs: the field to compare
     :type lhs: str
     :param time_or_period: the time instant or time span to use as a filter
@@ -406,9 +411,6 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
                 ``"BEFORE OR DURING"``, ``"DURING"``, ``"DURING OR AFTER"``,
                 ``"AFTER"``.
     :type op: str
-    :param feature_list: a list of feature dict set to lookup
-                            potential choices for a certain field
-    :type feature_list: list
 
     :return: a comparison expression result
     :rtype: list
@@ -490,6 +492,8 @@ def spatial(feature_list, field_list, lhs, rhs, op,
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :param lhs: the field to compare
     :type lhs: str
     :param rhs: spatial expression
@@ -548,6 +552,8 @@ def bbox(feature_list, field_list, lhs, minx, miny, maxx, maxy,
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :param lhs: the field to compare
     :type lhs: str
     :param minx: the lower x part of the bbox
@@ -660,8 +666,8 @@ def attribute(name, field_name=None):
 
     :param name: the field filter name
     :type name: str
-    :param field_name: the dictionary to use as a lookup.
-    :type field_name: list of feature dict set
+    :param field_name: the dictionary to use as a lookup for field names
+    :type field_name: dict
 
     :return: field name
     :rtype: str
