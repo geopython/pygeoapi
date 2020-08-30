@@ -46,9 +46,11 @@
 import logging
 import json
 import psycopg2
+import uuid
 from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
+    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError, \
+    ProviderItemAlreadyExistsError, ProviderSchemaError
 
 from psycopg2.extras import RealDictCursor
 
@@ -173,6 +175,15 @@ class PostgreSQLProvider(BaseProvider):
         if not self.fields:
             with DatabaseConnection(self.conn_dic, self.table) as db:
                 self.fields = db.fields
+            if 'natural' in self.fields:
+                self.fields['"natural"'] = self.fields['natural']
+                self.fields.pop('natural')
+            '''
+            print('----------------------------------')
+            print(self.fields)
+            print('----------------------------------')
+            assert 1 == 2
+            '''
         return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
@@ -406,3 +417,202 @@ class PostgreSQLProvider(BaseProvider):
         feature_collection['numberMatched'] = hits
 
         return feature_collection
+
+    def get_unique_id(self):
+        id_type = self.get_fields()[self.id_field]
+        if 'int' in id_type:
+            id = 0
+            while True:
+                try:
+                    self.get(id)
+                    id += 1
+                except ProviderItemNotFoundError:
+                    return id
+        else:
+            return str(uuid.uuid4())
+
+    def create(self, new_feature):
+        LOGGER.debug('Inserting item into Postgis')
+        prop = new_feature['properties']
+        geom = json.dumps(new_feature['geometry'])
+        nfid = new_feature.get('id', None) or\
+            new_feature['properties'].get(self.id_field, None)
+        if nfid is not None:
+            try:
+                self.get(nfid)
+                err = 'provider item {} already exists'\
+                    .format(nfid)
+                LOGGER.error(err)
+                raise ProviderItemAlreadyExistsError(err)
+            except ProviderItemNotFoundError:
+                pass
+        else:
+            nfid = self.get_unique_id()
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set([key for key in prop])
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        # set missing properties to empty
+        for prop in curr_cols - new_cols:
+            new_feature['properties'][prop] = 'NULL'
+        prop = new_feature['properties']
+        keys = [key for key in prop]
+        keys_str = ','.join(keys)
+        vals = [prop[key] for key in prop]
+        for index in range(len(vals)):
+            if self.get_fields()[keys[index]] == 'varchar':
+                vals[index] = '\'{}\''.format(vals[index])
+        vals_str = ','.join(map(str, vals))
+        sql_query = SQL('INSERT INTO {0} ({1},{2}) \
+            VALUES ({3},ST_GeomFromGeoJSON(\'{4}\'))'.format(
+                self.table, keys_str, self.geom, vals_str, geom))
+        with DatabaseConnection(self.conn_dic, self.table) as db:
+            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            try:
+                cursor.execute(sql_query)
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}: {}'.format(
+                    sql_query.as_string(cursor), err))
+                raise ProviderQueryError()
+            db.conn.commit()
+        return nfid
+
+    def replace(self, identifier, feature):
+        LOGGER.debug('Replacing an item in Postgis')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        prop = feature['properties']
+        geom = json.dumps(feature['geometry'])
+        nfid = feature.get('id', None) or\
+            feature['properties'].get(self.id_field, None)
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set([key for key in prop])
+        if nfid is not None and nfid != identifier:
+            err = 'cant change key'
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        # set missing properties to empty
+        for prop in curr_cols - new_cols:
+            feature['properties'][prop] = 'NULL'
+        prop = feature['properties']
+        prop.pop(self.id_field, None)
+        keys = [key for key in prop]
+        vals = [prop[key] for key in prop]
+        for index in range(len(vals)):
+            if self.get_fields()[keys[index]] == 'varchar':
+                vals[index] = '\'{}\''.format(vals[index])
+        keys.append(self.geom)
+        vals.append('ST_GeomFromGeoJSON(\'{}\')'.format(geom))
+        updates = [i+'='+j for i, j in zip(keys, vals)]
+        updates_string = ','.join(updates)
+        sql_query = SQL('UPDATE {0} SET {1} WHERE {2}={3}'.format(
+                self.table, updates_string, self.id_field, identifier))
+        with DatabaseConnection(self.conn_dic, self.table) as db:
+            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            try:
+                cursor.execute(sql_query)
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}: {}'.format(
+                    sql_query.as_string(cursor), err))
+                raise ProviderQueryError()
+            db.conn.commit()
+
+    def update(self, identifier, updates):
+        LOGGER.debug('Updating an item in Postgis')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        mods = updates['modify']
+        keys = [item['name'] for item in mods]
+        vals = [item['value'] for item in mods]
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set(keys)
+        if self.id_field in new_cols:
+            err = 'cant change key'
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        for index in range(len(vals)):
+            if self.get_fields()[keys[index]] == 'varchar':
+                vals[index] = '\'{}\''.format(vals[index])
+        updates = [i+'='+j for i, j in zip(keys, vals)]
+        updates_string = ','.join(updates)
+        sql_query = SQL('UPDATE {0} SET {1} WHERE {2}={3}'.format(
+                self.table, updates_string, self.id_field, identifier))
+        with DatabaseConnection(self.conn_dic, self.table) as db:
+            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            try:
+                cursor.execute(sql_query)
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}: {}'.format(
+                    sql_query.as_string(cursor), err))
+                raise ProviderQueryError()
+            db.conn.commit()
+            return self.get(identifier)
+
+    def delete(self, identifier):
+        LOGGER.debug('Deleting item from Postgis')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        with DatabaseConnection(self.conn_dic, self.table) as db:
+            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            sql_query = SQL("DELETE FROM {} WHERE {}=%s".
+                            format(self.table, self.id_field))
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
+            LOGGER.debug('Identifier: {}'.format(identifier))
+            try:
+                cursor.execute(sql_query, (identifier, ))
+                db.conn.commit()
+            except Exception as err:
+                LOGGER.error('Error executing sql_query: {}'.format(
+                    sql_query.as_string(cursor)))
+                LOGGER.error(err)
+                raise ProviderQueryError()
+
+    '''
+    def replace(self, new_feature, identifier):
+        LOGGER.debug('Replace from Postgis')
+        prop = new_feature['properties']
+        geom = json.dumps(new_feature['geometry'])
+        nfid = new_feature.get('id', None) or\
+            new_feature['properties'].get(self.id_field, None)
+        if nfid is not None:
+            try:
+                self.get(nfid)
+                err = 'provider item {} already exists'\
+                    .format(nfid)
+                LOGGER.error(err)
+                raise ProviderItemAlreadyExistsError(err)
+            except ProviderItemNotFoundError:
+                pass
+        else:
+            nfid = self.get_unique_id()
+
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set([key for key in prop].append('geometry'))
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+
+        keys = ",".join([key for key in prop].append('geometry'))
+        vals = ",".join([prop[key] for key in prop].append(geom))
+        query = 'insert into {0} ({1}) values ({2});'.\
+            format(Identifier(self.table), keys, vals)
+        with DatabaseConnection(self.conn_dic, self.table) as db:
+            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query)
+        return nfid
+'''

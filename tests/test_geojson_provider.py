@@ -233,7 +233,7 @@ def test_replace_invalid_schema_raise_exception(fixture, config):
     }
 
     with pytest.raises(ProviderSchemaError):
-        p.create(new_feature)
+        p.replace('123-456', new_feature)
 
 
 def test_update(fixture, config):
