@@ -80,7 +80,6 @@ class DatabaseConnection:
              or in a specific schema ["osm", "public"].
              Note: First we should have the schema
              being used and then public
-
         :param table: table name containing the data. This variable is used to
                 assemble column information
         :param context: query or hits, if query then it will determine
@@ -121,7 +120,7 @@ class DatabaseConnection:
             result = self.cur.fetchall()
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
-                )
+            )
             self.fields = dict(result)
 
         return self
@@ -139,8 +138,8 @@ class PostgreSQLProvider(BaseProvider):
 
     def __init__(self, provider_def):
         """
-        PostgreSQLProvider Class constructor
 
+        PostgreSQLProvider Class constructor
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
                              data contains the connection information
@@ -221,9 +220,11 @@ class PostgreSQLProvider(BaseProvider):
         :param datetime: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param cql_expression: cql query filter expression
 
         :returns: GeoJSON FeaturesCollection
         """
+
         LOGGER.debug('Querying PostGIS')
 
         if cql_expression:
@@ -255,9 +256,8 @@ class PostgreSQLProvider(BaseProvider):
                             cursor.execute(sql_query)
                         except Exception as err:
                             LOGGER.error(
-                                'Error executing sql_query: {}: {}'.format(
-                                    sql_query.as_string(cursor), err)
-                            )
+                                'Error executing sql_query: {}: '
+                                '{}'.format(sql_query.as_string(cursor), err))
                             raise ProviderQueryError()
 
                         hits = cursor.fetchone()["hits"]
@@ -270,11 +270,39 @@ class PostgreSQLProvider(BaseProvider):
                     cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
                     sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-                    SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
+                    SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}"). \
                         format(db.columns,
                                Identifier(self.geom),
                                Identifier(self.table),
                                cql_where_clause)
+
+                    LOGGER.debug(
+                        'SQL Query: {}'.format(sql_query.as_string(cursor)))
+                    LOGGER.debug('Start Index: {}'.format(startindex))
+                    LOGGER.debug('End Index: {}'.format(end_index))
+                    try:
+                        cursor.execute(sql_query)
+                        for index in [startindex, limit]:
+                            cursor.execute("fetch forward {} from geo_cursor"
+                                           .format(index))
+                    except Exception as err:
+                        LOGGER.error('Error executing sql_query: {}'.format(
+                            sql_query.as_string(cursor)))
+                        LOGGER.error(err)
+                        raise ProviderQueryError()
+
+                    row_data = cursor.fetchall()
+
+                    feature_collection = {
+                        'type': 'FeatureCollection',
+                        'features': []
+                    }
+
+                    for rd in row_data:
+                        feature_collection['features'].append(
+                            self.__response_feature(rd))
+
+                    return feature_collection
 
             except Exception as err:
                 LOGGER.debug('Invalid CQL filter evaluation: {}'.format(err))
@@ -289,15 +317,14 @@ class PostgreSQLProvider(BaseProvider):
 
                     where_clause = self.__get_where_clauses(
                         properties=properties, bbox=bbox)
-                    sql_query = SQL("SELECT COUNT(*) as hits from {} {}").\
+                    sql_query = SQL("SELECT COUNT(*) as hits from {} {}"). \
                         format(Identifier(self.table), where_clause)
                     try:
                         cursor.execute(sql_query)
                     except Exception as err:
                         LOGGER.error(
-                            'Error executing sql_query: {}: {}'.format(
-                                sql_query.as_string(cursor), err)
-                        )
+                            'Error executing sql_query: {}: '
+                            '{}'.format(sql_query.as_string(cursor), err))
                         raise ProviderQueryError()
 
                     hits = cursor.fetchone()["hits"]
@@ -313,25 +340,27 @@ class PostgreSQLProvider(BaseProvider):
                     properties=properties, bbox=bbox)
 
                 sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-                SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
+                SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}"). \
                     format(db.columns,
                            Identifier(self.geom),
                            Identifier(self.table),
                            where_clause)
 
                 LOGGER.debug(
-                    'SQL Query: {}'.format(sql_query.as_string(cursor))
-                )
+                    'SQL Query: '
+                    '{}'.format(sql_query.as_string(cursor)))
                 LOGGER.debug('Start Index: {}'.format(startindex))
                 LOGGER.debug('End Index: {}'.format(end_index))
                 try:
                     cursor.execute(sql_query)
                     for index in [startindex, limit]:
-                        cursor.execute("fetch forward {} from "
-                                       "geo_cursor".format(index))
+                        cursor.execute(
+                            "fetch forward {} from "
+                            "geo_cursor".format(index))
                 except Exception as err:
-                    LOGGER.error('Error executing sql_query: {}'.format(
-                        sql_query.as_string(cursor)))
+                    LOGGER.error(
+                        'Error executing sql_query: '
+                        '{}'.format(sql_query.as_string(cursor)))
                     LOGGER.error(err)
                     raise ProviderQueryError()
 
@@ -356,8 +385,8 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ' \
-              'ORDER BY {} DESC LIMIT 1'
+
+        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1'
         cursor.execute(SQL(sql).format(
             Identifier(self.id_field),
             Identifier(self.table),
@@ -376,8 +405,8 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ' \
-              'ORDER BY {} LIMIT 1'
+
+        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1'
         cursor.execute(SQL(sql).format(
             Identifier(self.id_field),
             Identifier(self.table),
@@ -408,12 +437,10 @@ class PostgreSQLProvider(BaseProvider):
                                          Identifier(self.table),
                                          Identifier(self.id_field))
 
-            LOGGER.debug(
-                'SQL Query: {}'.format(sql_query.as_string(db.conn))
-            )
+            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
             LOGGER.debug('Identifier: {}'.format(identifier))
             try:
-                cursor.execute(sql_query, (identifier, ))
+                cursor.execute(sql_query, (identifier,))
             except Exception as err:
                 LOGGER.error('Error executing sql_query: {}'.format(
                     sql_query.as_string(cursor)))

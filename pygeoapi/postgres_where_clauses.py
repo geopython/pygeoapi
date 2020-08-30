@@ -1,5 +1,5 @@
 """
-To form WHERE CLAUSES of CQL filter queries 
+To form WHERE CLAUSES of CQL filter queries
 from Abstract Syntax Tree for PostGres
 """
 
@@ -227,7 +227,9 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
-    :param lhs: the field to compare
+    :param field_name: the dictionary to use as a lookup for field names
+    :type field_name: dict
+    :type field_list: list of feature dict set
     :type lhs: str
     :param time_or_period: the time instant or time span to use as a filter
     :type time_or_period: :class:`datetime.datetime` or a tuple of two
@@ -301,8 +303,8 @@ Spatial_Operator = {
     "CROSSES": SQL('ST_Crosses'),
     "EQUALS": SQL('ST_Equals'),
     "OVERLAPS": SQL('ST_Overlaps'),
-    "BEYOND": SQL('ST_Distance'),
-    "DWITHIN": SQL('ST_Distance'),
+    "BEYOND": SQL('ST_DWITHIN'),
+    "DWITHIN": SQL('ST_DWITHIN'),
     "RELATE": SQL('ST_Relate')
 }
 
@@ -310,11 +312,13 @@ Spatial_Operator = {
 def spatial(feature_list, field_list, lhs, rhs, op,
             pattern=None, distance=None, units=None):
     """
-    Create a spatial filter for the given spatial attribute.
+    Create a spatial filter for the given spatial attribute
 
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :param lhs: the field to compare
     :type lhs: str
     :param rhs: spatial expression
@@ -350,27 +354,22 @@ def spatial(feature_list, field_list, lhs, rhs, op,
             if units == 'kilometers':
                 distance = distance * 1000
 
+            where_condition = [
+                SQL('{relation}({geometry},'
+                    'ST_GeomFromText({parameter},{srid}), '
+                    '{distance})').format(
+                    relation=Spatial_Operator[op],
+                    geometry=Identifier(field_list[lhs]),
+                    parameter=Literal(rhs), srid=Literal(4326),
+                    distance=Literal(distance))
+            ]
+
             if op == "BEYOND":
                 where_clause = [
-                    SQL('{relation}({geometry},'
-                        'ST_GeomFromText({parameter}),'
-                        '{srid})>={distance}').format(
-                        relation=Spatial_Operator[op],
-                        geometry=Identifier(field_list[lhs]),
-                        parameter=Literal(rhs), srid=Literal(4326),
-                        distance=Literal(distance))
-                ]
-
+                    SQL(' NOT {}').format(SQL(' AND ').join(
+                        where_condition))]
             else:
-                where_clause = [
-                    SQL('{relation}({geometry},'
-                        'ST_GeomFromText({parameter},'
-                        '{srid}))<={distance}').format(
-                        relation=Spatial_Operator[op],
-                        geometry=Identifier(field_list[lhs]),
-                        parameter=Literal(rhs), srid=Literal(4326),
-                        distance=Literal(distance))
-                ]
+                where_clause = where_condition
 
         elif op == "RELATE":
             where_clause = [
@@ -411,6 +410,8 @@ def bbox(feature_list, field_list, lhs, minx, miny, maxx, maxy,
     :param feature_list: a list of feature dict set to lookup
                             potential choices for a certain field
     :type feature_list: list
+    :param field_list: the dictionary to use as a lookup for field names
+    :type field_list: dict
     :param lhs: the field to compare
     :type lhs: str
     :param minx: the lower x part of the bbox
@@ -441,14 +442,14 @@ def bbox(feature_list, field_list, lhs, minx, miny, maxx, maxy,
     return where_clause
 
 
-def attribute(name, field_name=None):
+def attribute(name, field_name):
     """
     Create an attribute lookup expression using a field mapping dictionary.
 
     :param name: the field filter name
     :type name: str
-    :param field_name: the dictionary to use as a lookup.
-    :type field_name: list of feature dict set
+    :param field_name: the dictionary to use as a lookup for field names
+    :type field_name: dict
 
     :return: field name
     :rtype: str
