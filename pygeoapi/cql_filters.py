@@ -392,7 +392,7 @@ def get_field_value(record, lhs):
         raise CQLException()
 
 
-def temporal(feature_list, lhs, time_or_period, op):
+def temporal(feature_list, field_list, lhs, time_or_period, op):
     """
     Create a temporal filter for the given temporal attribute.
 
@@ -415,9 +415,10 @@ def temporal(feature_list, lhs, time_or_period, op):
     """
 
     try:
-        if lhs != "datetime":
-            raise CQLExceptionTemporal("Invalid field name: {}".format(lhs))
+        if lhs not in field_list.keys():
+            raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
 
+        lhs = field_list[lhs]
         filtered_feature_list = []
 
         # perform temporal comparison
@@ -481,7 +482,7 @@ def temporal_filter(record_date_time, time_or_period, op):
         return result
 
 
-def spatial(feature_list, lhs, rhs, op,
+def spatial(feature_list, field_list, lhs, rhs, op,
             pattern=None, distance=None, units=None):
     """
     Create a spatial filter for the given spatial attribute.
@@ -511,9 +512,10 @@ def spatial(feature_list, lhs, rhs, op,
     """
 
     try:
-        if lhs != "geometry":
+        if lhs not in field_list.keys():
             raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
 
+        lhs = field_list[lhs]
         rhs = shapely.wkt.loads(rhs.value)
         filtered_feature_list = []
 
@@ -538,7 +540,7 @@ def spatial(feature_list, lhs, rhs, op,
         raise CQLExceptionSpatial()
 
 
-def bbox(feature_list, lhs, minx, miny, maxx, maxy,
+def bbox(feature_list, field_list, lhs, minx, miny, maxx, maxy,
          crs=None, bboverlaps=True):
     """
     Create a bounding box filter for the given spatial attribute.
@@ -566,9 +568,10 @@ def bbox(feature_list, lhs, minx, miny, maxx, maxy,
     """
 
     try:
-        if lhs != "geometry":
+        if lhs not in field_list.keys():
             raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
 
+        lhs = field_list[lhs]
         filtered_feature_list = []
 
         bbox = box(minx, miny, maxx, maxy)
@@ -665,7 +668,7 @@ def attribute(name, field_name=None):
     """
 
     try:
-        if name in field_name:
+        if name in field_name.keys():
             field = name
             return field
         else:

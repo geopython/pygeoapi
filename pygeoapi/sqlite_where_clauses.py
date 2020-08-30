@@ -1,5 +1,6 @@
 """
-For evaluating CQL filter queries from Abstract Syntax Tree
+To form WHERE CLAUSES of CQL filter queries
+from Abstract Syntax Tree for PostGres
 """
 
 import logging
@@ -202,7 +203,7 @@ def is_null(feature_list, lhs, not_=False):
     return where_clause
 
 
-def temporal(feature_list, lhs, time_or_period, op):
+def temporal(feature_list, field_list, lhs, time_or_period, op):
     """
     Create a temporal filter for the given temporal attribute.
 
@@ -225,8 +226,9 @@ def temporal(feature_list, lhs, time_or_period, op):
     """
 
     try:
-        if lhs != "datetime":
-            raise CQLExceptionTemporal("Invalid field name: {}".format(lhs))
+        if lhs not in field_list.keys():
+            raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
+
         where_clause = ""
 
         # perform before and after operations
@@ -235,12 +237,12 @@ def temporal(feature_list, lhs, time_or_period, op):
                 time_or_period.value, "%Y-%m-%dT%H:%M:%SZ")
             if op == 'BEFORE':
                 where_clause =\
-                    "{date}<={parameter}".format(date=lhs,
+                    "{date}<={parameter}".format(date=field_list[lhs],
                                                  parameter=query_date_time)
 
             elif op == 'AFTER':
                 where_clause =\
-                    "{date}>={parameter}".format(date=lhs,
+                    "{date}>={parameter}".format(date=field_list[lhs],
                                                  parameter=query_date_time)
 
         # perform during operation
@@ -249,16 +251,16 @@ def temporal(feature_list, lhs, time_or_period, op):
             low = datetime.strptime(low.value, "%Y-%m-%dT%H:%M:%SZ")
             high = datetime.strptime(high.value, "%Y-%m-%dT%H:%M:%SZ")
             where_clause =\
-                "{date}>={low} AND {date}<={high}".format(date=lhs,
+                "{date}>={low} AND {date}<={high}".format(date=field_list[lhs],
                                                           low=low,
                                                           high=high)
             if 'BEFORE' in op:
                 where_clause =\
-                    "{date}<={high}".format(date=lhs,
+                    "{date}<={high}".format(date=field_list[lhs],
                                             high=high)
             elif 'AFTER' in op:
                 where_clause =\
-                    "{date}>={low}".format(date=lhs,
+                    "{date}>={low}".format(date=field_list[lhs],
                                            low=low)
         return where_clause
 
@@ -282,7 +284,7 @@ Spatial_Operator = {
 }
 
 
-def spatial(feature_list, lhs, rhs, op,
+def spatial(feature_list, field_list, lhs, rhs, op,
             pattern=None, distance=None, units=None):
     """
     Create a spatial filter for the given spatial attribute.
@@ -312,7 +314,7 @@ def spatial(feature_list, lhs, rhs, op,
     """
 
     try:
-        if lhs != "geometry":
+        if lhs not in field_list.keys():
             raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
 
         rhs = str(rhs.value)
@@ -329,14 +331,14 @@ def spatial(feature_list, lhs, rhs, op,
                 where_clause =\
                     "{relation}({geometry},ST_GeomFromText('{parameter}'))" \
                     ">={distance}".format(relation=Spatial_Operator[op],
-                                          geometry="{}",
+                                          geometry=field_list[lhs],
                                           parameter=rhs,
                                           distance=distance)
             else:
                 where_clause =\
                     "{relation}({geometry},ST_GeomFromText('{parameter}'))" \
                     "<={distance}".format(relation=Spatial_Operator[op],
-                                          geometry="{}",
+                                          geometry=field_list[lhs],
                                           parameter=rhs,
                                           distance=distance)
 
@@ -344,14 +346,14 @@ def spatial(feature_list, lhs, rhs, op,
             where_clause =\
                 "{relation}({geometry},ST_GeomFromText('{parameter}')," \
                 "'{pattern}')".format(relation=Spatial_Operator[op],
-                                      geometry="{}",
+                                      geometry=field_list[lhs],
                                       parameter=rhs,
                                       pattern=pattern)
         else:
             where_clause =\
                 "{relation}({geometry},ST_GeomFromText('{parameter}')" \
                 ")".format(relation=Spatial_Operator[op],
-                           geometry="{}",
+                           geometry=field_list[lhs],
                            parameter=rhs)
 
         return where_clause
@@ -365,7 +367,7 @@ def spatial(feature_list, lhs, rhs, op,
         raise CQLExceptionSpatial()
 
 
-def bbox(feature_list, lhs, minx, miny, maxx, maxy,
+def bbox(feature_list, field_list, lhs, minx, miny, maxx, maxy,
          crs=None, bboverlaps=True):
     """
     Create a bounding box filter for the given spatial attribute.
@@ -391,10 +393,8 @@ def bbox(feature_list, lhs, minx, miny, maxx, maxy,
     """
 
     try:
-        if lhs != "geometry":
-            raise CQLExceptionBBox(
-                "Invalid field name: {}".format(lhs)
-            )
+        if lhs not in field_list.keys():
+            raise CQLExceptionSpatial("Invalid field name: {}".format(lhs))
 
         bbox = 'Polygon(({minx} {miny}, {maxx} {miny}, ' \
                '{maxx} {maxy}, {minx} {maxy}, ' \
@@ -404,7 +404,7 @@ def bbox(feature_list, lhs, minx, miny, maxx, maxy,
                                         maxy=maxy)
 
         where_clause = "ST_Intersects({geometry},ST_ENVELOPE('{bbox}')" \
-                       ")".format(geometry="{}", bbox=bbox)
+                       ")".format(geometry=field_list[lhs], bbox=bbox)
         return where_clause
 
     except Exception as err:
@@ -426,7 +426,7 @@ def attribute(name, field_name=None):
     """
 
     try:
-        if name.lower() in field_name:
+        if name.lower() in field_name.keys():
             field = name
             return str(field)
         else:

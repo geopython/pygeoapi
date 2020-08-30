@@ -273,15 +273,18 @@ class SQLiteGPKGProvider(BaseProvider):
 
         if cql_expression:
             try:
-                field_list = self.get_fields()
+                fields = self.get_fields()
+                field_list = {}
+                for k in fields.keys():
+                    field_list[k] = k
+                field_list['geometry'] = self.geom_col
                 cql_handler = load_plugin('extensions',
                                           {'name': 'CQL',
                                            'cql_expression': cql_expression,
                                            'feature_list': None,
-                                           'field_list': field_list.keys()})
+                                           'field_list': field_list})
 
-                cql_where_clause = cql_handler.cql_where_clause()
-                cql_where_clause = cql_where_clause.format(self.geom_col)
+                cql_where_clause = cql_handler.sqlite_where_clause()
 
                 if resulttype == 'hits':
                     sql_query = "SELECT COUNT(*) as hits FROM {} WHERE " \

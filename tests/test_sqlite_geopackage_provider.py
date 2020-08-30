@@ -291,7 +291,7 @@ def test_cql_query_spatial(config_sqlite):
     assert len(features) == 176
     feature_collection = p.query(
         cql_expression='EQUALS(geometry,'
-                       'POLYGON((43.58274580259273 41.09214325618256, '
+                       'MULTIPOLYGON(((43.58274580259273 41.09214325618256, '
                        '44.97248009621807 41.24812856705559, '
                        '45.17949588397934 40.98535390885146, '
                        '45.56035118997044 40.81228953710592, '
@@ -304,7 +304,7 @@ def test_cql_query_spatial(config_sqlite):
                        '46.14362308124881 38.74120148371221, '
                        '45.73537926614301 39.31971914321974, '
                        '45.73997846861698 39.47399913182712, '
-                       '43.58274580259273 41.09214325618256)))')
+                       '43.58274580259273 41.09214325618256))))')
 
     features = feature_collection.get('features', None)
     assert len(features) == 0

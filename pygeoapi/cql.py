@@ -15,7 +15,9 @@ from pycql.ast import (
 )
 from pygeoapi.cql_exception import CQLException
 import pygeoapi.cql_filters as cql_filters
-import pygeoapi.cql_where_clauses as cql_where_clauses
+import pygeoapi.sqlite_where_clauses as sqlite_where_clauses
+import pygeoapi.postgres_where_clauses as postgres_where_clauses
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,14 +46,24 @@ class CQLHandler:
         feature_list = self.CQLFilter.get_cql_filtered_list(self)
         return feature_list
 
-    def cql_where_clause(self):
+    def sqlite_where_clause(self):
         """
         Perform CQL Filter on the feature list
 
         :returns: list of filtered feature list
         """
 
-        where_clause = self.CQLFilter.get_cql_where_clause(self)
+        where_clause = self.CQLFilter.get_sqlite_where_clause(self)
+        return where_clause
+
+    def postgres_where_clause(self):
+        """
+        Perform CQL Filter on the feature list
+
+        :returns: list of filtered feature list
+        """
+
+        where_clause = self.CQLFilter.get_postgres_where_clause(self)
         return where_clause
 
     def cql_validation(self):
@@ -100,9 +112,12 @@ class CQLHandler:
             self.field_list = field_list
             self.feature_list = feature_list
             self.provider = provider
-            self.method = cql_where_clauses\
-                if self.provider in ['SQLite', 'PostGreSQL']\
-                else cql_filters
+            if self.provider == "SQLite":
+                self.method = sqlite_where_clauses
+            elif self.provider == "PostGreSQL":
+                self.method = postgres_where_clauses
+            else:
+                self.method = cql_filters
 
         def to_filter(self, node):
             """
@@ -177,6 +192,7 @@ class CQLHandler:
             elif isinstance(node, TemporalPredicateNode):
                 return self.method.temporal(
                     self.feature_list,
+                    self.field_list,
                     to_filter(node.lhs),
                     node.rhs,
                     node.op
@@ -186,6 +202,7 @@ class CQLHandler:
             elif isinstance(node, SpatialPredicateNode):
                 return self.method.spatial(
                     self.feature_list,
+                    self.field_list,
                     to_filter(node.lhs),
                     to_filter(node.rhs),
                     node.op,
@@ -198,6 +215,7 @@ class CQLHandler:
             elif isinstance(node, BBoxPredicateNode):
                 return self.method.bbox(
                     self.feature_list,
+                    self.field_list,
                     to_filter(node.lhs),
                     to_filter(node.minx),
                     to_filter(node.miny),
@@ -240,11 +258,17 @@ class CQLHandler:
 
             :returns: field ``list``
             """
+
             if self.field_list:
-                return [x.lower() for x in self.field_list]
-            field_list = list(self.feature_list[0].keys())
-            field_list = field_list + (list(self.feature_list[0]
-                                            ['properties'].keys()))
+                return self.field_list
+
+            fields = list(self.feature_list[0].keys())
+            fields = fields + (list(
+                self.feature_list[0]['properties'].keys()))
+            field_list = {}
+            for k in fields:
+                field_list[k] = k
+
             return field_list
 
         def get_cql_evaluation(self, provider):
@@ -260,7 +284,7 @@ class CQLHandler:
                 if cql_ast is None:
                     raise CQLException()
 
-                field_list = list(self.CQLFilter.get_field_list(self))
+                field_list = self.CQLFilter.get_field_list(self)
                 cql_evaluator = self.CQLEvaluator(field_list,
                                                   self.feature_list,
                                                   provider)
@@ -281,7 +305,7 @@ class CQLHandler:
                 get_cql_evaluation(self, ['CSV', 'GeoJSON'])
             return filtered_feature_list
 
-        def get_cql_where_clause(self):
+        def get_sqlite_where_clause(self):
             """
             Helper function to get where clause for provider
 
@@ -290,4 +314,15 @@ class CQLHandler:
 
             cql_where_clause = self.CQLFilter.\
                 get_cql_evaluation(self, 'SQLite')
+            return cql_where_clause
+
+        def get_postgres_where_clause(self):
+            """
+            Helper function to get where clause for provider
+
+            :returns: string where clause
+            """
+
+            cql_where_clause = self.CQLFilter.\
+                get_cql_evaluation(self, 'PostGreSQL')
             return cql_where_clause
