@@ -61,10 +61,14 @@ def feature_list(collection):
 def field_list(feature_list):
     """get the list of field names in features"""
 
-    field_name = list(feature_list[0].keys())
-    field_name = field_name + (list(feature_list[0]
-                                    ['properties'].keys()))
-    return field_name
+    fields = list(feature_list[0].keys())
+    fields = fields + (list(
+        feature_list[0]['properties'].keys()))
+    field_list = {}
+    for k in fields:
+        field_list[k] = k
+
+    return field_list
 
 
 def test_feature_collection(collection):
@@ -643,7 +647,9 @@ def temporal_test(cql_ast, feature_list, field_list):
     assert lhs.name in field_list
 
     result = temporal(
-        feature_list, attribute(lhs.name, field_list),
+        feature_list,
+        field_list,
+        attribute(lhs.name, field_list),
         literal(rhs.value), op)
     assert isinstance(result, list)
     if len(result) > 0:
@@ -866,6 +872,7 @@ def spatial_test(cql_ast, feature_list, field_list):
         distance = cql_ast.distance.value
 
     result = spatial(feature_list,
+                     field_list,
                      attribute(lhs.name, field_list),
                      literal(rhs.value), op,
                      pattern=cql_ast.pattern,
@@ -909,6 +916,7 @@ def test_bbox_simple(feature_list, field_list):
     assert lhs.name in field_list
 
     result = bbox(feature_list,
+                  field_list,
                   attribute(lhs.name, field_list),
                   literal(minx.value), literal(miny.value),
                   literal(maxx.value), literal(maxy.value))
