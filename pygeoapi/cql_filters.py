@@ -478,9 +478,9 @@ def temporal_filter(record_date_time, time_or_period, op):
         high = datetime.strptime(high.value, "%Y-%m-%dT%H:%M:%SZ")
         result = d >= low and d <= high
         if 'BEFORE' in op:
-            result = d <= low or result
-        if 'AFTER' in op:
-            result = d >= high or result
+            result = d <= high
+        elif 'AFTER' in op:
+            result = d >= low
         return result
 
 

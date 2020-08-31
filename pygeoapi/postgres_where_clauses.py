@@ -251,12 +251,12 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
             query_date_time = datetime.strptime(
                 time_or_period.value, "%Y-%m-%dT%H:%M:%SZ")
             if op == 'BEFORE':
-                where_clause = [SQL('{} <= {}').format(
+                where_clause = [SQL('{} < {}').format(
                     Identifier(field_list[lhs]),
                     Literal(query_date_time))]
 
             elif op == 'AFTER':
-                where_clause = [SQL('{} >= {}').format(
+                where_clause = [SQL('{} > {}').format(
                     Identifier(field_list[lhs]),
                     Literal(query_date_time))]
 
@@ -277,12 +277,12 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
                     SQL(' AND ').join(where_conditions))
 
             if 'BEFORE' in op:
-                where_clause = [SQL('{} <= {}').format(
+                where_clause = [SQL('{} < {}').format(
                     Identifier(field_list[lhs]),
                     Literal(high))]
 
             elif 'AFTER' in op:
-                where_clause = [SQL('{} >= {}').format(
+                where_clause = [SQL('{} > {}').format(
                     Identifier(field_list[lhs]),
                     Literal(low))]
 

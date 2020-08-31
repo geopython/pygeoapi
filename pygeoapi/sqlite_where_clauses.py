@@ -239,13 +239,13 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
                 time_or_period.value, "%Y-%m-%dT%H:%M:%SZ")
             if op == 'BEFORE':
                 where_clause =\
-                    "{date}<={parameter}".format(date=field_list[lhs],
-                                                 parameter=query_date_time)
+                    "{date}<{parameter}".format(date=field_list[lhs],
+                                                parameter=query_date_time)
 
             elif op == 'AFTER':
                 where_clause =\
-                    "{date}>={parameter}".format(date=field_list[lhs],
-                                                 parameter=query_date_time)
+                    "{date}>{parameter}".format(date=field_list[lhs],
+                                                parameter=query_date_time)
 
         # perform during operation
         elif 'DURING' in op:
@@ -258,12 +258,12 @@ def temporal(feature_list, field_list, lhs, time_or_period, op):
                                                           high=high)
             if 'BEFORE' in op:
                 where_clause =\
-                    "{date}<={high}".format(date=field_list[lhs],
-                                            high=high)
+                    "{date}<{high}".format(date=field_list[lhs],
+                                           high=high)
             elif 'AFTER' in op:
                 where_clause =\
-                    "{date}>={low}".format(date=field_list[lhs],
-                                           low=low)
+                    "{date}>{low}".format(date=field_list[lhs],
+                                          low=low)
         return where_clause
 
     except Exception as err:
