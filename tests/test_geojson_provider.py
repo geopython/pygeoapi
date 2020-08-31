@@ -173,6 +173,7 @@ cql_path = get_cql_test_file_path('data/ne_110m_lakes.geojson')
 def cql_config():
     return {
         'name': 'GeoJSON',
+        'type': 'feature',
         'data': cql_path,
         'id_field': 'id'
     }

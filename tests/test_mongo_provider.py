@@ -40,6 +40,7 @@ mongocollection = 'testplaces'
 def config():
     return {
         'name': 'MongoDB',
+        'type': 'feature',
         'data': monogourl,
         'collection': mongocollection
     }
@@ -93,8 +94,6 @@ def test_query(config):
     results = p.query(sortby=[{'property': 'scalerank', 'order': 'D'}])
     assert results['features'][0]['properties']['scalerank'] == 8
 
-    print(results['features'][0])
-    print(len(results['features'][0]['properties']))
     assert len(results['features'][0]['properties']) == 37
 
 

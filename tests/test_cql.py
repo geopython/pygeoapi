@@ -88,7 +88,6 @@ def test_feature_collection(collection):
 
     if features:
         for feature in features:
-            assert 'id' in feature
             assert 'properties' in feature
 
 

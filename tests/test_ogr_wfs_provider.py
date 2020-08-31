@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_MapServer_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?',
@@ -75,6 +76,7 @@ def config_MapServer_WFS():
 def config_GeoServer_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -105,6 +107,7 @@ def config_GeoServer_WFS():
 def config_geosol_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -134,6 +137,7 @@ def config_geosol_gs_WFS():
 def config_geonode_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -304,7 +308,6 @@ def test_query_bbox_hits_ms(config_MapServer_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 
@@ -322,7 +325,6 @@ def test_query_bbox_hits_gs(config_GeoServer_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
@@ -340,7 +342,6 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 

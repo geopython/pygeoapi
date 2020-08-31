@@ -66,6 +66,7 @@ class GeoJSONProvider(BaseProvider):
 
     def __init__(self, provider_def):
         """initializer"""
+
         BaseProvider.__init__(self, provider_def)
         self.fields = self.get_fields()
 
@@ -104,7 +105,9 @@ class GeoJSONProvider(BaseProvider):
         # Must be a FeatureCollection
         assert data['type'] == 'FeatureCollection'
         # All features must have ids, TODO must be unique strings
-
+        for i in data['features']:
+            if 'id' not in i and self.id_field in i['properties']:
+                i['id'] = i['properties'][self.id_field]
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
@@ -162,10 +165,10 @@ class GeoJSONProvider(BaseProvider):
         """
 
         all_data = self._load()
+        # if matches
         for feature in all_data['features']:
-            if str(feature[self.id_field]) == identifier:
+            if str(feature.get('id')) == identifier:
                 return feature
-
         # default, no match
         err = 'item {} not found'.format(identifier)
         LOGGER.error(err)
@@ -176,10 +179,12 @@ class GeoJSONProvider(BaseProvider):
 
         :param new_feature: new GeoJSON feature dictionary
         """
+
         all_data = self._load()
 
-        # Hijack the feature id and make sure it's unique
-        new_feature[self.id_field] = str(uuid.uuid4())
+        if self.id_field not in new_feature and\
+           self.id_field not in new_feature['properties']:
+            new_feature['properties'][self.id_field] = str(uuid.uuid4())
 
         all_data['features'].append(new_feature)
 
@@ -195,11 +200,14 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature[self.id_field] == identifier:
-                # ensure new_feature retains id
-                new_feature[self.id_field] = identifier
-                all_data['features'][i] = new_feature
-                break
+            if self.id_field in feature:
+                if feature[self.id_field] == identifier:
+                    new_feature['properties'][self.id_field] = identifier
+                    all_data['features'][i] = new_feature
+            elif self.id_field in feature['properties']:
+                if feature['properties'][self.id_field] == identifier:
+                    new_feature['properties'][self.id_field] = identifier
+                    all_data['features'][i] = new_feature
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
@@ -211,10 +219,12 @@ class GeoJSONProvider(BaseProvider):
 
         all_data = self._load()
         for i, feature in enumerate(all_data['features']):
-            if feature[self.id_field] == identifier:
-                all_data['features'].pop(i)
-                break
-
+            if self.id_field in feature:
+                if feature[self.id_field] == identifier:
+                    all_data['features'].pop(i)
+            elif self.id_field in feature['properties']:
+                if feature['properties'][self.id_field] == identifier:
+                    all_data['features'].pop(i)
         with open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 

@@ -158,12 +158,17 @@ default.
               # see pygeoapi.plugin for supported providers
               # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
               # see Plugins section for more information
-              - type: feature # underlying data geospatial type: (allowed values are: feature)
+              - type: feature # underlying data geospatial type: (allowed values are: feature, coverage)
                 default: true  # optional: if not specified, the first provider definition is considered the default
                 name: CSV
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
                 time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+                format:  # optional default format
+                    name: GeoJSON  # required: format name
+                    mimetype: application/json  # required: format mimetype
+                options:  # optional options to pass to provider (i.e. GDAL creation)
+                    option_name: option_value
                 properties:  # optional: only return the following properties, in order
                     - stn_id
                     - value

@@ -44,6 +44,7 @@ LOGGER = logging.getLogger(__name__)
 def config():
     return {
         'name': 'PostgreSQL',
+        'type': 'feature',
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',

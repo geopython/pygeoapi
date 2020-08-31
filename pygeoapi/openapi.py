@@ -39,12 +39,15 @@ from pygeoapi.util import (filter_dict_by_key_value,
                            get_provider_by_type,
                            get_extension_by_type,
                            yaml_load)
+from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
+#    'oacov': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Sprint-August-2020/master/docs/Draft_Spring_Guide_for_OGC_API_Coverages/openapi'  # noqa
+    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved'  # noqa
 }
 
 
@@ -384,7 +387,7 @@ def get_oas_30(cfg):
                     '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                 }
             }
-        }
+        }     
 
         items_path = '{}/items'.format(collection_name_path)
 
@@ -444,20 +447,111 @@ def get_oas_30(cfg):
                 append(filter_lang_parameter)
             cql_filter_exists = True
 
-        if p.fields:
-            queryables_path = '{}/queryables'.format(collection_name_path)
+        LOGGER.debug('setting up feature endpoints')
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                            collections[k]['providers'], 'feature'))
+            if p.fields:
+                queryables_path = '{}/queryables'.format(collection_name_path)
 
-            paths[queryables_path] = {
+                paths[queryables_path] = {
+                    'get': {
+                        'summary': 'Get {} queryables'.format(v['title']),
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': 'get{}Queryables'.format(
+                            k.capitalize()),
+                        'parameters': [
+                            items_f,
+                        ],
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/Queryables'},  # noqa
+                            '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                            '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                            '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                        }
+                    }
+                }
+
+            if p.time_field is not None:
+                paths[items_path]['get']['parameters'].append(
+                    {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
+
+            for field, type in p.fields.items():
+
+                if p.properties and field not in p.properties:
+                    LOGGER.debug('Provider specified not to advertise property')  # noqa
+                    continue
+
+                if type == 'date':
+                    schema = {
+                        'type': 'string',
+                        'format': 'date'
+                    }
+                elif type == 'float':
+                    schema = {
+                        'type': 'number',
+                        'format': 'float'
+                    }
+                elif type == 'long':
+                    schema = {
+                        'type': 'integer',
+                        'format': 'int64'
+                    }
+                else:
+                    schema = {
+                        'type': type
+                    }
+
+                path_ = '{}/items'.format(collection_name_path)
+                paths['{}'.format(path_)]['get']['parameters'].append({
+                    'name': field,
+                    'in': 'query',
+                    'required': False,
+                    'schema': schema,
+                    'style': 'form',
+                    'explode': False
+                })
+
+            paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
                 'get': {
-                    'summary': 'Get {} queryables'.format(v['title']),
+                    'summary': 'Get {} item by id'.format(v['title']),
                     'description': v['description'],
                     'tags': [k],
-                    'operationId': 'get{}Queryables'.format(k.capitalize()),
+                    'operationId': 'get{}Feature'.format(k.capitalize()),
                     'parameters': [
+                        {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '#/components/parameters/f'}
                     ],
                     'responses': {
-                        '200': {'$ref': '#/components/responses/Queryables'},
+                        '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+        except ProviderTypeError:
+            LOGGER.debug('collection is not feature based')
+
+        LOGGER.debug('setting up coverage endpoints')
+        try:
+            load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'coverage'))
+
+            coverage_path = '{}/coverage'.format(collection_name_path)
+
+            paths[coverage_path] = {
+                'get': {
+                    'summary': 'Get {} coverage'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}Coverage'.format(k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
@@ -465,64 +559,51 @@ def get_oas_30(cfg):
                 }
             }
 
-        if p.time_field is not None:
-            paths[items_path]['get']['parameters'].append(
-                {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
+            coverage_domainset_path = '{}/coverage/domainset'.format(
+                collection_name_path)
 
-        for field, type in p.fields.items():
-
-            if p.properties and field not in p.properties:
-                LOGGER.debug('Provider specified not to advertise property')
-                continue
-
-            if type == 'date':
-                schema = {
-                    'type': 'string',
-                    'format': 'date'
-                }
-            elif type == 'float':
-                schema = {
-                    'type': 'number',
-                    'format': 'float'
-                }
-            elif type == 'long':
-                schema = {
-                    'type': 'integer',
-                    'format': 'int64'
-                }
-            else:
-                schema = {
-                    'type': type
-                }
-
-            path_ = '{}/items'.format(collection_name_path)
-            paths['{}'.format(path_)]['get']['parameters'].append({
-                'name': field,
-                'in': 'query',
-                'required': False,
-                'schema': schema,
-                'style': 'form',
-                'explode': False
-            })
-
-        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
-            'get': {
-                'summary': 'Get {} item by id'.format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'operationId': 'get{}Feature'.format(k.capitalize()),
-                'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'responses': {
-                    '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+            paths[coverage_domainset_path] = {
+                'get': {
+                    'summary': 'Get {} coverage domain set'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}CoverageDomainSet'.format(
+                        k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}/schemas/cis_1.1/domainSet.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
                 }
             }
-        }
+
+            coverage_rangetype_path = '{}/coverage/rangetype'.format(
+                collection_name_path)
+
+            paths[coverage_rangetype_path] = {
+                'get': {
+                    'summary': 'Get {} coverage range type'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}CoverageRangeType'.format(
+                        k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}/schemas/cis_1.1/rangeType.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+        except ProviderTypeError:
+            LOGGER.debug('collection is not coverage based')
 
     # if CQL filter is applicable
     if cql_filter_exists:

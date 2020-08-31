@@ -3,6 +3,7 @@ Flask
 python-dateutil
 pytz
 PyYAML
+rasterio
 unicodecsv
 pycql
 shapely

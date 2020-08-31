@@ -34,6 +34,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import re
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
@@ -46,11 +47,13 @@ from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderQueryError, ProviderItemNotFoundError)
+    ProviderInvalidQueryError, ProviderQueryError, ProviderItemNotFoundError,
+    ProviderTypeError)
 from pygeoapi.cql_exception import CQLException
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-                           json_serial, render_j2_template, TEMPLATES, to_json)
+                           get_typed_value, render_j2_template,
+                           TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,8 +70,13 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+    'http://www.opengis.net/spec/ogcapi_coverages-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html'
 ]
+
+OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 
 def pre_process(func):
@@ -112,6 +120,11 @@ class API:
         if 'templates' not in self.config['server']:
             self.config['server']['templates'] = TEMPLATES
 
+        if 'pretty_print' not in self.config['server']:
+            self.config['server']['pretty_print'] = False
+
+        self.pretty_print = self.config['server']['pretty_print']
+
         setup_logger(self.config['logging'])
 
     @pre_process
@@ -133,7 +146,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         fcm = {
             'links': [],
@@ -203,9 +216,9 @@ class API:
 
         if format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
-            return headers_, 200, json.dumps(self.fcmld)
+            return headers_, 200, to_json(self.fcmld, self.pretty_print)
 
-        return headers_, 200, json.dumps(fcm)
+        return headers_, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
     def openapi(self, headers_, format_, openapi):
@@ -227,7 +240,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
 
@@ -242,7 +255,7 @@ class API:
         headers_['Content-Type'] = \
             'application/vnd.oai.openapi+json;version=3.0'
 
-        return headers_, 200, json.dumps(openapi)
+        return headers_, 200, to_json(openapi, self.pretty_print)
 
     @pre_process
     def conformance(self, headers_, format_):
@@ -262,7 +275,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         conformance = {
             'conformsTo': CONFORMANCE
@@ -274,7 +287,7 @@ class API:
                                          conformance)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(conformance)
+        return headers_, 200, to_json(conformance, self.pretty_print)
 
     @pre_process
     @jsonldify
@@ -296,7 +309,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         fcm = {
             'collections': [],
@@ -312,16 +325,20 @@ class API:
                 'description': 'Invalid collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
-            collection_data_type = get_provider_default(
-                v['providers'])['type']
+            collection_data = get_provider_default(v['providers'])
+            collection_data_type = collection_data['type']
+
+            collection_data_format = None
+
+            if 'format' in collection_data:
+                collection_data_format = collection_data['format']
 
             collection = {'links': []}
             collection['id'] = k
-            collection['itemType'] = collection_data_type.capitalize()
             collection['title'] = v['title']
             collection['description'] = v['description']
             collection['keywords'] = v['keywords']
@@ -387,6 +404,7 @@ class API:
             })
 
             if collection_data_type == 'feature':
+                collection['itemType'] = collection_data_type.capitalize()
                 LOGGER.debug('Adding feature based links')
                 collection['links'].append({
                     'type': 'application/json',
@@ -423,6 +441,75 @@ class API:
                     'href': '{}/collections/{}/items?f=html'.format(
                         self.config['server']['url'], k)
                 })
+            elif collection_data_type == 'coverage':
+                LOGGER.debug('Adding coverage based links')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'collection',
+                    'title': 'Detailed Coverage metadata in JSON',
+                    'href': '{}/collections/{}?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'collection',
+                    'title': 'Detailed Coverage metadata in HTML',
+                    'href': '{}/collections/{}?f=html'.format(
+                        self.config['server']['url'], k)
+                })
+                coverage_url = '{}/collections/{}/coverage'.format(
+                        self.config['server']['url'], k)
+
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': '{}/coverage-domainset'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage domain set of collection in JSON',
+                    'href': '{}/domainset?f=json'.format(coverage_url)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': '{}/coverage-domainset'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage domain set of collection in HTML',
+                    'href': '{}/domainset?f=html'.format(coverage_url)
+                })
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': '{}/coverage-rangetype'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage range type of collection in JSON',
+                    'href': '{}/rangetype?f=json'.format(coverage_url)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': '{}/coverage-rangetype'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage range type of collection in HTML',
+                    'href': '{}/rangetype?f=html'.format(coverage_url)
+                })
+                collection['links'].append({
+                    'type': 'application/prs.coverage+json',
+                    'rel': '{}/coverage'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage data',
+                    'href': '{}/collections/{}/coverage?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                if collection_data_format is not None:
+                    collection['links'].append({
+                        'type': collection_data_format['mimetype'],
+                        'rel': '{}/coverage'.format(OGC_RELTYPES_BASE),
+                        'title': 'Coverage data as {}'.format(
+                            collection_data_format['name']),
+                        'href': '{}/collections/{}/coverage?f={}'.format(
+                            self.config['server']['url'], k,
+                            collection_data_format['name'])
+                    })
+                if dataset is not None:
+                    LOGGER.debug('Creating extended coverage metadata')
+                    p = load_plugin('provider', get_provider_by_type(
+                        self.config['resources'][dataset]['providers'],
+                        'coverage'))
+
+                    collection['crs'] = [p.crs]
+                    collection['domainset'] = p.get_coverage_domainset()
+                    collection['rangetype'] = p.get_coverage_rangetype()
 
             if dataset is not None and k == dataset:
                 fcm = collection
@@ -479,9 +566,9 @@ class API:
                     )
                 )
             headers_['Content-Type'] = 'application/ld+json'
-            return headers_, 200, json.dumps(jsonld)
+            return headers_, 200, to_json(jsonld, self.pretty_print)
 
-        return headers_, 200, json.dumps(fcm, default=json_serial)
+        return headers_, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
     @jsonldify
@@ -503,7 +590,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
@@ -513,7 +600,7 @@ class API:
                 'description': 'Invalid collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Creating collection queryables')
         LOGGER.debug('Loading provider')
@@ -526,14 +613,14 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         queryables = {
             'queryables': []
@@ -561,7 +648,7 @@ class API:
 
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(queryables, default=json_serial)
+        return headers_, 200, to_json(queryables, self.pretty_print)
 
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
@@ -593,7 +680,7 @@ class API:
                 'description': 'Invalid collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception, default=json_serial)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         format_ = check_format(args, headers)
 
@@ -603,7 +690,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Processing query parameters')
 
@@ -617,7 +704,7 @@ class API:
                                    'or zero'
                 }
                 LOGGER.error(exception)
-                return headers_, 400, json.dumps(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
         except (TypeError) as err:
             LOGGER.warning(err)
             startindex = 0
@@ -628,7 +715,7 @@ class API:
                 'description': 'startindex value should be an integer'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Processing limit parameter')
         try:
@@ -641,7 +728,7 @@ class API:
                     'description': 'limit value should be strictly positive'
                 }
                 LOGGER.error(exception)
-                return headers_, 400, json.dumps(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
         except TypeError as err:
             LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
@@ -652,7 +739,7 @@ class API:
                 'description': 'limit value should be an integer'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -665,7 +752,7 @@ class API:
                     'description': 'bbox values should be minx,miny,maxx,maxy'
                 }
                 LOGGER.error(exception)
-                return headers_, 400, json.dumps(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
         except AttributeError:
             bbox = []
         try:
@@ -676,7 +763,7 @@ class API:
                 'description': 'bbox values must be numbers'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Processing datetime parameter')
         # TODO: pass datetime to query as a `datetime` object
@@ -739,7 +826,7 @@ class API:
                 'description': 'datetime parameter out of range'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         # processing cql filter query parameter
         LOGGER.debug('Processing filter parameter')
@@ -753,7 +840,7 @@ class API:
                 )
                 cql_handler.cql_validation()
 
-        except Exception:
+        except CQLException:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid CQL filter expression'
@@ -765,20 +852,27 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
@@ -788,7 +882,7 @@ class API:
                     'description': 'unknown query parameter'
                 }
                 LOGGER.error(exception)
-                return headers_, 400, json.dumps(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
             elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
@@ -808,7 +902,8 @@ class API:
                             'description': 'sort order should be A or D'
                         }
                         LOGGER.error(exception)
-                        return headers_, 400, json.dumps(exception)
+                        return headers_, 400, to_json(exception,
+                                                      self.pretty_print)
                     sortby.append({'property': prop, 'order': order})
                 else:
                     sortby.append({'property': s, 'order': 'A'})
@@ -819,7 +914,7 @@ class API:
                         'description': 'bad sort property'
                     }
                     LOGGER.error(exception)
-                    return headers_, 400, json.dumps(exception)
+                    return headers_, 400, to_json(exception, self.pretty_print)
         else:
             sortby = []
 
@@ -843,28 +938,28 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'generic error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except CQLException as err:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid CQL filter expression'
             }
             LOGGER.error(err)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, json.dumps(exception, self.pretty_print)
 
         serialized_query_params = ''
         for k, v in args.items():
@@ -977,7 +1072,7 @@ class API:
             content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content, default=json_serial)
+        return headers_, 200, to_json(content, self.pretty_print)
 
     @pre_process
     def get_collection_item(self, headers_, format_, dataset, identifier):
@@ -999,7 +1094,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1012,12 +1107,19 @@ class API:
                 'description': 'Invalid collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Loading provider')
-        p = load_plugin('provider', get_provider_by_type(
-            collections[dataset]['providers'], 'feature'))
-
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                collections[dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
@@ -1027,28 +1129,28 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderItemNotFoundError:
             exception = {
                 'code': 'NotFound',
                 'description': 'identifier not found'
             }
             LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
         except ProviderQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'generic error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         if content is None:
             exception = {
@@ -1056,7 +1158,7 @@ class API:
                 'description': 'identifier not found'
             }
             LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
 
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
@@ -1109,7 +1211,384 @@ class API:
             )
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content, default=json_serial)
+        return headers_, 200, to_json(content, self.pretty_print)
+
+    @jsonldify
+    def get_collection_coverage(self, headers_, args, dataset,
+                                pathinfo=None):
+        """
+        Returns a subset of a collection coverage
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        query_args = {}
+        format_ = 'json'
+
+        LOGGER.debug('Processing query parameters')
+
+        subsets = {}
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'coverage')
+
+            p = load_plugin('provider', collection_def)
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'}, 400,
+                    to_json(exception, self.pretty_print))
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
+
+        if 'f' in args:
+            query_args['format_'] = format_ = args['f']
+        if 'rangeSubset' in args:
+            LOGGER.debug('Processing rangeSubset parameter')
+            query_args['bands'] = list(
+                filter(None, args['rangeSubset'].split(',')))
+            LOGGER.debug('Bands: {}'.format(query_args['bands']))
+
+            for a in query_args['bands']:
+                if int(a) > p.num_bands:
+                    exception = {
+                        'code': 'InvalidParameterValue',
+                        'description': 'Invalid bands specified'
+                    }
+                    LOGGER.error(exception)
+                    return ({'Content-type': 'application/json'}, 400,
+                            to_json(exception, self.pretty_print))
+
+        if 'subset' in args:
+            LOGGER.debug('Processing subset parameters')
+            for s in args.getlist('subset'):
+                try:
+                    m = re.search(r'(.*)\((.*),(.*)\)', s)
+                    subset_name = m.group(1)
+                    if subset_name not in p.axes:
+                        exception = {
+                            'code': 'InvalidParameterValue',
+                            'description': 'Invalid axis name'
+                        }
+                        LOGGER.error(exception)
+                        return ({'Content-type': 'application/json'}, 400,
+                                to_json(exception, self.pretty_print))
+
+                    subsets[subset_name] = list(map(
+                        get_typed_value, m.group(2, 3)))
+                except AttributeError:
+                    exception = {
+                        'code': 'InvalidParameterValue',
+                        'description': 'subset should be like "axis(min,max)"'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 400, to_json(exception, self.pretty_print)
+
+            query_args['subsets'] = subsets
+            LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
+
+        LOGGER.debug('Querying coverage')
+        try:
+            data = p.query(**query_args)
+        except ProviderInvalidQueryError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error: {}'.format(err),
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'},
+                    400, to_json(exception, self.pretty_print))
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'},
+                    500, to_json(exception, self.pretty_print))
+
+        mt = collection_def['format']['name']
+
+        if format_ == mt:
+            return ({'Content-type': mt}, 200, data)
+        elif format_ == 'json':
+            return ({'Content-type': 'application/prs.coverage+json'},
+                    200, to_json(data, self.pretty_print))
+        else:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid format parameter'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'},
+                    400, to_json(exception, self.pretty_print))
+
+    @jsonldify
+    def get_collection_coverage_domainset(self, headers_, args, dataset,
+                                          pathinfo=None):
+        """
+        Returns a collection coverage domainset
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = check_format(args, headers_)
+        if format_ is None:
+            format_ = 'json'
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'coverage')
+
+            p = load_plugin('provider', collection_def)
+
+            data = p.get_coverage_domainset()
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'}, 400,
+                    to_json(exception, self.pretty_print))
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
+
+        if format_ == 'json':
+            return ({'Content-type': 'application/json'},
+                    200, to_json(data, self.pretty_print))
+        elif format_ == 'html':
+            data['id'] = dataset
+            data['title'] = self.config['resources'][dataset]['title']
+            content = render_j2_template(self.config, 'domainset.html',
+                                         data)
+            return {'Content-type': 'text/html'}, 200, content
+        else:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid format parameter'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'},
+                    400, to_json(exception, self.pretty_print))
+
+    @jsonldify
+    def get_collection_coverage_rangetype(self, headers_, args, dataset,
+                                          pathinfo=None):
+        """
+        Returns a collection coverage rangetype
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = check_format(args, headers_)
+        if format_ is None:
+            format_ = 'json'
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'coverage')
+
+            p = load_plugin('provider', collection_def)
+
+            data = p.get_coverage_rangetype()
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'}, 400,
+                    to_json(exception, self.pretty_print))
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
+
+        if format_ == 'json':
+            return ({'Content-type': 'application/json'},
+                    200, to_json(data, self.pretty_print))
+        elif format_ == 'html':
+            data['id'] = dataset
+            data['title'] = self.config['resources'][dataset]['title']
+            content = render_j2_template(self.config, 'rangetype.html',
+                                         data)
+            return {'Content-type': 'text/html'}, 200, content
+        else:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid format parameter'
+            }
+            LOGGER.error(exception)
+            return ({'Content-type': 'application/json'},
+                    400, to_json(exception, self.pretty_print))
+
+    @pre_process
+    @jsonldify
+    def describe_processes(self, headers_, format_, process=None):
+        """
+        Provide processes metadata
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        processes_config = filter_dict_by_key_value(self.config['resources'],
+                                                    'type', 'process')
+
+        if processes_config:
+            if process is not None:
+                if process not in processes_config.keys():
+                    exception = {
+                        'code': 'NotFound',
+                        'description': 'identifier not found'
+                    }
+                    LOGGER.error(exception)
+                    return headers_, 404, to_json(exception, self.pretty_print)
+
+                p = load_plugin('process',
+                                processes_config[process]['processor'])
+                p.metadata['jobControlOptions'] = ['sync-execute']
+                p.metadata['outputTransmission'] = ['value']
+                response = p.metadata
+            else:
+                processes = []
+                for k, v in processes_config.items():
+                    p = load_plugin('process',
+                                    processes_config[k]['processor'])
+                    p.metadata['jobControlOptions'] = ['sync-execute']
+                    p.metadata['outputTransmission'] = ['value']
+                    processes.append(p.metadata)
+                response = {
+                    'processes': processes
+                }
+        else:
+            processes = []
+            response = {'processes': processes}
+
+        if format_ == 'html':  # render
+            headers_['Content-Type'] = 'text/html'
+            if process is not None:
+                response = render_j2_template(self.config, 'process.html',
+                                              p.metadata)
+            else:
+                response = render_j2_template(self.config, 'processes.html',
+                                              {'processes': processes})
+
+            return headers_, 200, response
+
+        return headers_, 200, to_json(response, self.pretty_print)
+
+    def execute_process(self, headers, args, data, process):
+        """
+        Execute process
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param data: process data
+        :param process: name of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        data_dict = {}
+        response = {}
+
+        if not data:
+            exception = {
+                'code': 'MissingParameterValue',
+                'description': 'missing request data'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        processes = filter_dict_by_key_value(self.config['resources'],
+                                             'type', 'process')
+
+        if process not in processes:
+            exception = {
+                'code': 'NotFound',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
+
+        p = load_plugin('process',
+                        processes[process]['processor'])
+
+        data_ = json.loads(data)
+        for input_ in data_['inputs']:
+            data_dict[input_['id']] = input_['value']
+
+        try:
+            outputs = p.execute(data_dict)
+            m = p.metadata
+            if 'response' in args and args['response'] == 'raw':
+                headers_['Content-Type'] = \
+                    m['outputs'][0]['output']['formats'][0]['mimeType']
+                if 'json' in headers_['Content-Type']:
+                    response = to_json(outputs)
+                else:
+                    response = outputs
+            else:
+                response['outputs'] = outputs
+                response = to_json(response)
+            return headers_, 200, response
+        except Exception as err:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': str(err)
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
     @pre_process
     @jsonldify
@@ -1121,7 +1600,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         id_ = 'pygeoapi-stac'
         stac_version = '0.6.2'
@@ -1161,7 +1640,7 @@ class API:
                                          content)
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(content, default=json_serial)
+        return headers_, 200, to_json(content, self.pretty_print)
 
     @pre_process
     @jsonldify
@@ -1173,7 +1652,7 @@ class API:
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Path: {}'.format(path))
         dir_tokens = path.split('/')
@@ -1189,7 +1668,7 @@ class API:
                 'description': 'collection not found'
             }
             LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Loading provider')
         try:
@@ -1202,7 +1681,7 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         id_ = '{}-stac'.format(dataset)
         stac_version = '0.6.2'
@@ -1227,14 +1706,14 @@ class API:
                 'code': 'NotFound',
                 'description': 'resource not found'
             }
-            return headers_, 404, json.dumps(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
         except Exception as err:
             LOGGER.error(err)
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'data query error'
             }
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
@@ -1254,144 +1733,11 @@ class API:
 
                 return headers_, 200, content
 
-            return headers_, 200, json.dumps(content, default=json_serial)
+            return headers_, 200, to_json(content, self.pretty_print)
 
         else:  # send back file
             headers_.pop('Content-Type', None)
             return headers_, 200, stac_data
-
-    @pre_process
-    @jsonldify
-    def describe_processes(self, headers_, format_, process=None):
-        """
-        Provide processes metadata
-
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param process: name of process
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
-
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
-
-        if processes_config:
-            if process is not None:
-                if process not in processes_config.keys():
-                    exception = {
-                        'code': 'NotFound',
-                        'description': 'identifier not found'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 404, json.dumps(exception)
-
-                p = load_plugin('process',
-                                processes_config[process]['processor'])
-                p.metadata['jobControlOptions'] = ['sync-execute']
-                p.metadata['outputTransmission'] = ['value']
-                response = p.metadata
-            else:
-                processes = []
-                for k, v in processes_config.items():
-                    p = load_plugin('process',
-                                    processes_config[k]['processor'])
-                    p.metadata['itemType'] = 'process'
-                    p.metadata['jobControlOptions'] = ['sync-execute']
-                    p.metadata['outputTransmission'] = ['value']
-                    processes.append(p.metadata)
-                response = {
-                    'processes': processes
-                }
-        else:
-            processes = []
-            response = {'processes': processes}
-
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
-            if process is not None:
-                response = render_j2_template(self.config, 'process.html',
-                                              p.metadata)
-            else:
-                response = render_j2_template(self.config, 'processes.html',
-                                              {'processes': processes})
-
-            return headers_, 200, response
-
-        return headers_, 200, json.dumps(response)
-
-    def execute_process(self, headers, args, data, process):
-        """
-        Execute process
-
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param data: process data
-        :param process: name of process
-
-        :returns: tuple of headers, status code, content
-        """
-
-        headers_ = HEADERS.copy()
-
-        data_dict = {}
-        response = {}
-
-        if not data:
-            exception = {
-                'code': 'MissingParameterValue',
-                'description': 'missing request data'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
-
-        processes = filter_dict_by_key_value(self.config['resources'],
-                                             'type', 'process')
-
-        if process not in processes:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
-
-        p = load_plugin('process',
-                        processes[process]['processor'])
-
-        data_ = json.loads(data)
-        for input_ in data_['inputs']:
-            data_dict[input_['id']] = input_['value']
-
-        try:
-            outputs = p.execute(data_dict)
-            m = p.metadata
-            if 'response' in args and args['response'] == 'raw':
-                headers_['Content-Type'] = \
-                    m['outputs'][0]['output']['formats'][0]['mimeType']
-                if 'json' in headers_['Content-Type']:
-                    response = to_json(outputs)
-                else:
-                    response = outputs
-            else:
-                response['outputs'] = outputs
-                response = to_json(response)
-            return headers_, 200, response
-        except Exception as err:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': str(err)
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
 
 
 def check_format(args, headers):
