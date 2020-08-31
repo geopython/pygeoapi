@@ -402,6 +402,10 @@ def test_cql_spatial(config):
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
     assert results['numberReturned'] == 2
+    results = p.query(cql_expression='BBOX(geometry, -90, 40, -60, 45)')
+    assert len(results['features']) == 4
+    assert results['numberMatched'] == 4
+    assert results['numberReturned'] == 4
 
 
 # test on temporal operation
@@ -443,10 +447,6 @@ def test_cql_temporal(config):
     assert len(results['features']) == 4
     assert results['numberMatched'] == 4
     assert results['numberReturned'] == 4
-    results = p.query(cql_expression='BBOX(geometry, -90, 40, -60, 45)')
-    assert len(results['features']) == 4
-    assert results['numberMatched'] == 4
-    assert results['numberReturned'] == 4
 
 
 def test_cql_hits(config):
@@ -479,7 +479,7 @@ def test_cql_auxiliary_expressions(config):
             cql_expression='datetime FOLLOWING 2001-10-30T14:24:55Z'
         )
         assert results.get('features', None) is None
-        results = p.query(cql_expression='name LIKE 2')
+        results = p.query(cql_expression='  ')
         assert results.get('features', None) is None
         results = p.query(cql_expression='id BETWEEN 2 AND "A"')
         assert results.get('features', None) is None
