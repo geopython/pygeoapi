@@ -273,14 +273,12 @@ expression or an arbitrarily complex expression. To implement these enhanced fil
 CQL is used. CQL extension on pygeoapi specifies how resource instances in a source collection should be filtered to identify
 a result set. 
 
-CQL helps in query operations to identify the subset of resources that should be included in a response document. However,
-CQL may also be used in other operations (e.g. updates) to identify the subset of resources that should be affected by an 
-operation. Each resource instance in the source collection is evaluated using a CQL filtering expression. The overall
+CQL helps in query operations to identify the subset of resources that should be included in a response document. Each resource instance in the source collection is evaluated using a CQL filtering expression. The overall
 filter expression always evaluates to true or false. If the expression evaluates to true, the resource instance satisfies 
 the expression and is marked as being in the result set. If the overall filter expression evaluates to false, the data instance
 is not in the result set.
 
-This section is implemented at collection level and based on `OGC API - Features - Part 3: Common Query Language <http://docs.opengeospatial.org/DRAFTS/19-079.html>`_ document that
+This section is implemented at provider level and based on `OGC API - Features - Part 3: Common Query Language <http://docs.opengeospatial.org/DRAFTS/19-079.html>`_ document that
 defines the schema for a JSON document and exposes the set of properties or keys that are used to construct CQL expressions for
 pygeoapi.
 
@@ -290,13 +288,17 @@ The default pygeoapi configuration for CQL extension includes an example for the
 
 .. code-block:: yaml
 
-    resources:
-        obs:
-            filters:
-                - cql-text
-                - cql-json
+resources:
+    obs:
+        providers:
+            extensions:
+                - type: CQL
+                filters:
+                    - cql-text
+                    - cql-json
 
-    
+
+
 Summary
 -------
 
