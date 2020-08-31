@@ -7,23 +7,23 @@ This directory provides test data to demonstrate functionality.
 ### `ne_110m_lakes.geojson`
 
 - source: Natural Earth Lakes + Reservoirs
-- URL: [http://www.naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/](http://www.naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/)
+- URL: [https:/naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/](https://naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/)
 - Shapefile converted to GeoJSON
-- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](http://naturalearthdata.com)
+- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](https://naturalearthdata.com)
 
 ### `ne_110m_admin_0_countries.sqlite`
 
 - source: Natural Earth Admin 0 - Countries
-- URL: [http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/](http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/)
+- URL: [https://naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/](https://naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/)
 - Shapefile converted to SQLite
-- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](http://naturalearthdata.com)
+- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](https://naturalearthdata.com)
 
 ### `ne_110m_populated_places_simple.geojson`
 
 - source: Natural Earth Populated Places
-- URL: [http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/](http://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/)
+- URL: [https://naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/](https://naturalearthdata.com/downloads/110m-cultural-vectors/110m-populated-places/)
 - Shapefile converted to GeoJSON
-- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](http://naturalearthdata.com)
+- Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](https://naturalearthdata.com)
 
 ### `obs.csv`
 
@@ -35,8 +35,8 @@ This directory provides test data to demonstrate functionality.
 ### `poi_portugal.gpkg`
 
 - source: OpenStreetMap - Natural GIS
-- URL: [http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities](http://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities)
-- Data obtained from WFS instance of NaturalGIS company (http://www.naturalgis.pt/en/) and converted to geopackage
+- URL: [https://naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities](https://www.naturalgis.pt/cgi-bin/opendata/mapserv?service=WFS&request=GetCapabilities)
+- Data obtained from WFS instance of NaturalGIS company (https://naturalgis.pt/en/) and converted to geopackage
 - Upstream data from OpenStreetMap extract for Portugal
 
 ### `hotosm_bdi_waterways.sql.gz`
@@ -51,4 +51,4 @@ This directory provides test data to demonstrate functionality.
 
 - source: [Meteorological Service of Canada Datamrt](https://eccc-msc.github.io/open-data/msc-datamart/readme_en)
 - URL: https://dd.weather.gc.ca/model_gem_global/15km/grib2/lat_lon/00/000
-- License: https://eccc-msc.github.io/open-data/licence/readme_en/
+- License: https://eccc-msc.github.io/open-data/licence/readme_en

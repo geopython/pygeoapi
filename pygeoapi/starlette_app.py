@@ -277,6 +277,72 @@ for collection_id in coll_support_trans:
                   collection_items, methods=['PATCH', 'PUT', 'DELETE'])
 
 
+@app.route('/collections/<collection_id>/coverage')
+def collection_coverage(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/<collection_id>/coverage/domainset')
+def collection_coverage_domainset(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage domainset endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_domainset(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/<collection_id>/coverage/rangetype')
+def collection_coverage_rangetype(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage rangetype endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_rangetype(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes')
+@app.route('/processes/')
+@app.route('/processes/{process_id}')
 @app.route('/processes/{process_id}/')
 @app.route('/processes/{process_id}')
 @app.route('/processes/')

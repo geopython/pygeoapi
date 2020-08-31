@@ -44,13 +44,24 @@ class BaseProvider:
         :returns: pygeoapi.providers.base.BaseProvider
         """
 
-        self.name = provider_def['name']
-        self.data = provider_def['data']
+        try:
+            self.name = provider_def['name']
+            self.type = provider_def['type']
+            self.data = provider_def['data']
+        except KeyError:
+            raise RuntimeError('name/type/data are required')
+
+        self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
         self.time_field = provider_def.get('time_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
         self.fields = {}
+
+        # for coverage providers
+        self.axes = []
+        self.crs = None
+        self.num_bands = None
 
     def get_fields(self):
         """
@@ -74,11 +85,21 @@ class BaseProvider:
 
         raise NotImplementedError()
 
+    def get_metadata(self):
+        """
+        Provide data/file metadata
+
+        :returns: `dict` of metadata construct (format
+                  determined by provider/standard)
+        """
+
+        raise NotImplementedError()
+
     def query(self):
         """
         query the provider
 
-        :returns: dict of 0..n GeoJSON features
+        :returns: dict of 0..n GeoJSON features or coverage data
         """
 
         raise NotImplementedError()
@@ -108,8 +129,26 @@ class BaseProvider:
 
         raise NotImplementedError()
 
+    def get_coverage_domainset(self):
+        """
+        Provide coverage domainset
+
+        :returns: CIS JSON object of domainset metadata
+        """
+
+        raise NotImplementedError()
+
+    def get_coverage_rangetype(self):
+        """
+        Provide coverage rangetype
+
+        :returns: CIS JSON object of rangetype metadata
+        """
+
+        raise NotImplementedError()
+
     def delete(self, identifier):
-        """Updates an existing feature id with new_feature
+        """Deletes an existing feature
 
         :param identifier: feature id
         """
@@ -130,13 +169,23 @@ class ProviderConnectionError(ProviderGenericError):
     pass
 
 
+class ProviderTypeError(ProviderGenericError):
+    """provider type error"""
+    pass
+
+
+class ProviderInvalidQueryError(ProviderGenericError):
+    """provider invalid query error"""
+    pass
+
+
 class ProviderQueryError(ProviderGenericError):
     """provider query error"""
     pass
 
 
 class ProviderItemNotFoundError(ProviderGenericError):
-    """provider query error"""
+    """provider item not found query error"""
     pass
 
 

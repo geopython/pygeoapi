@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 def config_vsicurl_csv():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'CSV',
             'source': '/vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv', # noqa
@@ -122,7 +123,6 @@ def test_query_bbox_hits_vsicurl(config_vsicurl_csv):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 

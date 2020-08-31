@@ -36,6 +36,7 @@ import yaml
 import copy
 
 from pygeoapi.plugin import load_plugin
+from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
                            yaml_load)
 
@@ -43,7 +44,9 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi'  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
+#    'oacov': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Sprint-August-2020/master/docs/Draft_Spring_Guide_for_OGC_API_Coverages/openapi'  # noqa
+    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved'  # noqa
 }
 
 
@@ -407,129 +410,70 @@ def get_oas_30(cfg):
                 }
             }
         }
-        data_provider = load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'feature'))
-        id = data_provider.id_field
-        samp_feat = data_provider.query()['features'][0]
-        samp_feat.pop(id, None)
-        samp_feat['properties'].pop(id, None)
-        samp_prop = samp_feat['properties']
-        samp_geom = samp_feat['geometry']
-        fields = data_provider.get_fields()
-        fields.pop(id, None)
-        prop = dict()
-        for key in samp_prop:
-            prop[key] = {'type': fields[key],
-                         'example': samp_prop[key]}
-        geom = samp_geom['type']
-        oapif = OPENAPI_YAML['oapif']
-        geom_schema = '{}#/components/schemas/{}GeoJSON'\
-                      .format(oapif, geom.lower())
-        geom = {'$ref': geom_schema}
-        form = {
-                    'type': {
-                        'type': 'string',
-                        'enum': ['Feature']
-                    },
-                    'geometry': geom,
-                    'properties': {
-                        'type': 'object',
-                        'properties': prop
-                    }
-                }
-        post_form = copy.deepcopy(form)
-        feature_id = '{}#/components/parameters/featureId'.format(oapif)
-        nvpo = '#/components/schemas/nameValuePairObj'
 
-        # flag if data transactions is specified and enabled for the collection
-        for provider in collections[k]['providers']:
-            if provider['type'] == 'feature' and\
-              'extensions' in provider:
-                for extension in provider['extensions']:
-                    if extension['type'] == 'transaction' and\
-                       extension['enabled']:
-                        transaction = True
-                        break
-
-        items_path = '{}/items'.format(collection_name_path)
-
-        paths[items_path] = {
-            'get': {
-                'summary': 'Get {} items'.format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'operationId': 'get{}Features'.format(k.capitalize()),
-                'parameters': [
-                    items_f,
-                    {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    {'$ref': '#/components/parameters/sortby'},
-                    {'$ref': '#/components/parameters/startindex'}
-                ],
-                'responses': {
-                    '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
-                }
-            }
-        }
-
-        post = {
-            'post': {
-                'summary': 'Add a new feature to {}'.format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'requestBody': {
-                    'required': True,
-                    'content': {
-                        'application/geo+json': {
-                            'schema': {
-                                'type': 'object',
-                                'properties': post_form
-                            }
+        LOGGER.debug('setting up feature endpoints')
+        try:
+            data_provider = load_plugin('provider', get_provider_by_type(
+                            collections[k]['providers'], 'feature'))
+            id = data_provider.id_field
+            samp_feat = data_provider.query()['features'][0]
+            samp_feat.pop(id, None)
+            samp_feat['properties'].pop(id, None)
+            samp_prop = samp_feat['properties']
+            samp_geom = samp_feat['geometry']
+            fields = data_provider.get_fields()
+            fields.pop(id, None)
+            prop = dict()
+            for key in samp_prop:
+                prop[key] = {'type': fields[key],
+                             'example': samp_prop[key]}
+            geom = samp_geom['type']
+            oapif = OPENAPI_YAML['oapif']
+            geom_schema = '{}#/components/schemas/{}GeoJSON'\
+                          .format(oapif, geom.lower())
+            geom = {'$ref': geom_schema}
+            form = {
+                        'type': {
+                            'type': 'string',
+                            'enum': ['Feature']
+                        },
+                        'geometry': geom,
+                        'properties': {
+                            'type': 'object',
+                            'properties': prop
                         }
                     }
-                },
-                'responses': {
-                    '201': {
-                        'description': 'Created {} item'.format(v['title']),
-                        'headers': {
-                            'Location': {
-                                'schema': {
-                                    'type': 'string'
-                                }
-                            }
-                        }
-                    },
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
-                }
-            }
-        }
+            post_form = copy.deepcopy(form)
+            feature_id = '{}#/components/parameters/featureId'.format(oapif)
+            nvpo = '#/components/schemas/nameValuePairObj'
 
-        # if data transactions are enabled, add post
-        if transaction:
-            paths[items_path].update(post)
+            # flag if data transactions is enabled for the collection
+            for provider in collections[k]['providers']:
+                if provider['type'] == 'feature' and\
+                  'extensions' in provider:
+                    for extension in provider['extensions']:
+                        if extension['type'] == 'transaction' and\
+                           extension['enabled']:
+                            transaction = True
+                            break
 
-        p = load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'feature'))
+            items_path = '{}/items'.format(collection_name_path)
 
-        if p.fields:
-            queryables_path = '{}/queryables'.format(collection_name_path)
-
-            paths[queryables_path] = {
+            paths[items_path] = {
                 'get': {
-                    'summary': 'Get {} queryables'.format(v['title']),
+                    'summary': 'Get {} items'.format(v['title']),
                     'description': v['description'],
                     'tags': [k],
-                    'operationId': 'get{}Queryables'.format(k.capitalize()),
+                    'operationId': 'get{}Features'.format(k.capitalize()),
                     'parameters': [
                         items_f,
+                        {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        {'$ref': '#/components/parameters/sortby'},
+                        {'$ref': '#/components/parameters/startindex'}
                     ],
                     'responses': {
-                        '200': {'$ref': '#/components/responses/Queryables'},
+                        '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
@@ -537,190 +481,331 @@ def get_oas_30(cfg):
                 }
             }
 
-        if p.time_field is not None:
-            paths[items_path]['get']['parameters'].append(
-                {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
-
-        for field, type in p.fields.items():
-
-            if p.properties and field not in p.properties:
-                LOGGER.debug('Provider specified not to advertise property')
-                continue
-
-            if type == 'date':
-                schema = {
-                    'type': 'string',
-                    'format': 'date'
-                }
-            elif type == 'float':
-                schema = {
-                    'type': 'number',
-                    'format': 'float'
-                }
-            elif type == 'long':
-                schema = {
-                    'type': 'integer',
-                    'format': 'int64'
-                }
-            else:
-                schema = {
-                    'type': type
-                }
-
-            path_ = '{}/items'.format(collection_name_path)
-            paths['{}'.format(path_)]['get']['parameters'].append({
-                'name': field,
-                'in': 'query',
-                'required': False,
-                'schema': schema,
-                'style': 'form',
-                'explode': False
-            })
-
-        paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
-            'get': {
-                'summary': 'Get {} item by id'.format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'operationId': 'get{}Feature'.format(k.capitalize()),
-                'parameters': [
-                    {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'responses': {
-                    '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
-                }
-            }
-        }
-        samp_prop_pairs = samp_prop.items()
-        pairs_iterator = iter(samp_prop_pairs)
-        first_pair = next(pairs_iterator)
-        samp_ext_kvp = [{'name': first_pair[0], 'value': first_pair[1]}]
-        second_pair = next(pairs_iterator)
-        samp_ext_keys = [second_pair[0]]
-        samp_add_kvp = [{'name': 'item_name', 'value': 'item_value'}]
-        patch = {
-            'patch': {
-                'summary': 'Update properties of an existing feature \
-                    in {} by id'.format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'parameters': [
-                    {'$ref': feature_id}
-                ],
-                'requestBody': {
-                    'required': True,
-                    'content': {
-                        'application/json': {
-                            'schema': {
-                                'type': 'object',
-                                'properties': {
-                                    'add': {
-                                        'type': 'array',
-                                        'items': {
-                                            '$ref': nvpo
-                                        },
-                                        'example': samp_add_kvp
-                                    },
-                                    'modify': {
-                                        'type': 'array',
-                                        'items': {
-                                            '$ref': nvpo
-                                        },
-                                        'example': samp_ext_kvp
-                                    },
-                                    'remove': {
-                                        'type': 'array',
-                                        'items': {
-                                            'type': 'string'
-                                        },
-                                        'example': samp_ext_keys
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                'responses': {
-                    '200': {
-                        'description': 'Modified  {} item'.format(v['title']),
-                        'headers': {
-                            'Location': {
-                                'schema': {
-                                    'type': 'string',
-                                }
-                            }
-                        },
+            post = {
+                'post': {
+                    'summary': 'Add a new feature to {}'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'requestBody': {
+                        'required': True,
                         'content': {
                             'application/geo+json': {
                                 'schema': {
-                                    '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])  # noqa
+                                    'type': 'object',
+                                    'properties': post_form
                                 }
                             }
                         }
                     },
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    'responses': {
+                        '201': {
+                            'description':
+                            'Created {} item'.format(v['title']),
+                            'headers': {
+                                'Location': {
+                                    'schema': {
+                                        'type': 'string'
+                                    }
+                                }
+                            }
+                        },
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
                 }
             }
-        }
 
-        put = {
-            'put': {
-                'summary': 'Replace an existing feature in {} by id'
-                .format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'parameters': [
-                    {'$ref': feature_id}
-                ],
-                'requestBody': {
-                    'required': True,
-                    'content': {
-                        'application/geo+json': {
-                            'schema': {
-                                'type': 'object',
-                                'properties': form
-                            }
+            # if data transactions are enabled, add post
+            if transaction:
+                paths[items_path].update(post)
+
+            p = load_plugin('provider', get_provider_by_type(
+                            collections[k]['providers'], 'feature'))
+
+            if p.fields:
+                queryables_path = '{}/queryables'.format(collection_name_path)
+
+                paths[queryables_path] = {
+                    'get': {
+                        'summary': 'Get {} queryables'.format(v['title']),
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId':
+                        'get{}Queryables'.format(k.capitalize()),
+                        'parameters': [
+                            items_f,
+                        ],
+                        'responses': {
+                            '200': {'$ref':
+                                    '#/components/responses/Queryables'},
+                            '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                            '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                            '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                         }
                     }
-                },
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                }
+
+            if p.time_field is not None:
+                paths[items_path]['get']['parameters'].append(
+                    {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
+
+            for field, type in p.fields.items():
+
+                if p.properties and field not in p.properties:
+                    LOGGER.debug('Provider specified not to \
+                                  advertise property')
+                    continue
+
+                if type == 'date':
+                    schema = {
+                        'type': 'string',
+                        'format': 'date'
+                    }
+                elif type == 'float':
+                    schema = {
+                        'type': 'number',
+                        'format': 'float'
+                    }
+                elif type == 'long':
+                    schema = {
+                        'type': 'integer',
+                        'format': 'int64'
+                    }
+                else:
+                    schema = {
+                        'type': type
+                    }
+
+                path_ = '{}/items'.format(collection_name_path)
+                paths['{}'.format(path_)]['get']['parameters'].append({
+                    'name': field,
+                    'in': 'query',
+                    'required': False,
+                    'schema': schema,
+                    'style': 'form',
+                    'explode': False
+                })
+
+            paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
+                'get': {
+                    'summary': 'Get {} item by id'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}Feature'.format(k.capitalize()),
+                    'parameters': [
+                        {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        {'$ref': '#/components/parameters/f'}
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
                 }
             }
-        }
-
-        delete = {
-            'delete': {
-                'summary': 'Delete an existing feature from {} by id'.
-                format(v['title']),
-                'description': v['description'],
-                'tags': [k],
-                'parameters': [
-                    {'$ref': feature_id}
-                ],
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},  # noqa
-                    '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
-                    '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+            samp_prop_pairs = samp_prop.items()
+            pairs_iterator = iter(samp_prop_pairs)
+            first_pair = next(pairs_iterator)
+            samp_ext_kvp = [{'name': first_pair[0], 'value': first_pair[1]}]
+            second_pair = next(pairs_iterator)
+            samp_ext_keys = [second_pair[0]]
+            samp_add_kvp = [{'name': 'item_name', 'value': 'item_value'}]
+            patch = {
+                'patch': {
+                    'summary': 'Update properties of an existing feature \
+                        in {} by id'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': feature_id}
+                    ],
+                    'requestBody': {
+                        'required': True,
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'add': {
+                                            'type': 'array',
+                                            'items': {
+                                                '$ref': nvpo
+                                            },
+                                            'example': samp_add_kvp
+                                        },
+                                        'modify': {
+                                            'type': 'array',
+                                            'items': {
+                                                '$ref': nvpo
+                                            },
+                                            'example': samp_ext_kvp
+                                        },
+                                        'remove': {
+                                            'type': 'array',
+                                            'items': {
+                                                'type': 'string'
+                                            },
+                                            'example': samp_ext_keys
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    'responses': {
+                        '200': {
+                            'description': 'Modified  {} item'.
+                            format(v['title']),
+                            'headers': {
+                                'Location': {
+                                    'schema': {
+                                        'type': 'string',
+                                    }
+                                }
+                            },
+                            'content': {
+                                'application/geo+json': {
+                                    'schema': {
+                                        '$ref': '{}#/components/schemas/featureGeoJSON'.format(OPENAPI_YAML['oapif'])  # noqa
+                                    }
+                                }
+                            }
+                        },
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
                 }
             }
-        }
 
-        # if data transactions are enabled, add patch, put and delete
-        if transaction:
-            fIdPath = '{}/items/{{featureId}}'.format(collection_name_path)
-            for verb in [patch, put, delete]:
-                paths[fIdPath].update(verb)
+            put = {
+                'put': {
+                    'summary': 'Replace an existing feature in {} by id'
+                    .format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': feature_id}
+                    ],
+                    'requestBody': {
+                        'required': True,
+                        'content': {
+                            'application/geo+json': {
+                                'schema': {
+                                    'type': 'object',
+                                    'properties': form
+                                }
+                            }
+                        }
+                    },
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/200'},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
+            delete = {
+                'delete': {
+                    'summary': 'Delete an existing feature from {} by id'.
+                    format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'parameters': [
+                        {'$ref': feature_id}
+                    ],
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/200'},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
+            # if data transactions are enabled, add patch, put and delete
+            if transaction:
+                fIdPath = '{}/items/{{featureId}}'.format(collection_name_path)
+                for verb in [patch, put, delete]:
+                    paths[fIdPath].update(verb)
+
+        except ProviderTypeError:
+            LOGGER.debug('collection is not feature based')
+
+        LOGGER.debug('setting up coverage endpoints')
+        try:
+            load_plugin('provider', get_provider_by_type(
+                        collections[k]['providers'], 'coverage'))
+
+            coverage_path = '{}/coverage'.format(collection_name_path)
+
+            paths[coverage_path] = {
+                'get': {
+                    'summary': 'Get {} coverage'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}Coverage'.format(k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
+            coverage_domainset_path = '{}/coverage/domainset'.format(
+                collection_name_path)
+
+            paths[coverage_domainset_path] = {
+                'get': {
+                    'summary': 'Get {} coverage domain set'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}CoverageDomainSet'.format(
+                        k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}/schemas/cis_1.1/domainSet.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
+            coverage_rangetype_path = '{}/coverage/rangetype'.format(
+                collection_name_path)
+
+            paths[coverage_rangetype_path] = {
+                'get': {
+                    'summary': 'Get {} coverage range type'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'get{}CoverageRangeType'.format(
+                        k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '{}/schemas/cis_1.1/rangeType.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+        except ProviderTypeError:
+            LOGGER.debug('collection is not coverage based')
 
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],

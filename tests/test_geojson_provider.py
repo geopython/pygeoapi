@@ -72,6 +72,7 @@ def fixture():
 def config():
     return {
         'name': 'GeoJSON',
+        'type': 'feature',
         'data': path,
         'id_field': 'id'
     }

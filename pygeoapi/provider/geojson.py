@@ -66,6 +66,7 @@ class GeoJSONProvider(BaseProvider):
 
     def __init__(self, provider_def):
         """initializer"""
+
         BaseProvider.__init__(self, provider_def)
         self.fields = self.get_fields()
 

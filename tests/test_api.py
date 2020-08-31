@@ -31,13 +31,14 @@ import json
 import os
 import logging
 
+from pyld import jsonld
 import pytest
-
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
+from werkzeug.datastructures import ImmutableMultiDict
+
 from pygeoapi.api import API, check_format
 from pygeoapi.util import yaml_load
-from pyld import jsonld
 
 LOGGER = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 4
+    assert len(root['conformsTo']) == 7
 
     rsp_headers, code, response = api_.conformance(req_headers, {'f': 'foo'})
     assert code == 400
@@ -193,7 +194,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 1
+    assert len(collections['collections']) == 2
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
@@ -226,6 +227,13 @@ def test_describe_collections(config, api_):
     rsp_headers, code, response = api_.describe_collections(
         req_headers, {'f': 'html'}, 'obs')
     assert rsp_headers['Content-Type'] == 'text/html'
+
+    rsp_headers, code, response = api_.describe_collections(
+        req_headers, {}, 'gdps-temperature')
+    collection = json.loads(response)
+
+    assert collection['id'] == 'gdps-temperature'
+    assert len(collection['links']) == 12
 
 
 def test_get_collection_queryables(config, api_):
@@ -535,7 +543,12 @@ def test_get_collection_item(config, api_):
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'foo', 371)
+        req_headers, {'f': 'json'}, 'gdps-temperature', '371')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_item(
+        req_headers, {}, 'foo', '371')
 
     assert code == 400
 
@@ -579,6 +592,95 @@ def test_get_collection_item_json_ld(config, api_):
             '@type'] == 'https://schema.org/Text'
     assert expanded['https://purl.org/geojson/vocab#properties'][0][
         'https://schema.org/identifier'][0]['@value'] == 35
+
+
+def test_get_coverage_domainset(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage_domainset(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage_domainset(
+        req_headers, {}, 'gdps-temperature')
+
+    domainset = json.loads(response)
+
+    assert domainset['type'] == 'DomainSetType'
+    assert domainset['generalGrid']['axisLabels'] == ['Long', 'Lat']
+    assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
+    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 2400  # noqa
+    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 1201  # noqa
+
+
+def test_get_collection_coverage_rangetype(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
+        req_headers, {}, 'gdps-temperature')
+
+    rangetype = json.loads(response)
+
+    assert rangetype['type'] == 'DataRecordType'
+    assert len(rangetype['field']) == 1
+    assert rangetype['field'][0]['id'] == 1
+    assert rangetype['field'][0]['name'] == 'Temperature [C]'
+    assert rangetype['field'][0]['uom']['code'] == '[C]'
+
+
+def test_get_collection_coverage(config, api_):
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'rangeSubset': '12'}, 'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers,
+        ImmutableMultiDict([('subset', 'bad_axis(10,20)')]),
+        'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'f': 'blah'}, 'gdps-temperature')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers,
+        ImmutableMultiDict([
+            ('subset', 'Lat(5,10)'), ('subset', 'Long(5,10)')]),
+        'gdps-temperature')
+
+    assert code == 200
+    content = json.loads(response)
+
+    assert content['domain']['axes']['x']['num'] == 35
+    assert content['domain']['axes']['y']['num'] == 35
+    assert 'TMP' in content['parameters']
+    assert 'TMP' in content['ranges']
+    assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers,
+        ImmutableMultiDict([
+             ('subset', 'Lat(5,10)'), ('subset', 'Long(5,10)'),
+             ('f', 'GRIB2')
+        ]),
+        'gdps-temperature')
+
+    assert code == 200
+    assert isinstance(response, bytes)
 
 
 def test_describe_processes(config, api_):

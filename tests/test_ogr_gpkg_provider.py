@@ -44,6 +44,7 @@ LOGGER = logging.getLogger(__name__)
 def config_poi_portugal():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source': './tests/data/poi_portugal.gpkg',
@@ -97,6 +98,7 @@ def test_get_not_existing_feature_raise_exception(
 def config_gpkg_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source':
@@ -117,6 +119,7 @@ def config_gpkg_4326():
 def config_gpkg_28992():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'GPKG',
             'source':
@@ -195,7 +198,6 @@ def test_query_bbox_hits_4326(config_gpkg_4326):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
@@ -213,7 +215,6 @@ def test_query_bbox_hits_28992(config_gpkg_28992):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 

@@ -60,6 +60,7 @@ def fixture():
 def config():
     return {
         'name': 'CSV',
+        'type': 'feature',
         'data': path,
         'id_field': 'id',
         'geometry': {
