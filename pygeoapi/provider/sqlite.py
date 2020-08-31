@@ -33,17 +33,19 @@
 
 import sqlite3
 import logging
+import uuid
 import os
 import json
 from pygeoapi.plugin import InvalidPluginError
-from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderItemNotFoundError)
+from pygeoapi.provider.base import BaseProvider, \
+    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError, \
+    ProviderItemAlreadyExistsError, ProviderSchemaError
 
 LOGGER = logging.getLogger(__name__)
 
 
 SPATIALITE_EXTENSION = os.getenv('SPATIALITE_LIBRARY_PATH',
-                                 'mod_spatialite.so')
+                                 'mod_spatialite')
 
 
 class SQLiteGPKGProvider(BaseProvider):
@@ -72,6 +74,12 @@ class SQLiteGPKGProvider(BaseProvider):
         LOGGER.debug('Name: {}'.format(self.name))
         LOGGER.debug('ID_field: {}'.format(self.id_field))
         LOGGER.debug('Table: {}'.format(self.table))
+
+        if (os.path.exists(self.data)):
+            self.conn = sqlite3.connect(self.data)
+        else:
+            LOGGER.error('Path to sqlite does not exist')
+            raise InvalidPluginError()
 
         self.cursor = self.__load()
 
@@ -143,9 +151,10 @@ class SQLiteGPKGProvider(BaseProvider):
             feature = {
                 'type': 'Feature'
             }
-            feature["geometry"] = json.loads(
-                rd.pop('AsGeoJSON({})'.format(self.geom_col))
-                )
+            if rd['AsGeoJSON({})'.format(self.geom_col)] is not None:
+                feature["geometry"] = json.loads(
+                    rd.pop('AsGeoJSON({})'.format(self.geom_col))
+                    )
             feature['properties'] = rd
             feature['id'] = feature['properties'].pop(self.id_field)
 
@@ -173,22 +182,16 @@ class SQLiteGPKGProvider(BaseProvider):
         :returns: sqlite3.Cursor
         """
 
-        if (os.path.exists(self.data)):
-            conn = sqlite3.connect(self.data)
-        else:
-            LOGGER.error('Path to sqlite does not exist')
-            raise InvalidPluginError()
-
         try:
-            conn.enable_load_extension(True)
+            self.conn.enable_load_extension(True)
         except AttributeError as err:
             LOGGER.error('Extension loading not enabled: {}'.format(err))
             raise ProviderConnectionError()
 
-        conn.row_factory = sqlite3.Row
-        conn.enable_load_extension(True)
-        # conn.set_trace_callback(LOGGER.debug)
-        cursor = conn.cursor()
+        self.conn.row_factory = sqlite3.Row
+        self.conn.enable_load_extension(True)
+        # self.conn.set_trace_callback(LOGGER.debug)
+        cursor = self.conn.cursor()
         try:
             cursor.execute("SELECT load_extension('{}')".format(
                 SPATIALITE_EXTENSION))
@@ -335,6 +338,196 @@ class SQLiteGPKGProvider(BaseProvider):
             err = 'item {} not found'.format(identifier)
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
+
+    def get_unique_id(self):
+        id_type = self.get_fields()[self.id_field]
+        if 'int' in id_type:
+            id = 0
+            while True:
+                try:
+                    self.get(id)
+                    id += 1
+                except ProviderItemNotFoundError:
+                    return id
+        else:
+            return str(uuid.uuid4())
+
+    def create(self, new_feature):
+        """
+        Insert a new feature to provider
+
+        :param new_feature: GeoJSON feature
+
+        :returns: feature id
+        """
+        LOGGER.debug('Inserting item into SQLite/GPKG')
+        prop = new_feature['properties']
+        geom = json.dumps(new_feature['geometry'])
+        nfid = new_feature.get('id', None) or\
+            new_feature['properties'].get(self.id_field, None)
+        if nfid is not None:
+            try:
+                self.get(nfid)
+                err = 'provider item {} already exists'\
+                    .format(nfid)
+                LOGGER.error(err)
+                raise ProviderItemAlreadyExistsError(err)
+            except ProviderItemNotFoundError:
+                pass
+        else:
+            nfid = self.get_unique_id()
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set([key for key in prop])
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        # set missing properties to empty
+        for prop in curr_cols - new_cols:
+            new_feature['properties'][prop] = None
+        prop = new_feature['properties']
+        prop[self.id_field] = nfid
+        keys = [key for key in prop]
+        keys_str = ','.join(keys)
+        vals = [prop[key] for key in prop]
+        for index in range(len(vals)):
+            if vals[index] is None:
+                vals[index] = 'NULL'
+            elif 'char' in self.get_fields()[keys[index]] or\
+                 'text' in self.get_fields()[keys[index]]:
+                vals[index] = '\'{}\''.format(vals[index])
+        vals_str = ','.join(map(str, vals))
+        sql_query = 'INSERT INTO {0} ({1},{2}) \
+            VALUES ({3},GeomFromGeoJSON(\'{4}\'))'.format(
+                self.table, keys_str, self.geom_col,
+                    vals_str, geom)
+        print(sql_query)
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        try:
+            self.cursor.execute(sql_query)
+            self.conn.commit()
+        except Exception as err:
+            LOGGER.error('Error executing sql_query: {}: {}'.format(
+                sql_query, err))
+            raise ProviderQueryError()
+        return nfid
+
+    def replace(self, identifier, feature):
+        """
+        Replaces an existing feature in provider
+
+        :param identifier: feature id
+        :param feature: GeoJSON feature
+        """
+        LOGGER.debug('Replacing an item in SQLite/GPKG')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        prop = feature['properties']
+        nfid = feature.get('id', None) or\
+            feature['properties'].get(self.id_field, None)
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set([key for key in prop])
+        if nfid is not None and nfid != identifier:
+            err = 'cant change key'
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        # set missing properties to empty
+        for prop in curr_cols - new_cols:
+            feature['properties'][prop] = None
+        prop = feature['properties']
+        prop.pop(self.id_field, None)
+        keys = [key for key in prop]
+        vals = [prop[key] for key in prop]
+        for index in range(len(vals)):
+            if vals[index] is None:
+                vals[index] = 'NULL'
+            elif 'char' in self.get_fields()[keys[index]] or\
+                 'text' in self.get_fields()[keys[index]]:
+                vals[index] = '\'{}\''.format(vals[index])
+        updates = [i+'='+j for i, j in zip(keys, vals)]
+        updates_string = ','.join(updates)
+        sql_query = 'UPDATE {0} SET {1} WHERE {2}={3}'.format(
+                self.table, updates_string, self.id_field, identifier)
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        try:
+            self.cursor.execute(sql_query)
+            self.conn.commit()
+        except Exception as err:
+            LOGGER.error('Error executing sql_query: {}: {}'.format(
+                sql_query, err))
+            raise ProviderQueryError()
+
+    def update(self, identifier, updates):
+        """
+        Updates an existing feature to provider
+
+        :param identifier: feature id
+        :param updates: updates dict
+
+        :returns: GeoJSON feature
+        """
+        LOGGER.debug('Updating an item in SQLite/GPKG')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        mods = updates['modify']
+        keys = [item['name'] for item in mods]
+        vals = [item['value'] for item in mods]
+        curr_cols = set([key for key in self.get_fields()])
+        new_cols = set(keys)
+        if self.id_field in new_cols:
+            err = 'cant change key'
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        if bool(new_cols - curr_cols):
+            err = 'properties {} not prescent in provider schema'\
+                .format(new_cols - curr_cols)
+            LOGGER.error(err)
+            raise ProviderSchemaError(err)
+        for index in range(len(vals)):
+            if vals[index] is None:
+                vals[index] = 'NULL'
+            elif 'char' in self.get_fields()[keys[index]] or\
+                 'text' in self.get_fields()[keys[index]]:
+                vals[index] = '\'{}\''.format(vals[index])
+        updates = [i+'='+j for i, j in zip(keys, vals)]
+        updates_string = ','.join(updates)
+        sql_query = 'UPDATE {0} SET {1} WHERE {2}={3}'.format(
+                self.table, updates_string, self.id_field, identifier)
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        try:
+            self.cursor.execute(sql_query)
+            self.conn.commit()
+        except Exception as err:
+            LOGGER.error('Error executing sql_query: {}: {}'.format(
+                sql_query, err))
+            raise ProviderQueryError()
+
+    def delete(self, identifier):
+        """
+        Delet a feature from provider
+
+        :param identifier: feature id
+        """
+        LOGGER.debug('Deleting item from SQLite/GPKG')
+        # raise error if identifier is invalid
+        self.get(identifier)
+        sql_query = "DELETE FROM {0} WHERE {1}={2}".\
+            format(self.table, self.id_field, identifier)
+        LOGGER.debug('SQL Query: {}'.format(sql_query))
+        LOGGER.debug('Identifier: {}'.format(identifier))
+        try:
+            self.cursor.execute(sql_query)
+            self.conn.commit()
+        except Exception as err:
+            LOGGER.error('Error executing sql_query: {}'.format(sql_query))
+            LOGGER.error(err)
+            raise ProviderQueryError()
 
     def __repr__(self):
         return '<SQLiteGPKGProvider> {}, {}'.format(self.data, self.table)

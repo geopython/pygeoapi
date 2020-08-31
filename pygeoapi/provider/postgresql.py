@@ -432,6 +432,13 @@ class PostgreSQLProvider(BaseProvider):
             return str(uuid.uuid4())
 
     def create(self, new_feature):
+        """
+        Insert a new feature to provider
+
+        :param new_feature: GeoJSON feature
+
+        :returns: feature id
+        """
         LOGGER.debug('Inserting item into Postgis')
         prop = new_feature['properties']
         geom = json.dumps(new_feature['geometry'])
@@ -481,6 +488,12 @@ class PostgreSQLProvider(BaseProvider):
         return nfid
 
     def replace(self, identifier, feature):
+        """
+        Replaces an existing feature in provider
+
+        :param identifier: feature id
+        :param feature: GeoJSON feature
+        """
         LOGGER.debug('Replacing an item in Postgis')
         # raise error if identifier is invalid
         self.get(identifier)
@@ -501,13 +514,15 @@ class PostgreSQLProvider(BaseProvider):
             raise ProviderSchemaError(err)
         # set missing properties to empty
         for prop in curr_cols - new_cols:
-            feature['properties'][prop] = 'NULL'
+            feature['properties'][prop] = None
         prop = feature['properties']
         prop.pop(self.id_field, None)
         keys = [key for key in prop]
         vals = [prop[key] for key in prop]
         for index in range(len(vals)):
-            if self.get_fields()[keys[index]] == 'varchar':
+            if vals[index] is None:
+                vals[index] = 'NULL'
+            elif 'varchar' in self.get_fields()[keys[index]]:
                 vals[index] = '\'{}\''.format(vals[index])
         keys.append(self.geom)
         vals.append('ST_GeomFromGeoJSON(\'{}\')'.format(geom))
@@ -526,6 +541,14 @@ class PostgreSQLProvider(BaseProvider):
             db.conn.commit()
 
     def update(self, identifier, updates):
+        """
+        Updates an existing feature to provider
+
+        :param identifier: feature id
+        :param updates: updates dict
+
+        :returns: GeoJSON feature
+        """
         LOGGER.debug('Updating an item in Postgis')
         # raise error if identifier is invalid
         self.get(identifier)
@@ -562,6 +585,11 @@ class PostgreSQLProvider(BaseProvider):
             return self.get(identifier)
 
     def delete(self, identifier):
+        """
+        Delet a feature from provider
+
+        :param identifier: feature id
+        """
         LOGGER.debug('Deleting item from Postgis')
         # raise error if identifier is invalid
         self.get(identifier)
@@ -579,40 +607,3 @@ class PostgreSQLProvider(BaseProvider):
                     sql_query.as_string(cursor)))
                 LOGGER.error(err)
                 raise ProviderQueryError()
-
-    '''
-    def replace(self, new_feature, identifier):
-        LOGGER.debug('Replace from Postgis')
-        prop = new_feature['properties']
-        geom = json.dumps(new_feature['geometry'])
-        nfid = new_feature.get('id', None) or\
-            new_feature['properties'].get(self.id_field, None)
-        if nfid is not None:
-            try:
-                self.get(nfid)
-                err = 'provider item {} already exists'\
-                    .format(nfid)
-                LOGGER.error(err)
-                raise ProviderItemAlreadyExistsError(err)
-            except ProviderItemNotFoundError:
-                pass
-        else:
-            nfid = self.get_unique_id()
-
-        curr_cols = set([key for key in self.get_fields()])
-        new_cols = set([key for key in prop].append('geometry'))
-        if bool(new_cols - curr_cols):
-            err = 'properties {} not prescent in provider schema'\
-                .format(new_cols - curr_cols)
-            LOGGER.error(err)
-            raise ProviderSchemaError(err)
-
-        keys = ",".join([key for key in prop].append('geometry'))
-        vals = ",".join([prop[key] for key in prop].append(geom))
-        query = 'insert into {0} ({1}) values ({2});'.\
-            format(Identifier(self.table), keys, vals)
-        with DatabaseConnection(self.conn_dic, self.table) as db:
-            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query)
-        return nfid
-'''

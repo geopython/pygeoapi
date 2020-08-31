@@ -35,7 +35,8 @@
 
 import pytest
 
-from pygeoapi.provider.base import ProviderItemNotFoundError
+from pygeoapi.provider.base import ProviderItemNotFoundError, \
+    ProviderSchemaError, ProviderItemAlreadyExistsError
 from pygeoapi.provider.sqlite import SQLiteGPKGProvider
 
 
@@ -165,3 +166,355 @@ def test_get_geopackage_not_existing_item_raise_exception(config_geopackage):
     p = SQLiteGPKGProvider(config_geopackage)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
+
+def test_create_sqlite(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    new_feature = {
+        'type': 'Feature',
+        'id': 1234,
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'type': 'Country'
+        }
+    }
+    id = p.create(new_feature)
+    assert id == 1234
+    feature = p.get(1234)
+    assert feature['properties']['type'] == 'Country'
+
+
+def test_create_sqlite_existing_item_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    new_feature = {
+        'type': 'Feature',
+        'id': 1234,
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'type': 'Country'
+        }
+    }
+
+    with pytest.raises(ProviderItemAlreadyExistsError):
+        p.create(new_feature)
+
+
+def test_create_sqlite_invalid_schema_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    new_feature = {
+        'type': 'Feature',
+        'id': 2345,
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'i_am_an_alien': 1,
+            'type': 'Country'
+        }
+    }
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
+
+
+def test_replace_sqlite(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'type': 'State'
+        }
+    }
+    p.replace(1234, feature)
+    feature = p.get(1234)
+    assert feature['properties']['type'] == 'State'
+
+
+def test_replace_sqlite_non_existing_item_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'type': 'State'
+        }
+    }
+    with pytest.raises(ProviderItemNotFoundError):
+        p.replace(-1, feature)
+
+
+def test_replace_sqlite_invalid_schema_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'MultiPolygon',
+            'coordinates': [
+                [
+                    [
+                        [6.15665815595878, 50.80372101501058],
+                        [5.606975945670001, 51.03729848896978],
+                        [4.973991326526914, 51.47502370869813],
+                        [4.047071160507528, 51.26725861266857],
+                        [6.15665815595878, 50.80372101501058]
+                    ]
+                ]
+            ]
+        },
+        'properties': {
+            'i_am_an_alien': 1,
+            'type': 'State'
+        }
+    }
+    with pytest.raises(ProviderSchemaError):
+        p.replace(1234, feature)
+
+
+def test_update_sqlite(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    updates = {"modify": [{"name": "type", "value": "Island"}]}
+    p.update(1234, updates)
+    updated_feature = p.get(1234)
+    assert updated_feature['properties']['type'] == "Island"
+
+
+def test_update_sqlite_non_existing_item_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    updates = {"modify": [{"name": "type", "value": "Island"}]}
+    with pytest.raises(ProviderItemNotFoundError):
+        p.update(-1, updates)
+
+
+def test_update_sqlite_invalid_updates_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    updates = {"modify": [{"name": "oldname", "value": "atlantis"}]}
+    prev_results = p.get(1234)
+    with pytest.raises(ProviderSchemaError):
+        p.update(1234, updates)
+    results = p.get(1234)
+    assert results == prev_results
+
+
+def test_delete_sqlite(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    p.delete(1234)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(1234)
+
+
+def test_delete_sqlite_non_existing_item_raise_exception(config_sqlite):
+    p = SQLiteGPKGProvider(config_sqlite)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.delete(-1)
+
+
+'''
+def test_create_geopackage(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    new_feature = {
+        'type': 'Feature',
+        'id': 111111111,
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'fclass': 'cafe'
+        }
+    }
+    id = p.create(new_feature)
+    assert id == 111111111
+    print(p.get(111111111))
+    new_feature = p.get(111111111)
+    assert new_feature['properties']['type'] == 'Country'
+
+
+def test_create_geopackage_existing_item_raise_exception(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    new_feature = {
+        'type': 'Feature',
+        'id': 111111111,
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'fclass': 'cafe'
+        }
+    }
+    with pytest.raises(ProviderItemAlreadyExistsError):
+        p.create(new_feature)
+
+
+def test_create_geopackage_invalid_schema_raise_exception(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    new_feature = {
+        'type': 'Feature',
+        'id': 222222222,
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'i_am_an_alien': 1,
+            'fclass': 'cafe'
+        }
+    }
+    with pytest.raises(ProviderSchemaError):
+        p.create(new_feature)
+
+
+def test_replace_geopackage(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'fclass': 'cafe'
+        }
+    }
+    p.replace(111111111, feature)
+    feature = p.get(111111111)
+    assert feature['properties']['type'] == 'State'
+
+
+def test_replace_geopackage_non_existing_item_raise_excpton(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Feature',
+            'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'fclass': 'cafe'
+        }
+    }
+    with pytest.raises(ProviderItemNotFoundError):
+        p.replace(-1, feature)
+
+
+def test_replace_geopackage_invalid_schema_raise_exception(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    feature = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [-8.419435, 40.20902399999999]
+        },
+        'properties': {
+            'i_am_an_alien': 1,
+            'fclass': 'cafe'
+        }
+    }
+    with pytest.raises(ProviderSchemaError):
+        p.replace(111111111, feature)
+
+
+def test_update_geopackage(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    updates = {"modify": [{"name": "fclass", "value": "hotel"}]}
+    p.update(111111111, updates)
+    updated_feature = p.get(111111111)
+    assert updated_feature['properties']['type'] == "Island"
+
+
+def test_update_geopackage_non_existing_item_raise_excepton(config_geopackage):
+    p = SQLiteGPKGProvider(config_sqlite)
+    updates = {"modify": [{"name": "fclass", "value": "hotel"}]}
+    with pytest.raises(ProviderItemNotFoundError):
+        p.update(-1, updates)
+
+
+def test_update_geopackage_invalid_updates_raise_exception(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    updates = {"modify": [{"name": "oldname", "value": "transelvenia"}]}
+    prev_results = p.get(111111111)
+    with pytest.raises(ProviderSchemaError):
+        p.update(111111111, updates)
+    results = p.get(111111111)
+    assert results == prev_results
+
+
+def test_delete_geopackage(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    p.delete(111111111)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(111111111)
+
+
+def test_delete_geopackage_non_existing_item_raise_excepton(config_geopackage):
+    p = SQLiteGPKGProvider(config_geopackage)
+    with pytest.raises(ProviderItemNotFoundError):
+        p.delete(-1)
+'''
