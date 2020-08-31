@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 SPATIALITE_EXTENSION = os.getenv('SPATIALITE_LIBRARY_PATH',
-                                 'mod_spatialite')
+                                 'mod_spatialite.so')
 
 
 class SQLiteGPKGProvider(BaseProvider):
