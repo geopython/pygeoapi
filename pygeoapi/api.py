@@ -567,6 +567,7 @@ class API:
             headers_['Content-Type'] = 'application/ld+json'
             return headers_, 200, to_json(jsonld, self.pretty_print)
 
+        print(fcm)
         return headers_, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
@@ -1228,19 +1229,37 @@ class API:
             query_args['format_'] = format_ = args['f']
         if 'rangeSubset' in args:
             LOGGER.debug('Processing rangeSubset parameter')
-            query_args['bands'] = list(
+            range_subsets = list(
                 filter(None, args['rangeSubset'].split(',')))
-            LOGGER.debug('Bands: {}'.format(query_args['bands']))
+            if p.name == 'rasterio':
 
-            for a in query_args['bands']:
-                if int(a) > p.num_bands:
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'Invalid bands specified'
-                    }
-                    LOGGER.error(exception)
-                    return ({'Content-type': 'application/json'}, 400,
-                            to_json(exception, self.pretty_print))
+                query_args['bands'] = range_subsets
+                LOGGER.debug('Bands: {}'.format(query_args['bands']))
+
+                for a in query_args['bands']:
+                    if int(a) > p.num_bands:
+                        exception = {
+                            'code': 'InvalidParameterValue',
+                            'description': 'Invalid bands specified'
+                        }
+                        LOGGER.error(exception)
+                        return ({'Content-type': 'application/json'}, 400,
+                                to_json(exception, self.pretty_print))
+
+            else:
+
+                query_args['range_type'] = range_subsets
+                LOGGER.debug('Fields: {}'.format(query_args['range_type']))
+
+                for a in query_args['range_type']:
+                    if a not in p.fields:
+                        exception = {
+                            'code': 'InvalidParameterValue',
+                            'description': 'Invalid field specified'
+                        }
+                        LOGGER.error(exception)
+                        return ({'Content-type': 'application/json'}, 400,
+                                to_json(exception, self.pretty_print))
 
         if 'subset' in args:
             LOGGER.debug('Processing subset parameters')
@@ -1249,6 +1268,7 @@ class API:
                     m = re.search(r'(.*)\((.*),(.*)\)', s)
                     subset_name = m.group(1)
                     if subset_name not in p.axes:
+                        print('axes', p.axes)
                         exception = {
                             'code': 'InvalidParameterValue',
                             'description': 'Invalid axis name'

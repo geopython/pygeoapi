@@ -67,6 +67,12 @@ class XarrayProvider(BaseProvider):
             open_func = xarray.open_zarr if zarr else xarray.open_dataset
             self._data = open_func(self.data)
             self._coverage_properties = self._get_coverage_properties()
+
+            self.axes = [self._coverage_properties['x_axis_label'],
+                         self._coverage_properties['y_axis_label'],
+                         self._coverage_properties['time_axis_label']]
+
+            self.fields = self._coverage_properties['fields']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -104,11 +110,11 @@ class XarrayProvider(BaseProvider):
                 },
                     {
                         'type': 'RegularAxisType',
-                        'axisLabel': self._coverage_properties['time_label'],
-                        'lowerBound': self._coverage_properties['bbox'][1],
-                        'upperBound': self._coverage_properties['bbox'][3],
-                        'uomLabel': self._coverage_properties['bbox_units'],
-                        'resolution': self._coverage_properties['resy']
+                        'axisLabel': self._coverage_properties['time_axis_label'],
+                        'lowerBound': self._coverage_properties['time_range'][0],
+                        'upperBound': self._coverage_properties['time_range'][1],
+                        'uomLabel': self._coverage_properties['restime'],
+                        'resolution': self._coverage_properties['restime']
                     }
                 ],
                 'gridLimits': {
@@ -129,7 +135,7 @@ class XarrayProvider(BaseProvider):
                 }
             },
             '_meta': {
-                'tags': self._coverage_properties['tags']
+                'tags': self._data.attrs
             }
         }
 
@@ -147,33 +153,32 @@ class XarrayProvider(BaseProvider):
             'field': []
         }
 
-        for i, dtype, nodataval in zip(self._data.indexes, self._data.dtypes,
-                                       self._data.nodatavals):
-            LOGGER.debug('Determing rangetype for band {}'.format(i))
+        for name, var in self._data.variables.items():
+            LOGGER.debug('Determing rangetype for {}'.format(name))
 
             name, units = None, None
-            if self._data.units[i-1] is None:
-                parameter = _get_parameter_metadata(
-                    self._data.profile['driver'], self._data.tags(i))
+            if len(var.shape) >= 3:
+                parameter = self._get_parameter_metadata(
+                    name, var.attrs)
                 name = parameter['description']
                 units = parameter['unit_label']
 
-            rangetype['field'].append({
-                'id': i,
-                'type': 'QuantityType',
-                'name': name,
-                'definition': dtype,
-                'nodata': nodataval,
-                'uom': {
-                    'id': 'http://www.opengis.net/def/uom/UCUM/{}'.format(
-                         units),
-                    'type': 'UnitReference',
-                    'code': units
-                },
-                '_meta': {
-                    'tags': self._data.tags(i)
-                }
-            })
+                rangetype['field'].append({
+                    'id': name,
+                    'type': 'QuantityType',
+                    'name': var.attrs.get('long_name') or name,
+                    'definition': str(var.dtype),
+                    'nodata': 'null',
+                    'uom': {
+                        'id': 'http://www.opengis.net/def/uom/UCUM/{}'.format(
+                             units),
+                        'type': 'UnitReference',
+                        'code': units
+                    },
+                    '_meta': {
+                        'tags': var.attrs
+                    }
+                })
 
         return rangetype
 
@@ -189,8 +194,7 @@ class XarrayProvider(BaseProvider):
         """
 
         if len(range_type) < 1:
-            range_type = [x for x in ds.variables
-                          if len(ds.variables[x].shape) >= 3]
+            range_type = self.fields
 
         data = self._data[[*range_type]]
 
@@ -210,33 +214,36 @@ class XarrayProvider(BaseProvider):
 
             data = data.sel(query_params)
 
-            out_meta = {'bbox': [
-                self._data.coords[lon][0], self._data.coords[lon][-1],
-                self._data.coords[lat][0], self._data.coords[lat][-1]],
-                "driver": "Xarray",
-                "height": self._data.dims[lat],
-                "width": self._data.dims[lon],
-                "time_steps": self._data.dims[time],
-                "variables": {var_name:
-                                  {key: val for vdict in attrs for
-                                   k, v in vdict.items()}
-                              for var_name in self._data.variables}
-            }
+        out_meta = {'bbox': [
+            data.coords[self.lon_var].values[0],
+            data.coords[self.lat_var].values[0],
+            data.coords[self.lon_var].values[-1],
+            data.coords[self.lat_var].values[-1]],
+            "time": self._coverage_properties['time_range'],
+            "driver": "Xarray",
+            "height": data.dims[self.lat_var],
+            "width": data.dims[self.lon_var],
+            "time_steps": data.dims[self.time_var],
+            "variables": {var_name: var.attrs
+                          for var_name, var in data.variables.items()}
+        }
 
-        return gen_covjson(out_meta, data)
+        return self.gen_covjson(out_meta, data, range_type)
 
-    def gen_covjson(self, metadata, data):
+    def gen_covjson(self, metadata, data, range_type):
         """
         Generate coverage as CoverageJSON representation
 
         :param metadata: coverage metadata
         :param data: rasterio DatasetReader object
+        :param range_type: range type list
 
         :returns: dict of CoverageJSON representation
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
         minx, miny, maxx, maxy = metadata['bbox']
+        mint, maxt = metadata['time']
 
         cj = {
             'type': 'Coverage',
@@ -244,19 +251,24 @@ class XarrayProvider(BaseProvider):
                 'type': 'Domain',
                 'domainType': 'Grid',
                 'axes': {
-                    'x': {
+                    self.lon_var: {
                         'start': minx,
                         'stop': maxx,
                         'num': metadata['width']
                     },
-                    'y': {
+                    self.lat_var: {
                         'start': maxy,
                         'stop': miny,
                         'num': metadata['height']
+                    },
+                    self.time_var: {
+                        'start': mint,
+                        'stop': maxt,
+                        'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
-                    'coordinates': ['x', 'y', 'time'],
+                    'coordinates': ['x', 'y'],
                     'system': {
                         'type': self._coverage_properties['crs_type'],
                         'id': self._coverage_properties['bbox_crs']
@@ -267,9 +279,9 @@ class XarrayProvider(BaseProvider):
             'ranges': {}
         }
 
-        for bs in bands_select:
-            pm = _get_parameter_metadata(
-                self._data.profile['driver'], self._data.tags(bs))
+        for variable in range_type:
+            pm = self._get_parameter_metadata(
+                variable, self._data[variable].attrs)
 
             parameter = {
                 'type': 'Parameter',
@@ -291,13 +303,17 @@ class XarrayProvider(BaseProvider):
             for key in cj['parameters'].keys():
                 cj['ranges'][key] = {
                     'type': 'NdArray',
-                    # 'dataType': metadata.dtypes[0],
-                    'dataType': 'float',
-                    'axisNames': ['y', 'x'],
-                    'shape': [metadata['height'], metadata['width']],
+                    'dataType': str(self._data[variable].dtype),
+                    'axisNames': [self._coverage_properties['x_axis_label'],
+                                  self._coverage_properties['y_axis_label'],
+                                  self._coverage_properties['time_axis_label']
+                                  ],
+                    'shape': [metadata['height'],
+                              metadata['width'],
+                              metadata['time_steps']]
                 }
-                # TODO: deal with multi-band value output
-                cj['ranges'][key]['values'] = data.flatten().tolist()
+
+                cj['ranges'][key]['values'] = data[key].values.tolist()
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
@@ -314,30 +330,44 @@ class XarrayProvider(BaseProvider):
         time_var, lat_var, lon_var = [None, None, None]
         for coord in self._data.coords:
             if coord.lower() == 'time':
-                time_var = coord
-            if self._data.coords[x].attrs['units'] == 'degrees_north':
-                lat_var = coord
-            if self._data.coords[x].attrs['units'] == 'degrees_east':
-                lon_var = coord
+                self.time_var = time_var = coord
+                continue
+            if self._data.coords[coord].attrs['units'] == 'degrees_north':
+                self.lat_var = lat_var = coord
+                continue
+            if self._data.coords[coord].attrs['units'] == 'degrees_east':
+                self.lon_var = lon_var = coord
+                continue
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to asess
         # all of the attributes based on lat lon vars
         properties = {
             'bbox': [
-                self._data.coords[lon_var][0],
-                self._data.bounds[lat_vat][0],
-                self._data.coords[lon_var][-1],
-                self._data.bounds[lat_vat][-1],
+                self._data.coords[lon_var].values[0],
+                self._data.coords[lat_var].values[0],
+                self._data.coords[lon_var].values[-1],
+                self._data.coords[lat_var].values[-1],
+            ],
+            'time_range': [
+                np.datetime_as_string(self._data.coords[time_var].values[0]),
+                np.datetime_as_string(self._data.coords[time_var].values[-1])
             ],
             'bbox_crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
             'crs_type': 'GeographicCRS',
-            'bbox_units': 'deg',
             'x_axis_label': lon_var,
             'y_axis_label': lat_var,
             'time_axis_label': time_var,
             'width': self._data.dims[lon_var],
-            'height': self._data.dims[lat_var]
+            'height': self._data.dims[lat_var],
+            'time': self._data.dims[time_var],
+            'time_duration': self.get_time_coverage_duration(),
+            'bbox_units': 'degrees',
+            'resx': np.abs(self._data.coords[lon_var].values[1]
+                           - self._data.coords[lon_var].values[0]),
+            'resy': np.abs(self._data.coords[lat_var].values[1]
+                           - self._data.coords[lat_var].values[0]),
+            'restime': self.get_time_resolution()
         }
 
         if 'crs' in self._data.variables.keys():
@@ -346,14 +376,60 @@ class XarrayProvider(BaseProvider):
                 self._data.crs.epsg_code)
 
             properties['inverse_flattening'] = self_data.crs.inverse_flattening
-            properties['bbox_units'] = 'degrees'
-            properties['resx'] = self._data.attrs['geospatial_lon_units']
-            properties['resy'] = self._data.attrs['geospatial_lat_units']
-            properties['restime'] = self._data.attrs['time_coverage_resolution']
+
             properties['crs_type'] = 'ProjectedCRS'
 
         properties['axes'] = [
-            properties['x_axis_label'], properties['y_axis_label']
+            properties['x_axis_label'],
+            properties['y_axis_label'],
+            properties['time_axis_label']
         ]
 
+        properties['fields'] =  [name for name in self._data.variables
+                          if len(self._data.variables[name].shape) >= 3]
+
         return properties
+
+    @staticmethod
+    def _get_parameter_metadata(name, attrs):
+        """
+        Helper function to derive parameter name and units
+        :param name: name of variable
+        :param attrs: dictionary of variable attributes
+        :returns: dict of parameter metadata
+        """
+
+        return {
+            'id': name,
+            'description': attrs.get('long_name') or 'Not available',
+            'unit_label': attrs.get('units') or 'Not available',
+            'unit_symbol': attrs.get('units') or 'Not available',
+            'observed_property_id': name,
+            'observed_property_name': attrs.get('long_name') or 'Not available'
+        }
+
+    def get_time_resolution(self):
+        """
+        Helper function to derive time resolution
+        :returns: time resolution string
+        """
+        dts = np.array([(self._data.TIME[1] - self._data.TIME[0])
+                       .values.astype('timedelta64[%s]' % x) for x in
+                      ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
+        return str(dts[np.array([x.astype(np.int) for x in dts]) > 0][0])
+
+    def get_time_coverage_duration(self):
+        """
+        Helper function to derive time coverage duration
+        :returns: time coverage duration string
+        """
+        ms_difference = (self._data.TIME[-1] - self._data.TIME[0])\
+            .values.astype('timedelta64[ms]').astype(np.double)
+        time_dict = {
+            'days': int(ms_difference / 1000 / 60 / 60 / 24),
+            'hours': int((ms_difference / 1000 / 60 / 60) % 24),
+            'minutes': int((ms_difference / 1000 / 60) % 60),
+            'seconds': int(ms_difference / 1000) % 60}
+        times = ['%d %s' % (val, key) for key, val in time_dict.items() if val > 0]
+        return ', '.join(times)
+

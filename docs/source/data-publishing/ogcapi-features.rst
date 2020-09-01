@@ -162,6 +162,8 @@ Data access examples
   - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo
+- queryables
+  - http://localhost:5000/collections/foo/queryables
 - browse features
   - http://localhost:5000/collections/foo/items
 - paging

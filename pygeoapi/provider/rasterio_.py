@@ -46,9 +46,7 @@ class RasterioProvider(BaseProvider):
     def __init__(self, provider_def):
         """
         Initialize object
-
         :param provider_def: provider definition
-
         :returns: pygeoapi.providers.rasterio_.RasterioProvider
         """
 
@@ -67,7 +65,6 @@ class RasterioProvider(BaseProvider):
     def get_coverage_domainset(self):
         """
         Provide coverage domainset
-
         :returns: CIS JSON object of domainset metadata
         """
 
@@ -122,7 +119,6 @@ class RasterioProvider(BaseProvider):
     def get_coverage_rangetype(self):
         """
         Provide coverage rangetype
-
         :returns: CIS JSON object of rangetype metadata
         """
 
@@ -164,10 +160,8 @@ class RasterioProvider(BaseProvider):
     def query(self, bands=[], subsets={}, format_='json'):
         """
         Extract data from collection collection
-
         :param bands: list of bands (int)
         :param subsets: dict of subset names with lists of ranges
-
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
@@ -189,7 +183,6 @@ class RasterioProvider(BaseProvider):
 
             x = self._coverage_properties['x_axis_label']
             y = self._coverage_properties['y_axis_label']
-
 
             shapes = [{
                'type': 'Polygon',
@@ -219,6 +212,7 @@ class RasterioProvider(BaseProvider):
                 LOGGER.debug('Clipping data with bbox')
                 out_image, out_transform = rasterio.mask.mask(
                     _data,
+                    filled=False,
                     shapes=shapes,
                     crop=True,
                     indexes=args['indexes'])
@@ -263,10 +257,8 @@ class RasterioProvider(BaseProvider):
     def gen_covjson(self, metadata, data):
         """
         Generate coverage as CoverageJSON representation
-
         :param metadata: coverage metadata
         :param data: rasterio DatasetReader object
-
         :returns: dict of CoverageJSON representation
         """
 
@@ -348,7 +340,6 @@ class RasterioProvider(BaseProvider):
     def _get_coverage_properties(self):
         """
         Helper function to normalize coverage properties
-
         :returns: `dict` of coverage properties
         """
 
@@ -393,10 +384,8 @@ class RasterioProvider(BaseProvider):
 def _get_parameter_metadata(driver, band):
     """
     Helper function to derive parameter name and units
-
     :param driver: rasterio/GDAL driver name
     :param band: int of band number
-
     :returns: dict of parameter metadata
     """
 

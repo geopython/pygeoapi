@@ -15,10 +15,10 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, rangeSubset, subsets
+   :header: Provider, rangeSubset, subset
    :align: left
 
-   rasterio,✔️,✔️,✔️,
+   rasterio,✔️,✔️
 
 
 Below are specific connection examples based on supported providers.
@@ -51,20 +51,18 @@ Data access examples
   - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo
-- browse features
-  - http://localhost:5000/collections/foo/items
-- paging
-  - http://localhost:5000/collections/foo/items?startIndex=10&limit=10
-- CSV outputs
-  - http://localhost:5000/collections/foo/items?f=csv
-- query features (spatial)
-  - http://localhost:5000/collections/foo/items?bbox=-180,-90,180,90
-- query features (attribute)
-  - http://localhost:5000/collections/foo/items?propertyname=foo
-- query features (temporal)
-  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
-- fetch a specific feature
-  - http://localhost:5000/collections/foo/items/123
+- coverage rangetype
+  - http://localhost:5000/collections/foo/coverage/rangetype
+- coverage domainset
+  - http://localhost:5000/collections/foo/coverage/domainset
+- coverage access via CoverageJSON (default)
+  - http://localhost:5000/collections/foo/coverage?f=json
+- coverage access via native format (as defined in ``provider.format.name``)
+  - http://localhost:5000/collections/foo/coverage?f=GRIB2
+- coverage access with comma-separated rangeSubset
+  - http://localhost:5000/collections/foo/coverage?rangeSubset=1,3
+- coverage access with subsetting
+  - http://localhost:5000/collections/foo/coverage?subset=lat(10,20)&subset=long(10,20)
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`rasterio`: https://rasterio.readthedocs.io

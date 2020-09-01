@@ -41,6 +41,7 @@ from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader
 import yaml
+import numpy as np
 
 from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
@@ -183,6 +184,8 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
+    elif isinsance(obj, float):
+        return "null"
     elif isinstance(obj, bytes):
         try:
             LOGGER.debug('Returning as UTF-8 decoded bytes')
