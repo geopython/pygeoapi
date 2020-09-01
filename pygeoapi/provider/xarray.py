@@ -385,8 +385,8 @@ class XarrayProvider(BaseProvider):
             properties['time_axis_label']
         ]
 
-        properties['fields'] =  [name for name in self._data.variables
-                          if len(self._data.variables[name].shape) >= 3]
+        properties['fields'] = [name for name in self._data.variables
+                                if len(self._data.variables[name].shape) >= 3]
 
         return properties
 

@@ -58,6 +58,7 @@ class RasterioProvider(BaseProvider):
             self.axes = self._coverage_properties['axes']
             self.crs = self._coverage_properties['bbox_crs']
             self.num_bands = self._coverage_properties['num_bands']
+            self.fields = [str(num) for num in range(1, self.num_bands+1)]
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -157,14 +158,15 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, bands=[], subsets={}, format_='json'):
+    def query(self, range_type=[], subsets={}, format_='json'):
         """
         Extract data from collection collection
-        :param bands: list of bands (int)
+        :param range_type: list of bands (int)
         :param subsets: dict of subset names with lists of ranges
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
+        bands = range_type
         LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
 
         args = {

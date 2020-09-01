@@ -32,7 +32,6 @@
 import base64
 from datetime import date, datetime, time
 from decimal import Decimal
-import json
 import logging
 import mimetypes
 import os
@@ -42,6 +41,7 @@ from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader
 import yaml
 import numpy as np
+import simplejson as json
 
 from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
@@ -159,7 +159,7 @@ def to_json(dict_, pretty=False):
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial, indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent, ignore_nan=True)
 
 
 def get_path_basename(urlpath):
@@ -184,8 +184,6 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
-    elif isinsance(obj, float):
-        return "null"
     elif isinstance(obj, bytes):
         try:
             LOGGER.debug('Returning as UTF-8 decoded bytes')

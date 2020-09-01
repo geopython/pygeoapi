@@ -44,6 +44,19 @@ capable of handling.
              name: GRIB2
              mimetype: application/x-grib2
 
+xarray
+^^^^^^^^
+
+The `xarray`_ provider plugin reads and extracts any data that xarray is
+capable of handling (netCDF, Zarr).
+
+.. code-block:: yaml
+
+   providers:
+       - type: coverage
+         name: xarray
+         data: tests/data/coads_sst.nc
+
 Data access examples
 --------------------
 
