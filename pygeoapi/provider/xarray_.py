@@ -27,43 +27,33 @@
 #
 # =================================================================
 
+import logging
+import tempfile
+
 import xarray
 import numpy as np
-import logging
-import os
-import uuid
 
-from pygeoapi.provider.base import BaseProvider, ProviderConnectionError, ProviderQueryError
+from pygeoapi.provider.base import (BaseProvider,
+                                    ProviderConnectionError,
+                                    ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
 
 class XarrayProvider(BaseProvider):
-    """Provider class backed by local GeoJSON files
-    This is meant to be simple
-    (no external services, no dependencies, no schema)
-    at the expense of performance
-    (no indexing, full serialization roundtrip on each request)
-    Not thread safe, a single server process is assumed
-    This implementation uses the feature 'id' heavily
-    and will override any 'id' provided in the original data.
-    The feature 'properties' will be preserved.
-    TODO:
-    * query method should take bbox
-    * instead of methods returning FeatureCollections,
-    we should be yielding Features and aggregating in the view
-    * there are strict id semantics; all features in the input GeoJSON file
-    must be present and be unique strings. Otherwise it will break.
-    * How to raise errors in the provider implementation such that
-    * appropriate HTTP responses will be raised
-    """
+    """Xarray Provider"""
 
     def __init__(self, provider_def):
-        """initializer"""
+        """
+        Initialize object
+        :param provider_def: provider definition
+        :returns: pygeoapi.providers.xarray_.XarrayProvider
+        """
+
         BaseProvider.__init__(self, provider_def)
 
         try:
-            zarr = self.data.split('.')[-1] == 'zarr'
+            zarr = 'zarr' in self.data[:5]
             open_func = xarray.open_zarr if zarr else xarray.open_dataset
             self._data = open_func(self.data)
             self._coverage_properties = self._get_coverage_properties()
@@ -84,37 +74,38 @@ class XarrayProvider(BaseProvider):
         :returns: CIS JSON object of domainset metadata
         """
 
+        c_props = self._coverage_properties
         domainset = {
             'type': 'DomainSetType',
             'generalGrid': {
                 'type': 'GeneralGridCoverageType',
-                'srsName': self._coverage_properties['bbox_crs'],
+                'srsName': c_props['bbox_crs'],
                 'axisLabels': [
-                    self._coverage_properties['x_axis_label'],
-                    self._coverage_properties['y_axis_label']
+                    c_props['x_axis_label'],
+                    c_props['y_axis_label']
                 ],
                 'axis': [{
                     'type': 'RegularAxisType',
-                    'axisLabel': self._coverage_properties['x_axis_label'],
-                    'lowerBound': self._coverage_properties['bbox'][0],
-                    'upperBound': self._coverage_properties['bbox'][2],
-                    'uomLabel': self._coverage_properties['bbox_units'],
-                    'resolution': self._coverage_properties['resx']
+                    'axisLabel': c_props['x_axis_label'],
+                    'lowerBound': c_props['bbox'][0],
+                    'upperBound': c_props['bbox'][2],
+                    'uomLabel': c_props['bbox_units'],
+                    'resolution': c_props['resx']
                 }, {
                     'type': 'RegularAxisType',
-                    'axisLabel': self._coverage_properties['y_axis_label'],
-                    'lowerBound': self._coverage_properties['bbox'][1],
-                    'upperBound': self._coverage_properties['bbox'][3],
-                    'uomLabel': self._coverage_properties['bbox_units'],
-                    'resolution': self._coverage_properties['resy']
+                    'axisLabel': c_props['y_axis_label'],
+                    'lowerBound': c_props['bbox'][1],
+                    'upperBound': c_props['bbox'][3],
+                    'uomLabel': c_props['bbox_units'],
+                    'resolution': c_props['resy']
                 },
                     {
                         'type': 'RegularAxisType',
-                        'axisLabel': self._coverage_properties['time_axis_label'],
-                        'lowerBound': self._coverage_properties['time_range'][0],
-                        'upperBound': self._coverage_properties['time_range'][1],
-                        'uomLabel': self._coverage_properties['restime'],
-                        'resolution': self._coverage_properties['restime']
+                        'axisLabel': c_props['time_axis_label'],
+                        'lowerBound': c_props['time_range'][0],
+                        'upperBound': c_props['time_range'][1],
+                        'uomLabel': c_props['restime'],
+                        'resolution': c_props['restime']
                     }
                 ],
                 'gridLimits': {
@@ -125,12 +116,12 @@ class XarrayProvider(BaseProvider):
                         'type': 'IndexAxisType',
                         'axisLabel': 'i',
                         'lowerBound': 0,
-                        'upperBound': self._coverage_properties['width']
+                        'upperBound': c_props['width']
                     }, {
                         'type': 'IndexAxisType',
                         'axisLabel': 'j',
                         'lowerBound': 0,
-                        'upperBound': self._coverage_properties['height']
+                        'upperBound': c_props['height']
                     }]
                 }
             },
@@ -182,31 +173,27 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_type=[], subsets={}, format_='json'):
+    def query(self, range_subset=[], subsets={}, format_='json'):
         """
          Extract data from collection collection
 
-        :param range_type: list of data variables to return (all if blank)
+        :param range_subset: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
         :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        if len(range_type) < 1:
-            range_type = self.fields
+        if len(range_subset) < 1:
+            range_subset = self.fields
 
-        data = self._data[[*range_type]]
+        data = self._data[[*range_subset]]
 
         if(self._coverage_properties['x_axis_label'] in subsets or
            self._coverage_properties['y_axis_label'] in subsets or
            self._coverage_properties['time_axis_label'] in subsets):
 
             LOGGER.debug('Creating spatio-temporal subset')
-
-            lon = self._coverage_properties['x_axis_label']
-            lat = self._coverage_properties['y_axis_label']
-            time = self._coverage_properties['time_axis_label']
 
             query_params = {}
             for key, val in subsets.items():
@@ -228,7 +215,17 @@ class XarrayProvider(BaseProvider):
                           for var_name, var in data.variables.items()}
         }
 
-        return self.gen_covjson(out_meta, data, range_type)
+        LOGGER.debug('Serializing data in memory')
+        if format_ == 'json':
+            LOGGER.debug('Creating output in CoverageJSON')
+            return self.gen_covjson(out_meta, data, range_subset)
+
+        else:  # return data in native format
+            with tempfile.TemporaryFile() as fp:
+                LOGGER.debug('Returning data in native format')
+                fp.write(data.to_netcdf())
+                fp.seek(0)
+                return fp.read()
 
     def gen_covjson(self, metadata, data, range_type):
         """
@@ -375,7 +372,8 @@ class XarrayProvider(BaseProvider):
                 'http://www.opengis.net/def/crs/OGC/1.3/',
                 self._data.crs.epsg_code)
 
-            properties['inverse_flattening'] = self_data.crs.inverse_flattening
+            properties['inverse_flattening'] = self._data.crs.\
+                inverse_flattening
 
             properties['crs_type'] = 'ProjectedCRS'
 
@@ -415,7 +413,7 @@ class XarrayProvider(BaseProvider):
         """
         dts = np.array([(self._data.TIME[1] - self._data.TIME[0])
                        .values.astype('timedelta64[%s]' % x) for x in
-                      ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
+                        ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
         return str(dts[np.array([x.astype(np.int) for x in dts]) > 0][0])
 
     def get_time_coverage_duration(self):
@@ -430,6 +428,6 @@ class XarrayProvider(BaseProvider):
             'hours': int((ms_difference / 1000 / 60 / 60) % 24),
             'minutes': int((ms_difference / 1000 / 60) % 60),
             'seconds': int(ms_difference / 1000) % 60}
-        times = ['%d %s' % (val, key) for key, val in time_dict.items() if val > 0]
+        times = ['%d %s' % (val, key) for key, val
+                 in time_dict.items() if val > 0]
         return ', '.join(times)
-

@@ -7,4 +7,5 @@ rasterio
 xarray
 zarr
 netCDF4
+scipy
 

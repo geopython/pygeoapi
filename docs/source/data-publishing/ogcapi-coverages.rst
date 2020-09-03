@@ -56,6 +56,9 @@ capable of handling (netCDF, Zarr).
        - type: coverage
          name: xarray
          data: tests/data/coads_sst.nc
+         format:
+            name: netcdf
+            mimetype: application/x-netcdf
 
 Data access examples
 --------------------
@@ -79,3 +82,4 @@ Data access examples
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
+.. _`xarray`: http://xarray.pydata.org

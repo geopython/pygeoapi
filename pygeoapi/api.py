@@ -1229,13 +1229,12 @@ class API:
         if 'rangeSubset' in args:
             LOGGER.debug('Processing rangeSubset parameter')
 
-            query_args['range_type'] = list(
+            query_args['range_subset'] = list(
                 filter(None, args['rangeSubset'].split(',')))
-            LOGGER.debug('Fields: {}'.format(query_args['range_type']))
+            LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
 
-            for a in query_args['range_type']:
+            for a in query_args['range_subset']:
                 if a not in p.fields:
-                    print('fields', p.fields)
                     exception = {
                         'code': 'InvalidParameterValue',
                         'description': 'Invalid field specified'

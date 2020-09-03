@@ -30,7 +30,7 @@
 import os
 import pytest
 
-from pygeoapi.provider.xarray import XarrayProvider
+from pygeoapi.provider.xarray_ import XarrayProvider
 
 
 def get_test_file_path(filename):
