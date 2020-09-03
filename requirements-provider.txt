@@ -5,7 +5,7 @@ psycopg2-binary==2.8.4
 pymongo==3.10.1
 rasterio
 xarray
-zarr
+zarr==2.3.0
 netCDF4
 scipy
 
