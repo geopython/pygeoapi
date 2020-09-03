@@ -47,8 +47,7 @@ capable of handling.
 xarray
 ^^^^^^^^
 
-The `xarray`_ provider plugin reads and extracts any data that xarray is
-capable of handling (netCDF, Zarr).
+The `xarray`_ provider plugin reads and extracts netCDF data.
 
 .. code-block:: yaml
 

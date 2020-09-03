@@ -53,9 +53,7 @@ class XarrayProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
         try:
-            zarr = 'zarr' in self.data[:5]
-            open_func = xarray.open_zarr if zarr else xarray.open_dataset
-            self._data = open_func(self.data)
+            self._data = xarray.open_dataset(self.data)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
