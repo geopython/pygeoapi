@@ -54,9 +54,9 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
-                           get_provider_by_type, get_provider_default,
-                           get_typed_value, render_j2_template,
-                           TEMPLATES, to_json)
+                           get_provider_by_type, filter_providers_by_type,
+                           get_provider_default, get_typed_value,
+                           render_j2_template, TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -801,7 +801,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
             return headers_, 200, content
 
-        return headers_, 200, json.dumps(tiles, default=json_serial)
+        return headers_, 200, to_json(tiles, self.pretty_print)
 
     def get_collection_items(self, headers, args, dataset, pathinfo=None):
         """
@@ -1236,12 +1236,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 400, json.dumps(exception)
 
-        LOGGER.debug('Loading provider')
-        dataset_providers = {
-                provider['type']: provider for provider in self.config[
-                    'resources'][dataset]['providers']}
-        p = load_plugin('provider',
-                        dataset_providers['tiles'],
+        LOGGER.debug('Loading tile provider')
+        p = load_plugin('provider', filter_providers_by_type(
+                            self.config['resources'][dataset]['providers']),
                         tiles=True)
 
         try:
