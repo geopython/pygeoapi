@@ -45,7 +45,7 @@ PLUGINS = {
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
-        'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider'
+        'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'tiles': {
             'MVTTileProvider': 'pygeoapi.provider.mvt.MVTProvider'
         }

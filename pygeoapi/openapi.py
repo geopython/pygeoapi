@@ -45,7 +45,7 @@ OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
 #    'oacov': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Sprint-August-2020/master/docs/Draft_Spring_Guide_for_OGC_API_Coverages/openapi'  # noqa
-    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved'  # noqa
+    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/map-tiles.yaml'  # noqa
 }
