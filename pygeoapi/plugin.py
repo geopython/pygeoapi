@@ -47,7 +47,7 @@ PLUGINS = {
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'tiles': {
-            'MVTTileProvider': 'pygeoapi.provider.mvt.MVTProvider'
+            'MVTProvider': 'pygeoapi.provider.mvt.MVTProvider'
         }
     },
     'formatter': {

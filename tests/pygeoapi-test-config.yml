@@ -152,7 +152,7 @@ resources:
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
             - type: tiles
-              name: MVTTileProvider
+              name: MVTProvider
               # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
               data: tests/data/tiles/ne_110m_lakes
               format: 
