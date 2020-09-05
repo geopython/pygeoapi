@@ -60,6 +60,7 @@ def fixture():
 def config():
     return {
         'name': 'GeoJSON',
+        'type': 'feature',
         'data': path,
         'id_field': 'id'
     }
@@ -136,28 +137,6 @@ def test_update(fixture, config):
     p.update('123-456', new_feature)
 
     # Should be changed
-    results = p.get('123-456')
-    assert 'Null' in results['properties']['name']
-
-
-def test_update_safe_id(fixture, config):
-    p = GeoJSONProvider(config)
-    new_feature = {
-        'type': 'Feature',
-        'id': 'SOMETHING DIFFERENT',
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [0.0, 0.0]},
-        'properties': {
-            'name': 'Null Island'}}
-
-    p.update('123-456', new_feature)
-
-    # Don't let the id change, should not exist
-    with pytest.raises(ProviderItemNotFoundError):
-        p.get('SOMETHING DIFFERENT')
-
-    # Should still be at the old id
     results = p.get('123-456')
     assert 'Null' in results['properties']['name']
 

@@ -43,6 +43,7 @@ from jinja2 import Environment, FileSystemLoader
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -142,16 +143,22 @@ def str2bool(value):
     return value2
 
 
-def to_json(dict_):
+def to_json(dict_, pretty=False):
     """
     Serialize dict to json
 
     :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
 
     :returns: JSON string representation
     """
 
-    return json.dumps(dict_, default=json_serial)
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, default=json_serial, indent=indent)
 
 
 def get_path_basename(urlpath):
@@ -316,8 +323,8 @@ def get_provider_by_type(providers, provider_type):
     try:
         p = (next(d for i, d in enumerate(providers)
                   if d['type'] == provider_type))
-    except StopIteration:
-        raise RuntimeError('Cannot find provider type')
+    except (RuntimeError, StopIteration):
+        raise ProviderTypeError('Invalid provider type requested')
 
     return p
 

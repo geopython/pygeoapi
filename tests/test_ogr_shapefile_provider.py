@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_shapefile_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRI Shapefile',
             'source':
@@ -65,6 +66,7 @@ def config_shapefile_4326():
 def config_shapefile_28992():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRI Shapefile',
             'source':
@@ -152,7 +154,6 @@ def test_query_bbox_hits_4326(config_shapefile_4326):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
@@ -170,7 +171,6 @@ def test_query_bbox_hits_28992(config_shapefile_28992):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 

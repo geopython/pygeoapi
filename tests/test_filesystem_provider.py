@@ -39,6 +39,7 @@ THISDIR = os.path.dirname(os.path.realpath(__file__))
 def config():
     return {
         'name': 'FileSystem',
+        'type': 'stac',
         'data': os.path.join(THISDIR, 'data'),
         'file_types': ['.gpkg']
     }

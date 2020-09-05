@@ -266,6 +266,69 @@ def collection_items(collection_id, item_id=None):
     return response
 
 
+@APP.route('/collections/<collection_id>/coverage')
+def collection_coverage(collection_id):
+    """
+    OGC API - Coverages coverage endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<collection_id>/coverage/domainset')
+def collection_coverage_domainset(collection_id):
+    """
+    OGC API - Coverages coverage domainset endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_domainset(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<collection_id>/coverage/rangetype')
+def collection_coverage_rangetype(collection_id):
+    """
+    OGC API - Coverages coverage rangetype endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_rangetype(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @APP.route('/processes')
 @APP.route('/processes/<process_id>')
 def processes(process_id=None):
