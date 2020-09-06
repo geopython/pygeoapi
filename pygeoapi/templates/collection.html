@@ -29,17 +29,19 @@
               Display Queryables of "{{ data['title'] }}"</a></div>
         </li>
       </ul>
-      {% if config['resources'][data['id']]['tiles'] %}
-        <h3>Tiles</h3>
-        <ul>
-          <li>
-            <div>
-              <meta itemprop="encodingFormat" content="text/html" />
-              <a title="Display Tiles" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">
-                Display Tiles of "{{ data['title'] }}</a>"</div>
-          </li>
-        </ul>
-      {% endif %}
+      {% for provider in config['resources'][data['id']]['providers'] %}
+        {% if 'tiles' in provider['type'] %}
+          <h3>Tiles</h3>
+          <ul>
+            <li>
+              <div>
+                <meta itemprop="encodingFormat" content="text/html" />
+                <a title="Display Tiles" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">
+                  Display Tiles of "{{ data['title'] }}</a>"</div>
+            </li>
+          </ul>
+        {% endif %}
+      {% endfor %}
       <h3>View</h3>
       <ul>
         <li>
