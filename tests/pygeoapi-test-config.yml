@@ -157,7 +157,7 @@ resources:
               data: tests/data/tiles/ne_110m_lakes
               format: 
                 name: pbf
-                mimetype: application/x-protobuf
+                mimetype: application/vnd.mapbox-vector-tile
               schemes:
                 - WebMercatorQuad
                 - WorldCRS84Quad

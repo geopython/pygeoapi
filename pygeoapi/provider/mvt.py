@@ -89,7 +89,7 @@ class MVTProvider(BaseTileProvider):
         url = urlparse(self.data)
         baseurl = baseurl or '{}://{}'.format(url.scheme, url.netloc)
         # @TODO: support multiple types
-        tile_type = tile_type or self.format_types[0]
+        tile_type = tile_type or self.format_type
         servicepath = \
             servicepath or \
             '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
@@ -107,7 +107,7 @@ class MVTProvider(BaseTileProvider):
 
         links = {
             'links': [{
-                'type': 'application/vnd.mapbox-vector-tile',
+                'type': self.mimetype,
                 'rel': 'item',
                 'title': 'This collection as Mapbox vector tiles',
                 'href': service_url,
@@ -124,7 +124,7 @@ class MVTProvider(BaseTileProvider):
         return links
 
     def get_tiles(self, layer=None, tileset=None,
-                  z=None, y=None, x=None, format='pbf'):
+                  z=None, y=None, x=None, format_=None):
         """
         Gets tile
 
@@ -133,14 +133,15 @@ class MVTProvider(BaseTileProvider):
         :param z: z index
         :param y: y index
         :param x: x index
-        :param format: tile format
+        :param format_: tile format
 
         :returns: an encoded mvt tile
         """
 
         with httpx.Client(base_url=self.data) as tile_api:
             resp = tile_api.get(
-                '/ne_110m_lakes/{z}/{y}/{x}.pbf'.format(z=z, y=y, x=x))
+                '/{lyr}/{z}/{y}/{x}.{f}'.format(
+                    lyr=layer,z=z, y=y, x=x, f=format_))
             resp.raise_for_status()
             return resp.content
 
