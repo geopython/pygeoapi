@@ -57,22 +57,21 @@ class MVTProvider(BaseTileProvider):
         #     msg = 'Service does not exist: {}'.format(self.data)
         #     LOGGER.error(msg)
         #     raise ProviderConnectionError(msg)
-        self.schemes = self.get_tiling_schemes()
-        self.services = self.get_tile_services()
 
     def get_tiling_schemes(self):
 
-        tileMatrixSetLinks = {
-            'tileMatrixSetLinks': [{
+        tile_matrix_set_links_list = [{
                 'tileMatrixSet': 'WorldCRS84Quad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
             }, {
                 'tileMatrixSet': 'WebMercatorQuad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
             }]
-        }
+        tile_matrix_set_links = [
+            item for item in tile_matrix_set_links_list
+                if item['tileMatrixSet'] in self.schemes]
 
-        return tileMatrixSetLinks
+        return tile_matrix_set_links
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           tile_type=None):

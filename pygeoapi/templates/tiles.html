@@ -37,9 +37,9 @@
         <div class="col-md-2 col-sm-12">Tile Matrix Set</div>
         <div class="col-md-8">
           <select id="tilingScheme">
-            <option value="WebMercatorQuad">WebMercatorQuad</option>
-            <option value="WorldCRS84Quad">WorldCRS84Quad</option>
-            <option value="WorldMercatorWGS84Quad">WorldMercatorWGS84Quad</option>
+            {% for scheme in data['tileMatrixSetLinks'] %}
+              <option value={{scheme['tileMatrixSet']}}>{{scheme['tileMatrixSet']}}</option>
+            {% endfor %}
           </select>
           <script>
             var select = document.getElementById('tilingScheme');
