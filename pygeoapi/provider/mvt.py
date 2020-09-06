@@ -74,7 +74,7 @@ class MVTProvider(BaseTileProvider):
 
         return tileMatrixSetLinks
 
-    def get_tile_services(self, baseurl=None, servicepath=None,
+    def get_tiles_service(self, baseurl=None, servicepath=None,
                           tile_type=None):
         """
         Gets mvt service description
@@ -101,7 +101,7 @@ class MVTProvider(BaseTileProvider):
                 tile_type)
 
         service_url = urljoin(baseurl, servicepath)
-        service_metadata = urljoin(
+        service_metadata_url = urljoin(
             service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
 
@@ -116,7 +116,7 @@ class MVTProvider(BaseTileProvider):
                 'type': 'application/json',
                 'rel': 'describedby',
                 'title': 'Metadata for this collection in the TileJSON format',
-                'href': '{}?f=json'.format(service_metadata),
+                'href': '{}?f=json'.format(service_metadata_url),
                 'templated': True
             }]
         }

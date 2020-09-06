@@ -50,7 +50,7 @@ class BaseTileProvider:
         self.data = provider_def['data']
         self.format_type = provider_def['format']['name']
         self.mimetype = provider_def['format']['mimetype']
-        self.tiling_schemes = provider_def['schemes']
+        self.schemes = provider_def['schemes']
         self.fields = {}
 
     def get_fields(self):
