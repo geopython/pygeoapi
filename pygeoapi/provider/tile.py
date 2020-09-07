@@ -53,11 +53,18 @@ class BaseTileProvider:
         self.schemes = provider_def['schemes']
         self.fields = {}
 
+    def get_layer(self):
+        """
+        Get provider layer name
+
+        :returns: `string` of layer name
+        """
+
     def get_fields(self):
         """
         Get provider field information (names, types)
 
-        :returns: dict of fields
+        :returns: `dict` of fields
         """
 
         raise NotImplementedError()
@@ -66,7 +73,7 @@ class BaseTileProvider:
         """
         Get provider field information (names, types)
 
-        :returns: dict of tiling schemes
+        :returns: `dict` of tiling schemes
         """
 
         raise NotImplementedError()
@@ -84,14 +91,16 @@ class BaseTileProvider:
 
         raise NotImplementedError()
 
-    def get_tiles(self, layer, z, y, x, format):
+    def get_tiles(self, layer, tileset, z, y, x, format_):
         """
         Gets tiles data
 
         :param layer: tile layer
+        :param tileset: tile set
         :param z: z index
         :param y: y index
         :param x: x index
+        :param format_: tile format type
 
         :returns: `binary` of the tile
         """

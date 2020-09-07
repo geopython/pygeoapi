@@ -211,8 +211,7 @@ def get_collection_tiles(name=None):
     return response
 
 
-@APP.route('/collections/<name>/tiles/\
-    <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+@APP.route('/collections/<name>/tiles/<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_items_tiles(name=None, tileMatrixSetId=None,
                                tileMatrix=None, tileRow=None, tileCol=None):
     """

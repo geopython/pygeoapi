@@ -744,14 +744,14 @@ class API:
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception)
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception)
 
         tiles = {
             'title': dataset,
@@ -795,7 +795,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if format_ == 'html':  # render
             tiles['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
-            print(tiles)
+
             content = render_j2_template(self.config, 'tiles.html',
                                          tiles)
 
@@ -1221,7 +1221,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception)
 
         LOGGER.debug('Processing tiles')
 
@@ -1237,16 +1237,27 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 400, json.dumps(exception)
 
         LOGGER.debug('Loading tile provider')
-        p = load_plugin('provider', filter_providers_by_type(
-                            self.config['resources'][dataset]['providers']),
-                        tiles=True)
-
         try:
+            dataset_providers = {
+                provider['type']: provider for provider in self.config[
+                    'resources'][dataset]['providers']}
+            p = load_plugin(
+                'provider',
+                dataset_providers['tiles'],
+                tiles=True)
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
-            content = p.get_tiles(layer=None, tileset=matrix_id,
-                                  z=z_idx, y=y_idx, x=x_idx, format=format_)
-            return headers_, 200, content
+            content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
+                                  z=z_idx, y=y_idx, x=x_idx, format_=format_)
+            if content is None:
+                exception = {
+                    'code': 'NotFound',
+                    'description': 'identifier not found'
+                }
+                LOGGER.error(exception)
+                return headers_, 404, to_json(exception)
+            else:
+                return headers_, 200, content
         # @TODO: figure out if the spec requires to return json errors
         except ProviderConnectionError as err:
             exception = {
@@ -1254,36 +1265,28 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception)
         except ProviderTilesetIdNotFoundError:
             exception = {
                 'code': 'NotFound',
                 'description': 'Tileset id not found'
             }
             LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 404, to_json(exception)
         except ProviderTileQueryError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'Tile not found'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
+            return headers_, 500, to_json(exception)
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'generic error (check logs)'
             }
             LOGGER.error(err)
-            return headers_, 500, json.dumps(exception)
-
-        if content is None:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, json.dumps(exception)
+            return headers_, 500, to_json(exception)
 
     @pre_process
     def get_collection_item(self, headers_, format_, dataset, identifier):

@@ -32,8 +32,6 @@ import httpx
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.provider.tile import BaseTileProvider
-# from pygeoapi.provider.base import (ProviderConnectionError,
-#                                     ProviderNotFoundError)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -57,6 +55,12 @@ class MVTProvider(BaseTileProvider):
         #     msg = 'Service does not exist: {}'.format(self.data)
         #     LOGGER.error(msg)
         #     raise ProviderConnectionError(msg)
+
+    def get_layer(self):
+
+        url = urlparse(self.data)
+
+        return url.path.split("/{z}/{x}/{y}")[0][1:]
 
     def get_tiling_schemes(self):
 
@@ -136,7 +140,8 @@ class MVTProvider(BaseTileProvider):
 
         :returns: an encoded mvt tile
         """
-
+        if format_ == "mvt":
+            format_ = self.format_type
         with httpx.Client(base_url=self.data) as tile_api:
             resp = tile_api.get(
                 '/{lyr}/{z}/{y}/{x}.{f}'.format(

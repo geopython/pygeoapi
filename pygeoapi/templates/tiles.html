@@ -73,13 +73,19 @@
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
 
     map.addLayer(new L.TileLayer(
-        '{{ config['server']['map']['url'] }}', {
+        '{{ config["server"]["map"]["url"] }}', {
             maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
+            attribution: '{{ config["server"]["map"]["attribution"] }}'
         }
     ));
 
-    var tilesUrl = "http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf";
+    //var tilesUrl = "http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/{z}/{x}/{y}?f=mvt"
+    {% for link in data["links"] %}
+      {% if link["rel"] == "item" %}
+        var tilesUrl = '{{ link["href"] }}';
+      {% endif %}
+    {% endfor %}
+    var url = tilesUrl.replace('{tileMatrixSetId}', "WorldCRS84Quad").replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
 
 		var VectorTileOptions = {
         interactive: true,
@@ -99,7 +105,7 @@
       highlight = null;
     };
 
-    var tilesPbfLayer = L.vectorGrid.protobuf(tilesUrl, VectorTileOptions)
+    var tilesPbfLayer = L.vectorGrid.protobuf(url, VectorTileOptions)
       .on('click', function(e) {	// The .on method attaches an event handler
           L.popup()
             .setContent("<b>Name</b>: " + e.layer.properties.name +
