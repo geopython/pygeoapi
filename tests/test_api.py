@@ -60,6 +60,14 @@ def make_req_headers(**kwargs):
     return request.headers
 
 
+def make_lakes_req_headers(**kwargs):
+    environ = create_environ('/collections/lakes/items',
+                             'http://localhost:5000/')
+    environ.update(kwargs)
+    request = Request(environ)
+    return request.headers
+
+
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
@@ -681,6 +689,20 @@ def test_get_collection_coverage(config, api_):
     assert code == 200
     assert isinstance(response, bytes)
 
+
+def test_get_collection_tiles_invalid(config, api_):
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+def test_get_collection_tiles(config, api_):
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'lakes')
+
+    assert code == 200
 
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()

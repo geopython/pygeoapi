@@ -190,54 +190,6 @@ def collection_queryables(collection_id=None):
     return response
 
 
-@APP.route('/collections/<name>/tiles')
-def get_collection_tiles(name=None):
-    """
-    OGC open api collections tiles access point
-
-    :param name: identifier of collection name
-
-    :returns: HTTP response
-    """
-
-    headers, status_code, content = api_.get_collection_tiles(
-        request.headers, request.args, name)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
-@APP.route('/collections/<name>/tiles/<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
-def get_collection_items_tiles(name=None, tileMatrixSetId=None,
-                               tileMatrix=None, tileRow=None, tileCol=None):
-    """
-    OGC open api collection tiles service
-
-    :param name: identifier of collection name
-    :param tileMatrixSetId: identifier of tile matrix set
-    :param tileMatrix: identifier of {z} matrix index
-    :param tileRow: identifier of {y} matrix index
-    :param tileCol: identifier of {x} matrix index
-
-    :returns: HTTP response
-    """
-
-    headers, status_code, content = api_.get_collection_items_tiles(
-        request.headers, request.args, name,
-        tileMatrixSetId, tileMatrix, tileRow, tileCol)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
 @APP.route('/collections/<collection_id>/items')
 @APP.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
@@ -319,6 +271,54 @@ def collection_coverage_rangetype(collection_id):
 
     headers, status_code, content = api_.get_collection_coverage_rangetype(
         request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<collection_id>/tiles')
+def get_collection_tiles(collection_id=None):
+    """
+    OGC open api collections tiles access point
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
+                              tileMatrix=None, tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service data
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tileMatrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_data(
+        request.headers, request.args, collection_id,
+        tileMatrixSetId, tileMatrix, tileRow, tileCol)
 
     response = make_response(content, status_code)
 
