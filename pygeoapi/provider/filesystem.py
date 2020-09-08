@@ -141,6 +141,8 @@ class FileSystemProvider(BaseProvider):
 
         elif resource_type == 'directory':
             for dc in os.listdir(data_path):
+                if dc == "tiles":
+                    continue
                 fullpath = os.path.join(data_path, dc)
                 if os.path.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)
