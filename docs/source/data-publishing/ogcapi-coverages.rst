@@ -44,6 +44,21 @@ capable of handling.
              name: GRIB2
              mimetype: application/x-grib2
 
+xarray
+^^^^^^^^
+
+The `xarray`_ provider plugin reads and extracts netCDF data.
+
+.. code-block:: yaml
+
+   providers:
+       - type: coverage
+         name: xarray
+         data: tests/data/coads_sst.nc
+         format:
+            name: netcdf
+            mimetype: application/x-netcdf
+
 Data access examples
 --------------------
 
@@ -66,3 +81,4 @@ Data access examples
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
+.. _`xarray`: http://xarray.pydata.org
