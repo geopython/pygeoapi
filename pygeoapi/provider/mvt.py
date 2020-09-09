@@ -28,7 +28,7 @@
 # =================================================================
 
 import logging
-import httpx
+import requests
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.provider.tile import BaseTileProvider
@@ -142,10 +142,14 @@ class MVTProvider(BaseTileProvider):
         """
         if format_ == "mvt":
             format_ = self.format_type
-        with httpx.Client(base_url=self.data) as tile_api:
-            resp = tile_api.get(
-                '/{lyr}/{z}/{y}/{x}.{f}'.format(
-                    lyr=layer,z=z, y=y, x=x, f=format_))
+        url = urlparse(self.data)
+        base_url = '{}://{}'.format(url.scheme, url.netloc)
+        with requests.Session() as session:
+            session.get(base_url)
+            resp = session.get(
+                '{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
+                    base_url=base_url,lyr=layer,
+                    z=z, y=y, x=x, f=format_))
             resp.raise_for_status()
             return resp.content
 
