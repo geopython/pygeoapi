@@ -1275,15 +1275,16 @@ class API:
             query_args['format_'] = format_ = args['f']
         if 'rangeSubset' in args:
             LOGGER.debug('Processing rangeSubset parameter')
-            query_args['bands'] = list(
-                filter(None, args['rangeSubset'].split(',')))
-            LOGGER.debug('Bands: {}'.format(query_args['bands']))
 
-            for a in query_args['bands']:
-                if int(a) > p.num_bands:
+            query_args['range_subset'] = list(
+                filter(None, args['rangeSubset'].split(',')))
+            LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
+
+            for a in query_args['range_subset']:
+                if a not in p.fields:
                     exception = {
                         'code': 'InvalidParameterValue',
-                        'description': 'Invalid bands specified'
+                        'description': 'Invalid field specified'
                     }
                     LOGGER.error(exception)
                     return ({'Content-type': 'application/json'}, 400,

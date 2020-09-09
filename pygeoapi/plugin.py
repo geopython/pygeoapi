@@ -49,6 +49,7 @@ PLUGINS = {
         'tiles': {
             'MVTProvider': 'pygeoapi.provider.mvt.MVTProvider'
         }
+        'xarray': 'pygeoapi.provider.xarray_.XarrayProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
