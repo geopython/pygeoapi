@@ -202,7 +202,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 2
+    assert len(collections['collections']) == 3
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
@@ -697,12 +697,14 @@ def test_get_collection_tiles_invalid(config, api_):
 
     assert code == 400
 
+
 def test_get_collection_tiles(config, api_):
     req_headers = make_lakes_req_headers()
     rsp_headers, code, response = api_.get_collection_tiles(
         req_headers, {}, 'lakes')
 
     assert code == 200
+
 
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()
