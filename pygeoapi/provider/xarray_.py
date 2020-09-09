@@ -209,11 +209,8 @@ class XarrayProvider(BaseProvider):
                 LOGGER.warning(err)
                 raise ProviderQueryError(err)
 
-        subsets_data_total = 0
-        for key, val in subsets.items():
-            subsets_data_total += data.coords[key].size
-
-        if subsets_data_total == 0:
+        if sum([data.coords[self.x_field].size,
+                data.coords[self.y_field].size]) == 0:
             msg = 'No data found'
             LOGGER.warning(msg)
             raise ProviderNoDataError(msg)
