@@ -35,6 +35,7 @@ import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
+                                    ProviderNoDataError,
                                     ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
@@ -195,20 +196,43 @@ class XarrayProvider(BaseProvider):
 
             query_params = {}
             for key, val in subsets.items():
-                query_params[key] = slice(val[0], val[1])
+                if data.coords[key].values[0] > data.coords[key].values[-1]:
+                    LOGGER.debug('Reversing slicing low/high')
+                    query_params[key] = slice(val[1], val[0])
+                else:
+                    query_params[key] = slice(val[0], val[1])
 
-            data = data.sel(query_params)
+            LOGGER.debug('Query parameters: {}'.format(query_params))
+            try:
+                data = data.sel(query_params)
+            except Exception as err:
+                LOGGER.warning(err)
+                raise ProviderQueryError(err)
 
-        out_meta = {'bbox': [
-            data.coords[self.lon_var].values[0],
-            data.coords[self.lat_var].values[0],
-            data.coords[self.lon_var].values[-1],
-            data.coords[self.lat_var].values[-1]],
-            "time": self._coverage_properties['time_range'],
-            "driver": "Xarray",
-            "height": data.dims[self.lat_var],
-            "width": data.dims[self.lon_var],
-            "time_steps": data.dims[self.time_var],
+        subsets_data_total = 0
+        for key, val in subsets.items():
+            subsets_data_total += data.coords[key].size
+
+        if subsets_data_total == 0:
+            msg = 'No data found'
+            LOGGER.warning(msg)
+            raise ProviderNoDataError(msg)
+
+        out_meta = {
+            'bbox': [
+                data.coords[self.x_field].values[0],
+                data.coords[self.y_field].values[0],
+                data.coords[self.x_field].values[-1],
+                data.coords[self.y_field].values[-1]
+            ],
+            "time": [
+                _to_datetime_string(data.coords[self.time_field].values[0]),
+                _to_datetime_string(data.coords[self.time_field].values[-1])
+            ],
+            "driver": "xarray",
+            "height": data.dims[self.y_field],
+            "width": data.dims[self.x_field],
+            "time_steps": data.dims[self.time_field],
             "variables": {var_name: var.attrs
                           for var_name, var in data.variables.items()}
         }
@@ -240,23 +264,28 @@ class XarrayProvider(BaseProvider):
         minx, miny, maxx, maxy = metadata['bbox']
         mint, maxt = metadata['time']
 
+        if data.coords[self.y_field].values[0] > data.coords[self.y_field].values[-1]:  # noqa
+            LOGGER.debug('Reversing direction of {}'.format(self.y_field))
+            miny = data.coords[self.y_field].values[-1]
+            maxy = data.coords[self.y_field].values[0]
+
         cj = {
             'type': 'Coverage',
             'domain': {
                 'type': 'Domain',
                 'domainType': 'Grid',
                 'axes': {
-                    self.lon_var: {
+                    'x': {
                         'start': minx,
                         'stop': maxx,
                         'num': metadata['width']
                     },
-                    self.lat_var: {
+                    'y': {
                         'start': maxy,
                         'stop': miny,
                         'num': metadata['height']
                     },
-                    self.time_var: {
+                    self.time_field: {
                         'start': mint,
                         'stop': maxt,
                         'num': metadata['time_steps']
@@ -299,16 +328,16 @@ class XarrayProvider(BaseProvider):
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': str(self._data[variable].dtype),
-                    'axisNames': [self._coverage_properties['x_axis_label'],
-                                  self._coverage_properties['y_axis_label'],
-                                  self._coverage_properties['time_axis_label']
-                                  ],
+                    'axisNames': [
+                        'y', 'x', self._coverage_properties['time_axis_label']
+                    ],
                     'shape': [metadata['height'],
                               metadata['width'],
                               metadata['time_steps']]
                 }
 
-                cj['ranges'][key]['values'] = data[key].values.tolist()
+                data = data.fillna(None)
+                cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
@@ -322,46 +351,58 @@ class XarrayProvider(BaseProvider):
         :returns: `dict` of coverage properties
         """
 
-        time_var, lat_var, lon_var = [None, None, None]
+        time_var, y_var, x_var = [None, None, None]
         for coord in self._data.coords:
             if coord.lower() == 'time':
-                self.time_var = time_var = coord
+                time_var = coord
                 continue
             if self._data.coords[coord].attrs['units'] == 'degrees_north':
-                self.lat_var = lat_var = coord
+                y_var = coord
                 continue
             if self._data.coords[coord].attrs['units'] == 'degrees_east':
-                self.lon_var = lon_var = coord
+                x_var = coord
                 continue
+
+        if self.x_field is None:
+            self.x_field = x_var
+        if self.y_field is None:
+            self.y_field = y_var
+        if self.time_field is None:
+            self.time_field = time_var
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to asess
         # all of the attributes based on lat lon vars
+
         properties = {
             'bbox': [
-                self._data.coords[lon_var].values[0],
-                self._data.coords[lat_var].values[0],
-                self._data.coords[lon_var].values[-1],
-                self._data.coords[lat_var].values[-1],
+                self._data.coords[self.x_field].values[0],
+                self._data.coords[self.y_field].values[0],
+                self._data.coords[self.x_field].values[-1],
+                self._data.coords[self.y_field].values[-1],
             ],
             'time_range': [
-                np.datetime_as_string(self._data.coords[time_var].values[0]),
-                np.datetime_as_string(self._data.coords[time_var].values[-1])
+                _to_datetime_string(
+                    self._data.coords[self.time_field].values[0]
+                ),
+                _to_datetime_string(
+                    self._data.coords[self.time_field].values[-1]
+                )
             ],
             'bbox_crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
             'crs_type': 'GeographicCRS',
-            'x_axis_label': lon_var,
-            'y_axis_label': lat_var,
-            'time_axis_label': time_var,
-            'width': self._data.dims[lon_var],
-            'height': self._data.dims[lat_var],
-            'time': self._data.dims[time_var],
+            'x_axis_label': self.x_field,
+            'y_axis_label': self.y_field,
+            'time_axis_label': self.time_field,
+            'width': self._data.dims[self.x_field],
+            'height': self._data.dims[self.y_field],
+            'time': self._data.dims[self.time_field],
             'time_duration': self.get_time_coverage_duration(),
             'bbox_units': 'degrees',
-            'resx': np.abs(self._data.coords[lon_var].values[1]
-                           - self._data.coords[lon_var].values[0]),
-            'resy': np.abs(self._data.coords[lat_var].values[1]
-                           - self._data.coords[lat_var].values[0]),
+            'resx': np.abs(self._data.coords[self.x_field].values[1]
+                           - self._data.coords[self.x_field].values[0]),
+            'resy': np.abs(self._data.coords[self.y_field].values[1]
+                           - self._data.coords[self.y_field].values[0]),
             'restime': self.get_time_resolution()
         }
 
@@ -397,11 +438,11 @@ class XarrayProvider(BaseProvider):
 
         return {
             'id': name,
-            'description': attrs.get('long_name') or 'Not available',
-            'unit_label': attrs.get('units') or 'Not available',
-            'unit_symbol': attrs.get('units') or 'Not available',
+            'description': attrs.get('long_name', None),
+            'unit_label': attrs.get('units', None),
+            'unit_symbol': attrs.get('units', None),
             'observed_property_id': name,
-            'observed_property_name': attrs.get('long_name') or 'Not available'
+            'observed_property_name': attrs.get('long_name', None)
         }
 
     def get_time_resolution(self):
@@ -409,9 +450,13 @@ class XarrayProvider(BaseProvider):
         Helper function to derive time resolution
         :returns: time resolution string
         """
-        dts = np.array([(self._data.TIME[1] - self._data.TIME[0])
-                       .values.astype('timedelta64[%s]' % x) for x in
-                        ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
+
+        time_diff = (self._data[self.time_field][1] -
+                     self._data[self.time_field][0])
+
+        dts = np.array([time_diff.values.astype('timedelta64[{}]'.format(x))
+                       for x in ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
+
         return str(dts[np.array([x.astype(np.int) for x in dts]) > 0][0])
 
     def get_time_coverage_duration(self):
@@ -419,13 +464,36 @@ class XarrayProvider(BaseProvider):
         Helper function to derive time coverage duration
         :returns: time coverage duration string
         """
-        ms_difference = (self._data.TIME[-1] - self._data.TIME[0])\
-            .values.astype('timedelta64[ms]').astype(np.double)
+
+        dur = self._data[self.time_field][-1] - self._data[self.time_field][0]
+        ms_difference = dur.values.astype('timedelta64[ms]').astype(np.double)
+
         time_dict = {
             'days': int(ms_difference / 1000 / 60 / 60 / 24),
             'hours': int((ms_difference / 1000 / 60 / 60) % 24),
             'minutes': int((ms_difference / 1000 / 60) % 60),
-            'seconds': int(ms_difference / 1000) % 60}
-        times = ['%d %s' % (val, key) for key, val
+            'seconds': int(ms_difference / 1000) % 60
+        }
+
+        times = ['{} {}'.format(val, key) for key, val
                  in time_dict.items() if val > 0]
+
         return ', '.join(times)
+
+
+def _to_datetime_string(datetime_obj):
+    """
+    Convenience function to formulate string from various datetime objects
+
+    :param datetime_obj: datetime object (native datetime, cftime)
+
+    :returns: str representation of datetime
+    """
+
+    try:
+        value = np.datetime_as_string(datetime_obj)
+    except Exception as err:
+        LOGGER.warning(err)
+        value = datetime_obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+    return value

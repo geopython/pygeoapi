@@ -47,8 +47,9 @@ from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderInvalidQueryError, ProviderQueryError, ProviderItemNotFoundError,
-    ProviderTypeError)
+    ProviderInvalidQueryError, ProviderNoDataError, ProviderQueryError,
+    ProviderItemNotFoundError, ProviderTypeError)
+
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
                            get_typed_value, render_j2_template,
@@ -1245,9 +1246,9 @@ class API:
 
         if 'subset' in args:
             LOGGER.debug('Processing subset parameters')
-            for s in args.getlist('subset'):
+            for s in args['subset'].split(','):
                 try:
-                    m = re.search(r'(.*)\((.*),(.*)\)', s)
+                    m = re.search(r'(.*)\((.*):(.*)\)', s)
                     subset_name = m.group(1)
                     if subset_name not in p.axes:
                         exception = {
@@ -1282,6 +1283,14 @@ class API:
             LOGGER.error(exception)
             return ({'Content-type': 'application/json'},
                     400, to_json(exception, self.pretty_print))
+        except ProviderNoDataError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'No data found'
+            }
+            LOGGER.debug(exception)
+            return ({'Content-type': 'application/json'},
+                    204, to_json(exception, self.pretty_print))
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
