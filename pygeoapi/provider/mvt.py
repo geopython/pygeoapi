@@ -72,8 +72,8 @@ class MVTProvider(BaseTileProvider):
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
             }]
         tile_matrix_set_links = [
-            item for item in tile_matrix_set_links_list
-                if item['tileMatrixSet'] in self.schemes]
+            item for item in tile_matrix_set_links_list if item[
+                'tileMatrixSet'] in self.schemes]
 
         return tile_matrix_set_links
 
@@ -146,10 +146,9 @@ class MVTProvider(BaseTileProvider):
         base_url = '{}://{}'.format(url.scheme, url.netloc)
         with requests.Session() as session:
             session.get(base_url)
-            resp = session.get(
-                '{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
-                    base_url=base_url,lyr=layer,
-                    z=z, y=y, x=x, f=format_))
+            resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
+                base_url=base_url, lyr=layer,
+                z=z, y=y, x=x, f=format_))
             resp.raise_for_status()
             return resp.content
 

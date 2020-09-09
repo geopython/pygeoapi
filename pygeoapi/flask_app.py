@@ -301,7 +301,8 @@ def get_collection_tiles(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+@APP.route('/collections/<collection_id>/tiles/\
+<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
                               tileMatrix=None, tileRow=None, tileCol=None):
     """

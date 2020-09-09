@@ -54,9 +54,9 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
-                           get_provider_by_type, filter_providers_by_type,
-                           get_provider_default, get_typed_value,
-                           render_j2_template, TEMPLATES, to_json)
+                           get_provider_by_type, get_provider_default,
+                           get_typed_value, render_j2_template, TEMPLATES,
+                           to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1574,7 +1574,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             .format(dataset, 'tileMatrixSetId',
                     'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
-        
+
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
 
         if format_ == 'html':  # render
@@ -1589,9 +1589,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         return headers_, 200, to_json(tiles, self.pretty_print)
 
     @jsonldify
-    def get_collection_tiles_data(self, headers_, format_,
-                                   dataset, matrix_id,
-                                   z_idx, y_idx, x_idx):
+    def get_collection_tiles_data(self, headers_, format_, dataset,
+                                  matrix_id, z_idx, y_idx, x_idx):
         """
         Get collection items tiles
 
