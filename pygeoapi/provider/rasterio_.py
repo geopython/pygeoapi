@@ -163,6 +163,8 @@ class RasterioProvider(BaseProvider):
         Extract data from collection collection
         :param range_subset: list of bands
         :param subsets: dict of subset names with lists of ranges
+        :param format_: data format of output
+
         :returns: coverage data as dict of CoverageJSON or native format
         """
 

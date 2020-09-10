@@ -5,4 +5,3 @@ pytz
 PyYAML
 rasterio
 unicodecsv
-simplejson

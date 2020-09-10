@@ -127,6 +127,34 @@ resources:
                   x_field: long
                   y_field: lat
 
+    cmip5:
+        type: cmip5
+        title: CMIP5 sample
+        description: CMIP5 sample
+        keywords:
+            - cmip5
+            - climate
+        extents:
+            spatial:
+                bbox: [-150,40,-45,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://open.canada.ca/data/en/dataset/eddd6eaf-34d7-4452-a994-3d928115a68b
+              hreflang: en-CA
+        providers:
+            - type: coverage
+              name: xarray
+              data: tests/data/CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y.nc
+              x_field: lon
+              y_field: lat
+              time_field: time
+              format:
+                  name: NetCDF
+                  mimetype: application/x-netcdf
+
     gdps-temperature:
         type: collection
         title: Global Deterministic Prediction System sample

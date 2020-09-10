@@ -19,6 +19,7 @@ parameters.
    :align: left
 
    rasterio,✔️,✔️
+   xarray,✔️,✔️
 
 
 Below are specific connection examples based on supported providers.
@@ -47,7 +48,7 @@ capable of handling.
 xarray
 ^^^^^^^^
 
-The `xarray`_ provider plugin reads and extracts netCDF data.
+The `xarray`_ provider plugin reads and extracts `NetCDF`_ data.
 
 .. code-block:: yaml
 
@@ -55,6 +56,11 @@ The `xarray`_ provider plugin reads and extracts netCDF data.
        - type: coverage
          name: xarray
          data: tests/data/coads_sst.nc
+         # optionally specify x/y/time fields, else provider will attempt
+         # to derive automagically
+         x_field: lat
+         x_field: lon
+         time_field: time
          format:
             name: netcdf
             mimetype: application/x-netcdf
@@ -81,4 +87,5 @@ Data access examples
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
-.. _`xarray`: http://xarray.pydata.org
+.. _`xarray`: https://xarray.pydata.org
+.. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
