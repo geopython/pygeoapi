@@ -665,7 +665,7 @@ def test_get_collection_coverage(config, api_):
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB2'},
+        req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB'},
         'gdps-temperature')
 
     assert code == 200
