@@ -78,12 +78,14 @@ class BaseTileProvider:
 
         raise NotImplementedError()
 
-    def get_tile_services(self, baseurl, servicepath, tile_type):
+    def get_tile_services(self, baseurl, servicepath, dirpath,
+                          tile_type):
         """
         Gets tile service description
 
         :param baseurl: base URL of endpoint
         :param servicepath: base path of URL
+        :param dirpath: directory basepath (equivalent of URL)
         :param tile_type: tile format type
 
         :returns: `dict` of file listing or `dict` of GeoJSON item or raw file
@@ -107,14 +109,12 @@ class BaseTileProvider:
 
         raise NotImplementedError()
 
-    def get_metadata_services(self, baseurl, servicepath):
+    def get_metadata(self):
         """
-        Gets tile service description
+        Provide data/file metadata
 
-        :param baseurl: base URL of endpoint
-        :param servicepath: base path of URL
-
-        :returns: `dict` of the metadata description
+        :returns: `dict` of metadata construct (format
+                  determined by provider/standard)
         """
 
         raise NotImplementedError()

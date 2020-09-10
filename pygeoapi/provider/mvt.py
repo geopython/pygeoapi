@@ -56,6 +56,9 @@ class MVTProvider(BaseTileProvider):
         #     LOGGER.error(msg)
         #     raise ProviderConnectionError(msg)
 
+    def __repr__(self):
+        return '<MVTProvider> {}'.format(self.data)
+
     def get_layer(self):
 
         url = urlparse(self.data)
@@ -78,12 +81,13 @@ class MVTProvider(BaseTileProvider):
         return tile_matrix_set_links
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
-                          tile_type=None):
+                          dirpath=None, tile_type=None):
         """
         Gets mvt service description
 
         :param baseurl: base URL of endpoint
         :param servicepath: base path of URL
+        :param dirpath: directory basepath (equivalent of URL)
         :param tile_type: tile format type
 
         :returns: `dict` of item tile service
@@ -152,19 +156,15 @@ class MVTProvider(BaseTileProvider):
             resp.raise_for_status()
             return resp.content
 
-    def __repr__(self):
-        return '<MVTProvider> {}'.format(self.data)
-
-    def _describe_service(self):
+    def get_metadata(self, tilejson=True):
         """
         Helper function to describe a vector tile service
-
-        :param layer: path to file
 
         :returns: `dict` of JSON metadata
         """
 
         content = {
+            "tilejson" : "3.0.0"
         }
 
         return content

@@ -1603,8 +1603,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         return headers_, 200, to_json(tiles, self.pretty_print)
 
     @jsonldify
-    def get_collection_tiles_data(self, headers_, format_, dataset,
-                                  matrix_id, z_idx, y_idx, x_idx):
+    def get_collection_tiles_data(self, headers_, format_, dataset=None,
+                                  matrix_id=None, z_idx=None, y_idx=None,
+                                  x_idx=None):
         """
         Get collection items tiles
 
@@ -1700,6 +1701,84 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             LOGGER.error(err)
             return headers_, 500, to_json(exception)
+
+    @jsonldify
+    def get_collection_tiles_metadata(self, headers_, format_, dataset=None,
+                                      matrix_id=None):
+        """
+        Get collection items tiles
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: dataset name
+        :param matrix_id: matrix identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Creating collection tiles')
+        LOGGER.debug('Loading provider')
+        try:
+            dataset_providers = {
+                provider['type']: provider for provider in self.config[
+                    'resources'][dataset]['providers']}
+            p = load_plugin(
+                'provider',
+                dataset_providers['tiles'],
+                tiles=True)
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection tiles'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception)
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception)
+
+        tiles_metadata = p.get_metadata()
+
+        if format_ == 'html':  # render
+            tiles_metadata['title'] = self.config['resources'][dataset]['title']
+            headers_['Content-Type'] = 'text/html'
+
+            content = render_j2_template(self.config, 'tiles_metadata.html',
+                                         tiles_metadata)
+
+            return headers_, 200, content
+
+        return headers_, 200, to_json(tiles_metadata, self.pretty_print)
 
     @pre_process
     @jsonldify
