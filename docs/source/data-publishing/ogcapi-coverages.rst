@@ -42,7 +42,7 @@ capable of handling.
          options:  # optional creation options
              DATA_ENCODING: COMPLEX_PACKING
          format:
-             name: GRIB2
+             name: GRIB
              mimetype: application/x-grib2
 
 xarray
@@ -79,7 +79,7 @@ Data access examples
 - coverage access via CoverageJSON (default)
   - http://localhost:5000/collections/foo/coverage?f=json
 - coverage access via native format (as defined in ``provider.format.name``)
-  - http://localhost:5000/collections/foo/coverage?f=GRIB2
+  - http://localhost:5000/collections/foo/coverage?f=GRIB
 - coverage access with comma-separated rangeSubset
   - http://localhost:5000/collections/foo/coverage?rangeSubset=1,3
 - coverage access with subsetting

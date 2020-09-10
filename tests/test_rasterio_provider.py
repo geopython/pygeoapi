@@ -56,7 +56,7 @@ def config():
             'DATA_ENCODING': 'COMPLEX_PACKING'
         },
         'format': {
-            'name': 'GRIB2',
+            'name': 'GRIB',
             'mimetype': 'application/x-grib2'
         }
     }
@@ -96,5 +96,5 @@ def test_query(config):
     data = p.query()
     assert isinstance(data, dict)
 
-    data = p.query(format_='GRIB2')
+    data = p.query(format_='GRIB')
     assert isinstance(data, bytes)
