@@ -222,10 +222,10 @@ class RasterioProvider(BaseProvider):
                     crop=True,
                     indexes=args['indexes'])
 
-                out_meta.update({"driver": self.native_format,
-                                 "height": out_image.shape[1],
-                                 "width": out_image.shape[2],
-                                 "transform": out_transform})
+                out_meta.update({'driver': self.native_format,
+                                 'height': out_image.shape[1],
+                                 'width': out_image.shape[2],
+                                 'transform': out_transform})
             else:  # no spatial subset
                 LOGGER.debug('Creating data in memory with band selection')
                 out_image = _data.read(indexes=args['indexes'])
