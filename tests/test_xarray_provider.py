@@ -88,3 +88,6 @@ def test_query(config):
 
     data = p.query()
     assert isinstance(data, dict)
+
+    data = p.query(format_='NetCDF')
+    assert isinstance(data, bytes)
