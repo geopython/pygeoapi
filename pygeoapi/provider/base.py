@@ -53,6 +53,8 @@ class BaseProvider:
 
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
+        self.x_field = provider_def.get('x_field', None)
+        self.y_field = provider_def.get('y_field', None)
         self.time_field = provider_def.get('time_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
@@ -186,6 +188,11 @@ class ProviderQueryError(ProviderGenericError):
 
 class ProviderItemNotFoundError(ProviderGenericError):
     """provider item not found query error"""
+    pass
+
+
+class ProviderNoDataError(ProviderGenericError):
+    """provider no data error"""
     pass
 
 
