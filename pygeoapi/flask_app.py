@@ -301,6 +301,28 @@ def get_collection_tiles(collection_id=None):
     return response
 
 
+@APP.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')
+def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+    """
+    OGC open api collection tiles service metadata
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_metadata(
+        request.headers, request.args, collection_id, tileMatrixSetId)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @APP.route('/collections/<collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
@@ -320,28 +342,6 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     headers, status_code, content = api_.get_collection_tiles_data(
         request.headers, request.args, collection_id,
         tileMatrixSetId, tileMatrix, tileRow, tileCol)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
-
-
-@APP.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')
-def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
-    """
-    OGC open api collection tiles service metadata
-
-    :param collection_id: collection identifier
-    :param tileMatrixSetId: identifier of tile matrix set
-
-    :returns: HTTP response
-    """
-
-    headers, status_code, content = api_.get_collection_tiles_metadata(
-        request.headers, request.args, collection_id, tileMatrixSetId)
 
     response = make_response(content, status_code)
 

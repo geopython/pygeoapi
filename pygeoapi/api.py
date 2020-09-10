@@ -1702,6 +1702,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(err)
             return headers_, 500, to_json(exception)
 
+    @pre_process
     @jsonldify
     def get_collection_tiles_metadata(self, headers_, format_, dataset=None,
                                       matrix_id=None):
