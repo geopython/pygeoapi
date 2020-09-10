@@ -1269,7 +1269,7 @@ class API:
                 except AttributeError:
                     exception = {
                         'code': 'InvalidParameterValue',
-                        'description': 'subset should be like "axis(min,max)"'
+                        'description': 'subset should be like "axis(min:max)"'
                     }
                     LOGGER.error(exception)
                     return headers_, 400, to_json(exception, self.pretty_print)
