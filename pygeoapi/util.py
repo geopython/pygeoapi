@@ -32,6 +32,7 @@
 import base64
 from datetime import date, datetime, time
 from decimal import Decimal
+import json
 import logging
 import mimetypes
 import os
@@ -40,7 +41,6 @@ from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader
 import yaml
-import simplejson as json
 
 from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
@@ -159,8 +159,7 @@ def to_json(dict_, pretty=False):
         indent = None
 
     return json.dumps(dict_, default=json_serial,
-                      indent=indent,
-                      ignore_nan=True)
+                      indent=indent)
 
 
 def get_path_basename(urlpath):

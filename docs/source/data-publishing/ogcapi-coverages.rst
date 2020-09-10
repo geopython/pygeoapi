@@ -19,6 +19,7 @@ parameters.
    :align: left
 
    rasterio,✔️,✔️
+   xarray,✔️,✔️
 
 
 Below are specific connection examples based on supported providers.
@@ -41,13 +42,13 @@ capable of handling.
          options:  # optional creation options
              DATA_ENCODING: COMPLEX_PACKING
          format:
-             name: GRIB2
+             name: GRIB
              mimetype: application/x-grib2
 
 xarray
 ^^^^^^^^
 
-The `xarray`_ provider plugin reads and extracts netCDF data.
+The `xarray`_ provider plugin reads and extracts `NetCDF`_ data.
 
 .. code-block:: yaml
 
@@ -55,6 +56,11 @@ The `xarray`_ provider plugin reads and extracts netCDF data.
        - type: coverage
          name: xarray
          data: tests/data/coads_sst.nc
+         # optionally specify x/y/time fields, else provider will attempt
+         # to derive automagically
+         x_field: lat
+         x_field: lon
+         time_field: time
          format:
             name: netcdf
             mimetype: application/x-netcdf
@@ -73,7 +79,7 @@ Data access examples
 - coverage access via CoverageJSON (default)
   - http://localhost:5000/collections/foo/coverage?f=json
 - coverage access via native format (as defined in ``provider.format.name``)
-  - http://localhost:5000/collections/foo/coverage?f=GRIB2
+  - http://localhost:5000/collections/foo/coverage?f=GRIB
 - coverage access with comma-separated rangeSubset
   - http://localhost:5000/collections/foo/coverage?rangeSubset=1,3
 - coverage access with subsetting
@@ -81,4 +87,5 @@ Data access examples
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
-.. _`xarray`: http://xarray.pydata.org
+.. _`xarray`: https://xarray.pydata.org
+.. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF

@@ -35,7 +35,6 @@ from pyld import jsonld
 import pytest
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
-from werkzeug.datastructures import ImmutableMultiDict
 
 from pygeoapi.api import API, check_format
 from pygeoapi.util import yaml_load
@@ -652,9 +651,7 @@ def test_get_collection_coverage(config, api_):
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers,
-        ImmutableMultiDict([('subset', 'bad_axis(10,20)')]),
-        'gdps-temperature')
+        req_headers, {'subset': 'bad_axis(10:20)'}, 'gdps-temperature')
 
     assert code == 400
 
@@ -664,10 +661,7 @@ def test_get_collection_coverage(config, api_):
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers,
-        ImmutableMultiDict([
-            ('subset', 'Lat(5,10)'), ('subset', 'Long(5,10)')]),
-        'gdps-temperature')
+        req_headers, {'subset': 'Lat(5:10),Long(5:10)'}, 'gdps-temperature')
 
     assert code == 200
     content = json.loads(response)
@@ -679,15 +673,28 @@ def test_get_collection_coverage(config, api_):
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers,
-        ImmutableMultiDict([
-             ('subset', 'Lat(5,10)'), ('subset', 'Long(5,10)'),
-             ('f', 'GRIB2')
-        ]),
+        req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB'},
         'gdps-temperature')
 
     assert code == 200
     assert isinstance(response, bytes)
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'},  # noqa
+        'cmip5')
+
+    assert code == 200
+    assert isinstance(json.loads(response), dict)
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2'}, 'cmip5')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2)'}, 'cmip5')
+
+    assert code == 204
 
 
 def test_get_collection_tiles_invalid(config, api_):
