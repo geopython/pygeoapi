@@ -58,3 +58,9 @@ This directory provides test data to demonstrate functionality.
 - source: [Canadian Centre for Climate Services](https://canada.ca/climate-services)
 - URL: https://dd.weather.gc.ca/climate/cmip5/netcdf/scenarios/RCP8.5/annual/absolute/CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y.nc
 - License: https://eccc-msc.github.io/open-data/licence/readme_en
+
+### `coads_sst.nc`
+
+- source: [NOAA Physical Sciences Library](https://psl.noaa.gov)
+- URL: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
+- License: ICOADS data provided by the NOAA/OAR/ESRL PSL, Boulder, Colorado, USA, from their Web site at https://psl.noaa.gov.
