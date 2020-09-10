@@ -671,6 +671,23 @@ def test_get_collection_coverage(config, api_):
     assert code == 200
     assert isinstance(response, bytes)
 
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'},  # noqa
+        'cmip5')
+
+    assert code == 200
+    assert isinstance(json.loads(response), dict)
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2'}, 'cmip5')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'subset': 'lat(1:2)'}, 'cmip5')
+
+    assert code == 204
+
 
 def test_describe_processes(config, api_):
     req_headers = make_req_headers()

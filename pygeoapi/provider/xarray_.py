@@ -209,8 +209,8 @@ class XarrayProvider(BaseProvider):
                 LOGGER.warning(err)
                 raise ProviderQueryError(err)
 
-        if sum([data.coords[self.x_field].size,
-                data.coords[self.y_field].size]) == 0:
+        if (any([data.coords[self.x_field].size == 0,
+                data.coords[self.y_field].size == 0])):
             msg = 'No data found'
             LOGGER.warning(msg)
             raise ProviderNoDataError(msg)

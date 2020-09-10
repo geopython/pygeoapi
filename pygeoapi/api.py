@@ -1248,8 +1248,13 @@ class API:
             LOGGER.debug('Processing subset parameters')
             for s in args['subset'].split(','):
                 try:
-                    m = re.search(r'(.*)\((.*):(.*)\)', s)
+                    if '"' not in s:
+                        m = re.search(r'(.*)\((.*):(.*)\)', s)
+                    else:
+                        m = re.search(r'(.*)\(\"(\S+)\":\"(\S+.*)\"\)', s)
+
                     subset_name = m.group(1)
+
                     if subset_name not in p.axes:
                         exception = {
                             'code': 'InvalidParameterValue',
