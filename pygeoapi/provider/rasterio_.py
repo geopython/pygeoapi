@@ -59,6 +59,7 @@ class RasterioProvider(BaseProvider):
             self.crs = self._coverage_properties['bbox_crs']
             self.num_bands = self._coverage_properties['num_bands']
             self.fields = [str(num) for num in range(1, self.num_bands+1)]
+            self.native_format = provider_def['format']['name']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -221,10 +222,10 @@ class RasterioProvider(BaseProvider):
                     crop=True,
                     indexes=args['indexes'])
 
-                out_meta.update({"driver": "GRIB",
-                                 "height": out_image.shape[1],
-                                 "width": out_image.shape[2],
-                                 "transform": out_transform})
+                out_meta.update({'driver': self.native_format,
+                                 'height': out_image.shape[1],
+                                 'width': out_image.shape[2],
+                                 'transform': out_transform})
             else:  # no spatial subset
                 LOGGER.debug('Creating data in memory with band selection')
                 out_image = _data.read(indexes=args['indexes'])
