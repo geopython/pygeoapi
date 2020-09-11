@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import io
 import logging
 
 import rasterio
@@ -36,6 +35,7 @@ import rasterio.mask
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
+from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -178,9 +178,8 @@ class RasterioProvider(BaseProvider):
         shapes = []
 
         if not bands and not subsets and format_ != 'json':
-            LOGGER.debug('No parameters specified, returning native file')
-            with io.open(self.data, 'rb') as fh:
-                return fh.read()
+            LOGGER.debug('No parameters specified, returning native data')
+            return read_data(self.data)
 
         if (self._coverage_properties['x_axis_label'] in subsets and
                 self._coverage_properties['y_axis_label'] in subsets):
