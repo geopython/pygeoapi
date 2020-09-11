@@ -158,3 +158,16 @@ def test_get_provider_default():
     assert pd['name'] == 'CSV'
 
     pd = util.get_provider_default(d['resources']['obs']['providers'])
+
+
+def test_is_local_file():
+    paths = [
+        'https://example.org',
+        'http://example.org',
+        's3://bucket/path.dat'
+    ]
+
+    for path in paths:
+        assert util.is_local_file(path) is False
+
+    assert util.is_local_file('/home/user/file.dat') is True

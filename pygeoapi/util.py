@@ -335,3 +335,16 @@ def get_provider_default(providers):
 
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
+
+
+def is_local_file(path):
+    """
+    helper function to determine whether a path is a file or a remote
+    resource
+    """
+
+    scheme = urlparse(path).scheme
+
+    if scheme in ['', 'file'] and path.startswith(os.sep):
+        return True
+    return False

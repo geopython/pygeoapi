@@ -36,6 +36,7 @@ import rasterio.mask
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
+from pygeoapi.util import is_local_file
 
 LOGGER = logging.getLogger(__name__)
 
@@ -177,7 +178,8 @@ class RasterioProvider(BaseProvider):
         }
         shapes = []
 
-        if not bands and not subsets and format_ != 'json':
+        if (not bands and not subsets and format_ != 'json' and
+                is_local_file(self.data)):
             LOGGER.debug('No parameters specified, returning native file')
             with io.open(self.data, 'rb') as fh:
                 return fh.read()
