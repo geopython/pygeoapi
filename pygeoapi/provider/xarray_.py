@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+import io
 import logging
 import tempfile
 
@@ -37,6 +38,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
+from pygeoapi.util import is_local_file
 
 LOGGER = logging.getLogger(__name__)
 
