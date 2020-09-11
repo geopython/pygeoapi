@@ -183,16 +183,16 @@ class XarrayProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        if len(range_subset) < 1:
-            range_subset = self.fields
-
-        data = self._data[[*range_subset]]
-
         if (not range_subset and not subsets and format_ != 'json' and
                 is_local_file(self.data)):
             LOGGER.debug('No parameters specified, returning native file')
             with io.open(self.data, 'rb') as fh:
                 return fh.read()
+
+        if len(range_subset) < 1:
+            range_subset = self.fields
+
+        data = self._data[[*range_subset]]
 
         if(self._coverage_properties['x_axis_label'] in subsets or
            self._coverage_properties['y_axis_label'] in subsets or
