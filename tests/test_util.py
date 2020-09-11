@@ -160,14 +160,7 @@ def test_get_provider_default():
     pd = util.get_provider_default(d['resources']['obs']['providers'])
 
 
-def test_is_local_file():
-    paths = [
-        'https://example.org',
-        'http://example.org',
-        's3://bucket/path.dat'
-    ]
+def test_read_data():
+    data = util.read_data(get_test_file_path('pygeoapi-test-config.yml'))
 
-    for path in paths:
-        assert util.is_local_file(path) is False
-
-    assert util.is_local_file('/home/user/file.dat') is True
+    assert isinstance(data, bytes)
