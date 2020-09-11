@@ -158,3 +158,9 @@ def test_get_provider_default():
     assert pd['name'] == 'CSV'
 
     pd = util.get_provider_default(d['resources']['obs']['providers'])
+
+
+def test_read_data():
+    data = util.read_data(get_test_file_path('pygeoapi-test-config.yml'))
+
+    assert isinstance(data, bytes)

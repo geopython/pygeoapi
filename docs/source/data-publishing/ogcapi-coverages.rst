@@ -45,6 +45,10 @@ capable of handling.
              name: GRIB
              mimetype: application/x-grib2
 
+.. note::
+   The rasterio provider ``format.name`` directive **requires** a valid
+   `GDAL raster driver short name`_.
+
 xarray
 ^^^^^^^^
 
@@ -89,3 +93,4 @@ Data access examples
 .. _`rasterio`: https://rasterio.readthedocs.io
 .. _`xarray`: https://xarray.pydata.org
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
+.. _`GDAL raster driver short name`: https://gdal.org/drivers/raster/index.html

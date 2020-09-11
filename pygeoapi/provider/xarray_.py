@@ -37,6 +37,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
+from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -182,6 +183,10 @@ class XarrayProvider(BaseProvider):
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
+
+        if not range_subset and not subsets and format_ != 'json':
+            LOGGER.debug('No parameters specified, returning native data')
+            return read_data(self.data)
 
         if len(range_subset) < 1:
             range_subset = self.fields
