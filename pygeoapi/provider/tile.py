@@ -50,7 +50,7 @@ class BaseTileProvider:
         self.data = provider_def['data']
         self.format_type = provider_def['format']['name']
         self.mimetype = provider_def['format']['mimetype']
-        self.schemes = provider_def['schemes']
+        self.schemes = provider_def['options']['schemes']
         self.fields = {}
 
     def get_layer(self):

@@ -183,12 +183,17 @@ resources:
               name: MVTProvider
               # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
               data: tests/data/tiles/ne_110m_lakes
+              options:
+                bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
+                zoom:
+                    minzoom: 0
+                    maxzoom: 11
+                schemes:
+                    - WebMercatorQuad
+                    - WorldCRS84Quad
               format: 
-                name: pbf
-                mimetype: application/vnd.mapbox-vector-tile
-              schemes:
-                - WebMercatorQuad
-                - WorldCRS84Quad
+                    name: pbf
+                    mimetype: application/vnd.mapbox-vector-tile
 
     gdps-temperature:
         type: collection

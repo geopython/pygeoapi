@@ -1592,6 +1592,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
 
         if format_ == 'html':  # render
+            tiles['id'] = dataset
             tiles['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
 
