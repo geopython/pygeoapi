@@ -180,7 +180,7 @@ class MVTProvider(BaseTileProvider):
         content = resp.json()
         if tilejson:
             content = {
-                "tilejson" : "3.0.0"
+                "tilejson": "3.0.0"
             }
         else:
             content['json'] = json.loads(content['json'])

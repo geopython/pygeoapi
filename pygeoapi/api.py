@@ -1777,8 +1777,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        metadata_format = dataset_providers['tiles']['options']['metadata_format']
-        tilejson = lambda x: True if (x == 'tilejson') else False
+        metadata_format = \
+            dataset_providers['tiles']['options']['metadata_format']
+        tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(
             layer=p.get_layer(), tileset=matrix_id,
