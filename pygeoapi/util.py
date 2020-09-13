@@ -32,11 +32,13 @@
 import base64
 from datetime import date, datetime, time
 from decimal import Decimal
+import io
 import json
 import logging
 import mimetypes
 import os
 import re
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader
@@ -349,3 +351,21 @@ def get_provider_default(providers):
 
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
+
+
+def read_data(path):
+    """
+    helper function to read data (file or networrk)
+    """
+
+    LOGGER.debug('Attempting to read {}'.format(path))
+    scheme = urlparse(path).scheme
+
+    if scheme in ['', 'file']:
+        LOGGER.debug('local file on disk')
+        with io.open(path, 'rb') as fh:
+            return fh.read()
+    else:
+        LOGGER.debug('network file')
+        with urlopen(path) as r:
+            return r.read()
