@@ -1725,7 +1725,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'Invalid format'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
@@ -1735,7 +1735,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'Invalid collection'
             }
             LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1753,30 +1753,47 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'Invalid collection tiles'
             }
             LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'connection error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
-        tiles_metadata = p.get_metadata()
+        if matrix_id not in dataset_providers['tiles']['options']['schemes']:
+            exception = {
+                'code': 'NotFound',
+                'description': 'tileset not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
+
+        metadata_format = dataset_providers['tiles']['options']['metadata_format']
+        tilejson = lambda x: True if (x == 'tilejson') else False
+
+        tiles_metadata = p.get_metadata(
+            layer=p.get_layer(), tileset=matrix_id,
+            tilejson=tilejson(metadata_format))
 
         if format_ == 'html':  # render
-            tiles_metadata['title'] = self.config['resources'][dataset]['title']
+            metadata = dict(metadata=tiles_metadata)
+            metadata['id'] = dataset
+            metadata['title'] = self.config['resources'][dataset]['title']
+            metadata['tileset'] = matrix_id
+            metadata['format'] = metadata_format
             headers_['Content-Type'] = 'text/html'
 
             content = render_j2_template(self.config, 'tiles_metadata.html',
-                                         tiles_metadata)
+                                         metadata)
 
             return headers_, 200, content
 

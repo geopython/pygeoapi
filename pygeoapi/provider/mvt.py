@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+import json
 import logging
 import requests
 from urllib.parse import urlparse, urljoin
@@ -156,15 +157,32 @@ class MVTProvider(BaseTileProvider):
             resp.raise_for_status()
             return resp.content
 
-    def get_metadata(self, tilejson=True):
+    def get_metadata(self, layer=None, tileset=None, tilejson=True):
         """
-        Helper function to describe a vector tile service
+        Gets tile metadata
+
+        :param layer: mvt tile layer
+        :param tileset: mvt tileset
+        :param tilejson: `bool` for the returning json structure
+                        if True it returns MapBox TileJSON 3.0
+                        otherwise the raw JSON is served
 
         :returns: `dict` of JSON metadata
         """
 
-        content = {
-            "tilejson" : "3.0.0"
-        }
+        url = urlparse(self.data)
+        base_url = '{}://{}'.format(url.scheme, url.netloc)
+        with requests.Session() as session:
+            session.get(base_url)
+            resp = session.get('{base_url}/{lyr}/metadata.json'.format(
+                base_url=base_url, lyr=layer))
+            resp.raise_for_status()
+        content = resp.json()
+        if tilejson:
+            content = {
+                "tilejson" : "3.0.0"
+            }
+        else:
+            content['json'] = json.loads(content['json'])
 
         return content

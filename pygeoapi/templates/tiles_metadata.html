@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../../../collections">Collections</a>
+/ <a href="../../../{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="../../../{{ data['id'] }}/tiles">Tiles</a>
+/ <a href="../../../{{ data['id'] }}/tiles/{{ data['tileset'] }}/metadata">Tile Metadata</a>
+{% endblock %}
+{% block body %}
+    <section id="collection" itemscope itemtype="https://schema.org/Dataset">
+      <span itemprop="includedInDataCatalog" itemscope itemtype="https://schema.org/DataCatalog">
+        <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
+        <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
+        <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
+      </span>
+      <h1 itemprop="name">{{ data['title'] }}</h1>
+      <meta itemprop="url" content="{{ config['server']['url'] }}" />
+      <p itemprop="description">{{ data['description'] }}</p>
+      <p itemprop="keywords">
+        {% for kw in data['keywords'] %}
+          <mark class="tag">{{ kw }}</mark>
+        {% endfor %}
+      </p>
+      <h3>Tiles metadata - {{ data['format'] }} format</h3>
+      <h4 itemprop="tileset">Tileset {{ data['tileset'] }}</h4>
+      <ul>
+      {% for metadata in data['metadata'].items() %}
+        <li>{{ metadata[0] }} (<code>{{ metadata[1] }}</code>)</li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}
