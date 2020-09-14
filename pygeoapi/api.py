@@ -1590,12 +1590,22 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['links'].append(service)
 
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
+        metadata_format = \
+            dataset_providers['tiles']['options']['metadata_format']
 
         if format_ == 'html':  # render
             tiles['id'] = dataset
             tiles['title'] = self.config['resources'][dataset]['title']
+            tiles['tilesets'] = [
+                scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
+            tiles['format'] = metadata_format
+            tiles['bounds'] = dataset_providers[
+                'tiles']['options']['bounds']
+            tiles['minzoom'] = dataset_providers[
+                'tiles']['options']['zoom']['min']
+            tiles['maxzoom'] = dataset_providers[
+                'tiles']['options']['zoom']['max']
             headers_['Content-Type'] = 'text/html'
-
             content = render_j2_template(self.config, 'tiles.html',
                                          tiles)
 
@@ -1782,8 +1792,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(
-            layer=p.get_layer(), tileset=matrix_id,
-            tilejson=tilejson(metadata_format))
+            server_url=self.config['server']['url'],
+            layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson)
 
         if format_ == 'html':  # render
             metadata = dict(metadata=tiles_metadata)

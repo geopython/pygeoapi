@@ -2,8 +2,8 @@
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../collections">Collections</a>
-/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
-/ <a href="./{{ data['id'] }}tiles">Tiles</a>
+/ <a href="../{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="../{{ data['id'] }}/tiles">Tiles</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
@@ -37,26 +37,32 @@
         <div class="col-md-2 col-sm-12">Tile Matrix Set</div>
         <div class="col-md-8">
           <select id="tilingScheme">
-            {% for scheme in data['tileMatrixSetLinks'] %}
-              <option value={{scheme['tileMatrixSet']}}>{{scheme['tileMatrixSet']}}</option>
+            {% for tileset in data['tilesets'] %}
+              {% if loop.index0 == 0 %}
+                <option value="{{ tileset }}" selected></option>{{ tileset }}</option>
+              {% else %}
+                <option value="{{ tileset }}"></option>{{ tileset }}</option>
+              {% endif %}
             {% endfor %}
           </select>
-          <script>
-            var select = document.getElementById('tilingScheme');
-            let params = (new URL(document.location)).searchParams;
-            select.value = params.get('scheme');
-            select.addEventListener('change', ev => {
-              var scheme = ev.target.value;
-              document.location.search = `scheme=${scheme}`;
-            });
-          </script>
         </div>
       </div>
       <br></br>
       <div class="row">
         <div class="col-md-2 col-sm-12">Metadata</div>
-        <div class="col-md-8"><a id="tilejson" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/WebMercatorQuad/metadata" target="_blank">Tiles metadata in raw/TileJSON format</a></div>
+        <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
       </div>
+      <script>
+        var select = document.getElementById('tilingScheme');
+        var tileset = select.value;
+        let params = (new URL(document.location)).searchParams;
+        select.value = params.get('scheme');
+        select.addEventListener('change', ev => {
+          var scheme = ev.target.value;
+          document.location.search = `scheme=${scheme}`;
+        });
+        document.getElementById("tilejson").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + tileset + "/metadata";
+      </script>
       <br></br>
       <div class="row">
         <div class="col-md-2 col-sm-12">Map</div>
@@ -74,23 +80,25 @@
 
     map.addLayer(new L.TileLayer(
         '{{ config["server"]["map"]["url"] }}', {
-            maxZoom: 18,
+            maxZoom: {{ data['maxzoom'] }},
             attribution: '{{ config["server"]["map"]["attribution"] }}'
         }
     ));
 
-    //var tilesUrl = "http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/{z}/{x}/{y}?f=mvt"
     {% for link in data["links"] %}
       {% if link["rel"] == "item" %}
         var tilesUrl = '{{ link["href"] }}';
       {% endif %}
     {% endfor %}
-    var url = tilesUrl.replace('{tileMatrixSetId}', "WorldCRS84Quad").replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
+
+    // var select = document.getElementById('tilingScheme');
+    // var tileset = select.value;
+    var url = tilesUrl.replace('{tileMatrixSetId}', tileset).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
 
 		var VectorTileOptions = {
         interactive: true,
         rendererFactory: L.canvas.tile,
-        maxZoom: 11,
+        maxZoom: {{ data['maxzoom'] }},
         indexMaxZoom: 5,
         getFeatureId: function(feat) {
               return feat.properties["id"]
@@ -130,8 +138,8 @@
 			.addTo(map);
 
     map.on('click', clearHighlight);
-    bounds = L.latLngBounds([[-124.953634,-16.536406],[109.929807,66.969298]])
-    map.fitBounds(bounds, maxZoom=11);
+    bounds = L.latLngBounds({{ data['bounds'] }})
+    map.fitBounds(bounds, maxZoom={{ data['maxzoom']}});
 
     </script>
 {% endblock %}

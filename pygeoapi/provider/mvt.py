@@ -52,6 +52,23 @@ class MVTProvider(BaseTileProvider):
 
         BaseTileProvider.__init__(self, provider_def)
 
+        url = urlparse(self.data)
+        baseurl = '{}://{}'.format(url.scheme, url.netloc)
+        param_type = '?f=mvt'
+        servicepath = \
+            '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                url.path.split('/{z}/{x}/{y}')[0],
+                'tileMatrixSetId',
+                'tileMatrix',
+                'tileRow',
+                'tileCol',
+                param_type)
+
+        self._service_url = urljoin(baseurl, servicepath)
+        self._service_metadata_url = urljoin(
+            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
+            'metadata')
+
         # if not os.path.exists(self.data):
         #     msg = 'Service does not exist: {}'.format(self.data)
         #     LOGGER.error(msg)
@@ -59,6 +76,14 @@ class MVTProvider(BaseTileProvider):
 
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.data)
+
+    @property
+    def service_url(self):
+        return self._service_url
+
+    @property
+    def service_metadata_url(self):
+        return self._service_metadata_url
 
     def get_layer(self):
 
@@ -108,9 +133,9 @@ class MVTProvider(BaseTileProvider):
                 'tileCol',
                 tile_type)
 
-        service_url = urljoin(baseurl, servicepath)
-        service_metadata_url = urljoin(
-            service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
+        self._service_url = urljoin(baseurl, servicepath)
+        self._service_metadata_url = urljoin(
+            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
 
         links = {
@@ -118,13 +143,13 @@ class MVTProvider(BaseTileProvider):
                 'type': self.mimetype,
                 'rel': 'item',
                 'title': 'This collection as Mapbox vector tiles',
-                'href': service_url,
+                'href': self.service_url,
                 'templated': True
             }, {
                 'type': 'application/json',
                 'rel': 'describedby',
                 'title': 'Metadata for this collection in the TileJSON format',
-                'href': '{}?f=json'.format(service_metadata_url),
+                'href': '{}?f=json'.format(self.service_metadata_url),
                 'templated': True
             }]
         }
@@ -157,7 +182,8 @@ class MVTProvider(BaseTileProvider):
             resp.raise_for_status()
             return resp.content
 
-    def get_metadata(self, layer=None, tileset=None, tilejson=True):
+    def get_metadata(self, server_url, layer=None,
+                     tileset=None, tilejson=True):
         """
         Gets tile metadata
 
@@ -180,7 +206,19 @@ class MVTProvider(BaseTileProvider):
         content = resp.json()
         if tilejson:
             content = {
-                "tilejson": "3.0.0"
+                "tilejson": "3.0.0",
+                "name": content["name"],
+                "tiles": self.service_url.replace(
+                    urlparse(self.service_url).netloc,
+                    urlparse(server_url).netloc),
+                "minzoom": content["minzoom"],
+                "maxzoom": content["maxzoom"],
+                "bounds": content["bounds"],
+                "center": content["center"],
+                "attribution": None,
+                "description": None,
+                "vector_layers": json.loads(
+                    content["json"])["vector_layers"]
             }
         else:
             content['json'] = json.loads(content['json'])
