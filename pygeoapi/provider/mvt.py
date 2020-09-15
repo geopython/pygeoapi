@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import os
 import json
 import logging
 import requests
@@ -205,8 +204,9 @@ class MVTProvider(BaseTileProvider):
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
             else:
-                with open(self.service_url.joinpath('{z}/{y}/{x}.{f}'.format(
-                    z=z, y=y, x=x, f=format_)), 'rb') as tile:
+                with open(self.service_url.joinpath(
+                    '{z}/{y}/{x}.{f}'.format(
+                        z=z, y=y, x=x, f=format_)), 'rb') as tile:
                     return tile.read()
 
     def get_metadata(self, dataset, server_url, layer=None,
@@ -244,7 +244,7 @@ class MVTProvider(BaseTileProvider):
                 content = json.loads(md_file.read())
         if tilejson:
             service_url = urljoin(
-                server_url, 
+                server_url,
                 'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
                     dataset, tileset, 'tileMatrix',
                     'tileRow', 'tileCol', '?f=mvt'))

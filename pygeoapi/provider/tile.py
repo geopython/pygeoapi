@@ -79,7 +79,7 @@ class BaseTileProvider:
         raise NotImplementedError()
 
     def get_tiles_service(self, baseurl, servicepath, dirpath,
-                         tile_type):
+                          tile_type):
         """
         Gets tile service description
 
