@@ -1792,7 +1792,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(
-            server_url=self.config['server']['url'],
+            dataset=dataset, server_url=self.config['server']['url'],
             layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson)
 
         if format_ == 'html':  # render

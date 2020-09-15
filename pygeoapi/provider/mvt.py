@@ -27,12 +27,16 @@
 #
 # =================================================================
 
+import os
 import json
 import logging
 import requests
+from pathlib import Path
 from urllib.parse import urlparse, urljoin
 
+from pygeoapi.util import is_url
 from pygeoapi.provider.tile import BaseTileProvider
+from pygeoapi.provider.base import ProviderConnectionError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,27 +56,37 @@ class MVTProvider(BaseTileProvider):
 
         BaseTileProvider.__init__(self, provider_def)
 
-        url = urlparse(self.data)
-        baseurl = '{}://{}'.format(url.scheme, url.netloc)
-        param_type = '?f=mvt'
-        servicepath = \
-            '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                url.path.split('/{z}/{x}/{y}')[0],
-                'tileMatrixSetId',
-                'tileMatrix',
-                'tileRow',
-                'tileCol',
-                param_type)
+        if is_url(self.data):
+            url = urlparse(self.data)
+            baseurl = '{}://{}'.format(url.scheme, url.netloc)
+            param_type = '?f=mvt'
+            servicepath = \
+                '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                    url.path.split('/{z}/{x}/{y}')[0],
+                    'tileMatrixSetId',
+                    'tileMatrix',
+                    'tileRow',
+                    'tileCol',
+                    param_type)
 
-        self._service_url = urljoin(baseurl, servicepath)
-        self._service_metadata_url = urljoin(
-            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
-            'metadata')
-
-        # if not os.path.exists(self.data):
-        #     msg = 'Service does not exist: {}'.format(self.data)
-        #     LOGGER.error(msg)
-        #     raise ProviderConnectionError(msg)
+            self._service_url = urljoin(baseurl, servicepath)
+            self._service_metadata_url = urljoin(
+                self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
+                'metadata')
+        else:
+            data_path = Path(self.data)
+            if not data_path.exists():
+                msg = 'Service does not exist: {}'.format(self.data)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+            self._service_url = data_path
+            metadata_path = data_path.joinpath('metadata.json')
+            if not metadata_path.exists():
+                msg = 'Service metadata does not exist: {}'.format(
+                    metadata_path.name)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+            self._service_metadata_url = metadata_path
 
     def __repr__(self):
         return '<MVTProvider> {}'.format(self.data)
@@ -87,9 +101,11 @@ class MVTProvider(BaseTileProvider):
 
     def get_layer(self):
 
-        url = urlparse(self.data)
-
-        return url.path.split("/{z}/{x}/{y}")[0][1:]
+        if is_url(self.data):
+            url = urlparse(self.data)
+            return url.path.split("/{z}/{x}/{y}")[0][1:]
+        else:
+            return None
 
     def get_tiling_schemes(self):
 
@@ -172,23 +188,36 @@ class MVTProvider(BaseTileProvider):
         """
         if format_ == "mvt":
             format_ = self.format_type
-        url = urlparse(self.data)
-        base_url = '{}://{}'.format(url.scheme, url.netloc)
-        with requests.Session() as session:
-            session.get(base_url)
-            resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
-                base_url=base_url, lyr=layer,
-                z=z, y=y, x=x, f=format_))
-            resp.raise_for_status()
-            return resp.content
+        if is_url(self.data):
+            url = urlparse(self.data)
+            base_url = '{}://{}'.format(url.scheme, url.netloc)
+            with requests.Session() as session:
+                session.get(base_url)
+                resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
+                    base_url=base_url, lyr=layer,
+                    z=z, y=y, x=x, f=format_))
+                resp.raise_for_status()
+                return resp.content
+        else:
+            if not isinstance(self.service_url, Path):
+                msg = 'Wrong data path configuration: {}'.format(
+                    self.service_url)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+            else:
+                with open(self.service_url.joinpath('{z}/{y}/{x}.{f}'.format(
+                    z=z, y=y, x=x, f=format_)), 'rb') as tile:
+                    return tile.read()
 
-    def get_metadata(self, server_url, layer=None,
+    def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, tilejson=True):
         """
         Gets tile metadata
 
-        :param layer: mvt tile layer
-        :param tileset: mvt tileset
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
         :param tilejson: `bool` for the returning json structure
                         if True it returns MapBox TileJSON 3.0
                         otherwise the raw JSON is served
@@ -196,21 +225,33 @@ class MVTProvider(BaseTileProvider):
         :returns: `dict` of JSON metadata
         """
 
-        url = urlparse(self.data)
-        base_url = '{}://{}'.format(url.scheme, url.netloc)
-        with requests.Session() as session:
-            session.get(base_url)
-            resp = session.get('{base_url}/{lyr}/metadata.json'.format(
-                base_url=base_url, lyr=layer))
-            resp.raise_for_status()
-        content = resp.json()
+        if is_url(self.data):
+            url = urlparse(self.data)
+            base_url = '{}://{}'.format(url.scheme, url.netloc)
+            with requests.Session() as session:
+                session.get(base_url)
+                resp = session.get('{base_url}/{lyr}/metadata.json'.format(
+                    base_url=base_url, lyr=layer))
+                resp.raise_for_status()
+            content = resp.json()
+        else:
+            if not isinstance(self.service_metadata_url, Path):
+                msg = 'Wrong data path configuration: {}'.format(
+                    self.service_metadata_url)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+            with open(self.service_metadata_url, 'r') as md_file:
+                content = json.loads(md_file.read())
         if tilejson:
+            service_url = urljoin(
+                server_url, 
+                'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                    dataset, tileset, 'tileMatrix',
+                    'tileRow', 'tileCol', '?f=mvt'))
             content = {
                 "tilejson": "3.0.0",
                 "name": content["name"],
-                "tiles": self.service_url.replace(
-                    urlparse(self.service_url).netloc,
-                    urlparse(server_url).netloc),
+                "tiles": service_url,
                 "minzoom": content["minzoom"],
                 "maxzoom": content["maxzoom"],
                 "bounds": content["bounds"],
