@@ -453,13 +453,16 @@ class XarrayProvider(BaseProvider):
         :returns: time resolution string
         """
 
-        time_diff = (self._data[self.time_field][1] -
-                     self._data[self.time_field][0])
+        if self._data[self.time_field].size > 1:
+            time_diff = (self._data[self.time_field][1] -
+                         self._data[self.time_field][0])
 
-        dts = np.array([time_diff.values.astype('timedelta64[{}]'.format(x))
-                       for x in ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
+            dt = np.array([time_diff.values.astype('timedelta64[{}]'.format(x))
+                           for x in ['Y', 'M', 'D', 'h', 'm', 's', 'ms']])
 
-        return str(dts[np.array([x.astype(np.int) for x in dts]) > 0][0])
+            return str(dt[np.array([x.astype(np.int) for x in dt]) > 0][0])
+        else:
+            return None
 
     def get_time_coverage_duration(self):
         """
