@@ -573,9 +573,9 @@ def get_oas_30(cfg):
             LOGGER.debug('collection is not coverage based')
 
         LOGGER.debug('setting up OATiles')
-        tiles_extension = filter_providers_by_type(
-            collections[k]['providers'], 'tiles')
-        if tiles_extension:
+        tile_extension = filter_providers_by_type(
+            collections[k]['providers'], 'tile')
+        if tile_extension:
             oas['components']['responses'].update({
                     'Tiles': {
                         'description': 'Retrieves the tiles description for this collection', # noqa

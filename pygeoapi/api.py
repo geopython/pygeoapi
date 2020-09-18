@@ -297,8 +297,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_collections(self, headers_, format_, dataset=None,
-                             tiles=None):
+    def describe_collections(self, headers_, format_, dataset=None):
         """
         Provide collection metadata
 
@@ -306,7 +305,6 @@ class API:
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: name of collection
-        :param tiles: tiles of the collection
 
         :returns: tuple of headers, status code, content
         """
@@ -378,7 +376,7 @@ class API:
             # get providers type
             providers_type = {
                 provider['type']: provider for provider in v['providers']}
-            tiles = providers_type.get('tiles', {})
+            tile = providers_type.get('tile', {})
 
             for link in v['links']:
                 lnk = {
@@ -416,8 +414,8 @@ class API:
                     self.config['server']['url'], k)
             })
 
-            if tiles:
-                LOGGER.debug('Adding tiles link')
+            if tile:
+                LOGGER.debug('Adding tile link')
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'tiles',
@@ -541,8 +539,8 @@ class API:
                     collection['domainset'] = p.get_coverage_domainset()
                     collection['rangetype'] = p.get_coverage_rangetype()
 
-            if tiles:
-                LOGGER.debug('Adding tiles link')
+            if tile:
+                LOGGER.debug('Adding tile link')
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'tiles',
@@ -1528,8 +1526,8 @@ class API:
                     'resources'][dataset]['providers']}
             p = load_plugin(
                 'provider',
-                dataset_providers['tiles'],
-                tiles=True)
+                dataset_providers['tile'],
+                tile=True)
         except KeyError:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -1591,7 +1589,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
         metadata_format = \
-            dataset_providers['tiles']['options']['metadata_format']
+            dataset_providers['tile']['options']['metadata_format']
 
         if format_ == 'html':  # render
             tiles['id'] = dataset
@@ -1600,11 +1598,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
             tiles['format'] = metadata_format
             tiles['bounds'] = dataset_providers[
-                'tiles']['options']['bounds']
+                'tile']['options']['bounds']
             tiles['minzoom'] = dataset_providers[
-                'tiles']['options']['zoom']['min']
+                'tile']['options']['zoom']['min']
             tiles['maxzoom'] = dataset_providers[
-                'tiles']['options']['zoom']['max']
+                'tile']['options']['zoom']['max']
             headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config, 'tiles.html',
                                          tiles)
@@ -1658,11 +1656,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             dataset_providers = {
                 provider['type']: provider for provider in self.config[
                     'resources'][dataset]['providers']}
-            format_ = dataset_providers['tiles']['format']['name']
+            format_ = dataset_providers['tile']['format']['name']
             p = load_plugin(
                 'provider',
-                dataset_providers['tiles'],
-                tiles=True)
+                dataset_providers['tile'],
+                tile=True)
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
             content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
@@ -1755,8 +1753,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'resources'][dataset]['providers']}
             p = load_plugin(
                 'provider',
-                dataset_providers['tiles'],
-                tiles=True)
+                dataset_providers['tile'],
+                tile=True)
         except KeyError:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -1779,7 +1777,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 500, to_json(exception, self.pretty_print)
 
-        if matrix_id not in dataset_providers['tiles']['options']['schemes']:
+        if matrix_id not in dataset_providers['tile']['options']['schemes']:
             exception = {
                 'code': 'NotFound',
                 'description': 'tileset not found'
@@ -1788,7 +1786,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 404, to_json(exception, self.pretty_print)
 
         metadata_format = \
-            dataset_providers['tiles']['options']['metadata_format']
+            dataset_providers['tile']['options']['metadata_format']
         tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(

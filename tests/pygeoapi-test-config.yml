@@ -179,8 +179,8 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
-            - type: tiles
-              name: MVTProvider
+            - type: tile
+              name: MVT
               # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
               data: tests/data/tiles/ne_110m_lakes
               options:
