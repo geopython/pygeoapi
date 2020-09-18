@@ -141,6 +141,7 @@ class FileSystemProvider(BaseProvider):
 
         elif resource_type == 'directory':
             for dc in os.listdir(data_path):
+                # @TODO: handle a generic directory for tiles
                 if dc == "tiles":
                     continue
                 fullpath = os.path.join(data_path, dc)
