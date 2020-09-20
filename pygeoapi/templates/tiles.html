@@ -38,37 +38,36 @@
         <div class="col-md-8">
           <select id="tilingScheme">
             {% for tileset in data['tilesets'] %}
-              {% if loop.index0 == 0 %}
-                <option value="{{ tileset }}" selected></option>{{ tileset }}</option>
-              {% else %}
-                <option value="{{ tileset }}"></option>{{ tileset }}</option>
-              {% endif %}
+            <option value="{{ tileset }}">{{ tileset }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
-      <br></br>
+      <br/>
       <div class="row">
         <div class="col-md-2 col-sm-12">Metadata</div>
         <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
+      </div>
+      <div class="row">
+        <div class="col-md-2 col-sm-12">URI Template</div>
+        <div class="col-md-8"><code>{{ data['uri_template']['href'] }}</code></div>
       </div>
       <script>
         var select = document.getElementById('tilingScheme');
         var tileset = select.value;
         let params = (new URL(document.location)).searchParams;
-        select.value = params.get('scheme');
+//        select.value = params.get('scheme');
         select.addEventListener('change', ev => {
           var scheme = ev.target.value;
           document.location.search = `scheme=${scheme}`;
         });
         document.getElementById("tilejson").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + tileset + "/metadata";
       </script>
-      <br></br>
+      <br/>
       <div class="row">
         <div class="col-md-2 col-sm-12">Map</div>
-          <div class="col-md-8">
-            <div id="items-map"></div>
-          </div>
+        <div class="col-md-8">
+          <div id="items-map"></div>
         </div>
       </div>
     </section>
@@ -91,11 +90,9 @@
       {% endif %}
     {% endfor %}
 
-    // var select = document.getElementById('tilingScheme');
-    // var tileset = select.value;
     var url = tilesUrl.replace('{tileMatrixSetId}', tileset).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
 
-		var VectorTileOptions = {
+    var VectorTileOptions = {
         interactive: true,
         rendererFactory: L.canvas.tile,
         maxZoom: {{ data['maxzoom'] }},
@@ -114,7 +111,7 @@
     };
 
     var tilesPbfLayer = L.vectorGrid.protobuf(url, VectorTileOptions)
-      .on('click', function(e) {	// The .on method attaches an event handler
+      .on('click', function(e) { // The .on method attaches an event handler
           L.popup()
             .setContent("<b>Name</b>: " + e.layer.properties.name +
                         "<br><b>Class</b>: " + e.layer.properties.featureclass)
@@ -135,10 +132,10 @@
 
           L.DomEvent.stop(e);
       })
-			.addTo(map);
+      .addTo(map);
 
     map.on('click', clearHighlight);
-    bounds = L.latLngBounds({{ data['bounds'] }})
+    bounds = L.latLngBounds([[{{ data['bounds'][0] }},{{data['bounds'][1]}}],[{{ data['bounds'][2] }},{{data['bounds'][3]}}]])
     map.fitBounds(bounds, maxZoom={{ data['maxzoom']}});
 
     </script>

@@ -572,7 +572,7 @@ def get_oas_30(cfg):
         except ProviderTypeError:
             LOGGER.debug('collection is not coverage based')
 
-        LOGGER.debug('setting up OATiles')
+        LOGGER.debug('setting up tiles endpoints')
         tile_extension = filter_providers_by_type(
             collections[k]['providers'], 'tile')
         if tile_extension:
@@ -638,6 +638,26 @@ def get_oas_30(cfg):
                     ],
                     'responses': {
                         '200': {'$ref': '#/components/responses/Tiles'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+
+            tiles_data_path = '{}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}'.format(collection_name_path)  # noqa
+
+            paths[tiles_data_path] = {
+                'get': {
+                    'summary': 'Get a {} tile'.format(v['title']),
+                    'description': v['description'],
+                    'tags': [k],
+                    'operationId': 'describe{}Tiles'.format(k.capitalize()),
+                    'parameters': [
+                        items_f,
+                    ],
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/Tiles'},  # TODO: fix response format
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa

@@ -47,9 +47,7 @@ PLUGINS = {
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
-        'tile': {
-            'MVT': 'pygeoapi.provider.mvt.MVTProvider'
-        }
+        'MVT': 'pygeoapi.provider.mvt.MVTProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
@@ -60,13 +58,12 @@ PLUGINS = {
 }
 
 
-def load_plugin(plugin_type, plugin_def, tile=False):
+def load_plugin(plugin_type, plugin_def):
     """
     loads plugin by name
 
     :param plugin_type: type of plugin (provider, formatter)
     :param plugin_def: plugin definition
-    :param tile: plugin type for tile
 
     :returns: plugin object
     """
@@ -78,10 +75,7 @@ def load_plugin(plugin_type, plugin_def, tile=False):
         LOGGER.exception(msg)
         raise InvalidPluginError(msg)
 
-    if tile:
-        plugin_list = PLUGINS[plugin_type]['tile']
-    else:
-        plugin_list = PLUGINS[plugin_type]
+    plugin_list = PLUGINS[plugin_type]
 
     LOGGER.debug('Plugins: {}'.format(plugin_list))
 

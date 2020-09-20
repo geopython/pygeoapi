@@ -117,7 +117,7 @@ class MVTProvider(BaseTileProvider):
             }]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list if item[
-                'tileMatrixSet'] in self.schemes]
+                'tileMatrixSet'] in self.options['schemes']]
 
         return tile_matrix_set_links
 

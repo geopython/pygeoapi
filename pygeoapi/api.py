@@ -373,11 +373,6 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
-            # get providers type
-            providers_type = {
-                provider['type']: provider for provider in v['providers']}
-            tile = providers_type.get('tile', {})
-
             for link in v['links']:
                 lnk = {
                     'type': link['type'],
@@ -413,23 +408,6 @@ class API:
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
             })
-
-            if tile:
-                LOGGER.debug('Adding tile link')
-                collection['links'].append({
-                    'type': 'application/json',
-                    'rel': 'tiles',
-                    'title': 'Tiles as JSON',
-                    'href': '{}/collections/{}/tiles?f=json'.format(
-                        self.config['server']['url'], k)
-                })
-                collection['links'].append({
-                    'type': 'text/html',
-                    'rel': 'tiles',
-                    'title': 'Tiles as HTML',
-                    'href': '{}/collections/{}/tiles?f=html'.format(
-                        self.config['server']['url'], k)
-                })
 
             if collection_data_type == 'feature':
                 collection['itemType'] = collection_data_type.capitalize()
@@ -469,6 +447,7 @@ class API:
                     'href': '{}/collections/{}/items?f=html'.format(
                         self.config['server']['url'], k)
                 })
+
             elif collection_data_type == 'coverage':
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
@@ -539,8 +518,13 @@ class API:
                     collection['domainset'] = p.get_coverage_domainset()
                     collection['rangetype'] = p.get_coverage_rangetype()
 
+            try:
+                tile = get_provider_by_type(v['providers'], 'tile')
+            except ProviderTypeError:
+                tile = None
+
             if tile:
-                LOGGER.debug('Adding tile link')
+                LOGGER.debug('Adding tile links')
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'tiles',
@@ -1521,13 +1505,9 @@ class API:
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
-            dataset_providers = {
-                provider['type']: provider for provider in self.config[
-                    'resources'][dataset]['providers']}
-            p = load_plugin(
-                'provider',
-                dataset_providers['tile'],
-                tile=True)
+            t = get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
         except KeyError:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -1588,8 +1568,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['links'].append(service)
 
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
-        metadata_format = \
-            dataset_providers['tile']['options']['metadata_format']
+        metadata_format = p.options['metadata_format']
 
         if format_ == 'html':  # render
             tiles['id'] = dataset
@@ -1597,15 +1576,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['tilesets'] = [
                 scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
             tiles['format'] = metadata_format
-            tiles['bounds'] = dataset_providers[
-                'tile']['options']['bounds']
-            tiles['minzoom'] = dataset_providers[
-                'tile']['options']['zoom']['min']
-            tiles['maxzoom'] = dataset_providers[
-                'tile']['options']['zoom']['max']
+            tiles['bounds'] = \
+                self.config['resources'][dataset]['extents']['spatial']['bbox']
+            tiles['minzoom'] = p.options['zoom']['min']
+            tiles['maxzoom'] = p.options['zoom']['max']
+            tiles['uri_template'] = tiles['links'][-2]
+
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'tiles.html',
-                                         tiles)
+            content = render_j2_template(self.config, 'tiles.html', tiles)
 
             return headers_, 200, content
 
@@ -1653,14 +1631,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         LOGGER.debug('Loading tile provider')
         try:
-            dataset_providers = {
-                provider['type']: provider for provider in self.config[
-                    'resources'][dataset]['providers']}
-            format_ = dataset_providers['tile']['format']['name']
-            p = load_plugin(
-                'provider',
-                dataset_providers['tile'],
-                tile=True)
+            t = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+
+            format_ = p.format_type
+
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
             content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
@@ -1748,13 +1724,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
-            dataset_providers = {
-                provider['type']: provider for provider in self.config[
-                    'resources'][dataset]['providers']}
-            p = load_plugin(
-                'provider',
-                dataset_providers['tile'],
-                tile=True)
+            t = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
         except KeyError:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -1777,7 +1749,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 500, to_json(exception, self.pretty_print)
 
-        if matrix_id not in dataset_providers['tile']['options']['schemes']:
+        if matrix_id not in p.options['schemes']:
             exception = {
                 'code': 'NotFound',
                 'description': 'tileset not found'
@@ -1785,8 +1757,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        metadata_format = \
-            dataset_providers['tile']['options']['metadata_format']
+        metadata_format = p.options['metadata_format']
         tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(
