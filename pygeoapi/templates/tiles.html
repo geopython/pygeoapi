@@ -48,15 +48,14 @@
         <div class="col-md-2 col-sm-12">Metadata</div>
         <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
       </div>
-      <div class="row">
-        <div class="col-md-2 col-sm-12">URI Template</div>
-        <div class="col-md-8"><code>{{ data['uri_template']['href'] }}</code></div>
-      </div>
       <script>
         var select = document.getElementById('tilingScheme');
         var tileset = select.value;
         let params = (new URL(document.location)).searchParams;
-//        select.value = params.get('scheme');
+        var scheme = params.get('scheme');
+        if (scheme) {
+            select.value = scheme;
+        }
         select.addEventListener('change', ev => {
           var scheme = ev.target.value;
           document.location.search = `scheme=${scheme}`;

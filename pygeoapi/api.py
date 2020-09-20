@@ -1580,7 +1580,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 self.config['resources'][dataset]['extents']['spatial']['bbox']
             tiles['minzoom'] = p.options['zoom']['min']
             tiles['maxzoom'] = p.options['zoom']['max']
-            tiles['uri_template'] = tiles['links'][-2]
 
             headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config, 'tiles.html', tiles)
