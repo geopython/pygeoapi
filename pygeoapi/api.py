@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -50,10 +52,12 @@ from pygeoapi.provider.base import (
     ProviderInvalidQueryError, ProviderNoDataError, ProviderQueryError,
     ProviderItemNotFoundError, ProviderTypeError)
 
+from pygeoapi.provider.tile import (ProviderTileQueryError,
+                                    ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-                           get_typed_value, render_j2_template,
-                           TEMPLATES, to_json)
+                           get_typed_value, render_j2_template, TEMPLATES,
+                           to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +78,8 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi_coverages-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html'
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/core',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections'
 ]
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
@@ -441,6 +447,7 @@ class API:
                     'href': '{}/collections/{}/items?f=html'.format(
                         self.config['server']['url'], k)
                 })
+
             elif collection_data_type == 'coverage':
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
@@ -510,6 +517,28 @@ class API:
                     collection['crs'] = [p.crs]
                     collection['domainset'] = p.get_coverage_domainset()
                     collection['rangetype'] = p.get_coverage_rangetype()
+
+            try:
+                tile = get_provider_by_type(v['providers'], 'tile')
+            except ProviderTypeError:
+                tile = None
+
+            if tile:
+                LOGGER.debug('Adding tile links')
+                collection['links'].append({
+                    'type': 'application/json',
+                    'rel': 'tiles',
+                    'title': 'Tiles as JSON',
+                    'href': '{}/collections/{}/tiles?f=json'.format(
+                        self.config['server']['url'], k)
+                })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': 'tiles',
+                    'title': 'Tiles as HTML',
+                    'href': '{}/collections/{}/tiles?f=html'.format(
+                        self.config['server']['url'], k)
+                })
 
             if dataset is not None and k == dataset:
                 fcm = collection
@@ -1440,6 +1469,314 @@ class API:
             LOGGER.error(exception)
             return ({'Content-type': 'application/json'},
                     400, to_json(exception, self.pretty_print))
+
+    @pre_process
+    @jsonldify
+    def get_collection_tiles(self, headers_, format_, dataset=None):
+        """
+        Provide collection tiles
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: name of collection
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, json.dumps(exception)
+
+        LOGGER.debug('Creating collection tiles')
+        LOGGER.debug('Loading provider')
+        try:
+            t = get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+        except (KeyError, ProviderTypeError):
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection tiles'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception)
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception)
+
+        tiles = {
+            'title': dataset,
+            'description': self.config['resources'][dataset]['description'],
+            'links': [],
+            'tileMatrixSetLinks': []
+        }
+
+        tiles['links'].append({
+            'type': 'application/json',
+            'rel': 'self' if format_ == 'json' else 'alternate',
+            'title': 'This document as JSON',
+            'href': '{}/collections/{}/tiles?f=json'.format(
+                self.config['server']['url'], dataset)
+        })
+        tiles['links'].append({
+            'type': 'application/ld+json',
+            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+            'title': 'This document as RDF (JSON-LD)',
+            'href': '{}/collections/{}/tiles?f=jsonld'.format(
+                self.config['server']['url'], dataset)
+        })
+        tiles['links'].append({
+            'type': 'text/html',
+            'rel': 'self' if format_ == 'html' else 'alternate',
+            'title': 'This document as HTML',
+            'href': '{}/collections/{}/tiles?f=html'.format(
+                self.config['server']['url'], dataset)
+        })
+
+        for service in p.get_tiles_service(
+            baseurl=self.config['server']['url'],
+            servicepath='/collections/{}/\
+tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
+            .format(dataset, 'tileMatrixSetId',
+                    'tileMatrix', 'tileRow', 'tileCol'))['links']:
+            tiles['links'].append(service)
+
+        tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
+        metadata_format = p.options['metadata_format']
+
+        if format_ == 'html':  # render
+            tiles['id'] = dataset
+            tiles['title'] = self.config['resources'][dataset]['title']
+            tiles['tilesets'] = [
+                scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
+            tiles['format'] = metadata_format
+            tiles['bounds'] = \
+                self.config['resources'][dataset]['extents']['spatial']['bbox']
+            tiles['minzoom'] = p.options['zoom']['min']
+            tiles['maxzoom'] = p.options['zoom']['max']
+
+            headers_['Content-Type'] = 'text/html'
+            content = render_j2_template(self.config, 'tiles.html', tiles)
+
+            return headers_, 200, content
+
+        return headers_, 200, to_json(tiles, self.pretty_print)
+
+    @jsonldify
+    def get_collection_tiles_data(self, headers_, format_, dataset=None,
+                                  matrix_id=None, z_idx=None, y_idx=None,
+                                  x_idx=None):
+        """
+        Get collection items tiles
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: dataset name
+        :param matrix_id: matrix identifier
+        :param z_idx: z index
+        :param y_idx: y index
+        :param x_idx: x index
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is None and format_ not in ['mvt']:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception)
+
+        LOGGER.debug('Processing tiles')
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        if dataset not in collections.keys():
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception)
+
+        LOGGER.debug('Loading tile provider')
+        try:
+            t = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+
+            format_ = p.format_type
+
+            LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
+                matrix_id, z_idx, y_idx, x_idx))
+            content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
+                                  z=z_idx, y=y_idx, x=x_idx, format_=format_)
+            if content is None:
+                exception = {
+                    'code': 'NotFound',
+                    'description': 'identifier not found'
+                }
+                LOGGER.error(exception)
+                return headers_, 404, to_json(exception)
+            else:
+                return headers_, 200, content
+        # @TODO: figure out if the spec requires to return json errors
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection tiles'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception)
+        except ProviderConnectionError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, to_json(exception)
+        except ProviderTilesetIdNotFoundError:
+            exception = {
+                'code': 'NotFound',
+                'description': 'Tileset id not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception)
+        except ProviderTileQueryError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'Tile not found'
+            }
+            LOGGER.error(err)
+            return headers_, 500, to_json(exception)
+        except ProviderGenericError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'generic error (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 500, to_json(exception)
+
+    @pre_process
+    @jsonldify
+    def get_collection_tiles_metadata(self, headers_, format_, dataset=None,
+                                      matrix_id=None):
+        """
+        Get collection items tiles
+
+        :param headers_: copy of HEADERS object
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param dataset: dataset name
+        :param matrix_id: matrix identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        LOGGER.debug('Creating collection tiles')
+        LOGGER.debug('Loading provider')
+        try:
+            t = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'tile')
+            p = load_plugin('provider', t)
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid collection tiles'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers_, 500, to_json(exception, self.pretty_print)
+
+        if matrix_id not in p.options['schemes']:
+            exception = {
+                'code': 'NotFound',
+                'description': 'tileset not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
+
+        metadata_format = p.options['metadata_format']
+        tilejson = True if (metadata_format == 'tilejson') else False
+
+        tiles_metadata = p.get_metadata(
+            dataset=dataset, server_url=self.config['server']['url'],
+            layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson)
+
+        if format_ == 'html':  # render
+            metadata = dict(metadata=tiles_metadata)
+            metadata['id'] = dataset
+            metadata['title'] = self.config['resources'][dataset]['title']
+            metadata['tileset'] = matrix_id
+            metadata['format'] = metadata_format
+            headers_['Content-Type'] = 'text/html'
+
+            content = render_j2_template(self.config, 'tiles_metadata.html',
+                                         metadata)
+
+            return headers_, 200, content
+
+        return headers_, 200, to_json(tiles_metadata, self.pretty_print)
 
     @pre_process
     @jsonldify
