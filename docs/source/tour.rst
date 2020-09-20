@@ -115,6 +115,29 @@ http://localhost:5000/collections/gdps-temperature/coverage
 .. seealso::
    :ref:`ogcapi-coverages` for more OGC API - Coverages request exampless.
 
+Tiles
+-----
+
+A given collection or any data type can additionally be made available as tiles (map tiles,
+vector tiles, etc.).  The following page provides an overview of a collection's tiles
+capabilities (tile matrix sets, URI templates, etc.)
+
+http://localhost:5000/collections/lakes/tiles
+
+URI templates
+^^^^^^^^^^^^^
+
+From the abovementioned page, we can find the URI template:
+
+`http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt <http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt>`_
+
+Generic metadata
+^^^^^^^^^^^^^^^^
+
+This page provides freeform tiles metadata.
+
+http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
+
 SpatioTemporal Assets
 ---------------------
 

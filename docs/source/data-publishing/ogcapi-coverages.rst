@@ -50,7 +50,7 @@ capable of handling.
    `GDAL raster driver short name`_.
 
 xarray
-^^^^^^^^
+^^^^^^
 
 The `xarray`_ provider plugin reads and extracts `NetCDF`_ data.
 

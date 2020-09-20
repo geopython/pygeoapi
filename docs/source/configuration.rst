@@ -120,9 +120,11 @@ The ``providers`` block is a list of 1..n providers with which to operate the da
 provider requires a ``type`` property.  Allowed types are:
 
 - ``feature``
+- ``coverage``
+- ``tile``
 
 A collection's default provider can be qualified with ``default: true`` in the provider
-configuration.  If ``default`` is not included, the first provider is assumed to be the
+configuration.  If ``default`` is not included, the *first* provider is assumed to be the
 default.
 
 .. code-block:: yaml
