@@ -59,6 +59,14 @@ def make_req_headers(**kwargs):
     return request.headers
 
 
+def make_lakes_req_headers(**kwargs):
+    environ = create_environ('/collections/lakes/items',
+                             'http://localhost:5000/')
+    environ.update(kwargs)
+    request = Request(environ)
+    return request.headers
+
+
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
@@ -169,7 +177,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 7
+    assert len(root['conformsTo']) == 8
 
     rsp_headers, code, response = api_.conformance(req_headers, {'f': 'foo'})
     assert code == 400
@@ -193,7 +201,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 2
+    assert len(collections['collections']) == 3
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
@@ -687,6 +695,22 @@ def test_get_collection_coverage(config, api_):
         req_headers, {'subset': 'lat(1:2)'}, 'cmip5')
 
     assert code == 204
+
+
+def test_get_collection_tiles_invalid(config, api_):
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'obs')
+
+    assert code == 400
+
+
+def test_get_collection_tiles(config, api_):
+    req_headers = make_lakes_req_headers()
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req_headers, {}, 'lakes')
+
+    assert code == 200
 
 
 def test_describe_processes(config, api_):

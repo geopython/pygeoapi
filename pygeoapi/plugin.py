@@ -46,7 +46,8 @@ PLUGINS = {
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
-        'xarray': 'pygeoapi.provider.xarray_.XarrayProvider'
+        'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
+        'MVT': 'pygeoapi.provider.mvt.MVTProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'

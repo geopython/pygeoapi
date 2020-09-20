@@ -3,7 +3,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
 #
-# Copyright (c) 2019 Francesco Bartoli
+# Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -170,6 +170,69 @@ async def collection_queryables(request: Request, collection_id=None):
         collection_id = request.path_params['collection_id']
     headers, status_code, content = api_.get_collection_queryables(
         request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{name}/tiles')
+@app.route('/collections/{name}/tiles/')
+async def get_collection_tiles(request: Request, name=None):
+    """
+    OGC open api collections tiles access point
+
+    :param name: identifier of collection name
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
+def get_collection_items_tiles(request: Request, name=None,
+                               tileMatrixSetId=None, tile_matrix=None,
+                               tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service
+
+    :param name: identifier of collection name
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tile_matrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    if 'tileMatrixSetId' in request.path_params:
+        tileMatrixSetId = request.path_params['tileMatrixSetId']
+    if 'tile_matrix' in request.path_params:
+        tile_matrix = request.path_params['tile_matrix']
+    if 'tileRow' in request.path_params:
+        tileRow = request.path_params['tileRow']
+    if 'tileCol' in request.path_params:
+        tileCol = request.path_params['tileCol']
+    headers, status_code, content = api_.get_collection_items_tiles(
+        request.headers, request.query_params, name, tileMatrixSetId,
+        tile_matrix, tileRow, tileCol)
 
     response = Response(content=content, status_code=status_code)
     if headers:
