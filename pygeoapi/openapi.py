@@ -657,7 +657,7 @@ def get_oas_30(cfg):
                         items_f,
                     ],
                     'responses': {
-                        '200': {'$ref': '#/components/responses/Tiles'},  # TODO: fix response format
+                        '200': {'$ref': '#/components/responses/Tiles'},  # noqa # TODO: fix response format
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
