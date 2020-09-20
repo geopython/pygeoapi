@@ -155,6 +155,46 @@ resources:
                   name: NetCDF
                   mimetype: application/x-netcdf
 
+    lakes:
+        type: collection
+        title: Large Lakes
+        description: lakes of the world, public domain
+        keywords:
+            - lakes
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: GeoJSON
+              data: tests/data/ne_110m_lakes.geojson
+              id_field: id
+            - type: tile
+              name: MVT
+              # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
+              data: tests/data/tiles/ne_110m_lakes
+              options:
+                metadata_format: raw # default | tilejson
+                bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
+                zoom:
+                    min: 0
+                    max: 11
+                schemes:
+                    - WorldCRS84Quad
+              format: 
+                    name: pbf
+                    mimetype: application/vnd.mapbox-vector-tile
+
     gdps-temperature:
         type: collection
         title: Global Deterministic Prediction System sample
