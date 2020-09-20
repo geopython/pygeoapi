@@ -1508,7 +1508,7 @@ class API:
             t = get_provider_by_type(
                     self.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)
-        except KeyError:
+        except (KeyError, ProviderTypeError):
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'Invalid collection tiles'
