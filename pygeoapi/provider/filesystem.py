@@ -140,7 +140,9 @@ class FileSystemProvider(BaseProvider):
                 return fh.read()
 
         elif resource_type == 'directory':
-            for dc in os.listdir(data_path):
+            dirpath2 = os.listdir(data_path)
+            dirpath2.sort()
+            for dc in dirpath2:
                 # @TODO: handle a generic directory for tiles
                 if dc == "tiles":
                     continue
