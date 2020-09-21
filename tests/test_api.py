@@ -697,15 +697,13 @@ def test_get_collection_coverage(config, api_):
     assert code == 204
 
 
-def test_get_collection_tiles_invalid(config, api_):
+def test_get_collection_tiles(config, api_):
     req_headers = make_lakes_req_headers()
     rsp_headers, code, response = api_.get_collection_tiles(
         req_headers, {}, 'obs')
 
     assert code == 400
 
-
-def test_get_collection_tiles(config, api_):
     req_headers = make_lakes_req_headers()
     rsp_headers, code, response = api_.get_collection_tiles(
         req_headers, {}, 'lakes')

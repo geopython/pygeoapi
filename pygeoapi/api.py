@@ -52,7 +52,8 @@ from pygeoapi.provider.base import (
     ProviderInvalidQueryError, ProviderNoDataError, ProviderQueryError,
     ProviderItemNotFoundError, ProviderTypeError)
 
-from pygeoapi.provider.tile import (ProviderTileQueryError,
+from pygeoapi.provider.tile import (ProviderTileNotFoundError,
+                                    ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
@@ -1212,7 +1213,7 @@ class API:
         return headers_, 200, to_json(content, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage(self, headers_, args, dataset,
+    def get_collection_coverage(self, headers, args, dataset,
                                 pathinfo=None):
         """
         Returns a subset of a collection coverage
@@ -1225,6 +1226,7 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
+        headers_ = HEADERS.copy()
         query_args = {}
         format_ = 'json'
 
@@ -1238,14 +1240,20 @@ class API:
                 self.config['resources'][dataset]['providers'], 'coverage')
 
             p = load_plugin('provider', collection_def)
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'collection does not exist'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
         except ProviderTypeError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'invalid provider type'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'}, 400,
-                    to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1270,11 +1278,10 @@ class API:
                         'description': 'Invalid field specified'
                     }
                     LOGGER.error(exception)
-                    return ({'Content-type': 'application/json'}, 400,
-                            to_json(exception, self.pretty_print))
+                    return headers_, 400, to_json(exception, self.pretty_print)
 
         if 'subset' in args:
-            LOGGER.debug('Processing subset parameters')
+            LOGGER.debug('Processing subset parameter')
             for s in args['subset'].split(','):
                 try:
                     if '"' not in s:
@@ -1290,8 +1297,8 @@ class API:
                             'description': 'Invalid axis name'
                         }
                         LOGGER.error(exception)
-                        return ({'Content-type': 'application/json'}, 400,
-                                to_json(exception, self.pretty_print))
+                        return (headers_, 400, to_json(exception,
+                                self.pretty_print))
 
                     subsets[subset_name] = list(map(
                         get_typed_value, m.group(2, 3)))
@@ -1315,43 +1322,40 @@ class API:
                 'description': 'query error: {}'.format(err),
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'},
-                    400, to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderNoDataError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'No data found'
             }
             LOGGER.debug(exception)
-            return ({'Content-type': 'application/json'},
-                    204, to_json(exception, self.pretty_print))
+            return headers_, 204, to_json(exception, self.pretty_print)
         except ProviderQueryError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'query error (check logs)'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'},
-                    500, to_json(exception, self.pretty_print))
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         mt = collection_def['format']['name']
 
         if format_ == mt:
-            return ({'Content-type': mt}, 200, data)
+            headers_['Content-type'] = mt
+            return headers_, 200, data
         elif format_ == 'json':
-            return ({'Content-type': 'application/prs.coverage+json'},
-                    200, to_json(data, self.pretty_print))
+            headers_['Content-type'] = 'application/prs.coverage+json'
+            return headers_, 200, to_json(data, self.pretty_print)
         else:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'invalid format parameter'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'},
-                    400, to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(data, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage_domainset(self, headers_, args, dataset,
+    def get_collection_coverage_domainset(self, headers, args, dataset,
                                           pathinfo=None):
         """
         Returns a collection coverage domainset
@@ -1363,6 +1367,8 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
+
+        headers_ = HEADERS.copy()
 
         format_ = check_format(args, headers_)
         if format_ is None:
@@ -1376,14 +1382,20 @@ class API:
             p = load_plugin('provider', collection_def)
 
             data = p.get_coverage_domainset()
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'collection does not exist'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
         except ProviderTypeError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'invalid provider type'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'}, 400,
-                    to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1393,25 +1405,24 @@ class API:
             return headers_, 500, to_json(exception, self.pretty_print)
 
         if format_ == 'json':
-            return ({'Content-type': 'application/json'},
-                    200, to_json(data, self.pretty_print))
+            return headers_, 200, to_json(data, self.pretty_print)
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
             content = render_j2_template(self.config, 'domainset.html',
                                          data)
-            return {'Content-type': 'text/html'}, 200, content
+            headers_['Content-type'] = 'text/html'
+            return headers_, 200, content
         else:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'invalid format parameter'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'},
-                    400, to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage_rangetype(self, headers_, args, dataset,
+    def get_collection_coverage_rangetype(self, headers, args, dataset,
                                           pathinfo=None):
         """
         Returns a collection coverage rangetype
@@ -1424,7 +1435,8 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        format_ = check_format(args, headers_)
+        headers_ = HEADERS.copy()
+        format_ = check_format(args, headers)
         if format_ is None:
             format_ = 'json'
 
@@ -1436,14 +1448,20 @@ class API:
             p = load_plugin('provider', collection_def)
 
             data = p.get_coverage_rangetype()
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'collection does not exist'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
         except ProviderTypeError:
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'invalid provider type'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'}, 400,
-                    to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1460,15 +1478,15 @@ class API:
             data['title'] = self.config['resources'][dataset]['title']
             content = render_j2_template(self.config, 'rangetype.html',
                                          data)
-            return {'Content-type': 'text/html'}, 200, content
+            headers_['Content-type'] = 'text/html'
+            return headers_, 200, content
         else:
             exception = {
                 'code': 'InvalidParameterValue',
                 'description': 'invalid format parameter'
             }
             LOGGER.error(exception)
-            return ({'Content-type': 'application/json'},
-                    400, to_json(exception, self.pretty_print))
+            return headers_, 400, to_json(exception, self.pretty_print)
 
     @pre_process
     @jsonldify
@@ -1589,13 +1607,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         return headers_, 200, to_json(tiles, self.pretty_print)
 
     @jsonldify
-    def get_collection_tiles_data(self, headers_, format_, dataset=None,
+    def get_collection_tiles_data(self, headers, format_, dataset=None,
                                   matrix_id=None, z_idx=None, y_idx=None,
                                   x_idx=None):
         """
         Get collection items tiles
 
-        :param headers_: copy of HEADERS object
+        :param headers: copy of HEADERS object
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: dataset name
@@ -1606,6 +1624,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
+
+        headers_ = HEADERS.copy()
+#        format_ = check_format({}, headers)
 
         if format_ is None and format_ not in ['mvt']:
             exception = {
@@ -1635,6 +1656,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             p = load_plugin('provider', t)
 
             format_ = p.format_type
+            headers_['Content-Type'] = format_
 
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
@@ -1648,7 +1670,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 LOGGER.error(exception)
                 return headers_, 404, to_json(exception)
             else:
-                return headers_, 200, content
+                return headers_, 202, content
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
             exception = {
@@ -1678,6 +1700,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             LOGGER.error(err)
             return headers_, 500, to_json(exception)
+        except ProviderTileNotFoundError as err:
+            exception = {
+                'code': 'NoMatch',
+                'description': 'tile not found (check logs)'
+            }
+            LOGGER.error(err)
+            return headers_, 404, to_json(exception)
         except ProviderGenericError as err:
             exception = {
                 'code': 'NoApplicableCode',
