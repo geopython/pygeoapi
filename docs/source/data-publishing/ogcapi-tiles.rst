@@ -8,7 +8,7 @@ Publishing map tiles to OGC API - Tiles
 
 pygeoapi can publish tiles from local or remote data sources (including cloud
 object storage).  To integrate tiles from a local data source, it is assumed
-that a directory tree of static tiles has been created on disk.  Example of
+that a directory tree of static tiles has been created on disk.  Examples of
 tile generation software include (but are not limited to):
 
 - `MapProxy`_

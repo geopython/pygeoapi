@@ -34,7 +34,8 @@ from pathlib import Path
 from urllib.parse import urlparse, urljoin
 
 from pygeoapi.util import is_url
-from pygeoapi.provider.tile import BaseTileProvider
+from pygeoapi.provider.tile import (
+    BaseTileProvider, ProviderTileNotFoundError)
 from pygeoapi.provider.base import ProviderConnectionError
 
 
@@ -204,10 +205,13 @@ class MVTProvider(BaseTileProvider):
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
             else:
-                with open(self.service_url.joinpath(
-                    '{z}/{y}/{x}.{f}'.format(
-                        z=z, y=y, x=x, f=format_)), 'rb') as tile:
-                    return tile.read()
+                try:
+                    with open(self.service_url.joinpath(
+                        '{z}/{y}/{x}.{f}'.format(
+                            z=z, y=y, x=x, f=format_)), 'rb') as tile:
+                        return tile.read()
+                except FileNotFoundError as err:
+                    raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, tilejson=True):
