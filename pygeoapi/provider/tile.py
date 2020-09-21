@@ -125,6 +125,11 @@ class ProviderTileQueryError(ProviderGenericError):
     pass
 
 
+class ProviderTileNotFoundError(ProviderGenericError):
+    """provider tile not found error"""
+    pass
+
+
 class ProviderTilesetIdNotFoundError(ProviderTileQueryError):
     """provider tileset matrix query error"""
     pass

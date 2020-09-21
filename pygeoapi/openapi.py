@@ -34,6 +34,7 @@ import os
 import click
 import yaml
 
+from pygeoapi import __version__
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
@@ -145,7 +146,7 @@ def get_oas_30(cfg):
             'name': cfg['metadata']['license']['name'],
             'url': cfg['metadata']['license']['url']
         },
-        'version': '3.0.2'
+        'version': __version__
     }
     oas['info'] = info
 
@@ -575,7 +576,9 @@ def get_oas_30(cfg):
         LOGGER.debug('setting up tiles endpoints')
         tile_extension = filter_providers_by_type(
             collections[k]['providers'], 'tile')
+
         if tile_extension:
+            tp = load_plugin('provider', tile_extension)
             oas['components']['responses'].update({
                     'Tiles': {
                         'description': 'Retrieves the tiles description for this collection', # noqa
@@ -652,15 +655,35 @@ def get_oas_30(cfg):
                     'summary': 'Get a {} tile'.format(v['title']),
                     'description': v['description'],
                     'tags': [k],
-                    'operationId': 'describe{}Tiles'.format(k.capitalize()),
-                    'parameters': [
-                        items_f,
-                    ],
+                    'operationId': 'get{}Tiles'.format(k.capitalize()),
+                    'parameters': [{
+                        'name': 'f',
+                        'in': 'query',
+                        'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
+                        'required': False,
+                        'schema': {
+                            'type': 'string',
+                            'enum': [tp.format_type],
+                            'default': tp.format_type
+                        },
+                        'style': 'form',
+                        'explode': False
+                    }],
                     'responses': {
-                        '200': {'$ref': '#/components/responses/Tiles'},  # noqa # TODO: fix response format
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+            }
+            mimetype = tile_extension['format']['mimetype']
+            paths[tiles_data_path]['get']['responses']['200'] = {
+                'content': {
+                    mimetype: {
+                        'schema': {
+                            'type': 'string',
+                            'format': 'binary'
+                        }
                     }
                 }
             }
