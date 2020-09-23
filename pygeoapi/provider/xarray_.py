@@ -27,8 +27,10 @@
 #
 # =================================================================
 
+import os
 import logging
 import tempfile
+import zipfile
 
 import xarray
 import numpy as np
@@ -55,7 +57,11 @@ class XarrayProvider(BaseProvider):
         BaseProvider.__init__(self, provider_def)
 
         try:
-            self._data = xarray.open_dataset(self.data)
+            if provider_def['format']['name'] == 'zarr':
+                open_func = xarray.open_zarr
+            else:
+                open_func = xarray.open_dataset
+            self._data = open_func(self.data)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -145,7 +151,7 @@ class XarrayProvider(BaseProvider):
         }
 
         for name, var in self._data.variables.items():
-            LOGGER.debug('Determing rangetype for {}'.format(name))
+            LOGGER.debug('Determining rangetype for {}'.format(name))
 
             name, units = None, None
             if len(var.shape) >= 3:
@@ -186,7 +192,13 @@ class XarrayProvider(BaseProvider):
 
         if not range_subset and not subsets and format_ != 'json':
             LOGGER.debug('No parameters specified, returning native data')
-            return read_data(self.data)
+            print(format_)
+            if format_ == 'zarr':
+                print('read zarr')
+                return _get_zarr_data(self._data)
+            else:
+                print('read netcdf')
+                return read_data(self.data)
 
         if len(range_subset) < 1:
             range_subset = self.fields
@@ -243,11 +255,13 @@ class XarrayProvider(BaseProvider):
         if format_ == 'json':
             LOGGER.debug('Creating output in CoverageJSON')
             return self.gen_covjson(out_meta, data, range_subset)
+        elif format_ == 'zarr':
+            LOGGER.debug('Returning data in native zarr format')
 
         else:  # return data in native format
             with tempfile.TemporaryFile() as fp:
-                LOGGER.debug('Returning data in native format')
-                fp.write(data.to_netcdf())
+                LOGGER.debug('Returning data in native NetCDF format')
+                fp.write(zipfile.data.to_netcdf())
                 fp.seek(0)
                 return fp.read()
 
@@ -502,3 +516,46 @@ def _to_datetime_string(datetime_obj):
         value = datetime_obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     return value
+
+
+# Based on https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
+def _zip_dir(path, ziph, cwd):
+    """
+        Convenience function to zip directory with sub directories
+        (based on source: https://stackoverflow.com/questions/1855095/
+        how-to-create-a-zip-archive-of-a-directory-in-python)
+        :param path: str directory to zip
+        :param ziph: zipfile file
+        :param cwd: current
+
+        """
+    for root, dirs, files in os.walk(path):
+        for file in files:
+
+            if len(dirs) < 1:
+                new_root = '/'.join(root.split('/')[:-1])
+                new_path = os.path.join(root.split('/')[-1], file)
+            else:
+                new_root = root
+                new_path = file
+
+            os.chdir(new_root)
+            ziph.write(new_path)
+            os.chdir(cwd)
+
+def _get_zarr_data(data):
+    """
+       Returns bytes to read from zarr directory zip
+       :param data: str directory to zip
+
+       :returns: byte array of zip data
+       """
+    tmp_dir = '/tmp/'
+    data.to_zarr('{}zarr.zarr'.format(tmp_dir), mode='w')
+    with zipfile.ZipFile('{}zarr.zarr.zip'.format(tmp_dir),
+                         'w', zipfile.ZIP_DEFLATED) as zipf:
+        _zip_dir('{}zarr.zarr'.format(tmp_dir), zipf, os.getcwd())
+    zip_file = open('{}zarr.zarr.zip'.format(tmp_dir),
+                    encoding="utf8",
+                    errors='ignore')
+    return zip_file.read()

@@ -1340,8 +1340,10 @@ class API:
 
         mt = collection_def['format']['name']
 
+        print('fomrats returning', format_, mt)
         if format_ == mt:
             headers_['Content-type'] = mt
+            print('returning data')
             return headers_, 200, data
         elif format_ == 'json':
             headers_['Content-type'] = 'application/prs.coverage+json'

@@ -1,0 +1,11 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time"
+    ],
+    "axis": "T",
+    "calendar": "proleptic_gregorian",
+    "comment": "Nominal time of analyzed fields",
+    "long_name": "reference time of sst field",
+    "standard_name": "time",
+    "units": "days since 2002-06-01T09:00:00"
+}
