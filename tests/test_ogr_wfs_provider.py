@@ -203,7 +203,7 @@ def test_get_gs(config_GeoServer_WFS):
     p = OGRProvider(config_GeoServer_WFS)
     result = p.get('inspireadressen.1747652')
     assert result['id'] == 'inspireadressen.1747652'
-    assert 'Mosselsepad' in result['properties']['straatnaam']
+    assert 'Professor Goossenslaan' in result['properties']['straatnaam']
 
 
 def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
