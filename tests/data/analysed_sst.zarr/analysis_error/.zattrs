@@ -1,0 +1,14 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "add_offset": 0.0,
+    "comment": "none",
+    "long_name": "estimated error standard deviation of analysed_sst",
+    "scale_factor": 0.01,
+    "units": "kelvin",
+    "valid_max": 32767,
+    "valid_min": 0
+}

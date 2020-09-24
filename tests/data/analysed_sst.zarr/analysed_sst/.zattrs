@@ -1,0 +1,15 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "add_offset": 298.15,
+    "comment": "\"Final\" version using Multi-Resolution Variational Analysis (MRVA) method for interpolation",
+    "long_name": "analysed sea surface temperature",
+    "scale_factor": 0.001,
+    "standard_name": "sea_surface_foundation_temperature",
+    "units": "kelvin",
+    "valid_max": 32767,
+    "valid_min": -32767
+}
