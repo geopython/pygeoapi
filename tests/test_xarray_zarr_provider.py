@@ -43,15 +43,19 @@ def get_test_file_path(filename):
 
 
 path = get_test_file_path(
-    'tests/data/coads_sst.nc')
+    'data/analysed_sst.zarr')
 
 
 @pytest.fixture()
 def config():
     return {
-        'name': 'xarray',
+        'name': 'zarr',
         'type': 'coverage',
-        'data': path
+        'data': path,
+        'format': {
+             'name': 'zarr',
+             'mimetype': 'application/zip'
+        }
     }
 
 
@@ -60,7 +64,7 @@ def test_provider(config):
 
     assert len(p.fields) == 4
     assert len(p.axes) == 3
-    assert p.axes == ['COADSX', 'COADSY', 'TIME']
+    assert p.axes == ['lon', 'lat', 'time']
 
 
 def test_domainset(config):
@@ -68,10 +72,10 @@ def test_domainset(config):
     domainset = p.get_coverage_domainset()
 
     assert isinstance(domainset, dict)
-    assert domainset['generalGrid']['axisLabels'] == ['COADSX', 'COADSY']
+    assert domainset['generalGrid']['axisLabels'] == ['lon', 'lat']
     assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
-    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 180  # noqa
-    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 90  # noqa
+    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 101  # noqa
+    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 101  # noqa
 
 
 def test_rangetype(config):
@@ -80,7 +84,7 @@ def test_rangetype(config):
 
     assert isinstance(rangetype, dict)
     assert len(rangetype['field']) == 4
-    assert rangetype['field'][0]['name'] == 'SEA SURFACE TEMPERATURE'
+    assert rangetype['field'][0]['name'] == 'analysed sea surface temperature'
 
 
 def test_query(config):
@@ -89,5 +93,5 @@ def test_query(config):
     data = p.query()
     assert isinstance(data, dict)
 
-    data = p.query(format_='NetCDF')
+    data = p.query(format_='zarr')
     assert isinstance(data, bytes)

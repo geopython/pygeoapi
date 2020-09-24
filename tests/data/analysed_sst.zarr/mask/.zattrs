@@ -1,0 +1,27 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "comment": "mask can be used to further filter the data.",
+    "flag_masks": [
+        1,
+        2,
+        4,
+        8,
+        16
+    ],
+    "flag_meanings": "1=open-sea, 2=land, 5=open-lake, 9=open-sea with ice in the grid, 13=open-lake with ice in the grid",
+    "flag_values": [
+        1,
+        2,
+        5,
+        9,
+        13
+    ],
+    "long_name": "sea/land field composite mask",
+    "source": "GMT \"grdlandmask\", ice flag from sea_ice_fraction data",
+    "valid_max": 31,
+    "valid_min": 1
+}
