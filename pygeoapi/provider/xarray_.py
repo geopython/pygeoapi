@@ -62,6 +62,7 @@ class XarrayProvider(BaseProvider):
             else:
                 open_func = xarray.open_dataset
             self._data = open_func(self.data)
+            self._data = _convert_float32_to_float64(self._data)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -516,12 +517,10 @@ def _to_datetime_string(datetime_obj):
     return value
 
 
-# Based on https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
 def _zip_dir(path, ziph, cwd):
     """
         Convenience function to zip directory with sub directories
-        (based on source: https://stackoverflow.com/questions/1855095/
-        how-to-create-a-zip-archive-of-a-directory-in-python)
+        (based on source: https://stackoverflow.com/questions/1855095/)
         :param path: str directory to zip
         :param ziph: zipfile file
         :param cwd: current working directory
@@ -544,8 +543,8 @@ def _zip_dir(path, ziph, cwd):
 
 def _get_zarr_data(data):
     """
-       Returns bytes to read from zarr directory zip
-       :param data: str directory to zip
+       Returns bytes to read from Zarr directory zip
+       :param data: Xarray dataset of coverage data
 
        :returns: byte array of zip data
        """
@@ -557,3 +556,20 @@ def _get_zarr_data(data):
         _zip_dir('{}zarr.zarr'.format(tmp_dir), zipf, os.getcwd())
     zip_file = open('{}zarr.zarr.zip'.format(tmp_dir), 'rb')
     return zip_file.read()
+
+
+def _convert_float32_to_float64(data):
+    """
+        Converts DataArray values of float32 to float64
+        :param data: Xarray dataset of coverage data
+
+        :returns: Xarray dataset of coverage data
+        """
+
+    for var_name in data.variables:
+        if data[var_name].dtype == 'float32':
+            og_attrs = data[var_name].attrs
+            data[var_name] = data[var_name].astype('float64')
+            data[var_name].attrs = og_attrs
+
+    return data

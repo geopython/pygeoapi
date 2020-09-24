@@ -43,7 +43,6 @@ from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader
 import yaml
-import numpy as np
 
 from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
@@ -195,8 +194,6 @@ def json_serial(obj):
             LOGGER.debug('Returning as base64 encoded JSON object')
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
-        return float(obj)
-    elif isinstance(obj, np.float32):
         return float(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
