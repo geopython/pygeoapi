@@ -511,9 +511,18 @@ class API:
                     })
                 if dataset is not None:
                     LOGGER.debug('Creating extended coverage metadata')
-                    p = load_plugin('provider', get_provider_by_type(
-                        self.config['resources'][dataset]['providers'],
-                        'coverage'))
+                    try:
+                        p = load_plugin('provider', get_provider_by_type(
+                            self.config['resources'][dataset]['providers'],
+                            'coverage'))
+                    except ProviderConnectionError:
+                        exception = {
+                           'code': 'NoApplicableCode',
+                           'description': 'connection error (check logs)'
+                        }
+                        LOGGER.error(exception)
+                        return headers_, 500, to_json(exception,
+                                                      self.pretty_print)
 
                     collection['crs'] = [p.crs]
                     collection['domainset'] = p.get_coverage_domainset()
@@ -1341,7 +1350,7 @@ class API:
         mt = collection_def['format']['name']
 
         if format_ == mt:
-            headers_['Content-type'] = mt
+            headers_['Content-Type'] = collection_def['format']['mimetype']
             return headers_, 200, data
         elif format_ == 'json':
             headers_['Content-type'] = 'application/prs.coverage+json'
@@ -1471,8 +1480,7 @@ class API:
             return headers_, 500, to_json(exception, self.pretty_print)
 
         if format_ == 'json':
-            return ({'Content-type': 'application/json'},
-                    200, to_json(data, self.pretty_print))
+            return (headers_, 200, to_json(data, self.pretty_print))
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
