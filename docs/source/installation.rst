@@ -20,9 +20,8 @@ For developers and the truly impatient
 
 .. code-block:: bash
 
-   python -m venv pygeoapi
-   cd pygeoapi
-   . bin/activate
+   python -m venv pygeoapi-env
+   source pygeoapi-env/bin/activate
    git clone https://github.com/geopython/pygeoapi.git
    cd pygeoapi
    pip install -r requirements.txt
