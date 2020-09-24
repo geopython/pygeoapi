@@ -66,7 +66,10 @@ ENV TZ=${TIMEZONE} \
 	DEB_PACKAGES="locales libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
-ADD . /pygeoapi
+RUN mkdir -p /pygeoapi/pygeoapi
+# Add files required for pip/setuptools
+ADD requirements*.txt setup.py README.md /pygeoapi/
+ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
 
 # Run all installs
 RUN \
@@ -99,6 +102,8 @@ RUN \
 	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
 	&& apt autoremove -y  \
 	&& rm -rf /var/lib/apt/lists/*
+
+ADD . /pygeoapi
 
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh
