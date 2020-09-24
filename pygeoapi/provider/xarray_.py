@@ -193,7 +193,6 @@ class XarrayProvider(BaseProvider):
 
         if not range_subset and not subsets and format_ != 'json':
             LOGGER.debug('No parameters specified, returning native data')
-            print(format_)
             if format_ == 'zarr':
                 return _get_zarr_data(self._data)
             else:
