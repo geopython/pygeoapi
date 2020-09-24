@@ -1353,7 +1353,7 @@ class API:
             headers_['Content-Type'] = collection_def['format']['mimetype']
             return headers_, 200, data
         elif format_ == 'json':
-            headers_['Content-type'] = 'application/prs.coverage+json'
+            headers_['Content-Type'] = 'application/prs.coverage+json'
             return headers_, 200, to_json(data, self.pretty_print)
         else:
             exception = {
@@ -1420,7 +1420,7 @@ class API:
             data['title'] = self.config['resources'][dataset]['title']
             content = render_j2_template(self.config, 'domainset.html',
                                          data)
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
             exception = {
@@ -1486,7 +1486,7 @@ class API:
             data['title'] = self.config['resources'][dataset]['title']
             content = render_j2_template(self.config, 'rangetype.html',
                                          data)
-            headers_['Content-type'] = 'text/html'
+            headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
             exception = {
