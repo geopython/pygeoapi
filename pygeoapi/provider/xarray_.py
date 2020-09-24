@@ -153,17 +153,17 @@ class XarrayProvider(BaseProvider):
         for name, var in self._data.variables.items():
             LOGGER.debug('Determining rangetype for {}'.format(name))
 
-            name, units = None, None
+            desc, units = None, None
             if len(var.shape) >= 3:
                 parameter = self._get_parameter_metadata(
                     name, var.attrs)
-                name = parameter['description']
+                desc = parameter['description']
                 units = parameter['unit_label']
 
                 rangetype['field'].append({
                     'id': name,
                     'type': 'QuantityType',
-                    'name': var.attrs.get('long_name') or name,
+                    'name': var.attrs.get('long_name') or desc,
                     'definition': str(var.dtype),
                     'nodata': 'null',
                     'uom': {
@@ -194,10 +194,8 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('No parameters specified, returning native data')
             print(format_)
             if format_ == 'zarr':
-                print('read zarr')
                 return _get_zarr_data(self._data)
             else:
-                print('read netcdf')
                 return read_data(self.data)
 
         if len(range_subset) < 1:
@@ -257,11 +255,11 @@ class XarrayProvider(BaseProvider):
             return self.gen_covjson(out_meta, data, range_subset)
         elif format_ == 'zarr':
             LOGGER.debug('Returning data in native zarr format')
-
+            return _get_zarr_data(data)
         else:  # return data in native format
             with tempfile.TemporaryFile() as fp:
                 LOGGER.debug('Returning data in native NetCDF format')
-                fp.write(zipfile.data.to_netcdf())
+                fp.write(data.to_netcdf())
                 fp.seek(0)
                 return fp.read()
 
@@ -526,7 +524,7 @@ def _zip_dir(path, ziph, cwd):
         how-to-create-a-zip-archive-of-a-directory-in-python)
         :param path: str directory to zip
         :param ziph: zipfile file
-        :param cwd: current
+        :param cwd: current working directory
 
         """
     for root, dirs, files in os.walk(path):
@@ -543,6 +541,7 @@ def _zip_dir(path, ziph, cwd):
             ziph.write(new_path)
             os.chdir(cwd)
 
+
 def _get_zarr_data(data):
     """
        Returns bytes to read from zarr directory zip
@@ -555,7 +554,5 @@ def _get_zarr_data(data):
     with zipfile.ZipFile('{}zarr.zarr.zip'.format(tmp_dir),
                          'w', zipfile.ZIP_DEFLATED) as zipf:
         _zip_dir('{}zarr.zarr'.format(tmp_dir), zipf, os.getcwd())
-    zip_file = open('{}zarr.zarr.zip'.format(tmp_dir),
-                    encoding="utf8",
-                    errors='ignore')
+    zip_file = open('{}zarr.zarr.zip'.format(tmp_dir), 'rb')
     return zip_file.read()
