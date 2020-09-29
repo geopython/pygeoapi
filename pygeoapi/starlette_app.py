@@ -73,6 +73,7 @@ api_ = API(CONFIG)
 
 routes = []
 
+
 def _route(path, methods=None):
     def inner(func):
         app.add_route(path, func, methods=methods)
