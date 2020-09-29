@@ -38,7 +38,6 @@ from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.routing import Route
 import uvicorn
 
 from pygeoapi.api import API
@@ -75,18 +74,8 @@ if (OGC_SCHEMAS_LOCATION is not None and
 
 api_ = API(CONFIG)
 
-routes = []
 
-
-def _route(path, methods=None):
-    def inner(func):
-        app.add_route(path, func, methods=methods)
-        routes.append(Route(path, func, methods=methods))
-        return func
-    return inner
-
-
-@_route('/')
+@app.route('/')
 async def landing_page(request: Request):
     """
     OGC API landing page endpoint
@@ -104,8 +93,8 @@ async def landing_page(request: Request):
     return response
 
 
-@_route('/openapi')
-@_route('/openapi/')
+@app.route('/openapi')
+@app.route('/openapi/')
 async def openapi(request: Request):
     """
     OpenAPI endpoint
@@ -126,8 +115,8 @@ async def openapi(request: Request):
     return response
 
 
-@_route('/conformance')
-@_route('/conformance/')
+@app.route('/conformance')
+@app.route('/conformance/')
 async def conformance(request: Request):
     """
     OGC API conformance endpoint
@@ -145,10 +134,10 @@ async def conformance(request: Request):
     return response
 
 
-@_route('/collections')
-@_route('/collections/')
-@_route('/collections/{collection_id}')
-@_route('/collections/{collection_id}/')
+@app.route('/collections')
+@app.route('/collections/')
+@app.route('/collections/{collection_id}')
+@app.route('/collections/{collection_id}/')
 async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
@@ -170,8 +159,8 @@ async def collections(request: Request, collection_id=None):
     return response
 
 
-@_route('/collections/{collection_id}/queryables')
-@_route('/collections/{collection_id}/queryables/')
+@app.route('/collections/{collection_id}/queryables')
+@app.route('/collections/{collection_id}/queryables/')
 async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
@@ -193,8 +182,8 @@ async def collection_queryables(request: Request, collection_id=None):
     return response
 
 
-@_route('/collections/{name}/tiles')
-@_route('/collections/{name}/tiles/')
+@app.route('/collections/{name}/tiles')
+@app.route('/collections/{name}/tiles/')
 async def get_collection_tiles(request: Request, name=None):
     """
     OGC open api collections tiles access point
@@ -216,9 +205,9 @@ async def get_collection_tiles(request: Request, name=None):
     return response
 
 
-@_route('/collections/{name}/tiles/\
+@app.route('/collections/{name}/tiles/\
     {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
-@_route('/collections/{name}/tiles/\
+@app.route('/collections/{name}/tiles/\
     {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
 def get_collection_items_tiles(request: Request, name=None,
                                tileMatrixSetId=None, tile_matrix=None,
@@ -256,10 +245,10 @@ def get_collection_items_tiles(request: Request, name=None,
     return response
 
 
-@_route('/collections/{collection_id}/items')
-@_route('/collections/{collection_id}/items/')
-@_route('/collections/{collection_id}/items/{item_id}')
-@_route('/collections/{collection_id}/items/{item_id}/')
+@app.route('/collections/{collection_id}/items')
+@app.route('/collections/{collection_id}/items/')
+@app.route('/collections/{collection_id}/items/{item_id}')
+@app.route('/collections/{collection_id}/items/{item_id}/')
 async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
@@ -290,7 +279,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     return response
 
 
-@_route('/collections/<collection_id>/coverage')
+@app.route('/collections/<collection_id>/coverage')
 def collection_coverage(request: Request, collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -311,7 +300,7 @@ def collection_coverage(request: Request, collection_id):
     return response
 
 
-@_route('/collections/<collection_id>/coverage/domainset')
+@app.route('/collections/<collection_id>/coverage/domainset')
 def collection_coverage_domainset(request: Request, collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -332,7 +321,7 @@ def collection_coverage_domainset(request: Request, collection_id):
     return response
 
 
-@_route('/collections/<collection_id>/coverage/rangetype')
+@app.route('/collections/<collection_id>/coverage/rangetype')
 def collection_coverage_rangetype(request: Request, collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -353,10 +342,10 @@ def collection_coverage_rangetype(request: Request, collection_id):
     return response
 
 
-@_route('/processes')
-@_route('/processes/')
-@_route('/processes/{process_id}')
-@_route('/processes/{process_id}/')
+@app.route('/processes')
+@app.route('/processes/')
+@app.route('/processes/{process_id}')
+@app.route('/processes/{process_id}/')
 async def processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
@@ -376,8 +365,8 @@ async def processes(request: Request, process_id=None):
     return response
 
 
-@_route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
-@_route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
 async def process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -401,7 +390,7 @@ async def process_jobs(request: Request, process_id=None):
     return response
 
 
-@_route('/stac')
+@app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
     STAC root endpoint
@@ -420,7 +409,7 @@ async def stac_catalog_root(request: Request):
     return response
 
 
-@_route('/stac/{path:path}')
+@app.route('/stac/{path:path}')
 async def stac_catalog_path(request: Request):
     """
     STAC endpoint
