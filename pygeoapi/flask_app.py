@@ -34,13 +34,15 @@ import os
 
 import click
 
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
+
+routes = Blueprint('pygeoapi', __name__)
 
 CONFIG = None
 
@@ -89,7 +91,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-@APP.route('/')
+@routes.route('/')
 def landing_page():
     """
     OGC API landing page endpoint
@@ -107,7 +109,7 @@ def landing_page():
     return response
 
 
-@APP.route('/openapi')
+@routes.route('/openapi')
 def openapi():
     """
     OpenAPI endpoint
@@ -128,7 +130,7 @@ def openapi():
     return response
 
 
-@APP.route('/conformance')
+@routes.route('/conformance')
 def conformance():
     """
     OGC API conformance endpoint
@@ -147,8 +149,8 @@ def conformance():
     return response
 
 
-@APP.route('/collections')
-@APP.route('/collections/<collection_id>')
+@routes.route('/collections')
+@routes.route('/collections/<collection_id>')
 def collections(collection_id=None):
     """
     OGC API collections endpoint
@@ -169,7 +171,7 @@ def collections(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/queryables')
+@routes.route('/collections/<collection_id>/queryables')
 def collection_queryables(collection_id=None):
     """
     OGC API collections querybles endpoint
@@ -190,8 +192,8 @@ def collection_queryables(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/items')
-@APP.route('/collections/<collection_id>/items/<item_id>')
+@routes.route('/collections/<collection_id>/items')
+@routes.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -217,7 +219,7 @@ def collection_items(collection_id, item_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/coverage')
+@routes.route('/collections/<collection_id>/coverage')
 def collection_coverage(collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -238,7 +240,7 @@ def collection_coverage(collection_id):
     return response
 
 
-@APP.route('/collections/<collection_id>/coverage/domainset')
+@routes.route('/collections/<collection_id>/coverage/domainset')
 def collection_coverage_domainset(collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -259,7 +261,7 @@ def collection_coverage_domainset(collection_id):
     return response
 
 
-@APP.route('/collections/<collection_id>/coverage/rangetype')
+@routes.route('/collections/<collection_id>/coverage/rangetype')
 def collection_coverage_rangetype(collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -280,7 +282,7 @@ def collection_coverage_rangetype(collection_id):
     return response
 
 
-@APP.route('/collections/<collection_id>/tiles')
+@routes.route('/collections/<collection_id>/tiles')
 def get_collection_tiles(collection_id=None):
     """
     OGC open api collections tiles access point
@@ -301,7 +303,7 @@ def get_collection_tiles(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')
+@routes.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')
 def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
     OGC open api collection tiles service metadata
@@ -323,7 +325,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/tiles/\
+@routes.route('/collections/<collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
                               tileMatrix=None, tileRow=None, tileCol=None):
@@ -351,8 +353,8 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     return response
 
 
-@APP.route('/processes')
-@APP.route('/processes/<process_id>')
+@routes.route('/processes')
+@routes.route('/processes/<process_id>')
 def processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -372,7 +374,7 @@ def processes(process_id=None):
     return response
 
 
-@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@routes.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
 def process_jobs(process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -396,7 +398,7 @@ def process_jobs(process_id=None):
     return response
 
 
-@APP.route('/stac')
+@routes.route('/stac')
 def stac_catalog_root():
     """
     STAC root endpoint
@@ -415,7 +417,7 @@ def stac_catalog_root():
     return response
 
 
-@APP.route('/stac/<path:path>')
+@routes.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
     STAC path endpoint
@@ -434,6 +436,9 @@ def stac_catalog_path(path):
         response.headers = headers
 
     return response
+
+
+APP.register_blueprint(routes)
 
 
 @click.command()
