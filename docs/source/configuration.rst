@@ -44,6 +44,9 @@ The ``server`` section provides directives on binding and high level tuning.
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of items to return
+    template: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
+      path: /path/to/jinja2/templates/folder # path to templates folder containing the jinja2 template HTML files
+      static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
@@ -80,7 +83,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
               - geospatial
               - data
               - api
-          keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist). Accepted values are discipline, temporal, place, theme, stratum
+          keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist. Accepted values are discipline, temporal, place, theme, stratum
           terms_of_service: https://creativecommons.org/licenses/by/4.0/  # terms of service
           url: http://example.org  # informative URL about the service
       license:  # licensing details
@@ -269,6 +272,7 @@ This example demonstrates how to use this feature with a CSV data provider, usin
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
 ``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
+
 
 Summary
 -------

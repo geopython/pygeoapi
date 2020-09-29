@@ -227,7 +227,13 @@ def render_j2_template(config, template, data):
     :returns: string of rendered template
     """
 
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    try:
+        templates_path = config['server']['templates']['path']
+        env = Environment(loader=FileSystemLoader(templates_path))
+        LOGGER.debug('using custom templates: {}'.format(templates_path))
+    except (KeyError, TypeError):
+        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
     env.globals.update(to_json=to_json)
