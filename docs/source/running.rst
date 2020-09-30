@@ -38,6 +38,25 @@ The Flask WSGI server can be run as follows:
    pygeoapi serve --flask
    pygeoapi serve  # uses Flask by default
 
+To integrate pygeoapi as part of another Flask application, use Flask blueprints:
+
+.. code-block:: python
+
+   from flask import Flask
+   from pygeoapi.flask_app import BLUEPRINT as pygeoapi_blueprint
+
+   app = Flask(__name__)
+
+   app.register_blueprint(pygeoapi_blueprint, url_prefix='/oapi')
+
+
+   @app.route('/')
+   def hello_world():
+       return 'Hello, World!'
+
+
+As a result, your application will be available at http://localhost:5000/ and pygeoapi will be available
+at http://localhost:5000/oapi
 
 Starlette ASGI
 ^^^^^^^^^^^^^^
@@ -51,12 +70,35 @@ Starlette is an ASGI implementation which pygeoapi utilizes to communicate with 
    HTTP request <--> Starlette (pygeoapi/starlette_app.py) <--> pygeoapi API (pygeoapi/api.py)
 
 
-The Flask WSGI server can be run as follows:
+The Starlette ASGI server can be run as follows:
 
 .. code-block:: bash
 
    pygeoapi serve --starlette
 
+To integrate pygeoapi as part of another Starlette application:
+
+
+.. code-block:: python
+
+   from starlette.applications import Starlette
+   from starlette.responses import PlainTextResponse
+   from starlette.routing import Route
+   from pygeoapi.starlette_app import app as pygeoapi_app
+
+
+   async def homepage(request):
+       return PlainTextResponse('Hello, World!')
+
+   app = Starlette(debug=True, routes=[
+       Route('/', homepage),
+   ])
+
+   app.mount('/oapi', pygeoapi_app)
+
+
+As a result, your application will be available at http://localhost:5000/ and pygeoapi will be available
+at http://localhost:5000/oapi
 
 Running in production
 ---------------------
