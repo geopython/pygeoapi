@@ -1379,7 +1379,7 @@ class API:
 
         headers_ = HEADERS.copy()
 
-        format_ = check_format(args, headers_)
+        format_ = check_format(args, headers)
         if format_ is None:
             format_ = 'json'
 

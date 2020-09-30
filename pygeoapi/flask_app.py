@@ -39,7 +39,7 @@ from flask import Flask, Blueprint, make_response, request, send_from_directory
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
-routes = Blueprint('pygeoapi', __name__)
+BLUEPRINT = Blueprint('pygeoapi', __name__)
 
 CONFIG = None
 
@@ -95,7 +95,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-@routes.route('/')
+@BLUEPRINT.route('/')
 def landing_page():
     """
     OGC API landing page endpoint
@@ -113,7 +113,7 @@ def landing_page():
     return response
 
 
-@routes.route('/openapi')
+@BLUEPRINT.route('/openapi')
 def openapi():
     """
     OpenAPI endpoint
@@ -134,7 +134,7 @@ def openapi():
     return response
 
 
-@routes.route('/conformance')
+@BLUEPRINT.route('/conformance')
 def conformance():
     """
     OGC API conformance endpoint
@@ -153,8 +153,8 @@ def conformance():
     return response
 
 
-@routes.route('/collections')
-@routes.route('/collections/<collection_id>')
+@BLUEPRINT.route('/collections')
+@BLUEPRINT.route('/collections/<collection_id>')
 def collections(collection_id=None):
     """
     OGC API collections endpoint
@@ -175,7 +175,7 @@ def collections(collection_id=None):
     return response
 
 
-@routes.route('/collections/<collection_id>/queryables')
+@BLUEPRINT.route('/collections/<collection_id>/queryables')
 def collection_queryables(collection_id=None):
     """
     OGC API collections querybles endpoint
@@ -196,8 +196,8 @@ def collection_queryables(collection_id=None):
     return response
 
 
-@routes.route('/collections/<collection_id>/items')
-@routes.route('/collections/<collection_id>/items/<item_id>')
+@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -223,7 +223,7 @@ def collection_items(collection_id, item_id=None):
     return response
 
 
-@routes.route('/collections/<collection_id>/coverage')
+@BLUEPRINT.route('/collections/<collection_id>/coverage')
 def collection_coverage(collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -244,7 +244,7 @@ def collection_coverage(collection_id):
     return response
 
 
-@routes.route('/collections/<collection_id>/coverage/domainset')
+@BLUEPRINT.route('/collections/<collection_id>/coverage/domainset')
 def collection_coverage_domainset(collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -265,7 +265,7 @@ def collection_coverage_domainset(collection_id):
     return response
 
 
-@routes.route('/collections/<collection_id>/coverage/rangetype')
+@BLUEPRINT.route('/collections/<collection_id>/coverage/rangetype')
 def collection_coverage_rangetype(collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -286,7 +286,7 @@ def collection_coverage_rangetype(collection_id):
     return response
 
 
-@routes.route('/collections/<collection_id>/tiles')
+@BLUEPRINT.route('/collections/<collection_id>/tiles')
 def get_collection_tiles(collection_id=None):
     """
     OGC open api collections tiles access point
@@ -307,7 +307,7 @@ def get_collection_tiles(collection_id=None):
     return response
 
 
-@routes.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')
+@BLUEPRINT.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
 def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
     OGC open api collection tiles service metadata
@@ -329,7 +329,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     return response
 
 
-@routes.route('/collections/<collection_id>/tiles/\
+@BLUEPRINT.route('/collections/<collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
                               tileMatrix=None, tileRow=None, tileCol=None):
@@ -357,8 +357,8 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     return response
 
 
-@routes.route('/processes')
-@routes.route('/processes/<process_id>')
+@BLUEPRINT.route('/processes')
+@BLUEPRINT.route('/processes/<process_id>')
 def processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -378,7 +378,7 @@ def processes(process_id=None):
     return response
 
 
-@routes.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
 def process_jobs(process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -402,7 +402,7 @@ def process_jobs(process_id=None):
     return response
 
 
-@routes.route('/stac')
+@BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """
     STAC root endpoint
@@ -421,7 +421,7 @@ def stac_catalog_root():
     return response
 
 
-@routes.route('/stac/<path:path>')
+@BLUEPRINT.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
     STAC path endpoint
@@ -442,7 +442,7 @@ def stac_catalog_path(path):
     return response
 
 
-APP.register_blueprint(routes)
+APP.register_blueprint(BLUEPRINT)
 
 
 @click.command()
