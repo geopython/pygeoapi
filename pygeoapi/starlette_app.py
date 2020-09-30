@@ -279,7 +279,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     return response
 
 
-@app.route('/collections/<collection_id>/coverage')
+@app.route('/collections/{collection_id}/coverage')
 def collection_coverage(request: Request, collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -288,6 +288,9 @@ def collection_coverage(request: Request, collection_id):
 
     :returns: Starlette HTTP Response
     """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
 
     headers, status_code, content = api_.get_collection_coverage(
         request.headers, request.query_params, collection_id)
@@ -300,7 +303,7 @@ def collection_coverage(request: Request, collection_id):
     return response
 
 
-@app.route('/collections/<collection_id>/coverage/domainset')
+@app.route('/collections/{collection_id}/coverage/domainset')
 def collection_coverage_domainset(request: Request, collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -309,6 +312,9 @@ def collection_coverage_domainset(request: Request, collection_id):
 
     :returns: Starlette HTTP Response
     """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
 
     headers, status_code, content = api_.get_collection_coverage_domainset(
         request.headers, request.query_params, collection_id)
@@ -321,7 +327,7 @@ def collection_coverage_domainset(request: Request, collection_id):
     return response
 
 
-@app.route('/collections/<collection_id>/coverage/rangetype')
+@app.route('/collections/{collection_id}/coverage/rangetype')
 def collection_coverage_rangetype(request: Request, collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -330,6 +336,9 @@ def collection_coverage_rangetype(request: Request, collection_id):
 
     :returns: Starlette HTTP Response
     """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
 
     headers, status_code, content = api_.get_collection_coverage_rangetype(
         request.headers, request.query_params, collection_id)
