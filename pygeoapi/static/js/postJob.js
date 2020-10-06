@@ -75,7 +75,8 @@ function _completion_ui(xhr) {
 }
 
 function submitJob(url) {
-  let parsedUrl = new URL(url);
+  // NOTE: need to pass base in case url is relative
+  let parsedUrl = new URL(url, document.location.origin);
   if (JobExecution.SYNC_EXECUTE) {
     parsedUrl.searchParams.set('sync-execute', 'True');
   } else {
