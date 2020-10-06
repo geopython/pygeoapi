@@ -5,9 +5,9 @@
         "project_name": "pygeoapi",
         "runtime": "python3.6",
         "s3_bucket": "zappa-pwpqh2twb",
-        "aws_region": "us-east-2"
+        "aws_region": "us-east-2",
         "environment_variables": {
-            "PYGEOAPI_CONFIG": "pygeoapi-config.yml"
+            "PYGEOAPI_CONFIG": "pygeoapi-config.yml",
             "PYGEOAPI_OPENAPI": "pygeoapi-openapi.yml"
         }
     }
