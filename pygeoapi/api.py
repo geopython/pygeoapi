@@ -2123,6 +2123,11 @@ def validate_bbox(value=None):
         LOGGER.debug(msg)
         raise
 
+    if bbox[0] > bbox[2] or bbox[1] > bbox[3]:
+        msg = 'min values should be less than max values'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
     return bbox
 
 
