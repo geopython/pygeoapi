@@ -41,7 +41,7 @@ class BaseFormatter:
 
         :param formatter_def: formatter definition
 
-        :returns: pygeoapi.providers.base.BaseFormatter
+        :returns: pygeoapi.formatter.base.BaseFormatter
         """
 
         self.mimetype = None
