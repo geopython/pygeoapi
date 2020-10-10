@@ -144,7 +144,7 @@ class PostgreSQLProvider(BaseProvider):
                              data contains the connection information
                              for class DatabaseCursor
 
-        :returns: pygeoapi.providers.base.PostgreSQLProvider
+        :returns: pygeoapi.provider.base.PostgreSQLProvider
         """
 
         BaseProvider.__init__(self, provider_def)

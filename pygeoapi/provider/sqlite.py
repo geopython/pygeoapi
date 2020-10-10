@@ -59,7 +59,7 @@ class SQLiteGPKGProvider(BaseProvider):
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
 
-        :returns: pygeoapi.providers.base.SQLiteProvider
+        :returns: pygeoapi.provider.base.SQLiteProvider
         """
         BaseProvider.__init__(self, provider_def)
 

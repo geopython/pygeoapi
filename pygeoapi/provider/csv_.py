@@ -47,7 +47,7 @@ class CSVProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.csv_.CSVProvider
+        :returns: pygeoapi.provider.csv_.CSVProvider
         """
 
         BaseProvider.__init__(self, provider_def)
