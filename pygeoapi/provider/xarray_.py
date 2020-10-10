@@ -51,7 +51,7 @@ class XarrayProvider(BaseProvider):
         """
         Initialize object
         :param provider_def: provider definition
-        :returns: pygeoapi.providers.xarray_.XarrayProvider
+        :returns: pygeoapi.provider.xarray_.XarrayProvider
         """
 
         BaseProvider.__init__(self, provider_def)

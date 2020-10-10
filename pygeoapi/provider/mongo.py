@@ -50,7 +50,7 @@ class MongoProvider(BaseProvider):
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
 
-        :returns: pygeoapi.providers.mongo.MongoProvider
+        :returns: pygeoapi.provider.mongo.MongoProvider
         """
         # this is dummy value never used in case of Mongo.
         # Mongo id field is _id

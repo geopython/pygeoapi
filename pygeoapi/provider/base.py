@@ -41,7 +41,7 @@ class BaseProvider:
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.base.BaseProvider
+        :returns: pygeoapi.provider.base.BaseProvider
         """
 
         try:
