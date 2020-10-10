@@ -43,7 +43,7 @@ class BaseTileProvider:
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.tile.BaseTileProvider
+        :returns: pygeoapi.provider.tile.BaseTileProvider
         """
 
         self.name = provider_def['name']
