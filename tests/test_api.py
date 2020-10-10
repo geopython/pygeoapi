@@ -36,7 +36,7 @@ import pytest
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 
-from pygeoapi.api import API, check_format
+from pygeoapi.api import API, check_format, validate_bbox, validate_datetime
 from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
@@ -857,3 +857,54 @@ def test_check_format():
     req_headers = make_req_headers(HTTP_ACCEPT='text/html')
     args['f'] = 'json'
     assert check_format(args, req_headers) == 'json'
+
+
+def test_validate_bbox():
+    assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
+    assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]
+    assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
+            [-142.1, 42.12, -52.22, 84.4])
+
+    with pytest.raises(ValueError):
+        validate_bbox('1,2,4')
+
+    with pytest.raises(ValueError):
+        validate_bbox('3,4,1,2')
+
+
+def test_validate_datetime():
+    config = yaml_load('''
+        temporal:
+            begin: 2000-10-30T18:24:39Z
+            end: 2007-10-30T08:57:29Z
+    ''')
+
+    # test time instant
+    assert validate_datetime(config, '2004') == '2004'
+    assert validate_datetime(config, '2004-10') == '2004-10'
+    assert validate_datetime(config, '2001-10-30') == '2001-10-30'
+
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2009-10-30')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000-09-09')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000-10-30T17:24:39Z')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2007-10-30T08:58:29Z')
+
+    # test time envelope
+    assert validate_datetime(config, '2004/2005') == '2004/2005'
+    assert validate_datetime(config, '2004-10/2005-10') == '2004-10/2005-10'
+    assert (validate_datetime(config, '2001-10-30/2002-10-30') ==
+            '2001-10-30/2002-10-30')
+    assert validate_datetime(config, '2004/..') == '2004/..'
+    assert validate_datetime(config, '../2005') == '../2005'
+    assert validate_datetime(config, '2004-10/2005-10') == '2004-10/2005-10'
+    assert (validate_datetime(config, '2001-10-30/2002-10-30') ==
+            '2001-10-30/2002-10-30')
+
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '2000/..')
+    with pytest.raises(ValueError):
+        _ = validate_datetime(config, '../2010')

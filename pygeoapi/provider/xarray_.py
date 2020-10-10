@@ -180,12 +180,15 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_subset=[], subsets={}, format_='json'):
+    def query(self, range_subset=[], subsets={}, bbox=[], datetime=None,
+              format_='json'):
         """
          Extract data from collection collection
 
         :param range_subset: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime: temporal (datestamp or extent)
         :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
