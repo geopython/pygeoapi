@@ -2145,9 +2145,8 @@ def validate_datetime(resource_def, datetime_=None):
 
     datetime_invalid = False
 
-    if (datetime_ is not None and
-            'temporal' in resource_def['extents']):
-        te = resource_def['extents']['temporal']
+    if (datetime_ is not None and 'temporal' in resource_def):
+        te = resource_def['temporal']
 
         if te['begin'] is not None and te['begin'].tzinfo is None:
             te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
