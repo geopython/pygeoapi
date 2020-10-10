@@ -50,7 +50,7 @@ class ElasticsearchProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.elasticsearch_.ElasticsearchProvider
+        :returns: pygeoapi.provider.elasticsearch_.ElasticsearchProvider
         """
 
         BaseProvider.__init__(self, provider_def)

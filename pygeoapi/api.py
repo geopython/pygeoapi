@@ -1222,15 +1222,13 @@ class API:
         return headers_, 200, to_json(content, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage(self, headers, args, dataset,
-                                pathinfo=None):
+    def get_collection_coverage(self, headers, args, dataset):
         """
         Returns a subset of a collection coverage
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -1364,15 +1362,13 @@ class API:
             return headers_, 400, to_json(data, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage_domainset(self, headers, args, dataset,
-                                          pathinfo=None):
+    def get_collection_coverage_domainset(self, headers, args, dataset):
         """
         Returns a collection coverage domainset
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -1431,15 +1427,13 @@ class API:
             return headers_, 400, to_json(exception, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage_rangetype(self, headers, args, dataset,
-                                          pathinfo=None):
+    def get_collection_coverage_rangetype(self, headers, args, dataset):
         """
         Returns a collection coverage rangetype
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """

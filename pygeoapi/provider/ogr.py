@@ -106,7 +106,7 @@ class OGRProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.ogr.OGRProvider
+        :returns: pygeoapi.provider.ogr.OGRProvider
         """
 
         BaseProvider.__init__(self, provider_def)
@@ -535,7 +535,7 @@ class SourceHelper:
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
         self.provider = provider
 
@@ -590,7 +590,7 @@ class CommonSourceHelper(SourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
         SourceHelper.__init__(self, provider)
         self.startindex = -1
@@ -674,7 +674,7 @@ class ESRIJSONHelper(CommonSourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
         CommonSourceHelper.__init__(self, provider)
 
@@ -737,7 +737,7 @@ class WFSHelper(SourceHelper):
 
         :param provider: provider instance
 
-        :returns: pygeoapi.providers.ogr.SourceHelper
+        :returns: pygeoapi.provider.ogr.SourceHelper
         """
         SourceHelper.__init__(self, provider)
 
@@ -774,7 +774,7 @@ class GdalErrorHandler:
         """
         Initialize the error handler
 
-        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        :returns: pygeoapi.provider.ogr.GdalErrorHandler
         """
         self.err_level = osgeo_gdal.CE_None
         self.err_num = 0
@@ -788,7 +788,7 @@ class GdalErrorHandler:
         :param err_num: internal gdal error number
         :param err_msg: error message
 
-        :returns: pygeoapi.providers.ogr.GdalErrorHandler
+        :returns: pygeoapi.provider.ogr.GdalErrorHandler
         """
 
         err_type = {
