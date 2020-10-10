@@ -782,86 +782,31 @@ class API:
         resulttype = args.get('resulttype') or 'results'
 
         LOGGER.debug('Processing bbox parameter')
-        try:
-            bbox = args.get('bbox').split(',')
-            if len(bbox) != 4:
+
+        bbox = args.get('bbox')
+
+        if bbox is None:
+            bbox = []
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
                 exception = {
                     'code': 'InvalidParameterValue',
-                    'description': 'bbox values should be minx,miny,maxx,maxy'
+                    'description': str(err)
                 }
                 LOGGER.error(exception)
                 return headers_, 400, to_json(exception, self.pretty_print)
-        except AttributeError:
-            bbox = []
-        try:
-            bbox = [float(c) for c in bbox]
-        except ValueError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'bbox values must be numbers'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Processing datetime parameter')
-        # TODO: pass datetime to query as a `datetime` object
-        # we would need to ensure partial dates work accordingly
-        # as well as setting '..' values to `None` so that underlying
-        # providers can just assume a `datetime.datetime` object
-        #
-        # NOTE: needs testing when passing partials from API to backend
         datetime_ = args.get('datetime')
-        datetime_invalid = False
-
-        if (datetime_ is not None and
-                'temporal' in collections[dataset]['extents']):
-            te = collections[dataset]['extents']['temporal']
-
-            if te['begin'] is not None and te['begin'].tzinfo is None:
-                te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
-            if te['end'] is not None and te['end'].tzinfo is None:
-                te['end'] = te['end'].replace(tzinfo=pytz.UTC)
-
-            if '/' in datetime_:  # envelope
-                LOGGER.debug('detected time range')
-                LOGGER.debug('Validating time windows')
-                datetime_begin, datetime_end = datetime_.split('/')
-                if datetime_begin != '..':
-                    datetime_begin = dateparse(datetime_begin)
-                    if datetime_begin.tzinfo is None:
-                        datetime_begin = datetime_begin.replace(
-                            tzinfo=pytz.UTC)
-
-                if datetime_end != '..':
-                    datetime_end = dateparse(datetime_end)
-                    if datetime_end.tzinfo is None:
-                        datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
-
-                if te['begin'] is not None and datetime_begin != '..':
-                    if datetime_begin < te['begin']:
-                        datetime_invalid = True
-
-                if te['end'] is not None and datetime_end != '..':
-                    if datetime_end > te['end']:
-                        datetime_invalid = True
-
-            else:  # time instant
-                datetime__ = dateparse(datetime_)
-                if datetime__ != '..':
-                    if datetime__.tzinfo is None:
-                        datetime__ = datetime__.replace(tzinfo=pytz.UTC)
-                LOGGER.debug('detected time instant')
-                if te['begin'] is not None and datetime__ != '..':
-                    if datetime__ < te['begin']:
-                        datetime_invalid = True
-                if te['end'] is not None and datetime__ != '..':
-                    if datetime__ > te['end']:
-                        datetime_invalid = True
-
-        if datetime_invalid:
+        try:
+            datetime_ = validate_datetime(collections[dataset]['extents'],
+                                          datetime_)
+        except ValueError as err:
             exception = {
                 'code': 'InvalidParameterValue',
-                'description': 'datetime parameter out of range'
+                'description': str(err)
             }
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
@@ -941,6 +886,8 @@ class API:
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
+        LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('datetime: {}'.format(datetime_))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
@@ -1268,6 +1215,25 @@ class API:
             }
             LOGGER.error(exception)
             return headers_, 500, to_json(exception, self.pretty_print)
+
+        LOGGER.debug('Processing bbox parameter')
+
+        bbox = args.get('bbox')
+
+        if bbox is None:
+            bbox = []
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': str(err)
+                }
+                LOGGER.error(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
+
+        query_args['bbox'] = bbox
 
         if 'f' in args:
             query_args['format_'] = format_ = args['f']
@@ -2127,3 +2093,110 @@ def check_format(args, headers):
             format_ = 'json'
 
     return format_
+
+
+def validate_bbox(value=None):
+    """
+    Helper function to validate bbox parameter
+
+    :param bbox: `list` of minx, miny, maxx, maxy
+
+    :returns: `list` of bbox as `float`s
+    """
+
+    if value is None:
+        LOGGER.debug('bbox is empty')
+        return []
+
+    bbox = value.split(',')
+
+    if len(bbox) != 4:
+        msg = 'bbox should be 4 values (minx,miny,maxx,maxy)'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    try:
+        bbox = [float(c) for c in bbox]
+    except ValueError as err:
+        msg = 'bbox values must be numbers'
+        err.args = (msg,)
+        LOGGER.debug(msg)
+        raise
+
+    if bbox[0] > bbox[2] or bbox[1] > bbox[3]:
+        msg = 'min values should be less than max values'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    return bbox
+
+
+def validate_datetime(resource_def, datetime_=None):
+    """
+    Helper function to validate bbox parameter
+
+    :param resource_def: `dict` of configuration resource definition
+    :param datetime_: `str` of datetime parameter
+
+    :returns: datetime object(s)
+    """
+
+    # TODO: pass datetime to query as a `datetime` object
+    # we would need to ensure partial dates work accordingly
+    # as well as setting '..' values to `None` so that underlying
+    # providers can just assume a `datetime.datetime` object
+    #
+    # NOTE: needs testing when passing partials from API to backend
+
+    datetime_invalid = False
+
+    if (datetime_ is not None and 'temporal' in resource_def):
+        te = resource_def['temporal']
+
+        if te['begin'] is not None and te['begin'].tzinfo is None:
+            te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
+        if te['end'] is not None and te['end'].tzinfo is None:
+            te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+
+        if '/' in datetime_:  # envelope
+            LOGGER.debug('detected time range')
+            LOGGER.debug('Validating time windows')
+            datetime_begin, datetime_end = datetime_.split('/')
+            if datetime_begin != '..':
+                datetime_begin = dateparse(datetime_begin)
+                if datetime_begin.tzinfo is None:
+                    datetime_begin = datetime_begin.replace(
+                        tzinfo=pytz.UTC)
+
+            if datetime_end != '..':
+                datetime_end = dateparse(datetime_end)
+                if datetime_end.tzinfo is None:
+                    datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
+
+            if te['begin'] is not None and datetime_begin != '..':
+                if datetime_begin < te['begin']:
+                    datetime_invalid = True
+
+            if te['end'] is not None and datetime_end != '..':
+                if datetime_end > te['end']:
+                    datetime_invalid = True
+
+        else:  # time instant
+            datetime__ = dateparse(datetime_)
+            if datetime__ != '..':
+                if datetime__.tzinfo is None:
+                    datetime__ = datetime__.replace(tzinfo=pytz.UTC)
+            LOGGER.debug('detected time instant')
+            if te['begin'] is not None and datetime__ != '..':
+                if datetime__ < te['begin']:
+                    datetime_invalid = True
+            if te['end'] is not None and datetime__ != '..':
+                if datetime__ > te['end']:
+                    datetime_invalid = True
+
+    if datetime_invalid:
+        msg = 'datetime parameter out of range'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    return datetime_
