@@ -24,7 +24,7 @@
         <p>Items in this collection.</p>
       </div>
       <div class="col-sm-12 col-md-6">
-        <FORM action="{% for l in data['links'] if l.rel == 'self' %} {{ l['url'] }} {% endfor %}" method="GET">
+        <form action="{% for l in data['links'] if l.rel == 'self' %} {{ l['url'] }} {% endfor %}" method="GET">
           <select id="queryables" onchange="document.getElementById('filterfield').name=this.value;" style="height:40px;width:120px">
             <option>Select ...</option>
           </select>
@@ -33,7 +33,7 @@
           </select>
           <input type="text" id="filterfield" value="" />
           <input type="submit" value="Filter"/>
-        </FORM>
+        </form>
       </div>
     </div>
 
