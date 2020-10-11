@@ -1235,8 +1235,26 @@ class API:
 
         query_args['bbox'] = bbox
 
+        LOGGER.debug('Processing datetime parameter')
+
+        datetime_ = args.get('datetime', None)
+
+        try:
+            datetime_ = validate_datetime(
+                self.config['resources'][dataset]['extents'], datetime_)
+        except ValueError as err:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': str(err)
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        query_args['datetime'] = datetime_
+
         if 'f' in args:
             query_args['format_'] = format_ = args['f']
+
         if 'rangeSubset' in args:
             LOGGER.debug('Processing rangeSubset parameter')
 
