@@ -25,11 +25,8 @@
       </div>
       <div class="col-sm-12 col-md-6">
         <FORM action="{% for l in data['links'] if l.rel == 'self' %} {{ l['url'] }} {% endfor %}" method="GET">
-          <select onchange="document.getElementById('filterfield').name=this.value;" style="height:40px;width:120px">
+          <select id="queryables" onchange="document.getElementById('filterfield').name=this.value;" style="height:40px;width:120px">
             <option>Select ...</option>
-            {% for k, v in data['features'][0]['properties'].items() %}
-              <option value="{{ k }}">{{ k }}</option>
-            {% endfor %}
           </select>
           <select style="height:40px;width:60px">
             <option>=</option>
@@ -143,6 +140,43 @@
 
     map.addLayer(items);
     map.fitBounds(items.getBounds());
+
+    //retrieve available queryables for this collection
+    var xhr2 = new XMLHttpRequest();
+    xhr2.overrideMimeType("application/json");
+    xhr2.open("GET", "./queryables?f=json");
+    xhr2.onload = function() {
+      if (xhr2.status === 200) {
+        updateFilter(xhr2.responseText);
+      }
+    };
+    xhr2.send();
+      
+    function updateFilter(resp) {
+      var aKey;
+      //grab url params
+      params = (new URL(document.location)).searchParams;
+      params.forEach(function (v,k){  
+        //select the filter param, prefill the filter form
+        if (["f","startindex","limit","scalerank"].indexOf(k) == -1){
+          aKey=k;
+          document.getElementById("filterfield").value=v;
+          document.getElementById("filterfield").name=k;
+        } else {
+          //todo: append to url
+        }
+      });
+      var jsonResponse = JSON.parse(resp);
+      //add the queryables as filter options
+      jsonResponse.queryables.forEach(
+        function(q, index){
+          let opt = new Option(q.queryable,q.queryable,false,(q.queryable == aKey?true:false));
+          document.getElementById("queryables").add(opt);
+          //todo: if currentValue.type is string: display =like, if numeric/date: display =><
+        }
+      )        
+    };
+
     </script>
 {% endif %}
 {% endblock %}
