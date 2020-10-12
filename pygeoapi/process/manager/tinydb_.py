@@ -133,7 +133,9 @@ class TinyDBManager(BaseManager):
 
         :return `bool` of status result
         """
-        raise NotImplementedError()
+        self.connect()
+        removed_ids = self.db.remove(tinydb.where('identifier') == job_id)
+        return bool(removed_ids)
 
     def delete_jobs(self, max_jobs, older_than):
         """

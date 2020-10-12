@@ -890,3 +890,13 @@ def test_check_async():
     req_headers['async-execute'] = 'True'
     req_headers['sync-execute'] = 'False'
     assert check_async(args, req_headers) is True
+
+
+def test_delete_job(api_):
+    rsp_headers, code, response = api_.delete_job('does-not-exist', 'does-not-exist')
+    assert code == 404
+
+    # TODO: better way of inserting test data?
+    api_.manager.db.insert({'identifier': 'my-job'})
+    rsp_headers, code, response = api_.delete_job('hello-world', 'my-job')
+    assert code == 204

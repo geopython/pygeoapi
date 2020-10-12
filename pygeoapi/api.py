@@ -1660,6 +1660,16 @@ class API:
             return headers_, 200, response
         return headers_, 200, json.dumps(job_output, sort_keys=True, indent=4, default=json_serial)
 
+    def delete_job(self, process_id, job_id):
+        """
+        :param process_id: name of process
+        :param job_id: ID of job
+
+        :returns: tuple of headers, status code, content
+        """
+        success = self.manager.delete_job(process_id, job_id)
+        return {}, 204 if success else 404, ""
+
 def check_async(args, headers):
     """
     Check execution mode requested from arguments or headers. Returns
