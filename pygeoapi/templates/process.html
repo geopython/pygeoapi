@@ -141,7 +141,7 @@
                 <!-- TODO max/min for numbers -->
                 {% set typeMap = {'string': 'text', 'integer': 'number', 'float': 'number', 'boolean': 'checkbox', 'enum': 'radio'} %}
                 {% for input_ in data['inputs'] %}
-                  <label for={{input_.id}}>{{input_.title|striptags|truncate}}</label>
+                  <label for={{input_.id}}>{{input_.title|striptags|truncate}}{% if input_.get('minOccurs', 1) > 0 %}*{% endif %} </label>
                   {% if input_.input.literalDataDomain %}
                     {% set example = data.example.inputs|selectattr("id","equalto",input_.id)|first|default("none") %}
                     {% set rawType = input_.input.literalDataDomain.dataType %}
