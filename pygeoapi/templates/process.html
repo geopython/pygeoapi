@@ -161,8 +161,10 @@
                           placeholder="{{example.value|default('')}}"
                           value="{{defaultValue or null}}"
                         {% endif %}
-                        {% if formType == 'number' %}
+                        {% if rawType == 'integer' %}
                           step="1"
+                        {% elif rawType == 'float' %}
+                          step="0.1"
                         {% endif %}
                         {% if (formType == 'checkbox') and (defaultValue is sameas true) %}
                           checked="checked"
