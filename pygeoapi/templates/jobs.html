@@ -8,6 +8,9 @@
 / <a href="../{{ data.process.id }}">{{ data.process.title }}</a>
 / <a href="./jobs">Jobs</a>
 {% endblock %}
+{% block form_js %}
+<script src="{{ config['server']['url'] }}/static/js/deleteJob.js"></script>
+{% endblock %}
 {% block body %}
     <section id="jobs">
       <div class="row">
@@ -22,6 +25,7 @@
                 <th>Progress</th>
                 <th>Status</th>
                 <th>Message</th>
+                <th></th> <!-- actions -->
               </tr>
             </thead>
             <tbody>
@@ -43,10 +47,14 @@
                 <td>
                   {{ job.message }}
                 </td>
+                <td>
+                  <button type="button" onclick="deleteJob('{{config.server.url}}/processes/{{data.process.id}}/jobs/{{job.identifier}}')" title="Delete job" class="secondary shadowed">Delete job</button>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
+          <section class="callout-info" id="action-results"></section>
         </div>
       </div>
     </section>
