@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+import os
 
 import tinydb
 
@@ -133,7 +134,18 @@ class TinyDBManager(BaseManager):
 
         :return `bool` of status result
         """
-        raise NotImplementedError()
+        self.connect()
+
+        # delete result file if present
+        job_result = self.get_job_result(processid, job_id)
+        if job_result:
+            location = job_result.get('location', None)
+            if location:
+                os.remove(location)
+
+        removed_ids = self.db.remove(tinydb.where('identifier') == job_id)
+
+        return bool(removed_ids)
 
     def delete_jobs(self, max_jobs, older_than):
         """

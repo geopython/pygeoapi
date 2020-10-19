@@ -280,7 +280,7 @@ def describe_processes(process_id=None):
 
 
 @APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
-@APP.route('/processes/<process_id>/jobs/<job_id>', methods=['GET'])
+@APP.route('/processes/<process_id>/jobs/<job_id>', methods=['GET', 'DELETE'])
 def execute_process(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -299,10 +299,14 @@ def execute_process(process_id=None, job_id=None):
             request.method, request.headers, request.args, data, process_id,
             files=request.files)
     else:
-        # Return status of a specific job
-        headers, status_code, content = api_.retrieve_job_status(
-            request.headers, request.args, request.data, process_id, job_id
-        )
+        if request.method == 'DELETE':
+            # TODO: starlet api
+            headers, status_code, content = api_.delete_job(process_id, job_id)
+        else:
+            # Return status of a specific job
+            headers, status_code, content = api_.retrieve_job_status(
+                request.headers, request.args, request.data, process_id, job_id
+            )
 
     response = make_response(content, status_code)
 
