@@ -34,13 +34,14 @@ import os
 
 import click
 
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
 APP = Flask(__name__)
 APP.url_map.strict_slashes = False
+# TODO make configurable
 APP.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 * 1024 # 1 GB max file upload
 APP.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', '/tmp')
 
@@ -51,6 +52,15 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+STATIC_FOLDER = 'static'
+if 'templates' in CONFIG['server']:
+    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
+
+APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+APP.url_map.strict_slashes = False
+
+BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
@@ -91,14 +101,15 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-@APP.route('/')
+@BLUEPRINT.route('/')
 def landing_page():
     """
     OGC API landing page endpoint
 
     :returns: HTTP response
     """
-    headers, status_code, content = api_.root(request.headers, request.args)
+    headers, status_code, content = api_.landing_page(
+        request.headers, request.args)
 
     response = make_response(content, status_code)
 
@@ -108,7 +119,7 @@ def landing_page():
     return response
 
 
-@APP.route('/openapi')
+@BLUEPRINT.route('/openapi')
 def openapi():
     """
     OpenAPI endpoint
@@ -129,7 +140,7 @@ def openapi():
     return response
 
 
-@APP.route('/conformance')
+@BLUEPRINT.route('/conformance')
 def conformance():
     """
     OGC API conformance endpoint
@@ -148,9 +159,9 @@ def conformance():
     return response
 
 
-@APP.route('/collections')
-@APP.route('/collections/<collection_id>')
-def describe_collections(collection_id=None):
+@BLUEPRINT.route('/collections')
+@BLUEPRINT.route('/collections/<collection_id>')
+def collections(collection_id=None):
     """
     OGC API collections endpoint
 
@@ -170,8 +181,8 @@ def describe_collections(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/queryables')
-def get_collection_queryables(collection_id=None):
+@BLUEPRINT.route('/collections/<collection_id>/queryables')
+def collection_queryables(collection_id=None):
     """
     OGC API collections querybles endpoint
 
@@ -191,9 +202,9 @@ def get_collection_queryables(collection_id=None):
     return response
 
 
-@APP.route('/collections/<collection_id>/items')
-@APP.route('/collections/<collection_id>/items/<item_id>')
-def dataset(collection_id, item_id=None):
+@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
+def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
 
@@ -218,16 +229,18 @@ def dataset(collection_id, item_id=None):
     return response
 
 
-@APP.route('/stac')
-def stac_catalog_root():
+@BLUEPRINT.route('/collections/<collection_id>/coverage')
+def collection_coverage(collection_id):
     """
-    STAC root endpoint
+    OGC API - Coverages coverage endpoint
+
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.get_stac_root(
-        request.headers, request.args)
+    headers, status_code, content = api_.get_collection_coverage(
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -237,18 +250,18 @@ def stac_catalog_root():
     return response
 
 
-@APP.route('/stac/<path:path>')
-def stac_catalog_path(path):
+@BLUEPRINT.route('/collections/<collection_id>/coverage/domainset')
+def collection_coverage_domainset(collection_id):
     """
-    STAC path endpoint
+    OGC API - Coverages coverage domainset endpoint
 
-    :param path: path
+    :param collection_id: collection identifier
 
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.get_stac_path(
-        request.headers, request.args, path)
+    headers, status_code, content = api_.get_collection_coverage_domainset(
+        request.headers, request.args, collection_id)
 
     response = make_response(content, status_code)
 
@@ -258,9 +271,102 @@ def stac_catalog_path(path):
     return response
 
 
-@APP.route('/processes', methods=['GET'])
-@APP.route('/processes/<process_id>')
-def describe_processes(process_id=None):
+@BLUEPRINT.route('/collections/<collection_id>/coverage/rangetype')
+def collection_coverage_rangetype(collection_id):
+    """
+    OGC API - Coverages coverage rangetype endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_coverage_rangetype(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles')
+def get_collection_tiles(collection_id=None):
+    """
+    OGC open api collections tiles access point
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.args, collection_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
+def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+    """
+    OGC open api collection tiles service metadata
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_metadata(
+        request.headers, request.args, collection_id, tileMatrixSetId)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/collections/<collection_id>/tiles/\
+<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
+                              tileMatrix=None, tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service data
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tileMatrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_collection_tiles_data(
+        request.headers, request.args, collection_id,
+        tileMatrixSetId, tileMatrix, tileRow, tileCol)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+
+@BLUEPRINT.route('/processes', methods=['GET'])
+@BLUEPRINT.route('/processes/<process_id>')
+def processes(process_id=None):
     """
     OGC API - Processes description endpoint
 
@@ -279,9 +385,9 @@ def describe_processes(process_id=None):
     return response
 
 
-@APP.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
-@APP.route('/processes/<process_id>/jobs/<job_id>', methods=['GET', 'DELETE'])
-def execute_process(process_id=None, job_id=None):
+@BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>', methods=['GET', 'DELETE'])
+def process_jobs(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
@@ -305,7 +411,7 @@ def execute_process(process_id=None, job_id=None):
         else:
             # Return status of a specific job
             headers, status_code, content = api_.retrieve_job_status(
-                request.headers, request.args, request.data, process_id, job_id
+                request.headers, request.args, process_id, job_id
             )
 
     response = make_response(content, status_code)
@@ -346,6 +452,49 @@ def download_file(process_id, job_id, filename):
     # TODO pass 'mimetype' kwarg
     dir = os.path.join(APP.config['UPLOAD_FOLDER'], process_id, job_id, 'output')
     return send_from_directory(dir, filename, as_attachment=True, conditional=True)
+
+@BLUEPRINT.route('/stac')
+def stac_catalog_root():
+    """
+    STAC root endpoint
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_root(
+        request.headers, request.args)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@BLUEPRINT.route('/stac/<path:path>')
+def stac_catalog_path(path):
+    """
+    STAC path endpoint
+
+    :param path: path
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_stac_path(
+        request.headers, request.args, path)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+APP.register_blueprint(BLUEPRINT)
+
 
 @click.command()
 @click.pass_context

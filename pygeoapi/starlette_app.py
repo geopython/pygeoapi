@@ -3,7 +3,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
 #
-# Copyright (c) 2019 Francesco Bartoli
+# Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -43,10 +43,6 @@ import uvicorn
 from pygeoapi.api import API
 from pygeoapi.util import yaml_load
 
-app = Starlette()
-app.mount('/static', StaticFiles(
-    directory='{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
-                                  os.sep)))
 CONFIG = None
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
@@ -54,6 +50,14 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+STATIC_DIR = '{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
+                                 os.sep)
+if 'templates' in CONFIG['server']:
+    STATIC_DIR = CONFIG['server']['templates'].get('static', STATIC_DIR)
+
+app = Starlette()
+app.mount('/static', StaticFiles(directory=STATIC_DIR))
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
@@ -79,7 +83,7 @@ async def landing_page(request: Request):
     :returns: Starlette HTTP Response
     """
 
-    headers, status_code, content = api_.root(
+    headers, status_code, content = api_.landing_page(
         request.headers, request.query_params)
 
     response = Response(content=content, status_code=status_code)
@@ -134,7 +138,7 @@ async def conformance(request: Request):
 @app.route('/collections/')
 @app.route('/collections/{collection_id}')
 @app.route('/collections/{collection_id}/')
-async def describe_collections(request: Request, collection_id=None):
+async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
 
@@ -157,7 +161,7 @@ async def describe_collections(request: Request, collection_id=None):
 
 @app.route('/collections/{collection_id}/queryables')
 @app.route('/collections/{collection_id}/queryables/')
-async def get_collection_queryables(request: Request, collection_id=None):
+async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
 
@@ -178,11 +182,74 @@ async def get_collection_queryables(request: Request, collection_id=None):
     return response
 
 
+@app.route('/collections/{name}/tiles')
+@app.route('/collections/{name}/tiles/')
+async def get_collection_tiles(request: Request, name=None):
+    """
+    OGC open api collections tiles access point
+
+    :param name: identifier of collection name
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    headers, status_code, content = api_.get_collection_tiles(
+        request.headers, request.query_params, name)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
+@app.route('/collections/{name}/tiles/\
+    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
+def get_collection_items_tiles(request: Request, name=None,
+                               tileMatrixSetId=None, tile_matrix=None,
+                               tileRow=None, tileCol=None):
+    """
+    OGC open api collection tiles service
+
+    :param name: identifier of collection name
+    :param tileMatrixSetId: identifier of tile matrix set
+    :param tile_matrix: identifier of {z} matrix index
+    :param tileRow: identifier of {y} matrix index
+    :param tileCol: identifier of {x} matrix index
+
+    :returns: HTTP response
+    """
+
+    if 'name' in request.path_params:
+        name = request.path_params['name']
+    if 'tileMatrixSetId' in request.path_params:
+        tileMatrixSetId = request.path_params['tileMatrixSetId']
+    if 'tile_matrix' in request.path_params:
+        tile_matrix = request.path_params['tile_matrix']
+    if 'tileRow' in request.path_params:
+        tileRow = request.path_params['tileRow']
+    if 'tileCol' in request.path_params:
+        tileCol = request.path_params['tileCol']
+    headers, status_code, content = api_.get_collection_items_tiles(
+        request.headers, request.query_params, name, tileMatrixSetId,
+        tile_matrix, tileRow, tileCol)
+
+    response = Response(content=content, status_code=status_code)
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @app.route('/collections/{collection_id}/items')
 @app.route('/collections/{collection_id}/items/')
 @app.route('/collections/{collection_id}/items/{item_id}')
 @app.route('/collections/{collection_id}/items/{item_id}/')
-async def dataset(request: Request, collection_id=None, item_id=None):
+async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
 
@@ -203,6 +270,126 @@ async def dataset(request: Request, collection_id=None, item_id=None):
     else:
         headers, status_code, content = api_.get_collection_item(
             request.headers, request.query_params, collection_id, item_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{collection_id}/coverage')
+def collection_coverage(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    headers, status_code, content = api_.get_collection_coverage(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{collection_id}/coverage/domainset')
+def collection_coverage_domainset(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage domainset endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    headers, status_code, content = api_.get_collection_coverage_domainset(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{collection_id}/coverage/rangetype')
+def collection_coverage_rangetype(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage rangetype endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    headers, status_code, content = api_.get_collection_coverage_rangetype(
+        request.headers, request.query_params, collection_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes')
+@app.route('/processes/')
+@app.route('/processes/{process_id}')
+@app.route('/processes/{process_id}/')
+async def processes(request: Request, process_id=None):
+    """
+    OGC API - Processes description endpoint
+
+    :param process_id: identifier of process to describe
+
+    :returns: Starlette HTTP Response
+    """
+    headers, status_code, content = api_.describe_processes(
+        request.headers, request.query_params, process_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+async def process_jobs(request: Request, process_id=None):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param process_id: identifier of process to execute
+
+    :returns: Starlette HTTP Response
+    """
+
+    if request.method == 'GET':
+        headers, status_code, content = ({}, 200, "[]")
+    elif request.method == 'POST':
+        headers, status_code, content = api_.execute_process(
+            request.headers, request.query_params, request.data, process_id)
 
     response = Response(content=content, status_code=status_code)
 
@@ -245,54 +432,6 @@ async def stac_catalog_path(request: Request):
 
     headers, status_code, content = api_.get_stac_path(
         request.headers, request.query_params, path)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes')
-@app.route('/processes/')
-@app.route('/processes/{process_id}')
-@app.route('/processes/{process_id}/')
-async def describe_processes(request: Request, process_id=None):
-    """
-    OGC API - Processes description endpoint
-
-    :param process_id: identifier of process to describe
-
-    :returns: Starlette HTTP Response
-    """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.query_params, process_id)
-
-    response = Response(content=content, status_code=status_code)
-
-    if headers:
-        response.headers.update(headers)
-
-    return response
-
-
-@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
-@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
-async def execute_process(request: Request, process_id=None):
-    """
-    OGC API - Processes jobs endpoint
-
-    :param process_id: identifier of process to execute
-
-    :returns: Starlette HTTP Response
-    """
-
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.query_params, request.data, process_id)
 
     response = Response(content=content, status_code=status_code)
 

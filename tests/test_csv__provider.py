@@ -27,33 +27,31 @@
 #
 # =================================================================
 
+import os
+
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csv_ import CSVProvider
 
 
-path = '/tmp/pygeoapi-test.csv'
+def get_test_file_path(filename):
+    """helper function to open test file safely"""
+
+    if os.path.isfile(filename):
+        return filename
+    else:
+        return 'tests/{}'.format(filename)
 
 
-@pytest.fixture()
-def fixture():
-    data = """id,stn_id,datetime,value,lat,long
-371,35,"2001-10-30T14:24:55Z",89.9,45,-75
-377,35,"2002-10-30T18:31:38Z",93.9,45,-75
-238,2147,"2007-10-30T08:57:29Z",103.5,43,-79
-297,2147,"2003-10-30T07:37:29Z",93.5,43,-79
-964,604,"2000-10-30T18:24:39Z",99.9,49,-122
-"""
-    with open(path, 'w') as fh:
-        fh.write(data)
-    return path
+path = get_test_file_path('data/obs.csv')
 
 
 @pytest.fixture()
 def config():
     return {
         'name': 'CSV',
+        'type': 'feature',
         'data': path,
         'id_field': 'id',
         'geometry': {
@@ -63,7 +61,7 @@ def config():
     }
 
 
-def test_query(fixture, config):
+def test_query(config):
     p = CSVProvider(config)
 
     fields = p.get_fields()
@@ -97,7 +95,7 @@ def test_query(fixture, config):
     assert len(results['features'][0]['properties']) == 2
 
 
-def test_get(fixture, config):
+def test_get(config):
     p = CSVProvider(config)
 
     result = p.get('964')
@@ -105,7 +103,7 @@ def test_get(fixture, config):
     assert result['properties']['value'] == '99.9'
 
 
-def test_get_not_existing_item_raise_exception(fixture, config):
+def test_get_not_existing_item_raise_exception(config):
     """Testing query for a not existing object"""
     p = CSVProvider(config)
     with pytest.raises(ProviderItemNotFoundError):

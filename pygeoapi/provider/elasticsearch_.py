@@ -28,6 +28,7 @@
 # =================================================================
 
 from collections import OrderedDict
+import json
 import logging
 
 from elasticsearch import Elasticsearch, exceptions, helpers
@@ -49,7 +50,7 @@ class ElasticsearchProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.providers.elasticsearch_.ElasticsearchProvider
+        :returns: pygeoapi.provider.elasticsearch_.ElasticsearchProvider
         """
 
         BaseProvider.__init__(self, provider_def)
@@ -190,7 +191,7 @@ class ElasticsearchProvider(BaseProvider):
                 filter_.append({'match': {time_field: datetime}})
 
             LOGGER.debug(filter_)
-            query['query']['bool']['filter'].append(filter_)
+            query['query']['bool']['filter'].append(*filter_)
 
         if properties:
             LOGGER.debug('processing properties')
@@ -238,6 +239,7 @@ class ElasticsearchProvider(BaseProvider):
             query['_source']['includes'].append('geometry')
         try:
             LOGGER.debug('querying Elasticsearch')
+            LOGGER.debug(json.dumps(query, indent=4))
 
             LOGGER.debug('Setting ES paging zero-based')
             if startindex > 0:

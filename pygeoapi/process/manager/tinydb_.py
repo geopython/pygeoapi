@@ -27,12 +27,15 @@
 #
 # =================================================================
 
+import io
+import json
 import logging
 import os
 
 import tinydb
 
 from pygeoapi.process.manager.base import BaseManager
+from pygeoapi.util import JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -134,8 +137,6 @@ class TinyDBManager(BaseManager):
 
         :return `bool` of status result
         """
-        self.connect()
-
         # delete result file if present
         job_result = self.get_job_result(processid, job_id)
         if job_result:
@@ -143,9 +144,11 @@ class TinyDBManager(BaseManager):
             if location:
                 os.remove(location)
 
-        removed_ids = self.db.remove(tinydb.where('identifier') == job_id)
+        self.connect()
+        removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
+        self.db.close()
 
-        return bool(removed_ids)
+        return removed
 
     def delete_jobs(self, max_jobs, older_than):
         """
@@ -165,9 +168,10 @@ class TinyDBManager(BaseManager):
 
         self.connect()
         query = tinydb.Query()
-        r = self.db.search((query.processid == processid) & (query.identifier == job_id))
-
-        return r[0] if r else None
+        result = self.db.search((query.processid == processid) & (query.identifier == job_id))
+        result = result[0] if result else None
+        self.db.close()
+        return result
 
     def get_job_output(self, processid, job_id):
         """
@@ -191,8 +195,8 @@ class TinyDBManager(BaseManager):
             # Job data was not written for some reason
             # TODO log/raise exception?
             return job_status, {}
-        with io.open(location, 'r') as fh:
-            result = json.load(fh)
+        with io.open(location, 'r') as filehandler:
+            result = json.load(filehandler)
         return job_status, result
 
     def __repr__(self):

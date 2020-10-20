@@ -54,9 +54,11 @@ The 'View' section provides the default to start browsing the data.
 
 The 'Queryables' section provides a link to the dataset's properties.
 
+Vector data
+-----------
 
 Collection queryables
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 http://localhost:5000/collections/obs/queryables
 
@@ -64,7 +66,7 @@ The queryables endpoint provides a list of queryable properties and their associ
 
 
 Collection items
-----------------
+^^^^^^^^^^^^^^^^
 
 http://localhost:5000/collections/obs/items
 
@@ -76,13 +78,65 @@ Let's inspect the feature close to `Toronto, Ontario, Canada`_.
 
 
 Collection item
----------------
+^^^^^^^^^^^^^^^
 
 http://localhost:5000/collections/obs/items/297
 
 This page provides an overview of the feature and its full set of properties, along with an interactive
 map.
 
+.. seealso::
+   :ref:`ogcapi-features` for more OGC API - Features request examples.
+
+Raster data
+-----------
+
+Collection coverage domainset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This page provides information on a collection coverage spatial properties and axis information.
+
+http://localhost:5000/collections/gdps-temperature/coverage/domainset
+
+Collection coverage rangetype
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This page provides information on a collection coverage rangetype (bands) information.
+
+http://localhost:5000/collections/gdps-temperature/coverage/rangetype
+
+Collection coverage data
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+This page provides a coverage in CoverageJSON format.
+
+http://localhost:5000/collections/gdps-temperature/coverage
+
+.. seealso::
+   :ref:`ogcapi-coverages` for more OGC API - Coverages request exampless.
+
+Tiles
+-----
+
+A given collection or any data type can additionally be made available as tiles (map tiles,
+vector tiles, etc.).  The following page provides an overview of a collection's tiles
+capabilities (tile matrix sets, URI templates, etc.)
+
+http://localhost:5000/collections/lakes/tiles
+
+URI templates
+^^^^^^^^^^^^^
+
+From the abovementioned page, we can find the URI template:
+
+`http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt <http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt>`_
+
+Generic metadata
+^^^^^^^^^^^^^^^^
+
+This page provides freeform tiles metadata.
+
+http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
 
 SpatioTemporal Assets
 ---------------------
@@ -94,6 +148,8 @@ click to browse directory contentsor inspect files.  Clicking on a file will att
 file's properties/metadata, as well as an interactive map with a footprint of the spatial extent of
 the file.
 
+.. seealso::
+   :ref:`stac` for more STAC request examples.
 
 Processes
 ---------
@@ -103,6 +159,8 @@ The processes page provides a list of process integrated onto the server, along 
 .. todo::
    Expand with more info once OAProc HTML is better flushed out.
 
+.. seealso::
+   :ref:`ogcapi-processes` for more OGC API - Processes request examples.
 
 API Documentation
 -----------------

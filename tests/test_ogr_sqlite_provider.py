@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 def config_sqlite_4326():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'SQLite',
             'source':
@@ -112,7 +113,6 @@ def test_query_bbox_hits_4326(config_sqlite_4326):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 

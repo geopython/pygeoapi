@@ -39,6 +39,7 @@ THISDIR = os.path.dirname(os.path.realpath(__file__))
 def config():
     return {
         'name': 'FileSystem',
+        'type': 'stac',
         'data': os.path.join(THISDIR, 'data'),
         'file_types': ['.gpkg']
     }
@@ -53,7 +54,7 @@ def test_query(config):
 
     r = p.get_data_path(baseurl, urlpath, dirpath)
 
-    assert len(r['links']) == 12
+    assert len(r['links']) == 14
 
     r = p.get_data_path(baseurl, urlpath, '/poi_portugal')
     assert r['geometry']['type'] == 'Polygon'

@@ -26,7 +26,7 @@
           <div>
             <meta itemprop="encodingFormat" content="text/html" />
             <a title="Display Queryables" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
-              Display Queryables of "{{ data['title'] }}</a>"</div>
+              Display Queryables of "{{ data['title'] }}"</a></div>
         </li>
       </ul>
       <h3>View</h3>
@@ -35,9 +35,22 @@
           <div itemprop="distribution" itemscope itemtype="https://schema.org/DataDownload">
             <meta itemprop="encodingFormat" content="text/html" />
             <a title="Browse Items" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
-              Browse through the items of "{{ data['title'] }}</a>"</div>
+              Browse through the items of "{{ data['title'] }}"</a></div>
         </li>
       </ul>
+      {% for provider in config['resources'][data['id']]['providers'] %}
+        {% if 'tile' in provider['type'] %}
+      <h3>Tiles</h3>
+      <ul>
+        <li>
+          <div>
+            <meta itemprop="encodingFormat" content="text/html" />
+            <a title="Display Tiles" itemprop="contentURL" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">Display Tiles of "{{ data['title'] }}"</a>
+          </div>
+        </li>
+      </ul>
+        {% endif %}
+      {% endfor %}
       {% endif  %}
       <h3>Links</h3>
       <ul>

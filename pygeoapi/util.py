@@ -34,11 +34,14 @@ from datetime import date, datetime, time
 import dateutil.parser
 from decimal import Decimal
 from enum import Enum
+
+import io
 import json
 import logging
 import mimetypes
 import os
 import re
+from urllib.request import urlopen
 from urllib.parse import urlparse
 from werkzeug.utils import secure_filename
 
@@ -46,6 +49,7 @@ from jinja2 import Environment, FileSystemLoader
 import yaml
 
 from pygeoapi import __version__, ENV_TZ
+from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -147,16 +151,23 @@ def str2bool(value):
     return value2
 
 
-def to_json(dict_):
+def to_json(dict_, pretty=False):
     """
     Serialize dict to json
 
     :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
 
     :returns: JSON string representation
     """
 
-    return json.dumps(dict_, default=json_serial)
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, default=json_serial,
+                      indent=indent)
 
 def format_datetime(value, _format='%a, %x %X %Z'):
     """
@@ -250,7 +261,13 @@ def render_j2_template(config, template, data):
     :returns: string of rendered template
     """
 
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    try:
+        templates_path = config['server']['templates']['path']
+        env = Environment(loader=FileSystemLoader(templates_path))
+        LOGGER.debug('using custom templates: {}'.format(templates_path))
+    except (KeyError, TypeError):
+        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
     env.filters['datetime'] = format_datetime
@@ -321,6 +338,21 @@ def filter_dict_by_key_value(dict_, key, value):
 
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
+
+def filter_providers_by_type(providers, type):
+    """
+    helper function to filter a list of providers by type
+
+    :param providers: ``list``
+    :param type: str
+
+    :returns: filtered ``dict`` provider
+    """
+
+    providers_ = {provider['type']: provider for provider in providers}
+    return providers_.get(type, None)
+
+
 def get_provider_by_type(providers, provider_type):
     """
     helper function to load a provider by a provider type
@@ -335,8 +367,8 @@ def get_provider_by_type(providers, provider_type):
     try:
         p = (next(d for i, d in enumerate(providers)
                   if d['type'] == provider_type))
-    except StopIteration:
-        raise RuntimeError('Cannot find provider type')
+    except (RuntimeError, StopIteration):
+        raise ProviderTypeError('Invalid provider type requested')
 
     return p
 
@@ -410,3 +442,20 @@ class JobStatus(Enum):
 
     # Alternative namings used in existing codebase
     finished = successful # TODO should this status be used?
+
+def read_data(path):
+    """
+    helper function to read data (file or networrk)
+    """
+
+    LOGGER.debug('Attempting to read {}'.format(path))
+    scheme = urlparse(path).scheme
+
+    if scheme in ['', 'file']:
+        LOGGER.debug('local file on disk')
+        with io.open(path, 'rb') as fh:
+            return fh.read()
+    else:
+        LOGGER.debug('network file')
+        with urlopen(path) as r:
+            return r.read()

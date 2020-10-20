@@ -37,6 +37,7 @@ from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
 def config():
     return {
         'name': 'Elasticsearch',
+        'type': 'feature',
         'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
         'id_field': 'geonameid'
     }

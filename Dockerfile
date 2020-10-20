@@ -62,16 +62,15 @@ ARG ADD_PIP_PACKAGES=""
 # ENV settings
 ENV TZ=${TZ} \
 	DEBIAN_FRONTEND="noninteractive" \
-	# DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils git" \
-	# DEB_PACKAGES="locales locales-all libgdal26 python3-gdal libsqlite3-mod-spatialite curl python3-distutils libpq-dev ${ADD_DEB_PACKAGES}" \
-	# PIP_PACKAGES="gunicorn==19.9.0 gevent==1.4.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	LANG=${LANG} \
 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils curl git unzip" \
 	DEB_PACKAGES="locales locales-all libgdal27 python3-gdal libsqlite3-mod-spatialite python3-distutils ${ADD_DEB_PACKAGES}" \
-	PIP_PACKAGES="gunicorn==20.0.4 gevent==1.5a4 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	PIP_PACKAGES="greenlet==0.4.16 gunicorn==20.0.4 gevent==1.5.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
-ENV LANG=${LANG}
-
-ADD . /pygeoapi
+RUN mkdir -p /pygeoapi/pygeoapi
+# Add files required for pip/setuptools
+ADD requirements*.txt setup.py README.md /pygeoapi/
+ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
 
 # Run all installs
 RUN \
@@ -105,6 +104,8 @@ RUN \
 	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
 	&& apt autoremove -y  \
 	&& rm -rf /var/lib/apt/lists/*
+
+# ADD . /pygeoapi
 
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh

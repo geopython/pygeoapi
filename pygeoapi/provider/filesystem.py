@@ -140,7 +140,12 @@ class FileSystemProvider(BaseProvider):
                 return fh.read()
 
         elif resource_type == 'directory':
-            for dc in os.listdir(data_path):
+            dirpath2 = os.listdir(data_path)
+            dirpath2.sort()
+            for dc in dirpath2:
+                # @TODO: handle a generic directory for tiles
+                if dc == "tiles":
+                    continue
                 fullpath = os.path.join(data_path, dc)
                 if os.path.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)

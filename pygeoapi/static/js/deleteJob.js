@@ -52,6 +52,17 @@ function deleteJob(url) {
         xhr.onreadystatechange = null;
       }
       _showToast('action-results', 'Job deleted')
+      if (!location.pathname.endsWith('jobs')) {
+        // Redirect away from deleted job status UI
+        setTimeout(function(){
+          window.location = location.protocol + '//' + location.hostname + (location.pathname.split('/').slice(0, -1).join('/'));
+        }, 2000);
+      } else {
+        // Refresh
+        setTimeout(function() {
+          location.reload();
+        }, 1000);
+      }
     } else if (xhr.readyState == XMLHttpRequest.DONE && (xhr.status >= 400)) {
       _showToast('action-results', 'Error deleting job')
     }

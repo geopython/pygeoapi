@@ -11,15 +11,21 @@ as a baseline and modify accordingly.
 Providers
 ---------
 
-The following feature providers are supported:
+pygeoapi core feature providers are listed below, along with a matrix of supported query
+parameters.
 
-- CSV
-- GeoJSON
-- Elasticsearch
-- OGR
-- MongoDB
-- PostgreSQL
-- SQLiteGPKG
+.. csv-table::
+   :header: Provider, properties, resulttype, bbox, datetime, sortby
+   :align: left
+
+   CSV,✔️ ,results/hits,❌,❌,❌
+   Elasticsearch,✔️ ,results/hits,✔️ ,✔️ ,✔️ 
+   GeoJSON,✔️ ,results/hits,❌,❌,❌
+   MongoDB,✔️ ,results,✔️ ,✔️ ,✔️ 
+   OGR,✔️ ,results/hits,✔️ ,❌,❌
+   PostgreSQL,✔️ ,results/hits,✔️ ,❌,❌
+   SQLiteGPKG,✔️ ,results/hits,✔️ ,❌,❌
+
 
 Below are specific connection examples based on supported providers.
 
@@ -156,6 +162,8 @@ Data access examples
   - http://localhost:5000/collections
 - overview of dataset
   - http://localhost:5000/collections/foo
+- queryables
+  - http://localhost:5000/collections/foo/queryables
 - browse features
   - http://localhost:5000/collections/foo/items
 - paging

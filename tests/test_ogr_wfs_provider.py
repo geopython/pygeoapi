@@ -2,9 +2,11 @@
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -44,13 +46,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def config_MapServer_WFS():
+def config_MapServer_WFS_cities():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
-            'source': 'WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?',
-            'source_srs': 'EPSG:28992',
+            'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
+            'source_srs': 'EPSG:4326',
             'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
@@ -59,7 +62,6 @@ def config_MapServer_WFS():
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
-
                 'GDAL_CACHEMAX': '64',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
@@ -67,21 +69,20 @@ def config_MapServer_WFS():
             },
         },
         'id_field': 'gml_id',
-        'layer': 'rdinfo:stations'
+        'layer': 'cities'
     }
 
 
 @pytest.fixture()
-def config_GeoServer_WFS():
+def config_MapServer_WFS_continents():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
-            'source':
-                'WFS:https://geodata.nationaalgeoregister.nl'
-                + '/inspireadressen/wfs?',
-            'source_srs': 'EPSG:28992',
-            'target_srs': 'EPSG:28992',
+            'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
+            'source_srs': 'EPSG:4326',
+            'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -89,7 +90,6 @@ def config_GeoServer_WFS():
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
-
                 'GDAL_CACHEMAX': '64',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
@@ -97,7 +97,7 @@ def config_GeoServer_WFS():
             },
         },
         'id_field': 'gml_id',
-        'layer': 'inspireadressen:inspireadressen'
+        'layer': 'continents'
     }
 
 
@@ -105,6 +105,7 @@ def config_GeoServer_WFS():
 def config_geosol_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -134,6 +135,7 @@ def config_geosol_gs_WFS():
 def config_geonode_gs_WFS():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'WFS',
             'source':
@@ -166,22 +168,22 @@ def config_geonode_gs_WFS():
     }
 
 
-def test_get_fields_gs(config_GeoServer_WFS):
+def test_get_fields_gs(config_MapServer_WFS_continents):
     """Testing field types"""
 
-    p = OGRProvider(config_GeoServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_continents)
     results = p.get_fields()
-    assert results['straatnaam'] == 'string'
-    assert results['huisnummer'] == 'integer'
+    assert results['NA2DESC'] == 'string'
+    assert results['NA3DESC'] == 'string'
 
 
-def test_get_ms(config_MapServer_WFS):
+def test_get_ms(config_MapServer_WFS_cities):
     """Testing query for a specific object"""
 
-    p = OGRProvider(config_MapServer_WFS)
-    result = p.get('stations.4403')
-    assert result['id'] == 'stations.4403'
-    assert '01' in result['properties']['station']
+    p = OGRProvider(config_MapServer_WFS_cities)
+    result = p.get('cities.8338')
+    assert result['id'] == 'cities.8338'
+    assert 'Buenos Aires' in result['properties']['NAME']
 
 
 def test_get_geosol_gs(config_geosol_gs_WFS):
@@ -193,13 +195,14 @@ def test_get_geosol_gs(config_geosol_gs_WFS):
     assert 'Centro storico di San Gimignano' in result['properties']['sito']
 
 
-def test_get_gs(config_GeoServer_WFS):
+def test_get_gs(config_MapServer_WFS_continents):
     """Testing query for a specific object"""
 
-    p = OGRProvider(config_GeoServer_WFS)
-    result = p.get('inspireadressen.1747652')
-    assert result['id'] == 'inspireadressen.1747652'
-    assert 'Mosselsepad' in result['properties']['straatnaam']
+    p = OGRProvider(config_MapServer_WFS_continents)
+    result = p.get('continents.23774')
+    assert result['id'] == 'continents.23774'
+    assert result['properties']['NA2DESC'] == 'Canada'
+    assert result['properties']['NA3DESC'] == 'North America'
 
 
 def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
@@ -234,27 +237,27 @@ def test_get_gs_with_geojson_output_too_complex_raise_exception(
 
 
 def test_get_gs_not_existing_feature_raise_exception(
-    config_GeoServer_WFS
+    config_MapServer_WFS_continents
 ):
     """Testing query for a not existing object"""
-    p = OGRProvider(config_GeoServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_continents)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
 
 
 def test_get_ms_not_existing_feature_raise_exception(
-    config_MapServer_WFS
+    config_MapServer_WFS_cities
 ):
     """Testing query for a not existing object"""
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
 
 
-def test_query_hits_ms(config_MapServer_WFS):
+def test_query_hits_ms(config_MapServer_WFS_cities):
     """Testing query on entire collection for hits"""
 
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(resulttype='hits')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
@@ -278,10 +281,10 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
 
 
 # OK, but backend WFS takes too much time....
-# def test_query_hits_gs(config_GeoServer_WFS):
+# def test_query_hits_gs(config_MapServer_WFS_continents):
 #     """Testing query on entire collection for hits"""
 #
-#     p = OGRProvider(config_GeoServer_WFS)
+#     p = OGRProvider(config_MapServer_WFS_continents)
 #     feature_collection = p.query(resulttype='hits')
 #     assert feature_collection.get('type', None) == 'FeatureCollection'
 #     features = feature_collection.get('features', None)
@@ -291,39 +294,33 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
 #     assert hits > 8000000
 
 
-def test_query_bbox_hits_ms(config_MapServer_WFS):
+def test_query_bbox_hits_ms(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_MapServer_WFS)
-    # feature_collection = p.query(
-    # bbox=[120000, 480000, 124000, 487000], resulttype='hits')
+    p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(
-        bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='hits')
+        bbox=[-47, -24, -45, -22], resulttype='hits')
+
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 
-def test_query_bbox_hits_gs(config_GeoServer_WFS):
+def test_query_bbox_hits_gs(config_MapServer_WFS_continents):
     """Testing query for a valid JSON object with geometry, single address"""
 
-    p = OGRProvider(config_GeoServer_WFS)
-    feature_collection = p.query(
-        bbox=(180800, 452500, 181200, 452700), resulttype='hits')
-    # feature_collection = p.query(bbox=(
-    # 5.763409, 52.060197, 5.769256, 52.061976), resulttype='hits')
+    p = OGRProvider(config_MapServer_WFS_continents)
+    feature_collection = p.query(bbox=[-61, 46, -60, 47], resulttype='hits')
 
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
-    assert hits == 1
+    assert hits == 3
 
 
 def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
@@ -340,14 +337,13 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits == 1
 
 
-def test_query_bbox_ms(config_MapServer_WFS):
+def test_query_bbox_ms(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
     # feature_collection = p.query(
     # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
@@ -364,17 +360,14 @@ def test_query_bbox_ms(config_MapServer_WFS):
     assert geometry is not None
 
 
-def test_query_bbox_gs(config_GeoServer_WFS):
+def test_query_bbox_gs(config_MapServer_WFS_continents):
     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_GeoServer_WFS)
-    feature_collection = p.query(
-        bbox=[180800, 452500, 181200, 452700], resulttype='results')
-    # feature_collection = p.query(
-    # bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
+    p = OGRProvider(config_MapServer_WFS_continents)
+    feature_collection = p.query(bbox=(5, 52, 6, 53), resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
-    assert len(features) == 1
+    assert len(features) == 4
     hits = feature_collection.get('numberMatched', None)
     assert hits is None
     feature = features[0]
@@ -382,7 +375,8 @@ def test_query_bbox_gs(config_GeoServer_WFS):
     assert properties is not None
     geometry = feature.get('geometry', None)
     assert geometry is not None
-    assert properties['straatnaam'] == 'Planken Wambuisweg'
+    assert properties['NA2DESC'] == 'Netherlands'
+    assert properties['NA3DESC'] == 'Europe'
 
 
 def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
@@ -407,10 +401,10 @@ def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
     assert geometry is not None
 
 
-def test_query_with_limit_ms(config_MapServer_WFS):
+def test_query_with_limit_ms(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(limit=2, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
@@ -424,10 +418,10 @@ def test_query_with_limit_ms(config_MapServer_WFS):
     assert geometry is not None
 
 
-def test_query_with_startindex(config_MapServer_WFS):
+def test_query_with_startindex(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(startindex=20, limit=5, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
@@ -437,63 +431,48 @@ def test_query_with_startindex(config_MapServer_WFS):
     feature = features[0]
     properties = feature.get('properties', None)
     assert properties is not None
-    assert feature['id'] == 'stations.21'
-    assert '101696.68' in properties['xrd']
+    assert feature['id'] == 'cities.411'
+    assert '6610764' in properties['POPULATION']
     geometry = feature.get('geometry', None)
     assert geometry is not None
 
 
-def test_query_with_property_filtering_gs(config_GeoServer_WFS):
+def test_query_with_property_filtering_gs(config_MapServer_WFS_continents):
     """Testing query with property filtering on geoserver backend"""
 
-    p = OGRProvider(config_GeoServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_continents)
 
     feature_collection = p.query(
         properties=[
-            ('postcode', '9711LM'),
-            ('huisnummer', 106),
+            ('NA2DESC', 'Greece'),
+            ('NA3DESC', 'Europe'),
         ]
     )
 
     for feature in feature_collection['features']:
         assert 'properties' in feature
-        assert 'postcode' in feature['properties']
-        assert 'huisnummer' in feature['properties']
+        assert 'NA2DESC' in feature['properties']
+        assert 'NA3DESC' in feature['properties']
 
-        assert feature['properties']['postcode'] == '9711LM'
-        assert feature['properties']['huisnummer'] == 106
+        assert feature['properties']['NA2DESC'] == 'Greece'
+        assert feature['properties']['NA3DESC'] == 'Europe'
 
 
-def test_query_with_property_filtering_ms(config_MapServer_WFS):
+def test_query_with_property_filtering_ms(config_MapServer_WFS_cities):
     """Testing query with property filtering on mapserver backend"""
 
-    p = OGRProvider(config_MapServer_WFS)
+    p = OGRProvider(config_MapServer_WFS_cities)
 
     feature_collection = p.query(
         properties=[
-            ('station', '21'),
+            ('NAME', 'Seoul'),
         ]
     )
 
-    for feature in feature_collection['features']:
-        assert 'properties' in feature
-        assert 'station' in feature['properties']
+    assert len(feature_collection['features']) == 1
 
-        assert feature['properties']['station'] == '21'
+    feature = feature_collection['features'][0]
 
-#
-# # OK, but backend GeoServer PDOK WFS takes too much time....
-# # def test_query_with_limit_gs(config_GeoServer_WFS):
-# #
-# #     p = OGRProvider(config_GeoServer_WFS)
-# #     feature_collection = p.query(limit=5, resulttype='results')
-# #     assert feature_collection.get('type', None) == 'FeatureCollection'
-# #     features = feature_collection.get('features', None)
-# #     assert len(features) == 5
-# #     hits = feature_collection.get('numberMatched', None)
-# #     assert hits is None
-# #     feature = features[0]
-# #     properties = feature.get('properties', None)
-# #     assert properties is not None
-# #     geometry = feature.get('geometry', None)
-# #     assert geometry is not None
+    assert 'properties' in feature
+    assert 'NAME' in feature['properties']
+    assert feature['properties']['NAME'] == 'Seoul'

@@ -93,7 +93,7 @@ case ${entry_cmd} in
 		[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
 
 		echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
-		gunicorn --workers ${WSGI_WORKERS} \
+		exec gunicorn --workers ${WSGI_WORKERS} \
 				--worker-class=${WSGI_WORKER_CLASS} \
 				--timeout ${WSGI_WORKER_TIMEOUT} \
 				--name=${CONTAINER_NAME} \

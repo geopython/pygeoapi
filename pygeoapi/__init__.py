@@ -40,8 +40,10 @@ ENV_TZ = pytz.timezone(os.environ.get('TZ', 'Etc/UTC'))
 
 from pygeoapi.openapi import generate_openapi_document
 
-cli = click.Group()
-cli.version = __version__
+@click.group()
+@click.version_option(version=__version__)
+def cli():
+    pass
 
 @cli.command()
 @click.option('--flask', 'server', flag_value="flask", default=True)

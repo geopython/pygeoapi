@@ -47,6 +47,7 @@ LOGGER = logging.getLogger(__name__)
 def config_ArcGIS_ESRIJSON():
     return {
         'name': 'OGR',
+        'type': 'feature',
         'data': {
             'source_type': 'ESRIJSON',
             'source': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&orderByFields=objectid+ASC&f=json', # noqa
@@ -137,7 +138,6 @@ def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched', None)
     assert hits is not None
-    print('hits={}'.format(hits))
     assert hits > 1
 
 
