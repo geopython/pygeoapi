@@ -1042,12 +1042,12 @@ def test_delete_job(api_):
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
-    assert data['outputs'][0]['value'] == 'Hello Test Deletion'
+    assert data['outputs'][0]['value'] == 'Hello Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
     rsp_headers, code, response = api_.delete_job('hello-world', job_id)
     assert code == 204
-    
+
     rsp_headers, code, response = api_.delete_job('hello-world', job_id)
     assert code == 404
 
