@@ -221,6 +221,8 @@ def _describe_file(filepath):
 
     try:
         import rasterio
+        from rasterio.crs import CRS
+        from rasterio.warp import transform_bounds
         LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
     except ImportError as err:
         LOGGER.warning(err)
@@ -257,24 +259,26 @@ def _describe_file(filepath):
     except rasterio.errors.RasterioIOError:
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
-
+        tcrs = CRS.from_epsg(4326)
+        bnds = transform_bounds(CRS(d.crs),tcrs,d.bounds[0],d.bounds[1],d.bounds[2],d.bounds[3])
         if d.schema['geometry'] not in [None, 'None']:
             content['bbox'] = [
-                d.bounds[0],
-                d.bounds[1],
-                d.bounds[2],
-                d.bounds[3]
+                bnds[0],
+                bnds[1],
+                bnds[2],
+                bnds[3]
             ]
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [d.bounds[0], d.bounds[1]],
-                    [d.bounds[0], d.bounds[3]],
-                    [d.bounds[2], d.bounds[3]],
-                    [d.bounds[2], d.bounds[1]],
-                    [d.bounds[0], d.bounds[1]]
+                    [bnds[0], bnds[1]],
+                    [bnds[0], bnds[3]],
+                    [bnds[2], bnds[3]],
+                    [bnds[2], bnds[1]],
+                    [bnds[0], bnds[1]]
                 ]]
             }
+        content['properties']['projection'] = d.crs['init']  
         for k, v in d.schema['properties'].items():
             content['properties'][k] = v
 
