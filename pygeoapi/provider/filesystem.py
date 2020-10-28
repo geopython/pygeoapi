@@ -260,8 +260,9 @@ def _describe_file(filepath):
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
         tcrs = CRS.from_epsg(4326)
-        bnds = transform_bounds(CRS(d.crs), tcrs, 
-            d.bounds[0], d.bounds[1], d.bounds[2], d.bounds[3])
+        bnds = transform_bounds(CRS(d.crs), tcrs,
+                                d.bounds[0], d.bounds[1],
+                                d.bounds[2], d.bounds[3])
         if d.schema['geometry'] not in [None, 'None']:
             content['bbox'] = [
                 bnds[0],
