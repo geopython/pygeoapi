@@ -32,7 +32,7 @@
 Returns content from plugins and sets reponses
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 import json
 import logging
@@ -1999,7 +1999,15 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             jobs = sorted(self.manager.get_jobs(process_id), key=lambda k: k['process_start_datetime'], reverse=True)
             if not format_ or format_ == 'html':
                 headers_['Content-Type'] = 'text/html'
-                response = render_j2_template(self.config, 'jobs.html', {'process': {'id': process_id, 'title': process.metadata['title']}, 'jobs': jobs})
+                response = render_j2_template(
+                    self.config,
+                    'jobs.html',
+                    {
+                        'process': {'id': process_id, 'title': process.metadata['title']},
+                        'jobs': jobs,
+                        'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
+                    },
+                )
                 return headers_, 200, response
             response = [job['identifier'] for job in jobs]
             return headers_, 200, to_json(response, self.pretty_print)
@@ -2207,7 +2215,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'process_start_datetime': job_result.get('process_start_datetime', None),
                     'process_end_datetime': job_result.get('process_end_datetime', None),
                     'progress': job_result.get('progress', 100 if status == JobStatus.finished else 0),
-                    **response}
+                    **response},
+                'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
             })
 
     def retrieve_job_result(self, method, headers, args, data, process_id, job_id):

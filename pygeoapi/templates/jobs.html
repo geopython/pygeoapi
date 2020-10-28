@@ -36,7 +36,11 @@
                   {{ job.process_start_datetime|datetime }}
                 </td>
                 <td>
-                  {{ job.process_start_datetime|duration(job.process_end_datetime) }}
+                  {% if job.status == 'running' %}
+                    {{ job.process_start_datetime|duration(data.now) }}
+                  {% else %}
+                    {{ job.process_start_datetime|duration(job.process_end_datetime) }}
+                  {% endif %}
                 </td>
                 <td>
                   <progress class="inline" value="{{job.progress|int*10}}" max="1000"></progress>
