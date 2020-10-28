@@ -220,6 +220,16 @@ def _describe_file(filepath):
     }
 
     try:
+        import datetime
+        t = os.path.getmtime(filepath)
+        s = os.path.getsize(filepath)
+        content['properties']['datetime'] = datetime.datetime.fromtimestamp(t)
+        if s > 0:
+            content['properties']['size'] = str(round(s/100)/10)
+    except ValueError as err:
+        LOGGER.debug(err)
+
+    try:
         import rasterio
         LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
     except ImportError as err:
@@ -275,8 +285,22 @@ def _describe_file(filepath):
                     [d.bounds[0], d.bounds[1]]
                 ]]
             }
+        
+        model = {}
         for k, v in d.schema['properties'].items():
-            content['properties'][k] = v
+            model[k] = v
+        if model.items():
+            content['properties']['model'] = model
+
+        from pygeoapi.util import yaml_load
+        pth = os.path.splitext(filepath)[0]
+        try:
+            with open('./{}.md.yml'.format(pth)) as fh:
+                md = yaml_load(fh)
+            for k, v in md.items():
+                content['properties'][k] = v
+        except (FileNotFoundError, IOError):
+            LOGGER.debug('file {}.md.yml not found.'.format(pth))
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]

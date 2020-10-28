@@ -1,0 +1,7 @@
+title: My cool observations
+description: Sample CSV data from mapserver project
+license: https://opendefinition.org/licenses/cc-by/
+providers:
+  name: Mapserver
+  roles: ContactPoint
+  url: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
