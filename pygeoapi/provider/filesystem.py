@@ -260,7 +260,8 @@ def _describe_file(filepath):
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
         tcrs = CRS.from_epsg(4326)
-        bnds = transform_bounds(CRS(d.crs),tcrs,d.bounds[0],d.bounds[1],d.bounds[2],d.bounds[3])
+        bnds = transform_bounds(CRS(d.crs), tcrs, 
+            d.bounds[0], d.bounds[1], d.bounds[2], d.bounds[3])
         if d.schema['geometry'] not in [None, 'None']:
             content['bbox'] = [
                 bnds[0],
@@ -278,14 +279,14 @@ def _describe_file(filepath):
                     [bnds[0], bnds[1]]
                 ]]
             }
-        content['properties']['projection'] = d.crs['init']  
+        content['properties']['projection'] = d.crs['init']
         for k, v in d.schema['properties'].items():
             content['properties'][k] = v
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
             content['assets'] = {}
-            for suffix in ['shx', 'dbf', 'prj']:
+            for suffix in ['shx', 'dbf', 'prj', 'shp.xml']:
                 content['assets'][suffix] = {
                     'href': './{}.{}'.format(id_, suffix)
                 }
