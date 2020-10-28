@@ -115,7 +115,7 @@ class ElasticsearchProvider(BaseProvider):
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[]):
         """
         query Elasticsearch index
 
@@ -123,7 +123,7 @@ class ElasticsearchProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 
@@ -159,7 +159,7 @@ class ElasticsearchProvider(BaseProvider):
 
             query['query']['bool']['filter'].append(bbox_filter)
 
-        if datetime is not None:
+        if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
             if self.time_field is None:
                 LOGGER.error('time_field not enabled for collection')
@@ -167,9 +167,9 @@ class ElasticsearchProvider(BaseProvider):
 
             time_field = self.mask_prop(self.time_field)
 
-            if '/' in datetime:  # envelope
+            if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
-                time_begin, time_end = datetime.split('/')
+                time_begin, time_end = datetime_.split('/')
 
                 range_ = {
                     'range': {
@@ -188,7 +188,7 @@ class ElasticsearchProvider(BaseProvider):
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                filter_.append({'match': {time_field: datetime}})
+                filter_.append({'match': {time_field: datetime_}})
 
             LOGGER.debug(filter_)
             query['query']['bool']['filter'].append(*filter_)

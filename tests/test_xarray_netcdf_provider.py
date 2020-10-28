@@ -30,6 +30,7 @@
 import os
 import pytest
 
+from pygeoapi.provider.base import ProviderQueryError
 from pygeoapi.provider.xarray_ import XarrayProvider
 
 
@@ -42,8 +43,7 @@ def get_test_file_path(filename):
         return 'tests/{}'.format(filename)
 
 
-path = get_test_file_path(
-    'tests/data/coads_sst.nc')
+path = get_test_file_path('tests/data/coads_sst.nc')
 
 
 @pytest.fixture()
@@ -72,7 +72,7 @@ def test_domainset(config):
     domainset = p.get_coverage_domainset()
 
     assert isinstance(domainset, dict)
-    assert domainset['generalGrid']['axisLabels'] == ['COADSX', 'COADSY']
+    assert domainset['generalGrid']['axisLabels'] == ['COADSX', 'COADSY', 'TIME']  # noqa
     assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
     assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 180  # noqa
     assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 90  # noqa
@@ -95,3 +95,12 @@ def test_query(config):
 
     data = p.query(format_='NetCDF')
     assert isinstance(data, bytes)
+
+    data = p.query(datetime_='2000-01-16')
+    assert isinstance(data, dict)
+
+    data = p.query(datetime_='2000-01-16/2000-04-16')
+    assert isinstance(data, dict)
+
+    with pytest.raises(ProviderQueryError):
+        data = p.query(datetime_='2010-01-16')
