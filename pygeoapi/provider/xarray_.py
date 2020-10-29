@@ -89,7 +89,8 @@ class XarrayProvider(BaseProvider):
                 'srsName': c_props['bbox_crs'],
                 'axisLabels': [
                     c_props['x_axis_label'],
-                    c_props['y_axis_label']
+                    c_props['y_axis_label'],
+                    c_props['time_axis_label']
                 ],
                 'axis': [{
                     'type': 'RegularAxisType',
@@ -180,7 +181,7 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_subset=[], subsets={}, bbox=[], datetime=None,
+    def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
               format_='json'):
         """
          Extract data from collection collection
@@ -188,7 +189,7 @@ class XarrayProvider(BaseProvider):
         :param range_subset: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
@@ -206,19 +207,48 @@ class XarrayProvider(BaseProvider):
 
         data = self._data[[*range_subset]]
 
-        if(self._coverage_properties['x_axis_label'] in subsets or
-           self._coverage_properties['y_axis_label'] in subsets or
-           self._coverage_properties['time_axis_label'] in subsets):
+        if any([self._coverage_properties['x_axis_label'] in subsets,
+                self._coverage_properties['y_axis_label'] in subsets,
+                self._coverage_properties['time_axis_label'] in subsets,
+                datetime_ is not None]):
 
             LOGGER.debug('Creating spatio-temporal subset')
 
             query_params = {}
             for key, val in subsets.items():
+                LOGGER.debug('Processing subset: {}'.format(key))
                 if data.coords[key].values[0] > data.coords[key].values[-1]:
-                    LOGGER.debug('Reversing slicing low/high')
+                    LOGGER.debug('Reversing slicing from high to low')
                     query_params[key] = slice(val[1], val[0])
                 else:
                     query_params[key] = slice(val[0], val[1])
+
+            if bbox:
+                if all([self._coverage_properties['x_axis_label'] in subsets,
+                        self._coverage_properties['y_axis_label'] in subsets,
+                        len(bbox) > 0]):
+                    msg = 'bbox and subsetting by coordinates are exclusive'
+                    LOGGER.warning(msg)
+                    raise ProviderQueryError(msg)
+                else:
+                    query_params['x_axis_label'] = slice(bbox[0], bbox[2])
+                    query_params['y_axis_label'] = slice(bbox[1], bbox[3])
+
+            if datetime_ is not None:
+                if self._coverage_properties['time_axis_label'] in subsets:
+                    msg = 'datetime and temporal subsetting are exclusive'
+                    LOGGER.error(msg)
+                    raise ProviderQueryError(msg)
+                else:
+                    if '/' in datetime_:
+                        begin, end = datetime_.split('/')
+                        if begin < end:
+                            query_params[self.time_field] = slice(begin, end)
+                        else:
+                            LOGGER.debug('Reversing slicing from high to low')
+                            query_params[self.time_field] = slice(end, begin)
+                    else:
+                        query_params[self.time_field] = datetime_
 
             LOGGER.debug('Query parameters: {}'.format(query_params))
             try:
@@ -228,7 +258,8 @@ class XarrayProvider(BaseProvider):
                 raise ProviderQueryError(err)
 
         if (any([data.coords[self.x_field].size == 0,
-                data.coords[self.y_field].size == 0])):
+                 data.coords[self.y_field].size == 0,
+                 data.coords[self.time_field].size == 0])):
             msg = 'No data found'
             LOGGER.warning(msg)
             raise ProviderNoDataError(msg)

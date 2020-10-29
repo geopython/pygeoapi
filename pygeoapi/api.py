@@ -892,7 +892,7 @@ class API:
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
-                              datetime=datetime_, properties=properties,
+                              datetime_=datetime_, properties=properties,
                               sortby=sortby)
         except ProviderConnectionError as err:
             exception = {
@@ -1250,7 +1250,7 @@ class API:
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
 
-        query_args['datetime'] = datetime_
+        query_args['datetime_'] = datetime_
 
         if 'f' in args:
             query_args['format_'] = format_ = args['f']
