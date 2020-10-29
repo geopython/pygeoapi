@@ -287,7 +287,7 @@ class OGRProvider(BaseProvider):
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[]):
         """
         Query OGR source
 
@@ -295,7 +295,7 @@ class OGRProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 

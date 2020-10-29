@@ -98,3 +98,19 @@ def test_query(config):
 
     data = p.query(format_='GRIB')
     assert isinstance(data, bytes)
+
+
+def test_query_bbox_reprojection(config):
+    config['options']['DATA_ENCODING'] = 'SIMPLE_PACKING'
+    config['data'] = get_test_file_path(
+        'tests/data/CMC_hrdps_continental_TMP_TGL_80_ps2.5km_2020102700_P005-00.grib2'  # noqa
+    )
+    p = RasterioProvider(config)
+
+    data = p.query(bbox=[-79, 45, -75, 49])
+
+    assert isinstance(data, dict)
+    assert data['domain']['axes']['x']['start'] == -79.0
+    assert data['domain']['axes']['x']['stop'] == -75.0
+    assert data['domain']['axes']['y']['start'] == 49.0
+    assert data['domain']['axes']['y']['stop'] == 45.0

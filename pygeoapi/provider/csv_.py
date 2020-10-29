@@ -72,12 +72,13 @@ class CSVProvider(BaseProvider):
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], datetime=None, properties=[]):
+              identifier=None, bbox=[], datetime_=None, properties=[]):
         """
         Load CSV data
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
+        :param datetime_: temporal (datestamp or extent)
         :param resulttype: return results or hit limit (default results)
         :param properties: list of tuples (name, value)
 
@@ -138,7 +139,7 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[]):
         """
         CSV query
 
@@ -146,7 +147,7 @@ class CSVProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
 

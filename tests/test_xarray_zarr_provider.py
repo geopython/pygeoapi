@@ -72,7 +72,7 @@ def test_domainset(config):
     domainset = p.get_coverage_domainset()
 
     assert isinstance(domainset, dict)
-    assert domainset['generalGrid']['axisLabels'] == ['lon', 'lat']
+    assert domainset['generalGrid']['axisLabels'] == ['lon', 'lat', 'time']
     assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
     assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 101  # noqa
     assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 101  # noqa
