@@ -201,7 +201,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 3
+    assert len(collections['collections']) == 4
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(
@@ -673,6 +673,17 @@ def test_get_collection_coverage(config, api_):
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
     rsp_headers, code, response = api_.get_collection_coverage(
+        req_headers, {'bbox': '-79,45,-75,49'}, 'gdps-temperature')
+
+    assert code == 200
+    content = json.loads(response)
+
+    assert content['domain']['axes']['x']['start'] == -79.0
+    assert content['domain']['axes']['x']['stop'] == -75.0
+    assert content['domain']['axes']['y']['start'] == 49.0
+    assert content['domain']['axes']['y']['stop'] == 45.0
+
+    rsp_headers, code, response = api_.get_collection_coverage(
         req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB'},
         'gdps-temperature')
 
@@ -680,8 +691,7 @@ def test_get_collection_coverage(config, api_):
     assert isinstance(response, bytes)
 
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'},  # noqa
-        'cmip5')
+        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'}, 'cmip5')  # noqa
 
     assert code == 200
     assert isinstance(json.loads(response), dict)
