@@ -841,9 +841,48 @@ def get_oas_30(cfg):
                     }
                 }
             }
-            # TODO additional endpoints: /processes/<process>/jobs/<job_id> and /processes/<process>/jobs/<job_id>/results
             if 'example' in p.metadata:
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+
+            # TODO: define jobId as parameter in dict
+            paths[f'{process_name_path}/jobs/{{jobId}}'] = {
+                'get': {
+                    'summary': 'Retrieve job details',
+                    'description': '',
+                    'tags': [k],
+                    'operationId': f'get{k.capitalize()}Job',
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/200'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        'default': {'$ref': '#/components/responses/default'}
+                    }
+                },
+                'delete': {
+                    'summary': 'Cancel / delete job',
+                    'description': '',
+                    'tags': [k],
+                    'operationId': f'delete{k.capitalize()}Job',
+                    'responses': {
+                        '204': {'$ref': '#/components/responses/204'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        'default': {'$ref': '#/components/responses/default'}
+                    }
+                },
+            }
+
+            paths[f'{process_name_path}/jobs/{{jobId}}/results'] = {
+                'get': {
+                    'summary': 'Retrieve job results',
+                    'description': '',
+                    'tags': [k],
+                    'operationId': f'get{k.capitalize()}JobResults',
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/200'},
+                        '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                        'default': {'$ref': '#/components/responses/default'}
+                    }
+                },
+            }
 
     oas['paths'] = paths
 
