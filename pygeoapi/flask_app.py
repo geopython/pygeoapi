@@ -39,11 +39,6 @@ from flask import Flask, Blueprint, make_response, request, send_from_directory
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
-APP = Flask(__name__)
-APP.url_map.strict_slashes = False
-# TODO make configurable
-APP.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 * 1024 # 1 GB max file upload
-APP.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 CONFIG = None
 
@@ -59,6 +54,9 @@ if 'templates' in CONFIG['server']:
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = False
+# TODO make configurable
+PP.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 * 1024 # 1 GB max file upload
+APP.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 
