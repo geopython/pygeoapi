@@ -41,9 +41,6 @@
                 <span class="spinner"></span>
               {% endif %}
             </div>
-            <div>
-              <button type="button" onclick="deleteJob('{{config.server.url}}/processes/{{data.process.id}}/jobs/{{data.job.jobID}}')" title="Delete job" class="secondary shadowed">Delete job</button>
-            </div>
             <div id="job-status-body">
               <div class="message">
                 <h3>Message</h3>
@@ -74,6 +71,10 @@
                   {% endfor %}
                 </ul>
                 {% endif %}
+                <h4><label for="actions">Actions</label></h4>
+                <span id="actions">
+                  <button type="button" onclick="deleteJob('{{config.server.url}}/processes/{{data.process.id}}/jobs/{{data.job.jobID}}')" title="Delete job" class="secondary shadowed">Delete job</button>
+                </span>
               </div>
               <section class="callout-info" id="action-results"></section>
             </div>
