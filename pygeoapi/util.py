@@ -48,7 +48,7 @@ from werkzeug.utils import secure_filename
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
-from pygeoapi import __version__, ENV_TZ
+from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ def format_datetime(value, _format='%a, %x %X %Z'):
     """
     if not isinstance(value, str) or not value.strip():
         return ''
-    return dateutil.parser.isoparse(value).astimezone(ENV_TZ).strftime(_format)
+    return dateutil.parser.isoparse(value).strftime(_format)
 
 def format_duration(start, end=None):
     """
