@@ -29,21 +29,14 @@
 
 __version__ = '0.9.dev0'
 
-import os
 import click
-import locale
-import pytz
-
-DEFAULT_LANG = 'en_US.UTF-8'
-locale.setlocale(locale.LC_ALL, os.environ.get('LANG', DEFAULT_LANG))
-ENV_TZ = pytz.timezone(os.environ.get('TZ', 'Etc/UTC'))
-
 from pygeoapi.openapi import generate_openapi_document
 
 @click.group()
 @click.version_option(version=__version__)
 def cli():
     pass
+
 
 @cli.command()
 @click.option('--flask', 'server', flag_value="flask", default=True)
