@@ -54,17 +54,16 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
 
 # ARGS
-ARG TZ="Etc/UTC"
-ARG LANG="en_US.UTF-8"
+ARG TIMEZONE="Europe/London"
+ARG LOCALE="en_US.UTF-8"
 ARG ADD_DEB_PACKAGES=""
 ARG ADD_PIP_PACKAGES=""
 
 # ENV settings
-ENV TZ=${TZ} \
+ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
-	LANG=${LANG} \
-	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip python3-dev apt-utils curl git unzip" \
-	DEB_PACKAGES="locales locales-all libgdal27 python3-gdal libsqlite3-mod-spatialite python3-distutils ${ADD_DEB_PACKAGES}" \
+ 	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils curl git unzip" \
+ 	DEB_PACKAGES="locales libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
 	PIP_PACKAGES="greenlet==0.4.16 gunicorn==20.0.4 gevent==1.5.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 RUN mkdir -p /pygeoapi/pygeoapi
@@ -76,25 +75,27 @@ ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
 RUN \
 	# Install dependencies
 	apt-get update \
-	&& apt-get upgrade -y \
 	&& apt-get --no-install-recommends install -y ${DEB_BUILD_DEPS} ${DEB_PACKAGES} \
 	# Timezone
+	&& cp /usr/share/zoneinfo/${TZ} /etc/localtime\
 	&& dpkg-reconfigure tzdata \
 	# Locale
+	&& sed -i -e "s/# ${LOCALE} UTF-8/${LOCALE} UTF-8/" /etc/locale.gen \
 	&& dpkg-reconfigure --frontend=noninteractive locales \
-	&& update-locale LANG=${LANG} \
+	&& update-locale LANG=${LOCALE} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
 	# Upgrade pip3 and install packages
 	&& python3 -m pip install --upgrade pip \
+	&& pip3 install ${PIP_PACKAGES} \
+	# # Install pygeoapi
 	# python3 -m pip install --upgrade setuptools \
 	&& python3 -m pip install ${PIP_PACKAGES} \
-	# # Install pygeoapi
 	&& cd /pygeoapi \
-	&& python3 -m pip install -r requirements.txt \
-	&& python3 -m pip install -r requirements-dev.txt \
-	&& python3 -m pip install -r requirements-provider.txt \
-	&& python3 -m pip install -r requirements-processes.txt \
-	&& python3 -m pip install -e . \
+	&& pip3 install -r requirements.txt \
+	&& pip3 install -r requirements-dev.txt \
+	&& pip3 install -r requirements-provider.txt \
+	&& pip3 install -r requirements-processes.txt \
+	&& pip3 install -e . \
 	# OGC schemas local setup
 	&& mkdir /schemas.opengis.net \
 	&& curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
@@ -105,7 +106,7 @@ RUN \
 	&& apt autoremove -y  \
 	&& rm -rf /var/lib/apt/lists/*
 
-# ADD . /pygeoapi
+ADD . /pygeoapi
 
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh
