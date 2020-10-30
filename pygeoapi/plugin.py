@@ -53,11 +53,10 @@ PLUGINS = {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
-        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
     },
     'process_manager': {
-        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager',
-        'Redis': 'pygeoapi.process.manager.redis_.RedisManager'
+        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
     }
 }
 
@@ -100,9 +99,6 @@ def load_plugin(plugin_type, plugin_def):
     class_ = getattr(module, classname)
     plugin = class_(plugin_def)
 
-    # TODO remove conditional after debugging
-    if 'TinyDBManager' == classname:
-        LOGGER.debug('plugin: {}'.format(plugin))
     return plugin
 
 
