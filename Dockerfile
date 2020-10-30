@@ -87,9 +87,7 @@ RUN \
 	# Upgrade pip3 and install packages
 	&& python3 -m pip install --upgrade pip \
 	&& pip3 install ${PIP_PACKAGES} \
-	# # Install pygeoapi
-	# python3 -m pip install --upgrade setuptools \
-	&& python3 -m pip install ${PIP_PACKAGES} \
+	# Install pygeoapi
 	&& cd /pygeoapi \
 	&& pip3 install -r requirements.txt \
 	&& pip3 install -r requirements-dev.txt \
