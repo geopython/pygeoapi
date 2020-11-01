@@ -220,10 +220,11 @@ def _describe_file(filepath):
     }
 
     try:
-        import datetime
+        from datetime import datetime
         t = os.path.getmtime(filepath)
         s = os.path.getsize(filepath)
-        content['properties']['datetime'] = datetime.datetime.fromtimestamp(t)
+        format = "%Y-%m-%d %H:%M"
+        content['properties']['datetime'] = datetime.fromtimestamp(t).strftime(format)
         if s > 0:
             content['properties']['size'] = str(round(s/100)/10)
     except ValueError as err:
