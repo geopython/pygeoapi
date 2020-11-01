@@ -40,6 +40,7 @@ import re
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
+from traceback import print_exc as printtrace 
 import pytz
 
 from pygeoapi import __version__
@@ -2043,7 +2044,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             return headers_, 404, to_json(exception, self.pretty_print)
         except Exception as err:
-            LOGGER.error(err)
+            LOGGER.error(printtrace())
             exception = {
                 'code': 'NoApplicableCode',
                 'description': 'data query error'
