@@ -84,7 +84,7 @@ class GeoJSONProvider(BaseProvider):
                 fields[f] = 'string'
             return fields
 
-    def _load(self):
+    def _load(self, skip_geometry=None, plist=[]):
         """Load and validate the source GeoJSON file
         at self.data
 
@@ -106,10 +106,16 @@ class GeoJSONProvider(BaseProvider):
         for i in data['features']:
             if 'id' not in i and self.id_field in i['properties']:
                 i['id'] = i['properties'][self.id_field]
+            if skip_geometry:
+                i['geometry'] = None
+            if self.properties or plist:
+                i['properties'] = {k: v for k, v in i['properties'].items()
+                                   if k in set(self.properties) | set(plist)}
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[], plist=[],
+              skip_geometry=False):
         """
         query the provider
 
@@ -120,12 +126,14 @@ class GeoJSONProvider(BaseProvider):
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param plist: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
 
         # TODO filter by bbox without resorting to third-party libs
-        data = self._load()
+        data = self._load(skip_geometry=skip_geometry, plist=plist)
 
         data['numberMatched'] = len(data['features'])
 

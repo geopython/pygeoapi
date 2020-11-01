@@ -15,16 +15,16 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties, resulttype, bbox, datetime, sortby
+   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
    :align: left
 
-   CSV,✔️ ,results/hits,❌,❌,❌
-   Elasticsearch,✔️ ,results/hits,✔️ ,✔️ ,✔️ 
-   GeoJSON,✔️ ,results/hits,❌,❌,❌
-   MongoDB,✔️ ,results,✔️ ,✔️ ,✔️ 
-   OGR,✔️ ,results/hits,✔️ ,❌,❌
-   PostgreSQL,✔️ ,results/hits,✔️ ,❌,❌
-   SQLiteGPKG,✔️ ,results/hits,✔️ ,❌,❌
+   CSV,✅,results/hits,❌,❌,❌,✅
+   Elasticsearch,✅,results/hits,✅,✅,✅,✅
+   GeoJSON,✅,results/hits,❌,❌,❌,❌
+   MongoDB,✅,results,✅,✅,✅,❌
+   OGR,✅,results/hits,✅,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,❌,❌
+   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.

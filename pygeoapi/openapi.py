@@ -269,6 +269,32 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             },
+            'properties': {
+                'name': 'properties',
+                'in': 'query',
+                'description': 'The properties that should be included for each feature. The parameter value is a comma-separated list of property names.',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string'
+                    }
+                }
+            },
+            'skipGeometry': {
+                'name': 'skipGeometry',
+                'in': 'query',
+                'description': 'This option can be used to skip response geometries for each feature.',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'boolean',
+                    'default': False
+                }
+            },
             'sortby': {
                 'name': 'sortby',
                 'in': 'query',
@@ -397,6 +423,10 @@ def get_oas_30(cfg):
 
             items_path = '{}/items'.format(collection_name_path)
 
+            coll_properties = deepcopy(oas['components']['parameters']['properties'])  # noqa
+
+            coll_properties['schema']['items']['enum'] = list(p.fields.keys())
+
             paths[items_path] = {
                 'get': {
                     'summary': 'Get {} items'.format(v['title']),
@@ -407,6 +437,8 @@ def get_oas_30(cfg):
                         items_f,
                         {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        coll_properties,
+                        {'$ref': '#/components/parameters/skipGeometry'},
                         {'$ref': '#/components/parameters/sortby'},
                         {'$ref': '#/components/parameters/startindex'}
                     ],

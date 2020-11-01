@@ -501,7 +501,15 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
-    assert code == 200
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'skipGeometry': 'true'}, 'obs')
+
+    assert json.loads(response)['features'][0]['geometry'] is None
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'properties': 'foo,bar'}, 'obs')
+
+    assert code == 500
 
 
 def test_get_collection_items_json_ld(config, api_):
