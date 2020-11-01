@@ -104,7 +104,6 @@ class CSVProvider(BaseProvider):
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data_, startindex, startindex+limit):
-                print("ROW", row)
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 if not skip_geometry:
@@ -118,7 +117,6 @@ class CSVProvider(BaseProvider):
                 else:
                     feature['geometry'] = None
                 if self.properties or plist:
-                    print("JJJ")
                     feature['properties'] = OrderedDict()
                     for p in set(self.properties) | set(plist):
                         try:
@@ -137,7 +135,6 @@ class CSVProvider(BaseProvider):
                     len(feature_collection['features'])
 
         if identifier is not None and not found:
-            print("i1WWUWU", identifier)
             return None
         elif identifier is not None and found:
             return result
