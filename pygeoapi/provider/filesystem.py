@@ -220,11 +220,11 @@ def _describe_file(filepath):
     }
 
     try:
-        from datetime import datetime
+        from datetime import datetime as dt
         t = os.path.getmtime(filepath)
         s = os.path.getsize(filepath)
-        format = "%Y-%m-%d %H:%M"
-        content['properties']['datetime'] = datetime.fromtimestamp(t).strftime(format)
+        f = "%Y-%m-%d %H:%M"
+        content['properties']['datetime'] = dt.fromtimestamp(t).strftime(f)
         if s > 0:
             content['properties']['size'] = str(round(s/100)/10)
     except ValueError as err:
@@ -286,7 +286,7 @@ def _describe_file(filepath):
                     [d.bounds[0], d.bounds[1]]
                 ]]
             }
-        
+
         model = {}
         for k, v in d.schema['properties'].items():
             model[k] = v
