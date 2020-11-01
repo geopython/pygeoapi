@@ -259,13 +259,13 @@ def _describe_file(filepath):
     except rasterio.errors.RasterioIOError:
         LOGGER.debug('Testing vector data detection')
         d = fiona.open(filepath)
-        s = CRS(d.crs)
-        if s.to_epsg() is not None and s.to_epsg() != 4326:
+        scrs = CRS(d.crs)
+        if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
             tcrs = CRS.from_epsg(4326)
-            bnds = transform_bounds(CRS(d.crs), tcrs,
+            bnds = transform_bounds(scrs, tcrs,
                                     d.bounds[0], d.bounds[1],
                                     d.bounds[2], d.bounds[3])
-            content['properties']['projection'] = d.crs['init']
+            content['properties']['projection'] = scrs.to_epsg()
         else:
             bnds = d.bounds
 
