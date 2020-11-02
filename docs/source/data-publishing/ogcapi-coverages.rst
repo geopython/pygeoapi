@@ -18,8 +18,8 @@ parameters.
    :header: Provider, rangeSubset, subset, bbox, datetime
    :align: left
 
-   rasterio,✔️,✔️,✔️,
-   xarray,✔️,✔️,✔️,✔️
+   rasterio,✅,✅,✅,
+   xarray,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.

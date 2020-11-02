@@ -115,7 +115,8 @@ class ElasticsearchProvider(BaseProvider):
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         query Elasticsearch index
 
@@ -126,6 +127,8 @@ class ElasticsearchProvider(BaseProvider):
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -228,15 +231,23 @@ class ElasticsearchProvider(BaseProvider):
                 }
                 query['sort'].append(sort_)
 
-        if self.properties:
+        if self.properties or select_properties:
             LOGGER.debug('including specified fields: {}'.format(
                 self.properties))
             query['_source'] = {
-                'includes': list(map(self.mask_prop, self.properties))
+                'includes': list(map(self.mask_prop,
+                                 set(self.properties) | set(select_properties)))  # noqa
             }
             query['_source']['includes'].append(self.mask_prop(self.id_field))
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
+        if skip_geometry:
+            LOGGER.debug('limiting to specified fields: {}'.format(
+                select_properties))
+            try:
+                query['_source']['excludes'] = ['geometry']
+            except KeyError:
+                query['_source'] = {'excludes': ['geometry']}
         try:
             LOGGER.debug('querying Elasticsearch')
             LOGGER.debug(json.dumps(query, indent=4))
@@ -352,7 +363,7 @@ class ElasticsearchProvider(BaseProvider):
             if 'type' not in doc['_source']:
                 feature_['id'] = id_
                 feature_['type'] = 'Feature'
-            feature_['geometry'] = doc['_source']['geometry']
+            feature_['geometry'] = doc['_source'].get('geometry')
             feature_['properties'] = {}
             for key, value in doc['_source'].items():
                 if key == 'geometry':
@@ -363,12 +374,13 @@ class ElasticsearchProvider(BaseProvider):
             feature_ = doc['_source']
             id_ = doc['_source']['properties'][self.id_field]
             feature_['id'] = id_
+            feature_['geometry'] = doc['_source'].get('geometry')
 
         if self.properties:
             feature_thinned = {
                 'id': id_,
                 'type': feature_['type'],
-                'geometry': feature_['geometry'],
+                'geometry': feature_.get('geometry'),
                 'properties': OrderedDict()
             }
             for p in self.properties:

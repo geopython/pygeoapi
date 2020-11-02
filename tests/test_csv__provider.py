@@ -89,6 +89,15 @@ def test_query(config):
 
     assert len(results['features'][0]['properties']) == 3
 
+    results = p.query(select_properties=['value'])
+    assert len(results['features'][0]['properties']) == 1
+
+    results = p.query(select_properties=['value', 'stn_id'])
+    assert len(results['features'][0]['properties']) == 2
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
+
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)
     results = p.query()
