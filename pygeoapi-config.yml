@@ -201,6 +201,8 @@ resources:
                   - .sqlite
                   - .csv
                   - .grib2
+                  - .tif
+                  - .shp
 
     hello-world:
         type: process
