@@ -886,10 +886,11 @@ class API:
         val = args.get('properties')
 
         if val is not None:
-            plist = val.split(',')
+            select_properties = val.split(',')
             properties_to_check = set(p.properties) | set(p.fields.keys())
 
-            if len(list(set(plist) - set(properties_to_check))) > 0:
+            if (len(list(set(select_properties) -
+                         set(properties_to_check))) > 0):
                 exception = {
                     'code': 'InvalidParameterValue',
                     'description': 'unknown properties specified'
@@ -897,7 +898,7 @@ class API:
                 LOGGER.error(exception)
                 return headers_, 400, to_json(exception, self.pretty_print)
         else:
-            plist = []
+            select_properties = []
 
         LOGGER.debug('processing skipGeometry parameter')
         val = args.get('skipGeometry')
@@ -913,14 +914,15 @@ class API:
         LOGGER.debug('sortby: {}'.format(sortby))
         LOGGER.debug('bbox: {}'.format(bbox))
         LOGGER.debug('datetime: {}'.format(datetime_))
-        LOGGER.debug('properties: {}'.format(plist))
+        LOGGER.debug('properties: {}'.format(select_properties))
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
-                              sortby=sortby, plist=plist,
+                              sortby=sortby,
+                              select_properties=select_properties,
                               skip_geometry=skip_geometry)
         except ProviderConnectionError as err:
             exception = {

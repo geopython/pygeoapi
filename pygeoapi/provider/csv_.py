@@ -73,7 +73,7 @@ class CSVProvider(BaseProvider):
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
-              plist=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False):
         """
         Load CSV data
 
@@ -82,7 +82,7 @@ class CSVProvider(BaseProvider):
         :param datetime_: temporal (datestamp or extent)
         :param resulttype: return results or hit limit (default results)
         :param properties: list of tuples (name, value)
-        :param plist: list of property names
+        :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of GeoJSON FeatureCollection
@@ -116,9 +116,9 @@ class CSVProvider(BaseProvider):
                     }
                 else:
                     feature['geometry'] = None
-                if self.properties or plist:
+                if self.properties or select_properties:
                     feature['properties'] = OrderedDict()
-                    for p in set(self.properties) | set(plist):
+                    for p in set(self.properties) | set(select_properties):
                         try:
                             feature['properties'][p] = row[p]
                         except KeyError as err:
@@ -146,7 +146,7 @@ class CSVProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              plist=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False):
         """
         CSV query
 
@@ -157,13 +157,14 @@ class CSVProvider(BaseProvider):
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
-        :param plist: list of property names
+        :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, limit, resulttype, plist=plist,
+        return self._load(startindex, limit, resulttype,
+                          select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
     def get(self, identifier):
