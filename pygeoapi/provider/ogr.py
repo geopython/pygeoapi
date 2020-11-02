@@ -287,7 +287,8 @@ class OGRProvider(BaseProvider):
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         Query OGR source
 
@@ -298,6 +299,8 @@ class OGRProvider(BaseProvider):
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of 0..n GeoJSON features
         """
