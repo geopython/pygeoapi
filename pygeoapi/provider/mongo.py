@@ -96,7 +96,8 @@ class MongoProvider(BaseProvider):
         return featurelist, matchCount
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         query the provider
 
