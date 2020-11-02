@@ -93,6 +93,15 @@ def test_query(config):
     assert results['numberMatched'] == 242
     assert results['numberReturned'] == 242
 
+    results = p.query(select_properties=['nameascii'])
+    assert len(results['features'][0]['properties']) == 2
+
+    results = p.query(select_properties=['nameascii', 'scalerank'])
+    assert len(results['features'][0]['properties']) == 3
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
+
     config['properties'] = ['nameascii']
     p = ElasticsearchProvider(config)
     results = p.query()

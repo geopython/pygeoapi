@@ -503,6 +503,16 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'skipGeometry': 'true'}, 'obs')
+
+    assert json.loads(response)['features'][0]['geometry'] is None
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'properties': 'foo,bar'}, 'obs')
+
+    assert code == 400
+
 
 def test_get_collection_items_json_ld(config, api_):
     req_headers = make_req_headers()
@@ -915,6 +925,6 @@ def test_validate_datetime():
             '2001-10-30/2002-10-30')
 
     with pytest.raises(ValueError):
-        _ = validate_datetime(config, '2000/..')
+        _ = validate_datetime(config, '1999/..')
     with pytest.raises(ValueError):
         _ = validate_datetime(config, '../2010')

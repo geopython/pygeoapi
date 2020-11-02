@@ -57,8 +57,8 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-                           get_typed_value, render_j2_template, TEMPLATES,
-                           to_json)
+                           get_typed_value, render_j2_template, str2bool,
+                           TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -705,7 +705,8 @@ class API:
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime', 'sortby']
+                               'resulttype', 'datetime', 'sortby',
+                               'properties', 'skipGeometry']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -881,6 +882,31 @@ class API:
         else:
             sortby = []
 
+        LOGGER.debug('processing properties parameter')
+        val = args.get('properties')
+
+        if val is not None:
+            select_properties = val.split(',')
+            properties_to_check = set(p.properties) | set(p.fields.keys())
+
+            if (len(list(set(select_properties) -
+                         set(properties_to_check))) > 0):
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'unknown properties specified'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
+        else:
+            select_properties = []
+
+        LOGGER.debug('processing skipGeometry parameter')
+        val = args.get('skipGeometry')
+        if val is not None:
+            skip_geometry = str2bool(val)
+        else:
+            skip_geometry = False
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
@@ -888,12 +914,16 @@ class API:
         LOGGER.debug('sortby: {}'.format(sortby))
         LOGGER.debug('bbox: {}'.format(bbox))
         LOGGER.debug('datetime: {}'.format(datetime_))
+        LOGGER.debug('properties: {}'.format(select_properties))
+        LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
-                              sortby=sortby)
+                              sortby=sortby,
+                              select_properties=select_properties,
+                              skip_geometry=skip_geometry)
         except ProviderConnectionError as err:
             exception = {
                 'code': 'NoApplicableCode',
