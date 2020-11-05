@@ -37,32 +37,53 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 #. Go to OpenAPI documentation
 
-.. image:: docs\source\_static\cql-filter\open_doc.png
+.. image:: /_static/cql-filter/open_doc.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 *pygeoapi currently supports two collections obs and lakes from CSV and GeoJSON data providers in OpenAPI Documentation*
 
 
 #. Providing CQL query filter along with other query parameters. For the following parameters, the default value of limit is 10, startindex 0, CQL query language is in text, resulttype is results and output format is GeoJSON
 
-.. image:: docs\source\_static\cql-filter\cql_query_parameters.png
-.. image:: docs\source\_static\cql-filter\cql_query_parameters2.png
-.. image:: docs\source\_static\cql-filter\cql_query_parameters3.png
+.. image:: docs\source/_static/cql-filter/cql_query_parameters.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
+.. image:: docs\source/_static/cql-filter/cql_query_parameters2.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
+.. image:: docs\source/_static/cql-filter/cql_query_parameters3.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 *The parameter values of any collection item can be changed to generate different API endpoint*
 
 #. Click on Try it out to give the parameters value
 
-.. image:: docs\source\_static\cql-filter\cql_query_parameter_value.png
+.. image:: docs\source/_static/cql-filter/cql_query_parameter_value.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
 
-.. image:: docs\source\_static\cql-filter\cql_insert_parameter.png
+.. image:: docs\source/_static/cql-filter/cql_insert_parameter.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. After filling the values of parameters (including CQL filter expression), click on execute. If the CQL expression is valid then an endpoint will be generated with Success code 200 and response body.
 
-.. image:: docs\source\_static\cql-filter\cql_execute_endpoint.png
+.. image:: docs\source/_static/cql-filter/cql_execute_endpoint.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. Furthermore the response body can be investigated by hitting the generated URL:
@@ -72,7 +93,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 #. Since the output format was specified as GeoJSON the response from API is the following:
 
-.. image:: docs\source\_static\cql-filter\cql_json_output.png
+.. image:: docs\source/_static/cql-filter/cql_json_output.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. For the same CQL filter expression if the resulttype is chnaged to hits. The API response will have only the total count of features that satisfied the given fiter expression.
@@ -83,7 +107,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_json_output2.png
+.. image:: docs\source/_static/cql-filter/cql_json_output2.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. To overlay the response from API on a map, we can change the output format of the endpoint from JSON to HTML
@@ -94,7 +121,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_html_output.png
+.. image:: docs\source/_static/cql-filter/cql_html_output.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 #. If any invalid CQL filter expression is provided then the API raises an exception and the response is as follows:
@@ -105,7 +135,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_invalid_output.png
+.. image:: docs\source/_static/cql-filter/cql_invalid_output.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 **Requested API:**
@@ -114,7 +147,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_invalid_output2.png
+.. image:: docs\source/_static/cql-filter/cql_invalid_output2.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 **Requested API:**
@@ -123,7 +159,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_invalid_output3.png
+.. image:: docs\source/_static/cql-filter/cql_invalid_output3.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 **Requested API:**
@@ -132,7 +171,10 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 **Response:**
 
-.. image:: docs\source\_static\cql-filter\cql_invalid_output4.png
+.. image:: /_static/cql-filter/cql_invalid_output4.png
+   :scale: 70%
+   :alt: generate and execute CQL endpoints
+   :align: center
 
 
 
