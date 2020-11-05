@@ -14,27 +14,27 @@ CQL Filter Predicates
 ---------------------
 The following CQL predicates are implemented in pygeoapi to support filtering functionality on features:
 
-``*Simple Condition Predicate, Combination Predicate, Not Condition Predicate, Between Predicate, Like Predicate, In Predicate, Null Predicate, BBox Predicate, Spatial Predicate and Temporal Predicate*``
+*Simple Condition Predicate, Combination Predicate, Not Condition Predicate, Between Predicate, Like Predicate, In Predicate, Null Predicate, BBox Predicate, Spatial Predicate and Temporal Predicate*
 
 
 CQL Filter Implementation for Data Providers 
 --------------------------------------------
 CQL implementation are provider for following data providers:
 
-* CQL for CSV and GeoJSON data providers: Evaluation of the Abstract Syntax Tree to filter the feature collections supported by CSV and GeoJSON data providers. pycql library has implementation connection to databases using ORM, but in pygeoapi the data providers don't work with ORM. So the evaluation for all the CQL query operations are developed from scratch and by using efficient methodlogy. The evaluated output is the response from the API.
+* **CQL for CSV and GeoJSON data providers:** Evaluation of the Abstract Syntax Tree to filter the feature collections supported by CSV and GeoJSON data providers. pycql library has implementation connection to databases using ORM, but in pygeoapi the data providers don't work with ORM. So the evaluation for all the CQL query operations are developed from scratch and by using efficient methodlogy. The evaluated output is the response from the API.
 
-* CQL for SQLite data provider: Evaluation of the Abstract Syntax Tree to filter the feature collections supported by SQLite data provider. The AST of the CQL filter request is translated into SQL queries and then used as a request to the database. The evaluated output from the SQLite database is the response from the API.
+* **CQL for SQLite data provider:** Evaluation of the Abstract Syntax Tree to filter the feature collections supported by SQLite data provider. The AST of the CQL filter request is translated into SQL queries and then used as a request to the database. The evaluated output from the SQLite database is the response from the API.
 
-* CQL for PostGreSQL data provider: Evaluation of the Abstract Syntax Tree to filter the feature collections supported by PostGreSQL data provider. Like SQLite quesries, the AST of the CQL filter request is translated into PostGreSQL queries by following the syntax of psycopg2 database adapter. The query is then used as a request to the database. The evaluated output from the PostGreSQL database is the response from the API.
+* **CQL for PostGreSQL data provider:** Evaluation of the Abstract Syntax Tree to filter the feature collections supported by PostGreSQL data provider. Like SQLite quesries, the AST of the CQL filter request is translated into PostGreSQL queries by following the syntax of psycopg2 database adapter. The query is then used as a request to the database. The evaluated output from the PostGreSQL database is the response from the API.
 
 
 Steps to generate and execute CQL endpoints
 -------------------------------------------
 
-* Install and run pygeoapi on localhost following the steps specified here
+1. Install and run pygeoapi on localhost following the steps specified here
 
 
-* Go to OpenAPI documentation
+2. Go to OpenAPI documentation
 
 .. image:: /_static/cql-filter/open_doc.png
    :alt: generate and execute CQL endpoints
@@ -43,7 +43,7 @@ Steps to generate and execute CQL endpoints
 *pygeoapi currently supports two collections obs and lakes from CSV and GeoJSON data providers in OpenAPI Documentation*
 
 
-* Providing CQL query filter along with other query parameters. For the following parameters, the default value of limit is 10, startindex 0, CQL query language is in text, resulttype is results and output format is GeoJSON
+3. Providing CQL query filter along with other query parameters. For the following parameters, the default value of limit is 10, startindex 0, CQL query language is in text, resulttype is results and output format is GeoJSON
 
 .. image:: /_static/cql-filter/cql_query_parameters.png
    :alt: generate and execute CQL endpoints
@@ -57,40 +57,40 @@ Steps to generate and execute CQL endpoints
 
 *The parameter values of any collection item can be changed to generate different API endpoint*
 
-* Click on Try it out to give the parameters value
+4. Click on Try it out to give the parameters value
 
 .. image:: /_static/cql-filter/cql_query_parameter_value.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
-* Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
+5. Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
 
 .. image:: /_static/cql-filter/cql_insert_parameter.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
-* After filling the values of parameters (including CQL filter expression), click on execute. If the CQL expression is valid then an endpoint will be generated with Success code 200 and response body.
+6. After filling the values of parameters (including CQL filter expression), click on execute. If the CQL expression is valid then an endpoint will be generated with Success code 200 and response body.
 
 .. image:: /_static/cql-filter/cql_execute_endpoint.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
-* Furthermore the response body can be investigated by hitting the generated URL:
+7. Furthermore the response body can be investigated by hitting the generated URL:
 
-``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&`` | ``filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 
-* Since the output format was specified as GeoJSON the response from API is the following:
+8. Since the output format was specified as GeoJSON the response from API is the following:
 
 .. image:: /_static/cql-filter/cql_json_output.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
-* For the same CQL filter expression if the resulttype is chnaged to hits. The API response will have only the total count of features that satisfied the given fiter expression.
+9. For the same CQL filter expression if the resulttype is chnaged to hits. The API response will have only the total count of features that satisfied the given fiter expression.
 
 **Requested API:**
 
@@ -172,6 +172,8 @@ Example of CQL query filters
 ----------------------------
 
 Getting started
+^^^^^^^^^^^^^^^
+
 The collections used for the project demonstration here are observation and lake features from CSV and GeoJSON data providers respectively.The attribute table for observation and lake features are as follows:
 
 **obs.csv**
@@ -180,12 +182,11 @@ The collections used for the project demonstration here are observation and lake
    :alt: example of cql query filter
    :align: center
 
-lakes.geojson
+**lakes.geojson**
 
 .. image:: /_static/cql-filter/cql_lakes.png
    :alt: example of cql query filter
    :align: center
-
 .. image:: /_static/cql-filter/cql_lakes2.png
    :alt: example of cql query filter
    :align: center
@@ -209,7 +210,7 @@ Let’s get started with the simple examples. In CQL comparisons are expressed u
    :alt: example of cql query filter
    :align: center
 
-* The filter **stn_id <= 604** will select observations that have stn_id less than or equals than 604:
+* The filter **stn_id <= 604** will select observations that have **stn_id** less than or equals than 604:
 
 **Requested API:**
 
@@ -234,7 +235,7 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
    :alt: example of cql query filter
    :align: center
 
-* To filter lakes whose id is not equals to 0, than the filter id<>0 will response with all the lake features except the one with **id=0**.
+* To filter lakes whose **id** is not equals to 0, than the filter id<>0 will response with all the lake features except the one with **id=0**.
 
 **Requested API:**
 
@@ -246,7 +247,9 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
    :alt: example of cql query filter
    :align: center
 
-* If there is a requirement to fetch only 5 lakes starting from index 10 and having filter as **id>10**. pygeoapi supports limit and startindex request parameters, so an API call is possible with CQL query filter along with other query parameters.
+* If there is a requirement to fetch only 5 lakes starting from index 10 and having filter as **id>10**. 
+
+*pygeoapi supports limit and startindex request parameters, so an API call is possible with CQL query filter along with other query parameters.*
 
 **Requested API:**
 
@@ -260,7 +263,7 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 
 Due to the implementation of CQL extension on pygeoapi, all the simple comparison operations are now supported on any number of feature collections.
 
-*The common comparison operators are: <, >, <=, >=, =, <>*
+*The common comparison operators are: **<, >, <=, >=, =, <>** *
 
 * To select a range of values the BETWEEN operator can be used like **id BETWEEN 20 AND 25**
 
@@ -314,7 +317,7 @@ String comparisons
    :alt: example of cql query filter
    :align: center
 
-*The comparison on strings can be performed with either of the following: LIKE, NOT LIKE, ILIKE , NOT LIKE*
+*The comparison on strings can be performed with either of the following: **LIKE, NOT LIKE, ILIKE , NOT LIKE** *
 
 The CQL extension on pygeoapi supports all the above specified formats for comparing strings.
 
@@ -342,7 +345,13 @@ List comparisons
 
 **Response:**
 
-.. image:: /_static/cql-filter/example11.png
+.. image:: /_static/cql-filter/example11_a.png
+   :alt: example of cql query filter
+   :align: center
+.. image:: /_static/cql-filter/example11_b.png
+   :alt: example of cql query filter
+   :align: center
+.. image:: /_static/cql-filter/example11_c.png
    :alt: example of cql query filter
    :align: center
 
@@ -352,7 +361,7 @@ Combination filters
 
 The CQL extension on pygeoapi is eligible to support filters that are a combination of more than one simple query filters.
 
-*The logical operators are: AND, OR*
+*The logical operators are: **AND, OR** *
 
 * To extract all the lakes whose id is less than 5 and name starts with 'Lake' then the combination of two filters can be formed as **id<5 AND name LIKE "Lake%"**
 
@@ -454,9 +463,9 @@ Spatial filters
    :alt: example of cql query filter
    :align: center
 
-**No such lakes found
+***No such lakes found*
 
-*The full list of geometric predicates are: EQUALS, DISJOINT, INTERSECTS, TOUCHES, CROSSES, WITHIN, CONTAINS, OVERLAPS, RELATE, DWITHIN, BEYOND*
+*The full list of geometric predicates are: **EQUALS, DISJOINT, INTERSECTS, TOUCHES, CROSSES, WITHIN, CONTAINS, OVERLAPS, RELATE, DWITHIN, BEYOND** *
 
 The CQL extension on pygeoapi supports all the above geometric predicates to perform spatial filters on any feature collection.
 
@@ -501,7 +510,7 @@ Temporal filters
 
 * Get all the features whose time value is during or after a time period such as **datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z**
 
-***Requested API:***
+**Requested API:**
 
 ``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z``
 
