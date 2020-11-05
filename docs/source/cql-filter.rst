@@ -166,8 +166,9 @@ filter=name LIKE 2``
    :align: center
 
 
-Example of CQL query filters
-----------------------------
+Examples of CQL query filter
+-----------------------------
+Following are few examples of CQL query filter implemented on pygeoapi data providers-
 
 Getting started
 ^^^^^^^^^^^^^^^
