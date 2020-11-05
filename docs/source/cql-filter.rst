@@ -31,15 +31,12 @@ CQL implementation are provider for following data providers:
 Steps to generate and execute CQL endpoints
 -------------------------------------------
 
-pygeoapi is a Python server implementation of the OGC API suite of standards. The ssimplementation of CQL is based on OGC API - Features - Part 3: Common Query Language document that defines the schema for a JSON document and exposes the set of properties or keys that may be used to construct CQL expressions for pygeoapi.
-
 * Install and run pygeoapi on localhost following the steps specified here
 
 
 * Go to OpenAPI documentation
 
 .. image:: /_static/cql-filter/open_doc.png
-   :scale: 100%
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -48,16 +45,13 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 * Providing CQL query filter along with other query parameters. For the following parameters, the default value of limit is 10, startindex 0, CQL query language is in text, resulttype is results and output format is GeoJSON
 
-.. image:: /_static/cql-filter/cql-filter/cql_query_parameters.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_query_parameters.png
    :alt: generate and execute CQL endpoints
    :align: center
-.. image:: /_static/cql-filter/cql-filter/cql_query_parameters2.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_query_parameters2.png
    :alt: generate and execute CQL endpoints
    :align: center
-.. image:: /_static/cql-filter/cql-filter/cql_query_parameters3.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_query_parameters3.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -65,38 +59,33 @@ pygeoapi is a Python server implementation of the OGC API suite of standards. Th
 
 * Click on Try it out to give the parameters value
 
-.. image:: /_static/cql-filter/cql-filter/cql_query_parameter_value.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_query_parameter_value.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
 * Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
 
-.. image:: /_static/cql-filter/cql-filter/cql_insert_parameter.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_insert_parameter.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
 * After filling the values of parameters (including CQL filter expression), click on execute. If the CQL expression is valid then an endpoint will be generated with Success code 200 and response body.
 
-.. image:: /_static/cql-filter/cql-filter/cql_execute_endpoint.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_execute_endpoint.png
    :alt: generate and execute CQL endpoints
    :align: center
 
 
 * Furthermore the response body can be investigated by hitting the generated URL:
 
-``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&
-filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 
 * Since the output format was specified as GeoJSON the response from API is the following:
 
-.. image:: /_static/cql-filter/cql-filter/cql_json_output.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_json_output.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -110,8 +99,7 @@ filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND
 
 **Response:**
 
-.. image:: /_static/cql-filter/cql-filter/cql_json_output2.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_json_output2.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -125,8 +113,7 @@ filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND
 
 **Response:**
 
-.. image:: /_static/cql-filter/cql-filter/cql_html_output.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_html_output.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -140,8 +127,7 @@ filter=INTERSECTION(geometry,POINT (-75 45))``
 
 **Response:**
 
-.. image:: /_static/cql-filter/cql-filter/cql_invalid_output.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_invalid_output.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -153,8 +139,7 @@ filter=id IN ['A','B']``
 
 **Response:**
 
-.. image:: /_static/cql-filter/cql-filter/cql_invalid_output2.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_invalid_output2.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -166,8 +151,7 @@ filter=name@obs``
 
 **Response:**
 
-.. image:: /_static/cql-filter/cql-filter/cql_invalid_output3.png
-   :scale: 100%
+.. image:: /_static/cql-filter/cql_invalid_output3.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -180,7 +164,6 @@ filter=name LIKE 2``
 **Response:**
 
 .. image:: /_static/cql-filter/cql_invalid_output4.png
-   :scale: 100%
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -194,19 +177,16 @@ The collections used for the project demonstration here are observation and lake
 **obs.csv**
 
 .. image:: /_static/cql-filter/cql_obs.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
 lakes.geojson
 
 .. image:: /_static/cql-filter/cql_lakes.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
 .. image:: /_static/cql-filter/cql_lakes2.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -217,7 +197,7 @@ Simple comparisons
 
 Let’s get started with the simple examples. In CQL comparisons are expressed using plain text.
 
-#. The filter **stn_id >= 35** will filter the observations that have **stn_id** value greater than or equals to 35:
+* The filter **stn_id >= 35** will filter the observations that have **stn_id** value greater than or equals to 35:
 
 **Requested API:**
 
@@ -226,11 +206,10 @@ Let’s get started with the simple examples. In CQL comparisons are expressed u
 **Response:**
 
 .. image:: /_static/cql-filter/example1.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. The filter **stn_id <= 604** will select observations that have stn_id less than or equals than 604:
+* The filter **stn_id <= 604** will select observations that have stn_id less than or equals than 604:
 
 **Requested API:**
 
@@ -239,11 +218,10 @@ Let’s get started with the simple examples. In CQL comparisons are expressed u
 **Response:**
 
 .. image:: /_static/cql-filter/example2.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. If we want to look for Lake Baikal on the map, then the filter **name='Lake Baikal'** will fetch its details and display its location on the world's map.
+* If we want to look for Lake Baikal on the map, then the filter **name='Lake Baikal'** will fetch its details and display its location on the world's map.
 The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 
 **Requested API:**
@@ -253,11 +231,10 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 **Response:**
 
 .. image:: /_static/cql-filter/example3.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. To filter lakes whose id is not equals to 0, than the filter id<>0 will response with all the lake features except the one with **id=0**.
+* To filter lakes whose id is not equals to 0, than the filter id<>0 will response with all the lake features except the one with **id=0**.
 
 **Requested API:**
 
@@ -266,11 +243,10 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 **Response:**
 
 .. image:: /_static/cql-filter/example4.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. If there is a requirement to fetch only 5 lakes starting from index 10 and having filter as **id>10**. pygeoapi supports limit and startindex request parameters, so an API call is possible with CQL query filter along with other query parameters.
+* If there is a requirement to fetch only 5 lakes starting from index 10 and having filter as **id>10**. pygeoapi supports limit and startindex request parameters, so an API call is possible with CQL query filter along with other query parameters.
 
 **Requested API:**
 
@@ -279,7 +255,6 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 **Response:**
 
 .. image:: /_static/cql-filter/example5.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -287,7 +262,7 @@ Due to the implementation of CQL extension on pygeoapi, all the simple compariso
 
 *The common comparison operators are: <, >, <=, >=, =, <>*
 
-#. To select a range of values the BETWEEN operator can be used like **id BETWEEN 20 AND 25**
+* To select a range of values the BETWEEN operator can be used like **id BETWEEN 20 AND 25**
 
 **Requested API:**
 
@@ -296,11 +271,10 @@ Due to the implementation of CQL extension on pygeoapi, all the simple compariso
 **Response:**
 
 .. image:: /_static/cql-filter/example6.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. If needed to filter out lake features with no admin then **admin IS NULL** will response with required lakes.
+* If needed to filter out lake features with no admin then **admin IS NULL** will response with required lakes.
 
 **Requested API:**
 
@@ -309,7 +283,6 @@ Due to the implementation of CQL extension on pygeoapi, all the simple compariso
 **Response:**
 
 .. image:: /_static/cql-filter/example7.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -317,7 +290,7 @@ Due to the implementation of CQL extension on pygeoapi, all the simple compariso
 String comparisons
 ^^^^^^^^^^^^^^^^^^
 
-#. In one of the above example we have already seen that comparison operators also support text values. For instance, to select only Lake Baikal, the filter was name='Lake Baikal'. But more general text/string comparisons can be made using the LIKE operator. name **NOT LIKE '%Lake%'** will extract all lakes that does not have 'Lake' anywhere in their name.
+* In one of the above example we have already seen that comparison operators also support text values. For instance, to select only Lake Baikal, the filter was name='Lake Baikal'. But more general text/string comparisons can be made using the LIKE operator. name **NOT LIKE '%Lake%'** will extract all lakes that does not have 'Lake' anywhere in their name.
 
 **Requested API:**
 
@@ -326,11 +299,10 @@ String comparisons
 **Response:**
 
 .. image:: /_static/cql-filter/example8.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Suppose we want to find all lakes whose name contains an 'great', regardless of letter case. We cannot use LIKE operator here as it is case sensitive. ILIKE operator can be used to ignore letter casing: **name ILIKE '%great%'**
+* Suppose we want to find all lakes whose name contains an 'great', regardless of letter case. We cannot use LIKE operator here as it is case sensitive. ILIKE operator can be used to ignore letter casing: **name ILIKE '%great%'**
 
 **Requested API:**
 
@@ -339,7 +311,6 @@ String comparisons
 **Response:**
 
 .. image:: /_static/cql-filter/example9.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -351,7 +322,7 @@ The CQL extension on pygeoapi supports all the above specified formats for compa
 List comparisons
 ^^^^^^^^^^^^^^^^
 
-#. If we want to extract only specific lakes whose **name **is in a given list, then we can use the IN operator specifying an attribute name as in **name IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')**
+* If we want to extract only specific lakes whose **name** is in a given list, then we can use the IN operator specifying an attribute name as in **name IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')**
 
 **Requested API:**
 
@@ -360,11 +331,10 @@ List comparisons
 **Response:**
 
 .. image:: /_static/cql-filter/example10.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. If the requirement is to get all the lakes from the collection except the ones specified in the list then **name NOT IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')** will serve our purpose.
+* If the requirement is to get all the lakes from the collection except the ones specified in the list then **name NOT IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')** will serve our purpose.
 
 **Requested API:**
 
@@ -373,7 +343,6 @@ List comparisons
 **Response:**
 
 .. image:: /_static/cql-filter/example11.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -385,7 +354,7 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 
 *The logical operators are: AND, OR*
 
-#. To extract all the lakes whose id is less than 5 and name starts with 'Lake' then the combination of two filters can be formed as **id<5 AND name LIKE "Lake%"**
+* To extract all the lakes whose id is less than 5 and name starts with 'Lake' then the combination of two filters can be formed as **id<5 AND name LIKE "Lake%"**
 
 **Requested API:**
 
@@ -394,11 +363,10 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 **Response:**
 
 .. image:: /_static/cql-filter/example12.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Furthermore, if a lake has an admin and its id is greater than 5 or its name contains 'lake' string irrespective of letter case, then the complex CQL filter query will be like: **admin IS NOT NULL AND id>5 OR name ILIKE "%lake%**
+* Furthermore, if a lake has an admin and its id is greater than 5 or its name contains 'lake' string irrespective of letter case, then the complex CQL filter query will be like: **admin IS NOT NULL AND id>5 OR name ILIKE "%lake%**
 
 **Requested API:**
 
@@ -407,7 +375,6 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 **Response:**
 
 .. image:: /_static/cql-filter/example13.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -415,7 +382,7 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 Spatial filters
 ^^^^^^^^^^^^^^^
 
-#. CQL provides a full set of geometric filter capabilities. Say, for example, if we want to display only the lakes that intersect the (-90,40,-60,45) bounding box. The filter will be **BBOX(geometry, -90, 40, -60, 45)**
+* CQL provides a full set of geometric filter capabilities. Say, for example, if we want to display only the lakes that intersect the (-90,40,-60,45) bounding box. The filter will be **BBOX(geometry, -90, 40, -60, 45)**
 
 **Requested API:**
 
@@ -424,11 +391,10 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example14.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Conversely, we can select the states that do not intersect the bounding box with the filter: **DISJOINT(the_geom, POLYGON((-90 40, -90 45, -60 45, -60 40, -90 40)))**
+* Conversely, we can select the states that do not intersect the bounding box with the filter: **DISJOINT(the_geom, POLYGON((-90 40, -90 45, -60 45, -60 40, -90 40)))**
 
 **Requested API:**
 
@@ -437,11 +403,10 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example15.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. If needed to extract the information of a lake that contains a particular geometry. Then **CONTAINS(geometry, POLYGON((108.58 54.19, 108.37 54.04, 108.48 53.94, 108.77 54.01, 108.77 54.11, 108.58 54.19)))** will return the feature that contains a polygon of specified coordinates.
+* If needed to extract the information of a lake that contains a particular geometry. Then **CONTAINS(geometry, POLYGON((108.58 54.19, 108.37 54.04, 108.48 53.94, 108.77 54.01, 108.77 54.11, 108.58 54.19)))** will return the feature that contains a polygon of specified coordinates.
 
 **Requested API:**
 
@@ -450,11 +415,10 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example16.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. But if needed to extract the information of lakes that are within a particular geometry. Then **WITHIN(geometry,POLYGON((-112.32 49.83, -94.21 49.83, -94.21 59.97, -112.32 59.97, -112.32 49.83)))** will return the features that are within a polygon of specified coordinates.
+* But if needed to extract the information of lakes that are within a particular geometry. Then **WITHIN(geometry,POLYGON((-112.32 49.83, -94.21 49.83, -94.21 59.97, -112.32 59.97, -112.32 49.83)))** will return the features that are within a polygon of specified coordinates.
 
 **Requested API:**
 
@@ -463,11 +427,10 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example17.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. To filter all the lakes that lies beyond 10000 meters from a location (-85 75) but its id should be between 15 and 25. Then the query filter can be **BEYOND(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25**
+* To filter all the lakes that lies beyond 10000 meters from a location (-85 75) but its id should be between 15 and 25. Then the query filter can be **BEYOND(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25**
 
 **Requested API:**
 
@@ -476,11 +439,10 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example18.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. But if to filter all the lakes that lies within 10000 meters from a location (-85 75) but its id should be between 15 and 25. Then the query filter can be **DWITHIN(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25**
+* But if to filter all the lakes that lies within 10000 meters from a location (-85 75) but its id should be between 15 and 25. Then the query filter can be **DWITHIN(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25**
 
 **Requested API:**
 
@@ -489,7 +451,6 @@ Spatial filters
 **Response:**
 
 .. image:: /_static/cql-filter/example19.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
@@ -502,7 +463,7 @@ The CQL extension on pygeoapi supports all the above geometric predicates to per
 Temporal filters
 ^^^^^^^^^^^^^^^^
 
-#. Get all the features whose time value is before a point in time such as **datetime BEFORE 2001-10-30T14:24:54Z**
+* Get all the features whose time value is before a point in time such as **datetime BEFORE 2001-10-30T14:24:54Z**
 
 **Requested API:**
 
@@ -511,11 +472,10 @@ Temporal filters
 **Response:**
 
 .. image:: /_static/cql-filter/example20.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Get all the features whose time value is during a time period such as **datetime DURING 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z**
+* Get all the features whose time value is during a time period such as **datetime DURING 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z**
 
 **Requested API:**
 
@@ -524,11 +484,10 @@ Temporal filters
 **Response:**
 
 .. image:: /_static/cql-filter/example21.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Get all the features whose time value is after a point in time such as **datetime AFTER 2001-10-30T14:24:54Z**
+* Get all the features whose time value is after a point in time such as **datetime AFTER 2001-10-30T14:24:54Z**
 
 **Requested API:**
 
@@ -537,11 +496,10 @@ Temporal filters
 **Response:**
 
 .. image:: /_static/cql-filter/example22.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
-#. Get all the features whose time value is during or after a time period such as **datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z**
+* Get all the features whose time value is during or after a time period such as **datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z**
 
 ***Requested API:***
 
@@ -550,7 +508,6 @@ Temporal filters
 **Response:**
 
 .. image:: /_static/cql-filter/example23.png
-   :scale: 100%
    :alt: example of cql query filter
    :align: center
 
