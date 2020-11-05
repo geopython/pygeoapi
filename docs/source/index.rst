@@ -21,6 +21,7 @@ pygeoapi |release| documentation
    how-pygeoapi-works
    installation
    configuration
+   cql-filters
    administration
    running
    running-with-docker
