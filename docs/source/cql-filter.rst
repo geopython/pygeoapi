@@ -36,7 +36,7 @@ Steps to generate and execute CQL endpoints
 
 2. Go to OpenAPI documentation
 
-.. image:: /_static/cql-filter/open_doc.png
+.. image:: /_static/cql-filter/cql_open_doc.png
    :alt: generate and execute CQL endpoints
    :align: center
 
@@ -62,7 +62,7 @@ Steps to generate and execute CQL endpoints
 .. image:: /_static/cql-filter/cql_query_parameter_value.png
    :alt: generate and execute CQL endpoints
    :align: center
-
+f
 
 5. Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
 
@@ -80,7 +80,7 @@ Steps to generate and execute CQL endpoints
 
 7. Furthermore the response body can be investigated by hitting the generated URL:
 
-``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&`` | ``filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text& filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 
 8. Since the output format was specified as GeoJSON the response from API is the following:
@@ -263,7 +263,7 @@ The requested API to GeoJSON Data provider for filtering Lake Baikal should be:
 
 Due to the implementation of CQL extension on pygeoapi, all the simple comparison operations are now supported on any number of feature collections.
 
-*The common comparison operators are: **<, >, <=, >=, =, <>** *
+*The common comparison operators are: <, >, <=, >=, =, <>*
 
 * To select a range of values the BETWEEN operator can be used like **id BETWEEN 20 AND 25**
 
@@ -317,7 +317,7 @@ String comparisons
    :alt: example of cql query filter
    :align: center
 
-*The comparison on strings can be performed with either of the following: **LIKE, NOT LIKE, ILIKE , NOT LIKE** *
+*The comparison on strings can be performed with either of the following: LIKE, NOT LIKE, ILIKE , NOT LIKE*
 
 The CQL extension on pygeoapi supports all the above specified formats for comparing strings.
 
@@ -361,7 +361,7 @@ Combination filters
 
 The CQL extension on pygeoapi is eligible to support filters that are a combination of more than one simple query filters.
 
-*The logical operators are: **AND, OR** *
+*The logical operators are: AND, OR*
 
 * To extract all the lakes whose id is less than 5 and name starts with 'Lake' then the combination of two filters can be formed as **id<5 AND name LIKE "Lake%"**
 
@@ -465,7 +465,7 @@ Spatial filters
 
 ***No such lakes found*
 
-*The full list of geometric predicates are: **EQUALS, DISJOINT, INTERSECTS, TOUCHES, CROSSES, WITHIN, CONTAINS, OVERLAPS, RELATE, DWITHIN, BEYOND** *
+*The full list of geometric predicates are: EQUALS, DISJOINT, INTERSECTS, TOUCHES, CROSSES, WITHIN, CONTAINS, OVERLAPS, RELATE, DWITHIN, BEYOND*
 
 The CQL extension on pygeoapi supports all the above geometric predicates to perform spatial filters on any feature collection.
 
