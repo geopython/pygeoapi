@@ -82,8 +82,7 @@ Steps to generate and execute CQL endpoints
 
 7. Furthermore the response body can be investigated by hitting the generated URL:
 
-.. code-block:: rst
-http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371
+``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&`` ``filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 
 8. Since the output format was specified as GeoJSON the response from API is the following:
@@ -97,8 +96,7 @@ http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&filter
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&resulttype=hits&
-filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&resulttype=hits&`` ``filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 **Response:**
 
@@ -111,8 +109,7 @@ filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&
-filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&`` ``filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
 
 **Response:**
 
@@ -125,8 +122,7 @@ filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=json&filter-lang=cql-text&
-filter=INTERSECTION(geometry,POINT (-75 45))``
+``http://localhost:5000/collections/obs/items?f=json&filter-lang=cql-text&`` ``filter=INTERSECTION(geometry,POINT (-75 45))``
 
 **Response:**
 
@@ -137,8 +133,7 @@ filter=INTERSECTION(geometry,POINT (-75 45))``
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&
-filter=id IN ['A','B']``
+``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=id IN ['A','B']``
 
 **Response:**
 
@@ -332,7 +327,7 @@ List comparisons
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?limit=1000&filter-lang=cql-text&filter=name IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')``
+``http://localhost:5000/collections/lakes/items?limit=1000&filter-lang=cql-text&`` ``filter=name IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')``
 
 **Response:**
 
@@ -344,7 +339,7 @@ List comparisons
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?limit=1000&filter-lang=cql-text&filter=name NOT IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')``
+``http://localhost:5000/collections/lakes/items?limit=1000&filter-lang=cql-text&`` ``filter=name NOT IN ('Lake Baikal','Lake Huron','Lake Onega','Lake Victoria')``
 
 **Response:**
 
@@ -370,7 +365,7 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?limit=100&filter-lang=cql-text&filter=id<5 AND name LIKE "Lake%"``
+``http://localhost:5000/collections/lakes/items?limit=100&filter-lang=cql-text&`` ``filter=id<5 AND name LIKE "Lake%"``
 
 **Response:**
 
@@ -382,7 +377,7 @@ The CQL extension on pygeoapi is eligible to support filters that are a combinat
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?limit=100&filter-lang=cql-text&filter=admin IS NOT NULL AND id>5 OR name ILIKE "%lake%"``
+``http://localhost:5000/collections/lakes/items?limit=100&filter-lang=cql-text&`` ``filter=admin IS NOT NULL AND id>5 OR name ILIKE "%lake%"``
 
 **Response:**
 
@@ -398,7 +393,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&filter=BBOX(geometry, -90, 40, -60, 45)``
+``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&`` ``filter=BBOX(geometry, -90, 40, -60, 45)``
 
 **Response:**
 
@@ -410,7 +405,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&filter=DISJOINT(the_geom, POLYGON((-90 40, -90 45, -60 45, -60 40, -90 40))``
+``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&`` ``filter=DISJOINT(the_geom, POLYGON((-90 40, -90 45, -60 45, -60 40, -90 40))``
 
 **Response:**
 
@@ -422,7 +417,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&filter=CONTAINS(geometry, POLYGON((108.58 54.19, 108.37 54.04, 108.48 53.94, 108.77 54.01, 108.77 54.11, 108.58 54.19)))``
+``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&`` ``filter=CONTAINS(geometry, POLYGON((108.58 54.19, 108.37 54.04, 108.48 53.94, 108.77 54.01, 108.77 54.11, 108.58 54.19)))``
 
 **Response:**
 
@@ -434,7 +429,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&filter=WITHIN(geometry,POLYGON((-112.32 49.83, -94.21 49.83, -94.21 59.97, -112.32 59.97, -112.32 49.83)))``
+``http://localhost:5000/collections/lakes/items?f=html&filter-lang=cql-text&`` ``filter=WITHIN(geometry,POLYGON((-112.32 49.83, -94.21 49.83, -94.21 59.97, -112.32 59.97, -112.32 49.83)))``
 
 **Response:**
 
@@ -446,7 +441,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&limit=5&filter-lang=cql-text&filter=BEYOND(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25``
+``http://localhost:5000/collections/lakes/items?f=html&limit=5&filter-lang=cql-text&`` ``filter=BEYOND(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25``
 
 **Response:**
 
@@ -458,7 +453,7 @@ Spatial filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/lakes/items?f=html&limit=5&filter-lang=cql-text&filter=DWITHIN(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25``
+``http://localhost:5000/collections/lakes/items?f=html&limit=5&filter-lang=cql-text&`` ``filter=DWITHIN(geometry,POINT(-85 75),10000,meters) AND id BETWEEN 15 AND 25``
 
 **Response:**
 
@@ -479,7 +474,7 @@ Temporal filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=datetime BEFORE 2001-10-30T14:24:54Z``
+``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&`` ``filter=datetime BEFORE 2001-10-30T14:24:54Z``
 
 **Response:**
 
@@ -491,7 +486,7 @@ Temporal filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=datetime DURING 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z``
+``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&`` ``filter=datetime DURING 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z``
 
 **Response:**
 
@@ -503,7 +498,7 @@ Temporal filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=datetime AFTER 2001-10-30T14:24:54Z``
+``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&`` ``filter=datetime AFTER 2001-10-30T14:24:54Z``
 
 **Response:**
 
@@ -515,7 +510,7 @@ Temporal filters
 
 **Requested API:**
 
-``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&filter=datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z``
+``http://localhost:5000/collections/obs/items?f=html&filter-lang=cql-text&`` ``filter=datetime DURING OR AFTER 2003-01-01T00:00:00Z/2005-01-01T00:00:00Z``
 
 **Response:**
 
