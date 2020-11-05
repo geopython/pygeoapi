@@ -12,6 +12,7 @@ This project is based on `OGC API - Features - Part 3: Common Query Language <ht
 
 CQL Filter Predicates
 ---------------------
+
 The following CQL predicates are implemented in pygeoapi to support filtering functionality on features:
 
 *Simple Condition Predicate, Combination Predicate, Not Condition Predicate, Between Predicate, Like Predicate, In Predicate, Null Predicate, BBox Predicate, Spatial Predicate and Temporal Predicate*
@@ -19,6 +20,7 @@ The following CQL predicates are implemented in pygeoapi to support filtering fu
 
 CQL Filter Implementation for Data Providers 
 --------------------------------------------
+
 CQL implementation are provider for following data providers:
 
 * **CQL for CSV and GeoJSON data providers:** Evaluation of the Abstract Syntax Tree to filter the feature collections supported by CSV and GeoJSON data providers. pycql library has implementation connection to databases using ORM, but in pygeoapi the data providers don't work with ORM. So the evaluation for all the CQL query operations are developed from scratch and by using efficient methodlogy. The evaluated output is the response from the API.
@@ -62,7 +64,7 @@ Steps to generate and execute CQL endpoints
 .. image:: /_static/cql-filter/cql_query_parameter_value.png
    :alt: generate and execute CQL endpoints
    :align: center
-f
+   
 
 5. Provide the CQL query parameter in text to filter the collection features Here assigning CQL filter as **WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371** and keeping the default values of all the other parameters.
 
@@ -80,7 +82,8 @@ f
 
 7. Furthermore the response body can be investigated by hitting the generated URL:
 
-``http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text& filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371``
+.. code-block:: rst
+http://localhost:5000/collections/lakes/items?f=json&filter-lang=cql-text&filter=WITHIN(geometry, POLYGON((-80.0 -80.0,-80.0 50,80.0 50,-80.0 -80.0))) AND id<>371
 
 
 8. Since the output format was specified as GeoJSON the response from API is the following:
