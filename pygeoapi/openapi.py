@@ -48,7 +48,8 @@ OPENAPI_YAML = {
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
-    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi'  # noqa
+    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
+    'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
 }
 
 
@@ -725,6 +726,56 @@ def get_oas_30(cfg):
                     }
                 }
             }
+
+        LOGGER.debug('setting up tiles endpoints')
+        edr_extension = filter_providers_by_type(
+            collections[k]['providers'], 'edr')
+
+        if edr_extension:
+            ep = load_plugin('provider', edr_extension)
+
+            edr_query_endpoints = []
+
+            for qt in ep.get_query_types():
+                edr_query_endpoints.append({
+                    'path': '{}/{}'.format(collection_name_path, qt),
+                    'qt': qt,
+                    'op_id': 'query{}{}'.format(qt.capitalize(), k.capitalize())  # noqa
+                })
+                if ep.instances:
+                    edr_query_endpoints.append({
+                        'path': '{}/instances/{{instanceId}}/{}'.format(collection_name_path, qt),  # noqa
+                        'qt': qt,
+                        'op_id': 'query{}Instance{}'.format(qt.capitalize(), k.capitalize())  # noqa
+                    })
+
+            for eqe in edr_query_endpoints:
+                paths[eqe['path']] = {
+                    'get': {
+                        'summary': 'query {} by {}'.format(v['description'], eqe['qt']),  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': eqe['op_id'],
+                        'parameters': [
+                            {'$ref': '{}/parameters/{}Coords.yaml'.format(OPENAPI_YAML['oaedr'], eqe['qt'])},  # noqa
+                            {'$ref': '{}/parameters/datetime.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '{}/parameters/parameter-name.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '{}/parameters/z.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {
+                                'description': 'Response',
+                                'content': {
+                                    'application/prs.coverage+json': {
+                                        'schema': {
+                                            '$ref': '{}/schemas/coverageJSON.yaml'.format(OPENAPI_YAML['oaedr'])}  # noqa
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],

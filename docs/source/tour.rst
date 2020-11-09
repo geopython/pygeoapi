@@ -148,6 +148,7 @@ This page provides metadata catalogue search capabilities
 .. seealso::
    :ref:`ogcapi-records` for more OGC API - Records request examples.
 
+
 Processes
 ---------
 
@@ -158,6 +159,25 @@ The processes page provides a list of process integrated onto the server, along 
 
 .. seealso::
    :ref:`ogcapi-processes` for more OGC API - Processes request examples.
+
+
+Environmental data retrieval
+----------------------------
+
+http://localhost:5000/collections/edr-test
+
+This page provides, in addition to a common collection description, specific
+link relations for EDR queries if the collection has an EDR capability, as
+well as supported parameter names to select.
+
+http://localhost:5000/collections/edr-test/position?coords=POINT(111 13)&parameter-name=SST&f=json
+
+This page executes a position query against a given parameter name, providing
+a response in CoverageJSON.
+
+
+.. seealso::
+   :ref:`ogcapi-edr` for more OGC API - EDR request examples.
 
 
 SpatioTemporal Assets

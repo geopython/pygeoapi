@@ -180,6 +180,31 @@ resources:
                   name: GRIB2
                   mimetype: application/x-grib2
 
+    edr-test:
+        type: collection
+        title: EDR test
+        description: EDR test
+        keywords:
+            - edr
+            - test
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://eccc-msc.github.io/open-data/msc-data/nwp_gdps/readme_gdps_en
+              hreflang: en-CA
+        providers:
+            - type: edr
+              name: EDR
+              data: tests/data/coads_sst.nc
+              format:
+                  name: NetCDF
+                  mimetype: application/x-netcdf
+
     test-data:
         type: stac-collection
         title: pygeoapi test data
