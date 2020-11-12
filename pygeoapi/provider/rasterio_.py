@@ -29,6 +29,7 @@
 
 import logging
 
+from pyproj import CRS, Transformer
 import rasterio
 from rasterio.io import MemoryFile
 import rasterio.mask
@@ -159,14 +160,14 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_subset=[], subsets={}, bbox=[], datetime=None,
+    def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
               format_='json'):
         """
         Extract data from collection collection
         :param range_subset: list of bands
         :param subsets: dict of subset names with lists of ranges
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
@@ -180,11 +181,64 @@ class RasterioProvider(BaseProvider):
         }
         shapes = []
 
-        if not bands and not subsets and format_ != 'json':
+        if all([not bands, not subsets, not bbox, format_ != 'json']):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
 
-        if (self._coverage_properties['x_axis_label'] in subsets and
+        if all([self._coverage_properties['x_axis_label'] in subsets,
+                self._coverage_properties['y_axis_label'] in subsets,
+                len(bbox) > 0]):
+            msg = 'bbox and subsetting by coordinates are exclusive'
+            LOGGER.warning(msg)
+            raise ProviderQueryError(msg)
+
+        if len(bbox) > 0:
+            minx, miny, maxx, maxy = bbox
+
+            crs_src = CRS.from_epsg(4326)
+
+            if 'crs' in self.options:
+                crs_dest = CRS.from_string(self.options['crs'])
+            else:
+                crs_dest = self._data.crs
+
+            if crs_src == crs_dest:
+                LOGGER.debug('source bbox CRS and data CRS are the same')
+                shapes = [{
+                   'type': 'Polygon',
+                   'coordinates': [[
+                       [minx, miny],
+                       [minx, maxy],
+                       [maxx, maxy],
+                       [maxx, miny],
+                       [minx, miny],
+                   ]]
+                }]
+            else:
+                LOGGER.debug('source bbox CRS and data CRS are different')
+                LOGGER.debug('reprojecting bbox into native coordinates')
+
+                t = Transformer.from_crs(crs_src, crs_dest, always_xy=True)
+                minx2, miny2 = t.transform(minx, miny)
+                maxx2, maxy2 = t.transform(maxx, maxy)
+
+                LOGGER.debug('Source coordinates: {}'.format(
+                    [minx, miny, maxx, maxy]))
+                LOGGER.debug('Destination coordinates: {}'.format(
+                    [minx2, miny2, maxx2, maxy2]))
+
+                shapes = [{
+                   'type': 'Polygon',
+                   'coordinates': [[
+                       [minx2, miny2],
+                       [minx2, maxy2],
+                       [maxx2, maxy2],
+                       [maxx2, miny2],
+                       [minx2, miny2],
+                   ]]
+                }]
+
+        elif (self._coverage_properties['x_axis_label'] in subsets and
                 self._coverage_properties['y_axis_label'] in subsets):
             LOGGER.debug('Creating spatial subset')
 
@@ -216,13 +270,17 @@ class RasterioProvider(BaseProvider):
                     out_meta[key] = value
 
             if shapes:  # spatial subset
-                LOGGER.debug('Clipping data with bbox')
-                out_image, out_transform = rasterio.mask.mask(
-                    _data,
-                    filled=False,
-                    shapes=shapes,
-                    crop=True,
-                    indexes=args['indexes'])
+                try:
+                    LOGGER.debug('Clipping data with bbox')
+                    out_image, out_transform = rasterio.mask.mask(
+                        _data,
+                        filled=False,
+                        shapes=shapes,
+                        crop=True,
+                        indexes=args['indexes'])
+                except ValueError as err:
+                    LOGGER.error(err)
+                    raise ProviderQueryError(err)
 
                 out_meta.update({'driver': self.native_format,
                                  'height': out_image.shape[1],
@@ -232,7 +290,9 @@ class RasterioProvider(BaseProvider):
                 LOGGER.debug('Creating data in memory with band selection')
                 out_image = _data.read(indexes=args['indexes'])
 
-            if shapes:
+            if bbox:
+                out_meta['bbox'] = [bbox[0], bbox[1], bbox[2], bbox[3]]
+            elif shapes:
                 out_meta['bbox'] = [
                     subsets[x][0], subsets[y][0],
                     subsets[x][1], subsets[y][1]

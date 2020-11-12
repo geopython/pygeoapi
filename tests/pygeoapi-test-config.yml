@@ -131,7 +131,7 @@ resources:
                   y_field: lat
 
     cmip5:
-        type: cmip5
+        type: collection
         title: CMIP5 sample
         description: CMIP5 sample
         keywords:

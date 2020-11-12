@@ -23,7 +23,7 @@ pygeoapi core tile providers are listed below, along with supported storage type
    :header: Provider, local, remote
    :align: left
 
-   MVT,✔️,✔️
+   MVT,✅,✅
 
 
 Below are specific connection examples based on supported providers.

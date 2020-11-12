@@ -72,14 +72,18 @@ class CSVProvider(BaseProvider):
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], datetime=None, properties=[]):
+              identifier=None, bbox=[], datetime_=None, properties=[],
+              select_properties=[], skip_geometry=False):
         """
         Load CSV data
 
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
+        :param datetime_: temporal (datestamp or extent)
         :param resulttype: return results or hit limit (default results)
         :param properties: list of tuples (name, value)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of GeoJSON FeatureCollection
         """
@@ -102,16 +106,19 @@ class CSVProvider(BaseProvider):
             for row in itertools.islice(data_, startindex, startindex+limit):
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
-                feature['geometry'] = {
-                    'type': 'Point',
-                    'coordinates': [
-                        float(row.pop(self.geometry_x)),
-                        float(row.pop(self.geometry_y))
-                    ]
-                }
-                if self.properties:
+                if not skip_geometry:
+                    feature['geometry'] = {
+                        'type': 'Point',
+                        'coordinates': [
+                            float(row.pop(self.geometry_x)),
+                            float(row.pop(self.geometry_y))
+                        ]
+                    }
+                else:
+                    feature['geometry'] = None
+                if self.properties or select_properties:
                     feature['properties'] = OrderedDict()
-                    for p in self.properties:
+                    for p in set(self.properties) | set(select_properties):
                         try:
                             feature['properties'][p] = row[p]
                         except KeyError as err:
@@ -138,7 +145,8 @@ class CSVProvider(BaseProvider):
         return feature_collection
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         CSV query
 
@@ -146,14 +154,18 @@ class CSVProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
 
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, limit, resulttype)
+        return self._load(startindex, limit, resulttype,
+                          select_properties=select_properties,
+                          skip_geometry=skip_geometry)
 
     def get(self, identifier):
         """

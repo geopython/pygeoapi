@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+from datetime import datetime
 import logging
 
 from bson import Code
@@ -95,7 +96,8 @@ class MongoProvider(BaseProvider):
         return featurelist, matchCount
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         query the provider
 
@@ -110,9 +112,9 @@ class MongoProvider(BaseProvider):
 
         # This parameter is not working yet!
         # gte is not sufficient to check date range
-        if datetime is not None:
-            assert isinstance(datetime.datetime, datetime)
-            and_filter.append({'properties.datetime': {'$gte': datetime}})
+        if datetime_ is not None:
+            assert isinstance(datetime_, datetime)
+            and_filter.append({'properties.datetime': {'$gte': datetime_}})
 
         for prop in properties:
             and_filter.append({"properties."+prop[0]: {'$eq': prop[1]}})
