@@ -33,6 +33,7 @@ Returns content from plugins and sets reponses
 """
 
 from datetime import datetime
+from functools import partial
 import json
 import logging
 import os
@@ -2181,12 +2182,12 @@ def validate_bbox(value=None):
 
 def validate_datetime(resource_def, datetime_=None):
     """
-    Helper function to validate bbox parameter
+    Helper function to validate temporal parameter
 
     :param resource_def: `dict` of configuration resource definition
     :param datetime_: `str` of datetime parameter
 
-    :returns: datetime object(s)
+    :returns: `str` datetime_ input, if valid
     """
 
     # TODO: pass datetime to query as a `datetime` object
@@ -2199,6 +2200,12 @@ def validate_datetime(resource_def, datetime_=None):
     datetime_invalid = False
 
     if (datetime_ is not None and 'temporal' in resource_def):
+
+        dateparse_begin = partial(dateparse, default=datetime.min)
+        dateparse_end = partial(dateparse, default=datetime.max)
+        unix_epoch = datetime(1970, 1, 1, 0, 0, 0)
+        dateparse_ = partial(dateparse, default=unix_epoch)
+
         te = resource_def['temporal']
 
         if te['begin'] is not None and te['begin'].tzinfo is None:
@@ -2211,36 +2218,35 @@ def validate_datetime(resource_def, datetime_=None):
             LOGGER.debug('Validating time windows')
             datetime_begin, datetime_end = datetime_.split('/')
             if datetime_begin != '..':
-                datetime_begin = dateparse(datetime_begin)
+                datetime_begin = dateparse_begin(datetime_begin)
                 if datetime_begin.tzinfo is None:
                     datetime_begin = datetime_begin.replace(
                         tzinfo=pytz.UTC)
 
             if datetime_end != '..':
-                datetime_end = dateparse(datetime_end)
+                datetime_end = dateparse_end(datetime_end)
                 if datetime_end.tzinfo is None:
                     datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
 
-            if te['begin'] is not None and datetime_begin != '..':
-                if datetime_begin < te['begin']:
-                    datetime_invalid = True
-
-            if te['end'] is not None and datetime_end != '..':
-                if datetime_end > te['end']:
-                    datetime_invalid = True
+            datetime_invalid = any([
+                (te['begin'] is not None and datetime_begin != '..' and
+                    datetime_begin < te['begin']),
+                (te['end'] is not None and datetime_end != '..' and
+                    datetime_end > te['end'])
+            ])
 
         else:  # time instant
-            datetime__ = dateparse(datetime_)
+            LOGGER.debug('detected time instant')
+            datetime__ = dateparse_(datetime_)
             if datetime__ != '..':
                 if datetime__.tzinfo is None:
                     datetime__ = datetime__.replace(tzinfo=pytz.UTC)
-            LOGGER.debug('detected time instant')
-            if te['begin'] is not None and datetime__ != '..':
-                if datetime__ < te['begin']:
-                    datetime_invalid = True
-            if te['end'] is not None and datetime__ != '..':
-                if datetime__ > te['end']:
-                    datetime_invalid = True
+            datetime_invalid = any([
+                (te['begin'] is not None and datetime__ != '..' and
+                    datetime__ < te['begin']),
+                (te['end'] is not None and datetime__ != '..' and
+                    datetime__ > te['end'])
+            ])
 
     if datetime_invalid:
         msg = 'datetime parameter out of range'
