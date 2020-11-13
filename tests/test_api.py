@@ -927,4 +927,6 @@ def test_validate_datetime():
     with pytest.raises(ValueError):
         _ = validate_datetime(config, '2000/..')
     with pytest.raises(ValueError):
+        _ = validate_datetime(config, '../2007')
+    with pytest.raises(ValueError):
         _ = validate_datetime(config, '../2010')
