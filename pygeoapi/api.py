@@ -62,13 +62,9 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-<<<<<<< HEAD
                            get_safe_filepath, get_typed_value, JobStatus,
-                           json_serial, render_j2_template, TEMPLATES, to_json)
-=======
-                           get_typed_value, render_j2_template, str2bool,
-                           TEMPLATES, to_json)
->>>>>>> master
+                           json_serial, render_j2_template, str2bool, TEMPLATES,
+                           to_json)
 
 LOGGER = logging.getLogger(__name__)
 
