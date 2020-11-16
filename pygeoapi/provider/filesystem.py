@@ -30,7 +30,11 @@
 import io
 import logging
 import os
+from json import loads
+from datetime import datetime as dt
 from urllib.parse import urljoin
+from pygeometa.core import read_mcf, MCFReadError
+from pygeometa.schemas.stac import STACItemOutputSchema
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
@@ -207,6 +211,8 @@ class FileSystemProvider(BaseProvider):
 def _describe_file(filepath):
     """
     Helper function to describe a geospatial data
+    First checks if a sidecar mcf file is available, if so uses that
+    if not, script will parse the file to retrieve some info from the file
 
     :param filepath: path to file
 
@@ -218,90 +224,84 @@ def _describe_file(filepath):
         'geometry': None,
         'properties': {}
     }
-
+    
+    # read mcf file (if exists)
+    pth = os.path.splitext(filepath)[0]
     try:
-        from datetime import datetime as dt
-        t = os.path.getmtime(filepath)
-        s = os.path.getsize(filepath)
-        f = "%Y-%m-%d %H:%M"
-        content['properties']['datetime'] = dt.fromtimestamp(t).strftime(f)
-        if s > 0:
-            content['properties']['size'] = str(round(s/100)/10)
-    except ValueError as err:
-        LOGGER.debug(err)
+        md = read_mcf('./{}.yml'.format(pth))
+        stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md) 
+        stacdata = loads(stacjson)
+        for k, v in stacdata.items():
+            content[k] = v
+    except OSError as err:
+        LOGGER.warning('OS error: ' + str(err))
+    except MCFReadError as err:
+        LOGGER.warning('MCF error: ' + str(err))
 
-    try:
-        import rasterio
-        LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
-    except ImportError as err:
-        LOGGER.warning(err)
-        return content
+    if 'datetime' not in content['properties']:
+        try:
+            t = os.path.getmtime(filepath)
+            content['properties']['datetime'] = dt.fromtimestamp(t)
+        except ValueError as err:
+            LOGGER.debug(err)
+    
+    if content['bbox'] is None:
+        try:
+            import rasterio
+        except ImportError as err:
+            LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
+            LOGGER.warning(err)
+            return content
 
-    try:
-        import fiona
-    except ImportError as err:
-        LOGGER.warning('fiona not found. Cannot derive geospatial properties')
-        LOGGER.warning(err)
-        return content
+        try:
+            import fiona
+        except ImportError as err:
+            LOGGER.warning('fiona not found. Cannot derive geospatial properties')
+            LOGGER.warning(err)
+            return content
 
-    try:  # raster
-        LOGGER.debug('Testing raster data detection')
-        d = rasterio.open(filepath)
-        content['bbox'] = [
-            d.bounds.left,
-            d.bounds.bottom,
-            d.bounds.right,
-            d.bounds.top
-        ]
-        content['geometry'] = {
-            'type': 'Polygon',
-            'coordinates': [[
-                [d.bounds.left, d.bounds.bottom],
-                [d.bounds.left, d.bounds.top],
-                [d.bounds.right, d.bounds.top],
-                [d.bounds.right, d.bounds.bottom],
-                [d.bounds.left, d.bounds.bottom]
-            ]]
-        }
-        for k, v in d.tags(1).items():
-            content['properties'][k] = v
-    except rasterio.errors.RasterioIOError:
-        LOGGER.debug('Testing vector data detection')
-        d = fiona.open(filepath)
-
-        if d.schema['geometry'] not in [None, 'None']:
+        try:  # raster
+            LOGGER.debug('Testing raster data detection')
+            d = rasterio.open(filepath)
             content['bbox'] = [
-                d.bounds[0],
-                d.bounds[1],
-                d.bounds[2],
-                d.bounds[3]
+                d.bounds.left,
+                d.bounds.bottom,
+                d.bounds.right,
+                d.bounds.top
             ]
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [d.bounds[0], d.bounds[1]],
-                    [d.bounds[0], d.bounds[3]],
-                    [d.bounds[2], d.bounds[3]],
-                    [d.bounds[2], d.bounds[1]],
-                    [d.bounds[0], d.bounds[1]]
+                    [d.bounds.left, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.top],
+                    [d.bounds.right, d.bounds.top],
+                    [d.bounds.right, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.bottom]
                 ]]
             }
-
-        model = {}
-        for k, v in d.schema['properties'].items():
-            model[k] = v
-        if model.items():
-            content['properties']['model'] = model
-
-        from pygeoapi.util import yaml_load
-        pth = os.path.splitext(filepath)[0]
-        try:
-            with open('./{}.md.yml'.format(pth)) as fh:
-                md = yaml_load(fh)
-            for k, v in md.items():
+            for k, v in d.tags(1).items():
                 content['properties'][k] = v
-        except (FileNotFoundError, IOError):
-            LOGGER.debug('file {}.md.yml not found.'.format(pth))
+        except rasterio.errors.RasterioIOError:
+            LOGGER.debug('Testing vector data detection')
+            d = fiona.open(filepath)
+
+            if d.schema['geometry'] not in [None, 'None']:
+                content['bbox'] = [
+                    d.bounds[0],
+                    d.bounds[1],
+                    d.bounds[2],
+                    d.bounds[3]
+                ]
+                content['geometry'] = {
+                    'type': 'Polygon',
+                    'coordinates': [[
+                        [d.bounds[0], d.bounds[1]],
+                        [d.bounds[0], d.bounds[3]],
+                        [d.bounds[2], d.bounds[3]],
+                        [d.bounds[2], d.bounds[1]],
+                        [d.bounds[0], d.bounds[1]]
+                    ]]
+                }
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
