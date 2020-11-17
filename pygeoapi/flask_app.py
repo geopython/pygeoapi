@@ -38,6 +38,7 @@ from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
+from . flaskutils import PygeoapiFlaskRequest
 
 
 CONFIG = None
@@ -54,6 +55,7 @@ if 'templates' in CONFIG['server']:
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = False
+APP.request_class = PygeoapiFlaskRequest
 
 BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 

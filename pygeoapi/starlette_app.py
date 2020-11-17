@@ -42,6 +42,7 @@ import uvicorn
 
 from pygeoapi.api import API
 from pygeoapi.util import yaml_load
+from .starletteutils import PygeoapiStarlette
 
 CONFIG = None
 
@@ -56,7 +57,7 @@ STATIC_DIR = '{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
 if 'templates' in CONFIG['server']:
     STATIC_DIR = CONFIG['server']['templates'].get('static', STATIC_DIR)
 
-app = Starlette()
+app = PygeoapiStarlette()
 app.mount('/static', StaticFiles(directory=STATIC_DIR))
 
 # CORS: optionally enable from config.
