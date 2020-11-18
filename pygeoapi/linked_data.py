@@ -60,7 +60,7 @@ def jsonldify(func):
         provider = meta.get('provider', {})
         ident = meta.get('identification', {})
         fcmld = {
-          "@context": "https://schema.org/docs/jsonldcontext.jsonld",
+          "@context": "https://schema.org/",
           "@type": "DataCatalog",
           "@id": cfg.get('server', {}).get('url', None),
           "url": cfg.get('server', {}).get('url', None),
