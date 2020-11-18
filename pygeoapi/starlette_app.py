@@ -1,10 +1,12 @@
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 #
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2020 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -35,14 +37,16 @@ import os
 import click
 
 from starlette.staticfiles import StaticFiles
-from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
 import uvicorn
 
 from pygeoapi.api import API
 from pygeoapi.util import yaml_load
-from .starletteutils import PygeoapiStarlette
+from .starletteutils import (
+    PygeoapiRouter,
+    PygeoapiStarlette,
+)
 
 CONFIG = None
 
@@ -57,7 +61,7 @@ STATIC_DIR = '{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
 if 'templates' in CONFIG['server']:
     STATIC_DIR = CONFIG['server']['templates'].get('static', STATIC_DIR)
 
-app = PygeoapiStarlette()
+app = PygeoapiStarlette(router_class=PygeoapiRouter)
 app.mount('/static', StaticFiles(directory=STATIC_DIR))
 
 # CORS: optionally enable from config.

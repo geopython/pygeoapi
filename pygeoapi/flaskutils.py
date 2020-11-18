@@ -35,13 +35,12 @@ from flask import Request
 from werkzeug.datastructures import (
     ImmutableMultiDict,
     iteritems,
-    iter_multi_items,
     iterlists,
     MultiDict,
 )
 
 
-class RequestQueryParamsImmutableMultiDict(ImmutableMultiDict):
+class PygeoapiQueryParamsImmutableMultiDict(ImmutableMultiDict):
     """An ImmutableMultiDict that converts its keys to lowercase
 
     This is useful when used to parse URL query parameters, which can usually
@@ -76,29 +75,6 @@ class RequestQueryParamsImmutableMultiDict(ImmutableMultiDict):
                 tmp.setdefault(key.lower(), []).append(value)
             dict.__init__(self, tmp)
 
-    def __setitem__(self, key: str, value):
-        return super().__setitem__(key.lower(), value)
-
-    def add(self, key: str, value):
-        return super().add(key.lower(), value)
-
-    def setlist(self, key: str, new_list):
-        return super().setlist(key.lower(), new_list)
-
-    def setdefault(self, key: str, default: typing.Optional[typing.Any] = ...):
-        return super().setdefault(key.lower(), default)
-
-    def setlistdefault(
-            self,
-            key: str,
-            default_list: typing.Optional[typing.Any] = ...
-    ):
-        return super().setlistdefault(key.lower(), default_list)
-
-    def update(self, other_dict):
-        for key, value in iter_multi_items(other_dict):
-            MultiDict.add(self, key.lower(), value)
-
 
 class PygeoapiFlaskRequest(Request):
     """A Flask Request subclass to be used by pygeoapi
@@ -107,4 +83,4 @@ class PygeoapiFlaskRequest(Request):
 
     """
 
-    parameter_storage_class = RequestQueryParamsImmutableMultiDict
+    parameter_storage_class = PygeoapiQueryParamsImmutableMultiDict

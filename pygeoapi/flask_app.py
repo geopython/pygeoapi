@@ -2,8 +2,10 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
+#               2020 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,7 +40,7 @@ from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
-from . flaskutils import PygeoapiFlaskRequest
+from .flaskutils import PygeoapiFlaskRequest
 
 
 CONFIG = None

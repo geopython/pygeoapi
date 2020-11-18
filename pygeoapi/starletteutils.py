@@ -35,6 +35,7 @@ import typing
 
 from starlette.applications import Starlette
 from starlette.datastructures import (
+    ImmutableMultiDict,
     QueryParams,
     State,
 )
@@ -57,19 +58,22 @@ from starlette.types import (
     Send,
 )
 
-# customize starlette application in order to supply a custom router
-# customize starlette router in order to supply a custom request_response function...
-
 
 class PygeoapiQueryParams(QueryParams):
-    """
-    Reimplemented in order to convert all query parameter names to lowercase
+    """Reimplemented in order to convert query parameter names to lowercase.
+
+    This is useful when used to parse URL query parameters, which can usually
+    be specified with whatever casing.
+
+    Implementation is based on starlette's ``QueryParams`` class and it simply
+    converts any incoming keys to lower case.
+
     """
 
     def __init__(
             self,
             *args: typing.Union[
-                "ImmutableMultiDict",
+                ImmutableMultiDict,
                 typing.Mapping,
                 typing.List[typing.Tuple[typing.Any, typing.Any]],
                 str,
@@ -82,30 +86,40 @@ class PygeoapiQueryParams(QueryParams):
         self._dict = {k.lower(): str(v) for k, v in self._dict.items()}
 
 
-
 class PygeoapiStarletteRequest(Request):
+    """
+    Custom starlette request class that allows using custom query param parser.
+
+    The default starlette ``Request`` is hardcoded to use starlette's
+    ``QueryParams`` class for parsing a request's query parameters. We want
+    to use a custom parser instead (``PygeoapiQueryParams``).
+
+    """
+
+    query_params_class = PygeoapiQueryParams
 
     @property
     def query_params(self) -> QueryParams:
         if not hasattr(self, "_query_params"):
-            self._query_params = PygeoapiQueryParams(self.scope["query_string"])
+            self._query_params = self.query_params_class(
+                self.scope["query_string"])
         return self._query_params
 
 
-def pygeoapi_request_response(func: typing.Callable) -> ASGIApp:
+def pygeoapi_request_response(
+        func: typing.Callable,
+        request_class: typing.Optional[typing.Type] = Request
+) -> ASGIApp:
     """
-    Takes a function or coroutine `func(request) -> response`,
-    and returns an ASGI application.
-
-    Reimplemented in order to be able to specify a custom starlette Request
-    class
-
+    This is a reimplementation of ``starlette.routing.request_response`` that
+    takes an optional parameter with a custom request class to use instead of
+    starlette's ``Request``.
     """
 
     is_coroutine = iscoroutinefunction_or_partial(func)
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        request = PygeoapiStarletteRequest(scope, receive=receive, send=send)
+        request = request_class(scope, receive=receive, send=send)
         if is_coroutine:
             response = await func(request)
         else:
@@ -116,7 +130,16 @@ def pygeoapi_request_response(func: typing.Callable) -> ASGIApp:
 
 
 class PygeoapiRoute(Route):
-    """Reimplemented in order to supply a custom Request class"""
+    """Reimplemented in order to be able to use a custom request class.
+
+    The default starlette ``Route`` delegates creation of starlette ``Request``
+    instances to the ``starlette.routing.request_response`` function. In order
+    to be able to use a custom request class we need to use a custom function
+    instead. This class is pretty much the same as its base class, with the
+    only change being that it calls ``pygeoapi_request_response`` instead of
+    ``starlette.routing.request_response``.
+
+    """
 
     def __init__(
             self,
@@ -137,8 +160,10 @@ class PygeoapiRoute(Route):
         while isinstance(endpoint_handler, functools.partial):
             endpoint_handler = endpoint_handler.func
         if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
-            # Endpoint is function or method. Treat it as `func(request) -> response`.
-            self.app = pygeoapi_request_response(endpoint)
+            # Endpoint is function or method.
+            # Treat it as `func(request) -> response`.
+            self.app = pygeoapi_request_response(
+                endpoint, request_class=PygeoapiStarletteRequest)
             if methods is None:
                 methods = ["GET"]
         else:
@@ -157,6 +182,7 @@ class PygeoapiRoute(Route):
 
 class PygeoapiRouter(Router):
     """Reimplemented in order to supply a custom Route class"""
+    route_class = PygeoapiRoute
 
     def add_route(
             self,
@@ -166,7 +192,7 @@ class PygeoapiRouter(Router):
             name: str = None,
             include_in_schema: bool = True,
     ) -> None:
-        route = PygeoapiRoute(
+        route = self.route_class(
             path,
             endpoint=endpoint,
             methods=methods,
@@ -177,11 +203,13 @@ class PygeoapiRouter(Router):
 
 
 class PygeoapiStarlette(Starlette):
-    """Reimplemented in order to supply a custom Router class
+    """Custom starlette application that allows using a different router class.
 
-    Pygeoapi is subclassing the default Starlette class in order to be able to
-    control starlette's Request class. This goal is accomplishd by
-    reimplementing a starlette application's default router.
+    The default starlette ``Starlette`` application is hardcoded to use
+    starlette's ``Router`` class for handling routing in the application. We
+    want to be able to specify some custom behavior for starlette's requests
+    and the request is handled by starlette's routes, which in tunr are handled
+    by starlette's router.
 
     """
 
@@ -196,6 +224,7 @@ class PygeoapiStarlette(Starlette):
             on_startup: typing.Sequence[typing.Callable] = None,
             on_shutdown: typing.Sequence[typing.Callable] = None,
             lifespan: typing.Callable[["Starlette"], typing.AsyncGenerator] = None,
+            router_class: typing.Optional[typing.Type] = Router,
     ) -> None:
         # The lifespan context function is a newer style that replaces
         # on_startup / on_shutdown handlers. Use one or the other, not both.
@@ -205,8 +234,11 @@ class PygeoapiStarlette(Starlette):
 
         self._debug = debug
         self.state = State()
-        self.router = PygeoapiRouter(
-            routes, on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
+        self.router = router_class(
+            routes,
+            on_startup=on_startup,
+            on_shutdown=on_shutdown,
+            lifespan=lifespan
         )
         self.exception_handlers = (
             {} if exception_handlers is None else dict(exception_handlers)

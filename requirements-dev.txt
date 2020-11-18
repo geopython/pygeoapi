@@ -5,6 +5,7 @@ flask_cors
 pytest
 pytest-cov
 pytest-env
+pytest-raises
 coverage
 pyld
 
