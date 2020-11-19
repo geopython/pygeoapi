@@ -4,11 +4,8 @@
 / <a href="./collections">Collections</a>
 {% endblock %}
 {% block body %}
-    <section id="collections" itemscope itemtype="https://schema.org/DataCatalog">
-    <meta itemprop="url" content="{{ config['server']['url'] }}" />
-    <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
-    <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
-      <h2>Collections in this service</h2>
+    <section id="collections">
+      <h1>Collections in this service</h1>
             <table class="striped">
               <thead>
               <tr>
@@ -18,14 +15,13 @@
               </thead>
               <tbody>
                 {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'collection').items() %}
-                <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+                <tr>
                   <td data-label="name">
-                    <meta itemprop="url" content="{{ config['server']['url'] }}/collections/{{ k }}" />
                     <a  title="{{ v['title'] | striptags | truncate }}"
                       href="{{ config['server']['url'] }}/collections/{{ k }}">
-                      <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
+                      <span>{{ v['title'] | striptags | truncate }}</span></a>
                   </td>
-                  <td itemprop="description" data-label="description">
+                  <td data-label="description">
                     {{ v['description'] | striptags | truncate }}
                   </td>
                 </tr>
