@@ -34,11 +34,10 @@
                   </thead>
                   <tbody>
                   {% for k, link in data['assets'].items() %}
-                  <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+                  <tr>
                     <td data-label="name">
-                      <meta itemprop="url" content="{{ link['href'] }}"/>
                       <a title="{{ link['href'] }}" href="{{ link['href'] }}">
-                      <span itemprop="name">{{ link['href'] | get_path_basename }}</span></a>
+                      <span>{{ link['href'] | get_path_basename }}</span></a>
                     </td>
                   </tr>
                   {% endfor %}

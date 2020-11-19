@@ -5,10 +5,9 @@
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="processes" itemscope itemtype="https://schema.org/WebAPI">
-      <h2 itemprop="name">{{ data['title'] }}</h2>
-      <div itemprop="description">{{ data['description'] }}</div>
-      <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ data['id'] }}" />
+    <section id="processes">
+      <h2>{{ data['title'] }}</h2>
+      <div>{{ data['description'] }}</div>
       <div class="row">
         <div class="col-sm-12 col-md-6">
             <table class="striped">
@@ -22,10 +21,10 @@
               </thead>
               <tbody>
                 {% for input_ in data['inputs'] %}
-                <tr itemprop="parameter" itemscope itemtype="https://schema.org/Parameter">
-                  <td itemprop="id" data-label="name">{{ input_['id'] }}</td>
-                  <td itemprop="name" data-label="title">{{ input_['title'] }}</td>
-                  <td itemprop="description" data-label="description">
+                <tr>
+                  <td data-label="name">{{ input_['id'] }}</td>
+                  <td data-label="title">{{ input_['title'] }}</td>
+                  <td data-label="description">
                     {{ input_['description'] | striptags | truncate }}
                   </td>
                 </tr>
@@ -38,7 +37,7 @@
       <ul>
       {% for link in data['links'] %}
           <li>
-            <a itemprop="documentation" title="{{ link['rel'] }}" href="{{ link['href'] }}">
+            <a title="{{ link['rel'] }}" href="{{ link['href'] }}">
             {{ link['title'] }} ({{ link['type'] }})
             </a></li>
       {% endfor %}
