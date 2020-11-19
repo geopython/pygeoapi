@@ -6,15 +6,10 @@
 {% block body %}
 
     <section id="identification">
-      <meta itemprop="url" content="{{ config['server']['url'] }}/stac" />
-      <meta itemprop="name" content="{{ data['title'] | striptags }}" />
-      <meta itemprop="name" content="{{ data['description'] | striptags }}" />
-
       <h4>STAC Version: {{ data['stac_version'] }}</h4>
-
     </section>
 
-    <section id="collections" itemscope itemtype="https://schema.org/DataCatalog">
+    <section id="collections">
       <h2>Collections</h2>
             <table class="striped">
               <thead>
@@ -25,14 +20,13 @@
               </thead>
               <tbody>
                 {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'stac-collection').items() %}
-                <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+                <tr>
                   <td data-label="name">
-                    <meta itemprop="url" content="{{ config['server']['url'] }}/stac/{{ k }}" />
                     <a  title="{{ v['title'] | striptags | truncate }}"
                       href="{{ config['server']['url'] }}/stac/{{ k }}">
-                      <span itemprop="name">{{ v['title'] | striptags | truncate }}</span></a>
+                      <span>{{ v['title'] | striptags | truncate }}</span></a>
                   </td>
-                  <td itemprop="description" data-label="description">
+                  <td data-label="description">
                     {{ v['description'] | striptags | truncate }}
                   </td>
                 </tr>
