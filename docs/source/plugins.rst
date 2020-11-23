@@ -68,8 +68,9 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                'field2': 'string'
            }
 
-       def query(self, startindex=0, limit=10, resulttype='results',
-                 bbox=[], datetime=None, properties=[], sortby=[]):
+       def query(self,startindex=0, limit=10, resulttype='results',
+                 bbox=[], datetime_=None, properties=[], sortby=[],
+                 select_properties=[], skip_geometry=False):
 
            # open data file (self.data) and process, return
            return {
