@@ -9,3 +9,6 @@ rasterio
 scipy
 xarray
 zarr
+SPARQLWrapper
+rdflib
+rdflib-jsonld
