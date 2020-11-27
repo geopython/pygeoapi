@@ -15,16 +15,16 @@
               </tr>
               </thead>
               <tbody>
-                {% for v in data['collections']  %}
+                {% for col in data['collections']  %}
                 <tr>
                   <td data-label="name">
-                    <a  title="{{ v['title'] | striptags | truncate }}"
-                      href="{{ config['server']['url'] }}/collections/{{ k }}">
-                      <span>{{ v['title'] | striptags | truncate }}</span></a>
+                    <a  title="{{ col['title'] | striptags | truncate }}"
+                      href="{{ config['server']['url'] }}/collections/{{ col.id }}">
+                      <span>{{ col['title'] | striptags | truncate }}</span></a>
                   </td>
-                  <td data-label="type">{{ v["itemType"] }}</td>
+                  <td data-label="type">{{ col["itemType"] }}</td>
                   <td data-label="description">
-                    {{ v['description'] | striptags | truncate }}
+                    {{ col['description'] | striptags | truncate }}
                   </td>
                 </tr>
                 {% endfor %}
