@@ -411,8 +411,10 @@ class API:
                     self.config['server']['url'], k)
             })
 
+            collection['itemType'] = []
+
             if collection_data_type == 'feature':
-                collection['itemType'] = collection_data_type.capitalize()
+                collection['itemType'].append(collection_data_type.capitalize())
                 LOGGER.debug('Adding feature based links')
                 collection['links'].append({
                     'type': 'application/json',
@@ -451,6 +453,7 @@ class API:
                 })
 
             elif collection_data_type == 'coverage':
+                collection['itemType'].append(collection_data_type.capitalize())
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
                     'type': 'application/json',
@@ -536,6 +539,7 @@ class API:
 
             if tile:
                 LOGGER.debug('Adding tile links')
+                collection['itemType'].append("TILE")
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'tiles',
