@@ -10,19 +10,21 @@
               <thead>
               <tr>
                 <th>Name</th>
+                <th>Type</th>
                 <th>Description</th>
               </tr>
               </thead>
               <tbody>
-                {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'collection').items() %}
+                {% for col in data['collections']  %}
                 <tr>
                   <td data-label="name">
-                    <a  title="{{ v['title'] | striptags | truncate }}"
-                      href="{{ config['server']['url'] }}/collections/{{ k }}">
-                      <span>{{ v['title'] | striptags | truncate }}</span></a>
+                    <a  title="{{ col['title'] | striptags | truncate }}"
+                      href="{{ config['server']['url'] }}/collections/{{ col.id }}">
+                      <span>{{ col['title'] | striptags | truncate }}</span></a>
                   </td>
+                  <td data-label="type">{{ col["itemType"] }}</td>
                   <td data-label="description">
-                    {{ v['description'] | striptags | truncate }}
+                    {{ col['description'] | striptags | truncate }}
                   </td>
                 </tr>
                 {% endfor %}
