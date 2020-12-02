@@ -31,6 +31,9 @@ import logging
 from SPARQLWrapper import SPARQLWrapper, JSON, RDFXML
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
+import json
+import shapely.wkt
+import geojson
 
 from base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
@@ -71,6 +74,22 @@ class GeoSPARSQLProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features or coverage data
         """
 
+ 
+    def _issueQuery(self, query, retFormat):
+        
+        sparql = SPARQLWrapper(self.endpoint)
+        sparql.setQuery(query)
+        sparql.setReturnFormat(retFormat)
+        
+        try:
+            results = sparql.query().convert()
+        except Exception as err:
+            LOGGER.error('Error issuing sqarql query: {}'.format(query))
+            LOGGER.error(err)
+            raise ProviderQueryError(err)
+
+        return results
+
     
     def get(self, identifier):
         """
@@ -80,17 +99,51 @@ class GeoSPARSQLProvider(BaseProvider):
         :returns: dict of single GeoJSON feature
         """
 
-        print("The endpoint: " + str(self.endpoint))
+#        print("The endpoint: " + str(self.endpoint))
         sparql = SPARQLWrapper(self.endpoint)
-        sparql.setQuery("""
-           CONSTRUCT {<%s> ?predicate ?object}
-               WHERE {<%s> ?predicate ?object}
-        """ % (identifier, identifier))
-        print("the query:\n" + sparql.getQuery())
+#
+#        # Obtain Feature properties
+#        sparql.setQuery("""
+#           CONSTRUCT {<%s> ?predicate ?object}
+#               WHERE {<%s> ?predicate ?object}
+#        """ % (identifier, identifier))
+#
+#        sparql.setReturnFormat(RDFXML)
+#        results = sparql.query().convert()
+       
+        # Obtain Feature properties 
+        results = self._issueQuery("""
+            CONSTRUCT {<%s> ?predicate ?object}
+                WHERE {<%s> ?predicate ?object}
+        """ % (identifier, identifier), RDFXML)
+       
+        props = json.loads(results.serialize(format='json-ld', indent=2))
 
-        sparql.setReturnFormat(RDFXML)
-        results = sparql.query().convert()
-        return results.serialize(format='json-ld', indent=2)
+        # Obtain Feature geometry
+        resultsGeo = self._issueQuery("""
+             PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+             SELECT ?predicate ?object 
+              WHERE { <%s> geo:hasGeometry ?geom .
+                      ?geom ?predicate ?object . }
+        """ % (identifier), JSON)
+
+        predicate = resultsGeo["results"]["bindings"][1]["predicate"] 
+        object = resultsGeo["results"]["bindings"][1]["object"] 
+
+        if predicate["value"] == "http://www.opengis.net/ont/geosparql#asWKT":
+            geom = shapely.wkt.loads(object["value"])
+        else:
+            raise ProviderNoDataError("Geometry not found for feature %s"
+                                      % (identifier))
+
+
+        return geojson.Feature(geometry=geom, properties=props)
+
+        # This is a string, must be converted into a dictionary
+        # return results.serialize(format='json-ld', indent=2)
+
+        # Convert WKT to GeoJSON
+        # https://gist.github.com/drmalex07/5a54fc4f1db06a66679e
 
 
     def create(self, new_feature):
