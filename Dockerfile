@@ -101,6 +101,7 @@ RUN \
 	&& pip3 uninstall --yes wheel \
 	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
 	&& apt autoremove -y  \
+	&& apt-get --no-install-recommends install -y python3-gdal \
 	&& rm -rf /var/lib/apt/lists/*
 
 ADD . /pygeoapi
