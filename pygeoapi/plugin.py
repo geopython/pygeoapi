@@ -40,7 +40,7 @@ PLUGINS = {
         'CSV': 'pygeoapi.provider.csv_.CSVProvider',
         'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',  # noqa
         'ElasticsearchCatalogue': 'pygeoapi.provider.elasticsearch_.ElasticsearchCatalogueProvider',  # noqa
-        'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
+        'GeoJSON': 'pygeoapi.provider.geojson_prov.GeoJSONProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
@@ -50,6 +50,7 @@ PLUGINS = {
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider'
+        'GeoSPARQL': 'pygeoapi.provider.mvt.GeoSPARQLProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
