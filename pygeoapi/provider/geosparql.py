@@ -35,12 +35,12 @@ import json
 import shapely.wkt
 import geojson
 
-from base import (BaseProvider, ProviderQueryError,
+from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
 #LOGGER = logging.getLogger(__name__)
 
-class GeoSPARSQLProvider(BaseProvider):
+class GeoSPARQLProvider(BaseProvider):
     """Generic provider for GeoSPARQL endpoints 
     based on RDFlib and SPARQLWrapper
     """
@@ -99,18 +99,6 @@ class GeoSPARSQLProvider(BaseProvider):
         :returns: dict of single GeoJSON feature
         """
 
-#        print("The endpoint: " + str(self.endpoint))
-        sparql = SPARQLWrapper(self.endpoint)
-#
-#        # Obtain Feature properties
-#        sparql.setQuery("""
-#           CONSTRUCT {<%s> ?predicate ?object}
-#               WHERE {<%s> ?predicate ?object}
-#        """ % (identifier, identifier))
-#
-#        sparql.setReturnFormat(RDFXML)
-#        results = sparql.query().convert()
-       
         # Obtain Feature properties 
         results = self._issueQuery("""
             CONSTRUCT {<%s> ?predicate ?object}
@@ -136,14 +124,7 @@ class GeoSPARSQLProvider(BaseProvider):
             raise ProviderNoDataError("Geometry not found for feature %s"
                                       % (identifier))
 
-
         return geojson.Feature(geometry=geom, properties=props)
-
-        # This is a string, must be converted into a dictionary
-        # return results.serialize(format='json-ld', indent=2)
-
-        # Convert WKT to GeoJSON
-        # https://gist.github.com/drmalex07/5a54fc4f1db06a66679e
 
 
     def create(self, new_feature):

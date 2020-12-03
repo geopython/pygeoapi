@@ -12,3 +12,4 @@ zarr
 SPARQLWrapper
 rdflib
 rdflib-jsonld
+shapely
