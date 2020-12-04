@@ -48,13 +48,13 @@ def config():
 def test_get(config):
     """Testing query for a specific GeoSPARQL feature with geometry"""
 
+    rdf_label = "http://www.w3.org/2000/01/rdf-schema#label"
     p = GeoSPARQLProvider(config)
     result = p.get("http://www.example.org/POI#WashingtonMonument")
     assert isinstance(result, dict)
     assert 'geometry' in result
     assert 'properties' in result
-    assert 'Washington Monument' in result['properties']['http://www.w3.org/2000/01/rdf-schema#label']
-
+    assert 'Washington Monument' in result['properties'][0][rdf_label][0]['@value']
 
 
 
