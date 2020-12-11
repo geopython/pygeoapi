@@ -1,0 +1,15 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix ex: <http://www.example.org/POI#> .
+@prefix sf: <http://www.opengis.net/ont/sf#> .
+ex:Atomium a ex:Monument;
+ rdfs:label "Atomium";
+ geo:hasGeometry ex:AtPoint .
+ex:AtPoint a sf:Point;
+ geo:asWKT "POINT(50.894722 4.341111)"^^geo:wktLiteral.
+ex:Parthenon a ex:Monument;
+ rdfs:label "Parthenon";
+ geo:hasGeometry ex:PaPoint .
+ex:PaPoint a sf:Point;
+ geo:asWKT "POINT(37.97151 23.72665)"^^geo:wktLiteral.
