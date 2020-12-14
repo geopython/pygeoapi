@@ -64,7 +64,7 @@ ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
 	DEB_BUILD_DEPS="tzdata build-essential libpython3-dev libgdal-dev python3-pip apt-utils curl git unzip" \
 	DEB_PACKAGES="locales libgdal27 python3-distutils python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
-	PIP_PACKAGES="setuptools==49.3.1 greenlet==0.4.16 gunicorn==20.0.4 gevent==1.5.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	PIP_PACKAGES="setuptools==49.3.1 greenlet==0.4.17 gunicorn==20.0.4 gevent==20.9.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
 
 RUN mkdir -p /pygeoapi/pygeoapi
 # Add files required for pip/setuptools
