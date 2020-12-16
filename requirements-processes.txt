@@ -1,1 +1,0 @@
-git+https://github.com/manaakiwhenua/wkt-reprojector-plugin.git@master

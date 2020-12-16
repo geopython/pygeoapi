@@ -32,6 +32,7 @@ __version__ = '0.9.dev0'
 import click
 from pygeoapi.openapi import generate_openapi_document
 
+
 @click.group()
 @click.version_option(version=__version__)
 def cli():

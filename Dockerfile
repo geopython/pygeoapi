@@ -92,7 +92,6 @@ RUN \
 	&& pip3 install -r requirements.txt \
 	&& pip3 install -r requirements-dev.txt \
 	&& pip3 install -r requirements-provider.txt \
-	&& pip3 install -r requirements-processes.txt \
 	&& pip3 install -e . \
 	# OGC schemas local setup
 	&& mkdir /schemas.opengis.net \
