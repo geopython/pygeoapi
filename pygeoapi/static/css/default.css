@@ -1,33 +1,24 @@
-html, body {
-    background-color: #fff;
-}
-
 .flat {
-    border: 0;
+    border: 0px;
 }
 
 header {
     display: inline-block;
 }
 
-/* cancel mini-css header>button uppercase */
-header button, header [type="button"], header .button, header [role="button"] {
-    text-transform: none;
-}
-
 main {
-    background-color: white;
-    padding-bottom: 65px; /* prevent from falling under the footer */
+    background-color:white
 }
 
 .crumbs {
-    background-color: rgb(230, 230, 230);
+    background-color:rgb(230, 230, 230);
     padding: 6px;
 }
 
 .crumbs a {
-    color: black;
     padding: 0px 6px;
+    color:black;
+/*    text-transform: capitalize;*/
 }
 
 #items-map {
@@ -35,252 +26,24 @@ main {
     height: 400px;
 }
 
+/* cancel mini-css header>button uppercase */
+header button, header [type="button"], header .button, header [role="button"] {
+      text-transform: none;
+}
+
+html, body {
+    background-color: #fff;
+}
+
 footer.sticky {
     position: fixed;
     width: 100%;
 }
 
+main {
+    padding-bottom: 65px; /* prevent from falling under the footer */
+}
+
 table:not(.horizontal) {
     max-height: none;
-}
-
-table {
-    empty-cells: show;
-    table-layout: auto;
-}
-
-th, td {
-  width: auto;
-}
-
-td.small {
-  font-size: smaller;
-}
-
-table mark {
-  font-size: 80%;
-  font-weight: 600;
-}
-
-#process table th,
-#process table td {
-  font-size: 80%;
-  overflow-x: visible;
-}
-
-#process table td[itemprop="id"],
-#process table td[data-label="Default Value"] {
-   font-family: monospace;
-}
-
-#process-example {
-  margin-top: 10px;
-  background: var(--header-back-color);
-  color: var(--header-fore-color);
-}
-
-.job-form-input:not([type='checkbox']) {
-  width: 100%;
-}
-
-.form-style-1 {
-	margin: 10px auto;
-	padding: 20px 20px 10px 20px;
-}
-.form-style-1 li {
-	padding: 0;
-	display: block;
-	list-style: none;
-	margin: 10px 0 0 0;
-}
-.form-style-1 label{
-	margin: 6px 0 0 6px;
-	padding: 0;
-	font-weight: bold;
-  display: block;
-
-}
-input[type='radio'] + label {
-  font-weight: normal;
-  display: inline;
-}
-
-.form-style-1 input[type=submit], .form-style-1 input[type=button]{
-	border: none;
-}
-
-.job-results {
-  color: green;
-  overflow: hidden;
-  transition:all 2s ease-in;
-}
-
-mark.successful {
-  background-color: green;
-}
-
-mark.accepted {
-  background-color: default;
-}
-
-mark.failed {
-  background-color: red;
-}
-
-mark.running {
-  background-color: orange;
-}
-
-#job-results {
-  border: 1px solid #eee;
-  border-left-color: #1b809e;
-  border-left-width: 5px;
-  border-radius: 3px;
-  margin: 4px;
-  margin-right: 9px;
-  padding: 20px;
-}
-
-#job-results h3 {
-  color: #1b809e;
-}
-
-#job-results:empty {
-  visibility: hidden;
-  padding: 0;
-}
-
-.renderjson a {
-  text-decoration: none;
-}
-.renderjson .disclosure {
-  color: black;
-  font-size: 120%;
-}
-.renderjson .syntax {
-  color: #ABB2BF;
-}
-.renderjson .string {
-  color: #98C379;
-}
-.renderjson .number {
-  color: #D19A66;
-}
-.renderjson .boolean {
-  color: plum;
-}
-.renderjson .key {
-  color: #E06C75;
-}
-.renderjson .keyword {
-  color: lightgoldenrodyellow;
-}
-.renderjson .object.syntax {
-  color: #ABB2BF;
-}
-.renderjson .array.syntax {
-  color: #ABB2BF;
-}
-
-.toast a {
-  color: white;
-  text-decoration: underline;
-}
-
-table progress {
-  margin-left: 0;
-  margin-right: 0;
-}
-
-#job-status {
-  border: 2px solid;
-  border-radius: 3px;
-}
-
-#job-status.successful {
-  border-color: green;
-}
-
-#job-status.accepted {
-  border-color: default;
-}
-
-#job-status.failed {
-  border-color: red;
-}
-
-#job-status.running {
-  border-color: orange;
-}
-
-#job-status-header {
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  height: 50px;
-  margin-top: 0;
-  padding: 10px;
-  padding-left: 30px;
-  padding-right: 30px;
-}
-
-#job-status-header.successful {
-  background-color: lightgreen;
-}
-
-#job-status-header.accepted {
-  background-color: default;
-}
-
-#job-status-header.failed {
-  background-color: pink;
-}
-
-#job-status-header.running {
-  background-color: yellow;
-}
-
-#job-status-header > .progress,
-#job-status-header > .spinner {
-  float: right;
-}
-
-#job-status-header > span {
-  line-height: 50px;
-}
-
-#job-status-body {
-  margin: 20px;
-  padding: 5px;
-}
-
-#job-status-body > .message {
-  background-color: var(--header-back-color);;
-  border-radius: 3px;
-  padding: 15px;
-}
-
-#job-status-body > .message > h3 {
-  color: grey;
-}
-
-#job-status-body > .links > ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-label {
-  padding: 0;
-}
-
-#job-status-body h4 label {
-  color: grey;
-  font-size: 0.8em;
-}
-
-#job-status-body h4 {
-  margin-bottom: 0;
-}
-
-#job-status-body > .duration > p {
-  margin-top: 0;
 }

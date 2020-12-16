@@ -54,9 +54,6 @@ if 'templates' in CONFIG['server']:
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = False
-# TODO make configurable
-APP.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 * 1024 # 1 GB max file upload
-APP.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 
@@ -361,8 +358,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     return response
 
 
-
-@BLUEPRINT.route('/processes', methods=['GET'])
+@BLUEPRINT.route('/processes')
 @BLUEPRINT.route('/processes/<process_id>')
 def processes(process_id=None):
     """
@@ -384,30 +380,28 @@ def processes(process_id=None):
 
 
 @BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
-@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>', methods=['GET', 'DELETE'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
+                 methods=['GET', 'DELETE'])
 def process_jobs(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
     :param process_id: process identifier
-    :param job_id: job identifier (server-generated)
+    :param job_id: job identifier
 
     :returns: HTTP response
     """
-    if not job_id:
-        # Request a new job (POST)
-        # Get array of all job IDs (GET)
-        # TODO review use of "document" label as magical
-        data = request.data or request.form.get('document')
-        headers, status_code, content = api_.execute_process(
-            request.method, request.headers, request.args, data, process_id,
-            files=request.files)
-    else:
+
+    if job_id is None:  # list or submit job
+        if request.method == 'GET':
+            headers, status_code, content = ({}, 200, "[]")
+        elif request.method == 'POST':
+            headers, status_code, content = api_.execute_process(
+                request.headers, request.args, request.data, process_id)
+    else:  # get or delete job
         if request.method == 'DELETE':
-            # TODO: starlet api
             headers, status_code, content = api_.delete_job(process_id, job_id)
-        else:
-            # Return status of a specific job
+        else:  # Return status of a specific job
             headers, status_code, content = api_.retrieve_job_status(
                 request.headers, request.args, process_id, job_id
             )
@@ -419,24 +413,21 @@ def process_jobs(process_id=None, job_id=None):
 
     return response
 
+
 @APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
 def retrieve_job_result(process_id=None, job_id=None):
     """
     OGC API - Processes job result endpoint
 
-    Under synchronous execution, these results would have been returned to the
-    client already (but can be requested again). Under asyncronous execution,
-    this is the endpoint a client hits to obtain their results, via a Location
-    header.
-
     :param process_id: process identifier
-    :param job_id: job identifier (server-generated)
+    :param job_id: job identifier
 
     :returns: HTTP response
     """
+
     headers, status_code, content = api_.retrieve_job_result(
-        request.method, request.headers, request.args, request.data, process_id, job_id
-    )
+        request.method, request.headers, request.args, request.data,
+        process_id, job_id)
 
     response = make_response(content, status_code)
 
@@ -445,11 +436,31 @@ def retrieve_job_result(process_id=None, job_id=None):
 
     return response
 
-@APP.route('/processes/<process_id>/jobs/<job_id>/results/<filename>', methods=['GET'])
-def download_file(process_id, job_id, filename):
-    # TODO pass 'mimetype' kwarg
-    dir = os.path.join(APP.config['UPLOAD_FOLDER'], process_id, job_id, 'output')
-    return send_from_directory(dir, filename, as_attachment=True, conditional=True)
+
+@APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
+           methods=['GET'])
+def retrieve_job_resource(process_id, job_id, resource):
+    """
+    OGC API - Processes job result endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+    :param resource: job resource
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.retrieve_job_resource(
+        request.method, request.headers, request.args, request.data,
+        process_id, job_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
 
 @BLUEPRINT.route('/stac')
 def stac_catalog_root():
@@ -511,6 +522,7 @@ def serve(ctx, server=None, debug=False):
     # setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
+
 
 if __name__ == '__main__':  # run locally, for testing
     serve()
