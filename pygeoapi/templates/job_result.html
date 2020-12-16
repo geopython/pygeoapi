@@ -10,11 +10,9 @@
 {% block body %}
   <section id="jobs">
     <h2>Results of job {{data.job.id}}</h2>
-    <div id="results"></div>
+    <pre id="results"></pre>
   </section>
-  <script src="{{ config['server']['url'] }}/static/js/renderjson.js"></script>
   <script>
-    renderjson.set_show_to_level(2);
-    document.getElementById("results").appendChild(renderjson(JSON.parse('{{data.result|tojson}}')));
+    document.getElementById('results').innerHTML = JSON.stringify({{ data.result }}, undefined, 2);
   </script>
 {% endblock %}

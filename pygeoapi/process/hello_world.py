@@ -29,7 +29,8 @@
 
 import logging
 
-from pygeoapi.process.base import BaseProcessor
+from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +39,9 @@ PROCESS_METADATA = {
     'version': '0.2.0',
     'id': 'hello-world',
     'title': 'Hello World',
-    'description': 'An example process that takes a name as input, and echoes it back as output. Intended to demonstrate a simple process with a single literal input.',
+    'description': 'An example process that takes a name as input, and echoes'
+                   'it back as output. Intended to demonstrate a simple'
+                   'process with a single literal input.',
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
@@ -48,9 +51,10 @@ PROCESS_METADATA = {
         'hreflang': 'en-US'
     }],
     'inputs': [{
-        'id': 'name', # TODO a URI?
+        'id': 'name',
         'title': 'Name',
-        'abstract': 'The name of the person or entity that you wish to be echoed back as an output.',
+        'abstract': 'The name of the person or entity that you wish to be'
+                    'echoed back as an output',
         'input': {
             'literalDataDomain': {
                 'dataType': 'string',
@@ -61,12 +65,12 @@ PROCESS_METADATA = {
         },
         'minOccurs': 1,
         'maxOccurs': 1,
-        'metadata': None, # TODO how to use?
+        'metadata': None,  # TODO how to use?
         'keywords': ['full name', 'personal']
     }, {
         'id': 'message',
         'title': 'Message',
-        'abstract': 'An optional message to echo as well.',
+        'abstract': 'An optional message to echo as well',
         'input': {
             'literalDataDomain': {
                 'dataType': 'string',
@@ -83,7 +87,8 @@ PROCESS_METADATA = {
     'outputs': [{
         'id': 'echo',
         'title': 'Hello, world',
-        'description': 'A "hello world" echo with the name and (optional) message submitted for processing.',
+        'description': 'A "hello world" echo with the name and (optional)'
+                       'message submitted for processing',
         'output': {
             'formats': [{
                 'mimeType': 'application/json'
@@ -93,9 +98,9 @@ PROCESS_METADATA = {
     'example': {
         'inputs': [{
             'id': 'name',
-            'value': 'Some name',
+            'value': 'World',
             'type': 'text/plain'
-        },{
+        }, {
             'id': 'message',
             'value': 'An optional message.',
             'type': 'text/plain'
@@ -110,17 +115,23 @@ class HelloWorldProcessor(BaseProcessor):
     def __init__(self, processor_def):
         """
         Initialize object
+
         :param processor_def: provider definition
+
         :returns: pygeoapi.process.hello_world.HelloWorldProcessor
         """
 
         BaseProcessor.__init__(self, processor_def, PROCESS_METADATA)
 
     def execute(self, data):
-        name = data.get('name')
-        if not name:
-            raise Exception('Cannot process without a name')
-        value = 'Hello {}! {}'.format(data['name'], data.get('message', '')).strip()
+
+        name = data.get('name', None)
+
+        if name is None:
+            raise ProcessorExecuteError('Cannot process without a name')
+
+        value = 'Hello {}! {}'.format(name, data.get('message', '')).strip()
+
         outputs = [{
             'id': 'echo',
             'value': value

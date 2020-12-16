@@ -1,8 +1,5 @@
 {% extends "base.html" %}
 {% block title %}{{ super() }} Job status {% endblock %}
-{% block form_js %}
-<script src="{{ config['server']['url'] }}/static/js/deleteJob.js"></script>
-{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../">Processes</a>
 / <a href="../">{{ data.process.title }}</a>
@@ -18,28 +15,8 @@
         <div class="col-md-12">
           <div id="job-status" class="{{ data.job.status }}">
             <div id="job-status-header" class="{{ data.job.status }}">
-              <span>
-                <!-- TODO i18n -->
-                {% if data.job.status == 'successful' %}
-                  <span class="icon-info"></span>
-                  Your job was successful!
-                {% elif data.job.status == 'accepted' %}
-                  <span class="icon-info"></span>
-                  Your job has been accepted and is awaiting processing
-                {% elif data.job.status == 'running' %}
-                  <span class="icon-info"></span>
-                  Your job is in progress
-                {% elif data.job.status == 'failed' %}
-                  <span class="icon-alert"></span>
-                  We failed to process your job
-                {% endif %}
-              </span>
-              <span class="progress">
-                {{ data.job.progress }}%
-              </span>
-              {% if data.job.status == 'running' %}
-                <span class="spinner"></span>
-              {% endif %}
+              <p>Status: {{ data['job']['status'] }}</p>
+              <p class="progress">Progress: {{ data.job.progress }}%</p>
             </div>
             <div id="job-status-body">
               <div class="message">
@@ -52,15 +29,15 @@
                 <h4><label for="runtime">Runtime</label></h4>
                 <p><span id="runtime">
                   {% if data.job.status == 'running' %}
-                    {{ data.job.process_start_datetime|duration(data.now) }}
+                    {{ data.job.process_start_datetime|format_duration(data.now) }}
                   {% else %}
-                    {{ data.job.process_start_datetime|duration(data.job.process_end_datetime) }}
+                    {{ data.job.process_start_datetime|format_duration(data.job.process_end_datetime) }}
                   {% endif %}
                 </span></p>
                 <h4><label for="starttime">Started processing</label></h4>
-                <p><span id="starttime">{{ data.job.process_start_datetime|datetime }}</span></p>
+                <p><span id="starttime">{{ data.job.process_start_datetime|format_datetime }}</span></p>
                 <h4><label for="endtime">Finished processing</label></h4>
-                <p><span id="endtime">{{ data.job.process_end_datetime|datetime }}</span></p>
+                <p><span id="endtime">{{ data.job.process_end_datetime|format_datetime }}</span></p>
               </div>
               <div class="links">
                 {% if data.job.links %}
@@ -68,21 +45,12 @@
                 <ul id="resources">
                   {% for link in data.job.links %}
                   {% if link.rel != 'self' %}
-                  <li>
-                    <a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">
-                      <span class="icon-link"></span>{{ link.title }}
-                    </a>
-                  </li>
+                  <li><a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">{{ link.title }}</a></li>
                   {% endif %}
                   {% endfor %}
                 </ul>
                 {% endif %}
-                <h4><label for="actions">Actions</label></h4>
-                <span id="actions">
-                  <button type="button" onclick="deleteJob('{{config.server.url}}/processes/{{data.process.id}}/jobs/{{data.job.jobID}}')" title="Delete job" class="secondary shadowed">Delete job</button>
-                </span>
               </div>
-              <section class="callout-info" id="action-results"></section>
             </div>
           </div>
         </div>

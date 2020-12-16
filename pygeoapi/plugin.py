@@ -53,7 +53,7 @@ PLUGINS = {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
-        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
     },
     'process_manager': {
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'

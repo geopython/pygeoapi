@@ -1,7 +1,4 @@
 {% extends "base.html" %}
-{% block refresh_js %}
-<script src="{{ config['server']['url']}}/static/js/refreshPage.js"></script>
-{% endblock %}
 {% block title %}{{ super() }} Jobs {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../processes">Processes</a>
@@ -19,13 +16,12 @@
             <caption>Jobs</caption>
             <thead>
               <tr>
-                <th></th>
+                <th>ID</th>
                 <th>Start</th>
                 <th>Runtime</th>
                 <th>Progress</th>
                 <th>Status</th>
                 <th>Message</th>
-                <th></th> <!-- actions -->
               </tr>
             </thead>
             <tbody>
@@ -33,13 +29,13 @@
               <tr>
                 <td class="small"><a href="/processes/{{data.process.id}}/jobs/{{ job.identifier }}">{{ job.identifier }}</a></td>
                 <td>
-                  {{ job.process_start_datetime|datetime }}
+                  {{ job.process_start_datetime|format_datetime }}
                 </td>
                 <td>
                   {% if job.status == 'running' %}
-                    {{ job.process_start_datetime|duration(data.now) }}
+                    {{ job.process_start_datetime|format_duration(data.now) }}
                   {% else %}
-                    {{ job.process_start_datetime|duration(job.process_end_datetime) }}
+                    {{ job.process_start_datetime|format_duration(job.process_end_datetime) }}
                   {% endif %}
                 </td>
                 <td>
@@ -51,14 +47,10 @@
                 <td>
                   {{ job.message }}
                 </td>
-                <td>
-                  <button type="button" onclick="deleteJob('{{config.server.url}}/processes/{{data.process.id}}/jobs/{{job.identifier}}')" title="Delete job" class="secondary shadowed">Delete job</button>
-                </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-          <section class="callout-info" id="action-results"></section>
         </div>
       </div>
     </section>

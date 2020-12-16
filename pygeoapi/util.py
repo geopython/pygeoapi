@@ -31,10 +31,8 @@
 
 import base64
 from datetime import date, datetime, time
-import dateutil.parser
 from decimal import Decimal
 from enum import Enum
-
 import io
 import json
 import logging
@@ -43,8 +41,8 @@ import os
 import re
 from urllib.request import urlopen
 from urllib.parse import urlparse
-from werkzeug.utils import secure_filename
 
+import dateutil.parser
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
@@ -61,6 +59,7 @@ UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
+
 
 def dategetter(date_property, collection):
     """
@@ -169,19 +168,24 @@ def to_json(dict_, pretty=False):
     return json.dumps(dict_, default=json_serial,
                       indent=indent)
 
-def format_datetime(value, _format='%a, %x %X %Z'):
+
+def format_datetime(value, format_='%a, %x %X %Z'):
     """
     Parse datetime as ISO 8601 string; re-present it in particular format
     for display in HTML
 
     :param value: `str` of ISO datetime
-    :param _format: `str` of datetime format for strftime
+    :param format_: `str` of datetime format for strftime
 
     :returns: string
     """
+
     if not isinstance(value, str) or not value.strip():
         return ''
-    return dateutil.parser.isoparse(value).strftime(_format)
+
+    print("VALUE", value)
+    return dateutil.parser.isoparse(value).strftime(format_)
+
 
 def format_duration(start, end=None):
     """
@@ -198,6 +202,7 @@ def format_duration(start, end=None):
     end = end or start
     duration = dateutil.parser.isoparse(end) - dateutil.parser.isoparse(start)
     return str(duration)
+
 
 def get_path_basename(urlpath):
     """
@@ -235,6 +240,7 @@ def json_serial(obj):
     LOGGER.error(msg)
     raise TypeError(msg)
 
+
 def is_url(urlstring):
     """
     Validation function that determines whether a candidate URL should be
@@ -270,8 +276,8 @@ def render_j2_template(config, template, data):
         LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
-    env.filters['datetime'] = format_datetime
-    env.filters['duration'] = format_duration
+    env.filters['format_datetime'] = format_datetime
+    env.filters['format_duration'] = format_duration
     env.globals.update(to_json=to_json)
 
     env.filters['get_path_basename'] = get_path_basename
@@ -297,6 +303,7 @@ def get_mimetype(filename):
     """
 
     return mimetypes.guess_type(filename)[0]
+
 
 def get_breadcrumbs(urlpath):
     """
@@ -393,55 +400,21 @@ def get_provider_default(providers):
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
 
-def allowed_file(filename):
-    '''
-    Checks the extension of a proposed filename and returns a Boolean
-    representing whether that file (extension) is acceptable for upload.
-    Does not actually add security, as only considers the file extension,
-    which can be deliberately misleading.
-
-    :param filename: `str` filename
-
-    :returns: `bool`
-    '''
-    return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
-
-def get_safe_filepath(unsafe_filename, *additional_paths):
-    '''
-    Function that takes a filename from user upload, and returns a safe version
-    of that filename, prepended by the path to where that file is stored on disk
-    for later use (e.g. by a processing algorithm).
-
-    :param unsafe_filename: raw string filename (consider as unsafe user input)
-    :param additional_paths: additional arguments (all strings) that each
-                             represent the name of a subdirectory under which
-                             the ultimate file will belong.
-
-    :returns: str of complete filepath
-    '''
-    # TODO user-scope file uploads?
-    # TODO delete old files? https://docs.python.org/3.8/library/tempfile.html#tempfile.TemporaryDirectory
-    # ^ That would allow the use of a context manager by the child process,
-    #   that deletes the dir when it is complete
-    filename = secure_filename(unsafe_filename)
-    if not allowed_file(filename):
-        raise Exception("Filetype not acceptable")
-    file_path = os.path.join(UPLOAD_FOLDER, *additional_paths, filename)
-    return file_path
 
 class JobStatus(Enum):
     """
     Enum for the job status options specified in the WPS 2.0 specification
     """
-    # From the specification
+
+    #  From the specification
     accepted = 'accepted'
     running = 'running'
     successful = 'successful'
     failed = 'failed'
 
-    # Alternative namings used in existing codebase
-    finished = successful # TODO should this status be used?
+    #  Alternative namings used in existing codebase
+    finished = successful  # TODO should this status be used?
+
 
 def read_data(path):
     """

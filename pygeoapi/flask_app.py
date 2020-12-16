@@ -394,10 +394,11 @@ def process_jobs(process_id=None, job_id=None):
 
     if job_id is None:  # list or submit job
         if request.method == 'GET':
-            headers, status_code, content = ({}, 200, "[]")
+            headers, status_code, content = api_.get_process_jobs(
+                request.headers, request.args, process_id)
         elif request.method == 'POST':
             headers, status_code, content = api_.execute_process(
-                request.headers, request.args, request.data, process_id)
+                request.method, request.headers, request.args, request.data, process_id)
     else:  # get or delete job
         if request.method == 'DELETE':
             headers, status_code, content = api_.delete_job(process_id, job_id)
@@ -452,7 +453,7 @@ def retrieve_job_resource(process_id, job_id, resource):
 
     headers, status_code, content = api_.retrieve_job_resource(
         request.method, request.headers, request.args, request.data,
-        process_id, job_id)
+        process_id, job_id, resource)
 
     response = make_response(content, status_code)
 

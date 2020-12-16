@@ -31,6 +31,7 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
@@ -46,39 +47,28 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def __repr__(self):
-        return '<BaseProcessor> {}'.format(self.name)
-
     def execute(self):
         """
         execute the process
+
         :returns: dict of process response
         """
 
         raise NotImplementedError()
 
-    def get_default(self, prop):
-        """
-        Return the default value for an input, if present. Expected to raise an
-        appropriate built-in exception if the requested property is absent or
-        has no default value.
+    def __repr__(self):
+        return '<BaseProcessor> {}'.format(self.name)
 
-        :param prop: id of process for which to obtain default value
-
-        :returns: default value from process metadata
-        """
-        inputs = self.metadata.get('inputs', list())
-        input = next((input for input in inputs if input['id'] == prop), dict())
-        # TODO inputs that are not literalDataDomain
-        return input['input']['literalDataDomain']['valueDefinition']['defaultValue']
 
 class ProcessorGenericError(Exception):
     """processor generic error"""
     pass
 
+
 class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
     pass
+
 
 class ProcessorNotFoundError(ProcessorGenericError):
     """processor not found error"""

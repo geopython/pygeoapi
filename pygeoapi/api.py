@@ -63,7 +63,7 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.util import (dategetter, filter_dict_by_key_value,
                            get_provider_by_type, get_provider_default,
-                           get_safe_filepath, get_typed_value, JobStatus,
+                           get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool, TEMPLATES,
                            to_json)
 
@@ -1923,7 +1923,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 metadata['itemType'] = ['process']
                 metadata['jobControlOptions'] = ['sync-execute', 'async-execute']
                 metadata['outputTransmission'] = ['value']
-                metadata['links'] = metadata.get('links', list())
+                metadata['links'] = metadata.get('links', [])
                 metadata['links'].append(process_jobs_link(process_id))
                 output.append(metadata)
 
@@ -1943,6 +1943,69 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                               response)
 
             return headers_, 200, response
+
+        return headers_, 200, to_json(response, self.pretty_print)
+
+    def get_process_jobs(self, headers, args, process_id):
+        """
+        Get process jobs
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process_id: id of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = check_format(args, headers)
+
+        headers_ = HEADERS.copy()
+
+        if format_ is not None and format_ not in FORMATS:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'Invalid format'
+            }
+            LOGGER.error(exception)
+            return headers_, 400, to_json(exception, self.pretty_print)
+
+        response = {}
+
+        processes = filter_dict_by_key_value(
+            self.config['resources'], 'type', 'process')
+
+        if process_id not in processes:
+            exception = {
+                'code': 'NoSuchProcess',
+                'description': 'identifier not found'
+            }
+            LOGGER.error(exception)
+            return headers_, 404, to_json(exception, self.pretty_print)
+
+        p = load_plugin('process', processes[process_id]['processor'])
+
+        if self.manager:
+            jobs = sorted(self.manager.get_jobs(process_id),
+                          key=lambda k: k['process_start_datetime'],
+                          reverse=True)
+        else:
+            LOGGER.debug('Process management not configured')
+            jobs = []
+
+        if format_ == 'html':
+            headers_['Content-Type'] = 'text/html'
+            response = render_j2_template(
+                self.config,
+                'jobs.html',
+                {
+                    'process': {'id': process_id, 'title': p.metadata['title']},
+                    'jobs': jobs,
+                    'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
+                },
+            )
+            return headers_, 200, response
+
+        response = [job['identifier'] for job in jobs]
 
         return headers_, 200, to_json(response, self.pretty_print)
 
@@ -2294,7 +2357,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if not format_ or format_ == 'html':
             headers_['Content-Type'] = 'text/html'
-            response = render_j2_template(self.config, 'jobresult.html', {
+            response = render_j2_template(self.config, 'job_result.html', {
                 'process': {'id': process_id, 'title': process.metadata['title']},
                 'job': {'id': job_id},
                 'result': job_output
