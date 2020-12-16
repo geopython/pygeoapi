@@ -150,12 +150,6 @@ class TinyDBManager(BaseManager):
 
         return removed
 
-    def delete_jobs(self, max_jobs, older_than):
-        """
-        TODO
-        """
-        raise NotImplementedError()
-
     def get_job_result(self, processid, job_id):
         """
         Get a single job

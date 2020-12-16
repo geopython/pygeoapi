@@ -61,11 +61,11 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
-from pygeoapi.util import (dategetter, filter_dict_by_key_value,
-                           get_provider_by_type, get_provider_default,
-                           get_typed_value, JobStatus,
-                           json_serial, render_j2_template, str2bool, TEMPLATES,
-                           to_json)
+from pygeoapi.util import (dategetter, DATETIME_FORMAT,
+                           filter_dict_by_key_value, get_provider_by_type,
+                           get_provider_default, get_typed_value, JobStatus,
+                           json_serial, render_j2_template, str2bool,
+                           TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,7 +90,6 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections'
 ]
 
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 
@@ -148,7 +147,9 @@ class API:
                                        self.config['server']['manager'])
             LOGGER.info('Process manager plugin loaded')
         else:
-            LOGGER.info('No process manager defined')
+            from pygeoapi.process.manager.base import BaseManager
+            LOGGER.info('No process manager defined; starting dummy manager')
+            LOGGER.info('Process manager plugin loaded')
             self.manager = None
 
 
@@ -1851,7 +1852,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         :param headers: dict of HTTP headers
         :param format_: format of requests,
                         pre checked by pre_process decorator
-        :param process: name of process, defaults to None to obtain
+        :param process: process identifier, defaults to None to obtain
             information about all processes
 
         :returns: tuple of headers, status code, content
@@ -2058,24 +2059,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
 
-        if method == 'GET' and process_id:
-            jobs = sorted(self.manager.get_jobs(process_id), key=lambda k: k['process_start_datetime'], reverse=True)
-            if format_ == 'html':
-                headers_['Content-Type'] = 'text/html'
-                response = render_j2_template(
-                    self.config,
-                    'jobs.html',
-                    {
-                        'process': {'id': process_id, 'title': process.metadata['title']},
-                        'jobs': jobs,
-                        'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
-                    },
-                )
-                return headers_, 200, response
-            response = [job['identifier'] for job in jobs]
-            return headers_, 200, to_json(response, self.pretty_print)
-
-        if method == 'POST' and not data:
+        if not data:
             # TODO not all processes require input, e.g. time-depenendent or
             # random value generators
             exception = {
@@ -2198,23 +2182,22 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         return headers_, 200, to_json(response, self.pretty_print)
 
-    def retrieve_job_status(self, headers, args, process_id, job_id):
+    def get_process_job_status(self, headers, args, process_id, job_id):
         """
         Get status of job (instance of a process)
 
-        :param method: HTTP method (GET)
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
-        :param process_id: name of process
-        :param job_id: ID of job
+        :param process_id: process identifier
+        :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
         headers_ = HEADERS.copy()
 
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
-        if process_id not in processes_config:
+        processes = filter_dict_by_key_value(self.config['resources'],
+                                             'type', 'process')
+        if process_id not in processes:
             exception = {
                 'code': 'NoSuchProcess',
                 'description': 'identifier not found'
@@ -2223,6 +2206,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 404, to_json(exception, self.pretty_print)
 
         job_result = self.manager.get_job_result(process_id, job_id)
+
         if not job_result:
             exception = {
                 'code': 'NoSuchJob',
@@ -2239,6 +2223,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
+
         status = JobStatus[job_result['status']]
         response = {
             'jobID': job_id,
@@ -2253,7 +2238,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'title': 'Status of {} job {}'.format(process_id, job_id)
             }]
         }
-        if status in (JobStatus.successful, JobStatus.running, JobStatus.accepted):
+
+        if status in (JobStatus.successful, JobStatus.running,
+                      JobStatus.accepted):
             # TODO link also if accepted/running?
             response['links'].append({
                 'href': '{}/processes/{}/jobs/{}/results'.format(
@@ -2271,22 +2258,39 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 200, json.dumps(response, default=json_serial)
         else:
             headers_['Content-Type'] = 'text/html'
-            process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
+            process = load_plugin('process',
+                                  processes[process_id]['processor'])
+
+            process_info = {
+                'id': process_id,
+                'title': process.metadata['title']
+            }
+
+            psd = job_result.get('process_start_datetime', None)
+            ped = job_result.get('process_end_datetime', None)
+
+            if status == JobStatus.finished:
+                progress = 100
+            else:
+                progress = job_result.get('progress', 0)
+
+            job_info = {
+                'process_start_datetime': psd,
+                'process_end_datetime': ped,
+                'progress': progress,
+                **response
+            }
+
             return headers_, 200, render_j2_template(self.config, 'job.html', {
-                'process': {'id': process_id, 'title': process.metadata['title']},
-                'job': {
-                    'process_start_datetime': job_result.get('process_start_datetime', None),
-                    'process_end_datetime': job_result.get('process_end_datetime', None),
-                    'progress': job_result.get('progress', 100 if status == JobStatus.finished else 0),
-                    **response},
+                'process': process_info,
+                'job': job_info,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
             })
 
-    def retrieve_job_result(self, method, headers, args, data, process_id, job_id):
+    def get_process_job_result(self, headers, args, data, process_id, job_id):
         """
         Get result of job (instance of a process)
 
-        :param method: HTTP method (GET)
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param data: process data
@@ -2344,14 +2348,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 404, json.dumps(exception)
 
         elif status == JobStatus.failed:
-            code = 'InvalidParameterValue' # TODO this must correspond to actual failure reason
-            http_status = 400 # TODO this must correspond to actual failure reason
             exception = {
-                'code': code,
+                'code': 'InvalidParameterValue',
                 'description': 'job failed'
             }
             LOGGER.info(exception)
-            return headers_, http_status, json.dumps(exception)
+            return headers_, 400, json.dumps(exception)
 
         format_ = check_format(args, headers_)
 
@@ -2365,16 +2367,39 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return headers_, 200, response
         return headers_, 200, json.dumps(job_output, sort_keys=True, indent=4, default=json_serial)
 
-    def delete_job(self, process_id, job_id):
+    def delete_process_job(self, process_id, job_id):
         """
-        :param process_id: name of process
-        :param job_id: ID of job
+        :param process_id: process identifier
+        :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
+
         success = self.manager.delete_job(process_id, job_id)
-        status = 204 if success else 404
-        return {}, status, ""
+
+        if not success:
+            http_status = 404
+            response = {
+                'code': 'NoSuchJob',
+                'description': 'Job identifier not found'
+            }
+        else:
+            http_status = 204
+            response = {
+                'jobID': job_id,
+                'status': JobStatus.dismissed,
+                'message': 'Job dismissed',
+                'progress': 100,
+                'links': [{
+                    'href': 'http://processing.example.org/processes/EchoProcess/jobs',
+                    'rel': 'up',
+                    'type': 'application/json',
+                    'title': 'The job list for the current process'
+                }] 
+            }
+
+        LOGGER.info(response)
+        return {}, http_status, response
 
     @pre_process
     @jsonldify

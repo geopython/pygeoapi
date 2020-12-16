@@ -360,7 +360,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
 @BLUEPRINT.route('/processes')
 @BLUEPRINT.route('/processes/<process_id>')
-def processes(process_id=None):
+def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
 
@@ -382,7 +382,7 @@ def processes(process_id=None):
 @BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
 @BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
                  methods=['GET', 'DELETE'])
-def process_jobs(process_id=None, job_id=None):
+def get_post_process_jobs(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
@@ -401,9 +401,10 @@ def process_jobs(process_id=None, job_id=None):
                 request.method, request.headers, request.args, request.data, process_id)
     else:  # get or delete job
         if request.method == 'DELETE':
-            headers, status_code, content = api_.delete_job(process_id, job_id)
+            headers, status_code, content = api_.delete_process_job(
+                process_id, job_id)
         else:  # Return status of a specific job
-            headers, status_code, content = api_.retrieve_job_status(
+            headers, status_code, content = api_.get_process_job_status(
                 request.headers, request.args, process_id, job_id
             )
 
@@ -416,7 +417,7 @@ def process_jobs(process_id=None, job_id=None):
 
 
 @APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
-def retrieve_job_result(process_id=None, job_id=None):
+def get_process_job_result(process_id=None, job_id=None):
     """
     OGC API - Processes job result endpoint
 
@@ -426,8 +427,8 @@ def retrieve_job_result(process_id=None, job_id=None):
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.retrieve_job_result(
-        request.method, request.headers, request.args, request.data,
+    headers, status_code, content = api_.get_process_job_result(
+        request.headers, request.args, request.data,
         process_id, job_id)
 
     response = make_response(content, status_code)

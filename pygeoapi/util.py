@@ -51,6 +51,8 @@ from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
 
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
@@ -169,7 +171,7 @@ def to_json(dict_, pretty=False):
                       indent=indent)
 
 
-def format_datetime(value, format_='%a, %x %X %Z'):
+def format_datetime(value, format_=DATETIME_FORMAT):
     """
     Parse datetime as ISO 8601 string; re-present it in particular format
     for display in HTML
@@ -411,6 +413,7 @@ class JobStatus(Enum):
     running = 'running'
     successful = 'successful'
     failed = 'failed'
+    dismissed = 'dismissed'
 
     #  Alternative namings used in existing codebase
     finished = successful  # TODO should this status be used?

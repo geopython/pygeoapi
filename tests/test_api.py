@@ -991,7 +991,8 @@ def test_execute_process(config, api_):
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
     for process_id, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_job(process_id, job_id)
+        rsp_headers, code, response = api_.delete_process_job(
+            process_id, job_id)
         assert code == 204
 
 
@@ -1090,9 +1091,9 @@ def test_check_async():
     assert check_async(args, req_headers) is True
 
 
-def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job('does-not-exist',
-                                                  'does-not-exist')
+def test_delete_process_job(api_):
+    rsp_headers, code, response = api_.delete_process_job(
+        'does-not-exist', 'does-not-exist')
 
     assert code == 404
 
@@ -1121,10 +1122,12 @@ def test_delete_job(api_):
     assert data['outputs'][0]['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job('hello-world', job_id)
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
     assert code == 204
 
-    rsp_headers, code, response = api_.delete_job('hello-world', job_id)
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
     assert code == 404
 
     rsp_headers, code, response = api_.execute_process(
@@ -1135,10 +1138,12 @@ def test_delete_job(api_):
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job('hello-world', job_id)
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
     assert code == 204
 
-    rsp_headers, code, response = api_.delete_job('hello-world', job_id)
+    rsp_headers, code, response = api_.delete_process_job(
+        'hello-world', job_id)
     assert code == 404
 
 

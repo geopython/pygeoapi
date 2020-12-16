@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,13 +34,12 @@ import logging
 from multiprocessing import dummy
 import os
 
-from pygeoapi.util import JobStatus
+from pygeoapi.util import DATETIME_FORMAT, JobStatus
 
 LOGGER = logging.getLogger(__name__)
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
-class BaseManager(object):
+class BaseManager:
     """generic Manager ABC"""
 
     def __init__(self, manager_def):
@@ -64,6 +63,15 @@ class BaseManager(object):
 
         raise NotImplementedError()
 
+    def connect(self):
+        """
+        Connect manager
+
+        :returns: `bool` status of result
+        """
+
+        raise NotImplementedError()
+
     def destroy(self):
         """
         Destroy manager
@@ -73,27 +81,15 @@ class BaseManager(object):
 
         raise NotImplementedError()
 
-    def get_jobs(self, processid=None, status=None):
+    def get_jobs(self, process_id=None, status=None):
         """
-        Get jobs
+        Get process jobs, optionally filtered by status
 
-        :param processid: process identifier
+        :param process_id: process identifier
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
 
-        :returns: list of jobs (identifier, status, process identifier)
-        """
-
-        raise NotImplementedError()
-
-    def get_job_result(self, processid, jobid):
-        """
-        Get a single job
-
-        :param processid: process identifier
-        :param jobid: job identifier
-
-        :returns: `dict`  # `pygeoapi.process.manager.Job`
+        :returns: `list` of jobs (identifier, status, process identifier)
         """
 
         raise NotImplementedError()
@@ -104,7 +100,7 @@ class BaseManager(object):
 
         :param job_metadata: `dict` of job metadata
 
-        :returns: add job result
+        :returns: `str` added job identifier
         """
 
         raise NotImplementedError()
@@ -116,6 +112,54 @@ class BaseManager(object):
         :param processid: process identifier
         :param job_id: job identifier
         :param update_dict: `dict` of property updates
+
+        :returns: `bool` of status result
+        """
+
+        raise NotImplementedError()
+
+    def get_job_status(self, process_id, job_id):
+        """
+        Updates a job
+
+        :param process_id: process identifier
+        :param job_id: job identifier
+
+        :returns: `dict` of status
+        """
+
+        raise NotImplementedError()
+
+    def get_job_result(self, process_id, job_id):
+        """
+        Get a job result
+
+        :param process_id: process identifier
+        :param job_id: job identifier
+
+        :returns: `dict` of job result
+        """
+
+        raise NotImplementedError()
+
+    def get_job_output(self, process_id, job_id):
+        """
+        Returns the actual output from a completed process
+
+        :param process_id: process identifier
+        :param job_id: job identifier
+
+        :returns: `str` of raw output or None
+        """
+
+        raise NotImplementedError()
+
+    def delete_job(self, process_id, job_id):
+        """
+        Deletes a job and associated results/outputs
+
+        :param process_id: process identifier
+        :param job_id: job identifier
 
         :returns: `bool` of status result
         """
@@ -239,46 +283,5 @@ class BaseManager(object):
         LOGGER.debug('Asynchronous execution')
         return self._execute_handler_async(p, job_id, data_dict)
 
-    def get_job_status(self, p, job_id, data_dict):
-        """
-
-        """
-
-    def get_job_output(self, processid, job_id):
-        """
-        Returns the actual output from a finished process, or else None if the
-        process has not finished execution.
-
-        :param processid: process identifier
-        :param job_id: job identifier
-
-        :returns: tuple of: JobStatus `Enum`, and
-        """
-        #TODO doc: what is the return type?
-
-    def delete_job(self, processid, job_id):
-        """
-        Deletes a job
-
-        :param processid: process identifier
-        :param job_id: job identifier
-
-        :returns: `bool` of status result
-        """
-
-        raise NotImplementedError()
-
-    def delete_jobs(self, max_jobs, older_than):
-        """
-        TODO
-        """
-
-        raise NotImplementedError()
-
     def __repr__(self):
-        return '<ManagerProcessor> {}'.format(self.name)
-
-
-class ManagerExecuteError(Exception):
-    """query / backend error"""
-    pass
+        return '<BaseManager> {}'.format(self.name)

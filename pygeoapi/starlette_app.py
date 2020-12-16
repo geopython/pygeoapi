@@ -355,7 +355,7 @@ def collection_coverage_rangetype(request: Request, collection_id):
 @app.route('/processes/')
 @app.route('/processes/{process_id}')
 @app.route('/processes/{process_id}/')
-async def processes(request: Request, process_id=None):
+async def get_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
 
@@ -376,7 +376,7 @@ async def processes(request: Request, process_id=None):
 
 @app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
 @app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
-async def process_jobs(request: Request, process_id=None):
+async def get_post_process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
 
