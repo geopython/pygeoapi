@@ -2272,13 +2272,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
             })
 
-    def get_process_job_result(self, headers, args, data, process_id, job_id):
+    def get_process_job_result(self, headers, args, process_id, job_id):
         """
         Get result of job (instance of a process)
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
-        :param data: process data
         :param process_id: name of process
         :param job_id: ID of job
 

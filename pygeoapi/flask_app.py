@@ -405,8 +405,7 @@ def get_post_process_jobs(process_id=None, job_id=None):
                 process_id, job_id)
         else:  # Return status of a specific job
             headers, status_code, content = api_.get_process_job_status(
-                request.headers, request.args, process_id, job_id
-            )
+                request.headers, request.args, process_id, job_id)
 
     response = make_response(content, status_code)
 
@@ -428,8 +427,7 @@ def get_process_job_result(process_id=None, job_id=None):
     """
 
     headers, status_code, content = api_.get_process_job_result(
-        request.headers, request.args, request.data,
-        process_id, job_id)
+        request.headers, request.args, process_id, job_id)
 
     response = make_response(content, status_code)
 
@@ -441,9 +439,9 @@ def get_process_job_result(process_id=None, job_id=None):
 
 @APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
            methods=['GET'])
-def retrieve_job_resource(process_id, job_id, resource):
+def get_process_job_result_resource(process_id, job_id, resource):
     """
-    OGC API - Processes job result endpoint
+    OGC API - Processes job result resource endpoint
 
     :param process_id: process identifier
     :param job_id: job identifier
@@ -452,9 +450,8 @@ def retrieve_job_resource(process_id, job_id, resource):
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.retrieve_job_resource(
-        request.method, request.headers, request.args, request.data,
-        process_id, job_id, resource)
+    headers, status_code, content = api_.get_process_job_result_resource(
+        request.headers, request.args, process_id, job_id, resource)
 
     response = make_response(content, status_code)
 
