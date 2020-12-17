@@ -52,7 +52,8 @@ class BaseManager:
         """
 
         self.name = manager_def['name']
-        self.output_dir = manager_def.get('output_dir', '/tmp')
+        self.connection = manager_def['connection']
+        self.output_dir = manager_def.get('output_dir', None)
 
     def create(self):
         """
@@ -105,11 +106,11 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def update_job(self, processid, job_id, update_dict):
+    def update_job(self, process_id, job_id, update_dict):
         """
         Updates a job
 
-        :param processid: process identifier
+        :param process_id: process identifier
         :param job_id: job identifier
         :param update_dict: `dict` of property updates
 
@@ -168,9 +169,10 @@ class BaseManager:
 
     def _execute_handler_async(self, p, job_id, data_dict):
         """
-        This private execution handler executes a process in a background thread
-        using multiprocessing.dummy
-        https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.dummy
+        This private execution handler executes a process in a background
+        thread using `multiprocessing.dummy`
+
+        https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.dummy  # noqa
 
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
@@ -180,16 +182,19 @@ class BaseManager:
                   and JobStatus.accepted (i.e. initial job status)
         """
         _process = dummy.Process(
-            target=self._execute_handler,
+            target=self._execute_handler_sync,
             args=(p, job_id, data_dict)
         )
         _process.start()
         return None, JobStatus.accepted
 
-    def _execute_handler(self, p, job_id, data_dict):
+    def _execute_handler_sync(self, p, job_id, data_dict):
         """
-        This private exeution handler writes output to disk as a process output
-        store. There is no clean-up of old process outputs.
+        Synchronous execution handler
+
+        If the manager has defined `output_dir`, then the result
+        will be written to disk
+        output store. There is no clean-up of old process outputs.
 
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
@@ -197,45 +202,55 @@ class BaseManager:
 
         :returns: tuple of response payload and status
         """
-        filename = '{}-{}'.format(p.metadata['id'], job_id)
-        job_filename = os.path.join(self.output_dir, filename)
 
-        processid = p.metadata['id']
+        if self.output_dir is not None:
+            filename = '{}-{}'.format(p.metadata['id'], job_id)
+            job_filename = os.path.join(self.output_dir, filename)
+        else:
+            job_filename = 'stdout'
+
+        process_id = p.metadata['id']
         current_status = JobStatus.accepted
+
         job_metadata = {
             'identifier': job_id,
-            'processid': processid,
-            'process_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+            'process_id': process_id,
+            'process_start_datetime': datetime.utcnow().strftime(
+                DATETIME_FORMAT),
             'process_end_datetime': None,
             'status': current_status.value,
             'location': None,
             'message': 'Job accepted and ready for execution',
             'progress': 5
         }
+
         self.add_job(job_metadata)
 
         try:
             current_status = JobStatus.running
             outputs = p.execute(data_dict)
-            self.update_job(processid, job_id, {
+            self.update_job(process_id, job_id, {
                 'status': current_status.value,
                 'message': 'Writing job output',
                 'progress': 95
             })
 
-            with io.open(job_filename, 'w') as fh:
-                fh.write(json.dumps(outputs, sort_keys=True, indent=4))
+            if self.output_dir is not None:
+                LOGGER.debug('writing output to {}'.format(job_filename))
+                with io.open(job_filename, 'w', encoding='utf-8') as fh:
+                    fh.write(json.dumps(outputs, sort_keys=True, indent=4))
 
             current_status = JobStatus.finished
             job_update_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'process_end_datetime': datetime.utcnow().strftime(
+                    DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': job_filename,
                 'message': 'Job complete',
                 'progress': 100
             }
 
-            self.update_job(processid, job_id, job_update_metadata)
+            self.update_job(process_id, job_id, job_update_metadata)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -248,40 +263,41 @@ class BaseManager:
             # response).
             current_status = JobStatus.failed
             code = 'InvalidParameterValue'
-            status_code = 400
             outputs = {
                 'code': code,
-                'description': str(err) # NOTE this is optional and internal exceptions aren't useful for (or safe to show) end-users
+                'description': 'Error updating job'
             }
-            LOGGER.error(outputs)
+            LOGGER.error(err)
             job_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+                'process_end_datetime': datetime.utcnow().strftime(
+                    DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
                 'message': f'{code}: {outputs["description"]}'
             }
 
-            self.update_job(processid, job_id, job_metadata)
+            self.update_job(process_id, job_id, job_metadata)
 
         return outputs, current_status
 
-    def execute_process(self, p, job_id, data_dict, sync=True):
+    def execute_process(self, p, job_id, data_dict, is_async=False):
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
-        :param sync: `bool` specifying sync or async processing.
+        :param is_async: `bool` specifying sync or async processing.
 
         :returns: tuple of response payload and status
         """
-        if sync:
-            LOGGER.debug('Synchronous execution')
-            return self._execute_handler(p, job_id, data_dict)
 
-        LOGGER.debug('Asynchronous execution')
-        return self._execute_handler_async(p, job_id, data_dict)
+        if not is_async:
+            LOGGER.debug('Synchronous execution')
+            return self._execute_handler_sync(p, job_id, data_dict)
+        else:
+            LOGGER.debug('Asynchronous execution')
+            return self._execute_handler_async(p, job_id, data_dict)
 
     def __repr__(self):
         return '<BaseManager> {}'.format(self.name)

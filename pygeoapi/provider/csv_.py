@@ -50,7 +50,7 @@ class CSVProvider(BaseProvider):
         :returns: pygeoapi.provider.csv_.CSVProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
         self.fields = self.get_fields()

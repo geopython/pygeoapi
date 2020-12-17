@@ -51,7 +51,7 @@ class RasterioProvider(BaseProvider):
         :returns: pygeoapi.provider.rasterio_.RasterioProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         try:
             self._data = rasterio.open(self.data)

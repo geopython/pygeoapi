@@ -54,7 +54,7 @@ class MVTProvider(BaseTileProvider):
         :returns: pygeoapi.provider.MVT.MVTProvider
         """
 
-        BaseTileProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         if is_url(self.data):
             url = urlparse(self.data)

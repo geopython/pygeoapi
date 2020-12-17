@@ -121,7 +121,7 @@ class HelloWorldProcessor(BaseProcessor):
         :returns: pygeoapi.process.hello_world.HelloWorldProcessor
         """
 
-        BaseProcessor.__init__(self, processor_def, PROCESS_METADATA)
+        super().__init__(processor_def, PROCESS_METADATA)
 
     def execute(self, data):
 

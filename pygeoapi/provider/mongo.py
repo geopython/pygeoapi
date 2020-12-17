@@ -57,7 +57,7 @@ class MongoProvider(BaseProvider):
         # Mongo id field is _id
         provider_def.setdefault('id_field', '_id')
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         LOGGER.info('Mongo source config: {}'.format(self.data))
 

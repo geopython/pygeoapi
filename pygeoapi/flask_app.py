@@ -398,7 +398,7 @@ def get_post_process_jobs(process_id=None, job_id=None):
                 request.headers, request.args, process_id)
         elif request.method == 'POST':
             headers, status_code, content = api_.execute_process(
-                request.method, request.headers, request.args, request.data, process_id)
+                request.headers, request.args, request.data, process_id)
     else:  # get or delete job
         if request.method == 'DELETE':
             headers, status_code, content = api_.delete_process_job(

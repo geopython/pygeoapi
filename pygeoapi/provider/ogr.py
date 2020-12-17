@@ -109,7 +109,7 @@ class OGRProvider(BaseProvider):
         :returns: pygeoapi.provider.ogr.OGRProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.ogr = osgeo_ogr
         # http://trac.osgeo.org/gdal/wiki/PythonGotchas
@@ -595,7 +595,9 @@ class CommonSourceHelper(SourceHelper):
 
         :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
+
         self.startindex = -1
         self.limit = -1
         self.result_set = None
@@ -679,7 +681,8 @@ class ESRIJSONHelper(CommonSourceHelper):
 
         :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        CommonSourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """
@@ -742,7 +745,8 @@ class WFSHelper(SourceHelper):
 
         :returns: pygeoapi.provider.ogr.SourceHelper
         """
-        SourceHelper.__init__(self, provider)
+
+        super().__init__(provider)
 
     def enable_paging(self, startindex=-1, limit=-1):
         """

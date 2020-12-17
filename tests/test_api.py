@@ -36,8 +36,7 @@ from pyld import jsonld
 import pytest
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
-from pygeoapi.api import (API, check_async, check_format, validate_bbox,
-                          validate_datetime)
+from pygeoapi.api import API, check_format, validate_bbox, validate_datetime
 from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
@@ -858,21 +857,24 @@ def test_execute_process(config, api_):
 
     # Test posting empty payload to existing process
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, '', 'hello-world')
+        req_headers, {}, '', 'hello-world')
+
     data = json.loads(response)
     assert code == 400
     assert 'Location' not in rsp_headers
     assert data['code'] == 'MissingParameterValue'
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body), 'foo')
+        req_headers, {}, json.dumps(req_body), 'foo')
+
     data = json.loads(response)
     assert code == 404
     assert 'Location' not in rsp_headers
     assert data['code'] == 'NoSuchProcess'
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body), 'hello-world')
+        req_headers, {}, json.dumps(req_body), 'hello-world')
+
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
@@ -884,7 +886,7 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_2), 'hello-world')
+        req_headers, {}, json.dumps(req_body_2), 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -895,7 +897,7 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_3), 'hello-world')
+        req_headers, {}, json.dumps(req_body_3), 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -906,7 +908,7 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_4), 'hello-world')
+        req_headers, {}, json.dumps(req_body_4), 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -916,30 +918,30 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_5), 'hello-world')
+        req_headers, {}, json.dumps(req_body_5), 'hello-world')
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Cannot process without a name'
+    assert data['description'] == 'Error updating job'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_6), 'hello-world')
+        req_headers, {}, json.dumps(req_body_6), 'hello-world')
 
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Cannot process without a name'
+    assert data['description'] == 'Error updating job'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_7), 'hello-world')
+        req_headers, {}, json.dumps(req_body_7), 'hello-world')
 
     data = json.loads(response)
     assert code == 400
@@ -948,7 +950,7 @@ def test_execute_process(config, api_):
     assert data['description'] == 'invalid request data'
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body_8), 'hello-world')
+        req_headers, {}, json.dumps(req_body_8), 'hello-world')
 
     data = json.loads(response)
     assert code == 400
@@ -958,7 +960,7 @@ def test_execute_process(config, api_):
 
     # req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {}, json.dumps(req_body), 'goodbye-world')
+        req_headers, {}, json.dumps(req_body), 'goodbye-world')
 
     response = json.loads(response)
     assert code == 404
@@ -967,8 +969,7 @@ def test_execute_process(config, api_):
 
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {'sync-execute': 'True'},
-        json.dumps(req_body), 'hello-world')
+        req_headers, {}, json.dumps(req_body), 'hello-world')
 
     response = json.loads(response)
     assert code == 200
@@ -977,13 +978,16 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     req_headers = make_req_headers()
+
+    req_body['mode'] = 'async'
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {'async-execute': 'True'},
-        json.dumps(req_body), 'hello-world')
+        req_headers, {}, json.dumps(req_body), 'hello-world')
 
     assert 'Location' in rsp_headers
-    assert response == ''
-    assert code == 202
+    response = json.loads(response)
+    assert isinstance(response, dict)
+
+    assert code == 201
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
@@ -993,7 +997,7 @@ def test_execute_process(config, api_):
     for process_id, job_id in cleanup_jobs:
         rsp_headers, code, response = api_.delete_process_job(
             process_id, job_id)
-        assert code == 204
+        assert code == 200
 
 
 def test_check_format():
@@ -1055,42 +1059,6 @@ def test_check_format():
     assert check_format(args, req_headers) == 'json'
 
 
-def test_check_async():
-    args = {}
-    req_headers = {}
-
-    assert check_async(args, req_headers) is False
-
-    args['f'] = 'html'
-    assert check_async(args, req_headers) is False
-
-    args['sync-execute'] = 'True'
-    assert check_async(args, req_headers) is False
-
-    req_headers['async-execute'] = 'True'
-    assert check_async(args, req_headers) is False  # Args precede headers
-
-    args['async-execute'] = 'True'
-    assert check_async(args, req_headers) is True  # Async precedes sync
-
-    args = {}
-    req_headers['async-execute'] = 'True'
-    assert check_async(args, req_headers) is True
-
-    req_headers['sync-execute'] = 'True'
-    assert check_async(args, req_headers) is True  # Async precedes sync
-
-    args['async-execute'] = 'True'
-    args['sync-execute'] = 'True'
-    assert check_async(args, req_headers) is True  # Async precedes sync
-
-    args['async-execute'] = 'True'
-    args['sync-execute'] = 'False'
-    req_headers['async-execute'] = 'True'
-    req_headers['sync-execute'] = 'False'
-    assert check_async(args, req_headers) is True
-
-
 def test_delete_process_job(api_):
     rsp_headers, code, response = api_.delete_process_job(
         'does-not-exist', 'does-not-exist')
@@ -1106,6 +1074,7 @@ def test_delete_process_job(api_):
     }
 
     req_body_async = {
+        'mode': 'async',
         'inputs': [{
             'id': 'name',
             'value': 'Async Test Deletion'
@@ -1113,8 +1082,7 @@ def test_delete_process_job(api_):
     }
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {'sync-execute': 'True'},
-        json.dumps(req_body_sync), 'hello-world')
+        req_headers, {}, json.dumps(req_body_sync), 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -1124,23 +1092,24 @@ def test_delete_process_job(api_):
     job_id = rsp_headers['Location'].split('/')[-1]
     rsp_headers, code, response = api_.delete_process_job(
         'hello-world', job_id)
-    assert code == 204
+
+    assert code == 200
 
     rsp_headers, code, response = api_.delete_process_job(
         'hello-world', job_id)
     assert code == 404
 
     rsp_headers, code, response = api_.execute_process(
-        'POST', req_headers, {'async-execute': 'True'},
-        json.dumps(req_body_async), 'hello-world')
-    assert code == 202
+        req_headers, {}, json.dumps(req_body_async), 'hello-world')
+
+    assert code == 201
     assert 'Location' in rsp_headers
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
     rsp_headers, code, response = api_.delete_process_job(
         'hello-world', job_id)
-    assert code == 204
+    assert code == 200
 
     rsp_headers, code, response = api_.delete_process_job(
         'hello-world', job_id)

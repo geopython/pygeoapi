@@ -147,11 +147,9 @@ class API:
                                        self.config['server']['manager'])
             LOGGER.info('Process manager plugin loaded')
         else:
-            from pygeoapi.process.manager.base import BaseManager
             LOGGER.info('No process manager defined; starting dummy manager')
             LOGGER.info('Process manager plugin loaded')
             self.manager = None
-
 
     @pre_process
     @jsonldify
@@ -1902,19 +1900,17 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             return headers_, 404, json.dumps(exception)
 
-        process_jobs_link = lambda process_id: dict({
-            'type': 'text/html',
-            'rel': 'collection',
-            'href': '{}/processes/{}/jobs'.format(self.config['server']['url'], process_id),
-            'title': 'Collection of jobs for the {} process'.format(process_id),
-            'hreflang': self.config['server'].get('language', None)
-        })
-
-
         if processes_config:
-            process_ids = processes_config.keys() if not process else [p for p in processes_config.keys() if p == process]
+            if not process:
+                process_ids = processes_config.keys()
+            else:
+                process_ids = [p for p in processes_config.keys()
+                               if p == process]
 
-            processes = list(map(lambda process_id: load_plugin('process', processes_config.get(process_id, {}).get('processor')), process_ids))
+            processes = list(map(lambda process_id: load_plugin('process',
+                             processes_config[process_id]['processor']),
+                             process_ids))
+
             output = []
             for _process in processes:
                 process_id = _process.metadata['id']
@@ -1922,10 +1918,23 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     continue
                 metadata = deepcopy(_process.metadata)
                 metadata['itemType'] = ['process']
-                metadata['jobControlOptions'] = ['sync-execute', 'async-execute']
+                metadata['jobControlOptions'] = [
+                    'sync-execute', 'async-execute']
                 metadata['outputTransmission'] = ['value']
                 metadata['links'] = metadata.get('links', [])
-                metadata['links'].append(process_jobs_link(process_id))
+
+                jobs_url = '{}/processes/{}/jobs'.format(
+                    self.config['server']['url'], process_id)
+                link = {
+                    'type': 'text/html',
+                    'rel': 'collection',
+                    'href': jobs_url,
+                    'title': 'Collection of jobs for the {} process'.format(
+                        process_id),
+                    'hreflang': self.config['server'].get('language', None)
+                }
+
+                metadata['links'].append(link)
                 output.append(metadata)
 
             response = output[0] if process is not None else {
@@ -1995,31 +2004,26 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if format_ == 'html':
             headers_['Content-Type'] = 'text/html'
-            response = render_j2_template(
-                self.config,
-                'jobs.html',
-                {
-                    'process': {'id': process_id, 'title': p.metadata['title']},
-                    'jobs': jobs,
-                    'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
-                },
-            )
+            data = {
+                'process': {'id': process_id, 'title': p.metadata['title']},
+                'jobs': jobs,
+                'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
+            }
+            response = render_j2_template(self.config, 'jobs.html', data)
             return headers_, 200, response
 
         response = [job['identifier'] for job in jobs]
 
         return headers_, 200, to_json(response, self.pretty_print)
 
-    def execute_process(self, method, headers, args, data, process_id, files=None):
+    def execute_process(self, headers, args, data, process_id):
         """
         Execute process
 
-        :param method: HTTP method (GET/POST)
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param data: process data
         :param process_id: id of process
-        :param files: file uploads
 
         :returns: tuple of headers, status code, content
         """
@@ -2057,7 +2061,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             return headers_, 500, json.dumps(exception)
 
-        process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
+        process = load_plugin('process',
+                              processes_config[process_id]['processor'])
 
         if not data:
             # TODO not all processes require input, e.g. time-depenendent or
@@ -2074,6 +2079,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             data = data.decode()
         except (UnicodeDecodeError, AttributeError):
             pass
+
         try:
             data = json.loads(data)
         except (json.decoder.JSONDecodeError, TypeError) as err:
@@ -2113,66 +2119,35 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         job_id = str(uuid.uuid1())
         url = '{}/processes/{}/jobs/{}'.format(
             self.config['server']['url'], process_id, job_id)
+
         headers_['Location'] = url
 
-        if method == 'POST' and files:
-            for _, file in files.items():
-                filename = file.filename
-                try:
-                    file_path = get_safe_filepath(filename, process_id, job_id)
-                except Exception as exc:
-                    LOGGER.debug(exc)
-                    exception = {
-                        'code': 'NoApplicableCode',
-                        'description': 'File type not acceptable'
-                    }
-                    LOGGER.info(exception)
-                    return headers_, 415, to_json(exception, self.pretty_print)
-                file_dir = os.path.dirname(file_path)
-                try:
-                    mode = 0o644 # Owner can read/write, group and others can read
-                    os.makedirs(file_dir, mode=mode, exist_ok=True)
-                    file.save(file_path)
-                    LOGGER.debug(f'wrote {file_path}')
-                except Exception as exc:
-                    LOGGER.exception(exc)
-                    exception = {
-                        'code': 'NoApplicableCode',
-                        'description': 'File upload failed'
-                    }
-                    LOGGER.info(exception)
-                    return headers_, 500, to_json(exception, self.pretty_print)
-                else:
-                    # Update name of file in upload data with the new path
-                    for id, value in data_dict.items():
-                        if value == filename:
-                            data_dict[id] = file_path
-                        elif isinstance(value, list) and filename in value:
-                            data_dict[id] = [v if v != filename else file_path for v in value]
-        outputs, status = None, None
-        sync = not check_async(args, headers)
-        if callable(getattr(self.manager, "execute_process", None)):
-            try:
-                LOGGER.debug(f'Manager execution, {"a" if not sync else ""}synchronous execution requested')
-                outputs, status = self.manager.execute_process(process, job_id, data_dict, sync=sync)
-            except ProcessorExecuteError as err:
-                exception = {
-                    'code': 'NoApplicableCode',
-                    'description': 'Processing error'
-                }
-                LOGGER.error(err)
-                return headers_, 500, to_json(exception, self.pretty_print)
-            else:
-                if not sync and status == JobStatus.accepted:
-                    return headers_, 202, ''
+        outputs = status = None
+        is_async = data.get('mode', 'auto') == 'async'
+
+        if is_async:
+            LOGGER.debug('Asynchronous request mode detected')
+
+        try:
+            LOGGER.debug('Executing process')
+            outputs, status = self.manager.execute_process(
+                process, job_id, data_dict, is_async)
+        except ProcessorExecuteError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'Processing error'
+            }
+            LOGGER.error(err)
+            return headers_, 500, to_json(exception, self.pretty_print)
 
         if status == JobStatus.failed:
             response = outputs
 
-        if 'response' in args and args['response'] == 'raw':
-            headers_['Content-Type'] = \
-                process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
-            if format == 'json':
+        ct = process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
+
+        if data.get('response', 'document') == 'raw':
+            headers_['Content-Type'] = ct
+            if format_ == 'json':
                 response = to_json(outputs)
             else:
                 response = outputs
@@ -2180,7 +2155,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         elif status != JobStatus.failed:
             response['outputs'] = outputs
 
-        return headers_, 200, to_json(response, self.pretty_print)
+        if is_async:
+            http_status = 201
+        else:
+            http_status = 200
+
+        return headers_, http_status, to_json(response, self.pretty_print)
 
     def get_process_job_status(self, headers, args, process_id, job_id):
         """
@@ -2310,7 +2290,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        process = load_plugin('process', processes_config.get(process_id, {}).get('processor'))
+        process = load_plugin('process',
+                              processes_config[process_id]['processor'])
 
         if not process:
             exception = {
@@ -2359,13 +2340,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if not format_ or format_ == 'html':
             headers_['Content-Type'] = 'text/html'
-            response = render_j2_template(self.config, 'job_result.html', {
-                'process': {'id': process_id, 'title': process.metadata['title']},
+            data = {
+                'process': {
+                    'id': process_id, 'title': process.metadata['title']
+                },
                 'job': {'id': job_id},
                 'result': job_output
-            })
+            }
+            response = render_j2_template(self.config, 'job_result.html',
+                                          data)
             return headers_, 200, response
-        return headers_, 200, json.dumps(job_output, sort_keys=True, indent=4, default=json_serial)
+
+        content = json.dumps(job_output, sort_keys=True, indent=4,
+                             default=json_serial)
+
+        return headers_, 200, content
 
     def delete_process_job(self, process_id, job_id):
         """
@@ -2384,18 +2373,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'description': 'Job identifier not found'
             }
         else:
-            http_status = 204
+            http_status = 200
+            jobs_url = '{}/processes/{}/jobs'.format(
+                self.config['server']['url'], process_id)
+
             response = {
                 'jobID': job_id,
-                'status': JobStatus.dismissed,
+                'status': JobStatus.dismissed.value,
                 'message': 'Job dismissed',
                 'progress': 100,
                 'links': [{
-                    'href': 'http://processing.example.org/processes/EchoProcess/jobs',
+                    'href': jobs_url,
                     'rel': 'up',
                     'type': 'application/json',
                     'title': 'The job list for the current process'
-                }] 
+                }]
             }
 
         LOGGER.info(response)
@@ -2550,37 +2542,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             headers_.pop('Content-Type', None)
             return headers_, 200, stac_data
 
-def check_async(args, headers):
-    """
-    Check execution mode requested from arguments or headers. Returns
-    True if asynchronous execution is requested, False otherwise.
-    Arguments take precedence over headers.
-
-    The args and headers considered are labelled "sync-execute" and
-    "async-execute". These are not part of the existing specification, which
-    does not currently state how async/sync "exection modes" are to be
-    specified by clients. Therefore this function is likely to change.
-
-    Note that since args and headers are serialised, the expected values
-    representing the Boolean cases True and False are properly the string
-    literals "True" and "False", which are equivalent to `str(True)` and
-    `str(False)`.
-
-    :param args: dict of request keyword value pairs
-    :param headers: dict of request headers
-
-    :returns: bool
-    """
-    async_arg = args.get('async-execute', None) == 'True'
-    if async_arg:
-        return True
-    sync_arg = args.get('sync-execute', None) == 'True'
-    if sync_arg:
-        return False
-    async_header = headers.get('async-execute', None) == 'True'
-    if async_header:
-        return True
-    return False
 
 def check_format(args, headers):
     """

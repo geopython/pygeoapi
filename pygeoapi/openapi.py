@@ -844,12 +844,26 @@ def get_oas_30(cfg):
             if 'example' in p.metadata:
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
+            name_in_path = {
+                'name': 'jobId',
+                'in': 'path',
+                'description': 'job identifier',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                }
+            }
+
             # TODO: define jobId as parameter in dict
             paths[f'{process_name_path}/jobs/{{jobId}}'] = {
                 'get': {
                     'summary': 'Retrieve job details',
                     'description': '',
                     'tags': [k],
+                    'parameters': [
+                        name_in_path,
+                        {'$ref': '#/components/parameters/f'}
+                    ],
                     'operationId': f'get{k.capitalize()}Job',
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
@@ -861,6 +875,9 @@ def get_oas_30(cfg):
                     'summary': 'Cancel / delete job',
                     'description': '',
                     'tags': [k],
+                    'parameters': [
+                        name_in_path
+                    ],
                     'operationId': f'delete{k.capitalize()}Job',
                     'responses': {
                         '204': {'$ref': '#/components/responses/204'},
@@ -875,6 +892,10 @@ def get_oas_30(cfg):
                     'summary': 'Retrieve job results',
                     'description': '',
                     'tags': [k],
+                    'parameters': [
+                        name_in_path,
+                        {'$ref': '#/components/parameters/f'}
+                    ],
                     'operationId': f'get{k.capitalize()}JobResults',
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},

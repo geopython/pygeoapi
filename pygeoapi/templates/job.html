@@ -26,7 +26,7 @@
               <div class="duration">
                 <h4><label for="progress">Progress</label></h4>
                 <progress id="progress" class="inline" value="{{data.job.progress|int*10}}" max="1000"></progress>
-                <h4><label for="runtime">Runtime</label></h4>
+                <h4><label for="runtime">Duration</label></h4>
                 <p><span id="runtime">
                   {% if data.job.status == 'running' %}
                     {{ data.job.process_start_datetime|format_duration(data.now) }}
