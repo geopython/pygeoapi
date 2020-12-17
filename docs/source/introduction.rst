@@ -20,6 +20,7 @@ Features
 - easy to deploy: via UbuntuGIS or the official Docker image
 - flexible: built on a robust plugin framework to build custom data connections, formats and processes
 - supports any Python web framework (included are Flask [default], Starlette)
+- supports asynchronous processing and job management (OGC API - Processes)
 
 Standards Support
 -----------------

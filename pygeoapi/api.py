@@ -2592,7 +2592,7 @@ def validate_bbox(value=None):
 
     :param bbox: `list` of minx, miny, maxx, maxy
 
-    :returns: `list` of bbox as `float`s
+    :returns: bbox as `list` of `float` values
     """
 
     if value is None:
@@ -2629,7 +2629,7 @@ def validate_datetime(resource_def, datetime_=None):
     :param resource_def: `dict` of configuration resource definition
     :param datetime_: `str` of datetime parameter
 
-    :returns: `str` datetime_ input, if valid
+    :returns: `str` of datetime input, if valid
     """
 
     # TODO: pass datetime to query as a `datetime` object
