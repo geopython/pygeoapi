@@ -143,13 +143,18 @@ class API:
 
         # TODO: add as decorator
         if 'manager' in self.config['server']:
-            self.manager = load_plugin('process_manager',
-                                       self.config['server']['manager'])
-            LOGGER.info('Process manager plugin loaded')
+            manager_def = self.config['server']['manager']
         else:
             LOGGER.info('No process manager defined; starting dummy manager')
-            LOGGER.info('Process manager plugin loaded')
-            self.manager = None
+            manager_def = {
+                'name': 'Dummy',
+                'connection': None,
+                'output_dir': None
+            }
+
+        LOGGER.debug('Loading process manager {}'.format(manager_def['name']))
+        self.manager = load_plugin('process_manager', manager_def)
+        LOGGER.info('Process manager plugin loaded')
 
     @pre_process
     @jsonldify
