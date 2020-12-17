@@ -54,7 +54,7 @@ class TinyDBManager(BaseManager):
 
         super().__init__(manager_def)
 
-    def connect(self):
+    def _connect(self):
 
         """
         connect to manager
@@ -87,7 +87,7 @@ class TinyDBManager(BaseManager):
         :returns: 'list` of jobs (identifier, status, process identifier)
         """
 
-        self.connect()
+        self._connect()
         if process_id is None:
             jobs_list = [doc.doc_id for doc in self.db.all()]
         else:
@@ -107,7 +107,7 @@ class TinyDBManager(BaseManager):
         :returns: identifier of added job
         """
 
-        self.connect()
+        self._connect()
         doc_id = self.db.insert(job_metadata)
         self.db.close()
 
@@ -124,7 +124,7 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of status result
         """
 
-        self.connect()
+        self._connect()
         self.db.update(update_dict, tinydb.where('identifier') == job_id)
         self.db.close()
 
@@ -140,19 +140,19 @@ class TinyDBManager(BaseManager):
         :return `bool` of status result
         """
         # delete result file if present
-        job_result = self.get_job_result(process_id, job_id)
+        job_result = self.get_job(process_id, job_id)
         if job_result:
             location = job_result.get('location', None)
             if location and self.output_dir is not None:
                 os.remove(location)
 
-        self.connect()
+        self._connect()
         removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
         self.db.close()
 
         return removed
 
-    def get_job_result(self, process_id, job_id):
+    def get_job(self, process_id, job_id):
         """
         Get a single job
 
@@ -162,7 +162,7 @@ class TinyDBManager(BaseManager):
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
-        self.connect()
+        self._connect()
         query = tinydb.Query()
         result = self.db.search((
             query.process_id == process_id) & (query.identifier == job_id))
@@ -171,7 +171,7 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return result
 
-    def get_job_output(self, process_id, job_id):
+    def get_job_result(self, process_id, job_id):
         """
         Get a job's status, and actual output of executing the process
 
@@ -181,7 +181,7 @@ class TinyDBManager(BaseManager):
         :returns: tuple of JobStatus and the process output as a `dict`
         """
 
-        job_result = self.get_job_result(process_id, job_id)
+        job_result = self.get_job(process_id, job_id)
         if not job_result:
             # processs/job does not exist
             return None, None

@@ -2167,7 +2167,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         return headers_, http_status, to_json(response, self.pretty_print)
 
-    def get_process_job_status(self, headers, args, process_id, job_id):
+    def get_process_job(self, headers, args, process_id, job_id):
         """
         Get status of job (instance of a process)
 
@@ -2190,7 +2190,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        job_result = self.manager.get_job_result(process_id, job_id)
+        job_result = self.manager.get_job(process_id, job_id)
 
         if not job_result:
             exception = {
@@ -2305,7 +2305,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        status, job_output = self.manager.get_job_output(process_id, job_id)
+        status, job_output = self.manager.get_job_result(process_id, job_id)
 
         if not status:
             exception = {

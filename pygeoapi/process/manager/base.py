@@ -55,33 +55,6 @@ class BaseManager:
         self.connection = manager_def['connection']
         self.output_dir = manager_def.get('output_dir', None)
 
-    def create(self):
-        """
-        Create manager
-
-        :returns: `bool` status of result
-        """
-
-        raise NotImplementedError()
-
-    def connect(self):
-        """
-        Connect manager
-
-        :returns: `bool` status of result
-        """
-
-        raise NotImplementedError()
-
-    def destroy(self):
-        """
-        Destroy manager
-
-        :returns: `bool` status of result
-        """
-
-        raise NotImplementedError()
-
     def get_jobs(self, process_id=None, status=None):
         """
         Get process jobs, optionally filtered by status
@@ -119,21 +92,9 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job_status(self, process_id, job_id):
+    def get_job(self, process_id, job_id):
         """
-        Updates a job
-
-        :param process_id: process identifier
-        :param job_id: job identifier
-
-        :returns: `dict` of status
-        """
-
-        raise NotImplementedError()
-
-    def get_job_result(self, process_id, job_id):
-        """
-        Get a job result
+        Get a job (!)
 
         :param process_id: process identifier
         :param job_id: job identifier
@@ -143,7 +104,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job_output(self, process_id, job_id):
+    def get_job_result(self, process_id, job_id):
         """
         Returns the actual output from a completed process
 

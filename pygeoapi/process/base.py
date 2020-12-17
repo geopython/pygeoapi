@@ -68,8 +68,3 @@ class ProcessorGenericError(Exception):
 class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
     pass
-
-
-class ProcessorNotFoundError(ProcessorGenericError):
-    """processor not found error"""
-    pass

@@ -392,19 +392,19 @@ def get_post_process_jobs(process_id=None, job_id=None):
     :returns: HTTP response
     """
 
-    if job_id is None:  # list or submit job
-        if request.method == 'GET':
+    if job_id is None:
+        if request.method == 'GET':  # list jobs
             headers, status_code, content = api_.get_process_jobs(
                 request.headers, request.args, process_id)
-        elif request.method == 'POST':
+        elif request.method == 'POST':  # submit job
             headers, status_code, content = api_.execute_process(
                 request.headers, request.args, request.data, process_id)
-    else:  # get or delete job
-        if request.method == 'DELETE':
+    else:
+        if request.method == 'DELETE':  # dismiss job
             headers, status_code, content = api_.delete_process_job(
                 process_id, job_id)
         else:  # Return status of a specific job
-            headers, status_code, content = api_.get_process_job_status(
+            headers, status_code, content = api_.get_process_job(
                 request.headers, request.args, process_id, job_id)
 
     response = make_response(content, status_code)
