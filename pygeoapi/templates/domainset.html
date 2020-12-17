@@ -5,15 +5,9 @@
 / <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
-    <section id="collection" itemscope itemtype="https://schema.org/Dataset">
-      <span itemprop="includedInDataCatalog" itemscope itemtype="https://schema.org/DataCatalog">
-        <meta itemprop="url" content="{{ config['server']['url'] }}/collections" />
-        <meta itemprop="name" content="{{ config['metadata']['identification']['title'] | striptags }}" />
-        <meta itemprop="description" content="{{ config['metadata']['identification']['description'] | striptags }}" />
-      </span>
-      <h1 itemprop="name">{{ data['title'] }}</h1>
-      <meta itemprop="url" content="{{ config['server']['url'] }}" />
-      <p itemprop="description">{{ data['description'] }}</p>
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
       <h3>Coverage domain set</h3>
       <h4>Axis labels</h4>
       <ul>
