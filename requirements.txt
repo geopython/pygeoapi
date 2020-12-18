@@ -6,3 +6,4 @@ pytz
 PyYAML
 rasterio
 unicodecsv
+requests
