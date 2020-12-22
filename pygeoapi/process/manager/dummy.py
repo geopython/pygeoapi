@@ -80,7 +80,7 @@ class DummyManager(BaseManager):
 
         try:
             outputs = p.execute(data_dict)
-            current_status = JobStatus.finished
+            current_status = JobStatus.successful
         except Exception as err:
             outputs = {
                 'code': 'InvalidParameterValue',

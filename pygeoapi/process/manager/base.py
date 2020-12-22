@@ -201,7 +201,7 @@ class BaseManager:
                 with io.open(job_filename, 'w', encoding='utf-8') as fh:
                     fh.write(json.dumps(outputs, sort_keys=True, indent=4))
 
-            current_status = JobStatus.finished
+            current_status = JobStatus.successful
             job_update_metadata = {
                 'process_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),

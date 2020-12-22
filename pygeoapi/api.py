@@ -1856,7 +1856,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param process: process identifier, defaults to None to obtain
-            information about all processes
+                        information about all processes
 
         :returns: tuple of headers, status code, content
         """
@@ -1898,6 +1898,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 response = {
                     'processes': processes
                 }
+
         if process and process not in processes_config:
             exception = {
                 'code': 'NoSuchProcess',
@@ -2254,7 +2255,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             psd = job_result.get('process_start_datetime', None)
             ped = job_result.get('process_end_datetime', None)
 
-            if status == JobStatus.finished:
+            if status == JobStatus.successful:
                 progress = 100
             else:
                 progress = job_result.get('progress', 0)

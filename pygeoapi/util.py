@@ -56,9 +56,6 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
 
-ALLOWED_UPLOAD_EXTENSIONS = {'csv', 'shp', 'json', 'geojson', 'gpkg'}
-UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
-
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
 
@@ -185,7 +182,6 @@ def format_datetime(value, format_=DATETIME_FORMAT):
     if not isinstance(value, str) or not value.strip():
         return ''
 
-    print("VALUE", value)
     return dateutil.parser.isoparse(value).strftime(format_)
 
 
@@ -414,9 +410,6 @@ class JobStatus(Enum):
     successful = 'successful'
     failed = 'failed'
     dismissed = 'dismissed'
-
-    #  Alternative namings used in existing codebase
-    finished = successful  # TODO should this status be used?
 
 
 def read_data(path):

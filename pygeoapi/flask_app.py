@@ -382,7 +382,7 @@ def get_processes(process_id=None):
 @BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
 @BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
                  methods=['GET', 'DELETE'])
-def get_post_process_jobs(process_id=None, job_id=None):
+def get_process_jobs(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 

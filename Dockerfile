@@ -91,6 +91,7 @@ RUN \
 	&& cd /pygeoapi \
 	&& pip3 install -r requirements.txt \
 	&& pip3 install -r requirements-dev.txt \
+	&& pip3 install -r requirements-manager.txt \
 	&& pip3 install -r requirements-provider.txt \
 	&& pip3 install -e . \
 	# OGC schemas local setup
