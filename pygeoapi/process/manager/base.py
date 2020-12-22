@@ -52,6 +52,7 @@ class BaseManager:
         """
 
         self.name = manager_def['name']
+        self.is_async = False
         self.connection = manager_def['connection']
         self.output_dir = manager_def.get('output_dir', None)
 

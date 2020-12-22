@@ -53,6 +53,7 @@ class TinyDBManager(BaseManager):
         """
 
         super().__init__(manager_def)
+        self.is_async = True
 
     def _connect(self):
 

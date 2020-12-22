@@ -1861,6 +1861,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         :returns: tuple of headers, status code, content
         """
 
+        processes = []
+
         if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -1872,82 +1874,50 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
 
-        if processes_config:
-            if process is not None:
-                if process not in processes_config.keys():
-                    exception = {
-                        'code': 'NoSuchProcess',
-                        'description': 'identifier not found'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 404, to_json(exception, self.pretty_print)
-
-                p = load_plugin('process',
-                                processes_config[process]['processor'])
-                p.metadata['jobControlOptions'] = ['sync-execute']
-                p.metadata['outputTransmission'] = ['value']
-                response = p.metadata
-            else:
-                processes = []
-                for k, v in processes_config.items():
-                    p = load_plugin('process',
-                                    processes_config[k]['processor'])
-                    p.metadata['jobControlOptions'] = ['sync-execute']
-                    p.metadata['outputTransmission'] = ['value']
-                    processes.append(p.metadata)
-                response = {
-                    'processes': processes
+        if process is not None:
+            if process not in processes_config.keys() or not processes_config:
+                exception = {
+                    'code': 'NoSuchProcess',
+                    'description': 'identifier not found'
                 }
-
-        if process and process not in processes_config:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            return headers_, 404, json.dumps(exception)
+                LOGGER.error(exception)
+                return headers_, 404, to_json(exception, self.pretty_print)
 
         if processes_config:
-            if not process:
-                process_ids = processes_config.keys()
-            else:
-                process_ids = [p for p in processes_config.keys()
-                               if p == process]
+            for key, value in processes_config.items():
+                p = load_plugin('process',
+                                processes_config[key]['processor'])
 
-            processes = list(map(lambda process_id: load_plugin('process',
-                             processes_config[process_id]['processor']),
-                             process_ids))
+                p2 = deepcopy(p.metadata)
 
-            output = []
-            for _process in processes:
-                process_id = _process.metadata['id']
-                if process is not None and process != process_id:
-                    continue
-                metadata = deepcopy(_process.metadata)
-                metadata['itemType'] = ['process']
-                metadata['jobControlOptions'] = [
-                    'sync-execute', 'async-execute']
-                metadata['outputTransmission'] = ['value']
-                metadata['links'] = metadata.get('links', [])
+                p2['jobControlOptions'] = ['sync-execute']
+                if self.manager.is_async:
+                    p2['jobControlOptions'].append('async-execute')
+
+                p2['outputTransmission'] = ['value']
+                p2['links'] = p2.get('links', [])
 
                 jobs_url = '{}/processes/{}/jobs'.format(
-                    self.config['server']['url'], process_id)
+                    self.config['server']['url'], key)
+
                 link = {
                     'type': 'text/html',
                     'rel': 'collection',
                     'href': jobs_url,
                     'title': 'Collection of jobs for the {} process'.format(
-                        process_id),
+                        key),
                     'hreflang': self.config['server'].get('language', None)
                 }
 
-                metadata['links'].append(link)
-                output.append(metadata)
+                p2['links'].append(link)
+                processes.append(p2)
 
-            response = output[0] if process is not None else {
-                'processes': output
-            }
+        if process is not None:
+            response = processes[0]
         else:
-            response = {'processes': []}
+            response = {
+                'processes': processes
+            }
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'

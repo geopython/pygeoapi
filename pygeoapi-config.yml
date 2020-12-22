@@ -208,7 +208,7 @@ resources:
                   - .tif
                   - .shp
 
-    hello-world:
-        type: process
-        processor:
-            name: HelloWorld
+    #hello-world:
+    #    type: process
+    #    processor:
+    #        name: HelloWorld
