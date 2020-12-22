@@ -22,6 +22,7 @@
             <tr>
               <th>ID</th>
               <th>Title</th>
+              <th>Data Type</th>
               <th>Description</th>
             </tr>
             </thead>
@@ -33,6 +34,9 @@
                 </td>
                 <td itemprop="name" data-label="Title">
                   {{ input_.title|striptags|truncate }}
+                </td>
+                <td itemprop="name" data-label="Title">
+                  {{ input_.input.literalDataDomain.dataType }}
                 </td>
                 <td itemprop="description" data-label="Description">
                   {{ input_.abstract }}
