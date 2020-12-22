@@ -147,7 +147,7 @@ class PostgreSQLProvider(BaseProvider):
         :returns: pygeoapi.provider.base.PostgreSQLProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']

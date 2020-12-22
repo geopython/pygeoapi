@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} Jobs {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../processes">Processes</a>
+/ <a href="../{{ data.process.id }}">{{ data.process.title }}</a>
+/ <a href="./jobs">Jobs</a>
+{% endblock %}
+{% block form_js %}
+<script src="{{ config['server']['url'] }}/static/js/deleteJob.js"></script>
+{% endblock %}
+{% block body %}
+    <section id="jobs">
+      <div class="row">
+        <div class="col-md-12">
+          <table class="job-list striped">
+            <caption>Jobs</caption>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Start</th>
+                <th>Duration</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in data.jobs %}
+              <tr>
+                <td class="small"><a href="/processes/{{data.process.id}}/jobs/{{ job.identifier }}">{{ job.identifier }}</a></td>
+                <td>
+                  {{ job.process_start_datetime|format_datetime }}
+                </td>
+                <td>
+                  {% if job.status == 'running' %}
+                    {{ job.process_start_datetime|format_duration(data.now) }}
+                  {% else %}
+                    {{ job.process_start_datetime|format_duration(job.process_end_datetime) }}
+                  {% endif %}
+                </td>
+                <td>
+                  <progress class="inline" value="{{job.progress|int*10}}" max="1000"></progress>
+                </td>
+                <td>
+                  <mark class="{{job.status}}">{{ job.status }}</mark>
+                </td>
+                <td>
+                  {{ job.message }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+{% endblock %}

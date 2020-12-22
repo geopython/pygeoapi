@@ -50,7 +50,7 @@ class FileSystemProvider(BaseProvider):
         :returns: pygeoapi.provider.filesystem.FileSystemProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         if not os.path.exists(self.data):
             msg = 'Directory does not exist: {}'.format(self.data)

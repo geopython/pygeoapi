@@ -360,7 +360,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
 @BLUEPRINT.route('/processes')
 @BLUEPRINT.route('/processes/<process_id>')
-def processes(process_id=None):
+def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
 
@@ -380,20 +380,78 @@ def processes(process_id=None):
 
 
 @BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
-def process_jobs(process_id=None):
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
+                 methods=['GET', 'DELETE'])
+def get_process_jobs(process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
     :param process_id: process identifier
+    :param job_id: job identifier
 
     :returns: HTTP response
     """
 
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.args, request.data, process_id)
+    if job_id is None:
+        if request.method == 'GET':  # list jobs
+            headers, status_code, content = api_.get_process_jobs(
+                request.headers, request.args, process_id)
+        elif request.method == 'POST':  # submit job
+            headers, status_code, content = api_.execute_process(
+                request.headers, request.args, request.data, process_id)
+    else:
+        if request.method == 'DELETE':  # dismiss job
+            headers, status_code, content = api_.delete_process_job(
+                process_id, job_id)
+        else:  # Return status of a specific job
+            headers, status_code, content = api_.get_process_job(
+                request.headers, request.args, process_id, job_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
+def get_process_job_result(process_id=None, job_id=None):
+    """
+    OGC API - Processes job result endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result(
+        request.headers, request.args, process_id, job_id)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
+@APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
+           methods=['GET'])
+def get_process_job_result_resource(process_id, job_id, resource):
+    """
+    OGC API - Processes job result resource endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+    :param resource: job resource
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result_resource(
+        request.headers, request.args, process_id, job_id, resource)
 
     response = make_response(content, status_code)
 
@@ -460,7 +518,7 @@ def serve(ctx, server=None, debug=False):
     :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    # setup_logger(CONFIG['logging'])
     APP.run(debug=True, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
 

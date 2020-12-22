@@ -61,7 +61,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         :returns: pygeoapi.provider.base.SQLiteProvider
         """
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.application_id = None

@@ -149,16 +149,3 @@ def test_update(fixture, config):
     # Should be changed
     results = p.get('123-456')
     assert 'Null' in results['properties']['name']
-
-
-"""
-    def __init__(self, definition):
-        BaseProvider.__init__(self, definition)
-    def _load(self):
-    def query(self):
-    def get(self, identifier):
-    def create(self, new_feature):
-    def update(self, identifier, new_feature):
-    def delete(self, identifier):
-    def __repr__(self):
-"""
