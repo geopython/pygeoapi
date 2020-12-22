@@ -355,7 +355,7 @@ def collection_coverage_rangetype(request: Request, collection_id):
 @app.route('/processes/')
 @app.route('/processes/{process_id}')
 @app.route('/processes/{process_id}/')
-async def processes(request: Request, process_id=None):
+async def get_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
 
@@ -376,20 +376,84 @@ async def processes(request: Request, process_id=None):
 
 @app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
 @app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
-async def process_jobs(request: Request, process_id=None):
+@app.route('/processes/{process_id}/jobs/{job_id}', methods=['GET', 'DELETE'])
+@app.route('/processes/{process_id}/jobs/{job_id}/', methods=['GET', 'DELETE'])
+async def get_process_jobs(request: Request, process_id=None, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
-    :param process_id: identifier of process to execute
+    :param process_id: process identifier
+    :param job_id: job identifier
 
     :returns: Starlette HTTP Response
     """
 
-    if request.method == 'GET':
-        headers, status_code, content = ({}, 200, "[]")
-    elif request.method == 'POST':
-        headers, status_code, content = api_.execute_process(
-            request.headers, request.query_params, request.data, process_id)
+    if job_id is None:  # list of submit job
+        if request.method == 'GET':
+            headers, status_code, content = api_.get_process_jobs(
+                request.headers, request.query_params, process_id)
+        elif request.method == 'POST':
+            headers, status_code, content = api_.execute_process(
+                request.headers, request.query_params, request.data,
+                process_id)
+    else:  # get or delete job
+        if request.method == 'DELETE':
+            headers, status_code, content = api_.delete_process_job(
+                process_id, job_id)
+        else:  # Return status of a specific job
+            headers, status_code, content = api_.get_process_job_status(
+                request.headers, request.args, process_id, job_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes/{process_id}/jobs/{job_id}/results', methods=['GET'])
+@app.route('/processes/{process_id}/jobs/{job_id}/results/', methods=['GET'])
+async def get_process_job_result(request: Request, process_id=None,
+                                 job_id=None):
+    """
+    OGC API - Processes job result endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result(
+        request.headers, request.args, process_id, job_id)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/processes/{process_id}/jobs/{job_id}/results/{resource}',
+           methods=['GET'])
+@app.route('/processes/{process_id}/jobs/{job_id}/results/{resource}/',
+           methods=['GET'])
+async def get_process_job_result_resource(request: Request, process_id=None,
+                                          job_id=None, resource=None):
+    """
+    OGC API - Processes job result resource endpoint
+
+    :param process_id: process identifier
+    :param job_id: job identifier
+    :param resource: job resource
+
+    :returns: HTTP response
+    """
+
+    headers, status_code, content = api_.get_process_job_result_resource(
+        request.headers, request.args, process_id, job_id, resource)
 
     response = Response(content=content, status_code=status_code)
 

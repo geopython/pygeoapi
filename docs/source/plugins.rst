@@ -58,7 +58,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
        def __init__(self, provider_def):
            """Inherit from parent class"""
 
-           BaseProvider.__init__(self, provider_def)
+           super().__init__(provider_def)
 
        def get_fields(self):
 
@@ -156,7 +156,7 @@ The below template provides a minimal example (let's call the file ``mycoolraste
        def __init__(self, provider_def):
            """Inherit from parent class"""
 
-           BaseProvider.__init__(self, provider_def)
+           super().__init__(provider_def)
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
 
@@ -204,7 +204,7 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
        def __init__(self, formatter_def):
            """Inherit from parent class"""
 
-           BaseFormatter.__init__(self, {'name': 'cooljson', 'geom': None})
+           super().__init__({'name': 'cooljson', 'geom': None})
            self.mimetype = 'text/json; subtype:mycooljson'
 
        def write(self, options={}, data=None):
