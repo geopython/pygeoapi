@@ -54,7 +54,7 @@ class XarrayProvider(BaseProvider):
         :returns: pygeoapi.provider.xarray_.XarrayProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         try:
             if provider_def['format']['name'] == 'zarr':

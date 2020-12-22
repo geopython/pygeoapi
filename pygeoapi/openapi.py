@@ -738,8 +738,9 @@ def get_oas_30(cfg):
             }
         }
 
-    LOGGER.debug('setting up processes')
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
+
+    has_manager = 'manager' in cfg['server']
 
     if processes:
         paths['/processes'] = {
@@ -757,6 +758,7 @@ def get_oas_30(cfg):
                 }
             }
         }
+        LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
             p = load_plugin('process', v['processor'])
@@ -843,6 +845,68 @@ def get_oas_30(cfg):
             }
             if 'example' in p.metadata:
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+
+            name_in_path = {
+                'name': 'jobId',
+                'in': 'path',
+                'description': 'job identifier',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                }
+            }
+
+            if has_manager:
+                # TODO: define jobId as parameter in dict
+                paths[f'{process_name_path}/jobs/{{jobId}}'] = {
+                    'get': {
+                        'summary': 'Retrieve job details',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path,
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'operationId': f'get{k.capitalize()}Job',
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/200'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                    'delete': {
+                        'summary': 'Cancel / delete job',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path
+                        ],
+                        'operationId': f'delete{k.capitalize()}Job',
+                        'responses': {
+                            '204': {'$ref': '#/components/responses/204'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                }
+
+                paths[f'{process_name_path}/jobs/{{jobId}}/results'] = {
+                    'get': {
+                        'summary': 'Retrieve job results',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path,
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'operationId': f'get{k.capitalize()}JobResults',
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/200'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                }
 
     oas['paths'] = paths
 

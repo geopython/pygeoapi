@@ -47,3 +47,19 @@ main {
 table:not(.horizontal) {
     max-height: none;
 }
+
+mark.successful {
+  background-color: green;
+}
+
+mark.accepted {
+  background-color: default;
+}
+
+mark.failed {
+  background-color: red;
+}
+
+mark.running {
+  background-color: orange;
+}

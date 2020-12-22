@@ -54,6 +54,10 @@ PLUGINS = {
     },
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+    },
+    'process_manager': {
+        'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
+        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
     }
 }
 
@@ -95,6 +99,7 @@ def load_plugin(plugin_type, plugin_def):
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
     plugin = class_(plugin_def)
+
     return plugin
 
 

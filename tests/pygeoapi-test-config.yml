@@ -42,7 +42,10 @@ server:
     map:
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-
+    manager:
+        name: TinyDB
+        connection: /tmp/pygeoapi-test-process-manager.db
+        
 logging:
     level: ERROR
     #logfile: /tmp/pygeoapi.log

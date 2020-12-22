@@ -53,7 +53,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: pygeoapi.provider.elasticsearch_.ElasticsearchProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         url_tokens = self.data.split('/')
 

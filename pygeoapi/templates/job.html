@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ super() }} Job status {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../">Processes</a>
+/ <a href="../">{{ data.process.title }}</a>
+/ <a href="./">Jobs</a>
+/ <a href="./{{ data.job.jobID }}">{{ data.job.jobID }}</a>
+{% endblock %}
+{% block body %}
+    <section id="job">
+      <div class="row">
+        <h1>Job status</h1>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div id="job-status" class="{{ data.job.status }}">
+            <div id="job-status-header" class="{{ data.job.status }}">
+              <p>Status: {{ data['job']['status'] }}</p>
+              <p class="progress">Progress: {{ data.job.progress }}%</p>
+            </div>
+            <div id="job-status-body">
+              <div class="message">
+                <h3>Message</h3>
+                <p>{{ data.job.message }}</p>
+              </div>
+              <div class="duration">
+                <h4><label for="progress">Progress</label></h4>
+                <progress id="progress" class="inline" value="{{data.job.progress|int*10}}" max="1000"></progress>
+                <h4><label for="runtime">Duration</label></h4>
+                <p><span id="runtime">
+                  {% if data.job.status == 'running' %}
+                    {{ data.job.process_start_datetime|format_duration(data.now) }}
+                  {% else %}
+                    {{ data.job.process_start_datetime|format_duration(data.job.process_end_datetime) }}
+                  {% endif %}
+                </span></p>
+                <h4><label for="starttime">Started processing</label></h4>
+                <p><span id="starttime">{{ data.job.process_start_datetime|format_datetime }}</span></p>
+                <h4><label for="endtime">Finished processing</label></h4>
+                <p><span id="endtime">{{ data.job.process_end_datetime|format_datetime }}</span></p>
+              </div>
+              <div class="links">
+                {% if data.job.links %}
+                <h4><label for="resources">Resources</label></h4>
+                <ul id="resources">
+                  {% for link in data.job.links %}
+                  {% if link.rel != 'self' %}
+                  <li><a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">{{ link.title }}</a></li>
+                  {% endif %}
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+{% endblock %}

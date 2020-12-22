@@ -44,13 +44,20 @@ The ``server`` section provides directives on binding and high level tuning.
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of items to return
-    template: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
+
+    templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
       path: /path/to/jinja2/templates/folder # path to templates folder containing the jinja2 template HTML files
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
+
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     ogc_schemas_location: /opt/schemas.opengis.net  # local copy of http://schemas.opengis.net
+
+    manager:  # optional OGC API - Processes asynchronous job management
+        name: TinyDB  # plugin name (see pygeoapi.plugin for supported process_manager's)
+        connection: /tmp/pygeoapi-process-manager.db  # connection info to store jobs (e.g. filepath)
+        output_dir: /tmp/  # temporary file area for storing job results (files)
 
 
 ``logging``

@@ -5,12 +5,12 @@ HTML Templating
 
 pygeoapi uses `Jinja`_ as its templating engine to render HTML and `Flask`_ to provide route paths of the API that returns HTTP responses. For complete details on how to use these modules, refer to the `Jinja documentation`_ and the `Flask documentation`_.
 
-The default pygeoapi configuration has ``server.template`` commented out and defaults to the pygeoapi ``pygeoapi/templates`` and ``pygeoapi/static`` folder. To point to a different set of template configuration, you can edit your configuration:
+The default pygeoapi configuration has ``server.templates`` commented out and defaults to the pygeoapi ``pygeoapi/templates`` and ``pygeoapi/static`` folder. To point to a different set of template configuration, you can edit your configuration:
 
 .. code-block:: yaml
 
   server:
-    template:
+    templates:
       path: /path/to/jinja2/templates/folder # jinja2 template HTML files
       static: /path/to/static/folder # css, js, images and other static files referenced by the template
 
