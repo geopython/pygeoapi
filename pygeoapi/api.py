@@ -2171,7 +2171,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        format_ = check_format(args, headers_)
+        format_ = check_format(args, headers)
         if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -2315,7 +2315,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         job_output = self.manager.get_job_result(process_id, job_id)
 
-        format_ = check_format(args, headers_)
+        format_ = check_format(args, headers)
 
         if not format_ or format_ == 'html':
             headers_['Content-Type'] = 'text/html'
