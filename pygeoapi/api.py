@@ -2128,7 +2128,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             else:
                 response = outputs
 
-        elif status != JobStatus.failed:
+        elif status != JobStatus.failed and not is_async:
             response['outputs'] = outputs
 
         if is_async:
@@ -2161,9 +2161,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        job_result = self.manager.get_job(process_id, job_id)
+        job = self.manager.get_job(process_id, job_id)
 
-        if not job_result:
+        if not job:
             exception = {
                 'code': 'NoSuchJob',
                 'description': 'job not found'
@@ -2171,7 +2171,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        format_ = check_format(args, headers_)
+        format_ = check_format(args, headers)
         if format_ is not None and format_ not in FORMATS:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -2180,11 +2180,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
 
-        status = JobStatus[job_result['status']]
+        status = JobStatus[job['status']]
         response = {
             'jobID': job_id,
             'status': status.value,
-            'message': job_result.get('message', None),
+            'message': job.get('message', None),
             'links': [{
                 'href': '{}/processes/{}/jobs/{}'.format(
                     self.config['server']['url'], process_id, job_id
@@ -2210,7 +2210,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             # TODO link to exception report?
             pass
 
-        if format_ == 'json' or format_ == 'jsonld':
+        if format_ != 'html':
             return headers_, 200, json.dumps(response, default=json_serial)
         else:
             headers_['Content-Type'] = 'text/html'
@@ -2222,13 +2222,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'title': process.metadata['title']
             }
 
-            psd = job_result.get('process_start_datetime', None)
-            ped = job_result.get('process_end_datetime', None)
+            psd = job.get('process_start_datetime', None)
+            ped = job.get('process_end_datetime', None)
 
             if status == JobStatus.successful:
                 progress = 100
             else:
-                progress = job_result.get('progress', 0)
+                progress = job.get('progress', 0)
 
             job_info = {
                 'process_start_datetime': psd,
@@ -2276,15 +2276,17 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        status, job_output = self.manager.get_job_result(process_id, job_id)
+        job = self.manager.get_job(process_id, job_id)
 
-        if not status:
+        if not job:
             exception = {
                 'code': 'NoSuchJob',
                 'description': 'job not found'
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
+        status = JobStatus[job['status']]
 
         if status == JobStatus.running:
             exception = {
@@ -2311,9 +2313,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 400, json.dumps(exception)
 
-        format_ = check_format(args, headers_)
+        job_output = self.manager.get_job_result(process_id, job_id)
 
-        if not format_ or format_ == 'html':
+        format_ = check_format(args, headers)
+
+        if format_ == 'html':
             headers_['Content-Type'] = 'text/html'
             data = {
                 'process': {

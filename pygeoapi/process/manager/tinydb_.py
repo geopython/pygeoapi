@@ -179,26 +179,26 @@ class TinyDBManager(BaseManager):
         :param process_id: process identifier
         :param jobid: job identifier
 
-        :returns: tuple of JobStatus and the process output as a `dict`
+        :returns: The process output as a `dict`
         """
 
         job_result = self.get_job(process_id, job_id)
         if not job_result:
             # processs/job does not exist
-            return None, None
+            return None
         location = job_result.get('location', None)
         job_status = JobStatus[job_result['status']]
         if not job_status == JobStatus.successful:
             # Job is incomplete
-            return job_status, None
+            return None
         if not location:
             # Job data was not written for some reason
             # TODO log/raise exception?
-            return job_status, {}
+            return {}
         with io.open(location, 'r', encoding='utf-8') as filehandler:
             result = json.load(filehandler)
 
-        return job_status, result
+        return result
 
     def __repr__(self):
         return '<TinyDBManager> {}'.format(self.name)
