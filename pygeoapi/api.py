@@ -2128,7 +2128,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             else:
                 response = outputs
 
-        elif status != JobStatus.failed:
+        elif status != JobStatus.failed and not is_async:
             response['outputs'] = outputs
 
         if is_async:
