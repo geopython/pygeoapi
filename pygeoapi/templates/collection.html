@@ -4,15 +4,30 @@
 / <a href="../collections">Collections</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+{% endblock %}
+
 {% block body %}
-    <section id="collection" >
-      <h1>{{ data['title'] }}</h1>
-      <p>{{ data['description'] }}</p>
-      <p>
-        {% for kw in data['keywords'] %}
-          <mark class="tag">{{ kw }}</mark>
-        {% endfor %}
-      </p>
+    <section id="collection">
+      <div class="row">
+        <div class="col-sm">
+          <h1>{{ data['title'] }}</h1>
+          <p>{{ data['description'] }}</p>
+          <p>
+            {% for kw in data['keywords'] %}
+              <mark class="tag">{{ kw }}</mark>
+            {% endfor %}
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <div id="collection-map"></div>
+        </div>
+      </div>
       {% if data['itemType'] == 'Feature' %}
       <h3>Queryables</h3>
       <ul>
@@ -53,4 +68,26 @@
       {% endfor %}
       </ul>
     </section>
+{% endblock %}
+
+{% block extrafoot %}
+    <script>
+    var map = L.map('collection-map').setView([{{ 0 }}, {{ 0 }}], 1);
+    map.addLayer(new L.TileLayer(
+      '{{ config['server']['map']['url'] }}', {
+        maxZoom: 18,
+        attribution: '{{ config['server']['map']['attribution'] }}'
+      }
+    ));
+
+    var bbox_layer = L.polygon([
+      ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][3] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][3] }}', '{{ data['extent']['spatial']['bbox'][0][2] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][2] }}']
+    ]);
+
+    map.addLayer(bbox_layer);
+    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
+    </script>
 {% endblock %}
