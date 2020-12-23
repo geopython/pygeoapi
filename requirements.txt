@@ -1,6 +1,6 @@
 click
 Flask
-pyproj
+pyproj<3
 python-dateutil
 pytz
 PyYAML
