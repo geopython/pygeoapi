@@ -2161,9 +2161,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, to_json(exception, self.pretty_print)
 
-        job_result = self.manager.get_job(process_id, job_id)
+        job = self.manager.get_job(process_id, job_id)
 
-        if not job_result:
+        if not job:
             exception = {
                 'code': 'NoSuchJob',
                 'description': 'job not found'
@@ -2180,11 +2180,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
 
-        status = JobStatus[job_result['status']]
+        status = JobStatus[job['status']]
         response = {
             'jobID': job_id,
             'status': status.value,
-            'message': job_result.get('message', None),
+            'message': job.get('message', None),
             'links': [{
                 'href': '{}/processes/{}/jobs/{}'.format(
                     self.config['server']['url'], process_id, job_id
@@ -2222,13 +2222,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'title': process.metadata['title']
             }
 
-            psd = job_result.get('process_start_datetime', None)
-            ped = job_result.get('process_end_datetime', None)
+            psd = job.get('process_start_datetime', None)
+            ped = job.get('process_end_datetime', None)
 
             if status == JobStatus.successful:
                 progress = 100
             else:
-                progress = job_result.get('progress', 0)
+                progress = job.get('progress', 0)
 
             job_info = {
                 'process_start_datetime': psd,
