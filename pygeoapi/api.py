@@ -2276,15 +2276,17 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
 
-        status, job_output = self.manager.get_job_result(process_id, job_id)
+        job = self.manager.get_job(process_id, job_id)
 
-        if not status:
+        if not job:
             exception = {
                 'code': 'NoSuchJob',
                 'description': 'job not found'
             }
             LOGGER.info(exception)
             return headers_, 404, json.dumps(exception)
+
+        status = JobStatus[job['status']]
 
         if status == JobStatus.running:
             exception = {
@@ -2310,6 +2312,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             }
             LOGGER.info(exception)
             return headers_, 400, json.dumps(exception)
+
+        job_output = self.manager.get_job_result(process_id, job_id)
 
         format_ = check_format(args, headers_)
 
