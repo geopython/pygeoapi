@@ -2210,7 +2210,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             # TODO link to exception report?
             pass
 
-        if format_ == 'json' or format_ == 'jsonld':
+        if format_ != 'html':
             return headers_, 200, json.dumps(response, default=json_serial)
         else:
             headers_['Content-Type'] = 'text/html'
@@ -2317,7 +2317,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         format_ = check_format(args, headers)
 
-        if not format_ or format_ == 'html':
+        if format_ == 'html':
             headers_['Content-Type'] = 'text/html'
             data = {
                 'process': {
