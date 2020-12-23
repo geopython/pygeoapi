@@ -79,8 +79,6 @@
             </tbody>
             </table>
         </div>
-     </div>
-      </tbody>
       </div>
     </section>
 {% endblock %}
@@ -95,10 +93,13 @@
             attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
-    var geojson_data = {{ data |to_json }};
-    var items = new L.GeoJSON(geojson_data);
-
-    map.addLayer(items);
-    map.fitBounds(items.getBounds(), {maxZoom: 10});
+    var bbox_layer = L.polygon([
+        [{{ data['extent']['spatial']['bbox'][1] }}, {{ data['extent']['spatial']['bbox'][0] }}],
+        [{{ data['extent']['spatial']['bbox'][3] }}, {{ data['extent']['spatial']['bbox'][0] }}],
+        [{{ data['extent']['spatial']['bbox'][3] }}, {{ data['extent']['spatial']['bbox'][2] }}],
+        [{{ data['extent']['spatial']['bbox'][1] }}, {{ data['extent']['spatial']['bbox'][2] }}],
+    ]);
+    map.addLayer(bbox_layer);
+    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
     </script>
 {% endblock %}
