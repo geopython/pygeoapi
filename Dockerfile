@@ -31,7 +31,7 @@
 #
 # =================================================================
 
-FROM debian:bullseye-slim
+FROM ubuntu:focal
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -74,7 +74,9 @@ ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
 # Run all installs
 RUN \
 	# Install dependencies
-	apt-get update \
+	apt-get update -y \
+	&& apt-get install -y --fix-missing --no-install-recommends software-properties-common \
+	&& add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
 	&& apt-get --no-install-recommends install -y ${DEB_BUILD_DEPS} ${DEB_PACKAGES} \
 	# Timezone
 	&& cp /usr/share/zoneinfo/${TZ} /etc/localtime\
