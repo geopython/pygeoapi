@@ -57,14 +57,12 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 ARG TIMEZONE="Europe/London"
 ARG LOCALE="en_US.UTF-8"
 ARG ADD_DEB_PACKAGES=""
-ARG ADD_PIP_PACKAGES=""
 
 # ENV settings
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
-	DEB_BUILD_DEPS="tzdata build-essential libpython3-dev libgdal-dev python3-pip apt-utils curl git unzip" \
-	DEB_PACKAGES="locales libgdal28 python3-distutils python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
-	PIP_PACKAGES="setuptools==49.3.1 greenlet==0.4.17 gunicorn==20.0.4 gevent==20.9.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	DEB_BUILD_DEPS="tzdata build-essential apt-utils curl git unzip" \
+	DEB_PACKAGES="locales python3-pip python3-setuptools python3-distutils python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-yaml python3-dateutil python3-pandas python3-tz python3-flask python3-unicodecsv python3-pyproj python3-click python3-greenlet python3-gevent python3-wheel gunicorn libsqlite3-mod-spatialite python3-elasticsearch ${ADD_DEB_PACKAGES}"
 
 RUN mkdir -p /pygeoapi/pygeoapi
 # Add files required for pip/setuptools
@@ -86,9 +84,6 @@ RUN \
 	&& dpkg-reconfigure --frontend=noninteractive locales \
 	&& update-locale LANG=${LOCALE} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
-	# Upgrade pip3 and install packages
-	&& python3 -m pip install --upgrade pip \
-	&& pip3 install ${PIP_PACKAGES} \
 	# Install pygeoapi
 	&& cd /pygeoapi \
 	&& pip3 install -r requirements.txt \
@@ -101,10 +96,9 @@ RUN \
 	&& curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
 	&& unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
 	# Cleanup TODO: remove unused Locales and TZs
-	&& pip3 uninstall --yes wheel \
-	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
+	&& apt-get remove --purge -y ${DEB_BUILD_DEPS} \
 	&& apt autoremove -y  \
-	&& apt-get --no-install-recommends install -y python3-gdal \
+	&& apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
 	&& rm -rf /var/lib/apt/lists/*
 
 ADD . /pygeoapi
