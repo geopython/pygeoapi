@@ -2,9 +2,9 @@
 {% block title %}{{ super() }} Job status {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../">Processes</a>
-/ <a href="../">{{ data.process.title }}</a>
+/ <a href="../">{{ data['process']['title'] }}</a>
 / <a href="./">Jobs</a>
-/ <a href="./{{ data.job.jobID }}">{{ data.job.jobID }}</a>
+/ <a href="./{{ data['jobs']['jobID'] }}">{{ data['jobs']['jobID'] }}</a>
 {% endblock %}
 {% block body %}
     <section id="job">
@@ -13,43 +13,38 @@
       </div>
       <div class="row">
         <div class="col-md-12">
-          <div id="job-status" class="{{ data.job.status }}">
-            <div id="job-status-header" class="{{ data.job.status }}">
-              <p>Status: {{ data['job']['status'] }}</p>
-              <p class="progress">Progress: {{ data.job.progress }}%</p>
+          <div id="job-status" class="{{ data['jobs']['status'] }}">
+            <div id="job-status-header" class="{{ data['jobs']['status'] }}">
+              <p>Status: {{ data['jobs']['status'] }}</p>
+              <p class="progress">Progress: {{ data['jobs']['progress'] }}%</p>
             </div>
             <div id="job-status-body">
               <div class="message">
                 <h3>Message</h3>
-                <p>{{ data.job.message }}</p>
+                <p>{{ data['jobs']['message'] }}</p>
               </div>
               <div class="duration">
                 <h4><label for="progress">Progress</label></h4>
-                <progress id="progress" class="inline" value="{{data.job.progress|int*10}}" max="1000"></progress>
+                <progress id="progress" class="inline" value="{{ data['jobs']['progress']|int*10 }}" max="1000"></progress>
                 <h4><label for="runtime">Duration</label></h4>
                 <p><span id="runtime">
-                  {% if data.job.status == 'running' %}
-                    {{ data.job.process_start_datetime|format_duration(data.now) }}
+                  {% if data['jobs']['status'] == 'running' %}
+                    {{ data['jobs']['job_start_datetime']|format_duration(data.now) }}
                   {% else %}
-                    {{ data.job.process_start_datetime|format_duration(data.job.process_end_datetime) }}
+                    {{ data['jobs']['job_start_datetime']|format_duration(data['jobs']['job_end_datetime']) }}
                   {% endif %}
                 </span></p>
                 <h4><label for="starttime">Started processing</label></h4>
-                <p><span id="starttime">{{ data.job.process_start_datetime|format_datetime }}</span></p>
+                <p><span id="starttime">{{ data['jobs']['job_start_datetime']|format_datetime }}</span></p>
                 <h4><label for="endtime">Finished processing</label></h4>
-                <p><span id="endtime">{{ data.job.process_end_datetime|format_datetime }}</span></p>
-              </div>
-              <div class="links">
-                {% if data.job.links %}
-                <h4><label for="resources">Resources</label></h4>
-                <ul id="resources">
-                  {% for link in data.job.links %}
-                  {% if link.rel != 'self' %}
-                  <li><a href="{{ link.href }}" rel="{{ link.rel }}" type="{{ link.type }}" title="{{ link.title }}">{{ link.title }}</a></li>
-                  {% endif %}
+                <p><span id="endtime">{{ data['jobs']['job_end_datetime']|format_datetime }}</span></p>
+
+                <h3>Links</h3>
+                <ul>
+                  {% for link in data['jobs']['links'] %}
+                  <li><a title="{{ link['rel'] }}" href="{{ link['href'] }}"><span>{{ link['title'] }}</span> (<span>{{ link['type'] }}</span>)</a></li>
                   {% endfor %}
                 </ul>
-                {% endif %}
               </div>
             </div>
           </div>

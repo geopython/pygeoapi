@@ -1903,13 +1903,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 link = {
                     'type': 'text/html',
                     'rel': 'collection',
-                    'href': jobs_url,
-                    'title': 'Collection of jobs for the {} process'.format(
-                        key),
+                    'href': '{}?f=html'.format(jobs_url),
+                    'title': 'jobs for this process as HTML',
                     'hreflang': self.config['server'].get('language', None)
                 }
-
                 p2['links'].append(link)
+
+                link = {
+                    'type': 'application/json',
+                    'rel': 'collection',
+                    'href': '{}?f=json'.format(jobs_url),
+                    'title': 'jobs for this process as JSON',
+                    'hreflang': self.config['server'].get('language', None)
+                }
+                p2['links'].append(link)
+
                 processes.append(p2)
 
         if process is not None:
@@ -1932,13 +1940,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         return headers_, 200, to_json(response, self.pretty_print)
 
-    def get_process_jobs(self, headers, args, process_id):
+    def get_process_jobs(self, headers, args, process_id, job_id=None):
         """
         Get process jobs
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param process_id: id of process
+        :param job_id: id of job
 
         :returns: tuple of headers, status code, content
         """
@@ -1971,26 +1980,80 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         p = load_plugin('process', processes[process_id]['processor'])
 
         if self.manager:
-            jobs = sorted(self.manager.get_jobs(process_id),
-                          key=lambda k: k['process_start_datetime'],
-                          reverse=True)
+            if job_id is None:
+                jobs = sorted(self.manager.get_jobs(process_id),
+                              key=lambda k: k['job_start_datetime'],
+                              reverse=True)
+            else:
+                jobs = [self.manager.get_job(process_id, job_id)]
         else:
             LOGGER.debug('Process management not configured')
             jobs = []
 
+        jobs2 = []
+        for job_ in jobs:
+            job2 = {
+                'jobID': job_['identifier'],
+                'status': job_['status'],
+                'message': job_['message'],
+                'progress': job_['progress'],
+                'job_start_datetime': job_['job_start_datetime'],
+                'job_end_datetime': job_['job_end_datetime']
+            }
+
+            job_result_url = '{}/processes/{}/jobs/{}'.format(
+                self.config['server']['url'], process_id, job_['identifier'])
+
+            if JobStatus[job_['status']] in [
+               JobStatus.successful, JobStatus.running, JobStatus.accepted]:
+
+                job_result_url = '{}/processes/{}/jobs/{}/results'.format(
+                    self.config['server']['url'],
+                    process_id, job_['identifier'])
+
+                job2['links'] = [{
+                    'href': '{}?f=html'.format(job_result_url),
+                    'rel': 'about',
+                    'type': 'text/html',
+                    'title': 'results of job {} as HTML'.format(job_id)
+                }, {
+                    'href': '{}?f=json'.format(job_result_url),
+                    'rel': 'about',
+                    'type': 'application/json',
+                    'title': 'results of job {} as JSON'.format(job_id)
+                }]
+
+                if job_['mimetype'] not in ['application/json', 'text/html']:
+                    job2['links'].append({
+                        'href': job_result_url,
+                        'rel': 'about',
+                        'type': job_['mimetype'],
+                        'title': 'results of job {} as {}'.format(
+                            job_id, job_['mimetype'])
+                    })
+
+            jobs2.append(job2)
+
+        if job_id is None:
+            j2_template = 'jobs.html'
+        else:
+            jobs2 = jobs2[0]
+            j2_template = 'job.html'
+
         if format_ == 'html':
             headers_['Content-Type'] = 'text/html'
             data = {
-                'process': {'id': process_id, 'title': p.metadata['title']},
-                'jobs': jobs,
+                'process': {
+                    'id': process_id,
+                    'title': p.metadata['title']
+                },
+                'jobs': jobs2,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
-            response = render_j2_template(self.config, 'jobs.html', data)
+            response = render_j2_template(self.config, j2_template, data)
             return headers_, 200, response
 
-        response = [job['identifier'] for job in jobs]
-
-        return headers_, 200, to_json(response, self.pretty_print)
+        return headers_, 200, to_json(jobs2, self.pretty_print)
 
     def execute_process(self, headers, args, data, process_id):
         """
@@ -2138,111 +2201,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         return headers_, http_status, to_json(response, self.pretty_print)
 
-    def get_process_job(self, headers, args, process_id, job_id):
-        """
-        Get status of job (instance of a process)
-
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param process_id: process identifier
-        :param job_id: job identifier
-
-        :returns: tuple of headers, status code, content
-        """
-        headers_ = HEADERS.copy()
-
-        processes = filter_dict_by_key_value(self.config['resources'],
-                                             'type', 'process')
-        if process_id not in processes:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
-
-        job = self.manager.get_job(process_id, job_id)
-
-        if not job:
-            exception = {
-                'code': 'NoSuchJob',
-                'description': 'job not found'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
-
-        format_ = check_format(args, headers)
-        if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
-
-        status = JobStatus[job['status']]
-        response = {
-            'jobID': job_id,
-            'status': status.value,
-            'message': job.get('message', None),
-            'links': [{
-                'href': '{}/processes/{}/jobs/{}'.format(
-                    self.config['server']['url'], process_id, job_id
-                ),
-                'rel': 'self',
-                'type': 'application/json',
-                'title': 'Status of {} job {}'.format(process_id, job_id)
-            }]
-        }
-
-        if status in (JobStatus.successful, JobStatus.running,
-                      JobStatus.accepted):
-            # TODO link also if accepted/running?
-            response['links'].append({
-                'href': '{}/processes/{}/jobs/{}/results'.format(
-                    self.config['server']['url'], process_id, job_id
-                ),
-                'rel': 'about',
-                'type': 'application/json',
-                'title': 'Results of {} job {}'.format(process_id, job_id)
-            })
-        elif status == JobStatus.failed:
-            # TODO link to exception report?
-            pass
-
-        if format_ != 'html':
-            return headers_, 200, json.dumps(response, default=json_serial)
-        else:
-            headers_['Content-Type'] = 'text/html'
-            process = load_plugin('process',
-                                  processes[process_id]['processor'])
-
-            process_info = {
-                'id': process_id,
-                'title': process.metadata['title']
-            }
-
-            psd = job.get('process_start_datetime', None)
-            ped = job.get('process_end_datetime', None)
-
-            if status == JobStatus.successful:
-                progress = 100
-            else:
-                progress = job.get('progress', 0)
-
-            job_info = {
-                'process_start_datetime': psd,
-                'process_end_datetime': ped,
-                'progress': progress,
-                **response
-            }
-
-            return headers_, 200, render_j2_template(self.config, 'job.html', {
-                'process': process_info,
-                'job': job_info,
-                'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT),
-            })
-
     def get_process_job_result(self, headers, args, process_id, job_id):
         """
         Get result of job (instance of a process)
@@ -2313,7 +2271,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.info(exception)
             return headers_, 400, json.dumps(exception)
 
-        job_output = self.manager.get_job_result(process_id, job_id)
+        mimetype, job_output = self.manager.get_job_result(process_id, job_id)
 
         format_ = check_format(args, headers)
 
@@ -2330,8 +2288,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                           data)
             return headers_, 200, response
 
-        content = json.dumps(job_output, sort_keys=True, indent=4,
-                             default=json_serial)
+        if mimetype in [None, 'application/json']:
+            content = json.dumps(job_output, sort_keys=True, indent=4,
+                                 default=json_serial)
+        else:
+            content = job_output
+            headers_['Content-Type'] = mimetype
 
         return headers_, 200, content
 

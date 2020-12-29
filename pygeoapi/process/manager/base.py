@@ -112,7 +112,7 @@ class BaseManager:
         :param process_id: process identifier
         :param job_id: job identifier
 
-        :returns: `str` of raw output or None
+        :returns: `tuple` of mimetype and raw output
         """
 
         raise NotImplementedError()
@@ -165,23 +165,18 @@ class BaseManager:
         :returns: tuple of response payload and status
         """
 
-        if self.output_dir is not None:
-            filename = '{}-{}'.format(p.metadata['id'], job_id)
-            job_filename = os.path.join(self.output_dir, filename)
-        else:
-            job_filename = 'stdout'
-
         process_id = p.metadata['id']
         current_status = JobStatus.accepted
 
         job_metadata = {
             'identifier': job_id,
             'process_id': process_id,
-            'process_start_datetime': datetime.utcnow().strftime(
+            'job_start_datetime': datetime.utcnow().strftime(
                 DATETIME_FORMAT),
-            'process_end_datetime': None,
+            'job_end_datetime': None,
             'status': current_status.value,
             'location': None,
+            'mimetype': None,
             'message': 'Job accepted and ready for execution',
             'progress': 5
         }
@@ -189,8 +184,17 @@ class BaseManager:
         self.add_job(job_metadata)
 
         try:
+            if self.output_dir is not None:
+                filename = '{}-{}'.format(p.metadata['id'], job_id)
+                job_filename = os.path.join(self.output_dir, filename)
+            else:
+                job_filename = None
+
+            jfmt = p.metadata['outputs'][0]['output']['formats'][0]['mimeType']
+
             current_status = JobStatus.running
             outputs = p.execute(data_dict)
+
             self.update_job(process_id, job_id, {
                 'status': current_status.value,
                 'message': 'Writing job output',
@@ -203,11 +207,13 @@ class BaseManager:
                     fh.write(json.dumps(outputs, sort_keys=True, indent=4))
 
             current_status = JobStatus.successful
+
             job_update_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(
+                'job_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': job_filename,
+                'mimetype': jfmt,
                 'message': 'Job complete',
                 'progress': 100
             }
@@ -231,10 +237,11 @@ class BaseManager:
             }
             LOGGER.error(err)
             job_metadata = {
-                'process_end_datetime': datetime.utcnow().strftime(
+                'job_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
+                'mimetype': None,
                 'message': f'{code}: {outputs["description"]}'
             }
 
