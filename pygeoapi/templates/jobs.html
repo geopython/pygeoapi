@@ -5,9 +5,6 @@
 / <a href="../{{ data.process.id }}">{{ data.process.title }}</a>
 / <a href="./jobs">Jobs</a>
 {% endblock %}
-{% block form_js %}
-<script src="{{ config['server']['url'] }}/static/js/deleteJob.js"></script>
-{% endblock %}
 {% block body %}
     <section id="jobs">
       <div class="row">
@@ -27,15 +24,13 @@
             <tbody>
               {% for job in data.jobs %}
               <tr>
-                <td class="small"><a href="/processes/{{data.process.id}}/jobs/{{ job.identifier }}">{{ job.identifier }}</a></td>
-                <td>
-                  {{ job.process_start_datetime|format_datetime }}
-                </td>
+                <td class="small"><a href="{{ config['server']['url'] }}/processes/{{data.process.id}}/jobs/{{ job.jobID}}">{{ job.jobID }}</a></td>
+                <td><abbr title="{{ job.job_start_datetime|format_datetime }}">{{ job.job_start_datetime|format_datetime }}</abbr></td>
                 <td>
                   {% if job.status == 'running' %}
-                    {{ job.process_start_datetime|format_duration(data.now) }}
+                    {{ job.job_start_datetime|format_duration(data.now) }}
                   {% else %}
-                    {{ job.process_start_datetime|format_duration(job.process_end_datetime) }}
+                    {{ job.job_start_datetime|format_duration(job.job_end_datetime) }}
                   {% endif %}
                 </td>
                 <td>
