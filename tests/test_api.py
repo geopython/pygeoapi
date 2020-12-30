@@ -758,7 +758,7 @@ def test_describe_processes(config, api_):
     assert process['version'] == '0.2.0'
     assert process['title'] == 'Hello World'
     assert len(process['keywords']) == 3
-    assert len(process['links']) == 2
+    assert len(process['links']) == 3
     assert len(process['inputs']) == 2
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
