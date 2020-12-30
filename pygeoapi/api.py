@@ -1990,7 +1990,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.debug('Process management not configured')
             jobs = []
 
-        jobs2 = []
+        serialized_jobs = []
         for job_ in jobs:
             job2 = {
                 'jobID': job_['identifier'],
@@ -2000,9 +2000,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'job_start_datetime': job_['job_start_datetime'],
                 'job_end_datetime': job_['job_end_datetime']
             }
-
-            job_result_url = '{}/processes/{}/jobs/{}'.format(
-                self.config['server']['url'], process_id, job_['identifier'])
 
             if JobStatus[job_['status']] in [
                JobStatus.successful, JobStatus.running, JobStatus.accepted]:
@@ -2032,12 +2029,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                             job_id, job_['mimetype'])
                     })
 
-            jobs2.append(job2)
+            serialized_jobs.append(job2)
 
         if job_id is None:
             j2_template = 'jobs.html'
         else:
-            jobs2 = jobs2[0]
+            serialized_jobs = serialized_jobs[0]
             j2_template = 'job.html'
 
         if format_ == 'html':
@@ -2047,13 +2044,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'id': process_id,
                     'title': p.metadata['title']
                 },
-                'jobs': jobs2,
+                'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
             response = render_j2_template(self.config, j2_template, data)
             return headers_, 200, response
 
-        return headers_, 200, to_json(jobs2, self.pretty_print)
+        return headers_, 200, to_json(serialized_jobs, self.pretty_print)
 
     def execute_process(self, headers, args, data, process_id):
         """
@@ -2275,25 +2272,24 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         format_ = check_format(args, headers)
 
-        if format_ == 'html':
-            headers_['Content-Type'] = 'text/html'
-            data = {
-                'process': {
-                    'id': process_id, 'title': process.metadata['title']
-                },
-                'job': {'id': job_id},
-                'result': job_output
-            }
-            response = render_j2_template(self.config, 'job_result.html',
-                                          data)
-            return headers_, 200, response
-
-        if mimetype in [None, 'application/json']:
-            content = json.dumps(job_output, sort_keys=True, indent=4,
-                                 default=json_serial)
-        else:
-            content = job_output
+        if mimetype not in [None, 'application/json']:
             headers_['Content-Type'] = mimetype
+            content = job_output
+        else:
+            if format_ == 'json':
+                content = json.dumps(job_output, sort_keys=True, indent=4,
+                                     default=json_serial)
+            else:
+                headers_['Content-Type'] = 'text/html'
+                data = {
+                    'process': {
+                        'id': process_id, 'title': process.metadata['title']
+                    },
+                    'job': {'id': job_id},
+                    'result': job_output
+                }
+                content = render_j2_template(self.config, 'job_result.html',
+                                             data)
 
         return headers_, 200, content
 
