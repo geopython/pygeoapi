@@ -404,7 +404,7 @@ def get_process_jobs(process_id=None, job_id=None):
             headers, status_code, content = api_.delete_process_job(
                 process_id, job_id)
         else:  # Return status of a specific job
-            headers, status_code, content = api_.get_process_job(
+            headers, status_code, content = api_.get_process_jobs(
                 request.headers, request.args, process_id, job_id)
 
     response = make_response(content, status_code)
