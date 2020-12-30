@@ -606,11 +606,12 @@ class API:
 
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
-                content = render_j2_template(self.config, 'collection.html',
+                content = render_j2_template(self.config,
+                                             'collections/collection.html',
                                              fcm)
             else:
-                content = render_j2_template(self.config, 'collections.html',
-                                             fcm)
+                content = render_j2_template(self.config,
+                                             'collections/index.html', fcm)
 
             return headers_, 200, content
 
@@ -704,7 +705,8 @@ class API:
         if format_ == 'html':  # render
             queryables['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'queryables.html',
+            content = render_j2_template(self.config,
+                                         'collections/queryables.html',
                                          queryables)
 
             return headers_, 200, content
@@ -1052,7 +1054,8 @@ class API:
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
-            content = render_j2_template(self.config, 'items.html',
+            content = render_j2_template(self.config,
+                                         'collections/items/index.html',
                                          content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
@@ -1208,7 +1211,8 @@ class API:
             headers_['Content-Type'] = 'text/html'
 
             content['title'] = collections[dataset]['title']
-            content = render_j2_template(self.config, 'item.html',
+            content = render_j2_template(self.config,
+                                         'collections/items/item.html',
                                          content)
             return headers_, 200, content
         elif format_ == 'jsonld':
@@ -1450,7 +1454,8 @@ class API:
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
-            content = render_j2_template(self.config, 'domainset.html',
+            content = render_j2_template(self.config,
+                                         'collections/coverage/domainset.html',
                                          data)
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
@@ -1514,7 +1519,8 @@ class API:
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
-            content = render_j2_template(self.config, 'rangetype.html',
+            content = render_j2_template(self.config,
+                                         'collections/coverage/rangetype.html',
                                          data)
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
@@ -1638,7 +1644,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['maxzoom'] = p.options['zoom']['max']
 
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'tiles.html', tiles)
+            content = render_j2_template(self.config,
+                                         'collections/tiles/index.html', tiles)
 
             return headers_, 200, content
 
@@ -1839,7 +1846,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             metadata['format'] = metadata_format
             headers_['Content-Type'] = 'text/html'
 
-            content = render_j2_template(self.config, 'tiles_metadata.html',
+            content = render_j2_template(self.config,
+                                         'collections/tiles/metadata.html',
                                          metadata)
 
             return headers_, 200, content
@@ -1930,11 +1938,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
             if process is not None:
-                response = render_j2_template(self.config, 'process.html',
+                response = render_j2_template(self.config,
+                                              'processes/process.html',
                                               response)
             else:
-                response = render_j2_template(self.config, 'processes.html',
-                                              response)
+                response = render_j2_template(self.config,
+                                              'processes/index.html', response)
 
             return headers_, 200, response
 
@@ -2032,10 +2041,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             serialized_jobs.append(job2)
 
         if job_id is None:
-            j2_template = 'jobs.html'
+            j2_template = 'processes/jobs/index.html'
         else:
             serialized_jobs = serialized_jobs[0]
-            j2_template = 'job.html'
+            j2_template = 'processes/jobs/job.html'
 
         if format_ == 'html':
             headers_['Content-Type'] = 'text/html'
@@ -2288,8 +2297,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'job': {'id': job_id},
                     'result': job_output
                 }
-                content = render_j2_template(self.config, 'job_result.html',
-                                             data)
+                content = render_j2_template(
+                    self.config, 'processes/jobs/results/index.html', data)
 
         return headers_, 200, content
 
@@ -2376,7 +2385,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'stac/root.html',
+            content = render_j2_template(self.config, 'stac/collection.html',
                                          content)
             return headers_, 200, content
 
