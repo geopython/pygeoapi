@@ -3,10 +3,12 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Just van den Broecke <justb4@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Angelos Tzotsos <gcpp.kalxas@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2021 Angelos Tzotsos
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,7 +33,7 @@
 #
 # =================================================================
 
-FROM ubuntu:focal-20201106
+FROM ubuntu:focal
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
