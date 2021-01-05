@@ -23,6 +23,12 @@
                 <h3>Message</h3>
                 <p>{{ data['jobs']['message'] }}</p>
               </div>
+              {% if data['jobs']['parameters'] %}
+              <div class="message">
+                <h3>Parameters</h3>
+                <pre>{{ data['jobs']['parameters'] | pprint }}</pre>
+              </div>
+              {% endif %}
               <div class="duration">
                 <h4><label for="progress">Progress</label></h4>
                 <progress id="progress" class="inline" value="{{ data['jobs']['progress']|int*10 }}" max="1000"></progress>

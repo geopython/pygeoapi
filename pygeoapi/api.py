@@ -2006,6 +2006,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'status': job_['status'],
                 'message': job_['message'],
                 'progress': job_['progress'],
+                'parameters': job_.get('parameters'),
                 'job_start_datetime': job_['job_start_datetime'],
                 'job_end_datetime': job_['job_end_datetime']
             }
