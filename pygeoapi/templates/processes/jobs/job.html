@@ -26,8 +26,11 @@
               {% if data['jobs']['parameters'] %}
               <div class="message">
                 <h3>Parameters</h3>
-                <pre>{{ data['jobs']['parameters'] | pprint }}</pre>
+                <pre id="job-parameters"></pre>
               </div>
+              <script>
+                document.getElementById('job-parameters').innerHTML = JSON.stringify({{ data['jobs']['parameters']}}, undefined, 2);
+              </script>
               {% endif %}
               <div class="duration">
                 <h4><label for="progress">Progress</label></h4>
