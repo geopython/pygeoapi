@@ -30,6 +30,9 @@
 import io
 import logging
 import os
+from json import loads
+from pygeometa.core import read_mcf, MCFReadError
+from pygeometa.schemas.stac import STACItemOutputSchema
 from urllib.parse import urljoin
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
@@ -207,6 +210,8 @@ class FileSystemProvider(BaseProvider):
 def _describe_file(filepath):
     """
     Helper function to describe a geospatial data
+    First checks if a sidecar mcf file is available, if so uses that
+    if not, script will parse the file to retrieve some info from the file
 
     :param filepath: path to file
 
@@ -219,76 +224,89 @@ def _describe_file(filepath):
         'properties': {}
     }
 
+    pth = os.path.splitext(filepath)[0]
     try:
-        import rasterio
-        from rasterio.crs import CRS
-        from rasterio.warp import transform_bounds
-        LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
-    except ImportError as err:
-        LOGGER.warning(err)
-        return content
+        md = read_mcf('./{}.yml'.format(pth))
+        stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md) 
+        stacdata = loads(stacjson)
+        for k, v in stacdata.items():
+            content[k] = v
+    except OSError as err:
+        LOGGER.warning('OS error: ' + str(err))
+    except MCFReadError as err:
+        LOGGER.warning('MCF error: ' + str(err))
 
-    try:
-        import fiona
-    except ImportError as err:
-        LOGGER.warning('fiona not found. Cannot derive geospatial properties')
-        LOGGER.warning(err)
-        return content
+    if (content['geometry'] == None and content['bbox'] == None):
+        try:
+            import rasterio
+            from rasterio.crs import CRS
+            from rasterio.warp import transform_bounds
+            LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
+        except ImportError as err:
+            LOGGER.warning(err)
+            return content
 
-    try:  # raster
-        LOGGER.debug('Testing raster data detection')
-        d = rasterio.open(filepath)
-        content['bbox'] = [
-            d.bounds.left,
-            d.bounds.bottom,
-            d.bounds.right,
-            d.bounds.top
-        ]
-        content['geometry'] = {
-            'type': 'Polygon',
-            'coordinates': [[
-                [d.bounds.left, d.bounds.bottom],
-                [d.bounds.left, d.bounds.top],
-                [d.bounds.right, d.bounds.top],
-                [d.bounds.right, d.bounds.bottom],
-                [d.bounds.left, d.bounds.bottom]
-            ]]
-        }
-        for k, v in d.tags(1).items():
-            content['properties'][k] = v
-    except rasterio.errors.RasterioIOError:
-        LOGGER.debug('Testing vector data detection')
-        d = fiona.open(filepath)
-        scrs = CRS(d.crs)
-        if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
-            tcrs = CRS.from_epsg(4326)
-            bnds = transform_bounds(scrs, tcrs,
-                                    d.bounds[0], d.bounds[1],
-                                    d.bounds[2], d.bounds[3])
-            content['properties']['projection'] = scrs.to_epsg()
-        else:
-            bnds = d.bounds
+        try:
+            import fiona
+        except ImportError as err:
+            LOGGER.warning('fiona not found. Cannot derive geospatial properties')
+            LOGGER.warning(err)
+            return content
 
-        if d.schema['geometry'] not in [None, 'None']:
+        try:  # raster
+            LOGGER.debug('Testing raster data detection')
+            d = rasterio.open(filepath)
             content['bbox'] = [
-                bnds[0],
-                bnds[1],
-                bnds[2],
-                bnds[3]
+                d.bounds.left,
+                d.bounds.bottom,
+                d.bounds.right,
+                d.bounds.top
             ]
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [bnds[0], bnds[1]],
-                    [bnds[0], bnds[3]],
-                    [bnds[2], bnds[3]],
-                    [bnds[2], bnds[1]],
-                    [bnds[0], bnds[1]]
+                    [d.bounds.left, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.top],
+                    [d.bounds.right, d.bounds.top],
+                    [d.bounds.right, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.bottom]
                 ]]
             }
+            for k, v in d.tags(1).items():
+                content['properties'][k] = v
+        except rasterio.errors.RasterioIOError:
+            LOGGER.debug('Testing vector data detection')
+            d = fiona.open(filepath)
+            scrs = CRS(d.crs)
+            if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
+                tcrs = CRS.from_epsg(4326)
+                bnds = transform_bounds(scrs, tcrs,
+                                        d.bounds[0], d.bounds[1],
+                                        d.bounds[2], d.bounds[3])
+                content['properties']['projection'] = scrs.to_epsg()
+            else:
+                bnds = d.bounds
 
-        for k, v in d.schema['properties'].items():
-            content['properties'][k] = v
+            if d.schema['geometry'] not in [None, 'None']:
+                content['bbox'] = [
+                    bnds[0],
+                    bnds[1],
+                    bnds[2],
+                    bnds[3]
+                ]
+                content['geometry'] = {
+                    'type': 'Polygon',
+                    'coordinates': [[
+                        [bnds[0], bnds[1]],
+                        [bnds[0], bnds[3]],
+                        [bnds[2], bnds[3]],
+                        [bnds[2], bnds[1]],
+                        [bnds[0], bnds[1]]
+                    ]]
+                }
+
+            for k, v in d.schema['properties'].items():
+                content['properties'][k] = v
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
