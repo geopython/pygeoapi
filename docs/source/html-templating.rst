@@ -18,6 +18,12 @@ The default pygeoapi configuration has ``server.templates`` commented out and de
 
 Your templates folder should mimic the same file names and structure of the default pygeoapi templates. Otherwise, you will need to modify ``api.py`` accordingly.
 
+Note that you need only copy and edit the templates you are interested in updating.  For example,
+if you are only interested in updating the ``landing_page.html`` template, then create your own version
+of the only that same file.  When pygeoapi detects that a custom HTML template is being used,
+it will look for the custom template in ``server.templates.path``.  If it does not exists, pygeoapi
+will render the default HTML template for the given endpoint/requuest.
+
 Linking to a static file in your HTML templates can be done using Jinja syntax and the exposed ``config['server']['url']``:
 
 .. code-block:: html
