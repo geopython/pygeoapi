@@ -31,19 +31,27 @@ service: pygeoapi
 
 provider:
   name: aws
-  runtime: python3.6
+  runtime: python3.8
+  # region: us-west-2 
+  # rolePermissionsBoundary: <arn for permission boundary>
+  # deploymentBucket: <name to deployment bucket>
+  # role: <arn for pre-existing lambda execution role>
+  # vpc: 
+    # subnetIds: 
+      # - subnet-id1
+      # - subnet-id2
+    # securityGroupIds:
+      # - sg-id1
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
 
 plugins:
   - serverless-python-requirements
   - serverless-wsgi
 custom:
   wsgi:
-    app: pygeoapi.flask_app.APP
-    packRequirements: true
+    pythonBin: python3
+    app: pygeoapi/flask_app.APP
+    packRequirements: false
     textMimeTypes:
       - application/ld+json
 functions:
@@ -51,6 +59,5 @@ functions:
     handler: wsgi_handler.handler
     events:
       - http: ANY /
-      - http: 'ANY {proxy+}'
     environment:
-      PYGEOAPI_CONFIG: pygeoapi-config.yml
+      PYGEOAPI_CONFIG: pygeoapi-serverless-config.yml
