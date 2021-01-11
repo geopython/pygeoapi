@@ -44,6 +44,7 @@ from urllib.parse import urlparse
 
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader
+from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
@@ -265,9 +266,11 @@ def render_j2_template(config, template, data):
     :returns: string of rendered template
     """
 
+    custom_templates = False
     try:
         templates_path = config['server']['templates']['path']
         env = Environment(loader=FileSystemLoader(templates_path))
+        custom_templates = True
         LOGGER.debug('using custom templates: {}'.format(templates_path))
     except (KeyError, TypeError):
         env = Environment(loader=FileSystemLoader(TEMPLATES))
@@ -287,7 +290,17 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
-    template = env.get_template(template)
+    try:
+        template = env.get_template(template)
+    except TemplateNotFound as err:
+        if custom_templates:
+            LOGGER.debug(err)
+            LOGGER.debug('Custom template not found; using default')
+            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            template = env.get_template(template)
+        else:
+            raise
+
     return template.render(config=config, data=data, version=__version__)
 
 
