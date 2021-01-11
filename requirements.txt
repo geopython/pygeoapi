@@ -1,9 +1,9 @@
 click
 Flask
+pygeometa
 pyproj
 python-dateutil
 pytz
 PyYAML
-pygeometa
 rasterio
 unicodecsv

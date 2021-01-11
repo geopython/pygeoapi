@@ -224,19 +224,21 @@ def _describe_file(filepath):
         'properties': {}
     }
 
-    pth = os.path.splitext(filepath)[0]
-    try:
-        md = read_mcf('./{}.yml'.format(pth))
-        stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md) 
-        stacdata = loads(stacjson)
-        for k, v in stacdata.items():
-            content[k] = v
-    except OSError as err:
-        LOGGER.warning('OS error: ' + str(err))
-    except MCFReadError as err:
-        LOGGER.warning('MCF error: ' + str(err))
+    mcf_file = os.path.splitext(filepath)[0] + '.yml'
 
-    if (content['geometry'] == None and content['bbox'] == None):
+    if os.path.isfile(mcf_file):
+        try:
+            md = read_mcf(mcf_file)
+            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md) 
+            stacdata = loads(stacjson)
+            for k, v in stacdata.items():
+                content[k] = v
+        except MCFReadError as err:
+            LOGGER.warning('MCF error: ' + str(err))
+    else:
+        LOGGER.debug('No mcf found at: ' + mcf_file)
+
+    if (content['geometry'] is None and content['bbox'] is None):
         try:
             import rasterio
             from rasterio.crs import CRS
