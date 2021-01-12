@@ -110,5 +110,10 @@ ENV/
 #Eclipse project
 .project
 
-
 .DS_Store
+
+# vim
+*.swn
+*.swo
+
+
