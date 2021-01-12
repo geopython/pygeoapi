@@ -34,6 +34,7 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.geosparql import GeoSPARQLProvider
 
+rdf_label = "http://www.w3.org/2000/01/rdf-schema#label"
 
 @pytest.fixture()
 def config():
@@ -48,7 +49,6 @@ def config():
 def test_get(config):
     """Testing query for a specific GeoSPARQL feature with geometry"""
 
-    rdf_label = "http://www.w3.org/2000/01/rdf-schema#label"
     p = GeoSPARQLProvider(config)
     result = p.get("http://www.example.org/POI#WashingtonMonument")
     assert isinstance(result, dict)
@@ -56,5 +56,30 @@ def test_get(config):
     assert 'properties' in result
     assert 'Washington Monument' in result['properties'][0][rdf_label][0]['@value']
 
+def test_query(config):
+    """Testing query for multiple GeoSPARQL features with geometry"""
+
+    p = GeoSPARQLProvider(config)
+    results = p.query()
+    assert isinstance(results, dict)
+    assert results['type'] == 'FeatureCollection'
+    assert len(results['features']) > 0
+    assert 'geometry' in results['features'][0]
+    assert 'properties' in results['features'][0]
+    assert 'Washington Monument' in results['features'][0]['properties'][0][rdf_label][0]['@value']
 
 
+
+#from SPARQLWrapper import SPARQLWrapper, JSON, RDFXML
+#from rdflib import Graph, plugin
+#from rdflib.serializer import Serializer
+#endpoint='http://localhost:8890/sparql'
+#sparql = SPARQLWrapper(endpoint)
+#sparql.setQuery("""
+#            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+#            SELECT ?subject
+#             WHERE {?subject rdf:type <http://www.example.org/POI#Monument>}
+#             LIMIT 10
+#        """)
+#sparql.setReturnFormat(JSON)
+#results = sparql.query().convert()

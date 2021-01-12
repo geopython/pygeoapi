@@ -33,7 +33,7 @@ from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
 import json
 import shapely.wkt
-import geojson
+from geojson import Feature, FeatureCollection
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
@@ -61,20 +61,13 @@ class GeoSPARQLProvider(BaseProvider):
 
         self.endpoint = provider_def['data']
         self.id_prefix = provider_def['id_prefix']
+        self.type = "<http://www.example.org/POI#Monument>"
         
  #       LOGGER.debug('Setting GeoSPARQL properties:')
  #       LOGGER.debug('Endpoint:{}'.format(self.endpoint)
  #       LOGGER.debug('Identifier prefix:{}'.format(self.id_prefix)
 
 
-    def query(self):
-        """
-        query the provider
-
-        :returns: dict of 0..n GeoJSON features or coverage data
-        """
-
- 
     def _issueQuery(self, query, retFormat):
         
         sparql = SPARQLWrapper(self.endpoint)
@@ -84,12 +77,36 @@ class GeoSPARQLProvider(BaseProvider):
         try:
             results = sparql.query().convert()
         except Exception as err:
-            LOGGER.error('Error issuing sqarql query: {}'.format(query))
+            LOGGER.error('Error issuing SPARQL query: {}'.format(query))
             LOGGER.error(err)
             raise ProviderQueryError(err)
 
         return results
 
+
+    def query(self, startindex=0, limit=10):
+        """
+        query the provider
+
+        :returns: dict of 0..n GeoJSON features or coverage data
+        """
+        features = []
+
+        # Retrive feature ids
+        results = self._issueQuery("""
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            SELECT ?subject
+             WHERE {?subject rdf:type %s}
+             LIMIT %s
+        """ % (self.type, str(limit)), JSON)
+
+        for item in results['results']['bindings']:
+
+            features.append(self.get(item['subject']['value']))
+
+        return FeatureCollection(features)
+
+ 
     
     def get(self, identifier):
         """
@@ -124,7 +141,7 @@ class GeoSPARQLProvider(BaseProvider):
             raise ProviderNoDataError("Geometry not found for feature %s"
                                       % (identifier))
 
-        return geojson.Feature(geometry=geom, properties=props)
+        return Feature(geometry=geom, properties=props)
 
 
     def create(self, new_feature):
