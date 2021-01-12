@@ -38,7 +38,7 @@ from geojson import Feature, FeatureCollection
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
 
-#LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 class GeoSPARQLProvider(BaseProvider):
     """Generic provider for GeoSPARQL endpoints 
@@ -61,12 +61,8 @@ class GeoSPARQLProvider(BaseProvider):
 
         self.endpoint = provider_def['data']
         self.id_prefix = provider_def['id_prefix']
-        self.type = "<http://www.example.org/POI#Monument>"
-        
- #       LOGGER.debug('Setting GeoSPARQL properties:')
- #       LOGGER.debug('Endpoint:{}'.format(self.endpoint)
- #       LOGGER.debug('Identifier prefix:{}'.format(self.id_prefix)
-
+        self.type = provider_def['rdf_type'] 
+       
 
     def _issueQuery(self, query, retFormat):
         
@@ -77,8 +73,9 @@ class GeoSPARQLProvider(BaseProvider):
         try:
             results = sparql.query().convert()
         except Exception as err:
-            LOGGER.error('Error issuing SPARQL query: {}'.format(query))
-            LOGGER.error(err)
+            if ('LOGGER' in vars() or 'LOGGER' in globals()):
+                LOGGER.error('Error issuing SPARQL query: {}'.format(query))
+                LOGGER.error(err)
             raise ProviderQueryError(err)
 
         return results
