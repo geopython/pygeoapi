@@ -36,7 +36,21 @@ Linking to a static file in your HTML templates can be done using Jinja syntax a
   <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" />
 
 
+Featured templates
+------------------
+
+The following themes provide useful examples of pygeoapi templates implemented
+by downstream applications.
+
+.. csv-table::
+   :header: "Plugin(s)", "Organization/Project","Description"
+   :align: left
+
+   `pygeoapi-skin-dashboard`_,GeoCat bv,skin for pygeoapi based on a typical dashboard interface
+
+
 .. _`Jinja`: https://palletsprojects.com/p/jinja/
 .. _`Jinja documentation`: https://jinja.palletsprojects.com
 .. _`Flask`: https://palletsprojects.com/p/flask/
 .. _`Flask documentation`: https://flask.palletsprojects.com
+.. _`pygeoapi-skin-dashboard`: https://github.com/GeoCat/pygeoapi-skin-dashboard
