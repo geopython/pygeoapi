@@ -226,4 +226,24 @@ under development, the implementation in ``pygeoapi/process/hello_world.py`` pro
 for the time being.
 
 
+Featured plugins
+----------------
+
+The following plugins provide useful examples of pygeoapi plugins implemented
+by downstream applications.
+
+.. csv-table::
+   :header: "Plugin(s)", "Organization/Project","Description"
+   :align: left
+
+   `msc-pygeoapi`_,Meteorological Service of Canada,processes for weather/climate/water data workflows
+   `pygeoapi-kubernetes-papermill`_,Euro Data Cube,processes for executing Jupyter notebooks via Kubernetes
+   `local-outlier-factor-plugin`_,Manaaki Whenua – Landcare Research,processes for local outlier detection
+   `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
+
+
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter-pypackage
+.. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
+.. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill
+.. _`local-outlier-factor-plugin`: https://github.com/manaakiwhenua/local-outlier-factor-plugin
+.. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi
