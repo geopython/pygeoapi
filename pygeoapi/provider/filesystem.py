@@ -32,11 +32,10 @@ import logging
 import os
 from json import loads
 from pygeometa.core import read_mcf, MCFReadError
-from pygeometa.schemas.stac import STACItemOutputSchema
-from urllib.parse import urljoin
-
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
+from pygeometa.schemas.stac import STACItemOutputSchema
+from urllib.parse import urljoin
 
 LOGGER = logging.getLogger(__name__)
 
@@ -229,7 +228,7 @@ def _describe_file(filepath):
     if os.path.isfile(mcf_file):
         try:
             md = read_mcf(mcf_file)
-            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md) 
+            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md)
             stacdata = loads(stacjson)
             for k, v in stacdata.items():
                 content[k] = v
@@ -251,7 +250,7 @@ def _describe_file(filepath):
         try:
             import fiona
         except ImportError as err:
-            LOGGER.warning('fiona not found. Cannot derive geospatial properties')
+            LOGGER.warning('fiona not found. Cannot derive geospatial properties')  # noqa
             LOGGER.warning(err)
             return content
 
