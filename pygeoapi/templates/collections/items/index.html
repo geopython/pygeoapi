@@ -16,12 +16,27 @@
 {% endblock %}
 
 {% block body %}
-  <section id="items"></section>
-  <section id="collection">
-    <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
-    <p>Items in this collection.</p>
-  </section>
   <section id="items">
+
+    <div class="row">
+      <div class="col-sm-12 col-md-6">
+        <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
+        <p>Items in this collection.</p>
+      </div>
+      <div class="col-sm-12 col-md-6">
+        <form action="{% for l in data['links'] if l.rel == 'self' %} {{ l['url'] }} {% endfor %}" method="GET">
+          <select id="queryables" onchange="document.getElementById('filterfield').name=this.value;" style="height:40px;width:120px">
+            <option>Select ...</option>
+          </select>
+          <select style="height:40px;width:60px">
+            <option>=</option>
+          </select>
+          <input type="text" id="filterfield" value="" />
+          <input type="submit" value="Filter"/>
+        </form>
+      </div>
+    </div>
+
     {% if data['features'] %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
@@ -125,6 +140,43 @@
 
     map.addLayer(items);
     map.fitBounds(items.getBounds());
+
+    //retrieve available queryables for this collection
+    var xhr2 = new XMLHttpRequest();
+    xhr2.overrideMimeType("application/json");
+    xhr2.open("GET", "./queryables?f=json");
+    xhr2.onload = function() {
+      if (xhr2.status === 200) {
+        updateFilter(xhr2.responseText);
+      }
+    };
+    xhr2.send();
+      
+    function updateFilter(resp) {
+      var aKey;
+      //grab url params
+      params = (new URL(document.location)).searchParams;
+      params.forEach(function (v,k){  
+        //select the filter param, prefill the filter form
+        if (["f","startindex","limit","scalerank"].indexOf(k) == -1){
+          aKey=k;
+          document.getElementById("filterfield").value=v;
+          document.getElementById("filterfield").name=k;
+        } else {
+          //todo: append to url
+        }
+      });
+      var jsonResponse = JSON.parse(resp);
+      //add the queryables as filter options
+      jsonResponse.queryables.forEach(
+        function(q, index){
+          let opt = new Option(q.queryable,q.queryable,false,(q.queryable == aKey?true:false));
+          document.getElementById("queryables").add(opt);
+          //todo: if currentValue.type is string: display =like, if numeric/date: display =><
+        }
+      )        
+    };
+
     </script>
 {% endif %}
 {% endblock %}
