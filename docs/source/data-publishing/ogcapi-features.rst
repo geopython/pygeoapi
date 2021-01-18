@@ -18,9 +18,9 @@ parameters.
    :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
    :align: left
 
-   CSV,✅,results/hits,❌,❌,❌,✅
+   CSV,❌,results/hits,❌,❌,❌,✅
    Elasticsearch,✅,results/hits,✅,✅,✅,✅
-   GeoJSON,✅,results/hits,❌,❌,❌,❌
+   GeoJSON,❌,results/hits,❌,❌,❌,❌
    MongoDB,✅,results,✅,✅,✅,❌
    OGR,✅,results/hits,✅,❌,❌,❌
    PostgreSQL,✅,results/hits,✅,❌,❌,❌
