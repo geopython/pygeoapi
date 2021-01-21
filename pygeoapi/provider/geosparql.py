@@ -36,7 +36,8 @@ import shapely.wkt
 from geojson import Feature, FeatureCollection
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
-                                    ProviderItemNotFoundError)
+                                    ProviderItemNotFoundError,
+                                    ProviderNoDataError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,7 +82,9 @@ class GeoSPARQLProvider(BaseProvider):
         return results
 
 
-    def query(self, startindex=0, limit=10):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False):
         """
         query the provider
 
@@ -104,7 +107,6 @@ class GeoSPARQLProvider(BaseProvider):
         return FeatureCollection(features)
 
  
-    
     def get(self, identifier):
         """
         query the provider by id
@@ -119,7 +121,13 @@ class GeoSPARQLProvider(BaseProvider):
                 WHERE {<%s> ?predicate ?object}
         """ % (identifier, identifier), RDFXML)
        
-        props = json.loads(results.serialize(format='json-ld', indent=2))
+        props_list = json.loads(results.serialize(format='json-ld', indent=2)) 
+        
+        if(len(props_list) > 0):
+            props = props_list[0]
+        else:
+            raise ProviderNoDataError("Failed to retrieve properties for feature %s"
+                                      % (identifier)) 
 
         # Obtain Feature geometry
         resultsGeo = self._issueQuery("""

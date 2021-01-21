@@ -56,7 +56,8 @@ def test_get(config):
     assert isinstance(result, dict)
     assert 'geometry' in result
     assert 'properties' in result
-    assert 'Washington Monument' in result['properties'][0][rdf_label][0]['@value']
+    assert isinstance(result['properties'], dict)
+    assert 'Washington Monument' in result['properties'][rdf_label][0]['@value']
 
 
 def test_get_fail(config):
@@ -78,5 +79,9 @@ def test_query(config):
     assert len(results['features']) > 0
     assert 'geometry' in results['features'][0]
     assert 'properties' in results['features'][0]
-    assert 'Washington Monument' in results['features'][0]['properties'][0][rdf_label][0]['@value']
+    assert isinstance(results['features'][0]['properties'], dict)
+    assert 'Washington Monument' in results['features'][0]['properties'][rdf_label][0]['@value']
+
+
+
 
