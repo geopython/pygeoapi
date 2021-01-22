@@ -56,9 +56,6 @@ services:
 
     container_name: virt-db
 
-    #    entrypoint:
-    #      - /data-entrypoint.sh
-
     ports:
       - 1111:1111
       - 8890:8890
