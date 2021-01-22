@@ -1,0 +1,15 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix ex: <http://www.example.org/POI#> .
+@prefix sf: <http://www.opengis.net/ont/sf#> .
+ex:WashingtonMonument a ex:Monument;
+ rdfs:label "Washington Monument";
+ geo:hasGeometry ex:WMPoint .
+ex:WMPoint a sf:Point;
+ geo:asWKT "POINT(-77.03524 38.889468)"^^geo:wktLiteral.
+ex:NationalMall a ex:Park;
+ rdfs:label "National Mall";
+ geo:hasGeometry ex:NMPoly .
+ex:NMPoly a sf:Polygon; #. #; 
+ geo:asWKT "POLYGON((-77.050125 38.892086, -77.039482 38.892036, -77.039482 38.895393, -77.033669 38.895508, -77.033585 38.892052, -77.031906 38.892086, -77.031883 38.887474, -77.050232 38.887142, -77.050125 38.892086 ))"^^geo:wktLiteral.

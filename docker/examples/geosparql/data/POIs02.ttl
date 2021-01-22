@@ -7,9 +7,9 @@ ex:Atomium a ex:Monument;
  rdfs:label "Atomium";
  geo:hasGeometry ex:AtPoint .
 ex:AtPoint a sf:Point;
- geo:asWKT "POINT(50.894722 4.341111)"^^geo:wktLiteral.
+ geo:asWKT "POINT(4.341111 50.894722)"^^geo:wktLiteral.
 ex:Parthenon a ex:Monument;
  rdfs:label "Parthenon";
  geo:hasGeometry ex:PaPoint .
 ex:PaPoint a sf:Point;
- geo:asWKT "POINT(37.97151 23.72665)"^^geo:wktLiteral.
+ geo:asWKT "POINT(23.72665 37.97151)"^^geo:wktLiteral.
