@@ -68,13 +68,13 @@ def dategetter(date_property, collection):
     :param date_property: property representing the date
     :param collection: dictionary to check within
 
-    :returns: `str` (ISO8601) representing the date. ('..' if null or "now",
+    :returns: `str` (ISO8601) representing the date. ('..' if null,
         allowing for an open interval).
     """
 
     value = collection.get(date_property, None)
 
-    if value == 'now' or value is None:
+    if value is None:
         return '..'
 
     return value.isoformat()
