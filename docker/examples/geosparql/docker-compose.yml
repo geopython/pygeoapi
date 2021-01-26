@@ -30,26 +30,22 @@
 version: '3.3'
 
 services:
-  #  pygeoapi:
-  #    image: geopython/pygeoapi:latest
-  #
-  #    container_name: pygeoapi_virt
-  #
-  #    entrypoint:
-  #      - /virt-entrypoint.sh
-  #
-  #    ports:
-  #      - 5000:80
-  #
-  #    volumes:
-  #      - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
-  #      - ./pygeoapi/virt-entrypoint.sh:/virt-entrypoint.sh
-  #
-  #    links:
-  #      - virtuoso
-  #
-  #    depends_on:
-  #      - virtuoso
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+  
+    container_name: pygeoapi_virt
+  
+    ports:
+      - 5000:80
+  
+    volumes:
+      - ./pygeoapi/geosparql.config.yml:/pygeoapi/local.config.yml
+  
+    links:
+      - virtuoso
+  
+    depends_on:
+      - virtuoso
 
   virtuoso:
     image: openlink/virtuoso-opensource-7:latest
