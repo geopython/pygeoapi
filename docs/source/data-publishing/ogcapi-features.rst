@@ -25,6 +25,7 @@ parameters.
    OGR,✅,results/hits,✅,❌,❌,❌
    PostgreSQL,✅,results/hits,✅,❌,❌,❌
    SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
+   GeoSPARQL,✅,results/hits,❌,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -196,6 +197,42 @@ GeoPackage file:
          id_field: osm_id
          table: poi_portugal
 
+
+GeoSPARQL
+^^^^^^^^^
+
+pygeoapi now supports GeoSPARQL as a data provider, albeit still in a limited way. For now only the `get` and `query` operations are supported, but there is more to come.
+
+pygeoapi creates GeoSPARQL queries to retrieve RDF triplets from the GeoSPARQL endpoint in the JSON-LD format. These triplets are then transformed into a GeoJSON document to be returned by the API. The URIs of related ontological classes and other RDF resources are kept in the `properties` section of the GeoJSON document.
+
+### Configuration
+
+The example configuration file in the project root folder includes a collection called `pois` exemplifying how to configure a GeoSPARQL endpoint as provider. 
+
+.. code-block:: yaml
+
+        providers:
+            - type: feature
+              name: GeoSPARQL
+              data: http://localhost:8890/sparql 
+              rdf_type: <http://www.example.org/POI#Monument>
+              id_prefix: http://www.example.org/POI# 
+
+
+Three GeoSPARQL specific elements are required:
+
+ - `data`: the URL of the GeoSPARQL endpoint.
+
+ - `rdf_type`: the type of RDF individuals that correspond to the collection. pygeoapi expects all the individuals of this type to have a related geometry individual (through the predicate `http://www.opengis.net/ont/geosparql#hasGeometry`).
+
+ - `id_prefix`: the initial segment of the URI for this collection that is the same for all individuals. 
+
+### Testing data and endpoint
+
+In the folder `docker/examples/geosparql/data` there a are few simple examples with GeoSPARQL triplets in the Turtle format. They can be imported into a triple store offering a GeoSPARQL endpoint for testing.
+
+The folder `docker/examples/geosparql` contains the resources necessary to set up a GeoSPARQL endpoint with [Virtuoso](https://virtuoso.openlinksw.com/) and Docker. The `README` file in that folder also provides instructions on how to import the test data into the Virtuoso triple store.
+       
 
 Data access examples
 --------------------
