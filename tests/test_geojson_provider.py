@@ -32,7 +32,7 @@ import json
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
-from pygeoapi.provider.geojson import GeoJSONProvider
+from pygeoapi.provider.geojson_prov import GeoJSONProvider
 
 
 path = '/tmp/test.geojson'
