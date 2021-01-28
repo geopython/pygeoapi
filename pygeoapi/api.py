@@ -2600,6 +2600,11 @@ def validate_datetime(resource_def, datetime_=None):
         if '/' in datetime_:  # envelope
             LOGGER.debug('detected time range')
             LOGGER.debug('Validating time windows')
+
+            # normalize "" to ".." (actually changes datetime_)
+            datetime_ = re.sub(r'^/', '../', datetime_)
+            datetime_ = re.sub(r'/$', '/..', datetime_)
+
             datetime_begin, datetime_end = datetime_.split('/')
             if datetime_begin != '..':
                 datetime_begin = dateparse_begin(datetime_begin)
