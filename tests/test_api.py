@@ -1157,6 +1157,8 @@ def test_validate_datetime():
             '2001-10-30/2002-10-30')
     assert validate_datetime(config, '2004/..') == '2004/..'
     assert validate_datetime(config, '../2005') == '../2005'
+    assert validate_datetime(config, '2004/') == '2004/..'
+    assert validate_datetime(config, '/2005') == '../2005'
     assert validate_datetime(config, '2004-10/2005-10') == '2004-10/2005-10'
     assert (validate_datetime(config, '2001-10-30/2002-10-30') ==
             '2001-10-30/2002-10-30')
