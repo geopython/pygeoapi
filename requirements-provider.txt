@@ -1,6 +1,7 @@
 elasticsearch==7.1.0
 fiona
 GDAL>=3.0.0
+geojson
 netCDF4
 psycopg2-binary==2.8.4
 pygeometa
