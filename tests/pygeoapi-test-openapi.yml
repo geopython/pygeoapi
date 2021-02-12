@@ -77,7 +77,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/exception.yaml
+            $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/exception.yaml
       description: Unexpected error
 info:
   contact:
@@ -276,7 +276,7 @@ paths:
                 type: text/plain
                 value: hi there
             schema:
-              $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/execute.yaml
+              $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/execute.yaml
         description: Mandatory execute request JSON
         required: true
       responses:
