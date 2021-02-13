@@ -94,10 +94,10 @@
         }
     ));
     var bbox_layer = L.polygon([
-        [{{ data['extent']['spatial']['bbox'][1] }}, {{ data['extent']['spatial']['bbox'][0] }}],
-        [{{ data['extent']['spatial']['bbox'][3] }}, {{ data['extent']['spatial']['bbox'][0] }}],
-        [{{ data['extent']['spatial']['bbox'][3] }}, {{ data['extent']['spatial']['bbox'][2] }}],
-        [{{ data['extent']['spatial']['bbox'][1] }}, {{ data['extent']['spatial']['bbox'][2] }}],
+        [{{ data['bbox'][1] }}, {{ data['bbox'][0] }}],
+        [{{ data['bbox'][3] }}, {{ data['bbox'][0] }}],
+        [{{ data['bbox'][3] }}, {{ data['bbox'][2] }}],
+        [{{ data['bbox'][1] }}, {{ data['bbox'][2] }}],
     ]);
     map.addLayer(bbox_layer);
     map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
