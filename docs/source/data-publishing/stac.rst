@@ -32,6 +32,16 @@ Connection examples
 .. note::
    ``rasterio`` and ``fiona`` are required for describing geospatial files.
 
+pygeometa metadata control files
+--------------------------------
+
+pygeoapi's STAC filesystem fuctionality supports `pygeometa`_ MCF files residing
+in the same directory as data files.  If an MCF file is found, it will be used
+as part of generating the STAC item metadata (e.g. a file named ``birds.csv``
+having an associated ``birds.yml`` file).  If no MCF file is found, then
+pygeometa will generate the STAC item metadata from configuration and by
+reading the data's properties.
+
 Data access examples
 --------------------
 
@@ -41,3 +51,4 @@ Data access examples
 From here, browse the filesystem accordingly.
 
 .. _`SpatioTemporal Asset Catalog (STAC)`: https://stacspec.org
+.. _`pygeometa`: https://geopython.github.io/pygeometa

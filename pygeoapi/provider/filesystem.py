@@ -31,10 +31,8 @@ import io
 import logging
 import os
 from json import loads
-from pygeometa.core import read_mcf, MCFReadError
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
-from pygeometa.schemas.stac import STACItemOutputSchema
 from urllib.parse import urljoin
 
 LOGGER = logging.getLogger(__name__)
@@ -223,27 +221,32 @@ def _describe_file(filepath):
         'properties': {}
     }
 
-    mcf_file = os.path.splitext(filepath)[0] + '.yml'
+    mcf_file = '{}.yml'.format(os.path.splitext(filepath)[0])
 
     if os.path.isfile(mcf_file):
         try:
+            from pygeometa.core import read_mcf, MCFReadError
+            from pygeometa.schemas.stac import STACItemOutputSchema
+
             md = read_mcf(mcf_file)
             stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md)
             stacdata = loads(stacjson)
             for k, v in stacdata.items():
                 content[k] = v
+        except ImportError as err:
+            LOGGER.debug('pygeometa not found')
         except MCFReadError as err:
             LOGGER.warning('MCF error: ' + str(err))
     else:
         LOGGER.debug('No mcf found at: ' + mcf_file)
 
-    if (content['geometry'] is None and content['bbox'] is None):
+    if content['geometry'] is None and content['bbox'] is None:
         try:
             import rasterio
             from rasterio.crs import CRS
             from rasterio.warp import transform_bounds
-            LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
         except ImportError as err:
+            LOGGER.warning('rasterio not found')
             LOGGER.warning(err)
             return content
 
