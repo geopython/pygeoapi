@@ -1,6 +1,5 @@
 click
 Flask
-pygeometa
 pyproj
 python-dateutil
 pytz
