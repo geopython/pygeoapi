@@ -233,12 +233,12 @@ def _describe_file(filepath):
             stacdata = loads(stacjson)
             for k, v in stacdata.items():
                 content[k] = v
-        except ImportError as err:
+        except ImportError:
             LOGGER.debug('pygeometa not found')
         except MCFReadError as err:
-            LOGGER.warning('MCF error: ' + str(err))
+            LOGGER.warning('MCF error: {}'.format(err))
     else:
-        LOGGER.debug('No mcf found at: ' + mcf_file)
+        LOGGER.debug('No mcf found at: {}'.format(mcf_file))
 
     if content['geometry'] is None and content['bbox'] is None:
         try:
@@ -253,7 +253,7 @@ def _describe_file(filepath):
         try:
             import fiona
         except ImportError as err:
-            LOGGER.warning('fiona not found. Cannot derive geospatial properties')  # noqa
+            LOGGER.warning('fiona not found')
             LOGGER.warning(err)
             return content
 
