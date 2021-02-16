@@ -59,7 +59,7 @@ before_install:
 
 install:
   # follow GDAL installed version for Python bindings
-  - pip3 install GDAL==`gdalinfo --version | cut -d' ' -f2 | cut -d',' -f1`
+  - export GDAL_VERSION=`gdal-config --version`
   - pip3 install -r requirements.txt
   - pip3 install -r requirements-dev.txt
   - pip3 install -r requirements-manager.txt

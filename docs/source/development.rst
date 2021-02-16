@@ -59,7 +59,7 @@ Install Spatialite from Homebrew:
 
    brew update
    brew install spatialite-tools
-   brew libspatialite
+   brew install libspatialite
 
 Set the variable for the Spatialite library under OSX:
 

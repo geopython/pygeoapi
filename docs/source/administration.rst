@@ -59,17 +59,29 @@ In UNIX:
 
 .. code-block:: bash
 
-    export PYGEOAPI_CONFIG=/path/to/my-pygeoapi-config.yml
-    export PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.yml
+   export PYGEOAPI_CONFIG=/path/to/my-pygeoapi-config.yml
+   export PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.yml
+
+The next environment variable is mandatory for providers based on the GDAL.
+
+.. code-block:: bash
+
+   export GDAL_VERSION=`gdal-config --version`
 
 In Windows:
 
 .. code-block:: bat
 
-    set PYGEOAPI_CONFIG=/path/to/my-pygeoapi-config.yml
-    set PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.yml
+   set PYGEOAPI_CONFIG=/path/to/my-pygeoapi-config.yml
+   set PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.yml
+
+For GDAL based providers:
+
+.. code-block:: bat
+
+   set GDAL_VERSION=`gdal-config --version`
 
 Summary
 -------
 
-At this point you are ready to run the server.  Let's go!
+At this point you are ready to run the server. Let's go!
