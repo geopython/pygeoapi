@@ -1,0 +1,3 @@
+# aiofiles
+Django < 3.0.0
+pydantic
