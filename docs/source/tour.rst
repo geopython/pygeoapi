@@ -138,6 +138,28 @@ This page provides freeform tiles metadata.
 
 http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
 
+Metadata
+--------
+
+http://localhost:5000/collections/metadata-records/items?q=birds&bbox=-142,42,-52,84
+
+This page provides metadata catalogue search capabilities
+
+.. seealso::
+   :ref:`ogcapi-records` for more OGC API - Records request examples.
+
+Processes
+---------
+
+The processes page provides a list of process integrated onto the server, along with a name and description.
+
+.. todo::
+   Expand with more info once OAProc HTML is better flushed out.
+
+.. seealso::
+   :ref:`ogcapi-processes` for more OGC API - Processes request examples.
+
+
 SpatioTemporal Assets
 ---------------------
 
@@ -150,17 +172,6 @@ the file.
 
 .. seealso::
    :ref:`stac` for more STAC request examples.
-
-Processes
----------
-
-The processes page provides a list of process integrated onto the server, along with a name and description.
-
-.. todo::
-   Expand with more info once OAProc HTML is better flushed out.
-
-.. seealso::
-   :ref:`ogcapi-processes` for more OGC API - Processes request examples.
 
 API Documentation
 -----------------

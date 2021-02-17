@@ -56,6 +56,7 @@ class BaseProvider:
         self.x_field = provider_def.get('x_field', None)
         self.y_field = provider_def.get('y_field', None)
         self.time_field = provider_def.get('time_field')
+        self.title_field = provider_def.get('title_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
         self.fields = {}

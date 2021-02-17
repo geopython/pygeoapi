@@ -121,7 +121,7 @@ class ElasticsearchProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         query Elasticsearch index
 
@@ -134,6 +134,7 @@ class ElasticsearchProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -235,6 +236,18 @@ class ElasticsearchProvider(BaseProvider):
                     }
                 }
                 query['sort'].append(sort_)
+
+        if q is not None:
+            LOGGER.debug('Adding free-text search')
+            query['query']['bool']['must'] = {'query_string': {'query': q}}
+
+            query['_source'] = {
+                'excludes': [
+                    'properties._metadata-payload',
+                    'properties._metadata-schema',
+                    'properties._metadata-format'
+                ]
+            }
 
         if self.properties or select_properties:
             LOGGER.debug('including specified fields: {}'.format(
@@ -416,3 +429,39 @@ class ElasticsearchProvider(BaseProvider):
 
     def __repr__(self):
         return '<ElasticsearchProvider> {}'.format(self.data)
+
+
+class ElasticsearchCatalogueProvider(ElasticsearchProvider):
+    """Elasticsearch Provider"""
+
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
+
+    def _excludes(self):
+        return [
+            'properties._metadata-anytext'
+        ]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for i in self._excludes():
+            del fields[i]
+        return fields
+
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
+
+        records = super().query(
+            startindex=startindex, limit=limit,
+            resulttype=resulttype, bbox=bbox,
+            datetime_=datetime_, properties=properties,
+            sortby=sortby,
+            select_properties=select_properties,
+            skip_geometry=skip_geometry,
+            q=q)
+
+        return records
+
+    def __repr__(self):
+        return '<ElasticsearchCatalogueProvider> {}'.format(self.data)

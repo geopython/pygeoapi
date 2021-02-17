@@ -87,7 +87,14 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/core',
-    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections'
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html'
 ]
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
@@ -432,9 +439,9 @@ class API:
                     self.config['server']['url'], k)
             })
 
-            if collection_data_type == 'feature':
-                collection['itemType'] = collection_data_type.capitalize()
-                LOGGER.debug('Adding feature based links')
+            if collection_data_type in ['feature', 'record']:
+                collection['itemType'] = collection_data_type
+                LOGGER.debug('Adding feature/record based links')
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'queryables',
@@ -665,10 +672,14 @@ class API:
             return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Creating collection queryables')
-        LOGGER.debug('Loading provider')
         try:
+            LOGGER.debug('Loading feature provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            LOGGER.debug('Loading record provider')
+            p = load_plugin('provider', get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'record'))
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -730,7 +741,7 @@ class API:
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
                                'resulttype', 'datetime', 'sortby',
-                               'properties', 'skipGeometry']
+                               'properties', 'skipGeometry', 'q']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
@@ -836,18 +847,30 @@ class API:
             LOGGER.error(exception)
             return headers_, 400, to_json(exception, self.pretty_print)
 
+        LOGGER.debug('processing q parameter')
+        val = args.get('q')
+
+        if val is not None:
+            q = val
+        else:
+            q = None
+
         LOGGER.debug('Loading provider')
 
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                exception = {
+                    'code': 'NoApplicableCode',
+                    'description': 'invalid provider type'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
         except ProviderConnectionError:
             exception = {
                 'code': 'NoApplicableCode',
@@ -941,6 +964,7 @@ class API:
         LOGGER.debug('datetime: {}'.format(datetime_))
         LOGGER.debug('properties: {}'.format(select_properties))
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
+        LOGGER.debug('q: {}'.format(q))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
@@ -948,7 +972,8 @@ class API:
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
                               select_properties=select_properties,
-                              skip_geometry=skip_geometry)
+                              skip_geometry=skip_geometry,
+                              q=q)
         except ProviderConnectionError as err:
             exception = {
                 'code': 'NoApplicableCode',
@@ -1054,11 +1079,10 @@ class API:
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
-            prv = get_provider_by_type(collections[dataset]['providers'],
-                                       'feature')
-            if 'title_field' in prv:
-                content['title_field'] = prv['title_field']
-            content['id_field'] = prv['id_field']
+
+            if p.title_field is not None:
+                content['title_field'] = p.title_field
+            content['id_field'] = p.title_field
 
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
@@ -1131,12 +1155,16 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                exception = {
+                    'code': 'NoApplicableCode',
+                    'description': 'invalid provider type'
+                }
+                LOGGER.error(exception)
+                return headers_, 400, to_json(exception, self.pretty_print)
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
@@ -1218,11 +1246,9 @@ class API:
             headers_['Content-Type'] = 'text/html'
 
             content['title'] = collections[dataset]['title']
-            prv = get_provider_by_type(collections[dataset]['providers'],
-                                       'feature')
-            content['id_field'] = prv['id_field']
-            if 'title_field' in prv:
-                content['title_field'] = prv['title_field']
+            content['id_field'] = p.id_field
+            if p.title_field is not None:
+                content['title_field'] = p.title_field
 
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
