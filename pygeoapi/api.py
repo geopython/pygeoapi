@@ -1892,7 +1892,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 return headers_, 404, to_json(exception, self.pretty_print)
 
         if processes_config:
-            for key, value in processes_config.items():
+            if process is not None:
+                relevant_processes = [(process, processes_config[process])]
+            else:
+                relevant_processes = processes_config.items()
+
+            for key, value in relevant_processes:
                 p = load_plugin('process',
                                 processes_config[key]['processor'])
 
