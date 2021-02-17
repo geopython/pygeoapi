@@ -36,7 +36,15 @@
                   {{ input_.title|striptags|truncate }}
                 </td>
                 <td itemprop="name" data-label="Title">
-                  {{ input_.input.literalDataDomain.dataType }}
+                  {% with literalDataDomain = input_.input.literalDataDomain %}
+                    {% if literalDataDomain %}
+                      {{ literalDataDomain.dataType }}
+                    {% else %}
+                      {% for format in input_.input.formats %}
+                        {{ format.mimeType }}{% if not loop.last %},{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% endwith %}
                 </td>
                 <td itemprop="description" data-label="Description">
                   {{ input_.abstract }}
