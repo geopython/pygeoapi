@@ -138,10 +138,10 @@ This page provides freeform tiles metadata.
 
 http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
 
-Metadata
---------
+Metadata Records
+----------------
 
-http://localhost:5000/collections/metadata-records/items?q=birds&bbox=-142,42,-52,84
+http://localhost:5000/collections/metadata-records/items?q=crops&bbox=-142,42,-52,84
 
 This page provides metadata catalogue search capabilities
 

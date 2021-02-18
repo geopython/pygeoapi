@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -891,7 +891,7 @@ class API:
             if k not in reserved_fieldnames and k not in p.fields.keys():
                 exception = {
                     'code': 'InvalidParameterValue',
-                    'description': 'unknown query parameter'
+                    'description': 'unknown query parameter: {}'.format(k)
                 }
                 LOGGER.error(exception)
                 return headers_, 400, to_json(exception, self.pretty_print)

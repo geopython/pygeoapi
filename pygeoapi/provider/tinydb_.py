@@ -197,7 +197,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             results.sort(key=lambda k: k['properties'][sortby[0]['property']],
                          reverse=sort_reverse)
 
-        feature_collection['features'] = results[startindex:limit]
+        feature_collection['features'] = results[startindex:startindex + limit]
 
         return feature_collection
 
@@ -214,11 +214,11 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         record = self.db.get(Query().properties[self.id_field] == identifier)
 
+        if record is None:
+            raise ProviderItemNotFoundError('record does not exist')
+
         for e in self.excludes:
             del record['properties'][e]
-
-        if len(record) < 1:
-            raise ProviderItemNotFoundError('record does not exist')
 
         return record
 
