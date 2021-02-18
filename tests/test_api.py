@@ -177,7 +177,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 9
+    assert len(root['conformsTo']) == 16
 
     rsp_headers, code, response = api_.conformance(req_headers, {'f': 'foo'})
     assert code == 400
