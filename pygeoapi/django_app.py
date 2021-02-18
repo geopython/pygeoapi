@@ -5,6 +5,18 @@ import sys
 from pathlib import Path
 
 
+def config():
+    from pygeoapi.util import yaml_load
+
+    if not os.environ.get('PYGEOAPI_CONFIG'):
+        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+
+    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+        CONFIG = yaml_load(fh)
+
+    return CONFIG
+
+
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_pygeoapi.settings')
     django_app_path = Path(os.path.dirname(__file__))
@@ -17,7 +29,11 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
 
-    sys.argv = [str(django_app_path / "django_app.py"), "runserver"]
+    CONFIG = config()
+    sys.argv = [str(django_app_path / "django_app.py"),
+                "runserver",
+                f"{CONFIG['server']['bind'].get('host')}:"
+                f"{CONFIG['server']['bind'].get('port')}"]
     sys.path.append(str(django_app_path))
     
     execute_from_command_line(sys.argv)
