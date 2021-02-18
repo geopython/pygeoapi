@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -44,11 +44,11 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
-#    'oacov': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Sprint-August-2020/master/docs/Draft_Spring_Guide_for_OGC_API_Coverages/openapi'  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi',  # noqa
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
-    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
-    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/map-tiles.yaml'  # noqa
+    'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
+    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
+    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi'  # noqa
 }
 
 
@@ -416,10 +416,20 @@ def get_oas_30(cfg):
             }
         }
 
-        LOGGER.debug('setting up feature endpoints')
+        LOGGER.debug('setting up collection endpoints')
         try:
+            ptype = None
+
+            if filter_providers_by_type(
+                    collections[k]['providers'], 'feature'):
+                ptype = 'feature'
+
+            if filter_providers_by_type(
+                    collections[k]['providers'], 'record'):
+                ptype = 'record'
+
             p = load_plugin('provider', get_provider_by_type(
-                            collections[k]['providers'], 'feature'))
+                            collections[k]['providers'], ptype))
 
             items_path = '{}/items'.format(collection_name_path)
 
@@ -440,7 +450,7 @@ def get_oas_30(cfg):
                         coll_properties,
                         {'$ref': '#/components/parameters/skipGeometry'},
                         {'$ref': '#/components/parameters/sortby'},
-                        {'$ref': '#/components/parameters/startindex'}
+                        {'$ref': '#/components/parameters/startindex'},
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -451,6 +461,9 @@ def get_oas_30(cfg):
                 }
             }
 
+            if ptype == 'record':
+                paths[items_path]['get']['parameters'].append(
+                    {'$ref': '{}/parameters/q.yaml'.format(OPENAPI_YAML['oapir'])})  # noqa
             if p.fields:
                 queryables_path = '{}/queryables'.format(collection_name_path)
 

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -54,8 +54,9 @@ def test_query(config):
 
     r = p.get_data_path(baseurl, urlpath, dirpath)
 
-    assert len(r['links']) == 14
+    assert len(r['links']) == 16
 
     r = p.get_data_path(baseurl, urlpath, '/poi_portugal')
+
     assert r['geometry']['type'] == 'Polygon'
     assert r['assets']['default']['href'] == 'http://example.org/stac/poi_portugal.gpkg'  # noqa
