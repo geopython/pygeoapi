@@ -97,7 +97,7 @@ class MongoProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         query the provider
 

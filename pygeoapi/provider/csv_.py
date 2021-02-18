@@ -73,7 +73,7 @@ class CSVProvider(BaseProvider):
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         Load CSV data
 
@@ -84,6 +84,7 @@ class CSVProvider(BaseProvider):
         :param properties: list of tuples (name, value)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of GeoJSON FeatureCollection
         """

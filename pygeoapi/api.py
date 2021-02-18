@@ -542,7 +542,7 @@ class API:
                     LOGGER.debug('Creating extended coverage metadata')
                     try:
                         p = load_plugin('provider', get_provider_by_type(
-                            self.config['resources'][dataset]['providers'],
+                            self.config['resources'][k]['providers'],
                             'coverage'))
                     except ProviderConnectionError:
                         exception = {

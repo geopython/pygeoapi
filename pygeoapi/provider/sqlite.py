@@ -252,7 +252,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -268,6 +268,7 @@ class SQLiteGPKGProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: GeoJSON FeaturesCollection
         """
