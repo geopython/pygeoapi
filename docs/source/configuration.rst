@@ -175,7 +175,8 @@ default.
                 name: CSV
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
-                time_field: datetimestamp  # optional field corresponding to the temporal propert of the dataset
+                time_field: datetimestamp  # optional field corresponding to the temporal property of the dataset
+                title_field: foo # optional field of which property to display as title/label on HTML pages
                 format:  # optional default format
                     name: GeoJSON  # required: format name
                     mimetype: application/json  # required: format mimetype

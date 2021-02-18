@@ -151,6 +151,7 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
+              title_field: name
 
     gdps-temperature:
         type: collection

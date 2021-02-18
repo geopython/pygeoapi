@@ -837,6 +837,7 @@ class API:
             return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Loading provider')
+
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
@@ -1053,6 +1054,11 @@ class API:
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
+            prv = get_provider_by_type(collections[dataset]['providers'],
+                                       'feature')
+            if 'title_field' in prv:
+                content['title_field'] = prv['title_field']
+            content['id_field'] = prv['id_field']
 
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
@@ -1120,6 +1126,7 @@ class API:
             return headers_, 400, to_json(exception, self.pretty_print)
 
         LOGGER.debug('Loading provider')
+
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
@@ -1211,6 +1218,12 @@ class API:
             headers_['Content-Type'] = 'text/html'
 
             content['title'] = collections[dataset]['title']
+            prv = get_provider_by_type(collections[dataset]['providers'],
+                                       'feature')
+            content['id_field'] = prv['id_field']
+            if 'title_field' in prv:
+                content['title_field'] = prv['title_field']
+
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
                                          content)

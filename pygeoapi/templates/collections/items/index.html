@@ -74,10 +74,14 @@
             <thead>
             <tr>
                 <th>id</th>
-                {% for k, v in data['features'][0]['properties'].items() %}
-                {% if loop.index < 5 %}
-                <td>{{ k }}</td>
+                {% if data['title_field'] %}
+                  <th>{{ data['title_field'] }}</th>
                 {% endif %}
+                {% for k, v in data['features'][0]['properties'].items() %}
+                  {# start with id & title then take first 5 columns for table #}
+                  {% if loop.index < 5 and k != data['id_field'] and k != data['title_field'] %}
+                  <th>{{ k }}</th>
+                  {% endif %}
                 {% endfor %}
             </tr>
           </thead>
@@ -85,11 +89,14 @@
             {% for ft in data['features'] %}
               <tr>
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
-                  {% for k, v in ft['properties'].items() %}
-                  {% if loop.index < 5 %}
+                {% if data['title_field'] %}
+                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}">{{ ft['properties'][data['title_field']] }}</a></td>
+                {% endif %}
+                {% for k, v in ft['properties'].items() %}
+                  {% if loop.index < 5 and k != data['id_field'] and k != data['title_field'] %}
                   <td data-label="{{ k }}">{{ v | urlize(20) }}</td>
                   {% endif %}
-                  {% endfor %}
+                {% endfor %}
               </tr>
             {% endfor %}
           </tbody>
@@ -118,7 +125,7 @@
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
             var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';
-            var html = '<span><a href="' + url + '">' + feature.id + '</a></span>';
+            var html = '<span><a href="' + url + '">' + feature.id + '. ' + feature['properties']['{{ data['title_field'] }}'] + '</a></span>';
             layer.bindPopup(html);
         }
     });
