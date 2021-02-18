@@ -48,7 +48,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
 .. _`OGC API`: https://ogcapi.ogc.org
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
-.. _`OGC API - Tiles`: https://github.com/opengeospatial/OGC-API-Tiles
+.. _`OGC API - Tiles`: https://github.com/opengeospatial/ogcapi-tiles
 .. _`OGC API - Processes`: https://github.com/opengeospatial/ogcapi-processes
 .. _`OGC API - Records`: https://github.com/opengeospatial/ogcapi-records
 .. _`SpatioTemporal Asset Catalog`: https://stacspec.org

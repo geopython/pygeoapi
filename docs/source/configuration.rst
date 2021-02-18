@@ -170,7 +170,7 @@ default.
               # see pygeoapi.plugin for supported providers
               # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
               # see Plugins section for more information
-              - type: feature # underlying data geospatial type: (allowed values are: feature, coverage, record)
+              - type: feature # underlying data geospatial type: (allowed values are: feature, coverage, record, tile)
                 default: true  # optional: if not specified, the first provider definition is considered the default
                 name: CSV
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
