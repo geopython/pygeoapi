@@ -3,6 +3,7 @@
 # Authors: Timo Tuunanen <timo.tuunanen@rdvelho.com>
 #
 # Copyright (c) 2019 Timo Tuunanen
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -97,7 +98,7 @@ class MongoProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         query the provider
 
