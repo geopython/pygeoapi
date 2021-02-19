@@ -4,5 +4,5 @@ pyproj
 python-dateutil
 pytz
 PyYAML
-rasterio<1.2
+rasterio
 unicodecsv
