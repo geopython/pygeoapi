@@ -139,9 +139,9 @@ class TinyDBCatalogueProvider(BaseProvider):
                 time_begin, time_end = datetime_.split('/')
 
                 if time_begin != '..':
-                    QUERY.append("(Q.properties[self.time_field]>='{}')".format(datetime_))  # noqa
+                    QUERY.append("(Q.properties[self.time_field]>='{}')".format(time_begin))  # noqa
                 if time_end != '..':
-                    QUERY.append("(Q.properties[self.time_field]<='{}')".format(datetime_))  # noqa
+                    QUERY.append("(Q.properties[self.time_field]<='{}')".format(time_end))  # noqa
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
@@ -161,8 +161,8 @@ class TinyDBCatalogueProvider(BaseProvider):
         LOGGER.debug('SEARCH_STRING: {}'.format(SEARCH_STRING))
 
         LOGGER.debug('querying database')
-
         if len(QUERY) > 0:
+            LOGGER.debug('running eval on {}'.format(SEARCH_STRING))
             results = eval(SEARCH_STRING)
         else:
             results = self.db.all()
