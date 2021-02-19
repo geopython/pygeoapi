@@ -65,6 +65,7 @@ install:
   - pip3 install -r requirements-manager.txt
   - pip3 install -r requirements-provider.txt
   - python3 setup.py install
+  - pip3 install --upgrade rasterio==1.1.8
   # verify docker build
   - docker build --build-arg BUILD_DEV_IMAGE=true -t geopython/pygeoapi:latest .
 
