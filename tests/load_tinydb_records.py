@@ -86,7 +86,22 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
     type_ = m.hierarchy
     title = m.identification.title
     description = m.identification.abstract
+
+    contact = m.identification.contact
     issued = m.datestamp
+
+    links = []
+    if m.distribution and m.distribution.online:
+        for ln in m.distribution.online:
+            lnk = {
+                'href': ln.url,
+                'rel': 'item'
+            }
+            if hasattr(ln, 'name') and ln.name is not None:
+                lnk['title'] = ln.name
+            if hasattr(ln, 'protocol') and ln.protocol is not None:
+                lnk['type'] = ln.protocol
+            links.append(lnk)
 
     themes = []
     for keyword_set in m.identification.keywords2:
@@ -97,6 +112,17 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
         except (AttributeError, KeyError, TypeError):
             pass
         themes.append(theme)
+
+    contact = ''
+    for c in m.contact:
+        contact = getattr(c, 'email', None)
+        if not contact:
+            continue
+        if hasattr(c, 'name') and c.name is not None:
+            contact = '{}, {}'.format(c.name, contact)
+        if hasattr(c, 'organization') and c.organization is not None:
+            contact = '{}, {}'.format(contact, c.organization)
+        break
 
     bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
@@ -131,7 +157,8 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             'type': type_,
             'title': title,
             'description': description,
-
+            'contactPoint': contact,
+            'associations': links,
             'externalId': identifier,
             'themes': themes,
             'extent': {
