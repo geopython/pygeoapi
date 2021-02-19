@@ -226,9 +226,6 @@ resources:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            temporal:
-                begin: 1867-07-01
-                end: null  # or empty (either means open ended)
         providers:
             - type: record
               name: TinyDBCatalogue

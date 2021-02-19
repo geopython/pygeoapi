@@ -53,7 +53,8 @@ def config():
         'name': 'TinyDBCatalogue',
         'type': 'feature',
         'data': path,
-        'id_field': 'externalId'
+        'id_field': 'externalId',
+        'time_field': 'record-created'
     }
 
 
@@ -80,6 +81,18 @@ def test_query(config):
     results = p.query(limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+
+    results = p.query(datetime_='2020/..')
+    assert len(results['features']) == 6
+    assert results['features'][0]['id'] == '4e81a467-fc14-4fa0-a1d6-9d65336587c6'  # noqa
+
+    results = p.query(datetime_='../2020')
+    assert len(results['features']) == 4
+    assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+
+    results = p.query(datetime_='2020-09-17/2020-12-01')
+    assert len(results['features']) == 6
+    assert results['features'][0]['id'] == '4e81a467-fc14-4fa0-a1d6-9d65336587c6'  # noqa
 
     results = p.query(bbox=[-154, 42, -52, 84])
     assert len(results['features']) == 10
