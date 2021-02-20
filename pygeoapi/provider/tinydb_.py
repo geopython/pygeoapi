@@ -191,7 +191,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         if sortby:
             LOGGER.debug('Sorting results')
-            if sortby[0]['order'] == 'D':
+            if sortby[0]['order'] == '-':
                 sort_reverse = True
             else:
                 sort_reverse = False

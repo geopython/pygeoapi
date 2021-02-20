@@ -227,7 +227,7 @@ class ElasticsearchProvider(BaseProvider):
                     sort_property = self.mask_prop(sp)
 
                 sort_order = 'asc'
-                if sort['order'] == 'D':
+                if sort['order'] == '-':
                     sort_order = 'desc'
 
                 sort_ = {
