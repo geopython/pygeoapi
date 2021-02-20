@@ -295,17 +295,6 @@ def get_oas_30(cfg):
                     'default': False
                 }
             },
-            'sortby': {
-                'name': 'sortby',
-                'in': 'query',
-                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                },
-                'style': 'form',
-                'explode': False
-            },
             'startindex': {
                 'name': 'startindex',
                 'in': 'query',
@@ -449,7 +438,7 @@ def get_oas_30(cfg):
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                         coll_properties,
                         {'$ref': '#/components/parameters/skipGeometry'},
-                        {'$ref': '#/components/parameters/sortby'},
+                        {'$ref': '{}/parameters/sortby.yaml'.format(OPENAPI_YAML['oapir'])},  # noqa
                         {'$ref': '#/components/parameters/startindex'},
                     ],
                     'responses': {

@@ -82,16 +82,16 @@ def test_query(config):
     assert len(results['features']) == 1
     assert results['features'][0]['properties']['nameascii'] == 'Vaduz'
 
-    results = p.query(sortby=[{'property': 'nameascii', 'order': 'A'}])
+    results = p.query(sortby=[{'property': 'nameascii', 'order': '+'}])
     assert results['features'][0]['properties']['nameascii'] == 'Abidjan'
 
-    results = p.query(sortby=[{'property': 'nameascii', 'order': 'D'}])
+    results = p.query(sortby=[{'property': 'nameascii', 'order': '-'}])
     assert results['features'][0]['properties']['nameascii'] == 'Zagreb'
 
-    results = p.query(sortby=[{'property': 'scalerank', 'order': 'A'}])
+    results = p.query(sortby=[{'property': 'scalerank', 'order': '+'}])
     assert results['features'][0]['properties']['scalerank'] == 0
 
-    results = p.query(sortby=[{'property': 'scalerank', 'order': 'D'}])
+    results = p.query(sortby=[{'property': 'scalerank', 'order': '-'}])
     assert results['features'][0]['properties']['scalerank'] == 8
 
     assert len(results['features'][0]['properties']) == 37
