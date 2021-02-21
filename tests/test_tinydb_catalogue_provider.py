@@ -62,9 +62,10 @@ def test_query(config):
     p = TinyDBCatalogueProvider(config)
 
     fields = p.get_fields()
-    assert len(fields) == 7
+    assert len(fields) == 8
     assert fields['record-created'] == 'string'
     assert fields['title'] == 'string'
+    assert fields['q'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 10
