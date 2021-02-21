@@ -1,4 +1,5 @@
 {% extends "_base.html" %}
+{% set ptitle = data['properties'][data['title_field']] or ("Item " + data['id']) %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
     {% set val = v | string | trim %}
@@ -6,7 +7,7 @@
         {# Ends with image extension: render img element with link to image #}
         <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
     {% elif v is string, boolean, integer, float, number %}
-        {{ val | urlize() }}
+        {{ val | urlize() | wordwrap() }}
     {% elif v is mapping %}
       {# this is a dict #}
       {% for i,j in v.items() %}
@@ -19,16 +20,16 @@
       {% endfor %}
     {% endif %}
 {%- endmacro %}
-{% block title %}{{ super() }} {{ data['title'] }} - {{ data['id'] }}. {{ data['properties'][data['title_field']] }}{% endblock %}
+{% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../../collections">Collections</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
-/  <a href="{{ link['href'] }}">{{ link['title'] }}</a>
+/  <a href="{{ link['href'] }}">{{ link['title'] | truncate( 25 ) }}</a>
   {% endif %}
 {% endfor %}
 / <a href="../items">Items</a>
-/ <a href="./{{ data['id'] }}">{{ data['id'] }}. {{ data['properties'][data['title_field']] }}</a>
+/ <a href="./{{ data['id'] }}">{{ ptitle | truncate( 25 ) }}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -39,7 +40,7 @@
     <section id="item">
       <div class="row">
         <div class="col-sm">
-          <h1>{{ data['id'] }}. {{ data['properties'][data['title_field']] }}</h1>
+          <h1>{{ ptitle }}</h1>
         </div>
       </div>
       <div class="row">
