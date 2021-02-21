@@ -1,25 +1,35 @@
 {% extends "_base.html" %}
+{% set ptitle = data['properties'][data['title_field']] or ("Item " + data['id']) %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
     {% set val = v | string | trim %}
     {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
         {# Ends with image extension: render img element with link to image #}
-        <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
-    {% else %}
-        {# All other cases: text or link value #}
-        {{ v | urlize() }}
+        <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
+    {% elif v is string, boolean, integer, float, number %}
+        {{ val | urlize() | wordwrap() }}
+    {% elif v is mapping %}
+      {# this is a dict #}
+      {% for i,j in v.items() %}
+        <i>{{ i }}:</i> {{ render_item_value(j, 60) }}<br/>
+      {% endfor %}
+    {% elif v is iterable %}
+      {# else an array #}
+      {% for i in v %}
+        {{ render_item_value(i, 60) }}
+      {% endfor %}
     {% endif %}
 {%- endmacro %}
-{% block title %}{{ super() }} {{ data['title'] }} - {{ data['id'] }}. {{ data['properties'][data['title_field']] }}{% endblock %}
+{% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../../collections">Collections</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
-/  <a href="{{ link['href'] }}">{{ link['title'] }}</a>
+/  <a href="{{ link['href'] }}">{{ link['title'] | truncate( 25 ) }}</a>
   {% endif %}
 {% endfor %}
 / <a href="../items">Items</a>
-/ <a href="./{{ data['id'] }}">{{ data['id'] }}. {{ data['properties'][data['title_field']] }}</a>
+/ <a href="./{{ data['id'] }}">{{ ptitle | truncate( 25 ) }}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -30,7 +40,7 @@
     <section id="item">
       <div class="row">
         <div class="col-sm">
-          <h1>{{ data['id'] }}. {{ data['properties'][data['title_field']] }}</h1>
+          <h1>{{ ptitle }}</h1>
         </div>
       </div>
       <div class="row">
@@ -75,13 +85,13 @@
                 {% if k != data['id_field'] %}
                 <tr>
                   <td>{{ k }}</td>
-                  {% if k == 'links' %}
-                  <td>
-                      <ul>
-                          {% for l in v %}
-                          <li><a href="{{ l['href'] }}">{{ l['title'] }}</a></li>
-                          {% endfor %}
-                      </ul>
+                  {% if k in ['links', 'associations'] %}
+                  <td> 
+                    {% for l in v %}
+                      {% if l['href'] %}
+                        <a href="{{ l['href'] }}">{{ l['title'] or (l['href'].split('/') | last) }}</a><br />
+                      {% endif %}
+                    {% endfor %}
                   </td>
                   {% else %}
                     <td>{{ render_item_value(v, 80) }}</td>
