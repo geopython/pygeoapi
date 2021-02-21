@@ -229,7 +229,7 @@ resources:
         providers:
             - type: record
               name: TinyDBCatalogue
-              data: tests/data/open.canada.ca/sample-records.db
+              data: tests/data/open.canada.ca/sample-records.tinydb
               id_field: externalId
               time_field: record-created
               title_field: title

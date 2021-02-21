@@ -70,7 +70,7 @@ This directory provides test data to demonstrate functionality.
 - URL: https://registry.opendata.aws/mur
 - License: https://registry.opendata.aws/mur/#License
 
-### `open.canada.ca/sample-records.db`
+### `open.canada.ca/sample-records.tinydb`
 
 - source: Open Data Canada
 - URL: https://csw.open.canada.ca/geonetwork/srv/csw?service=CSW&version=2.0.2&request=GetRecords&outputschema=http://www.isotc211.org/2005/gmd&resulttype=results (2021-02-18)
