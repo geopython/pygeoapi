@@ -44,7 +44,7 @@ def get_test_file_path(filename):
         return 'tests/{}'.format(filename)
 
 
-path = get_test_file_path('tests/data/open.canada.ca/sample-records.db')
+path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
 
 
 @pytest.fixture()
@@ -62,7 +62,7 @@ def test_query(config):
     p = TinyDBCatalogueProvider(config)
 
     fields = p.get_fields()
-    assert len(fields) == 8
+    assert len(fields) == 10
     assert fields['record-created'] == 'string'
     assert fields['title'] == 'string'
     assert fields['q'] == 'string'
@@ -71,7 +71,7 @@ def test_query(config):
     assert len(results['features']) == 10
     assert results['numberMatched'] == 10
     assert results['numberReturned'] == 10
-    assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+    assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
     assert results['features'][0]['properties']['type'] == 'RI_622'
 
     results = p.query(q='crops')
@@ -81,31 +81,31 @@ def test_query(config):
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+    assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
 
     results = p.query(datetime_='2020/..')
     assert len(results['features']) == 6
-    assert results['features'][0]['id'] == '4e81a467-fc14-4fa0-a1d6-9d65336587c6'  # noqa
+    assert results['features'][0]['id'] == '64e70d29-57a3-44a8-b55c-d465639d1e2e'  # noqa
 
     results = p.query(datetime_='../2020')
     assert len(results['features']) == 4
-    assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+    assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
 
     results = p.query(datetime_='2020-09-17/2020-12-01')
     assert len(results['features']) == 6
-    assert results['features'][0]['id'] == '4e81a467-fc14-4fa0-a1d6-9d65336587c6'  # noqa
+    assert results['features'][0]['id'] == '64e70d29-57a3-44a8-b55c-d465639d1e2e'  # noqa
 
     results = p.query(bbox=[-154, 42, -52, 84])
     assert len(results['features']) == 10
-    assert results['features'][0]['id'] == '07b7ef80-6061-43fc-b874-e2800e9ae547'  # noqa
+    assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
 
     results = p.query(startindex=1, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '4e81a467-fc14-4fa0-a1d6-9d65336587c6'  # noqa
+    assert results['features'][0]['id'] == '64e70d29-57a3-44a8-b55c-d465639d1e2e'  # noqa
 
     results = p.query(startindex=2, limit=2)
     assert len(results['features']) == 2
-    assert results['features'][0]['id'] == 'caeb0592-8c95-4461-b9a5-5fde7f2ccbb3'  # noqa
+    assert results['features'][0]['id'] == 'd3028ad0-b0d0-47ff-bcc3-d383881e17cd'  # noqa
 
     results = p.query(sortby=[{'property': 'title', 'order': 'A'}])
     assert results['features'][0]['id'] == '1687cac6-ee13-4866-ab8a-114c2ede7b13'  # noqa

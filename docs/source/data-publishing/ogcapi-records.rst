@@ -88,6 +88,10 @@ Metadata search examples
   - http://localhost:5000/collections/foo/items?propertyname=foo
 - query records (temporal)
   - http://localhost:5000/collections/my-metadata/items?datetime=2020-04-10T14:11:00Z
+- query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
+  - http://localhost:5000/collections/my-metadata/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
+- query features (temporal) and sort descending by a property
+  - http://localhost:5000/collections/my-metadata/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
 - fetch a specific record
   - http://localhost:5000/collections/my-metadata/items/123
 
