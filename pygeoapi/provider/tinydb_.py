@@ -87,6 +87,8 @@ class TinyDBCatalogueProvider(BaseProvider):
             if p not in self.excludes + ['extent']:
                 fields[p] = 'string'
 
+        fields['q'] = 'string'
+
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',
