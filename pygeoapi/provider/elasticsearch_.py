@@ -446,6 +446,9 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
         fields = super().get_fields()
         for i in self._excludes():
             del fields[i]
+
+        fields['q'] = 'string'
+
         return fields
 
     def query(self, startindex=0, limit=10, resulttype='results',

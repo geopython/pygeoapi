@@ -65,6 +65,7 @@ def test_query(config):
     assert len(fields) == 9
     assert fields['record-created'] == 'string'
     assert fields['title'] == 'string'
+    assert fields['q'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 10
