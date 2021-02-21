@@ -44,7 +44,7 @@ def get_test_file_path(filename):
         return 'tests/{}'.format(filename)
 
 
-path = get_test_file_path('tests/data/open.canada.ca/sample-records.db')
+path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
 
 
 @pytest.fixture()
