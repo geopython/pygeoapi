@@ -88,13 +88,13 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
-                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}">{{ ft.id }}</a></td>
+                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | truncate( 12 )  }}</a></td>
                 {% if data['title_field'] %}
-                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}">{{ ft['properties'][data['title_field']] }}</a></td>
+                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | truncate( 35 ) }}</a></td>
                 {% endif %}
                 {% for k, v in ft['properties'].items() %}
-                  {% if loop.index < 5 and k != data['id_field'] and k != data['title_field'] %}
-                  <td data-label="{{ k }}">{{ v | urlize(20) }}</td>
+                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], 'extent'] %}
+                  <td data-label="{{ k }}">{{ v | truncate( 35 ) }}</td>
                   {% endif %}
                 {% endfor %}
               </tr>
@@ -121,7 +121,7 @@
             attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
-    var geojson_data = {{ data['features'] |to_json }};
+    var geojson_data = {{ data['features'] | to_json }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
             var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';

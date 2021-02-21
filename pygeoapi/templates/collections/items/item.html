@@ -6,7 +6,7 @@
     {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
         {# Ends with image extension: render img element with link to image #}
         <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
-    {% elif v is string, boolean, integer, float, number %}
+    {% elif v is string or v is boolean or v is integer or v is float or v is number %}
         {{ val | urlize() | wordwrap() }}
     {% elif v is mapping %}
       {# this is a dict #}
