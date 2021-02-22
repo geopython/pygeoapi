@@ -123,7 +123,7 @@ class MongoProvider(BaseProvider):
         filterobj = {'$and': and_filter} if and_filter else {}
 
         sort_list = [("properties." + sort['property'],
-                      ASCENDING if (sort['order'] == 'A') else DESCENDING)
+                      ASCENDING if (sort['order'] == '+') else DESCENDING)
                      for sort in sortby]
 
         featurelist, matchcount = self._get_feature_list(filterobj,
