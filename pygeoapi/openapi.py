@@ -485,6 +485,10 @@ def get_oas_30(cfg):
                     LOGGER.debug('Provider specified not to advertise property')  # noqa
                     continue
 
+                if field == 'q' and ptype == 'record':
+                    LOGGER.debug('q parameter already declared, skipping')
+                    continue
+
                 if type == 'date':
                     schema = {
                         'type': 'string',
