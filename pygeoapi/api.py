@@ -906,27 +906,21 @@ class API:
             sortby = []
             sorts = val.split(',')
             for s in sorts:
-                if ':' in s:
-                    prop, order = s.split(':')
-                    if order not in ['A', 'D']:
-                        exception = {
-                            'code': 'InvalidParameterValue',
-                            'description': 'sort order should be A or D'
-                        }
-                        LOGGER.error(exception)
-                        return headers_, 400, to_json(exception,
-                                                      self.pretty_print)
-                    sortby.append({'property': prop, 'order': order})
-                else:
-                    sortby.append({'property': s, 'order': 'A'})
-            for s in sortby:
-                if s['property'] not in p.fields.keys():
+                prop = s
+                order = '+'
+                if s[0] in ['+', '-']:
+                    order = s[0]
+                    prop = s[1:]
+
+                if prop not in p.fields.keys():
                     exception = {
                         'code': 'InvalidParameterValue',
                         'description': 'bad sort property'
                     }
                     LOGGER.error(exception)
                     return headers_, 400, to_json(exception, self.pretty_print)
+
+                sortby.append({'property': prop, 'order': order})
         else:
             sortby = []
 

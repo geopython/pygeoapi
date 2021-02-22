@@ -107,10 +107,10 @@ def test_query(config):
     assert len(results['features']) == 2
     assert results['features'][0]['id'] == 'd3028ad0-b0d0-47ff-bcc3-d383881e17cd'  # noqa
 
-    results = p.query(sortby=[{'property': 'title', 'order': 'A'}])
+    results = p.query(sortby=[{'property': 'title', 'order': '+'}])
     assert results['features'][0]['id'] == '1687cac6-ee13-4866-ab8a-114c2ede7b13'  # noqa
 
-    results = p.query(sortby=[{'property': 'title', 'order': 'D'}])
+    results = p.query(sortby=[{'property': 'title', 'order': '-'}])
     assert results['features'][0]['id'] == '8a09413a-0a01-4aab-8925-720d987deb20'  # noqa
 
 
