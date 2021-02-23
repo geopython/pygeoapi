@@ -6,18 +6,18 @@
     {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
         {# Ends with image extension: render img element with link to image #}
         <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
-    {% elif v is string or v is boolean or v is integer or v is float or v is number %}
-        {{ val | urlize() | wordwrap() }}
+    {% elif v is string or v is number %}
+        {{ val | urlize() }}
     {% elif v is mapping %}
-      {# this is a dict #}
       {% for i,j in v.items() %}
         <i>{{ i }}:</i> {{ render_item_value(j, 60) }}<br/>
       {% endfor %}
     {% elif v is iterable %}
-      {# else an array #}
       {% for i in v %}
         {{ render_item_value(i, 60) }}
       {% endfor %}
+    {% else %}
+      {{ val | urlize() }}
     {% endif %}
 {%- endmacro %}
 {% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
@@ -87,11 +87,17 @@
                   <td>{{ k }}</td>
                   {% if k in ['links', 'associations'] %}
                   <td> 
-                    {% for l in v %}
-                      {% if l['href'] %}
-                        <a href="{{ l['href'] }}">{{ l['title'] or (l['href'].split('/') | last) }}</a><br />
-                      {% endif %}
-                    {% endfor %}
+                    <ul>
+                      {% for l in v %}
+                        {% if l['href'] %}
+                          <li><a href="{{ l['href'] }}" title="{{ l['title'] or l['href'].split('/') }}">{{ l['title'] or (l['href'].split('/') | last) | truncate( 25 ) }}</a>
+                          {% if l['type'] %}
+                            ({{ l['type'] }})
+                          {% endif %}
+                          </li>
+                        {% endif %}
+                      {% endfor %}
+                    </ul>
                   </td>
                   {% else %}
                     <td>{{ render_item_value(v, 80) }}</td>
