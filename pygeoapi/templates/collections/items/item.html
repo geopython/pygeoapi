@@ -1,5 +1,5 @@
 {% extends "_base.html" %}
-{% set ptitle = data['properties'][data['title_field']] or ("Item " + data['id']) %}
+{% set ptitle = data['properties'][data['title_field']] or ("Item {}".format(data['id'])) %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
     {% set val = v | string | trim %}
