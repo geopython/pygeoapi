@@ -696,7 +696,12 @@ class API:
             return headers_, 500, to_json(exception, self.pretty_print)
 
         queryables = {
-            'queryables': []
+            'type': 'object',
+            'title': self.config['resources'][dataset]['title'],
+            'properties': {},
+            '$schema': 'http://json-schema.org/draft/2019-09/schema',
+            '$id': '{}/collections/{}/queryables'.format(
+                self.config['server']['url'], dataset)
         }
 
         for k, v in p.fields.items():
@@ -708,10 +713,12 @@ class API:
                 show_field = True
 
             if show_field:
-                queryables['queryables'].append({
-                    'queryable': k,
-                    'type': v
-                })
+                queryables['properties'][k] = {
+                    'title': k,
+                    'type': v['type']
+                }
+                if 'values' in v:
+                    queryables['properties'][k]['enum'] = v['values']
 
         if format_ == 'html':  # render
             queryables['title'] = self.config['resources'][dataset]['title']

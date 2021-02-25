@@ -258,8 +258,8 @@ def test_get_collection_queryables(config, api_):
         req_headers, {'f': 'json'}, 'obs')
     queryables = json.loads(response)
 
-    assert 'queryables' in queryables
-    assert len(queryables['queryables']) == 6
+    assert 'properties' in queryables
+    assert len(queryables['properties']) == 6
 
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
@@ -268,8 +268,8 @@ def test_get_collection_queryables(config, api_):
         req_headers, {'f': 'json'}, 'obs')
     queryables = json.loads(response)
 
-    assert 'queryables' in queryables
-    assert len(queryables['queryables']) == 1
+    assert 'properties' in queryables
+    assert len(queryables['properties']) == 1
 
 
 def test_describe_collections_json_ld(config, api_):
