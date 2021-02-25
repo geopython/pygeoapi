@@ -62,7 +62,7 @@ Collection queryables
 
 http://localhost:5000/collections/obs/queryables
 
-The queryables endpoint provides a list of queryable properties and their associated datatypes.
+The queryables endpoint provides the collection's queryable properties and associated datatypes.
 
 
 Collection items
