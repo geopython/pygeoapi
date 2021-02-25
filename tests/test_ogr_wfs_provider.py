@@ -173,8 +173,8 @@ def test_get_fields_gs(config_MapServer_WFS_continents):
 
     p = OGRProvider(config_MapServer_WFS_continents)
     results = p.get_fields()
-    assert results['NA2DESC'] == 'string'
-    assert results['NA3DESC'] == 'string'
+    assert results['NA2DESC']['type'] == 'string'
+    assert results['NA3DESC']['type'] == 'string'
 
 
 def test_get_ms(config_MapServer_WFS_cities):

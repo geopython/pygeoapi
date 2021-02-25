@@ -85,9 +85,9 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         for p in r['properties'].keys():
             if p not in self.excludes + ['extent']:
-                fields[p] = 'string'
+                fields[p] = {'type': 'string'}
 
-        fields['q'] = 'string'
+        fields['q'] = {'type': 'string'}
 
         return fields
 
