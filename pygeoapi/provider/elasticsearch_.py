@@ -115,6 +115,7 @@ class ElasticsearchProvider(BaseProvider):
                     type_ = 'string'
                 else:
                     type_ = v['type']
+
                 fields_[k] = {'type': type_}
 
         return fields_
@@ -220,7 +221,7 @@ class ElasticsearchProvider(BaseProvider):
 
                 sp = sort['property']
 
-                if self.fields[sp] == 'string':
+                if self.fields[sp]['type'] == 'string':
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:
@@ -447,7 +448,7 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
         for i in self._excludes():
             del fields[i]
 
-        fields['q'] = 'string'
+        fields['q'] = {'type': 'string'}
 
         return fields
 
