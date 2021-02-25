@@ -75,7 +75,7 @@ def test_query(fixture, config):
 
     fields = p.get_fields()
     assert len(fields) == 2
-    assert fields['name'] == 'string'
+    assert fields['name']['type'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 1

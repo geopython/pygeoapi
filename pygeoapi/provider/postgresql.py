@@ -120,7 +120,9 @@ class DatabaseConnection:
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
-            self.fields = dict(result)
+
+            for k, v in dict(result).items():
+                self.fields[k] = {'type': v}
 
         return self
 

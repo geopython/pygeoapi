@@ -266,12 +266,14 @@ class OGRProvider(BaseProvider):
                 fieldTypeCode = field_defn.GetType()
                 fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
 
-                fields[fieldName] = fieldType.lower()
+                fieldName2 = fieldType.lower()
 
-                if fields[fieldName] == 'integer64':
-                    fields[fieldName] = 'integer'
-                elif fields[fieldName] == 'real':
-                    fields[fieldName] = 'number'
+                if fieldName2 == 'integer64':
+                    fieldName2 = 'integer'
+                elif fieldName2 == 'real':
+                    fieldName2 = 'number'
+
+                fields[fieldName] = {'type': fieldName2}
 
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
