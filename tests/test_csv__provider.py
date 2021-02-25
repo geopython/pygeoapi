@@ -66,8 +66,8 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 6
-    assert fields['value'] == 'string'
-    assert fields['stn_id'] == 'string'
+    assert fields['value']['type'] == 'string'
+    assert fields['stn_id']['type'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 5

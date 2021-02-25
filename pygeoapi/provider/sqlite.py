@@ -88,12 +88,11 @@ class SQLiteGPKGProvider(BaseProvider):
         """
 
         if not self.fields:
-
             results = self.cursor.execute(
                 'PRAGMA table_info({})'.format(self.table)).fetchall()
-            [self.fields.update(
-                {item["name"]:item["type"].lower()}
-                ) for item in results]
+            for item in results:
+                self.fields[item['name']] = {'type': item['type']}
+
         return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
