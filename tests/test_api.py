@@ -615,7 +615,7 @@ def test_get_coverage_domainset(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req_headers, {}, 'obs')
 
-    assert code == 400
+    assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req_headers, {}, 'gdps-temperature')
@@ -634,7 +634,7 @@ def test_get_collection_coverage_rangetype(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req_headers, {}, 'obs')
 
-    assert code == 400
+    assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req_headers, {}, 'gdps-temperature')
