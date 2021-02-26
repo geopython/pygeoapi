@@ -615,7 +615,7 @@ def test_get_coverage_domainset(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req_headers, {}, 'obs')
 
-    assert code == 400
+    assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req_headers, {}, 'gdps-temperature')
@@ -634,7 +634,7 @@ def test_get_collection_coverage_rangetype(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req_headers, {}, 'obs')
 
-    assert code == 400
+    assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req_headers, {}, 'gdps-temperature')
@@ -1171,3 +1171,15 @@ def test_validate_datetime():
         _ = validate_datetime(config, '../2007')
     with pytest.raises(ValueError):
         _ = validate_datetime(config, '../2010')
+
+
+def test_get_exception(config, api_):
+    d = api_.get_exception(500, {}, 'json', 'NoApplicableCode', 'oops')
+    assert d[0] == {}
+    assert d[1] == 500
+    content = json.loads(d[2])
+    assert content['code'] == 'NoApplicableCode'
+    assert content['description'] == 'oops'
+
+    d = api_.get_exception(500, {}, 'html', 'NoApplicableCode', 'oops')
+    assert d[0] == {'Content-Type': 'text/html'}
