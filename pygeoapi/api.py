@@ -177,12 +177,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         fcm = {
             'links': [],
@@ -271,12 +268,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
 
@@ -306,12 +300,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         conformance = {
             'conformsTo': CONFORMANCE
@@ -340,12 +331,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         fcm = {
             'collections': [],
@@ -356,12 +344,9 @@ class API:
                                                'type', 'collection')
 
         if all([dataset is not None, dataset not in collections.keys()]):
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
@@ -545,13 +530,9 @@ class API:
                             self.config['resources'][k]['providers'],
                             'coverage'))
                     except ProviderConnectionError:
-                        exception = {
-                           'code': 'NoApplicableCode',
-                           'description': 'connection error (check logs)'
-                        }
-                        LOGGER.error(exception)
-                        return headers_, 500, to_json(exception,
-                                                      self.pretty_print)
+                        msg = 'connection error (check logs)'
+                        return self.get_exception(
+                            500, headers_, format_, 'NoApplicableCode', msg)
 
                     collection['crs'] = [p.crs]
                     collection['domainset'] = p.get_coverage_domainset()
@@ -654,22 +635,16 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection queryables')
         try:
@@ -681,19 +656,13 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'record'))
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         queryables = {
             'type': 'object',
@@ -755,23 +724,17 @@ class API:
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
 
-        if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
-
         format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in formats:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        if dataset not in collections.keys():
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -779,24 +742,16 @@ class API:
         try:
             startindex = int(args.get('startindex'))
             if startindex < 0:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'startindex value should be positive ' +
-                                   'or zero'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
-        except (TypeError) as err:
+                msg = 'startindex value should be positive or zero'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        except TypeError as err:
             LOGGER.warning(err)
             startindex = 0
-        except ValueError as err:
-            LOGGER.warning(err)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'startindex value should be an integer'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        except ValueError:
+            msg = 'startindex value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing limit parameter')
         try:
@@ -804,23 +759,16 @@ class API:
             # TODO: We should do more validation, against the min and max
             # allowed by the server configuration
             if limit <= 0:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'limit value should be strictly positive'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'limit value should be strictly positive'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
-        except ValueError as err:
-            LOGGER.warning(err)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'limit value should be an integer'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        except ValueError:
+            msg = 'limit value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         resulttype = args.get('resulttype') or 'results'
 
@@ -834,12 +782,9 @@ class API:
             try:
                 bbox = validate_bbox(bbox)
             except ValueError as err:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': str(err)
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = str(err)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = args.get('datetime')
@@ -847,12 +792,9 @@ class API:
             datetime_ = validate_datetime(collections[dataset]['extents'],
                                           datetime_)
         except ValueError as err:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': str(err)
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('processing q parameter')
         val = args.get('q')
@@ -872,36 +814,24 @@ class API:
                 p = load_plugin('provider', get_provider_by_type(
                     collections[dataset]['providers'], 'record'))
             except ProviderTypeError:
-                exception = {
-                    'code': 'NoApplicableCode',
-                    'description': 'invalid provider type'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
             if k not in reserved_fieldnames and k not in p.fields.keys():
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'unknown query parameter: {}'.format(k)
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'unknown query parameter: {}'.format(k)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
             elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
@@ -920,12 +850,9 @@ class API:
                     prop = s[1:]
 
                 if prop not in p.fields.keys():
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'bad sort property'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                    msg = 'bad sort property'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
 
                 sortby.append({'property': prop, 'order': order})
         else:
@@ -940,12 +867,9 @@ class API:
 
             if (len(list(set(select_properties) -
                          set(properties_to_check))) > 0):
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'unknown properties specified'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'unknown properties specified'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
         else:
             select_properties = []
 
@@ -976,26 +900,20 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         serialized_query_params = ''
         for k, v in args.items():
@@ -1130,12 +1048,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1143,12 +1058,9 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading provider')
 
@@ -1160,51 +1072,34 @@ class API:
                 p = load_plugin('provider', get_provider_by_type(
                     collections[dataset]['providers'], 'record'))
             except ProviderTypeError:
-                exception = {
-                    'code': 'NoApplicableCode',
-                    'description': 'invalid provider type'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderItemNotFoundError:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
         except ProviderQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if content is None:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(400, headers_, format_, 'NotFound', msg)
 
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
@@ -1291,26 +1186,17 @@ class API:
 
             p = load_plugin('provider', collection_def)
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                400, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         LOGGER.debug('Processing bbox parameter')
 
@@ -1322,12 +1208,9 @@ class API:
             try:
                 bbox = validate_bbox(bbox)
             except ValueError as err:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': str(err)
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = str(err)
+                return self.get_exception(
+                    500, headers_, format_, 'InvalidParameterValue', msg)
 
         query_args['bbox'] = bbox
 
@@ -1339,12 +1222,9 @@ class API:
             datetime_ = validate_datetime(
                 self.config['resources'][dataset]['extents'], datetime_)
         except ValueError as err:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': str(err)
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         query_args['datetime_'] = datetime_
 
@@ -1360,12 +1240,9 @@ class API:
 
             for a in query_args['range_subset']:
                 if a not in p.fields:
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'Invalid field specified'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                    msg = 'Invalid field specified'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
 
         if 'subset' in args:
             LOGGER.debug('Processing subset parameter')
@@ -1379,23 +1256,17 @@ class API:
                     subset_name = m.group(1)
 
                     if subset_name not in p.axes:
-                        exception = {
-                            'code': 'InvalidParameterValue',
-                            'description': 'Invalid axis name'
-                        }
-                        LOGGER.error(exception)
-                        return (headers_, 400, to_json(exception,
-                                self.pretty_print))
+                        msg = 'Invalid axis name'
+                        return self.get_exception(
+                            400, headers_, format_,
+                            'InvalidParameterValue', msg)
 
                     subsets[subset_name] = list(map(
                         get_typed_value, m.group(2, 3)))
                 except AttributeError:
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'subset should be like "axis(min:max)"'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                    msg = 'subset should be like "axis(min:max)"'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
 
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
@@ -1404,26 +1275,17 @@ class API:
         try:
             data = p.query(**query_args)
         except ProviderInvalidQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error: {}'.format(err),
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'query error: {}'.format(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderNoDataError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'No data found'
-            }
-            LOGGER.debug(exception)
-            return headers_, 204, to_json(exception, self.pretty_print)
+            msg = 'No data found'
+            return self.get_exception(
+                204, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         mt = collection_def['format']['name']
 
@@ -1434,12 +1296,9 @@ class API:
             headers_['Content-Type'] = 'application/prs.coverage+json'
             return headers_, 200, to_json(data, self.pretty_print)
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(data, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @jsonldify
     def get_collection_coverage_domainset(self, headers, args, dataset):
@@ -1468,26 +1327,17 @@ class API:
 
             data = p.get_coverage_domainset()
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
             return headers_, 200, to_json(data, self.pretty_print)
@@ -1500,12 +1350,9 @@ class API:
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @jsonldify
     def get_collection_coverage_rangetype(self, headers, args, dataset):
@@ -1533,26 +1380,17 @@ class API:
 
             data = p.get_coverage_rangetype()
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
             return (headers_, 200, to_json(data, self.pretty_print))
@@ -1565,12 +1403,9 @@ class API:
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @pre_process
     @jsonldify
@@ -1587,22 +1422,16 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1611,26 +1440,17 @@ class API:
                     self.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)
         except (KeyError, ProviderTypeError):
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         tiles = {
             'title': dataset,
@@ -1715,12 +1535,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 #        format_ = check_format({}, headers)
 
         if format_ is None and format_ not in ['mvt']:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing tiles')
 
@@ -1728,12 +1545,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading tile provider')
         try:
@@ -1749,57 +1563,40 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
                                   z=z_idx, y=y_idx, x=x_idx, format_=format_)
             if content is None:
-                exception = {
-                    'code': 'NotFound',
-                    'description': 'identifier not found'
-                }
-                LOGGER.error(exception)
-                return headers_, 404, to_json(exception)
+                msg = 'identifier not found'
+                return self.get_exception(
+                    404, headers_, format_, 'NotFound', msg)
             else:
                 return headers_, 202, content
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderTilesetIdNotFoundError:
-            exception = {
-                'code': 'NotFound',
-                'description': 'Tileset id not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception)
+            msg = 'Tileset id not found'
+            return self.get_exception(
+                404, headers_, format_, 'NotFound', msg)
         except ProviderTileQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'Tile not found'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'Tile not found'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderTileNotFoundError as err:
-            exception = {
-                'code': 'NoMatch',
-                'description': 'tile not found (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 404, to_json(exception)
+            msg = 'tile not found (check logs)'
+            return self.get_exception(
+                404, headers_, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
     @pre_process
     @jsonldify
@@ -1818,22 +1615,16 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1842,34 +1633,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 self.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'InvalidParameterValue', msg)
 
         if matrix_id not in p.options['schemes']:
-            exception = {
-                'code': 'NotFound',
-                'description': 'tileset not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'tileset not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
 
         metadata_format = p.options['metadata_format']
         tilejson = True if (metadata_format == 'tilejson') else False
@@ -1912,24 +1690,18 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         processes = []
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
 
         if process is not None:
             if process not in processes_config.keys() or not processes_config:
-                exception = {
-                    'code': 'NoSuchProcess',
-                    'description': 'identifier not found'
-                }
-                LOGGER.error(exception)
-                return headers_, 404, to_json(exception, self.pretty_print)
+                msg = 'Identifier not found'
+                return self.get_exception(
+                    404, headers_, format_, 'NoSuchProcess', msg)
 
         if processes_config:
             if process is not None:
@@ -2011,12 +1783,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         headers_ = HEADERS.copy()
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         response = {}
 
@@ -2024,12 +1793,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             self.config['resources'], 'type', 'process')
 
         if process_id not in processes:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
         p = load_plugin('process', processes[process_id]['processor'])
 
@@ -2124,12 +1890,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         headers_ = HEADERS.copy()
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         response = {}
 
@@ -2137,20 +1900,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             self.config['resources'], 'type', 'process'
         )
         if process_id not in processes_config:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
         if not self.manager:
-            LOGGER.debug('Process manager is undefined')
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'No processing service defined'
-            }
-            return headers_, 500, json.dumps(exception)
+            msg = 'Process manager is undefined'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'])
@@ -2158,16 +1915,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if not data:
             # TODO not all processes require input, e.g. time-depenendent or
             # random value generators
-            exception = {
-                'code': 'MissingParameterValue',
-                'description': 'missing request data'
-            }
-            LOGGER.info(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers_, format_, 'MissingParameterValue', msg)
 
         try:
             # Parse bytes data, if applicable
             data = data.decode()
+            LOGGER.debug(data)
         except (UnicodeDecodeError, AttributeError):
             pass
 
@@ -2176,13 +1931,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input does not appear to be valid JSON
             LOGGER.error(err)
-            LOGGER.debug(data)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid request data'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         try:
             data_dict = {}
@@ -2195,15 +1946,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     data_dict[id].append(value)
                 else:
                     data_dict[id] = [data_dict[id], value]
-        except KeyError as err:
+        except KeyError:
             # Return 4XX client error for missing 'id' or 'value' in an input
-            LOGGER.error(err)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid request data'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         else:
             LOGGER.debug(data_dict)
 
@@ -2224,12 +1971,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             outputs, status = self.manager.execute_process(
                 process, job_id, data_dict, is_async)
         except ProcessorExecuteError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'Processing error'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'Processing error'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if status == JobStatus.failed:
             response = outputs
@@ -2264,68 +2009,50 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
+
         headers_ = HEADERS.copy()
+        format_ = check_format(args, headers)
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
+
         if process_id not in processes_config:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'])
 
         if not process:
-            exception = {
-                'code': 'NoSuchProcess',
-                'description': 'identifier not found'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
         job = self.manager.get_job(process_id, job_id)
 
         if not job:
-            exception = {
-                'code': 'NoSuchJob',
-                'description': 'job not found'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            msg = 'job not found'
+            return self.get_exception(404, headers_, format_, 'NoSuchJob', msg)
 
         status = JobStatus[job['status']]
 
         if status == JobStatus.running:
-            exception = {
-                'code': 'ResultNotReady',
-                'description': 'job still running'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            msg = 'job still running'
+            return self.get_exception(
+                404, headers_, format_, 'ResultNotReady', msg)
 
         elif status == JobStatus.accepted:
             # NOTE: this case is not mentioned in the specification
-            exception = {
-                'code': 'ResultNotReady',
-                'description': 'job accepted but not yet running'
-            }
-            LOGGER.info(exception)
-            return headers_, 404, json.dumps(exception)
+            msg = 'job accepted but not yet running'
+            return self.get_exception(
+                404, headers_, format_, 'ResultNotReady', msg)
 
         elif status == JobStatus.failed:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'job failed'
-            }
-            LOGGER.info(exception)
-            return headers_, 400, json.dumps(exception)
+            msg = 'job failed'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         mimetype, job_output = self.manager.get_job_result(process_id, job_id)
-
-        format_ = check_format(args, headers)
 
         if mimetype not in [None, 'application/json']:
             headers_['Content-Type'] = mimetype
@@ -2390,12 +2117,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
     def get_stac_root(self, headers_, format_):
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         id_ = 'pygeoapi-stac'
         stac_version = '0.6.2'
@@ -2442,12 +2166,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
     def get_stac_path(self, headers_, format_, path):
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Path: {}'.format(path))
         dir_tokens = path.split('/')
@@ -2458,12 +2179,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                                     'type', 'stac-collection')
 
         if dataset not in stac_collections:
-            exception = {
-                'code': 'NotFound',
-                'description': 'collection not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
 
         LOGGER.debug('Loading provider')
         try:
@@ -2471,12 +2188,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 stac_collections[dataset]['providers'], 'stac'))
         except ProviderConnectionError as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         id_ = '{}-stac'.format(dataset)
         stac_version = '0.6.2'
@@ -2497,18 +2211,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             )
         except ProviderNotFoundError as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NotFound',
-                'description': 'resource not found'
-            }
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'resource not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
         except Exception as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'data query error'
-            }
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'data query error'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
@@ -2533,6 +2242,36 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         else:  # send back file
             headers_.pop('Content-Type', None)
             return headers_, 200, stac_data
+
+    def get_exception(self, status, headers, format_, code, description):
+        """
+        Exception handler
+
+        :param status: HTTP status code
+        :param headers: dict of HTTP response headers
+        :param format_: format string
+        :param code: OGC API exception code
+        :param description: OGC API exception code
+
+        :returns: tuple of headers, status, and message
+        """
+
+        LOGGER.error(description)
+        exception = {
+            'code': code,
+            'description': description
+        }
+
+        if format_ == 'json':
+            content = to_json(exception, self.pretty_print)
+        elif format_ == 'html':
+            headers['Content-Type'] = 'text/html'
+            content = render_j2_template(
+                self.config, 'exception.html', exception)
+        else:
+            content = to_json(exception, self.pretty_print)
+
+        return headers, status, content
 
 
 def check_format(args, headers):
