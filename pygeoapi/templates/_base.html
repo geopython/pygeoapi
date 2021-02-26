@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
-    <title>{% block title %}{{ config['metadata']['identification']['title'] }} -{% endblock %}</title>
+    <title>{% block title %}{% endblock %}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="language" content="{{ config['server']['language'] }}">
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
@@ -13,6 +13,17 @@
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
+    <meta name="twitter:image:src"   content="{% block thumb %}{% endblock %}{% if not self.thumb() %}{{'{}/static/img/logo.png'.format(config['server']['url']) }}{% endif %}" />
+    <meta property="og:image"        content="{{ self.thumb() }}{% if not self.thumb() %}{{'{}/static/img/logo.png'.format(config['server']['url']) }}{% endif %}" />
+    <meta name="twitter:site"        content="{{ config['metadata']['identification']['title'] }}" />
+    <meta property="og:site_name"    content="{{ config['metadata']['identification']['title'] }}" />    
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="{{ self.title() }}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}" />
+    <meta property="og:title"        content="{{ self.title() }}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}" />
+    <meta name="twitter:description" content="{{ config['metadata']['identification']['description']}}" />
+    <meta property="og:description"  content="{{ config['metadata']['identification']['description']}}" />
+
+    <meta property="og:type" content="website" />
     {% for link in data['links'] %}
       {% if (link['rel']=="self" and link['type']=="text/html") %}
       <link rel="canonical" href="{{ link['href'].split('?')[0] }}?f=html" />

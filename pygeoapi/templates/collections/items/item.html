@@ -1,5 +1,7 @@
 {% extends "_base.html" %}
 {% set ptitle = data['properties'][data['title_field']] or ("Item {}".format(data['id'])) %}
+{% block desc %}{{ data.get('properties',{}).get('description',{}) | string | truncate(250) }}{% endblock %}
+{% block tags %}{{ data['properties'].get('themes',[{}])[0].get('concepts',[]) | join(',') }}{% endblock %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
     {% set val = v | string | trim %}
@@ -20,7 +22,7 @@
       {{ val | urlize() }}
     {% endif %}
 {%- endmacro %}
-{% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
+{% block title %}{{ ptitle }}{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
