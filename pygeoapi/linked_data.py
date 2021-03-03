@@ -203,3 +203,100 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
                 feature['id'] = '{}/{}'.format(data['id'], featureId)
 
     return json.dumps(ldjsonData)
+
+
+def geojson2recordjsonld(config, data, dataset, identifier=None):
+    """
+    Render Schema.org representation of a record in JSON-LD from a GeoJSON base. 
+    Works for single record and multiple, adds featurecollection if only one 
+    (featurecollection is used as DataCatalog).
+
+    :param config: dict of configuration
+    :param data: dict of data:
+    :param dataset: dataset identifier
+    :param identifier: item identifier (optional)
+
+    :returns: string of rendered JSON (GeoJSON-LD)
+    """
+    isCollection = identifier is None
+    if isCollection:
+        fts = data
+    else:
+        fts = {
+            "type": "FeatureCollection",
+            "features": [
+                data
+            ]
+        }
+
+    ldjsonData = {
+        "@context": ["http://schema.org/", {
+            "title": "schema:name",
+            "record-created": "schema:dateCreated",
+            "record-updated": "schema:dateModified",
+            "contactPoint": "schema:creator",
+            "externalId": "schema:identifier",
+            "themes": "schema:keywords",
+            "spatial": "schema:spatialCoverage",
+            "temporal": "schema:temporalCoverage",
+            "associations": {
+                "@type":"schema:dataDownload",
+                "@container": "@set",
+                "@id": "schema:distribution"
+            },
+            "@id": "id",
+            "href": "schema:contentUrl",
+            "features": {
+                "@container": "@set",
+                "@id": "schema:dataset"
+            },
+            "Feature": "schema:Dataset",
+            "FeatureCollection": "schema:DataCatalog",
+            "rel": "schema:name",
+            "geometry": "schema:spatialCoverage",
+            "coordinates": "schema:polygon"
+        }],
+        "@id": '{}/collections/{}'.format(
+                        *[config['server']['url'], dataset]),
+        **fts
+    }
+    
+    for i, feature in enumerate(fts['features']):
+        feature.pop('type', '')
+        feature.pop('links', '')
+        feature['id'] = '{}/collections/{}/items/{}'.format(
+                        *[config['server']['url'], dataset, feature['id']])
+        crds = feature.get('geometry',{}).get('coordinates',[[]])[0]
+        if crds is not None:
+            feature['spatial'] = {
+                "@type": "Place",
+                "geo": {
+                    "@type": "GeoShape",
+                    "box": '{},{} {},{}'.format(
+                        crds[0][0], crds[0][1],
+                        crds[2][0], crds[2][1])
+                }
+            }
+        feature.pop('geometry')
+        for j, prop in feature.get('properties',{}).items():
+            if j not in ['type','extent']:
+                if j == 'associations':
+                    for dist in prop:
+                        if dist.get('type'):
+                            dist['encodingFormat'] = dist.get('type')
+                            dist.pop('type')
+                elif j == 'contactPoint' and prop is not '':
+                    prop = {
+                        "@type": "schema:Organization",
+                        "name": prop
+                    }
+                feature[j] = prop
+        feature.pop('properties')
+
+    ldjsonData.pop('timeStamp','')
+    ldjsonData.pop('numberMatched','')
+    ldjsonData.pop('numberReturned','')
+    ldjsonData.pop('links','')
+
+    return json.dumps(ldjsonData)
+

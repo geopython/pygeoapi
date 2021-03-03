@@ -46,8 +46,8 @@ from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__
-from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
-                                  jsonldify_collection)
+from pygeoapi.linked_data import (geojson2geojsonld, geojson2recordjsonld,
+                                  jsonldify, jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.process.base import (
     ProcessorExecuteError
@@ -1028,7 +1028,11 @@ class API:
             return headers_, 200, content
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
-            content = geojson2geojsonld(self.config, content, dataset)
+            itemType = self.config['resources'][dataset].get('providers', [{}])[0].get('type','')
+            if itemType == 'record':
+                content = geojson2recordjsonld(self.config, content, dataset)
+            else:
+                content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
 
         return headers_, 200, to_json(content, self.pretty_print)
@@ -1152,8 +1156,13 @@ class API:
             return headers_, 200, content
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
-            content = geojson2geojsonld(
-                self.config, content, dataset, identifier=identifier
+            itemType = self.config['resources'][dataset].get('providers', [{}])[0].get('type','')
+            if itemType == 'record':
+                content = geojson2recordjsonld(self.config, content, 
+                                               dataset, identifier=identifier)
+            else:
+                content = geojson2geojsonld(
+                    self.config, content, dataset, identifier=identifier
             )
             return headers_, 200, content
 
