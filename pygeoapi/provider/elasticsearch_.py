@@ -30,6 +30,7 @@
 from collections import OrderedDict
 import json
 import logging
+from urllib.parse import urlparse
 
 from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
@@ -55,18 +56,39 @@ class ElasticsearchProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        url_tokens = self.data.split('/')
+        self.es_host, self.index_name = self.data.rsplit('/', 1)
 
         LOGGER.debug('Setting Elasticsearch properties')
-        self.es_host = url_tokens[2]
-        self.index_name = url_tokens[-1]
         self.is_gdal = False
 
         LOGGER.debug('host: {}'.format(self.es_host))
         LOGGER.debug('index: {}'.format(self.index_name))
 
+        self.type_name = 'FeatureCollection'
+        self.url_parsed = urlparse(self.es_host)
+
         LOGGER.debug('Connecting to Elasticsearch')
-        self.es = Elasticsearch(self.es_host)
+
+        if self.url_parsed.port is None:  # proxy to default HTTP(S) port
+            if self.url_parsed.scheme == 'https':
+                port = 443
+            else:
+                port = 80
+        else:  # was set explictly
+            port = self.url_parsed.port
+
+        url_settings = {
+            'scheme': self.url_parsed.scheme,
+            'host': self.url_parsed.hostname,
+            'port': port
+        }
+
+        if self.url_parsed.path:
+            url_settings['url_prefix'] = self.url_parsed.path
+
+        LOGGER.debug('URL settings: {}'.format(url_settings))
+        LOGGER.debug('Connecting to Elasticsearch')
+        self.es = Elasticsearch([url_settings])
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
