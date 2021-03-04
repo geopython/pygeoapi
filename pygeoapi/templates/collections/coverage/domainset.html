@@ -1,0 +1,37 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../">Collections</a>
+/ <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <h3>Coverage domain set</h3>
+      <h4>Axis labels</h4>
+      <ul>
+	{% for al in data['generalGrid']['axisLabels'] %}
+	<li>{{ al }}</li>
+	{% endfor %}
+      </ul>
+      <h4>Extent</h4>
+      <ul>
+        <li>minx: {{ data['generalGrid']['axis'][0]['lowerBound'] }}</li>
+	<li>miny: {{ data['generalGrid']['axis'][1]['lowerBound'] }}</li>
+        <li>maxx: {{ data['generalGrid']['axis'][0]['upperBound'] }}</li>
+        <li>maxy: {{ data['generalGrid']['axis'][1]['upperBound'] }}</li>
+        <li>Coordinate reference system: {{ data['generalGrid']['srsName'] }}</li>
+      </ul>
+      <h4>Size</h4>
+      <ul>
+        <li>width: {{ data['generalGrid']['gridLimits']['axis'][0]['upperBound'] }} </li>
+        <li>height: {{ data['generalGrid']['gridLimits']['axis'][1]['upperBound'] }} </li>
+      </ul>
+      <h4>Resolution</h4>
+      <ul>
+        <li>x: {{ data['generalGrid']['axis'][0]['resolution'] }} </li>
+        <li>y: {{ data['generalGrid']['axis'][1]['resolution'] }} </li>
+      </ul>
+    </section>
+{% endblock %}

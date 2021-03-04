@@ -5,7 +5,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -59,9 +59,9 @@ class SQLiteGPKGProvider(BaseProvider):
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
 
-        :returns: pygeoapi.providers.base.SQLiteProvider
+        :returns: pygeoapi.provider.base.SQLiteProvider
         """
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.application_id = None
@@ -88,12 +88,11 @@ class SQLiteGPKGProvider(BaseProvider):
         """
 
         if not self.fields:
-
             results = self.cursor.execute(
                 'PRAGMA table_info({})'.format(self.table)).fetchall()
-            [self.fields.update(
-                {item["name"]:item["type"].lower()}
-                ) for item in results]
+            for item in results:
+                self.fields[item['name']] = {'type': item['type']}
+
         return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
@@ -251,7 +250,8 @@ class SQLiteGPKGProvider(BaseProvider):
         return cursor
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -262,9 +262,12 @@ class SQLiteGPKGProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: GeoJSON FeaturesCollection
         """

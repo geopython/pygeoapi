@@ -21,14 +21,14 @@ main {
 /*    text-transform: capitalize;*/
 }
 
-#items-map {
+#items-map, #collection-map {
     width: 100%;
     height: 400px;
 }
 
 /* cancel mini-css header>button uppercase */
 header button, header [type="button"], header .button, header [role="button"] {
-      text-transform: none;
+    text-transform: none;
 }
 
 html, body {
@@ -46,4 +46,20 @@ main {
 
 table:not(.horizontal) {
     max-height: none;
+}
+
+mark.successful {
+  background-color: green;
+}
+
+mark.accepted {
+  background-color: default;
+}
+
+mark.failed {
+  background-color: red;
+}
+
+mark.running {
+  background-color: orange;
 }

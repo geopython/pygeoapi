@@ -5,7 +5,7 @@
 #          Mary Bucknell <mbucknell@usgs.gov>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -120,7 +120,9 @@ class DatabaseConnection:
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
-            self.fields = dict(result)
+
+            for k, v in dict(result).items():
+                self.fields[k] = {'type': v}
 
         return self
 
@@ -144,10 +146,10 @@ class PostgreSQLProvider(BaseProvider):
                              data contains the connection information
                              for class DatabaseCursor
 
-        :returns: pygeoapi.providers.base.PostgreSQLProvider
+        :returns: pygeoapi.provider.base.PostgreSQLProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
@@ -205,7 +207,8 @@ class PostgreSQLProvider(BaseProvider):
         return where_clause
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -215,9 +218,12 @@ class PostgreSQLProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: GeoJSON FeaturesCollection
         """

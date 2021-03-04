@@ -49,7 +49,11 @@ def fixture():
                 'type': 'Point',
                 'coordinates': [125.6, 10.1]},
             'properties': {
-                'name': 'Dinagat Islands'}}]}
+                'name': 'Dinagat Islands',
+                'foo': 'bar'
+            }}
+        ]
+    }
 
     with open(path, 'w') as fh:
         fh.write(json.dumps(data))
@@ -70,14 +74,20 @@ def test_query(fixture, config):
     p = GeoJSONProvider(config)
 
     fields = p.get_fields()
-    assert len(fields) == 1
-    assert fields['name'] == 'string'
+    assert len(fields) == 2
+    assert fields['name']['type'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 1
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
     assert results['features'][0]['id'] == '123-456'
+
+    results = p.query(select_properties=['foo'])
+    assert len(results['features'][0]['properties']) == 1
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
 
 
 def test_get(fixture, config):
@@ -139,16 +149,3 @@ def test_update(fixture, config):
     # Should be changed
     results = p.get('123-456')
     assert 'Null' in results['properties']['name']
-
-
-"""
-    def __init__(self, definition):
-        BaseProvider.__init__(self, definition)
-    def _load(self):
-    def query(self):
-    def get(self, identifier):
-    def create(self, new_feature):
-    def update(self, identifier, new_feature):
-    def delete(self, identifier):
-    def __repr__(self):
-"""

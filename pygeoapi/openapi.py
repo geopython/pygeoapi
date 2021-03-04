@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -44,11 +44,11 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi',  # noqa
-#    'oacov': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Sprint-August-2020/master/docs/Draft_Spring_Guide_for_OGC_API_Coverages/openapi'  # noqa
+    'oapip': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi',  # noqa
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
-    'oapit': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
-    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/OGC-API-Tiles/master/openapi/swaggerhub/map-tiles.yaml'  # noqa
+    'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
+    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
+    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi'  # noqa
 }
 
 
@@ -269,16 +269,31 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             },
-            'sortby': {
-                'name': 'sortby',
+            'properties': {
+                'name': 'properties',
                 'in': 'query',
-                'description': 'The optional sortby parameter indicates the sort property and order on which the server shall present results in the response document using the convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple properties is supported by providing a comma-separated list.',  # noqa
+                'description': 'The properties that should be included for each feature. The parameter value is a comma-separated list of property names.',  # noqa
                 'required': False,
-                'schema': {
-                    'type': 'string',
-                },
                 'style': 'form',
-                'explode': False
+                'explode': False,
+                'schema': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string'
+                    }
+                }
+            },
+            'skipGeometry': {
+                'name': 'skipGeometry',
+                'in': 'query',
+                'description': 'This option can be used to skip response geometries for each feature.',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'boolean',
+                    'default': False
+                }
             },
             'startindex': {
                 'name': 'startindex',
@@ -390,12 +405,26 @@ def get_oas_30(cfg):
             }
         }
 
-        LOGGER.debug('setting up feature endpoints')
+        LOGGER.debug('setting up collection endpoints')
         try:
+            ptype = None
+
+            if filter_providers_by_type(
+                    collections[k]['providers'], 'feature'):
+                ptype = 'feature'
+
+            if filter_providers_by_type(
+                    collections[k]['providers'], 'record'):
+                ptype = 'record'
+
             p = load_plugin('provider', get_provider_by_type(
-                            collections[k]['providers'], 'feature'))
+                            collections[k]['providers'], ptype))
 
             items_path = '{}/items'.format(collection_name_path)
+
+            coll_properties = deepcopy(oas['components']['parameters']['properties'])  # noqa
+
+            coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
             paths[items_path] = {
                 'get': {
@@ -407,8 +436,10 @@ def get_oas_30(cfg):
                         items_f,
                         {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        {'$ref': '#/components/parameters/sortby'},
-                        {'$ref': '#/components/parameters/startindex'}
+                        coll_properties,
+                        {'$ref': '#/components/parameters/skipGeometry'},
+                        {'$ref': '{}/parameters/sortby.yaml'.format(OPENAPI_YAML['oapir'])},  # noqa
+                        {'$ref': '#/components/parameters/startindex'},
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -419,6 +450,9 @@ def get_oas_30(cfg):
                 }
             }
 
+            if ptype == 'record':
+                paths[items_path]['get']['parameters'].append(
+                    {'$ref': '{}/parameters/q.yaml'.format(OPENAPI_YAML['oapir'])})  # noqa
             if p.fields:
                 queryables_path = '{}/queryables'.format(collection_name_path)
 
@@ -449,6 +483,10 @@ def get_oas_30(cfg):
 
                 if p.properties and field not in p.properties:
                     LOGGER.debug('Provider specified not to advertise property')  # noqa
+                    continue
+
+                if field == 'q' and ptype == 'record':
+                    LOGGER.debug('q parameter already declared, skipping')
                     continue
 
                 if type == 'date':
@@ -706,8 +744,9 @@ def get_oas_30(cfg):
             }
         }
 
-    LOGGER.debug('setting up processes')
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
+
+    has_manager = 'manager' in cfg['server']
 
     if processes:
         paths['/processes'] = {
@@ -725,6 +764,7 @@ def get_oas_30(cfg):
                 }
             }
         }
+        LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
             p = load_plugin('process', v['processor'])
@@ -811,6 +851,68 @@ def get_oas_30(cfg):
             }
             if 'example' in p.metadata:
                 paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+
+            name_in_path = {
+                'name': 'jobId',
+                'in': 'path',
+                'description': 'job identifier',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                }
+            }
+
+            if has_manager:
+                # TODO: define jobId as parameter in dict
+                paths[f'{process_name_path}/jobs/{{jobId}}'] = {
+                    'get': {
+                        'summary': 'Retrieve job details',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path,
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'operationId': f'get{k.capitalize()}Job',
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/200'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                    'delete': {
+                        'summary': 'Cancel / delete job',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path
+                        ],
+                        'operationId': f'delete{k.capitalize()}Job',
+                        'responses': {
+                            '204': {'$ref': '#/components/responses/204'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                }
+
+                paths[f'{process_name_path}/jobs/{{jobId}}/results'] = {
+                    'get': {
+                        'summary': 'Retrieve job results',
+                        'description': '',
+                        'tags': [k],
+                        'parameters': [
+                            name_in_path,
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'operationId': f'get{k.capitalize()}JobResults',
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/200'},
+                            '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
+                            'default': {'$ref': '#/components/responses/default'}  # noqa
+                        }
+                    },
+                }
 
     oas['paths'] = paths
 

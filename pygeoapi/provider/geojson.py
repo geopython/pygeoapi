@@ -3,6 +3,7 @@
 # Authors: Matthew Perry <perrygeo@gmail.com>
 #
 # Copyright (c) 2018 Matthew Perry
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -65,7 +66,7 @@ class GeoJSONProvider(BaseProvider):
     def __init__(self, provider_def):
         """initializer"""
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
         self.fields = self.get_fields()
 
     def get_fields(self):
@@ -81,10 +82,10 @@ class GeoJSONProvider(BaseProvider):
                 data = json.loads(src.read())
             fields = {}
             for f in data['features'][0]['properties'].keys():
-                fields[f] = 'string'
+                fields[f] = {'type': 'string'}
             return fields
 
-    def _load(self):
+    def _load(self, skip_geometry=None, select_properties=[]):
         """Load and validate the source GeoJSON file
         at self.data
 
@@ -106,10 +107,16 @@ class GeoJSONProvider(BaseProvider):
         for i in data['features']:
             if 'id' not in i and self.id_field in i['properties']:
                 i['id'] = i['properties'][self.id_field]
+            if skip_geometry:
+                i['geometry'] = None
+            if self.properties or select_properties:
+                i['properties'] = {k: v for k, v in i['properties'].items()
+                                   if k in set(self.properties) | set(select_properties)}  # noqa
         return data
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
         """
         query the provider
 
@@ -117,15 +124,19 @@ class GeoJSONProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime: temporal (datestamp or extent)
+        :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: FeatureCollection dict of 0..n GeoJSON features
         """
 
         # TODO filter by bbox without resorting to third-party libs
-        data = self._load()
+        data = self._load(skip_geometry=skip_geometry,
+                          select_properties=select_properties)
 
         data['numberMatched'] = len(data['features'])
 

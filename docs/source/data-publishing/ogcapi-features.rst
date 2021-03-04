@@ -15,16 +15,16 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties, resulttype, bbox, datetime, sortby
+   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
    :align: left
 
-   CSV,✔️ ,results/hits,❌,❌,❌
-   Elasticsearch,✔️ ,results/hits,✔️ ,✔️ ,✔️ 
-   GeoJSON,✔️ ,results/hits,❌,❌,❌
-   MongoDB,✔️ ,results,✔️ ,✔️ ,✔️ 
-   OGR,✔️ ,results/hits,✔️ ,❌,❌
-   PostgreSQL,✔️ ,results/hits,✔️ ,❌,❌
-   SQLiteGPKG,✔️ ,results/hits,✔️ ,❌,❌
+   CSV,❌,results/hits,❌,❌,❌,✅
+   Elasticsearch,✅,results/hits,✅,✅,✅,✅
+   GeoJSON,❌,results/hits,❌,❌,❌,❌
+   MongoDB,✅,results,✅,✅,✅,❌
+   OGR,✅,results/hits,✅,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,❌,❌
+   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -89,7 +89,49 @@ To publish an Elasticsearch index, the following are required in your index:
 OGR
 ^^^
 
-.. todo:: add overview and requirements
+`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,  
+but also services such as WFS. Read the full list and configuration options at https://gdal.org/drivers/vector.
+Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_, 
+use this driver for example for flat database files (CSV).
+
+The OGR provider requires a recent (3+) version of GDAL to be installed.
+
+.. code-block:: yaml
+
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: ESRI Shapefile
+            source: tests/data/dutch_addresses_shape_4326/inspireadressen.shp
+            source_options:
+              ADJUST_GEOM_TYPE: FIRST_SHAPE
+            gdal_ogr_options:
+              SHPT: POINT
+          id_field: fid
+          layer: inspireadressen
+
+
+.. code-block:: yaml
+
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: WFS
+            source: WFS:https://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+            source_options:
+                VERSION: 2.0.0
+                OGR_WFS_PAGING_ALLOWED: YES
+                OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+             gdal_ogr_options:
+                GDAL_CACHEMAX: 64
+                GDAL_HTTP_PROXY: (optional proxy)
+                GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                CPL_DEBUG: NO
+          id_field: gml_id
+          layer: rdinfo:stations
+
 
 MongoDB
 ^^^^^^^
@@ -176,6 +218,10 @@ Data access examples
   - http://localhost:5000/collections/foo/items?propertyname=foo
 - query features (temporal)
   - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
+- query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
+  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
+- query features (temporal) and sort descending by a property
+  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
 - fetch a specific feature
   - http://localhost:5000/collections/foo/items/123
 

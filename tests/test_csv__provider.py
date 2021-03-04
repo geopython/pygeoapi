@@ -66,8 +66,8 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 6
-    assert fields['value'] == 'string'
-    assert fields['stn_id'] == 'string'
+    assert fields['value']['type'] == 'string'
+    assert fields['stn_id']['type'] == 'string'
 
     results = p.query()
     assert len(results['features']) == 5
@@ -88,6 +88,15 @@ def test_query(config):
     assert results['features'][0]['id'] == '238'
 
     assert len(results['features'][0]['properties']) == 3
+
+    results = p.query(select_properties=['value'])
+    assert len(results['features'][0]['properties']) == 1
+
+    results = p.query(select_properties=['value', 'stn_id'])
+    assert len(results['features'][0]['properties']) == 2
+
+    results = p.query(skip_geometry=True)
+    assert results['features'][0]['geometry'] is None
 
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)

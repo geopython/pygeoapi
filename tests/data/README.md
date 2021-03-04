@@ -64,3 +64,16 @@ This directory provides test data to demonstrate functionality.
 - source: [NOAA Physical Sciences Library](https://psl.noaa.gov)
 - URL: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
 - License: ICOADS data provided by the NOAA/OAR/ESRL PSL, Boulder, Colorado, USA, from their Web site at https://psl.noaa.gov.
+
+### `analysed_sst.nc`
+- source: [NASA Physical Oceanography Distributed Active Archive Center](https://podaac.jpl.nasa.gov)
+- URL: https://registry.opendata.aws/mur
+- License: https://registry.opendata.aws/mur/#License
+
+### `open.canada.ca/sample-records.tinydb`
+
+- source: Open Data Canada
+- URL: https://csw.open.canada.ca/geonetwork/srv/csw?service=CSW&version=2.0.2&request=GetRecords&outputschema=http://www.isotc211.org/2005/gmd&resulttype=results (2021-02-18)
+- License: https://www.canada.ca/en/transparency/terms.html
+- Notes
+  - ISO records transformed to OGC API - Records GeoJSONs with `tests/load_tinydb_records.py`

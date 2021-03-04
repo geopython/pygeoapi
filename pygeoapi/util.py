@@ -32,6 +32,7 @@
 import base64
 from datetime import date, datetime, time
 from decimal import Decimal
+from enum import Enum
 import io
 import json
 import logging
@@ -41,13 +42,17 @@ import re
 from urllib.request import urlopen
 from urllib.parse import urlparse
 
+import dateutil.parser
 from jinja2 import Environment, FileSystemLoader
+from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
+
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 TEMPLATES = '{}{}templates'.format(os.path.dirname(
     os.path.realpath(__file__)), os.sep)
@@ -58,19 +63,19 @@ mimetypes.add_type('text/plain', '.yml')
 
 def dategetter(date_property, collection):
     """
-    Attempts to obtains a date value from a collection.
+    Attempts to obtain a date value from a collection.
 
     :param date_property: property representing the date
     :param collection: dictionary to check within
 
-    :returns: `str` (ISO8601) representing the date. ('..' if null or "now",
-        allowing for an open interval).
+    :returns: `str` (ISO8601) representing the date (allowing
+               for an open interval using null)
     """
 
     value = collection.get(date_property, None)
 
-    if value == 'now' or value is None:
-        return '..'
+    if value is None:
+        return None
 
     return value.isoformat()
 
@@ -164,6 +169,40 @@ def to_json(dict_, pretty=False):
                       indent=indent)
 
 
+def format_datetime(value, format_=DATETIME_FORMAT):
+    """
+    Parse datetime as ISO 8601 string; re-present it in particular format
+    for display in HTML
+
+    :param value: `str` of ISO datetime
+    :param format_: `str` of datetime format for strftime
+
+    :returns: string
+    """
+
+    if not isinstance(value, str) or not value.strip():
+        return ''
+
+    return dateutil.parser.isoparse(value).strftime(format_)
+
+
+def format_duration(start, end=None):
+    """
+    Parse a start and (optional) end datetime as ISO 8601 strings, calculate
+    the difference, and return that duration as a string.
+
+    :param start: `str` of ISO datetime
+    :param end: `str` of ISO datetime, defaults to `start` for a 0 duration
+
+    :returns: string
+    """
+    if not isinstance(start, str) or not start.strip():
+        return ''
+    end = end or start
+    duration = dateutil.parser.isoparse(end) - dateutil.parser.isoparse(start)
+    return str(duration)
+
+
 def get_path_basename(urlpath):
     """
     Helper function to derive file basename
@@ -227,9 +266,19 @@ def render_j2_template(config, template, data):
     :returns: string of rendered template
     """
 
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    custom_templates = False
+    try:
+        templates_path = config['server']['templates']['path']
+        env = Environment(loader=FileSystemLoader(templates_path))
+        custom_templates = True
+        LOGGER.debug('using custom templates: {}'.format(templates_path))
+    except (KeyError, TypeError):
+        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
+    env.filters['format_datetime'] = format_datetime
+    env.filters['format_duration'] = format_duration
     env.globals.update(to_json=to_json)
 
     env.filters['get_path_basename'] = get_path_basename
@@ -241,7 +290,17 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
-    template = env.get_template(template)
+    try:
+        template = env.get_template(template)
+    except TemplateNotFound as err:
+        if custom_templates:
+            LOGGER.debug(err)
+            LOGGER.debug('Custom template not found; using default')
+            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            template = env.get_template(template)
+        else:
+            raise
+
     return template.render(config=config, data=data, version=__version__)
 
 
@@ -351,6 +410,19 @@ def get_provider_default(providers):
 
     LOGGER.debug('Default provider: {}'.format(default['type']))
     return default
+
+
+class JobStatus(Enum):
+    """
+    Enum for the job status options specified in the WPS 2.0 specification
+    """
+
+    #  From the specification
+    accepted = 'accepted'
+    running = 'running'
+    successful = 'successful'
+    failed = 'failed'
+    dismissed = 'dismissed'
 
 
 def read_data(path):

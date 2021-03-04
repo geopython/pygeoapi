@@ -36,13 +36,22 @@ zappa undeploy -s zappa_settings.json
 ## node/serverless
 
 The included `serverless.yml` and `pygeoapi-serverless-config.yml` can be used to deploy pygeoapi
-on AWS Lambda Serverless Environment.
+on AWS Lambda Serverless Environment. 
 
 This requires Amazon Credentials and the Serverless deployment tool.
 
 AWS Credentials can be created following the instructions at https://serverless.com/framework/docs/providers/aws/guide/credentials/
 
+Move serverless configs to root directory:
+
+```bash
+mv serverless.yml ..
+mv pygeoapi-server-config.yml ..
+cd ..
+```
+
 To install the Serverless environment
+
 
 ```bash
 npm install serverless
@@ -53,6 +62,12 @@ The following serverless plugins are also used
 ```bash
 serverless plugin install -n serverless-python-requirements
 serverless plugin install -n serverless-wsgi
+```
+
+To test the application as a lambda locally:
+
+```bash
+serverless wsgi server
 ```
 
 To deploy to AWS Lambda:

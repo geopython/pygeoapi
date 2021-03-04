@@ -53,7 +53,7 @@ class CSVFormatter(BaseFormatter):
         if 'geom' in formatter_def:
             geom = formatter_def['geom']
 
-        BaseFormatter.__init__(self, {'name': 'csv', 'geom': geom})
+        super().__init__({'name': 'csv', 'geom': geom})
         self.mimetype = 'text/csv'
 
     def write(self, options={}, data=None):

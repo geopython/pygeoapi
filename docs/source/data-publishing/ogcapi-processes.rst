@@ -21,6 +21,39 @@ Configuration
            processor:
                name: HelloWorld
 
+Asynchronous support
+--------------------
+
+By default, pygeoapi implements process execution (jobs) as synchronous mode.  That is, when
+jobs are submitted, the process is executed and returned in real-time.  Certain processes
+that may take time to execute, or be delegated to a scheduler/queue, are better suited to
+an asynchronous design pattern.  This means that when a job is submitted in asynchronous
+mode, the server responds immediately with a reference to the job, which allows the client
+to periodically poll the server for the processing status of a given job.
+
+pygeoapi provides asynchronous support by providing a 'manager' concept which, well,
+manages job execution.  The manager concept is implemented as part of the pygeoapi
+:ref:`plugins` architecture.  pygeoapi provides a default manager implementation
+based on `TinyDB`_ for simplicity.  Custom manager plugins can be developed for more
+advanced job management capabilities (e.g. Kubernetes, databases, etc.).
+
+
+.. code-block:: yaml
+
+   server:
+       manager:
+           name: TinyDB
+           connection: /tmp/pygeoapi-process-manager.db
+           output_dir: /tmp/
+
+
+Putting it all together
+-----------------------
+
+To summarize how pygeoapi processes and managers work together::
+
+- process plugins implement the core processing / workflow functionality
+- manager plugins control and manage how processes are executed
 
 Processing examples
 -------------------
@@ -35,9 +68,11 @@ Processing examples
   - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
 - execute a job for the ``hello-world`` process with a raw response
   - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs?response=raw" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
-
+- execute a job for the ``hello-world`` process in asynchronous mode
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
 
 .. todo:: add more examples once OAProc implementation is complete
 
-.. _`OGC API - Processes`: https://github.com/opengeospatial/wps-rest-binding
+.. _`OGC API - Processes`: https://github.com/opengeospatial/ogcapi-processes
 .. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
+.. _`TinyDB`: https://tinydb.readthedocs.io

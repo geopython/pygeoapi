@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <gmd:MD_Metadata xmlns:gmd="http://www.isotc211.org/2005/gmd">
+    <gmd:fileIdentifier xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gco:CharacterString>d3028ad0-b0d0-47ff-bcc3-d383881e17cd</gco:CharacterString>
+    </gmd:fileIdentifier>
+    <gmd:language xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gco:CharacterString>eng; CAN</gco:CharacterString>
+    </gmd:language>
+    <gmd:characterSet xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gmd:MD_CharacterSetCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_95" codeListValue="RI_458">utf8; utf8</gmd:MD_CharacterSetCode>
+    </gmd:characterSet>
+    <gmd:parentIdentifier xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gco:CharacterString>6a6f314b-5272-4e7a-ac4e-8d372990f22f</gco:CharacterString>
+    </gmd:parentIdentifier>
+    <gmd:hierarchyLevel xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gmd:MD_ScopeCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_108" codeListValue="RI_622">dataset; jeuDonnées</gmd:MD_ScopeCode>
+    </gmd:hierarchyLevel>
+    <gmd:contact />
+    <gmd:dateStamp xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gco:DateTime>2019-03-18T14:30:21</gco:DateTime>
+    </gmd:dateStamp>
+    <gmd:metadataStandardName xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="gmd:PT_FreeText_PropertyType">
+      <gco:CharacterString>North American Profile of ISO 19115:2003 - Geographic information - Metadata</gco:CharacterString>
+      <gmd:PT_FreeText>
+        <gmd:textGroup>
+          <gmd:LocalisedCharacterString locale="#fra">Profil nord-américain de la norme ISO 19115:2003 - Information géographique - Métadonnées</gmd:LocalisedCharacterString>
+        </gmd:textGroup>
+      </gmd:PT_FreeText>
+    </gmd:metadataStandardName>
+    <gmd:metadataStandardVersion xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gco:CharacterString>CAN/CGSB-171.100-2009</gco:CharacterString>
+    </gmd:metadataStandardVersion>
+    <gmd:referenceSystemInfo xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gmd:MD_ReferenceSystem>
+        <gmd:referenceSystemIdentifier>
+          <gmd:RS_Identifier>
+            <gmd:code>
+              <gco:CharacterString>4326</gco:CharacterString>
+            </gmd:code>
+            <gmd:codeSpace>
+              <gco:CharacterString>EPSG</gco:CharacterString>
+            </gmd:codeSpace>
+            <gmd:version gco:nilReason="missing">
+              <gco:CharacterString />
+            </gmd:version>
+          </gmd:RS_Identifier>
+        </gmd:referenceSystemIdentifier>
+      </gmd:MD_ReferenceSystem>
+    </gmd:referenceSystemInfo>
+    <gmd:identificationInfo xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gmd:MD_DataIdentification>
+        <gmd:citation>
+          <gmd:CI_Citation>
+            <gmd:title xsi:type="gmd:PT_FreeText_PropertyType">
+              <gco:CharacterString>Critical Habitat for Species at Risk, British Columbia - Showy Phlox (Phlox speciosa ssp. occidentalis )</gco:CharacterString>
+              <gmd:PT_FreeText>
+                <gmd:textGroup>
+                  <gmd:LocalisedCharacterString locale="#fra">Habitat essentiel pour les espèces en péril, Colombie-Britannique - Phlox de l'Ouest (Phlox speciosa ssp. occidentalis)</gmd:LocalisedCharacterString>
+                </gmd:textGroup>
+              </gmd:PT_FreeText>
+            </gmd:title>
+            <gmd:date>
+              <gmd:CI_Date>
+                <gmd:date>
+                  <gco:Date>2017-03-03</gco:Date>
+                </gmd:date>
+                <gmd:dateType>
+                  <gmd:CI_DateTypeCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_87" codeListValue="RI_366">creation; création</gmd:CI_DateTypeCode>
+                </gmd:dateType>
+              </gmd:CI_Date>
+            </gmd:date>
+            <gmd:date>
+              <gmd:CI_Date>
+                <gmd:date>
+                  <gco:Date>2017-03-03</gco:Date>
+                </gmd:date>
+                <gmd:dateType>
+                  <gmd:CI_DateTypeCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_87" codeListValue="RI_367">publication; publication</gmd:CI_DateTypeCode>
+                </gmd:dateType>
+              </gmd:CI_Date>
+            </gmd:date>
+          </gmd:CI_Citation>
+        </gmd:citation>
+        <gmd:abstract xsi:type="gmd:PT_FreeText_PropertyType">
+          <gco:CharacterString>This dataset displays the geographic areas within which critical habitat for species at risk listed on Schedule 1 of the federal Species at Risk Act (SARA) occurs in British Columbia. However, not all of the area within these boundaries is necessarily critical habitat. To precisely define what constitutes critical habitat for a particular species it is essential that this geo-spatial information be considered in conjunction with complementary information provided in a species’ recovery document. Recovery documents are available from the Species at Risk (SAR) Public Registry (http://www.sararegistry.gc.ca). The recovery documents contain important information about the interpretation of the geo-spatial information, especially regarding the biological and environmental features (“biophysical attributes”) that complete the definition of a species’ critical habitat.
+
+Each species’ dataset is part of a larger collection of critical habitat data that is available for download. The collection includes both “final” and “proposed” critical habitat as it is depicted in the recovery documents. “Proposed” critical habitat depicted in proposed recovery documents has not been formally identified and is subject to change before it is posted as final. Despite the use of the term “final”, it is important to note that recovery documents (and therefore critical habitat) may be amended from time to time. Species are added as the data becomes ready, which may occur after the recovery document has been posted on the SAR Public Registry. You should always consider the SAR Public Registry as the main source for critical habitat information. In cases where the data is sensitive (e.g. species noted in the List of Species and Ecosystems Susceptible to Persecution or Harm that are managed by the Province of British Columbia), the geographic area within which critical habitat occurs may be represented as “grid squares”. These are coarse (1, 10, 50 or 100 km2) squares based on a UTM grid that serve as a flag to review the associated species’ recovery document. To reiterate, not all of the area within these boundaries is necessarily critical habitat. 
+
+Critical habitat is defined in the federal Species at Risk Act (SARA) as “the habitat that is necessary for the survival or recovery of a listed wildlife species and that is identified as the species’ critical habitat in the recovery strategy or action plan for the species”. Critical habitat identification alone is not an automatic “protection” designation. Federal or non-federal laws or bylaws may be in place to provide protection.</gco:CharacterString>
+          <gmd:PT_FreeText>
+            <gmd:textGroup>
+              <gmd:LocalisedCharacterString locale="#fra">Cet ensemble de données présente les zones géographiques au sein desquelles l’habitat essentiel d’espèces en péril inscrites à l’annexe 1 de la Loi sur les espèces en péril (LEP) du Canada est présent en Colombie-Britannique. Toutefois, l’ensemble d’une zone en particulier ne fait pas nécessairement partie de l’habitat essentiel. Afin de déterminer avec précision l’habitat essentiel d’une espèce donnée, il est crucial de considérer ces données géospatiales conjointement avec des renseignements supplémentaires contenus dans le document de rétablissement de l’espèce. Les documents de rétablissement peuvent être téléchargés à partir du Registre public des espèces en péril (http://www.sararegistry.gc.ca). Ces documents renferment des renseignements importants sur l’interprétation de l’information géospatiale, particulièrement en ce qui concerne les caractéristiques biologiques et environnementales (« attributs biophysiques ») qui complètent la définition de l’habitat essentiel d’une espèce.
+
+L’ensemble de données de chacune des espèces fait partie d’un ensemble de données plus vaste sur l’habitat essentiel, qui est téléchargeable. Cet ensemble de données indique à la fois l’habitat essentiel « proposé » et l’habitat essentiel « final », tels qu’ils sont décrits dans les documents de rétablissement. L’habitat essentiel « proposé » dans une proposition de document de rétablissement n’est pas désigné de manière officielle et pourrait être modifié avant la publication de la version définitive du document de rétablissement. Malgré l’utilisation du terme « définitif », il est important de mentionner que les documents de rétablissement (et, par conséquent, l’habitat essentiel) sont appelés à être modifiés à l’occasion. Des espèces sont ajoutées à mesure que de nouvelles données sont disponibles, ce qui peut se produire après la publication du document de rétablissement dans le Registre public des espèces en péril. Ce Registre doit toujours être considéré comme étant la principale source de renseignements sur l’habitat essentiel. Dans les cas où les données sont sensibles (p. ex. espèces figurant dans la liste « Species and Ecosystems Susceptible to Persecution or Harm » [espèces et écosystèmes exposés à des risques de persécution ou de préjudice] gérées par la Colombie-Britannique), la zone géographique qui contient l’habitat essentiel peut être représentée par des « carrés au sein d’un quadrillage ». Ces carrés grossiers (de 1, 10, 50 ou 100 km2) fondés sur un quadrillage UTM servent d’indicateurs pour l’examen du document de rétablissement de l’espèce pertinente. Encore une fois, l’ensemble d’une zone en particulier ne fait pas nécessairement partie de l’habitat essentiel. 
+
+L’habitat essentiel est défini dans la Loi sur les espèces en péril (LEP) fédérale comme étant « l’habitat nécessaire à la survie ou au rétablissement d’une espèce sauvage inscrite, qui est désigné comme tel dans un programme de rétablissement ou un plan d’action élaboré à l’égard de l’espèce ». La désignation seule d’habitat essentiel ne donne pas lieu automatiquement à une désignation de « protection ». Des lois fédérales ou non fédérales ou des règlements administratifs peuvent être en place pour offrir une protection.</gmd:LocalisedCharacterString>
+            </gmd:textGroup>
+          </gmd:PT_FreeText>
+        </gmd:abstract>
+        <gmd:pointOfContact>
+          <gmd:CI_ResponsibleParty>
+            <gmd:individualName gco:nilReason="missing">
+              <gco:CharacterString />
+            </gmd:individualName>
+            <gmd:organisationName xsi:type="gmd:PT_FreeText_PropertyType">
+              <gco:CharacterString>Government of Canada; Environment and Climate Change Canada</gco:CharacterString>
+              <gmd:PT_FreeText>
+                <gmd:textGroup>
+                  <gmd:LocalisedCharacterString locale="#fra">Gouvernement du Canada; Environnement et Changement climatique Canada</gmd:LocalisedCharacterString>
+                </gmd:textGroup>
+              </gmd:PT_FreeText>
+            </gmd:organisationName>
+            <gmd:positionName>
+              <gco:CharacterString>Geospatial Analysis Specialist</gco:CharacterString>
+            </gmd:positionName>
+            <gmd:contactInfo>
+              <gmd:CI_Contact>
+                <gmd:phone>
+                  <gmd:CI_Telephone>
+                    <gmd:voice xsi:type="gmd:PT_FreeText_PropertyType" gco:nilReason="missing">
+                      <gco:CharacterString />
+                      <gmd:PT_FreeText>
+                        <gmd:textGroup>
+                          <gmd:LocalisedCharacterString locale="#fra" />
+                        </gmd:textGroup>
+                      </gmd:PT_FreeText>
+                    </gmd:voice>
+                    <gmd:facsimile gco:nilReason="missing">
+                      <gco:CharacterString />
+                    </gmd:facsimile>
+                  </gmd:CI_Telephone>
+                </gmd:phone>
+                <gmd:address>
+                  <gmd:CI_Address>
+                    <gmd:deliveryPoint xsi:type="gmd:PT_FreeText_PropertyType" gco:nilReason="missing">
+                      <gco:CharacterString />
+                      <gmd:PT_FreeText>
+                        <gmd:textGroup>
+                          <gmd:LocalisedCharacterString locale="#fra" />
+                        </gmd:textGroup>
+                      </gmd:PT_FreeText>
+                    </gmd:deliveryPoint>
+                    <gmd:city gco:nilReason="missing">
+                      <gco:CharacterString />
+                    </gmd:city>
+                    <gmd:administrativeArea xsi:type="gmd:PT_FreeText_PropertyType">
+                      <gco:CharacterString />
+                      <gmd:PT_FreeText>
+                        <gmd:textGroup>
+                          <gmd:LocalisedCharacterString locale="#fra" />
+                        </gmd:textGroup>
+                      </gmd:PT_FreeText>
+                    </gmd:administrativeArea>
+                    <gmd:postalCode gco:nilReason="missing">
+                      <gco:CharacterString />
+                    </gmd:postalCode>
+                    <gmd:country xsi:type="gmd:PT_FreeText_PropertyType">
+                      <gco:CharacterString>Canada</gco:CharacterString>
+                      <gmd:PT_FreeText>
+                        <gmd:textGroup>
+                          <gmd:LocalisedCharacterString locale="#fra">Canada (le)</gmd:LocalisedCharacterString>
+                        </gmd:textGroup>
+                      </gmd:PT_FreeText>
+                    </gmd:country>
+                    <gmd:electronicMailAddress xsi:type="gmd:PT_FreeText_PropertyType">
+                      <gco:CharacterString>ec.sigrep-gissarr.ec@canada.ca</gco:CharacterString>
+                      <gmd:PT_FreeText>
+                        <gmd:textGroup>
+                          <gmd:LocalisedCharacterString locale="#fra">ec.sigrep-gissarr.ec@canada.ca</gmd:LocalisedCharacterString>
+                        </gmd:textGroup>
+                      </gmd:PT_FreeText>
+                    </gmd:electronicMailAddress>
+                  </gmd:CI_Address>
+                </gmd:address>
+                <gmd:onlineResource>
+                  <gmd:CI_OnlineResource>
+                    <gmd:linkage gco:nilReason="missing">
+                      <gmd:URL />
+                    </gmd:linkage>
+                  </gmd:CI_OnlineResource>
+                </gmd:onlineResource>
+                <gmd:hoursOfService gco:nilReason="missing">
+                  <gco:CharacterString />
+                </gmd:hoursOfService>
+              </gmd:CI_Contact>
+            </gmd:contactInfo>
+            <gmd:role>
+              <gmd:CI_RoleCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_90" codeListValue="RI_414">pointOfContact; contact</gmd:CI_RoleCode>
+            </gmd:role>
+          </gmd:CI_ResponsibleParty>
+        </gmd:pointOfContact>
+        <gmd:graphicOverview>
+          <gmd:MD_BrowseGraphic>
+            <gmd:fileName>
+              <gco:CharacterString>https://csw.open.canada.ca/geonetwork/srv/api/records/d3028ad0-b0d0-47ff-bcc3-d383881e17cd/attachments/getmap.png</gco:CharacterString>
+            </gmd:fileName>
+          </gmd:MD_BrowseGraphic>
+        </gmd:graphicOverview>
+        <gmd:resourceConstraints>
+          <gmd:MD_LegalConstraints>
+            <gmd:accessConstraints>
+              <gmd:MD_RestrictionCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_107" codeListValue="RI_606">license; licence</gmd:MD_RestrictionCode>
+            </gmd:accessConstraints>
+          </gmd:MD_LegalConstraints>
+        </gmd:resourceConstraints>
+        <gmd:spatialRepresentationType>
+          <gmd:MD_SpatialRepresentationTypeCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_109" codeListValue="RI_635">vector; vecteur</gmd:MD_SpatialRepresentationTypeCode>
+        </gmd:spatialRepresentationType>
+        <gmd:language>
+          <gco:CharacterString>eng; CAN</gco:CharacterString>
+        </gmd:language>
+        <gmd:characterSet>
+          <gmd:MD_CharacterSetCode codeList="http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#IC_95" codeListValue="RI_458">utf8; utf8</gmd:MD_CharacterSetCode>
+        </gmd:characterSet>
+        <gmd:topicCategory>
+          <gmd:MD_TopicCategoryCode>biota</gmd:MD_TopicCategoryCode>
+        </gmd:topicCategory>
+        <gmd:extent>
+          <gmd:EX_Extent>
+            <gmd:geographicElement>
+              <gmd:EX_GeographicBoundingBox>
+                <gmd:westBoundLongitude>
+                  <gco:Decimal>-122.12613603204979</gco:Decimal>
+                </gmd:westBoundLongitude>
+                <gmd:eastBoundLongitude>
+                  <gco:Decimal>-121.64072726483376</gco:Decimal>
+                </gmd:eastBoundLongitude>
+                <gmd:southBoundLatitude>
+                  <gco:Decimal>48.98088195331109</gco:Decimal>
+                </gmd:southBoundLatitude>
+                <gmd:northBoundLatitude>
+                  <gco:Decimal>49.17536883527604</gco:Decimal>
+                </gmd:northBoundLatitude>
+              </gmd:EX_GeographicBoundingBox>
+            </gmd:geographicElement>
+          </gmd:EX_Extent>
+        </gmd:extent>
+      </gmd:MD_DataIdentification>
+    </gmd:identificationInfo>
+    <gmd:distributionInfo xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gfc="http://www.isotc211.org/2005/gfc" xmlns:geonet="http://www.fao.org/geonetwork" xmlns:gmi="http://www.isotc211.org/2005/gmi" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:napec="http://www.ec.gc.ca/data_donnees/standards/schemas/napec" xmlns:napm="http://www.geconnections.org/nap/napMetadataTools/napXsd/napm" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns="http://www.isotc211.org/2005/gmd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <gmd:MD_Distribution>
+        <gmd:distributionFormat>
+          <gmd:MD_Format>
+            <gmd:name>
+              <gco:CharacterString>SHP</gco:CharacterString>
+            </gmd:name>
+            <gmd:version>
+              <gco:CharacterString>1.0</gco:CharacterString>
+            </gmd:version>
+          </gmd:MD_Format>
+        </gmd:distributionFormat>
+        <gmd:distributionFormat>
+          <gmd:MD_Format>
+            <gmd:name>
+              <gco:CharacterString>CSV</gco:CharacterString>
+            </gmd:name>
+            <gmd:version>
+              <gco:CharacterString>1.0</gco:CharacterString>
+            </gmd:version>
+          </gmd:MD_Format>
+        </gmd:distributionFormat>
+        <gmd:distributionFormat>
+          <gmd:MD_Format>
+            <gmd:name>
+              <gco:CharacterString>JSON</gco:CharacterString>
+            </gmd:name>
+            <gmd:version>
+              <gco:CharacterString>1.0</gco:CharacterString>
+            </gmd:version>
+          </gmd:MD_Format>
+        </gmd:distributionFormat>
+        <gmd:transferOptions>
+          <gmd:MD_DigitalTransferOptions>
+            <gmd:onLine xlink:role="urn:xml:lang:eng-CAN">
+              <gmd:CI_OnlineResource>
+                <gmd:linkage>
+                  <gmd:URL>https://maps-cartes.ec.gc.ca/arcgis/rest/services/BC_CriticalHabitat_CB_HabitatEssentiel/MapServer/68</gmd:URL>
+                </gmd:linkage>
+              </gmd:CI_OnlineResource>
+            </gmd:onLine>
+          </gmd:MD_DigitalTransferOptions>
+        </gmd:transferOptions>
+        <gmd:transferOptions>
+          <gmd:MD_DigitalTransferOptions>
+            <gmd:onLine xlink:role="urn:xml:lang:eng-CAN">
+              <gmd:CI_OnlineResource>
+                <gmd:linkage>
+                  <gmd:URL>https://maps-cartes.ec.gc.ca/arcgis/services/BC_CriticalHabitat_CB_HabitatEssentiel/MapServer/WMSServer?request=GetCapabilities&amp;service=WMS&amp;layers=3&amp;legend_format=image/png&amp;feature_info_type=text/html</gmd:URL>
+                </gmd:linkage>
+              </gmd:CI_OnlineResource>
+            </gmd:onLine>
+          </gmd:MD_DigitalTransferOptions>
+        </gmd:transferOptions>
+        <gmd:transferOptions>
+          <gmd:MD_DigitalTransferOptions>
+            <gmd:onLine xlink:role="urn:xml:lang:fra-CAN">
+              <gmd:CI_OnlineResource>
+                <gmd:linkage>
+                  <gmd:URL>https://maps-cartes.ec.gc.ca/arcgis/rest/services/BC_CriticalHabitat_CB_HabitatEssentiel/MapServer/68</gmd:URL>
+                </gmd:linkage>
+              </gmd:CI_OnlineResource>
+            </gmd:onLine>
+          </gmd:MD_DigitalTransferOptions>
+        </gmd:transferOptions>
+        <gmd:transferOptions>
+          <gmd:MD_DigitalTransferOptions>
+            <gmd:onLine xlink:role="urn:xml:lang:fra-CAN">
+              <gmd:CI_OnlineResource>
+                <gmd:linkage>
+                  <gmd:URL>https://maps-cartes.ec.gc.ca/arcgis/services/BC_CriticalHabitat_CB_HabitatEssentiel/MapServer/WMSServer?request=GetCapabilities&amp;service=WMS&amp;layers=3&amp;legend_format=image/png&amp;feature_info_type=text/html</gmd:URL>
+                </gmd:linkage>
+              </gmd:CI_OnlineResource>
+            </gmd:onLine>
+          </gmd:MD_DigitalTransferOptions>
+        </gmd:transferOptions>
+      </gmd:MD_Distribution>
+    </gmd:distributionInfo>
+  </gmd:MD_Metadata>

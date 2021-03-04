@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../../../collections">Collections</a>
+/ <a href="../../../{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="../../../{{ data['id'] }}/tiles">Tiles</a>
+/ <a href="../../../{{ data['id'] }}/tiles/{{ data['tileset'] }}/metadata">Tile Metadata</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <p>
+        {% for kw in data['keywords'] %}
+          <mark class="tag">{{ kw }}</mark>
+        {% endfor %}
+      </p>
+      <h3>Tiles metadata - {{ data['format'] }} format</h3>
+      <h4>Tileset {{ data['tileset'] }}</h4>
+      <ul>
+      {% for metadata in data['metadata'].items() %}
+        <li>{{ metadata[0] }} (<code>{{ metadata[1] }}</code>)</li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}

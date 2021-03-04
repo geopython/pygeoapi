@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../processes">Processes</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="process" itemscope itemtype="https://schema.org/WebAPI">
+      <h2 itemprop="name">{{ data['title'] }}</h2>
+      <div itemprop="description">{{data.description}}</div>
+      <p itemprop="keywords">
+          {% for kw in data['keywords'] %}
+            <mark class="tag">{{ kw }}</mark>
+          {% endfor %}
+      </p>
+      <meta itemprop="url" content="{{config.server.url}}/processes/{{data.id}}" />
+      <div class="row">
+        <div class="col-sm-12 col-md-12">
+          <table class="striped hoverable">
+            <caption>Inputs</caption>
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Data Type</th>
+              <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+              {% for input_ in data['inputs'] %}
+              <tr itemprop="parameter" itemscope>
+                <td itemprop="id" data-label="ID">
+                  {{ input_.id }}
+                </td>
+                <td itemprop="name" data-label="Title">
+                  {{ input_.title|striptags|truncate }}
+                </td>
+                <td itemprop="name" data-label="Title">
+                  {% with literalDataDomain = input_.input.literalDataDomain %}
+                    {% if literalDataDomain %}
+                      {{ literalDataDomain.dataType }}
+                    {% else %}
+                      {% for format in input_.input.formats %}
+                        {{ format.mimeType }}{% if not loop.last %},{% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td itemprop="description" data-label="Description">
+                  {{ input_.abstract }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="col-sm-12 col-md-12">
+          <table class="striped hoverable">
+            <caption>Outputs</caption>
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+              {% for output_ in data['outputs'] %}
+              <tr itemprop="parameter" itemscope>
+                <td itemprop="id" data-label="ID">{{ output_['id'] }}</td>
+                <td itemprop="name" data-label="Title">{{ output_['title'] }}</td>
+                <td itemprop="description" data-label="Description">
+                  {{ output_['description'] | striptags | truncate }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h2>Execution modes</h2>
+          <ul>
+            {% if 'sync-execute' in data.jobControlOptions %}<li>Synchronous</li>{% endif %}
+            {% if 'async-execute' in data.jobControlOptions %}<li>Asynchronous</li>{% endif %}
+          </ul>
+          <h2>Jobs</h2>
+          <a title="Browse jobs" href="{{config.server.url}}/processes/{{data.id}}/jobs">Browse jobs</a>
+          <h2>Links</h2>
+          <ul>
+            {% for link in data['links'] %}
+                <li>
+                  <a title={{link.title}} type={{link.type}} rel={{link.rel}} href={{link.href}} hreflang={{link.hreflang}}>
+                    {{ link['title'] }} ({{ link['type'] }})
+                  </a>
+                </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+{% endblock %}

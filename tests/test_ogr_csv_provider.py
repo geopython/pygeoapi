@@ -76,8 +76,8 @@ def test_get_fields_vsicurl(config_vsicurl_csv):
 
     p = OGRProvider(config_vsicurl_csv)
     results = p.get_fields()
-    assert results['denominazione_regione'] == 'string'
-    assert results['totale_positivi'] == 'string'
+    assert results['denominazione_regione']['type'] == 'string'
+    assert results['totale_positivi']['type'] == 'string'
 
 
 def test_get_vsicurl(config_vsicurl_csv):

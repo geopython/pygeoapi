@@ -15,11 +15,11 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, rangeSubset, subset
+   :header: Provider, rangeSubset, subset, bbox, datetime
    :align: left
 
-   rasterio,✔️,✔️
-   xarray,✔️,✔️
+   rasterio,✅,✅,✅,
+   xarray,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -52,7 +52,7 @@ capable of handling.
 xarray
 ^^^^^^
 
-The `xarray`_ provider plugin reads and extracts `NetCDF`_ data.
+The `xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
 
 .. code-block:: yaml
 
@@ -68,6 +68,18 @@ The `xarray`_ provider plugin reads and extracts `NetCDF`_ data.
          format:
             name: netcdf
             mimetype: application/x-netcdf
+
+   providers:
+       - type: coverage
+         name: xarray
+         data: tests/data/analysed_sst.zarr
+         format:
+            name: zarr
+            mimetype: application/zip
+
+.. note::
+   `Zarr`_ files are directories with files and subdirectories.  Therefore
+    a zip file is returned upon request for said format.
 
 Data access examples
 --------------------
@@ -89,8 +101,9 @@ Data access examples
 - coverage access with subsetting
   - http://localhost:5000/collections/foo/coverage?subset=lat(10,20)&subset=long(10,20)
 
-.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
+.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
 .. _`xarray`: https://xarray.pydata.org
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
+.. _`Zarr`: https://zarr.readthedocs.io/en/stable
 .. _`GDAL raster driver short name`: https://gdal.org/drivers/raster/index.html

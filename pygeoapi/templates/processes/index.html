@@ -1,0 +1,35 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} Processes {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="./processes">Processes</a>
+{% endblock %}
+{% block body %}
+    <section id="processes">
+      <h2>Processes in this service</h2>
+      <div class="row">
+        <div class="col-sm-12 col-md-6">
+          <table class="striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in data['processes'] %}
+              <tr itemscope itemtype="https://schema.org/WebAPI">
+                <td itemprop="name" data-label="name">
+                  <meta itemprop="url" content="{{ config['server']['url'] }}/processes/{{ p['id'] }}" />
+                  <a title="{{ p['title'] | striptags | truncate }}" href="{{ config['server']['url'] }}/processes/{{ p['id'] }}">{{ p['title'] | striptags | truncate }}</a>
+                </td>
+                <td itemprop="description" data-label="description">
+                  {{ p['description'] | striptags | truncate }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+{% endblock %}

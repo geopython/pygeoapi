@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "_base.html" %}
 {% block title %}{{ super() }} stac/{{ data['path'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="{{ config['server']['url'] }}/stac">SpatioTemporal Asset Catalog</a>
@@ -34,11 +34,10 @@
                   </thead>
                   <tbody>
                   {% for k, link in data['assets'].items() %}
-                  <tr itemprop="dataset" itemscope itemtype="https://schema.org/Dataset">
+                  <tr>
                     <td data-label="name">
-                      <meta itemprop="url" content="{{ link['href'] }}"/>
                       <a title="{{ link['href'] }}" href="{{ link['href'] }}">
-                      <span itemprop="name">{{ link['href'] | get_path_basename }}</span></a>
+                      <span>{{ link['href'] | get_path_basename }}</span></a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -80,8 +79,6 @@
             </tbody>
             </table>
         </div>
-     </div>
-      </tbody>
       </div>
     </section>
 {% endblock %}
@@ -96,10 +93,13 @@
             attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
-    var geojson_data = {{ data |to_json }};
-    var items = new L.GeoJSON(geojson_data);
-
-    map.addLayer(items);
-    map.fitBounds(items.getBounds(), {maxZoom: 10});
+    var bbox_layer = L.polygon([
+        [{{ data['bbox'][1] }}, {{ data['bbox'][0] }}],
+        [{{ data['bbox'][3] }}, {{ data['bbox'][0] }}],
+        [{{ data['bbox'][3] }}, {{ data['bbox'][2] }}],
+        [{{ data['bbox'][1] }}, {{ data['bbox'][2] }}],
+    ]);
+    map.addLayer(bbox_layer);
+    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
     </script>
 {% endblock %}

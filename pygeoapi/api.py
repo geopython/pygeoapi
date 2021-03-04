@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -32,12 +32,15 @@
 Returns content from plugins and sets reponses
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
+from functools import partial
 import json
 import logging
 import os
+import uuid
 import re
 import urllib.parse
+from copy import deepcopy
 
 from dateutil.parser import parse as dateparse
 import pytz
@@ -46,6 +49,9 @@ from pygeoapi import __version__
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
+from pygeoapi.process.base import (
+    ProcessorExecuteError
+)
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -55,10 +61,11 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
-from pygeoapi.util import (dategetter, filter_dict_by_key_value,
-                           get_provider_by_type, get_provider_default,
-                           get_typed_value, render_j2_template, TEMPLATES,
-                           to_json)
+from pygeoapi.util import (dategetter, DATETIME_FORMAT,
+                           filter_dict_by_key_value, get_provider_by_type,
+                           get_provider_default, get_typed_value, JobStatus,
+                           json_serial, render_j2_template, str2bool,
+                           TEMPLATES, to_json)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -78,9 +85,16 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
     'http://www.opengis.net/spec/ogcapi_coverages-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html'
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/core',
-    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections'
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html'
 ]
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
@@ -88,7 +102,7 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 def pre_process(func):
     """
-        Decorator performing header copy and format\
+        Decorator performing header copy and format
         checking before sending arguments to methods
 
         :param func: decorated function
@@ -134,6 +148,21 @@ class API:
 
         setup_logger(self.config['logging'])
 
+        # TODO: add as decorator
+        if 'manager' in self.config['server']:
+            manager_def = self.config['server']['manager']
+        else:
+            LOGGER.info('No process manager defined; starting dummy manager')
+            manager_def = {
+                'name': 'Dummy',
+                'connection': None,
+                'output_dir': None
+            }
+
+        LOGGER.debug('Loading process manager {}'.format(manager_def['name']))
+        self.manager = load_plugin('process_manager', manager_def)
+        LOGGER.info('Process manager plugin loaded')
+
     @pre_process
     @jsonldify
     def landing_page(self, headers_, format_):
@@ -148,12 +177,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         fcm = {
             'links': [],
@@ -242,12 +268,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
 
@@ -277,12 +300,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         conformance = {
             'conformsTo': CONFORMANCE
@@ -311,12 +331,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         fcm = {
             'collections': [],
@@ -327,12 +344,9 @@ class API:
                                                'type', 'collection')
 
         if all([dataset is not None, dataset not in collections.keys()]):
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
@@ -410,9 +424,9 @@ class API:
                     self.config['server']['url'], k)
             })
 
-            if collection_data_type == 'feature':
-                collection['itemType'] = collection_data_type.capitalize()
-                LOGGER.debug('Adding feature based links')
+            if collection_data_type in ['feature', 'record']:
+                collection['itemType'] = collection_data_type
+                LOGGER.debug('Adding feature/record based links')
                 collection['links'].append({
                     'type': 'application/json',
                     'rel': 'queryables',
@@ -513,16 +527,12 @@ class API:
                     LOGGER.debug('Creating extended coverage metadata')
                     try:
                         p = load_plugin('provider', get_provider_by_type(
-                            self.config['resources'][dataset]['providers'],
+                            self.config['resources'][k]['providers'],
                             'coverage'))
                     except ProviderConnectionError:
-                        exception = {
-                           'code': 'NoApplicableCode',
-                           'description': 'connection error (check logs)'
-                        }
-                        LOGGER.error(exception)
-                        return headers_, 500, to_json(exception,
-                                                      self.pretty_print)
+                        msg = 'connection error (check logs)'
+                        return self.get_exception(
+                            500, headers_, format_, 'NoApplicableCode', msg)
 
                     collection['crs'] = [p.crs]
                     collection['domainset'] = p.get_coverage_domainset()
@@ -584,11 +594,12 @@ class API:
 
             headers_['Content-Type'] = 'text/html'
             if dataset is not None:
-                content = render_j2_template(self.config, 'collection.html',
+                content = render_j2_template(self.config,
+                                             'collections/collection.html',
                                              fcm)
             else:
-                content = render_j2_template(self.config, 'collections.html',
-                                             fcm)
+                content = render_j2_template(self.config,
+                                             'collections/index.html', fcm)
 
             return headers_, 200, content
 
@@ -624,45 +635,42 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection queryables')
-        LOGGER.debug('Loading provider')
         try:
+            LOGGER.debug('Loading feature provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            LOGGER.debug('Loading record provider')
+            p = load_plugin('provider', get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'record'))
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         queryables = {
-            'queryables': []
+            'type': 'object',
+            'title': self.config['resources'][dataset]['title'],
+            'properties': {},
+            '$schema': 'http://json-schema.org/draft/2019-09/schema',
+            '$id': '{}/collections/{}/queryables'.format(
+                self.config['server']['url'], dataset)
         }
 
         for k, v in p.fields.items():
@@ -674,15 +682,18 @@ class API:
                 show_field = True
 
             if show_field:
-                queryables['queryables'].append({
-                    'queryable': k,
-                    'type': v
-                })
+                queryables['properties'][k] = {
+                    'title': k,
+                    'type': v['type']
+                }
+                if 'values' in v:
+                    queryables['properties'][k]['enum'] = v['values']
 
         if format_ == 'html':  # render
             queryables['title'] = self.config['resources'][dataset]['title']
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'queryables.html',
+            content = render_j2_template(self.config,
+                                         'collections/queryables.html',
                                          queryables)
 
             return headers_, 200, content
@@ -705,30 +716,25 @@ class API:
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
-                               'resulttype', 'datetime', 'sortby']
+                               'resulttype', 'datetime', 'sortby',
+                               'properties', 'skipGeometry', 'q']
         formats = FORMATS
         formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
 
-        if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
-
         format_ = check_format(args, headers)
 
         if format_ is not None and format_ not in formats:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        if dataset not in collections.keys():
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -736,24 +742,16 @@ class API:
         try:
             startindex = int(args.get('startindex'))
             if startindex < 0:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'startindex value should be positive ' +
-                                   'or zero'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
-        except (TypeError) as err:
+                msg = 'startindex value should be positive or zero'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        except TypeError as err:
             LOGGER.warning(err)
             startindex = 0
-        except ValueError as err:
-            LOGGER.warning(err)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'startindex value should be an integer'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        except ValueError:
+            msg = 'startindex value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing limit parameter')
         try:
@@ -761,146 +759,79 @@ class API:
             # TODO: We should do more validation, against the min and max
             # allowed by the server configuration
             if limit <= 0:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'limit value should be strictly positive'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'limit value should be strictly positive'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
-        except ValueError as err:
-            LOGGER.warning(err)
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'limit value should be an integer'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        except ValueError:
+            msg = 'limit value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         resulttype = args.get('resulttype') or 'results'
 
         LOGGER.debug('Processing bbox parameter')
-        try:
-            bbox = args.get('bbox').split(',')
-            if len(bbox) != 4:
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'bbox values should be minx,miny,maxx,maxy'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
-        except AttributeError:
+
+        bbox = args.get('bbox')
+
+        if bbox is None:
             bbox = []
-        try:
-            bbox = [float(c) for c in bbox]
-        except ValueError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'bbox values must be numbers'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
-        # TODO: pass datetime to query as a `datetime` object
-        # we would need to ensure partial dates work accordingly
-        # as well as setting '..' values to `None` so that underlying
-        # providers can just assume a `datetime.datetime` object
-        #
-        # NOTE: needs testing when passing partials from API to backend
         datetime_ = args.get('datetime')
-        datetime_invalid = False
+        try:
+            datetime_ = validate_datetime(collections[dataset]['extents'],
+                                          datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
-        if (datetime_ is not None and
-                'temporal' in collections[dataset]['extents']):
-            te = collections[dataset]['extents']['temporal']
+        LOGGER.debug('processing q parameter')
+        val = args.get('q')
 
-            if te['begin'] is not None and te['begin'].tzinfo is None:
-                te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
-            if te['end'] is not None and te['end'].tzinfo is None:
-                te['end'] = te['end'].replace(tzinfo=pytz.UTC)
-
-            if '/' in datetime_:  # envelope
-                LOGGER.debug('detected time range')
-                LOGGER.debug('Validating time windows')
-                datetime_begin, datetime_end = datetime_.split('/')
-                if datetime_begin != '..':
-                    datetime_begin = dateparse(datetime_begin)
-                    if datetime_begin.tzinfo is None:
-                        datetime_begin = datetime_begin.replace(
-                            tzinfo=pytz.UTC)
-
-                if datetime_end != '..':
-                    datetime_end = dateparse(datetime_end)
-                    if datetime_end.tzinfo is None:
-                        datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
-
-                if te['begin'] is not None and datetime_begin != '..':
-                    if datetime_begin < te['begin']:
-                        datetime_invalid = True
-
-                if te['end'] is not None and datetime_end != '..':
-                    if datetime_end > te['end']:
-                        datetime_invalid = True
-
-            else:  # time instant
-                datetime__ = dateparse(datetime_)
-                if datetime__ != '..':
-                    if datetime__.tzinfo is None:
-                        datetime__ = datetime__.replace(tzinfo=pytz.UTC)
-                LOGGER.debug('detected time instant')
-                if te['begin'] is not None and datetime__ != '..':
-                    if datetime__ < te['begin']:
-                        datetime_invalid = True
-                if te['end'] is not None and datetime__ != '..':
-                    if datetime__ > te['end']:
-                        datetime_invalid = True
-
-        if datetime_invalid:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'datetime parameter out of range'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        if val is not None:
+            q = val
+        else:
+            q = None
 
         LOGGER.debug('Loading provider')
+
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         LOGGER.debug('processing property parameters')
         for k, v in args.items():
             if k not in reserved_fieldnames and k not in p.fields.keys():
-                exception = {
-                    'code': 'InvalidParameterValue',
-                    'description': 'unknown query parameter'
-                }
-                LOGGER.error(exception)
-                return headers_, 400, to_json(exception, self.pretty_print)
+                msg = 'unknown query parameter: {}'.format(k)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
             elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
@@ -912,62 +843,77 @@ class API:
             sortby = []
             sorts = val.split(',')
             for s in sorts:
-                if ':' in s:
-                    prop, order = s.split(':')
-                    if order not in ['A', 'D']:
-                        exception = {
-                            'code': 'InvalidParameterValue',
-                            'description': 'sort order should be A or D'
-                        }
-                        LOGGER.error(exception)
-                        return headers_, 400, to_json(exception,
-                                                      self.pretty_print)
-                    sortby.append({'property': prop, 'order': order})
-                else:
-                    sortby.append({'property': s, 'order': 'A'})
-            for s in sortby:
-                if s['property'] not in p.fields.keys():
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'bad sort property'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                prop = s
+                order = '+'
+                if s[0] in ['+', '-']:
+                    order = s[0]
+                    prop = s[1:]
+
+                if prop not in p.fields.keys():
+                    msg = 'bad sort property'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
+
+                sortby.append({'property': prop, 'order': order})
         else:
             sortby = []
+
+        LOGGER.debug('processing properties parameter')
+        val = args.get('properties')
+
+        if val is not None:
+            select_properties = val.split(',')
+            properties_to_check = set(p.properties) | set(p.fields.keys())
+
+            if (len(list(set(select_properties) -
+                         set(properties_to_check))) > 0):
+                msg = 'unknown properties specified'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        else:
+            select_properties = []
+
+        LOGGER.debug('processing skipGeometry parameter')
+        val = args.get('skipGeometry')
+        if val is not None:
+            skip_geometry = str2bool(val)
+        else:
+            skip_geometry = False
 
         LOGGER.debug('Querying provider')
         LOGGER.debug('startindex: {}'.format(startindex))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
+        LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('datetime: {}'.format(datetime_))
+        LOGGER.debug('properties: {}'.format(select_properties))
+        LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
+        LOGGER.debug('q: {}'.format(q))
 
         try:
             content = p.query(startindex=startindex, limit=limit,
                               resulttype=resulttype, bbox=bbox,
-                              datetime=datetime_, properties=properties,
-                              sortby=sortby)
+                              datetime_=datetime_, properties=properties,
+                              sortby=sortby,
+                              select_properties=select_properties,
+                              skip_geometry=skip_geometry,
+                              q=q)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         serialized_query_params = ''
         for k, v in args.items():
@@ -1053,7 +999,12 @@ class API:
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
-            content = render_j2_template(self.config, 'items.html',
+            if p.title_field is not None:
+                content['title_field'] = p.title_field
+            content['id_field'] = p.title_field
+
+            content = render_j2_template(self.config,
+                                         'collections/items/index.html',
                                          content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
@@ -1097,12 +1048,9 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1110,63 +1058,48 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading provider')
+
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderItemNotFoundError:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
         except ProviderQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if content is None:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'identifier not found'
+            return self.get_exception(400, headers_, format_, 'NotFound', msg)
 
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
@@ -1209,7 +1142,12 @@ class API:
             headers_['Content-Type'] = 'text/html'
 
             content['title'] = collections[dataset]['title']
-            content = render_j2_template(self.config, 'item.html',
+            content['id_field'] = p.id_field
+            if p.title_field is not None:
+                content['title_field'] = p.title_field
+
+            content = render_j2_template(self.config,
+                                         'collections/items/item.html',
                                          content)
             return headers_, 200, content
         elif format_ == 'jsonld':
@@ -1222,15 +1160,13 @@ class API:
         return headers_, 200, to_json(content, self.pretty_print)
 
     @jsonldify
-    def get_collection_coverage(self, headers, args, dataset,
-                                pathinfo=None):
+    def get_collection_coverage(self, headers, args, dataset):
         """
         Returns a subset of a collection coverage
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -1250,29 +1186,51 @@ class API:
 
             p = load_plugin('provider', collection_def)
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                400, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        LOGGER.debug('Processing bbox parameter')
+
+        bbox = args.get('bbox')
+
+        if bbox is None:
+            bbox = []
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
+                msg = str(err)
+                return self.get_exception(
+                    500, headers_, format_, 'InvalidParameterValue', msg)
+
+        query_args['bbox'] = bbox
+
+        LOGGER.debug('Processing datetime parameter')
+
+        datetime_ = args.get('datetime', None)
+
+        try:
+            datetime_ = validate_datetime(
+                self.config['resources'][dataset]['extents'], datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        query_args['datetime_'] = datetime_
 
         if 'f' in args:
             query_args['format_'] = format_ = args['f']
+
         if 'rangeSubset' in args:
             LOGGER.debug('Processing rangeSubset parameter')
 
@@ -1282,12 +1240,9 @@ class API:
 
             for a in query_args['range_subset']:
                 if a not in p.fields:
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'Invalid field specified'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                    msg = 'Invalid field specified'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
 
         if 'subset' in args:
             LOGGER.debug('Processing subset parameter')
@@ -1301,23 +1256,17 @@ class API:
                     subset_name = m.group(1)
 
                     if subset_name not in p.axes:
-                        exception = {
-                            'code': 'InvalidParameterValue',
-                            'description': 'Invalid axis name'
-                        }
-                        LOGGER.error(exception)
-                        return (headers_, 400, to_json(exception,
-                                self.pretty_print))
+                        msg = 'Invalid axis name'
+                        return self.get_exception(
+                            400, headers_, format_,
+                            'InvalidParameterValue', msg)
 
                     subsets[subset_name] = list(map(
                         get_typed_value, m.group(2, 3)))
                 except AttributeError:
-                    exception = {
-                        'code': 'InvalidParameterValue',
-                        'description': 'subset should be like "axis(min:max)"'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 400, to_json(exception, self.pretty_print)
+                    msg = 'subset should be like "axis(min:max)"'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
 
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
@@ -1326,26 +1275,17 @@ class API:
         try:
             data = p.query(**query_args)
         except ProviderInvalidQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error: {}'.format(err),
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'query error: {}'.format(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderNoDataError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'No data found'
-            }
-            LOGGER.debug(exception)
-            return headers_, 204, to_json(exception, self.pretty_print)
+            msg = 'No data found'
+            return self.get_exception(
+                204, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         mt = collection_def['format']['name']
 
@@ -1356,30 +1296,25 @@ class API:
             headers_['Content-Type'] = 'application/prs.coverage+json'
             return headers_, 200, to_json(data, self.pretty_print)
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(data, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @jsonldify
-    def get_collection_coverage_domainset(self, headers, args, dataset,
-                                          pathinfo=None):
+    def get_collection_coverage_domainset(self, headers, args, dataset):
         """
         Returns a collection coverage domainset
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
 
         headers_ = HEADERS.copy()
 
-        format_ = check_format(args, headers_)
+        format_ = check_format(args, headers)
         if format_ is None:
             format_ = 'json'
 
@@ -1392,54 +1327,41 @@ class API:
 
             data = p.get_coverage_domainset()
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
             return headers_, 200, to_json(data, self.pretty_print)
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
-            content = render_j2_template(self.config, 'domainset.html',
+            content = render_j2_template(self.config,
+                                         'collections/coverage/domainset.html',
                                          data)
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @jsonldify
-    def get_collection_coverage_rangetype(self, headers, args, dataset,
-                                          pathinfo=None):
+    def get_collection_coverage_rangetype(self, headers, args, dataset):
         """
         Returns a collection coverage rangetype
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -1458,43 +1380,32 @@ class API:
 
             data = p.get_coverage_rangetype()
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'collection does not exist'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
             return (headers_, 200, to_json(data, self.pretty_print))
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = self.config['resources'][dataset]['title']
-            content = render_j2_template(self.config, 'rangetype.html',
+            content = render_j2_template(self.config,
+                                         'collections/coverage/rangetype.html',
                                          data)
             headers_['Content-Type'] = 'text/html'
             return headers_, 200, content
         else:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'invalid format parameter'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'invalid format parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
     @pre_process
     @jsonldify
@@ -1511,22 +1422,16 @@ class API:
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, json.dumps(exception)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1535,26 +1440,17 @@ class API:
                     self.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)
         except (KeyError, ProviderTypeError):
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         tiles = {
             'title': dataset,
@@ -1608,12 +1504,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['maxzoom'] = p.options['zoom']['max']
 
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'tiles.html', tiles)
+            content = render_j2_template(self.config,
+                                         'collections/tiles/index.html', tiles)
 
             return headers_, 200, content
 
         return headers_, 200, to_json(tiles, self.pretty_print)
 
+    @pre_process
     @jsonldify
     def get_collection_tiles_data(self, headers, format_, dataset=None,
                                   matrix_id=None, z_idx=None, y_idx=None,
@@ -1637,12 +1535,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 #        format_ = check_format({}, headers)
 
         if format_ is None and format_ not in ['mvt']:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing tiles')
 
@@ -1650,12 +1545,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading tile provider')
         try:
@@ -1671,57 +1563,40 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
                                   z=z_idx, y=y_idx, x=x_idx, format_=format_)
             if content is None:
-                exception = {
-                    'code': 'NotFound',
-                    'description': 'identifier not found'
-                }
-                LOGGER.error(exception)
-                return headers_, 404, to_json(exception)
+                msg = 'identifier not found'
+                return self.get_exception(
+                    404, headers_, format_, 'NotFound', msg)
             else:
                 return headers_, 202, content
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderTilesetIdNotFoundError:
-            exception = {
-                'code': 'NotFound',
-                'description': 'Tileset id not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception)
+            msg = 'Tileset id not found'
+            return self.get_exception(
+                404, headers_, format_, 'NotFound', msg)
         except ProviderTileQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'Tile not found'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'Tile not found'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
         except ProviderTileNotFoundError as err:
-            exception = {
-                'code': 'NoMatch',
-                'description': 'tile not found (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 404, to_json(exception)
+            msg = 'tile not found (check logs)'
+            return self.get_exception(
+                404, headers_, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'generic error (check logs)'
-            }
             LOGGER.error(err)
-            return headers_, 500, to_json(exception)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
     @pre_process
     @jsonldify
@@ -1740,22 +1615,16 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         """
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1764,34 +1633,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 self.config['resources'][dataset]['providers'], 'tile')
             p = load_plugin('provider', t)
         except KeyError:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid collection tiles'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid collection tiles'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'InvalidParameterValue', msg)
         except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'InvalidParameterValue', msg)
 
         if matrix_id not in p.options['schemes']:
-            exception = {
-                'code': 'NotFound',
-                'description': 'tileset not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'tileset not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
 
         metadata_format = p.options['metadata_format']
         tilejson = True if (metadata_format == 'tilejson') else False
@@ -1808,7 +1664,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             metadata['format'] = metadata_format
             headers_['Content-Type'] = 'text/html'
 
-            content = render_j2_template(self.config, 'tiles_metadata.html',
+            content = render_j2_template(self.config,
+                                         'collections/tiles/metadata.html',
                                          metadata)
 
             return headers_, 200, content
@@ -1822,142 +1679,447 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         Provide processes metadata
 
         :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param process: name of process
+        :param format_: format of requests,
+                        pre checked by pre_process decorator
+        :param process: process identifier, defaults to None to obtain
+                        information about all processes
 
         :returns: tuple of headers, status code, content
         """
 
+        processes = []
+
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
 
+        if process is not None:
+            if process not in processes_config.keys() or not processes_config:
+                msg = 'Identifier not found'
+                return self.get_exception(
+                    404, headers_, format_, 'NoSuchProcess', msg)
+
         if processes_config:
             if process is not None:
-                if process not in processes_config.keys():
-                    exception = {
-                        'code': 'NotFound',
-                        'description': 'identifier not found'
-                    }
-                    LOGGER.error(exception)
-                    return headers_, 404, to_json(exception, self.pretty_print)
-
-                p = load_plugin('process',
-                                processes_config[process]['processor'])
-                p.metadata['jobControlOptions'] = ['sync-execute']
-                p.metadata['outputTransmission'] = ['value']
-                response = p.metadata
+                relevant_processes = [(process, processes_config[process])]
             else:
-                processes = []
-                for k, v in processes_config.items():
-                    p = load_plugin('process',
-                                    processes_config[k]['processor'])
-                    p.metadata['jobControlOptions'] = ['sync-execute']
-                    p.metadata['outputTransmission'] = ['value']
-                    processes.append(p.metadata)
-                response = {
-                    'processes': processes
+                relevant_processes = processes_config.items()
+
+            for key, value in relevant_processes:
+                p = load_plugin('process',
+                                processes_config[key]['processor'])
+
+                p2 = deepcopy(p.metadata)
+
+                p2['jobControlOptions'] = ['sync-execute']
+                if self.manager.is_async:
+                    p2['jobControlOptions'].append('async-execute')
+
+                p2['outputTransmission'] = ['value']
+                p2['links'] = p2.get('links', [])
+
+                jobs_url = '{}/processes/{}/jobs'.format(
+                    self.config['server']['url'], key)
+
+                link = {
+                    'type': 'text/html',
+                    'rel': 'collection',
+                    'href': '{}?f=html'.format(jobs_url),
+                    'title': 'jobs for this process as HTML',
+                    'hreflang': self.config['server'].get('language', None)
                 }
+                p2['links'].append(link)
+
+                link = {
+                    'type': 'application/json',
+                    'rel': 'collection',
+                    'href': '{}?f=json'.format(jobs_url),
+                    'title': 'jobs for this process as JSON',
+                    'hreflang': self.config['server'].get('language', None)
+                }
+                p2['links'].append(link)
+
+                processes.append(p2)
+
+        if process is not None:
+            response = processes[0]
         else:
-            processes = []
-            response = {'processes': processes}
+            response = {
+                'processes': processes
+            }
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
             if process is not None:
-                response = render_j2_template(self.config, 'process.html',
-                                              p.metadata)
+                response = render_j2_template(self.config,
+                                              'processes/process.html',
+                                              response)
             else:
-                response = render_j2_template(self.config, 'processes.html',
-                                              {'processes': processes})
+                response = render_j2_template(self.config,
+                                              'processes/index.html', response)
 
             return headers_, 200, response
 
         return headers_, 200, to_json(response, self.pretty_print)
 
-    def execute_process(self, headers, args, data, process):
+    def get_process_jobs(self, headers, args, process_id, job_id=None):
+        """
+        Get process jobs
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process_id: id of process
+        :param job_id: id of job
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = check_format(args, headers)
+
+        headers_ = HEADERS.copy()
+
+        if format_ is not None and format_ not in FORMATS:
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        response = {}
+
+        processes = filter_dict_by_key_value(
+            self.config['resources'], 'type', 'process')
+
+        if process_id not in processes:
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
+
+        p = load_plugin('process', processes[process_id]['processor'])
+
+        if self.manager:
+            if job_id is None:
+                jobs = sorted(self.manager.get_jobs(process_id),
+                              key=lambda k: k['job_start_datetime'],
+                              reverse=True)
+            else:
+                jobs = [self.manager.get_job(process_id, job_id)]
+        else:
+            LOGGER.debug('Process management not configured')
+            jobs = []
+
+        serialized_jobs = []
+        for job_ in jobs:
+            job2 = {
+                'jobID': job_['identifier'],
+                'status': job_['status'],
+                'message': job_['message'],
+                'progress': job_['progress'],
+                'parameters': job_.get('parameters'),
+                'job_start_datetime': job_['job_start_datetime'],
+                'job_end_datetime': job_['job_end_datetime']
+            }
+
+            if JobStatus[job_['status']] in [
+               JobStatus.successful, JobStatus.running, JobStatus.accepted]:
+
+                job_result_url = '{}/processes/{}/jobs/{}/results'.format(
+                    self.config['server']['url'],
+                    process_id, job_['identifier'])
+
+                job2['links'] = [{
+                    'href': '{}?f=html'.format(job_result_url),
+                    'rel': 'about',
+                    'type': 'text/html',
+                    'title': 'results of job {} as HTML'.format(job_id)
+                }, {
+                    'href': '{}?f=json'.format(job_result_url),
+                    'rel': 'about',
+                    'type': 'application/json',
+                    'title': 'results of job {} as JSON'.format(job_id)
+                }]
+
+                if job_['mimetype'] not in ['application/json', 'text/html']:
+                    job2['links'].append({
+                        'href': job_result_url,
+                        'rel': 'about',
+                        'type': job_['mimetype'],
+                        'title': 'results of job {} as {}'.format(
+                            job_id, job_['mimetype'])
+                    })
+
+            serialized_jobs.append(job2)
+
+        if job_id is None:
+            j2_template = 'processes/jobs/index.html'
+        else:
+            serialized_jobs = serialized_jobs[0]
+            j2_template = 'processes/jobs/job.html'
+
+        if format_ == 'html':
+            headers_['Content-Type'] = 'text/html'
+            data = {
+                'process': {
+                    'id': process_id,
+                    'title': p.metadata['title']
+                },
+                'jobs': serialized_jobs,
+                'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
+            }
+            response = render_j2_template(self.config, j2_template, data)
+            return headers_, 200, response
+
+        return headers_, 200, to_json(serialized_jobs, self.pretty_print)
+
+    def execute_process(self, headers, args, data, process_id):
         """
         Execute process
 
         :param headers: dict of HTTP headers
         :param args: dict of HTTP request parameters
         :param data: process data
-        :param process: name of process
+        :param process_id: id of process
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = check_format(args, headers)
+
+        headers_ = HEADERS.copy()
+
+        if format_ is not None and format_ not in FORMATS:
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        response = {}
+
+        processes_config = filter_dict_by_key_value(
+            self.config['resources'], 'type', 'process'
+        )
+        if process_id not in processes_config:
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
+
+        if not self.manager:
+            msg = 'Process manager is undefined'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        process = load_plugin('process',
+                              processes_config[process_id]['processor'])
+
+        if not data:
+            # TODO not all processes require input, e.g. time-depenendent or
+            # random value generators
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers_, format_, 'MissingParameterValue', msg)
+
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+            LOGGER.debug(data)
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        try:
+            data_dict = {}
+            for input in data.get('inputs', []):
+                id = input['id']
+                value = input['value']
+                if id not in data_dict:
+                    data_dict[id] = value
+                elif id in data_dict and isinstance(data_dict[id], list):
+                    data_dict[id].append(value)
+                else:
+                    data_dict[id] = [data_dict[id], value]
+        except KeyError:
+            # Return 4XX client error for missing 'id' or 'value' in an input
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+        else:
+            LOGGER.debug(data_dict)
+
+        job_id = str(uuid.uuid1())
+        url = '{}/processes/{}/jobs/{}'.format(
+            self.config['server']['url'], process_id, job_id)
+
+        headers_['Location'] = url
+
+        outputs = status = None
+        is_async = data.get('mode', 'auto') == 'async'
+
+        if is_async:
+            LOGGER.debug('Asynchronous request mode detected')
+
+        try:
+            LOGGER.debug('Executing process')
+            outputs, status = self.manager.execute_process(
+                process, job_id, data_dict, is_async)
+        except ProcessorExecuteError as err:
+            LOGGER.error(err)
+            msg = 'Processing error'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        if status == JobStatus.failed:
+            response = outputs
+
+        ct = process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
+
+        if data.get('response', 'document') == 'raw':
+            headers_['Content-Type'] = ct
+            if format_ == 'json':
+                response = to_json(outputs)
+            else:
+                response = outputs
+
+        elif status != JobStatus.failed and not is_async:
+            response['outputs'] = outputs
+
+        if is_async:
+            http_status = 201
+        else:
+            http_status = 200
+
+        return headers_, http_status, to_json(response, self.pretty_print)
+
+    def get_process_job_result(self, headers, args, process_id, job_id):
+        """
+        Get result of job (instance of a process)
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param process_id: name of process
+        :param job_id: ID of job
 
         :returns: tuple of headers, status code, content
         """
 
         headers_ = HEADERS.copy()
+        format_ = check_format(args, headers)
+        processes_config = filter_dict_by_key_value(self.config['resources'],
+                                                    'type', 'process')
 
-        data_dict = {}
-        response = {}
+        if process_id not in processes_config:
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
-        if not data:
-            exception = {
-                'code': 'MissingParameterValue',
-                'description': 'missing request data'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        process = load_plugin('process',
+                              processes_config[process_id]['processor'])
 
-        processes = filter_dict_by_key_value(self.config['resources'],
-                                             'type', 'process')
+        if not process:
+            msg = 'identifier not found'
+            return self.get_exception(
+                404, headers_, format_, 'NoSuchProcess', msg)
 
-        if process not in processes:
-            exception = {
-                'code': 'NotFound',
-                'description': 'identifier not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+        job = self.manager.get_job(process_id, job_id)
 
-        p = load_plugin('process',
-                        processes[process]['processor'])
+        if not job:
+            msg = 'job not found'
+            return self.get_exception(404, headers_, format_, 'NoSuchJob', msg)
 
-        data_ = json.loads(data)
-        for input_ in data_['inputs']:
-            data_dict[input_['id']] = input_['value']
+        status = JobStatus[job['status']]
 
-        try:
-            outputs = p.execute(data_dict)
-            m = p.metadata
-            if 'response' in args and args['response'] == 'raw':
-                headers_['Content-Type'] = \
-                    m['outputs'][0]['output']['formats'][0]['mimeType']
-                if 'json' in headers_['Content-Type']:
-                    response = to_json(outputs)
-                else:
-                    response = outputs
+        if status == JobStatus.running:
+            msg = 'job still running'
+            return self.get_exception(
+                404, headers_, format_, 'ResultNotReady', msg)
+
+        elif status == JobStatus.accepted:
+            # NOTE: this case is not mentioned in the specification
+            msg = 'job accepted but not yet running'
+            return self.get_exception(
+                404, headers_, format_, 'ResultNotReady', msg)
+
+        elif status == JobStatus.failed:
+            msg = 'job failed'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        mimetype, job_output = self.manager.get_job_result(process_id, job_id)
+
+        if mimetype not in [None, 'application/json']:
+            headers_['Content-Type'] = mimetype
+            content = job_output
+        else:
+            if format_ == 'json':
+                content = json.dumps(job_output, sort_keys=True, indent=4,
+                                     default=json_serial)
             else:
-                response['outputs'] = outputs
-                response = to_json(response)
-            return headers_, 200, response
-        except Exception as err:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': str(err)
+                headers_['Content-Type'] = 'text/html'
+                data = {
+                    'process': {
+                        'id': process_id, 'title': process.metadata['title']
+                    },
+                    'job': {'id': job_id},
+                    'result': job_output
+                }
+                content = render_j2_template(
+                    self.config, 'processes/jobs/results/index.html', data)
+
+        return headers_, 200, content
+
+    def delete_process_job(self, process_id, job_id):
+        """
+        :param process_id: process identifier
+        :param job_id: job identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        success = self.manager.delete_job(process_id, job_id)
+
+        if not success:
+            http_status = 404
+            response = {
+                'code': 'NoSuchJob',
+                'description': 'Job identifier not found'
             }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+        else:
+            http_status = 200
+            jobs_url = '{}/processes/{}/jobs'.format(
+                self.config['server']['url'], process_id)
+
+            response = {
+                'jobID': job_id,
+                'status': JobStatus.dismissed.value,
+                'message': 'Job dismissed',
+                'progress': 100,
+                'links': [{
+                    'href': jobs_url,
+                    'rel': 'up',
+                    'type': 'application/json',
+                    'title': 'The job list for the current process'
+                }]
+            }
+
+        LOGGER.info(response)
+        return {}, http_status, response
 
     @pre_process
     @jsonldify
     def get_stac_root(self, headers_, format_):
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         id_ = 'pygeoapi-stac'
         stac_version = '0.6.2'
@@ -1993,7 +2155,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
-            content = render_j2_template(self.config, 'stac/root.html',
+            content = render_j2_template(self.config, 'stac/collection.html',
                                          content)
             return headers_, 200, content
 
@@ -2004,12 +2166,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
     def get_stac_path(self, headers_, format_, path):
 
         if format_ is not None and format_ not in FORMATS:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'Invalid format'
-            }
-            LOGGER.error(exception)
-            return headers_, 400, to_json(exception, self.pretty_print)
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Path: {}'.format(path))
         dir_tokens = path.split('/')
@@ -2020,12 +2179,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                                     'type', 'stac-collection')
 
         if dataset not in stac_collections:
-            exception = {
-                'code': 'NotFound',
-                'description': 'collection not found'
-            }
-            LOGGER.error(exception)
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'collection not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
 
         LOGGER.debug('Loading provider')
         try:
@@ -2033,12 +2188,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 stac_collections[dataset]['providers'], 'stac'))
         except ProviderConnectionError as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         id_ = '{}-stac'.format(dataset)
         stac_version = '0.6.2'
@@ -2059,18 +2211,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             )
         except ProviderNotFoundError as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NotFound',
-                'description': 'resource not found'
-            }
-            return headers_, 404, to_json(exception, self.pretty_print)
+            msg = 'resource not found'
+            return self.get_exception(404, headers_, format_, 'NotFound', msg)
         except Exception as err:
             LOGGER.error(err)
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'data query error'
-            }
-            return headers_, 500, to_json(exception, self.pretty_print)
+            msg = 'data query error'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
@@ -2095,6 +2242,36 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         else:  # send back file
             headers_.pop('Content-Type', None)
             return headers_, 200, stac_data
+
+    def get_exception(self, status, headers, format_, code, description):
+        """
+        Exception handler
+
+        :param status: HTTP status code
+        :param headers: dict of HTTP response headers
+        :param format_: format string
+        :param code: OGC API exception code
+        :param description: OGC API exception code
+
+        :returns: tuple of headers, status, and message
+        """
+
+        LOGGER.error(description)
+        exception = {
+            'code': code,
+            'description': description
+        }
+
+        if format_ == 'json':
+            content = to_json(exception, self.pretty_print)
+        elif format_ == 'html':
+            headers['Content-Type'] = 'text/html'
+            content = render_j2_template(
+                self.config, 'exception.html', exception)
+        else:
+            content = to_json(exception, self.pretty_print)
+
+        return headers, status, content
 
 
 def check_format(args, headers):
@@ -2133,3 +2310,120 @@ def check_format(args, headers):
             format_ = 'json'
 
     return format_
+
+
+def validate_bbox(value=None):
+    """
+    Helper function to validate bbox parameter
+
+    :param bbox: `list` of minx, miny, maxx, maxy
+
+    :returns: bbox as `list` of `float` values
+    """
+
+    if value is None:
+        LOGGER.debug('bbox is empty')
+        return []
+
+    bbox = value.split(',')
+
+    if len(bbox) != 4:
+        msg = 'bbox should be 4 values (minx,miny,maxx,maxy)'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    try:
+        bbox = [float(c) for c in bbox]
+    except ValueError as err:
+        msg = 'bbox values must be numbers'
+        err.args = (msg,)
+        LOGGER.debug(msg)
+        raise
+
+    if bbox[0] > bbox[2] or bbox[1] > bbox[3]:
+        msg = 'min values should be less than max values'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    return bbox
+
+
+def validate_datetime(resource_def, datetime_=None):
+    """
+    Helper function to validate temporal parameter
+
+    :param resource_def: `dict` of configuration resource definition
+    :param datetime_: `str` of datetime parameter
+
+    :returns: `str` of datetime input, if valid
+    """
+
+    # TODO: pass datetime to query as a `datetime` object
+    # we would need to ensure partial dates work accordingly
+    # as well as setting '..' values to `None` so that underlying
+    # providers can just assume a `datetime.datetime` object
+    #
+    # NOTE: needs testing when passing partials from API to backend
+
+    datetime_invalid = False
+
+    if (datetime_ is not None and 'temporal' in resource_def):
+
+        dateparse_begin = partial(dateparse, default=datetime.min)
+        dateparse_end = partial(dateparse, default=datetime.max)
+        unix_epoch = datetime(1970, 1, 1, 0, 0, 0)
+        dateparse_ = partial(dateparse, default=unix_epoch)
+
+        te = resource_def['temporal']
+
+        if te['begin'] is not None and te['begin'].tzinfo is None:
+            te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
+        if te['end'] is not None and te['end'].tzinfo is None:
+            te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+
+        if '/' in datetime_:  # envelope
+            LOGGER.debug('detected time range')
+            LOGGER.debug('Validating time windows')
+
+            # normalize "" to ".." (actually changes datetime_)
+            datetime_ = re.sub(r'^/', '../', datetime_)
+            datetime_ = re.sub(r'/$', '/..', datetime_)
+
+            datetime_begin, datetime_end = datetime_.split('/')
+            if datetime_begin != '..':
+                datetime_begin = dateparse_begin(datetime_begin)
+                if datetime_begin.tzinfo is None:
+                    datetime_begin = datetime_begin.replace(
+                        tzinfo=pytz.UTC)
+
+            if datetime_end != '..':
+                datetime_end = dateparse_end(datetime_end)
+                if datetime_end.tzinfo is None:
+                    datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
+
+            datetime_invalid = any([
+                (te['begin'] is not None and datetime_begin != '..' and
+                    datetime_begin < te['begin']),
+                (te['end'] is not None and datetime_end != '..' and
+                    datetime_end > te['end'])
+            ])
+
+        else:  # time instant
+            LOGGER.debug('detected time instant')
+            datetime__ = dateparse_(datetime_)
+            if datetime__ != '..':
+                if datetime__.tzinfo is None:
+                    datetime__ = datetime__.replace(tzinfo=pytz.UTC)
+            datetime_invalid = any([
+                (te['begin'] is not None and datetime__ != '..' and
+                    datetime__ < te['begin']),
+                (te['end'] is not None and datetime__ != '..' and
+                    datetime__ > te['end'])
+            ])
+
+    if datetime_invalid:
+        msg = 'datetime parameter out of range'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    return datetime_

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -39,6 +39,7 @@ PLUGINS = {
     'provider': {
         'CSV': 'pygeoapi.provider.csv_.CSVProvider',
         'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',  # noqa
+        'ElasticsearchCatalogue': 'pygeoapi.provider.elasticsearch_.ElasticsearchCatalogueProvider',  # noqa
         'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
@@ -47,13 +48,18 @@ PLUGINS = {
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
-        'MVT': 'pygeoapi.provider.mvt.MVTProvider'
+        'MVT': 'pygeoapi.provider.mvt.MVTProvider',
+        'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+    },
+    'process_manager': {
+        'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
+        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
     }
 }
 
@@ -95,6 +101,7 @@ def load_plugin(plugin_type, plugin_def):
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
     plugin = class_(plugin_def)
+
     return plugin
 
 

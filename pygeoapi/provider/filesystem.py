@@ -30,10 +30,10 @@
 import io
 import logging
 import os
-from urllib.parse import urljoin
-
+from json import loads
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
+from urllib.parse import urljoin
 
 LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class FileSystemProvider(BaseProvider):
         :returns: pygeoapi.provider.filesystem.FileSystemProvider
         """
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         if not os.path.exists(self.data):
             msg = 'Directory does not exist: {}'.format(self.data)
@@ -69,6 +69,9 @@ class FileSystemProvider(BaseProvider):
         """
 
         thispath = os.path.join(baseurl, urlpath)
+
+        print("THISPATH", thispath)
+
         resource_type = None
         root_link = None
         child_links = []
@@ -207,6 +210,8 @@ class FileSystemProvider(BaseProvider):
 def _describe_file(filepath):
     """
     Helper function to describe a geospatial data
+    First checks if a sidecar mcf file is available, if so uses that
+    if not, script will parse the file to retrieve some info from the file
 
     :param filepath: path to file
 
@@ -219,69 +224,101 @@ def _describe_file(filepath):
         'properties': {}
     }
 
-    try:
-        import rasterio
-        LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
-    except ImportError as err:
-        LOGGER.warning(err)
-        return content
+    mcf_file = '{}.yml'.format(os.path.splitext(filepath)[0])
 
-    try:
-        import fiona
-    except ImportError as err:
-        LOGGER.warning('fiona not found. Cannot derive geospatial properties')
-        LOGGER.warning(err)
-        return content
+    if os.path.isfile(mcf_file):
+        try:
+            from pygeometa.core import read_mcf, MCFReadError
+            from pygeometa.schemas.stac import STACItemOutputSchema
 
-    try:  # raster
-        LOGGER.debug('Testing raster data detection')
-        d = rasterio.open(filepath)
-        content['bbox'] = [
-            d.bounds.left,
-            d.bounds.bottom,
-            d.bounds.right,
-            d.bounds.top
-        ]
-        content['geometry'] = {
-            'type': 'Polygon',
-            'coordinates': [[
-                [d.bounds.left, d.bounds.bottom],
-                [d.bounds.left, d.bounds.top],
-                [d.bounds.right, d.bounds.top],
-                [d.bounds.right, d.bounds.bottom],
-                [d.bounds.left, d.bounds.bottom]
-            ]]
-        }
-        for k, v in d.tags(1).items():
-            content['properties'][k] = v
-    except rasterio.errors.RasterioIOError:
-        LOGGER.debug('Testing vector data detection')
-        d = fiona.open(filepath)
+            md = read_mcf(mcf_file)
+            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md)
+            stacdata = loads(stacjson)
+            for k, v in stacdata.items():
+                content[k] = v
+        except ImportError:
+            LOGGER.debug('pygeometa not found')
+        except MCFReadError as err:
+            LOGGER.warning('MCF error: {}'.format(err))
+    else:
+        LOGGER.debug('No mcf found at: {}'.format(mcf_file))
 
-        if d.schema['geometry'] not in [None, 'None']:
+    if content['geometry'] is None and content['bbox'] is None:
+        try:
+            import rasterio
+            from rasterio.crs import CRS
+            from rasterio.warp import transform_bounds
+        except ImportError as err:
+            LOGGER.warning('rasterio not found')
+            LOGGER.warning(err)
+            return content
+
+        try:
+            import fiona
+        except ImportError as err:
+            LOGGER.warning('fiona not found')
+            LOGGER.warning(err)
+            return content
+
+        try:  # raster
+            LOGGER.debug('Testing raster data detection')
+            d = rasterio.open(filepath)
             content['bbox'] = [
-                d.bounds[0],
-                d.bounds[1],
-                d.bounds[2],
-                d.bounds[3]
+                d.bounds.left,
+                d.bounds.bottom,
+                d.bounds.right,
+                d.bounds.top
             ]
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [d.bounds[0], d.bounds[1]],
-                    [d.bounds[0], d.bounds[3]],
-                    [d.bounds[2], d.bounds[3]],
-                    [d.bounds[2], d.bounds[1]],
-                    [d.bounds[0], d.bounds[1]]
+                    [d.bounds.left, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.top],
+                    [d.bounds.right, d.bounds.top],
+                    [d.bounds.right, d.bounds.bottom],
+                    [d.bounds.left, d.bounds.bottom]
                 ]]
             }
-        for k, v in d.schema['properties'].items():
-            content['properties'][k] = v
+            for k, v in d.tags(1).items():
+                content['properties'][k] = v
+        except rasterio.errors.RasterioIOError:
+            LOGGER.debug('Testing vector data detection')
+            d = fiona.open(filepath)
+            scrs = CRS(d.crs)
+            if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
+                tcrs = CRS.from_epsg(4326)
+                bnds = transform_bounds(scrs, tcrs,
+                                        d.bounds[0], d.bounds[1],
+                                        d.bounds[2], d.bounds[3])
+                content['properties']['projection'] = scrs.to_epsg()
+            else:
+                bnds = d.bounds
+
+            if d.schema['geometry'] not in [None, 'None']:
+                content['bbox'] = [
+                    bnds[0],
+                    bnds[1],
+                    bnds[2],
+                    bnds[3]
+                ]
+                content['geometry'] = {
+                    'type': 'Polygon',
+                    'coordinates': [[
+                        [bnds[0], bnds[1]],
+                        [bnds[0], bnds[3]],
+                        [bnds[2], bnds[3]],
+                        [bnds[2], bnds[1]],
+                        [bnds[0], bnds[1]]
+                    ]]
+                }
+
+            for k, v in d.schema['properties'].items():
+                content['properties'][k] = v
 
         if d.driver == 'ESRI Shapefile':
             id_ = os.path.splitext(os.path.basename(filepath))[0]
             content['assets'] = {}
-            for suffix in ['shx', 'dbf', 'prj']:
+            for suffix in ['shx', 'dbf', 'prj', 'shp.xml']:
                 content['assets'][suffix] = {
                     'href': './{}.{}'.format(id_, suffix)
                 }

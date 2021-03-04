@@ -28,6 +28,7 @@ pygeoapi |release| documentation
    openapi
    data-publishing/index
    plugins
+   html-templating
    development
    ogc-compliance
    contributing

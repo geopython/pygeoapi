@@ -1,0 +1,16 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "add_offset": 0.0,
+    "comment": "ice data interpolated by a nearest neighbor approach.",
+    "long_name": "sea ice area fraction",
+    "scale_factor": 0.01,
+    "source": "EUMETSAT OSI-SAF, copyright EUMETSAT",
+    "standard_name": "sea ice area fraction",
+    "units": "fraction (between 0 and 1)",
+    "valid_max": 100,
+    "valid_min": 0
+}

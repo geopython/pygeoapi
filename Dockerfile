@@ -3,10 +3,12 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Just van den Broecke <justb4@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Angelos Tzotsos <gcpp.kalxas@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2021 Angelos Tzotsos
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,7 +33,7 @@
 #
 # =================================================================
 
-FROM debian:bullseye-slim
+FROM ubuntu:focal
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -53,52 +55,50 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # via Docker Volume mapping or within a docker-compose.yml file. See example at
 # https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
 
+# Build arguments
+# add "--build-arg BUILD_DEV_IMAGE=true" to Docker build command when building with test/doc tools
+
 # ARGS
 ARG TIMEZONE="Europe/London"
 ARG LOCALE="en_US.UTF-8"
-ARG ADD_DEB_PACKAGES=""
-ARG ADD_PIP_PACKAGES=""
+ARG BUILD_DEV_IMAGE="false"
+ARG ADD_DEB_PACKAGES="python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-pandas python3-pyproj python3-elasticsearch python3-pymongo python3-zarr python3-dask python3-tinydb"
 
 # ENV settings
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
-	DEB_BUILD_DEPS="tzdata build-essential python3-setuptools python3-pip apt-utils curl git unzip" \
-	DEB_PACKAGES="locales libgdal27 python3-gdal libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}" \
-	PIP_PACKAGES="greenlet==0.4.16 gunicorn==20.0.4 gevent==1.5.0 wheel==0.33.4 ${ADD_PIP_PACKAGES}"
+	DEB_BUILD_DEPS="software-properties-common curl unzip" \
+	DEB_PACKAGES="python3-pip python3-setuptools python3-distutils python3-yaml python3-dateutil python3-tz python3-flask python3-flask-cors python3-unicodecsv python3-click python3-greenlet python3-gevent python3-wheel gunicorn libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}"
 
-ADD . /pygeoapi
+RUN mkdir -p /pygeoapi/pygeoapi
+# Add files required for pip/setuptools
+ADD requirements*.txt setup.py README.md /pygeoapi/
+ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
 
 # Run all installs
 RUN \
 	# Install dependencies
-	apt-get update \
-	&& apt-get --no-install-recommends install -y ${DEB_BUILD_DEPS} ${DEB_PACKAGES} \
-	# Timezone
-	&& cp /usr/share/zoneinfo/${TZ} /etc/localtime\
-	&& dpkg-reconfigure tzdata \
-	# Locale
-	&& sed -i -e "s/# ${LOCALE} UTF-8/${LOCALE} UTF-8/" /etc/locale.gen \
-	&& dpkg-reconfigure --frontend=noninteractive locales \
-	&& update-locale LANG=${LOCALE} \
+	apt-get update -y \
+	&& apt-get install -y --fix-missing --no-install-recommends ${DEB_BUILD_DEPS}  \
+	&& add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+	&& apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
 	&& echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
-	# Upgrade pip3 and install packages
-	&& python3 -m pip install --upgrade pip \
-	&& pip3 install ${PIP_PACKAGES} \
 	# Install pygeoapi
 	&& cd /pygeoapi \
-	&& pip3 install -r requirements.txt \
-	&& pip3 install -r requirements-dev.txt \
-	&& pip3 install -r requirements-provider.txt \
+	# Optionally add development/test/doc packages
+	&& if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
 	&& pip3 install -e . \
 	# OGC schemas local setup
 	&& mkdir /schemas.opengis.net \
 	&& curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
 	&& unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
+	&& rm -f ./SCHEMAS_OPENGIS_NET.zip \
 	# Cleanup TODO: remove unused Locales and TZs
-	&& pip3 uninstall --yes wheel \
-	&& apt-get remove --purge ${DEB_BUILD_DEPS} -y \
+	&& apt-get remove --purge -y ${DEB_BUILD_DEPS} \
 	&& apt autoremove -y  \
 	&& rm -rf /var/lib/apt/lists/*
+
+ADD . /pygeoapi
 
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh

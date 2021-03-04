@@ -3,6 +3,7 @@
 # Authors: Timo Tuunanen <timo.tuunanen@rdvelho.com>
 #
 # Copyright (c) 2019 Timo Tuunanen
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,6 +28,7 @@
 #
 # =================================================================
 
+from datetime import datetime
 import logging
 
 from bson import Code
@@ -50,13 +52,13 @@ class MongoProvider(BaseProvider):
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
 
-        :returns: pygeoapi.providers.mongo.MongoProvider
+        :returns: pygeoapi.provider.mongo.MongoProvider
         """
         # this is dummy value never used in case of Mongo.
         # Mongo id field is _id
         provider_def.setdefault('id_field', '_id')
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         LOGGER.info('Mongo source config: {}'.format(self.data))
 
@@ -95,7 +97,8 @@ class MongoProvider(BaseProvider):
         return featurelist, matchCount
 
     def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime=None, properties=[], sortby=[]):
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
         """
         query the provider
 
@@ -110,9 +113,9 @@ class MongoProvider(BaseProvider):
 
         # This parameter is not working yet!
         # gte is not sufficient to check date range
-        if datetime is not None:
-            assert isinstance(datetime.datetime, datetime)
-            and_filter.append({'properties.datetime': {'$gte': datetime}})
+        if datetime_ is not None:
+            assert isinstance(datetime_, datetime)
+            and_filter.append({'properties.datetime': {'$gte': datetime_}})
 
         for prop in properties:
             and_filter.append({"properties."+prop[0]: {'$eq': prop[1]}})
@@ -120,7 +123,7 @@ class MongoProvider(BaseProvider):
         filterobj = {'$and': and_filter} if and_filter else {}
 
         sort_list = [("properties." + sort['property'],
-                      ASCENDING if (sort['order'] == 'A') else DESCENDING)
+                      ASCENDING if (sort['order'] == '+') else DESCENDING)
                      for sort in sortby]
 
         featurelist, matchcount = self._get_feature_list(filterobj,
