@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseFormatter:
     """generic Formatter ABC"""
 
-    def __init__(self, formatter_def):
+    def __init__(self, formatter_def, **kwargs):
         """
         Initialize object
 

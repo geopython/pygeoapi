@@ -52,7 +52,7 @@ class SQLiteGPKGProvider(BaseProvider):
     TODO: DELETE, UPDATE, CREATE
     """
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         SQLiteGPKGProvider Class constructor
 
@@ -61,7 +61,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         :returns: pygeoapi.provider.base.SQLiteProvider
         """
-        super().__init__(provider_def)
+        super().__init__(provider_def, **kwargs)
 
         self.table = provider_def['table']
         self.application_id = None
