@@ -41,7 +41,7 @@ LOGGER = logging.getLogger(__name__)
 class CSVProvider(BaseProvider):
     """CSV provider"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         Initialize object
 
@@ -50,7 +50,7 @@ class CSVProvider(BaseProvider):
         :returns: pygeoapi.provider.csv_.CSVProvider
         """
 
-        super().__init__(provider_def)
+        super().__init__(provider_def, **kwargs)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
         self.fields = self.get_fields()

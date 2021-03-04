@@ -65,7 +65,7 @@ PLUGINS = {
 }
 
 
-def load_plugin(plugin_type, plugin_def):
+def load_plugin(plugin_type, plugin_def, **kwargs):
     """
     loads plugin by name
 
@@ -101,7 +101,7 @@ def load_plugin(plugin_type, plugin_def):
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    plugin = class_(plugin_def)
+    plugin = class_(plugin_def, **kwargs)
 
     return plugin
 

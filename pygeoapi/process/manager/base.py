@@ -42,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseManager:
     """generic Manager ABC"""
 
-    def __init__(self, manager_def):
+    def __init__(self, manager_def, **kwargs):
         """
         Initialize object
 

@@ -48,6 +48,7 @@ from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -277,6 +278,8 @@ def json_serial(obj):
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
+    elif isinstance(obj, l10n.Locale):
+        return l10n.locale2str(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)

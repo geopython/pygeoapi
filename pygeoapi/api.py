@@ -48,6 +48,7 @@ from shapely.errors import WKTReadingError
 import pytz
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
@@ -104,7 +105,7 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 def pre_process(func):
     """
-        Decorator performing header copy and format
+        Decorator performing header copy and format and locale
         checking before sending arguments to methods
 
         :param func: decorated function
@@ -114,15 +115,32 @@ def pre_process(func):
 
     def inner(*args, **kwargs):
         cls = args[0]
-        headers_ = HEADERS.copy()
         format_ = check_format(args[2], args[1])
+        locale_ = None
+        if hasattr(cls, 'get_locale'):
+            # add locale as keyword argument
+            locale_ = cls.get_locale(args[2], args[1])
+            kwargs['language'] = locale_
+        headers_ = set_headers(locale_)
         if len(args) > 3:
             args = args[3:]
             return func(cls, headers_, format_, *args, **kwargs)
         else:
-            return func(cls, headers_, format_)
+            return func(cls, headers_, format_, **kwargs)
 
     return inner
+
+
+def set_headers(locale_):
+    """ Sets the API response headers.
+
+    :param locale_: The locale use for the Content-Language header.
+    :returns:       dict
+    """
+    headers_ = HEADERS.copy()
+    if locale_:
+        headers_['Content-Language'] = locale_
+    return headers_
 
 
 class API:
@@ -139,6 +157,8 @@ class API:
 
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+
+        self.locale = l10n.str2locale(config['server']['language'])
 
         if 'templates' not in self.config['server']:
             self.config['server']['templates'] = TEMPLATES
@@ -167,7 +187,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def landing_page(self, headers_, format_):
+    def landing_page(self, headers_, format_, **kwargs):
         """
         Provide API
 
@@ -207,7 +227,7 @@ class API:
               'type': 'text/html',
               'title': 'This document as HTML',
               'href': '{}?f=html'.format(self.config['server']['url']),
-              'hreflang': self.config['server']['language']
+              'hreflang': self.locale
             }, {
               'rel': 'service-desc',
               'type': 'application/vnd.oai.openapi+json;version=3.0',
@@ -218,7 +238,7 @@ class API:
               'type': 'text/html',
               'title': 'The OpenAPI definition as HTML',
               'href': '{}/openapi?f=html'.format(self.config['server']['url']),
-              'hreflang': self.config['server']['language']
+              'hreflang': self.locale
             }, {
               'rel': 'conformance',
               'type': 'application/json',
@@ -256,7 +276,7 @@ class API:
         return headers_, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
-    def openapi(self, headers_, format_, openapi):
+    def openapi(self, headers_, format_, openapi, **kwargs):
         """
         Provide OpenAPI document
 
@@ -293,7 +313,7 @@ class API:
             return headers_, 200, openapi.read()
 
     @pre_process
-    def conformance(self, headers_, format_):
+    def conformance(self, headers_, format_, **kwargs):
         """
         Provide conformance definition
 
@@ -323,7 +343,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_collections(self, headers_, format_, dataset=None):
+    def describe_collections(self, headers_, format_, dataset=None, **kwargs):
         """
         Provide collection metadata
 
@@ -339,6 +359,8 @@ class API:
             msg = 'Invalid format'
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
+
+        locale_ = kwargs['language']
 
         fcm = {
             'collections': [],
@@ -365,9 +387,9 @@ class API:
 
             collection = {'links': []}
             collection['id'] = k
-            collection['title'] = v['title']
-            collection['description'] = v['description']
-            collection['keywords'] = v['keywords']
+            collection['title'] = l10n.translate(v['title'], locale_)
+            collection['description'] = l10n.translate(v['description'], locale_)  # noqa
+            collection['keywords'] = l10n.translate(v['keywords'], locale_)
 
             bbox = v['extents']['spatial']['bbox']
             # The output should be an array of bbox, so if the user only
@@ -397,7 +419,7 @@ class API:
                 lnk = {
                     'type': link['type'],
                     'rel': link['rel'],
-                    'title': link['title'],
+                    'title': l10n.translate(link['title'], locale_),
                     'href': link['href']
                 }
                 if 'hreflang' in link:
@@ -533,7 +555,7 @@ class API:
                     try:
                         p = load_plugin('provider', get_provider_by_type(
                             self.config['resources'][k]['providers'],
-                            'coverage'))
+                            'coverage'), **kwargs)
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
@@ -651,12 +673,12 @@ class API:
         if format_ == 'jsonld':
             jsonld = self.fcmld.copy()
             if dataset is not None:
-                jsonld['dataset'] = jsonldify_collection(self, fcm)
+                jsonld['dataset'] = jsonldify_collection(self, fcm, locale_)
             else:
                 jsonld['dataset'] = list(
                     map(
                         lambda collection: jsonldify_collection(
-                            self, collection
+                            self, collection, locale_
                         ), fcm.get('collections', [])
                     )
                 )
@@ -667,7 +689,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_queryables(self, headers_, format_, dataset=None):
+    def get_collection_queryables(self, headers_, format_, dataset=None, **kwargs):  # noqa
         """
         Provide collection queryables
 
@@ -691,15 +713,19 @@ class API:
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
+        locale_ = kwargs.get('language')
+
         LOGGER.debug('Creating collection queryables')
         try:
             LOGGER.debug('Loading feature provider')
             p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'feature'))
+                self.config['resources'][dataset]['providers'], 'feature'),
+                **kwargs)
         except ProviderTypeError:
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'record'))
+                self.config['resources'][dataset]['providers'], 'record'),
+                **kwargs)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
@@ -735,7 +761,8 @@ class API:
                     queryables['properties'][k]['enum'] = v['values']
 
         if format_ == 'html':  # render
-            queryables['title'] = self.config['resources'][dataset]['title']
+            queryables['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], locale_)
             headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config,
                                          'collections/queryables.html',
@@ -757,10 +784,8 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = HEADERS.copy()
-
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+        reserved_fieldnames = ['bbox', 'f', 'l', 'limit', 'startindex',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q']
         formats = FORMATS
@@ -770,6 +795,8 @@ class API:
                                                'type', 'collection')
 
         format_ = check_format(args, headers)
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         if format_ is not None and format_ not in formats:
             msg = 'Invalid format'
@@ -842,22 +869,19 @@ class API:
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('processing q parameter')
-        val = args.get('q')
-
-        if val is not None:
-            q = val
-        else:
-            q = None
+        q = args.get('q') or None
 
         LOGGER.debug('Loading provider')
 
         try:
             p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+                collections[dataset]['providers'], 'feature'),
+                language=locale_)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                    collections[dataset]['providers'], 'record'),
+                    language=locale_)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1017,7 +1041,8 @@ class API:
         content['links'].append(
             {
                 'type': 'application/json',
-                'title': collections[dataset]['title'],
+                'title': l10n.translate(
+                    collections[dataset]['title'], locale_),
                 'rel': 'collection',
                 'href': '{}/collections/{}'.format(
                     self.config['server']['url'], dataset)
@@ -1055,7 +1080,9 @@ class API:
                                          content)
             return headers_, 200, content
         elif format_ == 'csv':  # render
-            formatter = load_plugin('formatter', {'name': 'CSV', 'geom': True})
+            formatter = load_plugin('formatter',
+                                    {'name': 'CSV', 'geom': True},
+                                    language=locale_)
 
             content = formatter.write(
                 data=content,
@@ -1078,12 +1105,11 @@ class API:
             content = geojson2geojsonld(
                 self.config, content, dataset, id_field=(p.uri_field or 'id')
             )
-            return headers_, 200, to_json(content, self.pretty_print)
 
         return headers_, 200, to_json(content, self.pretty_print)
 
     @pre_process
-    def get_collection_item(self, headers_, format_, dataset, identifier):
+    def get_collection_item(self, headers_, format_, dataset, identifier, **kwargs):  # noqa
         """
         Get a single collection item
 
@@ -1111,15 +1137,17 @@ class API:
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
+        locale_ = kwargs['language']
+
         LOGGER.debug('Loading provider')
 
         try:
             p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+                collections[dataset]['providers'], 'feature'), **kwargs)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                    collections[dataset]['providers'], 'record'), **kwargs)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1172,7 +1200,7 @@ class API:
             }, {
             'rel': 'collection',
             'type': 'application/json',
-            'title': collections[dataset]['title'],
+            'title': l10n.translate(collections[dataset]['title'], locale_),
             'href': '{}/collections/{}'.format(
                 self.config['server']['url'], dataset)
             }, {
@@ -1189,7 +1217,8 @@ class API:
         if format_ == 'html':  # render
             headers_['Content-Type'] = 'text/html'
 
-            content['title'] = collections[dataset]['title']
+            content['title'] = l10n.translate(collections[dataset]['title'],
+                                              locale_)
             content['id_field'] = p.id_field
             if p.uri_field is not None:
                 content['uri_field'] = p.uri_field
@@ -1205,8 +1234,6 @@ class API:
             content = geojson2geojsonld(
                 self.config, content, dataset, uri, (p.uri_field or 'id')
             )
-            content = to_json(content, self.pretty_print)
-            return headers_, 200, content
 
         return headers_, 200, to_json(content, self.pretty_print)
 
@@ -1222,9 +1249,10 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = HEADERS.copy()
         query_args = {}
         format_ = 'json'
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1235,7 +1263,7 @@ class API:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def)
+            p = load_plugin('provider', collection_def, language=locale_)
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
@@ -1338,7 +1366,7 @@ class API:
             return self.get_exception(
                 500, headers_, format_, 'NoApplicableCode', msg)
 
-        mt = collection_def['format']['name']
+        mt = l10n.translate(collection_def['format']['name'], locale_)
 
         if format_ == mt:
             headers_['Content-Type'] = collection_def['format']['mimetype']
@@ -1362,19 +1390,16 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-
-        format_ = check_format(args, headers)
-        if format_ is None:
-            format_ = 'json'
+        format_ = check_format(args, headers) or 'json'
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         LOGGER.debug('Loading provider')
         try:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def)
+            p = load_plugin('provider', collection_def, language=locale_)
 
             data = p.get_coverage_domainset()
         except KeyError:
@@ -1394,7 +1419,8 @@ class API:
             return headers_, 200, to_json(data, self.pretty_print)
         elif format_ == 'html':
             data['id'] = dataset
-            data['title'] = self.config['resources'][dataset]['title']
+            data['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], locale_)
             content = render_j2_template(self.config,
                                          'collections/coverage/domainset.html',
                                          data)
@@ -1416,18 +1442,16 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-        format_ = check_format(args, headers)
-        if format_ is None:
-            format_ = 'json'
+        format_ = check_format(args, headers) or 'json'
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         LOGGER.debug('Loading provider')
         try:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def)
+            p = load_plugin('provider', collection_def, language=locale_)
 
             data = p.get_coverage_rangetype()
         except KeyError:
@@ -1447,7 +1471,8 @@ class API:
             return (headers_, 200, to_json(data, self.pretty_print))
         elif format_ == 'html':
             data['id'] = dataset
-            data['title'] = self.config['resources'][dataset]['title']
+            data['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], locale_)
             content = render_j2_template(self.config,
                                          'collections/coverage/rangetype.html',
                                          data)
@@ -1460,7 +1485,7 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_tiles(self, headers_, format_, dataset=None):
+    def get_collection_tiles(self, headers_, format_, dataset=None, **kwargs):
         """
         Provide collection tiles
 
@@ -1477,6 +1502,8 @@ class API:
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
+        locale_ = kwargs['language']
+
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
@@ -1489,7 +1516,7 @@ class API:
         try:
             t = get_provider_by_type(
                     self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t)
+            p = load_plugin('provider', t, **kwargs)
         except (KeyError, ProviderTypeError):
             msg = 'Invalid collection tiles'
             return self.get_exception(
@@ -1505,7 +1532,8 @@ class API:
 
         tiles = {
             'title': dataset,
-            'description': self.config['resources'][dataset]['description'],
+            'description': l10n.translate(
+                self.config['resources'][dataset]['description'], locale_),
             'links': [],
             'tileMatrixSetLinks': []
         }
@@ -1545,7 +1573,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if format_ == 'html':  # render
             tiles['id'] = dataset
-            tiles['title'] = self.config['resources'][dataset]['title']
+            tiles['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], locale_)
             tiles['tilesets'] = [
                 scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
             tiles['format'] = metadata_format
@@ -1564,13 +1593,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
     @pre_process
     @jsonldify
-    def get_collection_tiles_data(self, headers, format_, dataset=None,
+    def get_collection_tiles_data(self, headers_, format_, dataset=None,
                                   matrix_id=None, z_idx=None, y_idx=None,
-                                  x_idx=None):
+                                  x_idx=None, **kwargs):
         """
         Get collection items tiles
 
-        :param headers: copy of HEADERS object
+        :param headers_: copy of HEADERS object
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param dataset: dataset name
@@ -1581,9 +1610,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
-#        format_ = check_format({}, headers)
 
         if format_ is None and format_ not in ['mvt']:
             msg = 'Invalid format'
@@ -1604,7 +1630,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t)
+            p = load_plugin('provider', t, **kwargs)
 
             format_ = p.format_type
             headers_['Content-Type'] = format_
@@ -1652,7 +1678,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
     @pre_process
     @jsonldify
     def get_collection_tiles_metadata(self, headers_, format_, dataset=None,
-                                      matrix_id=None):
+                                      matrix_id=None, **kwargs):
         """
         Get collection items tiles
 
@@ -1670,6 +1696,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
+        locale_ = kwargs['language']
+
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
@@ -1682,7 +1710,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t)
+            p = load_plugin('provider', t, **kwargs)
         except KeyError:
             msg = 'Invalid collection tiles'
             return self.get_exception(
@@ -1710,7 +1738,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if format_ == 'html':  # render
             metadata = dict(metadata=tiles_metadata)
             metadata['id'] = dataset
-            metadata['title'] = self.config['resources'][dataset]['title']
+            metadata['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], locale_)
             metadata['tileset'] = matrix_id
             metadata['format'] = metadata_format
             headers_['Content-Type'] = 'text/html'
@@ -1725,11 +1754,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
     @pre_process
     @jsonldify
-    def describe_processes(self, headers_, format_, process=None):
+    def describe_processes(self, headers_, format_, process=None, **kwargs):
         """
         Provide processes metadata
 
-        :param headers: dict of HTTP headers
+        :param headers_: dict of HTTP headers
         :param format_: format of requests,
                         pre checked by pre_process decorator
         :param process: process identifier, defaults to None to obtain
@@ -1762,7 +1791,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
             for key, value in relevant_processes:
                 p = load_plugin('process',
-                                processes_config[key]['processor'])
+                                processes_config[key]['processor'],
+                                **kwargs)
 
                 p2 = deepcopy(p.metadata)
 
@@ -1781,7 +1811,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'rel': 'collection',
                     'href': '{}?f=html'.format(jobs_url),
                     'title': 'jobs for this process as HTML',
-                    'hreflang': self.config['server'].get('language', None)
+                    'hreflang': self.locale
                 }
                 p2['links'].append(link)
 
@@ -1790,7 +1820,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'rel': 'collection',
                     'href': '{}?f=json'.format(jobs_url),
                     'title': 'jobs for this process as JSON',
-                    'hreflang': self.config['server'].get('language', None)
+                    'hreflang': self.locale
                 }
                 p2['links'].append(link)
 
@@ -1828,10 +1858,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
-
         format_ = check_format(args, headers)
-
-        headers_ = HEADERS.copy()
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         if format_ is not None and format_ not in FORMATS:
             msg = 'Invalid format'
@@ -1848,7 +1877,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             return self.get_exception(
                 404, headers_, format_, 'NoSuchProcess', msg)
 
-        p = load_plugin('process', processes[process_id]['processor'])
+        p = load_plugin('process', processes[process_id]['processor'],
+                        language=locale_)
 
         if self.manager:
             if job_id is None:
@@ -1935,10 +1965,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
-
         format_ = check_format(args, headers)
-
-        headers_ = HEADERS.copy()
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
 
         if format_ is not None and format_ not in FORMATS:
             msg = 'Invalid format'
@@ -1961,7 +1990,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 500, headers_, format_, 'NoApplicableCode', msg)
 
         process = load_plugin('process',
-                              processes_config[process_id]['processor'])
+                              processes_config[process_id]['processor'],
+                              language=locale_)
 
         if not data:
             # TODO not all processes require input, e.g. time-depenendent or
@@ -2058,9 +2088,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         :returns: tuple of headers, status code, content
         """
-
-        headers_ = HEADERS.copy()
         format_ = check_format(args, headers)
+        locale_ = self.get_locale(args, headers)
+        headers_ = set_headers(locale_)
+
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
 
@@ -2070,7 +2101,8 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 404, headers_, format_, 'NoSuchProcess', msg)
 
         process = load_plugin('process',
-                              processes_config[process_id]['processor'])
+                              processes_config[process_id]['processor'],
+                              language=locale_)
 
         if not process:
             msg = 'identifier not found'
@@ -2299,12 +2331,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
     @pre_process
     @jsonldify
-    def get_stac_root(self, headers_, format_):
+    def get_stac_root(self, headers_, format_, **kwargs):
 
         if format_ is not None and format_ not in FORMATS:
             msg = 'Invalid format'
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
+
+        locale_ = kwargs['language']
 
         id_ = 'pygeoapi-stac'
         stac_version = '1.0.0-rc.2'
@@ -2314,10 +2348,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             'id': id_,
             'type': 'Catalog',
             'stac_version': stac_version,
-            'title': self.config['metadata']['identification']['title'],
-            'description': self.config['metadata']['identification']['description'],  # noqa
-            'links': [],
-
+            'title': l10n.translate(
+                self.config['metadata']['identification']['title'], locale_),
+            'description': l10n.translate(
+                self.config['metadata']['identification']['description'], locale_),  # noqa
+            'links': []
         }
 
         stac_collections = filter_dict_by_key_value(self.config['resources'],
@@ -2345,12 +2380,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
     @pre_process
     @jsonldify
-    def get_stac_path(self, headers_, format_, path):
+    def get_stac_path(self, headers_, format_, path, **kwargs):
 
         if format_ is not None and format_ not in FORMATS:
             msg = 'Invalid format'
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
+
+        locale_ = kwargs['language']
 
         LOGGER.debug('Path: {}'.format(path))
         dir_tokens = path.split('/')
@@ -2367,7 +2404,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider', get_provider_by_type(
-                stac_collections[dataset]['providers'], 'stac'))
+                stac_collections[dataset]['providers'], 'stac'), **kwargs)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -2382,7 +2419,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             'id': id_,
             'type': 'Catalog',
             'stac_version': stac_version,
-            'description': description,
+            'description': l10n.translate(description, locale_),
             'links': []
         }
         try:
@@ -2454,6 +2491,37 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             content = to_json(exception, self.pretty_print)
 
         return headers, status, content
+
+    def get_locale(self, args, headers):
+        """
+        Gets the language setting from arguments or headers.
+        Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
+        web locales (e.g. "en-US") or basic language tags (e.g. "en").
+
+        :param args:    Dict of request keyword value pairs.
+        :param headers: Dict of request headers.
+
+        :returns:       Language string or None
+        """
+
+        # Optional l=<language> query param
+        # Overrides Accept-Language
+        lang = args.get('l')
+        if lang:
+            LOGGER.debug(f"Found language query parameter 'l={lang}'")
+            return lang
+
+        # Language not specified: get from headers
+        lang = {k.lower(): v for k, v in
+                headers.items()}.get('accept-language')
+
+        if not lang:
+            LOGGER.debug(f"No language found in query or header; "
+                         f"using server default {self.locale}")
+            lang = self.locale
+        else:
+            LOGGER.debug(f"Found Accept-Language header '{lang}'")
+        return lang
 
 
 def check_format(args, headers):

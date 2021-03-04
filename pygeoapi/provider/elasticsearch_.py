@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 class ElasticsearchProvider(BaseProvider):
     """Elasticsearch Provider"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         Initialize object
 
@@ -54,7 +54,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: pygeoapi.provider.elasticsearch_.ElasticsearchProvider
         """
 
-        super().__init__(provider_def)
+        super().__init__(provider_def, **kwargs)
 
         self.es_host, self.index_name = self.data.rsplit('/', 1)
 

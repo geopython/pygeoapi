@@ -8,3 +8,4 @@ rasterio
 shapely
 tinydb
 unicodecsv
+Babel

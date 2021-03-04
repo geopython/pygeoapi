@@ -29,13 +29,15 @@
 
 import logging
 
+from pygeoapi import l10n
+
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseProvider:
     """generic Provider ABC"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         Initialize object
 
@@ -51,13 +53,23 @@ class BaseProvider:
         except KeyError:
             raise RuntimeError('name/type/data are required')
 
+        # locale support
+        self.locale = None
+        locales = provider_def.get('languages', [])
+        if locales:
+            self.locale = l10n.best_match(kwargs.get('language'), locales)
+            LOGGER.info(f'{self.name} provider locale set to {self.locale}')
+        else:
+            LOGGER.info(f'{self.name} provider has no locale support')
+
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
         self.uri_field = provider_def.get('uri_field', None)
         self.x_field = provider_def.get('x_field', None)
         self.y_field = provider_def.get('y_field', None)
         self.time_field = provider_def.get('time_field')
-        self.title_field = provider_def.get('title_field')
+        self.title_field = l10n.translate(provider_def.get('title_field'),
+                                          self.locale)
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
         self.fields = {}

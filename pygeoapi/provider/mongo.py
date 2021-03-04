@@ -45,7 +45,7 @@ class MongoProvider(BaseProvider):
     """Generic provider for Mongodb.
     """
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         MongoProvider Class constructor
 
@@ -58,7 +58,7 @@ class MongoProvider(BaseProvider):
         # Mongo id field is _id
         provider_def.setdefault('id_field', '_id')
 
-        super().__init__(provider_def)
+        super().__init__(provider_def, **kwargs)
 
         LOGGER.info('Mongo source config: {}'.format(self.data))
 

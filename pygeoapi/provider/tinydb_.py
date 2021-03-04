@@ -42,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 class TinyDBCatalogueProvider(BaseProvider):
     """TinyDB Catalogue Provider"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, **kwargs):
         """
         Initialize object
 
@@ -55,7 +55,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             '_metadata-anytext',
         ]
 
-        BaseProvider.__init__(self, provider_def)
+        BaseProvider.__init__(self, provider_def, **kwargs)
 
         LOGGER.debug('Connecting to TinyDB db at {}'.format(self.data))
 

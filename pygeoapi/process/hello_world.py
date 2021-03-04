@@ -112,7 +112,7 @@ PROCESS_METADATA = {
 class HelloWorldProcessor(BaseProcessor):
     """Hello World Processor example"""
 
-    def __init__(self, processor_def):
+    def __init__(self, processor_def, **kwargs):
         """
         Initialize object
 
@@ -121,7 +121,7 @@ class HelloWorldProcessor(BaseProcessor):
         :returns: pygeoapi.process.hello_world.HelloWorldProcessor
         """
 
-        super().__init__(processor_def, PROCESS_METADATA)
+        super().__init__(processor_def, PROCESS_METADATA, **kwargs)
 
     def execute(self, data):
 
