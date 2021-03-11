@@ -2,6 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Sander Schaminee <sander.schaminee@geocat.net>
 #
 # Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
@@ -28,8 +29,8 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-""" Root level code of pygeoapi, parsing content provided by webframework.
-Returns content from plugins and sets reponses
+""" Root level code of pygeoapi, parsing content provided by web framework.
+Returns content from plugins and sets responses.
 """
 
 from datetime import datetime, timezone
@@ -41,6 +42,8 @@ import uuid
 import re
 import urllib.parse
 from copy import deepcopy
+from typing import Union, Any
+from collections import OrderedDict
 
 from dateutil.parser import parse as dateparse
 from shapely.wkt import loads as shapely_loads
@@ -79,7 +82,11 @@ HEADERS = {
 }
 
 #: Formats allowed for ?f= requests
-FORMATS = ['json', 'html', 'jsonld']
+FORMATS = OrderedDict((
+    ('html', 'text/html'),
+    ('jsonld', 'application/ld+json'),
+    ('json', 'application/json'),
+))
 
 CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
@@ -105,43 +112,179 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 
 def pre_process(func):
+    """ Decorator that transforms the incoming Request instance specific to the
+    web framework (Flask, Starlette) into an APIRequest instance.
+
+    :param func: decorated function
+
+    :returns: `func`
     """
-        Decorator performing header copy and format and locale
-        checking before sending arguments to methods
 
-        :param func: decorated function
-
-        :returns: `func`
-    """
-
-    def inner(*args, **kwargs):
+    def inner(*args):
         cls = args[0]
-        format_ = check_format(args[2], args[1])
-        locale_ = None
-        if hasattr(cls, 'get_locale'):
-            # add locale as keyword argument
-            locale_ = cls.get_locale(args[2], args[1])
-            kwargs['language'] = locale_
-        headers_ = set_headers(locale_)
-        if len(args) > 3:
-            args = args[3:]
-            return func(cls, headers_, format_, *args, **kwargs)
+        req = APIRequest(args[1], getattr(cls, 'locales', set()))
+        if len(args) > 2:
+            args = args[2:]
+            return func(cls, req, *args)
         else:
-            return func(cls, headers_, format_, **kwargs)
+            return func(cls, req)
 
     return inner
 
 
-def set_headers(locale_):
-    """ Sets the API response headers.
+class APIRequest:
+    """ Transforms an incoming server-specific Request into an object
+    with some generic helper methods and properties.
 
-    :param locale_: The locale use for the Content-Language header.
-    :returns:       dict
+    :param request:             The web platform specific Request instance.
+    :param supported_locales:   List or set of supported Locale instances.
     """
-    headers_ = HEADERS.copy()
-    if locale_:
-        headers_['Content-Language'] = locale_
-    return headers_
+    def __init__(self, request, supported_locales):
+        # Get request data (if any)
+        self._data = request.data
+
+        # Copy request query parameters
+        self._args = self._get_params(request)
+
+        # Get path info
+        self._path_info = request.headers.environ['PATH_INFO'].strip('/')
+
+        # Extract locale from params or headers
+        self._locale, self._l_param = self._get_locale(request.headers,
+                                                       supported_locales)
+        if not self._locale:
+            LOGGER.debug("No (different) locale in query params or header, "
+                         "or invalid/unsupported locale")
+
+        # Determine format
+        self._format = self._get_format(request.headers)
+
+    @staticmethod
+    def _get_params(request):
+        """ Extracts the query parameters from the Request object.
+
+        :param request: A Flask or Starlette Request instance
+        :returns:       ImmutableMultiDict or empty dict
+        """
+        if hasattr(request, 'args'):
+            # Return ImmutableMultiDict from Flask request
+            return request.args
+        elif hasattr(request, 'query_params'):
+            # Return ImmutableMultiDict from Starlette request
+            return request.query_params
+        LOGGER.debug('No query parameters found')
+        return {}
+
+    def _get_locale(self, headers, supported_locales):
+        """ Detects locale from "l=<language>" or Accept-Language header.
+        Returns a tuple of (locale, True) if found in the query params.
+        Returns a tuple of (locale, False) if found in headers.
+        Returns a tuple of (default locale, False) if not found.
+
+        :param headers:             A dict with Request headers
+        :param supported_locales:   List or set of supported Locale instances
+        :returns:                   A tuple of (str, bool)
+        """
+        default_locale = supported_locales[0]
+        for func, mapping in ((l10n.locale_from_params, self._args),
+                              (l10n.locale_from_headers, headers)):
+            loc_str = func(mapping)
+            if loc_str:
+                loc = l10n.best_match(loc_str, supported_locales)
+                if loc != default_locale:
+                    return loc, func is l10n.locale_from_params
+        return default_locale, False
+
+    def _get_format(self, headers) -> Union[str, None]:
+        """
+        Get Request format type from query parameters or headers.
+
+        :param headers: Dict of Request headers
+        :returns:       format value or None if not found/specified
+        """
+
+        # Optional f=html or f=json query param
+        # Overrides Accept header and might differ from FORMATS
+        format_ = (self._args.get('f') or '').strip().lower()
+        if format_:
+            return format_
+
+        # Format not specified: get from Accept headers (MIME types)
+        # e.g. format_ = 'text/html'
+        for h in (v for k, v in headers.items() if k.lower() == 'accept'):
+            for fmt, mime in FORMATS.items():
+                if mime.strip().lower() in h.split(','):
+                    format_ = fmt
+                    break
+
+        return format_
+
+    @property
+    def data(self):
+        """ Returns the additional data send with the Request. """
+        return self._data
+
+    @property
+    def params(self):
+        """ Returns the Request query parameters dict. """
+        return self._args
+
+    @property
+    def path_info(self):
+        """ Returns the web server request path info part. """
+        return self._path_info
+
+    @property
+    def locale(self) -> l10n.Locale:
+        """ Returns the user-defined locale from the request object.
+        If no locale has been defined or if it is invalid,
+        the default server locale is returned.
+
+        :returns:   babel.core.Locale
+        """
+        return self._locale
+
+    @property
+    def format(self) -> Union[str, None]:
+        """ Returns the content type format from the
+        request query parameters or headers.
+
+        :returns:   Format name or None
+        """
+        return self._format
+
+    def is_valid(self, additional_formats=None) -> bool:
+        """ Returns True if the requested format is supported or if the
+        requested format exists in a list if additional formats.
+
+        :param additional_formats:  Optional additional supported formats list
+        :returns:   A boolean
+        """
+        if self._format in FORMATS.keys():
+            return True
+        if self._format in (f.lower() for f in (additional_formats or ())):
+            return True
+        return False
+
+    def get_response_headers(self, content_type: Union[str, None] = None):
+        """ Prepares and returns a dictionary with Response object headers.
+        Adds a 'Content-Language' header if the Request had a valid
+        language query parameter.
+        If the user does not specify `content_type`, the 'Content-Type` header
+        is based on the `format` property. If that is invalid, the default
+        'application/json' is used.
+
+        :param content_type:    An optional Content-Type header override.
+        :returns:               A header dict
+        """
+        headers = HEADERS.copy()
+        if self._l_param and self._locale:
+            headers['Content-Language'] = l10n.locale2str(self._locale)
+        if content_type:
+            headers['Content-Type'] = content_type
+        elif self.is_valid():
+            headers['Content-Type'] = FORMATS[self.format]
+        return headers
 
 
 class API:
@@ -159,7 +302,9 @@ class API:
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
-        self.locale = l10n.str2locale(config['server']['language'])
+        # Process language settings
+        self.locales = l10n.get_locales(config)
+        self.default_locale = self.locales[0]
 
         if 'templates' not in self.config['server']:
             self.config['server']['templates'] = TEMPLATES
@@ -188,73 +333,73 @@ class API:
 
     @pre_process
     @jsonldify
-    def landing_page(self, headers_, format_, **kwargs):
+    def landing_page(self, request: Union[APIRequest, Any]):
         """
         Provide API
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests, pre checked by
-                        pre_process decorator
+        :param request: A request object
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
 
         fcm = {
             'links': [],
-            'title': self.config['metadata']['identification']['title'],
+            'title': l10n.translate(
+                self.config['metadata']['identification']['title'],
+                request.locale),
             'description':
-                self.config['metadata']['identification']['description']
+                l10n.translate(
+                    self.config['metadata']['identification']['description'],
+                    request.locale)
         }
 
         LOGGER.debug('Creating links')
+        # TODO: put title text in config or translatable files?
         fcm['links'] = [{
-              'rel': 'self' if not format_ or
-              format_ == 'json' else 'alternate',
-              'type': 'application/json',
-              'title': 'This document as JSON',
-              'href': '{}?f=json'.format(self.config['server']['url'])
-            }, {
-              'rel': 'self' if format_ == 'jsonld' else 'alternate',
-              'type': 'application/ld+json',
-              'title': 'This document as RDF (JSON-LD)',
-              'href': '{}?f=jsonld'.format(self.config['server']['url'])
-            }, {
-              'rel': 'self' if format_ == 'html' else 'alternate',
-              'type': 'text/html',
-              'title': 'This document as HTML',
-              'href': '{}?f=html'.format(self.config['server']['url']),
-              'hreflang': self.locale
-            }, {
-              'rel': 'service-desc',
-              'type': 'application/vnd.oai.openapi+json;version=3.0',
-              'title': 'The OpenAPI definition as JSON',
-              'href': '{}/openapi'.format(self.config['server']['url'])
-            }, {
-              'rel': 'service-doc',
-              'type': 'text/html',
-              'title': 'The OpenAPI definition as HTML',
-              'href': '{}/openapi?f=html'.format(self.config['server']['url']),
-              'hreflang': self.locale
-            }, {
-              'rel': 'conformance',
-              'type': 'application/json',
-              'title': 'Conformance',
-              'href': '{}/conformance'.format(self.config['server']['url'])
-            }, {
-              'rel': 'data',
-              'type': 'application/json',
-              'title': 'Collections',
-              'href': '{}/collections'.format(self.config['server']['url'])
-            }
-        ]
+            'rel': 'self' if not request.format
+                             or request.format == 'json' else 'alternate',
+            'type': FORMATS['json'],
+            'title': 'This document as JSON',
+            'href': '{}?f=json'.format(self.config['server']['url'])
+        }, {
+            'rel': 'self' if request.format == 'jsonld' else 'alternate',
+            'type': FORMATS['jsonld'],
+            'title': 'This document as RDF (JSON-LD)',
+            'href': '{}?f=jsonld'.format(self.config['server']['url'])
+        }, {
+            'rel': 'self' if request.format == 'html' else 'alternate',
+            'type': FORMATS['html'],
+            'title': 'This document as HTML',
+            'href': '{}?f=html'.format(self.config['server']['url']),
+            'hreflang': self.default_locale
+        }, {
+            'rel': 'service-desc',
+            'type': 'application/vnd.oai.openapi+json;version=3.0',
+            'title': 'The OpenAPI definition as JSON',
+            'href': '{}/openapi'.format(self.config['server']['url'])
+        }, {
+            'rel': 'service-doc',
+            'type': 'text/html',
+            'title': 'The OpenAPI definition as HTML',
+            'href': '{}/openapi?f=html'.format(self.config['server']['url']),
+            'hreflang': self.default_locale
+        }, {
+            'rel': 'conformance',
+            'type': 'application/json',
+            'title': 'Conformance',
+            'href': '{}/conformance'.format(self.config['server']['url'])
+        }, {
+            'rel': 'data',
+            'type': 'application/json',
+            'title': 'Collections',
+            'href': '{}/collections'.format(self.config['server']['url'])
+        }]
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        headers = request.get_response_headers()
+        if request.format == 'html':  # render
 
             fcm['processes'] = False
             fcm['stac'] = False
@@ -267,101 +412,91 @@ class API:
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
 
+            LOGGER.debug(
+                f"{self.config['metadata']['identification']['keywords']}")
+            fcm['keywords'] = l10n.translate(
+                self.config['metadata']['identification']['keywords'],
+                request.locale)
+
             content = render_j2_template(self.config, 'landing_page.html', fcm)
-            return headers_, 200, content
+            return headers, 200, content
 
-        if format_ == 'jsonld':
-            headers_['Content-Type'] = 'application/ld+json'
-            return headers_, 200, to_json(self.fcmld, self.pretty_print)
+        if request.format == 'jsonld':
+            return headers, 200, to_json(self.fcmld, self.pretty_print)  # noqa
 
-        return headers_, 200, to_json(fcm, self.pretty_print)
+        return headers, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
-    def openapi(self, headers_, format_, openapi, **kwargs):
+    def openapi(self, request: Union[APIRequest, Any], openapi):
         """
         Provide OpenAPI document
 
-
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests, pre checked by
-                        pre_process decorator
+        :param request: A request object
         :param openapi: dict of OpenAPI definition
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
 
-        if format_ == 'html':
+        headers = request.get_response_headers()
+        if request.format == 'html':
             path = '/'.join([self.config['server']['url'].rstrip('/'),
                             'openapi'])
             data = {
                 'openapi-document-path': path
             }
-            headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config, 'openapi.html', data)
-            return headers_, 200, content
+            return headers, 200, content
 
-        headers_['Content-Type'] = \
-            'application/vnd.oai.openapi+json;version=3.0'
+        headers['Content-Type'] = 'application/vnd.oai.openapi+json;version=3.0'  # noqa
 
         if isinstance(openapi, dict):
-            return headers_, 200, to_json(openapi, self.pretty_print)
+            return headers, 200, to_json(openapi, self.pretty_print)
         else:
-            return headers_, 200, openapi.read()
+            return headers, 200, openapi.read()
 
     @pre_process
-    def conformance(self, headers_, format_, **kwargs):
+    def conformance(self, request: Union[APIRequest, Any]):
         """
         Provide conformance definition
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
 
         conformance = {
             'conformsTo': CONFORMANCE
         }
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        headers = request.get_response_headers()
+        if request.format == 'html':  # render
             content = render_j2_template(self.config, 'conformance.html',
                                          conformance)
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(conformance, self.pretty_print)
+        return headers, 200, to_json(conformance, self.pretty_print)
 
     @pre_process
     @jsonldify
-    def describe_collections(self, headers_, format_, dataset=None, **kwargs):
+    def describe_collections(self, request: Union[APIRequest, Any], dataset=None):  # noqa
         """
         Provide collection metadata
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs['language']
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         fcm = {
             'collections': [],
@@ -374,7 +509,7 @@ class API:
         if all([dataset is not None, dataset not in collections.keys()]):
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
@@ -386,11 +521,13 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
-            collection = {'links': []}
-            collection['id'] = k
-            collection['title'] = l10n.translate(v['title'], locale_)
-            collection['description'] = l10n.translate(v['description'], locale_)  # noqa
-            collection['keywords'] = l10n.translate(v['keywords'], locale_)
+            collection = {
+                'id': k,
+                'title': l10n.translate(v['title'], request.locale),
+                'description': l10n.translate(v['description'], request.locale),  # noqa
+                'keywords': l10n.translate(v['keywords'], request.locale),
+                'links': []
+            }
 
             bbox = v['extents']['spatial']['bbox']
             # The output should be an array of bbox, so if the user only
@@ -416,11 +553,11 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
-            for link in v['links']:
+            for link in l10n.translate(v['links'], request.locale):
                 lnk = {
                     'type': link['type'],
                     'rel': link['rel'],
-                    'title': l10n.translate(link['title'], locale_),
+                    'title': link['title'],
                     'href': link['href']
                 }
                 if 'hreflang' in link:
@@ -431,22 +568,22 @@ class API:
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
                 'type': 'application/json',
-                'rel': 'self' if not format_
-                or format_ == 'json' else 'alternate',
+                'rel': 'self' if not request.format
+                or request.format == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections/{}?f=json'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
                 'type': 'application/ld+json',
-                'rel': 'self' if format_ == 'jsonld' else 'alternate',
+                'rel': 'self' if request.format == 'jsonld' else 'alternate',
                 'title': 'This document as RDF (JSON-LD)',
                 'href': '{}/collections/{}?f=jsonld'.format(
                     self.config['server']['url'], k)
             })
             collection['links'].append({
                 'type': 'text/html',
-                'rel': 'self' if format_ == 'html' else 'alternate',
+                'rel': 'self' if request.format == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections/{}?f=html'.format(
                     self.config['server']['url'], k)
@@ -556,14 +693,14 @@ class API:
                     try:
                         p = load_plugin('provider', get_provider_by_type(
                             self.config['resources'][k]['providers'],
-                            'coverage'), **kwargs)
+                            'coverage'), language=request.locale)
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
                     except ProviderConnectionError:
                         msg = 'connection error (check logs)'
-                        return self.get_exception(
-                            500, headers_, format_, 'NoApplicableCode', msg)
+                        return self.get_exception(500, headers, request.format,
+                                                  'NoApplicableCode', msg)
                     except ProviderTypeError:
                         pass
 
@@ -624,7 +761,7 @@ class API:
                 except ProviderConnectionError:
                     msg = 'connection error (check logs)'
                     return self.get_exception(
-                        500, headers_, format_, 'NoApplicableCode', msg)
+                        500, headers, request.format, 'NoApplicableCode', msg)
                 except ProviderTypeError:
                     pass
 
@@ -638,29 +775,28 @@ class API:
             fcm['links'].append({
                 'type': 'application/json',
                 'rel': 'self' if not format
-                or format_ == 'json' else 'alternate',
+                or request.format == 'json' else 'alternate',
                 'title': 'This document as JSON',
                 'href': '{}/collections?f=json'.format(
                     self.config['server']['url'])
             })
             fcm['links'].append({
                 'type': 'application/ld+json',
-                'rel': 'self' if format_ == 'jsonld' else 'alternate',
+                'rel': 'self' if request.format == 'jsonld' else 'alternate',
                 'title': 'This document as RDF (JSON-LD)',
                 'href': '{}/collections?f=jsonld'.format(
                     self.config['server']['url'])
             })
             fcm['links'].append({
                 'type': 'text/html',
-                'rel': 'self' if format_ == 'html' else 'alternate',
+                'rel': 'self' if request.format == 'html' else 'alternate',
                 'title': 'This document as HTML',
                 'href': '{}/collections?f=html'.format(
                     self.config['server']['url'])
             })
 
-        if format_ == 'html':  # render
+        if request.format == 'html':  # render
 
-            headers_['Content-Type'] = 'text/html'
             if dataset is not None:
                 content = render_j2_template(self.config,
                                              'collections/collection.html',
@@ -669,72 +805,64 @@ class API:
                 content = render_j2_template(self.config,
                                              'collections/index.html', fcm)
 
-            return headers_, 200, content
+            return headers, 200, content
 
-        if format_ == 'jsonld':
-            jsonld = self.fcmld.copy()
+        if request.format == 'jsonld':
+            jsonld = self.fcmld.copy()  # noqa
             if dataset is not None:
-                jsonld['dataset'] = jsonldify_collection(self, fcm, locale_)
+                jsonld['dataset'] = jsonldify_collection(self, fcm,
+                                                         request.locale)
             else:
-                jsonld['dataset'] = list(
-                    map(
-                        lambda collection: jsonldify_collection(
-                            self, collection, locale_
-                        ), fcm.get('collections', [])
-                    )
-                )
-            headers_['Content-Type'] = 'application/ld+json'
-            return headers_, 200, to_json(jsonld, self.pretty_print)
+                jsonld['dataset'] = [
+                    jsonldify_collection(self, c, request.locale)
+                    for c in fcm.get('collections', [])
+                ]
+            return headers, 200, to_json(jsonld, self.pretty_print)
 
-        return headers_, 200, to_json(fcm, self.pretty_print)
+        return headers, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
     @jsonldify
-    def get_collection_queryables(self, headers_, format_, dataset=None, **kwargs):  # noqa
+    def get_collection_queryables(self, request: Union[APIRequest, Any], dataset=None):  # noqa
         """
         Provide collection queryables
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs.get('language')
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection queryables')
         try:
             LOGGER.debug('Loading feature provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'),
-                **kwargs)
+                language=request.locale)
         except ProviderTypeError:
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'record'),
-                **kwargs)
+                language=request.locale)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         queryables = {
             'type': 'object',
@@ -761,93 +889,85 @@ class API:
                 if 'values' in v:
                     queryables['properties'][k]['enum'] = v['values']
 
-        if format_ == 'html':  # render
+        if request.format == 'html':  # render
             queryables['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], locale_)
-            headers_['Content-Type'] = 'text/html'
+                self.config['resources'][dataset]['title'], request.locale)
             content = render_j2_template(self.config,
                                          'collections/queryables.html',
                                          queryables)
 
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(queryables, self.pretty_print)
+        return headers, 200, to_json(queryables, self.pretty_print)
 
-    def get_collection_items(self, headers, args, dataset, pathinfo=None):
+    @pre_process
+    def get_collection_items(self, request: Union[APIRequest, Any], dataset, pathinfo=None):  # noqa
         """
         Queries collection
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param dataset: dataset name
         :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
 
+        if not request.is_valid(PLUGINS['formatter'].keys()):
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
+
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'l', 'limit', 'startindex',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q']
-        formats = FORMATS
-        formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
 
-        format_ = check_format(args, headers)
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
-
-        if format_ is not None and format_ not in formats:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
         if dataset not in collections.keys():
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
         LOGGER.debug('Processing startindex parameter')
         try:
-            startindex = int(args.get('startindex'))
+            startindex = int(request.params.get('startindex'))
             if startindex < 0:
                 msg = 'startindex value should be positive or zero'
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
             startindex = 0
         except ValueError:
             msg = 'startindex value should be an integer'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing limit parameter')
         try:
-            limit = int(args.get('limit'))
+            limit = int(request.params.get('limit'))
             # TODO: We should do more validation, against the min and max
             # allowed by the server configuration
             if limit <= 0:
                 msg = 'limit value should be strictly positive'
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
             limit = int(self.config['server']['limit'])
         except ValueError:
             msg = 'limit value should be an integer'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
-        resulttype = args.get('resulttype') or 'results'
+        resulttype = request.params.get('resulttype') or 'results'
 
         LOGGER.debug('Processing bbox parameter')
 
-        bbox = args.get('bbox')
+        bbox = request.params.get('bbox')
 
         if bbox is None:
             bbox = []
@@ -857,57 +977,57 @@ class API:
             except ValueError as err:
                 msg = str(err)
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
-        datetime_ = args.get('datetime')
+        datetime_ = request.params.get('datetime')
         try:
             datetime_ = validate_datetime(collections[dataset]['extents'],
                                           datetime_)
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('processing q parameter')
-        q = args.get('q') or None
+        q = request.params.get('q') or None
 
         LOGGER.debug('Loading provider')
 
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'),
-                language=locale_)
+                language=request.locale)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
                     collections[dataset]['providers'], 'record'),
-                    language=locale_)
+                    language=request.locale)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
-                    400, headers_, format_, 'NoApplicableCode', msg)
+                    400, headers, request.format, 'NoApplicableCode', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         LOGGER.debug('processing property parameters')
-        for k, v in args.items():
+        for k, v in request.params.items():
             if k not in reserved_fieldnames and k not in p.fields.keys():
                 msg = 'unknown query parameter: {}'.format(k)
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
             elif k not in reserved_fieldnames and k in p.fields.keys():
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
         LOGGER.debug('processing sort parameter')
-        val = args.get('sortby')
+        val = request.params.get('sortby')
 
         if val is not None:
             sortby = []
@@ -922,14 +1042,15 @@ class API:
                 if prop not in p.fields.keys():
                     msg = 'bad sort property'
                     return self.get_exception(
-                        400, headers_, format_, 'InvalidParameterValue', msg)
+                        400, headers, request.format,
+                        'InvalidParameterValue', msg)
 
                 sortby.append({'property': prop, 'order': order})
         else:
             sortby = []
 
         LOGGER.debug('processing properties parameter')
-        val = args.get('properties')
+        val = request.params.get('properties')
 
         if val is not None:
             select_properties = val.split(',')
@@ -939,12 +1060,12 @@ class API:
                          set(properties_to_check))) > 0):
                 msg = 'unknown properties specified'
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
         else:
             select_properties = []
 
         LOGGER.debug('processing skipGeometry parameter')
-        val = args.get('skipGeometry')
+        val = request.params.get('skipGeometry')
         if val is not None:
             skip_geometry = str2bool(val)
         else:
@@ -973,20 +1094,20 @@ class API:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderQueryError as err:
             LOGGER.error(err)
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         serialized_query_params = ''
-        for k, v in args.items():
+        for k, v in request.params.items():
             if k not in ('f', 'startindex'):
                 serialized_query_params += '&'
                 serialized_query_params += urllib.parse.quote(k, safe='')
@@ -995,24 +1116,24 @@ class API:
 
         content['links'] = [{
             'type': 'application/geo+json',
-            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
+            'rel': 'self' if not request.format
+                             or request.format == 'json' else 'alternate',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items?f=json{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
-            }, {
-            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+        }, {
+            'rel': 'self' if request.format == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
             'href': '{}/collections/{}/items?f=jsonld{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
-            }, {
+        }, {
             'type': 'text/html',
-            'rel': 'self' if format_ == 'html' else 'alternate',
+            'rel': 'self' if request.format == 'html' else 'alternate',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items?f=html{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
-            }
-        ]
+        }]
 
         if startindex > 0:
             prev = max(0, startindex - limit)
@@ -1043,7 +1164,7 @@ class API:
             {
                 'type': 'application/json',
                 'title': l10n.translate(
-                    collections[dataset]['title'], locale_),
+                    collections[dataset]['title'], request.locale),
                 'rel': 'collection',
                 'href': '{}/collections/{}'.format(
                     self.config['server']['url'], dataset)
@@ -1052,8 +1173,7 @@ class API:
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        if request.format == 'html':  # render
 
             # For constructing proper URIs to items
             if pathinfo:
@@ -1063,7 +1183,7 @@ class API:
             else:
                 path_info = '/'.join([
                     self.config['server']['url'].rstrip('/'),
-                    headers.environ['PATH_INFO'].strip('/')])
+                    request.path_info])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
@@ -1077,11 +1197,11 @@ class API:
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
                                          content)
-            return headers_, 200, content
-        elif format_ == 'csv':  # render
+            return headers, 200, content
+        elif request.format == 'csv':  # render
             formatter = load_plugin('formatter',
                                     {'name': 'CSV', 'geom': True},
-                                    language=locale_)
+                                    language=request.locale)
 
             content = formatter.write(
                 data=content,
@@ -1092,38 +1212,35 @@ class API:
                 }
             )
 
-            headers_['Content-Type'] = '{}; charset={}'.format(
+            headers['Content-Type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
 
             cd = 'attachment; filename="{}.csv"'.format(dataset)
-            headers_['Content-Disposition'] = cd
+            headers['Content-Disposition'] = cd
 
-            return headers_, 200, content
-        elif format_ == 'jsonld':
-            headers_['Content-Type'] = 'application/ld+json'
+            return headers, 200, content
+
+        elif request.format == 'jsonld':
             content = geojson2geojsonld(self.config, content, dataset)
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(content, self.pretty_print)
+        return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
-    def get_collection_item(self, headers_, format_, dataset, identifier, **kwargs):  # noqa
+    def get_collection_item(self, request: Union[APIRequest, Any], dataset, identifier):  # noqa
         """
         Get a single collection item
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: dataset name
         :param identifier: item identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         LOGGER.debug('Processing query parameters')
 
@@ -1133,23 +1250,23 @@ class API:
         if dataset not in collections.keys():
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs['language']
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading provider')
 
         try:
             p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'), **kwargs)
+                collections[dataset]['providers'], 'feature'),
+                            language=request.locale)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'), **kwargs)
+                    collections[dataset]['providers'], 'record'),
+                                language=request.locale)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
-                    400, headers_, format_, 'InvalidParameterValue', msg)
+                    400, headers, request.format, 'InvalidParameterValue', msg)
         try:
             LOGGER.debug('Fetching id {}'.format(identifier))
             content = p.get(identifier)
@@ -1157,67 +1274,68 @@ class API:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderItemNotFoundError:
             msg = 'identifier not found'
-            return self.get_exception(404, headers_, format_, 'NotFound', msg)
+            return self.get_exception(404, headers, request.format,
+                                      'NotFound', msg)
         except ProviderQueryError as err:
             LOGGER.error(err)
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         if content is None:
             msg = 'identifier not found'
-            return self.get_exception(400, headers_, format_, 'NotFound', msg)
+            return self.get_exception(400, headers, request.format,
+                                      'NotFound', msg)
 
         content['links'] = [{
-            'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
+            'rel': 'self' if not request.format
+                             or request.format == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items/{}?f=json'.format(
                 self.config['server']['url'], dataset, identifier)
-            }, {
-            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+        }, {
+            'rel': 'self' if request.format == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
             'href': '{}/collections/{}/items/{}?f=jsonld'.format(
                 self.config['server']['url'], dataset, identifier)
-            }, {
-            'rel': 'self' if format_ == 'html' else 'alternate',
+        }, {
+            'rel': 'self' if request.format == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items/{}?f=html'.format(
                 self.config['server']['url'], dataset, identifier)
-            }, {
+        }, {
             'rel': 'collection',
             'type': 'application/json',
-            'title': l10n.translate(collections[dataset]['title'], locale_),
+            'title': l10n.translate(collections[dataset]['title'],
+                                    request.locale),
             'href': '{}/collections/{}'.format(
                 self.config['server']['url'], dataset)
-            }, {
+        }, {
             'rel': 'prev',
             'type': 'application/geo+json',
             'href': '{}/collections/{}/items/{}'.format(
                 self.config['server']['url'], dataset, identifier)
-            }, {
+        }, {
             'rel': 'next',
             'type': 'application/geo+json',
             'href': '{}/collections/{}/items/{}'.format(
                 self.config['server']['url'], dataset, identifier)
-            }
-        ]
+        }]
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
-
+        if request.format == 'html':  # render
             content['title'] = l10n.translate(collections[dataset]['title'],
-                                              locale_)
+                                              request.locale)
             content['id_field'] = p.id_field
             if p.title_field is not None:
                 content['title_field'] = p.title_field
@@ -1225,23 +1343,23 @@ class API:
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
                                          content)
-            return headers_, 200, content
-        elif format_ == 'jsonld':
-            headers_['Content-Type'] = 'application/ld+json'
+            return headers, 200, content
+
+        elif request.format == 'jsonld':
             content = geojson2geojsonld(
                 self.config, content, dataset, identifier=identifier
             )
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(content, self.pretty_print)
+        return headers, 200, to_json(content, self.pretty_print)
 
+    @pre_process
     @jsonldify
-    def get_collection_coverage(self, headers, args, dataset):
+    def get_collection_coverage(self, request: Union[APIRequest, Any], dataset):  # noqa
         """
         Returns a subset of a collection coverage
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param dataset: dataset name
 
         :returns: tuple of headers, status code, content
@@ -1249,8 +1367,7 @@ class API:
 
         query_args = {}
         format_ = 'json'
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
+        headers = request.get_response_headers(FORMATS['json'])
 
         LOGGER.debug('Processing query parameters')
 
@@ -1261,23 +1378,24 @@ class API:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def, language=locale_)
+            p = load_plugin('provider', collection_def,
+                            language=request.locale)
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
-                404, headers_, format_, 'InvalidParameterValue', msg)
+                404, headers, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
             msg = 'invalid provider type'
             return self.get_exception(
-                400, headers_, format_, 'NoApplicableCode', msg)
+                400, headers, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
 
         LOGGER.debug('Processing bbox parameter')
 
-        bbox = args.get('bbox')
+        bbox = request.params.get('bbox')
 
         if bbox is None:
             bbox = []
@@ -1287,13 +1405,13 @@ class API:
             except ValueError as err:
                 msg = str(err)
                 return self.get_exception(
-                    500, headers_, format_, 'InvalidParameterValue', msg)
+                    500, headers, format_, 'InvalidParameterValue', msg)
 
         query_args['bbox'] = bbox
 
         LOGGER.debug('Processing datetime parameter')
 
-        datetime_ = args.get('datetime', None)
+        datetime_ = request.params.get('datetime', None)
 
         try:
             datetime_ = validate_datetime(
@@ -1301,29 +1419,29 @@ class API:
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, format_, 'InvalidParameterValue', msg)
 
         query_args['datetime_'] = datetime_
 
-        if 'f' in args:
-            query_args['format_'] = format_ = args['f']
+        if request.format:
+            query_args['format_'] = format_ = request.format
 
-        if 'rangeSubset' in args:
+        range_subset = request.params.get('rangeSubset')
+        if range_subset:
             LOGGER.debug('Processing rangeSubset parameter')
-
-            query_args['range_subset'] = list(
-                filter(None, args['rangeSubset'].split(',')))
+            query_args['range_subset'] = [rs for
+                                          rs in range_subset.split(',') if rs]
             LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
 
             for a in query_args['range_subset']:
                 if a not in p.fields:
                     msg = 'Invalid field specified'
                     return self.get_exception(
-                        400, headers_, format_, 'InvalidParameterValue', msg)
+                        400, headers, format_, 'InvalidParameterValue', msg)
 
-        if 'subset' in args:
+        if 'subset' in request.params:
             LOGGER.debug('Processing subset parameter')
-            for s in args['subset'].split(','):
+            for s in (request.params['subset'] or '').split(','):
                 try:
                     if '"' not in s:
                         m = re.search(r'(.*)\((.*):(.*)\)', s)
@@ -1335,7 +1453,7 @@ class API:
                     if subset_name not in p.axes:
                         msg = 'Invalid axis name'
                         return self.get_exception(
-                            400, headers_, format_,
+                            400, headers, format_,
                             'InvalidParameterValue', msg)
 
                     subsets[subset_name] = list(map(
@@ -1343,7 +1461,7 @@ class API:
                 except AttributeError:
                     msg = 'subset should be like "axis(min:max)"'
                     return self.get_exception(
-                        400, headers_, format_, 'InvalidParameterValue', msg)
+                        400, headers, format_, 'InvalidParameterValue', msg)
 
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
@@ -1354,205 +1472,194 @@ class API:
         except ProviderInvalidQueryError as err:
             msg = 'query error: {}'.format(err)
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, format_, 'InvalidParameterValue', msg)
         except ProviderNoDataError:
             msg = 'No data found'
             return self.get_exception(
-                204, headers_, format_, 'InvalidParameterValue', msg)
+                204, headers, format_, 'InvalidParameterValue', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
 
-        mt = l10n.translate(collection_def['format']['name'], locale_)
+        mt = collection_def['format']['name']
 
         if format_ == mt:
-            headers_['Content-Type'] = collection_def['format']['mimetype']
-            return headers_, 200, data
+            headers['Content-Type'] = collection_def['format']['mimetype']
+            return headers, 200, data
         elif format_ == 'json':
-            headers_['Content-Type'] = 'application/prs.coverage+json'
-            return headers_, 200, to_json(data, self.pretty_print)
+            headers['Content-Type'] = 'application/prs.coverage+json'
+            return headers, 200, to_json(data, self.pretty_print)
         else:
-            msg = 'invalid format parameter'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+            return self.get_format_exception(request)
 
+    @pre_process
     @jsonldify
-    def get_collection_coverage_domainset(self, headers, args, dataset):
+    def get_collection_coverage_domainset(self, request: Union[APIRequest, Any], dataset):  # noqa
         """
         Returns a collection coverage domainset
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param dataset: dataset name
 
         :returns: tuple of headers, status code, content
         """
-        format_ = check_format(args, headers) or 'json'
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
+
+        format_ = request.format or 'json'
+        headers = request.get_response_headers()
 
         LOGGER.debug('Loading provider')
         try:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def, language=locale_)
+            p = load_plugin('provider', collection_def,
+                            language=request.locale)
 
             data = p.get_coverage_domainset()
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
-                404, headers_, format_, 'InvalidParameterValue', msg)
+                404, headers, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
             msg = 'invalid provider type'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
-            return headers_, 200, to_json(data, self.pretty_print)
+            return headers, 200, to_json(data, self.pretty_print)
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], locale_)
+                self.config['resources'][dataset]['title'], request.locale)
             content = render_j2_template(self.config,
                                          'collections/coverage/domainset.html',
                                          data)
-            headers_['Content-Type'] = 'text/html'
-            return headers_, 200, content
+            return headers, 200, content
         else:
-            msg = 'invalid format parameter'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+            return self.get_format_exception(request)
 
+    @pre_process
     @jsonldify
-    def get_collection_coverage_rangetype(self, headers, args, dataset):
+    def get_collection_coverage_rangetype(self, request: Union[APIRequest, Any], dataset):  # noqa
         """
         Returns a collection coverage rangetype
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param dataset: dataset name
 
         :returns: tuple of headers, status code, content
         """
-        format_ = check_format(args, headers) or 'json'
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
+        format_ = request.format or 'json'
+        headers = request.get_response_headers()
 
         LOGGER.debug('Loading provider')
         try:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
-            p = load_plugin('provider', collection_def, language=locale_)
+            p = load_plugin('provider', collection_def,
+                            language=request.locale)
 
             data = p.get_coverage_rangetype()
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
-                404, headers_, format_, 'InvalidParameterValue', msg)
+                404, headers, format_, 'InvalidParameterValue', msg)
         except ProviderTypeError:
             msg = 'invalid provider type'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
-            return (headers_, 200, to_json(data, self.pretty_print))
+            return headers, 200, to_json(data, self.pretty_print)
         elif format_ == 'html':
             data['id'] = dataset
             data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], locale_)
+                self.config['resources'][dataset]['title'], request.locale)
             content = render_j2_template(self.config,
                                          'collections/coverage/rangetype.html',
                                          data)
-            headers_['Content-Type'] = 'text/html'
-            return headers_, 200, content
+            return headers, 200, content
         else:
-            msg = 'invalid format parameter'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+            return self.get_format_exception(request)
 
     @pre_process
     @jsonldify
-    def get_collection_tiles(self, headers_, format_, dataset=None, **kwargs):
+    def get_collection_tiles(self, request: Union[APIRequest, Any], dataset=None):  # noqa
         """
         Provide collection tiles
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs['language']
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
             t = get_provider_by_type(
                     self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, **kwargs)
+            p = load_plugin('provider', t, language=request.locale)
         except (KeyError, ProviderTypeError):
             msg = 'Invalid collection tiles'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         tiles = {
             'title': dataset,
             'description': l10n.translate(
-                self.config['resources'][dataset]['description'], locale_),
+                self.config['resources'][dataset]['description'],
+                request.locale),
             'links': [],
             'tileMatrixSetLinks': []
         }
 
         tiles['links'].append({
             'type': 'application/json',
-            'rel': 'self' if format_ == 'json' else 'alternate',
+            'rel': 'self' if request.format == 'json' else 'alternate',
             'title': 'This document as JSON',
             'href': '{}/collections/{}/tiles?f=json'.format(
                 self.config['server']['url'], dataset)
         })
         tiles['links'].append({
             'type': 'application/ld+json',
-            'rel': 'self' if format_ == 'jsonld' else 'alternate',
+            'rel': 'self' if request.format == 'jsonld' else 'alternate',
             'title': 'This document as RDF (JSON-LD)',
             'href': '{}/collections/{}/tiles?f=jsonld'.format(
                 self.config['server']['url'], dataset)
         })
         tiles['links'].append({
             'type': 'text/html',
-            'rel': 'self' if format_ == 'html' else 'alternate',
+            'rel': 'self' if request.format == 'html' else 'alternate',
             'title': 'This document as HTML',
             'href': '{}/collections/{}/tiles?f=html'.format(
                 self.config['server']['url'], dataset)
@@ -1560,8 +1667,7 @@ class API:
 
         for service in p.get_tiles_service(
             baseurl=self.config['server']['url'],
-            servicepath='/collections/{}/\
-tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
+            servicepath='/collections/{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'  # noqa
             .format(dataset, 'tileMatrixSetId',
                     'tileMatrix', 'tileRow', 'tileCol'))['links']:
             tiles['links'].append(service)
@@ -1569,10 +1675,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
         metadata_format = p.options['metadata_format']
 
-        if format_ == 'html':  # render
+        if request.format == 'html':  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], locale_)
+                self.config['resources'][dataset]['title'], request.locale)
             tiles['tilesets'] = [
                 scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
             tiles['format'] = metadata_format
@@ -1581,25 +1687,22 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             tiles['minzoom'] = p.options['zoom']['min']
             tiles['maxzoom'] = p.options['zoom']['max']
 
-            headers_['Content-Type'] = 'text/html'
             content = render_j2_template(self.config,
                                          'collections/tiles/index.html', tiles)
 
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(tiles, self.pretty_print)
+        return headers, 200, to_json(tiles, self.pretty_print)
 
     @pre_process
     @jsonldify
-    def get_collection_tiles_data(self, headers_, format_, dataset=None,
-                                  matrix_id=None, z_idx=None, y_idx=None,
-                                  x_idx=None, **kwargs):
+    def get_collection_tiles_data(self, request: Union[APIRequest, Any],
+                                  dataset=None, matrix_id=None,
+                                  z_idx=None, y_idx=None, x_idx=None):
         """
         Get collection items tiles
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: dataset name
         :param matrix_id: matrix identifier
         :param z_idx: z index
@@ -1609,10 +1712,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is None and format_ not in ['mvt']:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        format_ = request.format
+        if not format_:
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         LOGGER.debug('Processing tiles')
 
@@ -1622,16 +1725,16 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if dataset not in collections.keys():
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Loading tile provider')
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, **kwargs)
+            p = load_plugin('provider', t, language=request.locale)
 
             format_ = p.format_type
-            headers_['Content-Type'] = format_
+            headers['Content-Type'] = format_
 
             LOGGER.debug('Fetching tileset id {} and tile {}/{}/{}'.format(
                 matrix_id, z_idx, y_idx, x_idx))
@@ -1640,91 +1743,88 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             if content is None:
                 msg = 'identifier not found'
                 return self.get_exception(
-                    404, headers_, format_, 'NotFound', msg)
+                    404, headers, format_, 'NotFound', msg)
             else:
-                return headers_, 202, content
+                return headers, 202, content
+
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
             msg = 'Invalid collection tiles'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, format_, 'InvalidParameterValue', msg)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
         except ProviderTilesetIdNotFoundError:
             msg = 'Tileset id not found'
             return self.get_exception(
-                404, headers_, format_, 'NotFound', msg)
+                404, headers, format_, 'NotFound', msg)
         except ProviderTileQueryError as err:
             LOGGER.error(err)
             msg = 'Tile not found'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
         except ProviderTileNotFoundError as err:
             LOGGER.error(err)
             msg = 'tile not found (check logs)'
             return self.get_exception(
-                404, headers_, format_, 'NoMatch', msg)
+                404, headers, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, format_, 'NoApplicableCode', msg)
 
     @pre_process
     @jsonldify
-    def get_collection_tiles_metadata(self, headers_, format_, dataset=None,
-                                      matrix_id=None, **kwargs):
+    def get_collection_tiles_metadata(self, request: Union[APIRequest, Any],
+                                      dataset=None, matrix_id=None):
         """
         Get collection items tiles
 
-        :param headers_: copy of HEADERS object
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param dataset: dataset name
         :param matrix_id: matrix identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs['language']
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, **kwargs)
+            p = load_plugin('provider', t, language=request.locale)
         except KeyError:
             msg = 'Invalid collection tiles'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'InvalidParameterValue', msg)
+                500, headers, request.format, 'InvalidParameterValue', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'InvalidParameterValue', msg)
+                500, headers, request.format, 'InvalidParameterValue', msg)
 
         if matrix_id not in p.options['schemes']:
             msg = 'tileset not found'
-            return self.get_exception(404, headers_, format_, 'NotFound', msg)
+            return self.get_exception(404, headers, request.format,
+                                      'NotFound', msg)
 
         metadata_format = p.options['metadata_format']
         tilejson = True if (metadata_format == 'tilejson') else False
@@ -1733,32 +1833,29 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             dataset=dataset, server_url=self.config['server']['url'],
             layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson)
 
-        if format_ == 'html':  # render
+        if request.format == 'html':  # render
             metadata = dict(metadata=tiles_metadata)
             metadata['id'] = dataset
             metadata['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], locale_)
+                self.config['resources'][dataset]['title'], request.locale)
             metadata['tileset'] = matrix_id
             metadata['format'] = metadata_format
-            headers_['Content-Type'] = 'text/html'
 
             content = render_j2_template(self.config,
                                          'collections/tiles/metadata.html',
                                          metadata)
 
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(tiles_metadata, self.pretty_print)
+        return headers, 200, to_json(tiles_metadata, self.pretty_print)
 
     @pre_process
     @jsonldify
-    def describe_processes(self, headers_, format_, process=None, **kwargs):
+    def describe_processes(self, request: Union[APIRequest, Any], process=None):  # noqa
         """
         Provide processes metadata
 
-        :param headers_: dict of HTTP headers
-        :param format_: format of requests,
-                        pre checked by pre_process decorator
+        :param request: A request object
         :param process: process identifier, defaults to None to obtain
                         information about all processes
 
@@ -1767,10 +1864,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         processes = []
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
@@ -1779,7 +1875,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             if process not in processes_config.keys() or not processes_config:
                 msg = 'Identifier not found'
                 return self.get_exception(
-                    404, headers_, format_, 'NoSuchProcess', msg)
+                    404, headers, request.format, 'NoSuchProcess', msg)
 
         if processes_config:
             if process is not None:
@@ -1790,7 +1886,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             for key, value in relevant_processes:
                 p = load_plugin('process',
                                 processes_config[key]['processor'],
-                                **kwargs)
+                                language=request.locale)
 
                 p2 = deepcopy(p.metadata)
 
@@ -1799,17 +1895,19 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     p2['jobControlOptions'].append('async-execute')
 
                 p2['outputTransmission'] = ['value']
-                p2['links'] = p2.get('links', [])
+                p2['links'] = l10n.translate(p2.get('links', []),
+                                             request.locale)
 
                 jobs_url = '{}/processes/{}/jobs'.format(
                     self.config['server']['url'], key)
 
+                # TODO translation support
                 link = {
                     'type': 'text/html',
                     'rel': 'collection',
                     'href': '{}?f=html'.format(jobs_url),
                     'title': 'jobs for this process as HTML',
-                    'hreflang': self.locale
+                    'hreflang': self.default_locale
                 }
                 p2['links'].append(link)
 
@@ -1818,7 +1916,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                     'rel': 'collection',
                     'href': '{}?f=json'.format(jobs_url),
                     'title': 'jobs for this process as JSON',
-                    'hreflang': self.locale
+                    'hreflang': self.default_locale
                 }
                 p2['links'].append(link)
 
@@ -1831,8 +1929,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'processes': processes
             }
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        if request.format == 'html':  # render
             if process is not None:
                 response = render_j2_template(self.config,
                                               'processes/process.html',
@@ -1841,31 +1938,25 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 response = render_j2_template(self.config,
                                               'processes/index.html', response)
 
-            return headers_, 200, response
+            return headers, 200, response
 
-        return headers_, 200, to_json(response, self.pretty_print)
+        return headers, 200, to_json(response, self.pretty_print)
 
-    def get_process_jobs(self, headers, args, process_id, job_id=None):
+    @pre_process
+    def get_process_jobs(self, request: Union[APIRequest, Any], process_id, job_id=None):  # noqa
         """
         Get process jobs
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param process_id: id of process
         :param job_id: id of job
 
         :returns: tuple of headers, status code, content
         """
-        format_ = check_format(args, headers)
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        response = {}
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         processes = filter_dict_by_key_value(
             self.config['resources'], 'type', 'process')
@@ -1873,10 +1964,10 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if process_id not in processes:
             msg = 'identifier not found'
             return self.get_exception(
-                404, headers_, format_, 'NoSuchProcess', msg)
+                404, headers, request.format, 'NoSuchProcess', msg)
 
         p = load_plugin('process', processes[process_id]['processor'],
-                        language=locale_)
+                        language=request.locale)
 
         if self.manager:
             if job_id is None:
@@ -1937,42 +2028,35 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             serialized_jobs = serialized_jobs[0]
             j2_template = 'processes/jobs/job.html'
 
-        if format_ == 'html':
-            headers_['Content-Type'] = 'text/html'
+        if request.format == 'html':
             data = {
                 'process': {
                     'id': process_id,
-                    'title': p.metadata['title']
+                    'title': l10n.translate(p.metadata['title'],
+                                            request.locale)
                 },
                 'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
             response = render_j2_template(self.config, j2_template, data)
-            return headers_, 200, response
+            return headers, 200, response
 
-        return headers_, 200, to_json(serialized_jobs, self.pretty_print)
+        return headers, 200, to_json(serialized_jobs, self.pretty_print)
 
-    def execute_process(self, headers, args, data, process_id):
+    @pre_process
+    def execute_process(self, request: Union[APIRequest, Any], process_id):
         """
         Execute process
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
-        :param data: process data
+        :param request: A request object
         :param process_id: id of process
 
         :returns: tuple of headers, status code, content
         """
-        format_ = check_format(args, headers)
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        response = {}
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         processes_config = filter_dict_by_key_value(
             self.config['resources'], 'type', 'process'
@@ -1980,24 +2064,25 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if process_id not in processes_config:
             msg = 'identifier not found'
             return self.get_exception(
-                404, headers_, format_, 'NoSuchProcess', msg)
+                404, headers, request.format, 'NoSuchProcess', msg)
 
         if not self.manager:
             msg = 'Process manager is undefined'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'],
-                              language=locale_)
+                              language=request.locale)
 
-        if not data:
-            # TODO not all processes require input, e.g. time-depenendent or
-            # random value generators
+        if not request.data:
+            # TODO not all processes require input, e.g. time-dependent or
+            #      random value generators
             msg = 'missing request data'
             return self.get_exception(
-                400, headers_, format_, 'MissingParameterValue', msg)
+                400, headers, request.format, 'MissingParameterValue', msg)
 
+        data = request.data
         try:
             # Parse bytes data, if applicable
             data = data.decode()
@@ -2012,7 +2097,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(err)
             msg = 'invalid request data'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         try:
             data_dict = {}
@@ -2029,7 +2114,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             # Return 4XX client error for missing 'id' or 'value' in an input
             msg = 'invalid request data'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
         else:
             LOGGER.debug(data_dict)
 
@@ -2037,7 +2122,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         url = '{}/processes/{}/jobs/{}'.format(
             self.config['server']['url'], process_id, job_id)
 
-        headers_['Location'] = url
+        headers['Location'] = url
 
         outputs = status = None
         is_async = data.get('mode', 'auto') == 'async'
@@ -2053,13 +2138,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             LOGGER.error(err)
             msg = 'Processing error'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
+        response = {}
         if status == JobStatus.failed:
             response = outputs
 
         if data.get('response', 'document') == 'raw':
-            headers_['Content-Type'] = mime_type
+            headers['Content-Type'] = mime_type
             if 'json' in mime_type:
                 response = to_json(outputs)
             else:
@@ -2073,22 +2159,23 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         else:
             http_status = 200
 
-        return headers_, http_status, to_json(response, self.pretty_print)
+        return headers, http_status, to_json(response, self.pretty_print)
 
-    def get_process_job_result(self, headers, args, process_id, job_id):
+    @pre_process
+    def get_process_job_result(self, request: Union[APIRequest, Any], process_id, job_id):  # noqa
         """
         Get result of job (instance of a process)
 
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: A request object
         :param process_id: name of process
         :param job_id: ID of job
 
         :returns: tuple of headers, status code, content
         """
-        format_ = check_format(args, headers)
-        locale_ = self.get_locale(args, headers)
-        headers_ = set_headers(locale_)
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
@@ -2096,52 +2183,52 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if process_id not in processes_config:
             msg = 'identifier not found'
             return self.get_exception(
-                404, headers_, format_, 'NoSuchProcess', msg)
+                404, headers, request.format, 'NoSuchProcess', msg)
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'],
-                              language=locale_)
+                              language=request.locale)
 
         if not process:
             msg = 'identifier not found'
             return self.get_exception(
-                404, headers_, format_, 'NoSuchProcess', msg)
+                404, headers, request.format, 'NoSuchProcess', msg)
 
         job = self.manager.get_job(process_id, job_id)
 
         if not job:
             msg = 'job not found'
-            return self.get_exception(404, headers_, format_, 'NoSuchJob', msg)
+            return self.get_exception(404, headers, request.format,
+                                      'NoSuchJob', msg)
 
         status = JobStatus[job['status']]
 
         if status == JobStatus.running:
             msg = 'job still running'
             return self.get_exception(
-                404, headers_, format_, 'ResultNotReady', msg)
+                404, headers, request.format, 'ResultNotReady', msg)
 
         elif status == JobStatus.accepted:
             # NOTE: this case is not mentioned in the specification
             msg = 'job accepted but not yet running'
             return self.get_exception(
-                404, headers_, format_, 'ResultNotReady', msg)
+                404, headers, request.format, 'ResultNotReady', msg)
 
         elif status == JobStatus.failed:
             msg = 'job failed'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         mimetype, job_output = self.manager.get_job_result(process_id, job_id)
 
         if mimetype not in [None, 'application/json']:
-            headers_['Content-Type'] = mimetype
+            headers['Content-Type'] = mimetype
             content = job_output
         else:
-            if format_ == 'json':
+            if request.format == 'json':
                 content = json.dumps(job_output, sort_keys=True, indent=4,
                                      default=json_serial)
             else:
-                headers_['Content-Type'] = 'text/html'
                 data = {
                     'process': {
                         'id': process_id, 'title': process.metadata['title']
@@ -2152,7 +2239,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 content = render_j2_template(
                     self.config, 'processes/jobs/results/index.html', data)
 
-        return headers_, 200, content
+        return headers, 200, content
 
     def delete_process_job(self, process_id, job_id):
         """
@@ -2329,14 +2416,11 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
     @pre_process
     @jsonldify
-    def get_stac_root(self, headers_, format_, **kwargs):
+    def get_stac_root(self, request: Union[APIRequest, Any]):
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        locale_ = kwargs['language']
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         id_ = 'pygeoapi-stac'
         stac_version = '0.6.2'
@@ -2346,16 +2430,19 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             'id': id_,
             'stac_version': stac_version,
             'title': l10n.translate(
-                self.config['metadata']['identification']['title'], locale_),
+                self.config['metadata']['identification']['title'],
+                request.locale),
             'description': l10n.translate(
-                self.config['metadata']['identification']['description'], locale_),  # noqa
+                self.config['metadata']['identification']['description'],
+                request.locale),
             'license': l10n.translate(
-                self.config['metadata']['license']['name'], locale_),
+                self.config['metadata']['license']['name'], request.locale),
             'providers': [{
                 'name': l10n.translate(
-                    self.config['metadata']['provider']['name'], locale_),
+                    self.config['metadata']['provider']['name'],
+                    request.locale),
                 'url': l10n.translate(
-                    self.config['metadata']['provider']['url'], locale_)
+                    self.config['metadata']['provider']['url'], request.locale)
             }],
             'links': []
         }
@@ -2375,25 +2462,22 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 'type': 'text/html'
             })
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        if request.format == 'html':  # render
             content = render_j2_template(self.config, 'stac/collection.html',
                                          content)
-            return headers_, 200, content
+            return headers, 200, content
 
-        return headers_, 200, to_json(content, self.pretty_print)
+        return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
     @jsonldify
-    def get_stac_path(self, headers_, format_, path, **kwargs):
+    def get_stac_path(self, request: Union[APIRequest, Any], path):
 
-        if format_ is not None and format_ not in FORMATS:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
-        locale_ = kwargs['language']
-
+        dataset = None
         LOGGER.debug('Path: {}'.format(path))
         dir_tokens = path.split('/')
         if dir_tokens:
@@ -2404,17 +2488,19 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         if dataset not in stac_collections:
             msg = 'collection not found'
-            return self.get_exception(404, headers_, format_, 'NotFound', msg)
+            return self.get_exception(404, headers, request.format,
+                                      'NotFound', msg)
 
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider', get_provider_by_type(
-                stac_collections[dataset]['providers'], 'stac'), **kwargs)
+                stac_collections[dataset]['providers'], 'stac'),
+                            language=request.locale)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         id_ = '{}-stac'.format(dataset)
         stac_version = '0.6.2'
@@ -2423,7 +2509,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         content = {
             'id': id_,
             'stac_version': stac_version,
-            'description': l10n.translate(description, locale_),
+            'description': l10n.translate(description, request.locale),
             'extent': stac_collections[dataset]['extents'],
             'links': []
         }
@@ -2436,19 +2522,21 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         except ProviderNotFoundError as err:
             LOGGER.error(err)
             msg = 'resource not found'
-            return self.get_exception(404, headers_, format_, 'NotFound', msg)
+            return self.get_exception(404, headers, request.format,
+                                      'NotFound', msg)
         except Exception as err:
             LOGGER.error(err)
             msg = 'data query error'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
-            content['links'].extend(stac_collections[dataset]['links'])
+            content['links'].extend(
+                l10n.translate(stac_collections[dataset]['links'],
+                               request.locale))
 
-            if format_ == 'html':  # render
-                headers_['Content-Type'] = 'text/html'
+            if request.format == 'html':  # render
                 content['path'] = path
                 if 'assets' in content:  # item view
                     content = render_j2_template(self.config,
@@ -2459,13 +2547,13 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                                                  'stac/catalog.html',
                                                  content)
 
-                return headers_, 200, content
+                return headers, 200, content
 
-            return headers_, 200, to_json(content, self.pretty_print)
+            return headers, 200, to_json(content, self.pretty_print)
 
         else:  # send back file
-            headers_.pop('Content-Type', None)
-            return headers_, 200, stac_data
+            headers.pop('Content-Type', None)
+            return headers, 200, stac_data
 
     def get_exception(self, status, headers, format_, code, description):
         """
@@ -2486,9 +2574,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
             'description': description
         }
 
-        if format_ == 'json':
-            content = to_json(exception, self.pretty_print)
-        elif format_ == 'html':
+        if format_ == 'html':
             headers['Content-Type'] = 'text/html'
             content = render_j2_template(
                 self.config, 'exception.html', exception)
@@ -2497,81 +2583,24 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         return headers, status, content
 
-    def get_locale(self, args, headers):
+    def get_format_exception(self, request):
+        """ Returns a format exception.
+
+        :param request: An APIRequest instance.
+
+        :returns:       tuple of (headers, status, message)
         """
-        Gets the language setting from arguments or headers.
-        Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
-        web locales (e.g. "en-US") or basic language tags (e.g. "en").
-
-        :param args:    Dict of request keyword value pairs.
-        :param headers: Dict of request headers.
-
-        :returns:       Language string or None
-        """
-
-        # Optional l=<language> query param
-        # Overrides Accept-Language
-        lang = args.get('l')
-        if lang:
-            LOGGER.debug(f"Found language query parameter 'l={lang}'")
-            return lang
-
-        # Language not specified: get from headers
-        lang = {k.lower(): v for k, v in
-                headers.items()}.get('accept-language')
-
-        if not lang:
-            LOGGER.debug(f"No language found in query or header; "
-                         f"using server default {self.locale}")
-            lang = self.locale
-        else:
-            LOGGER.debug(f"Found Accept-Language header '{lang}'")
-        return lang
-
-
-def check_format(args, headers):
-    """
-    check format requested from arguments or headers
-
-    :param args: dict of request keyword value pairs
-    :param headers: dict of request headers
-
-    :returns: format value
-    """
-
-    # Optional f=html or f=json query param
-    # overrides accept
-    format_ = args.get('f')
-    if format_:
-        return format_
-
-    # Format not specified: get from accept headers
-    # format_ = 'text/html'
-    headers_ = None
-    if 'accept' in headers.keys():
-        headers_ = headers['accept']
-    elif 'Accept' in headers.keys():
-        headers_ = headers['Accept']
-
-    format_ = None
-    if headers_:
-        headers_ = headers_.split(',')
-
-        if 'text/html' in headers_:
-            format_ = 'html'
-        elif 'application/ld+json' in headers_:
-            format_ = 'jsonld'
-        elif 'application/json' in headers_:
-            format_ = 'json'
-
-    return format_
+        headers = request.get_response_headers()
+        msg = f'Invalid format: {request.format}'
+        return self.get_exception(
+            400, headers, 'json', 'InvalidParameterValue', msg)
 
 
 def validate_bbox(value=None):
     """
     Helper function to validate bbox parameter
 
-    :param bbox: `list` of minx, miny, maxx, maxy
+    :param value: `list` of minx, miny, maxx, maxy
 
     :returns: bbox as `list` of `float` values
     """
