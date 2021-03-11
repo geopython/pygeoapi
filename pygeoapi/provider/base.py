@@ -37,11 +37,12 @@ LOGGER = logging.getLogger(__name__)
 class BaseProvider:
     """generic Provider ABC"""
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def: dict, requested_locale: str = None):
         """
         Initialize object
 
-        :param provider_def: provider definition
+        :param provider_def:        provider definition
+        :param requested_locale:    requested provider locale
 
         :returns: pygeoapi.provider.base.BaseProvider
         """
@@ -54,13 +55,7 @@ class BaseProvider:
             raise RuntimeError('name/type/data are required')
 
         # locale support
-        self.locale = None
-        locales = provider_def.get('languages', [])
-        if locales:
-            self.locale = l10n.best_match(kwargs.get('language'), locales)
-            LOGGER.info(f'{self.name} provider locale set to {self.locale}')
-        else:
-            LOGGER.info(f'{self.name} provider has no locale support')
+        self.locale = l10n.get_plugin_locale(provider_def, requested_locale)
 
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)

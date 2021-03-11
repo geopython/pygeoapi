@@ -49,11 +49,12 @@ def jsonldify(func):
     """
 
     def inner(*args, **kwargs):
-        format_ = args[2]
+        apireq = args[1]
+        format_ = getattr(apireq, 'format', None)
         if not format_ == 'jsonld':
             return func(*args, **kwargs)
-        # Function args have been pre-processed, so get language from kwargs
-        locale_ = kwargs.get('language')
+        # Function args have been pre-processed, so get locale from APIRequest
+        locale_ = getattr(apireq, 'locale', None)
         LOGGER.debug('Creating JSON-LD representation')
         cls = args[0]
         cfg = cls.config
@@ -69,7 +70,8 @@ def jsonldify(func):
           "name": l10n.translate(ident.get('title', None), locale_),
           "description": l10n.translate(
               ident.get('description', None), locale_),
-          "keywords": ident.get('keywords', None),
+          "keywords": l10n.translate(
+              ident.get('keywords', None), locale_),
           "termsOfService": l10n.translate(
               ident.get('terms_of_service', None), locale_),
           "license": meta.get('license', {}).get('url', None),
@@ -137,7 +139,7 @@ def jsonldify_collection(cls, collection, locale_):
         "name": l10n.translate(collection['title'], locale_),
         "description": l10n.translate(collection['description'], locale_),
         "license": cls.fcmld['license'],
-        "keywords": collection.get('keywords', None),
+        "keywords": l10n.translate(collection.get('keywords', None), locale_),
         "spatial": None if (not hascrs84 or not bbox) else [{
             "@type": "Place",
             "geo": {
@@ -159,7 +161,7 @@ def jsonldify_collection(cls, collection, locale_):
             "encodingFormat": link['type'],
             "description": l10n.translate(link['title'], locale_),
             "inLanguage": link.get(
-                'hreflang', cls.config.get('server', {}).get('language', None)
+                'hreflang', l10n.locale2str(cls.default_locale)
             ),
             "author": link['rel'] if link.get(
                 'rel', None

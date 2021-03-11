@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 class DummyManager(BaseManager):
     """generic Manager ABC"""
 
-    def __init__(self, manager_def, **kwargs):
+    def __init__(self, manager_def, locale=None):
         """
         Initialize object
 
@@ -47,7 +47,7 @@ class DummyManager(BaseManager):
         :returns: `pygeoapi.process.manager.base.BaseManager`
         """
 
-        super().__init__(manager_def, **kwargs)
+        super().__init__(manager_def, locale)
 
     def get_jobs(self, process_id=None, status=None):
         """

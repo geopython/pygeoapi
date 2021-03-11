@@ -63,10 +63,10 @@ class GeoJSONProvider(BaseProvider):
     * appropriate HTTP responses will be raised
     """
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def, requested_locale=None):
         """initializer"""
 
-        super().__init__(provider_def, **kwargs)
+        super().__init__(provider_def, requested_locale)
         self.fields = self.get_fields()
 
     def get_fields(self):

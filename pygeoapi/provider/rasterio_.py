@@ -44,14 +44,14 @@ LOGGER = logging.getLogger(__name__)
 class RasterioProvider(BaseProvider):
     """Rasterio Provider"""
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def, requested_locale=None):
         """
         Initialize object
         :param provider_def: provider definition
         :returns: pygeoapi.provider.rasterio_.RasterioProvider
         """
 
-        super().__init__(provider_def, **kwargs)
+        super().__init__(provider_def, requested_locale)
 
         try:
             self._data = rasterio.open(self.data)
