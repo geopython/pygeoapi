@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 class MVTProvider(BaseTileProvider):
     """MVT Provider"""
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def, requested_locale=None):
         """
         Initialize object
 
@@ -54,7 +54,7 @@ class MVTProvider(BaseTileProvider):
         :returns: pygeoapi.provider.MVT.MVTProvider
         """
 
-        super().__init__(provider_def, **kwargs)
+        super().__init__(provider_def, requested_locale)
 
         if is_url(self.data):
             url = urlparse(self.data)

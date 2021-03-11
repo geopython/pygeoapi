@@ -35,6 +35,7 @@ from multiprocessing import dummy
 import os
 
 from pygeoapi.util import DATETIME_FORMAT, JobStatus
+from pygeoapi import l10n
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,11 +43,12 @@ LOGGER = logging.getLogger(__name__)
 class BaseManager:
     """generic Manager ABC"""
 
-    def __init__(self, manager_def, **kwargs):
+    def __init__(self, manager_def, requested_locale: str = None):
         """
         Initialize object
 
-        :param manager_def: manager definition
+        :param manager_def:         manager definition
+        :param requested_locale:    optional requested locale
 
         :returns: `pygeoapi.process.manager.base.BaseManager`
         """
@@ -55,6 +57,9 @@ class BaseManager:
         self.is_async = False
         self.connection = manager_def.get('connection', None)
         self.output_dir = manager_def.get('output_dir', None)
+
+        # locale support
+        self.locale = l10n.get_plugin_locale(manager_def, requested_locale)
 
     def get_jobs(self, process_id=None, status=None):
         """

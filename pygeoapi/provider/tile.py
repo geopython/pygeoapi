@@ -38,11 +38,12 @@ LOGGER = logging.getLogger(__name__)
 class BaseTileProvider:
     """generic Tile Provider ABC"""
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def, requested_locale: str = None):
         """
         Initialize object
 
-        :param provider_def: provider definition
+        :param provider_def:        provider definition
+        :param requested_locale:    requested provider locale
 
         :returns: pygeoapi.provider.tile.BaseTileProvider
         """
@@ -53,14 +54,8 @@ class BaseTileProvider:
         self.options = provider_def.get('options', None)
         self.fields = {}
 
-        # locale support for providers that need it
-        self.locale = None
-        locales = provider_def.get('languages', [])
-        if locales:
-            self.locale = l10n.best_match(kwargs.get('language'), locales)
-            LOGGER.info(f'{self.name} provider locale set to {self.locale}')
-        else:
-            LOGGER.info(f'{self.name} provider has no locale support')
+        # locale support
+        self.locale = l10n.get_plugin_locale(provider_def, requested_locale)
 
     def get_layer(self):
         """

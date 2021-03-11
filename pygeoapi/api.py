@@ -141,7 +141,7 @@ class APIRequest:
     """
     def __init__(self, request, supported_locales):
         # Get request data (if any)
-        self._data = request.data
+        self._data = getattr(request, 'data', None) or None
 
         # Copy request query parameters
         self._args = self._get_params(request)
@@ -150,11 +150,9 @@ class APIRequest:
         self._path_info = request.headers.environ['PATH_INFO'].strip('/')
 
         # Extract locale from params or headers
-        self._locale, self._l_param = self._get_locale(request.headers,
-                                                       supported_locales)
-        if not self._locale:
-            LOGGER.debug("No (different) locale in query params or header, "
-                         "or invalid/unsupported locale")
+        # _l_param stores a boolean -> True if language was found in query str
+        self._raw_locale, self._locale, self._l_param = \
+            self._get_locale(request.headers, supported_locales)
 
         # Determine format
         self._format = self._get_format(request.headers)
@@ -177,23 +175,39 @@ class APIRequest:
 
     def _get_locale(self, headers, supported_locales):
         """ Detects locale from "l=<language>" or Accept-Language header.
-        Returns a tuple of (locale, True) if found in the query params.
-        Returns a tuple of (locale, False) if found in headers.
-        Returns a tuple of (default locale, False) if not found.
+        Returns a tuple of (raw, locale, True) if found in the query params.
+        Returns a tuple of (raw, locale, False) if found in headers.
+        Returns a tuple of (raw, default locale, False) if not found.
 
         :param headers:             A dict with Request headers
         :param supported_locales:   List or set of supported Locale instances
-        :returns:                   A tuple of (str, bool)
+        :returns:                   A tuple of (Locale, bool)
         """
-        default_locale = supported_locales[0]
+        raw = None
+        try:
+            default_locale = l10n.str2locale(supported_locales[0])
+        except (TypeError, IndexError, l10n.LocaleError) as err:
+            # This should normally not happen, since the API class already
+            # loads the supported languages from the config, which raises
+            # a LocaleError if any of these languages are invalid.
+            LOGGER.error(err)
+            raise ValueError(f"{self.__class__.__name__} must be initialized"
+                             f"with a list of valid supported locales")
+
         for func, mapping in ((l10n.locale_from_params, self._args),
                               (l10n.locale_from_headers, headers)):
             loc_str = func(mapping)
             if loc_str:
+                if not raw:
+                    # This is the first-found locale string: set as raw
+                    raw = loc_str
+                # Check of locale string is a good match for the UI
                 loc = l10n.best_match(loc_str, supported_locales)
-                if loc != default_locale:
-                    return loc, func is l10n.locale_from_params
-        return default_locale, False
+                precedence = func is l10n.locale_from_params
+                if loc != default_locale or precedence:
+                    return raw, loc, precedence
+
+        return raw or supported_locales[0], default_locale, False
 
     def _get_format(self, headers) -> Union[str, None]:
         """
@@ -205,19 +219,21 @@ class APIRequest:
 
         # Optional f=html or f=json query param
         # Overrides Accept header and might differ from FORMATS
-        format_ = (self._args.get('f') or '').strip().lower()
+        format_ = (self._args.get('f') or '').strip()
         if format_:
             return format_
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        for h in (v for k, v in headers.items() if k.lower() == 'accept'):
+        for h in (v.strip() for k, v in headers.items() if k.lower() == 'accept'):  # noqa
             for fmt, mime in FORMATS.items():
-                if mime.strip().lower() in h.split(','):
+                # basic support for complex types (i.e. with "q=0.x")
+                types_ = (t.split(';')[0].strip() for t in h.split(',') if t)
+                if mime.strip() in types_:
                     format_ = fmt
                     break
 
-        return format_
+        return format_ or None
 
     @property
     def data(self):
@@ -240,9 +256,31 @@ class APIRequest:
         If no locale has been defined or if it is invalid,
         the default server locale is returned.
 
+        .. note::   The locale here determines the language in which pygeoapi
+                    should return its responses. This may not be the language
+                    that the user requested. It may also not be the language
+                    that is supported by a collection provider, for example.
+                    For this reason, you should pass the `raw_locale` property
+                    to all plugins, so (e.g.) providers can determine the best
+                    matching locale themselves.
+
         :returns:   babel.core.Locale
         """
         return self._locale
+
+    @property
+    def raw_locale(self) -> str:
+        """ Returns the raw locale string from the Request object.
+        If no "l" query parameter or Accept-Language header was found,
+        the first (= default) language tag from the server configuration is
+        returned.
+        Pass this value to the :func:`load_plugin` function to let the plugin
+        determine a best match for the locale, which may be different from the
+        locale used by pygeoapi's UI.
+
+        :returns:   a locale string
+        """
+        return self._raw_locale
 
     @property
     def format(self) -> Union[str, None]:
@@ -254,35 +292,46 @@ class APIRequest:
         return self._format
 
     def is_valid(self, additional_formats=None) -> bool:
-        """ Returns True if the requested format is supported or if the
-        requested format exists in a list if additional formats.
+        """ Returns True if:
+        - the format is not set (None)
+        - the requested format is supported
+        - the requested format exists in a list if additional formats
 
         :param additional_formats:  Optional additional supported formats list
         :returns:   A boolean
         """
+        if not self._format:
+            return True
         if self._format in FORMATS.keys():
             return True
         if self._format in (f.lower() for f in (additional_formats or ())):
             return True
         return False
 
-    def get_response_headers(self, content_type: Union[str, None] = None):
+    def get_response_headers(self, content_type: str = None,
+                             locale: l10n.Locale = None) -> dict:
         """ Prepares and returns a dictionary with Response object headers.
         Adds a 'Content-Language' header if the Request had a valid
-        language query parameter.
+        language query parameter or if a `locale` override is provided.
         If the user does not specify `content_type`, the 'Content-Type` header
         is based on the `format` property. If that is invalid, the default
         'application/json' is used.
 
         :param content_type:    An optional Content-Type header override.
+        :param locale:          An optional Locale for the Content-Language.
         :returns:               A header dict
         """
         headers = HEADERS.copy()
-        if self._l_param and self._locale:
-            headers['Content-Language'] = l10n.locale2str(self._locale)
+        if self._raw_locale or locale:
+            # Add a Content-Language response header if the user requested
+            # a specific language or if the locale override is applied
+            response_loc = l10n.locale2str(locale if locale else self._locale)
+            headers['Content-Language'] = response_loc
         if content_type:
+            # Set custom MIME type if specified
             headers['Content-Type'] = content_type
-        elif self.is_valid():
+        elif self.is_valid() and self.format:
+            # Set MIME type for valid formats
             headers['Content-Type'] = FORMATS[self.format]
         return headers
 
@@ -359,8 +408,7 @@ class API:
         LOGGER.debug('Creating links')
         # TODO: put title text in config or translatable files?
         fcm['links'] = [{
-            'rel': 'self' if not request.format
-                             or request.format == 'json' else 'alternate',
+            'rel': 'self' if request.format in (None, 'json') else 'alternate',
             'type': FORMATS['json'],
             'title': 'This document as JSON',
             'href': '{}?f=json'.format(self.config['server']['url'])
@@ -412,8 +460,6 @@ class API:
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
 
-            LOGGER.debug(
-                f"{self.config['metadata']['identification']['keywords']}")
             fcm['keywords'] = l10n.translate(
                 self.config['metadata']['identification']['keywords'],
                 request.locale)
@@ -693,7 +739,7 @@ class API:
                     try:
                         p = load_plugin('provider', get_provider_by_type(
                             self.config['resources'][k]['providers'],
-                            'coverage'), language=request.locale)
+                            'coverage'), request.locale)
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
@@ -849,12 +895,12 @@ class API:
             LOGGER.debug('Loading feature provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'),
-                language=request.locale)
+                request.raw_locale)
         except ProviderTypeError:
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'record'),
-                language=request.locale)
+                request.raw_locale)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
@@ -997,12 +1043,12 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'),
-                language=request.locale)
+                request.raw_locale)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
                     collections[dataset]['providers'], 'record'),
-                    language=request.locale)
+                    request.raw_locale)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1116,8 +1162,7 @@ class API:
 
         content['links'] = [{
             'type': 'application/geo+json',
-            'rel': 'self' if not request.format
-                             or request.format == 'json' else 'alternate',
+            'rel': 'self' if request.format in (None, 'json') else 'alternate',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items?f=json{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
@@ -1173,6 +1218,10 @@ class API:
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
 
+        if p.locale:
+            # If provider supports locales, override/set response locale
+            headers['Content-Language'] = p.locale
+
         if request.format == 'html':  # render
 
             # For constructing proper URIs to items
@@ -1201,7 +1250,7 @@ class API:
         elif request.format == 'csv':  # render
             formatter = load_plugin('formatter',
                                     {'name': 'CSV', 'geom': True},
-                                    language=request.locale)
+                                    request.raw_locale)
 
             content = formatter.write(
                 data=content,
@@ -1257,12 +1306,12 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'feature'),
-                            language=request.locale)
+                            request.raw_locale)
         except ProviderTypeError:
             try:
                 p = load_plugin('provider', get_provider_by_type(
                     collections[dataset]['providers'], 'record'),
-                                language=request.locale)
+                                request.raw_locale)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1296,8 +1345,7 @@ class API:
                                       'NotFound', msg)
 
         content['links'] = [{
-            'rel': 'self' if not request.format
-                             or request.format == 'json' else 'alternate',
+            'rel': 'self' if request.format in (None, 'json') else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
             'href': '{}/collections/{}/items/{}?f=json'.format(
@@ -1332,6 +1380,10 @@ class API:
             'href': '{}/collections/{}/items/{}'.format(
                 self.config['server']['url'], dataset, identifier)
         }]
+
+        if p.locale:
+            # If provider supports locales, override/set response locale
+            headers['Content-Language'] = p.locale
 
         if request.format == 'html':  # render
             content['title'] = l10n.translate(collections[dataset]['title'],
@@ -1369,17 +1421,13 @@ class API:
         format_ = 'json'
         headers = request.get_response_headers(FORMATS['json'])
 
-        LOGGER.debug('Processing query parameters')
-
-        subsets = {}
-
         LOGGER.debug('Loading provider')
         try:
             collection_def = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'coverage')
 
             p = load_plugin('provider', collection_def,
-                            language=request.locale)
+                            request.raw_locale)
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
@@ -1440,6 +1488,7 @@ class API:
                         400, headers, format_, 'InvalidParameterValue', msg)
 
         if 'subset' in request.params:
+            subsets = {}
             LOGGER.debug('Processing subset parameter')
             for s in (request.params['subset'] or '').split(','):
                 try:
@@ -1514,7 +1563,7 @@ class API:
                 self.config['resources'][dataset]['providers'], 'coverage')
 
             p = load_plugin('provider', collection_def,
-                            language=request.locale)
+                            request.raw_locale)
 
             data = p.get_coverage_domainset()
         except KeyError:
@@ -1563,7 +1612,7 @@ class API:
                 self.config['resources'][dataset]['providers'], 'coverage')
 
             p = load_plugin('provider', collection_def,
-                            language=request.locale)
+                            request.raw_locale)
 
             data = p.get_coverage_rangetype()
         except KeyError:
@@ -1620,7 +1669,7 @@ class API:
         try:
             t = get_provider_by_type(
                     self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, language=request.locale)
+            p = load_plugin('provider', t, request.raw_locale)
         except (KeyError, ProviderTypeError):
             msg = 'Invalid collection tiles'
             return self.get_exception(
@@ -1731,7 +1780,7 @@ class API:
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, language=request.locale)
+            p = load_plugin('provider', t, request.raw_locale)
 
             format_ = p.format_type
             headers['Content-Type'] = format_
@@ -1807,7 +1856,7 @@ class API:
         try:
             t = get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'tile')
-            p = load_plugin('provider', t, language=request.locale)
+            p = load_plugin('provider', t, request.raw_locale)
         except KeyError:
             msg = 'Invalid collection tiles'
             return self.get_exception(
@@ -1886,7 +1935,7 @@ class API:
             for key, value in relevant_processes:
                 p = load_plugin('process',
                                 processes_config[key]['processor'],
-                                language=request.locale)
+                                request.raw_locale)
 
                 p2 = deepcopy(p.metadata)
 
@@ -1967,7 +2016,7 @@ class API:
                 404, headers, request.format, 'NoSuchProcess', msg)
 
         p = load_plugin('process', processes[process_id]['processor'],
-                        language=request.locale)
+                        request.raw_locale)
 
         if self.manager:
             if job_id is None:
@@ -2073,7 +2122,7 @@ class API:
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'],
-                              language=request.locale)
+                              request.raw_locale)
 
         if not request.data:
             # TODO not all processes require input, e.g. time-dependent or
@@ -2187,7 +2236,7 @@ class API:
 
         process = load_plugin('process',
                               processes_config[process_id]['processor'],
-                              language=request.locale)
+                              request.raw_locale)
 
         if not process:
             msg = 'identifier not found'
@@ -2495,7 +2544,7 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 stac_collections[dataset]['providers'], 'stac'),
-                            language=request.locale)
+                            request.raw_locale)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'

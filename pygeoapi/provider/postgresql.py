@@ -137,7 +137,7 @@ class PostgreSQLProvider(BaseProvider):
     cursor (using support class DatabaseCursor)
     """
 
-    def __init__(self, provider_def, **kwargs):
+    def __init__(self, provider_def, requested_locale=None):
         """
         PostgreSQLProvider Class constructor
 
@@ -149,7 +149,7 @@ class PostgreSQLProvider(BaseProvider):
         :returns: pygeoapi.provider.base.PostgreSQLProvider
         """
 
-        super().__init__(provider_def, **kwargs)
+        super().__init__(provider_def, requested_locale)
 
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']

@@ -8,11 +8,11 @@
   <div class="col-md-8 col-sm-12">
 
   <section id="identification">
-    <h1>{{ config['metadata']['identification']['title'] }}</h1>
-    <p>{{ config['metadata']['identification']['description'] }}</p>
+    <h1>{{ data['title'] }}</h1>
+    <p>{{ data['description'] }}</p>
 
     <p>
-        {% for kw in config['metadata']['identification']['keywords'] %}
+        {% for kw in data['keywords'] %}
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
     </p>

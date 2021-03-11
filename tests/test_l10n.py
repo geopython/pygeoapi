@@ -124,3 +124,64 @@ def test_translate(language_struct, nonlanguage_struct):
     with pytest.raises(l10n.LocaleError):
         l10n.translate(language_struct, None)
         l10n.translate(language_struct, 42)
+
+
+def test_localefromheaders():
+    assert l10n.locale_from_headers({}) is None
+    assert l10n.locale_from_headers({'Accept-Language': 'de'}) == 'de'
+    assert l10n.locale_from_headers({'accept-language': 'en_US'}) == 'en_US'
+
+
+def test_localefromparams():
+    assert l10n.locale_from_params({}) is None
+    assert l10n.locale_from_params({'l': 'de'}) == 'de'
+    assert l10n.locale_from_params({'language': 'en_US'}) is None
+    assert l10n.locale_from_params({'l': 'en_US'}) == 'en_US'
+
+
+def test_addlocale():
+    assert l10n.add_locale('http://a.pi/', None) == 'http://a.pi/'
+    assert l10n.add_locale('http://a.pi/', 'en') == 'http://a.pi/?l=en'
+    assert l10n.add_locale('http://a.pi', 'de_CH') == 'http://a.pi?l=de-CH'
+    assert l10n.add_locale('http://a.pi', 'zz') == 'http://a.pi'
+    assert l10n.add_locale('http://a.pi?q=1', 'nl') == 'http://a.pi?q=1&l=nl'
+    assert l10n.add_locale('http://a.pi?l=de', 'nl') == 'http://a.pi?l=nl'
+
+
+def test_getlocales():
+    config = {
+        'server': {
+            'language': ''
+        }
+    }
+    with pytest.raises(l10n.LocaleError):
+        l10n.get_locales({})
+        l10n.get_locales(config)
+        config['server']['language'] = 'zz'
+        l10n.get_locales(config)
+
+    config['server']['language'] = 'en-US'
+    assert l10n.get_locales(config) == [Locale.parse('en_US')]
+    config['server']['language'] = 'de_CH'
+    assert l10n.get_locales(config) == [Locale.parse('de_CH')]
+
+    config = {
+        'server': {
+            'languages': []
+        }
+    }
+    with pytest.raises(l10n.LocaleError):
+        l10n.get_locales(config)
+        config['server']['languages'] = [None]
+    config['server']['languages'] = ['de', 'en-US']
+    assert l10n.get_locales(config) == [Locale.parse('de'), Locale.parse('en_US')]  # noqa
+
+
+def test_getpluginlocale():
+    assert l10n.get_plugin_locale({}, 'de') is None
+    assert l10n.get_plugin_locale({}, None) is None  # noqa
+    assert l10n.get_plugin_locale({}, '') is None
+    assert l10n.get_plugin_locale({'languages': ['en']}, None) == Locale('en')  # noqa
+    assert l10n.get_plugin_locale({'languages': []}, 'nl') is None
+    assert l10n.get_plugin_locale({'languages': ['en']}, 'fr') == Locale('en')
+    assert l10n.get_plugin_locale({'languages': ['en', 'de']}, 'de') == Locale('de')  # noqa

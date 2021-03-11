@@ -33,8 +33,15 @@ from collections import OrderedDict
 
 from babel import Locale
 from babel import UnknownLocaleError as _UnknownLocaleError
+from urllib import parse
 
 LOGGER = logging.getLogger(__name__)
+
+# Specifies the name of a request query parameter used to set a locale
+QUERY_PARAM = 'l'
+
+# Cache Babel Locale lookups by string
+_lc_cache = {}
 
 
 class LocaleError(Exception):
@@ -56,15 +63,25 @@ def str2locale(value, silent: bool = False) -> Union[Locale, None]:
     """
     if isinstance(value, Locale):
         return value
+
+    loc = _lc_cache.get(value)
+    if loc:
+        # Value has been converted before: return cached Locale
+        return loc
+
     try:
-        return Locale.parse(value.strip().replace('-', '_'))
+        loc = Locale.parse(value.strip().replace('-', '_'))
     except (ValueError, AttributeError):
         if not silent:
             raise LocaleError(f"invalid locale '{value}'")
     except _UnknownLocaleError as err:
         if not silent:
             raise LocaleError(err)
-    return None
+    else:
+        # Add to Locale cache
+        _lc_cache[value] = loc
+
+    return loc
 
 
 def locale2str(value: Locale) -> str:
@@ -115,7 +132,7 @@ def best_match(accept_languages, available_locales) -> Locale:
     """
 
     def get_match(locale_, available_locales_):
-        """ Finds the first match of `locale` in `available_locales_`. """
+        """ Finds the first match of `locale_` in `available_locales_`. """
         if not locale_:
             return None
         territories_ = available_locales_.get(locale_.language, {})
@@ -195,8 +212,8 @@ def best_match(accept_languages, available_locales) -> Locale:
     # Nothing matched: return the first available locale
     for lang, territories in prv_locales.items():
         match = Locale(lang, territory=territories[0])
-        LOGGER.debug(f"no match for requested '{accept_languages}'; "
-                     f"using first available language '{match}'")
+        LOGGER.debug(f"No match found for language '{accept_languages}'; "
+                     f"returning default locale '{match}'")
         return match
 
 
@@ -249,3 +266,123 @@ def translate(value, language):
     # Find best language match and return value by its key
     out_locale = best_match(language, loc_items)
     return value[loc_items[out_locale]]
+
+
+def locale_from_headers(headers) -> str:
+    """
+    Gets a valid Locale from a request headers dictionary.
+    Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
+    web locales (e.g. "en-US") or basic language tags (e.g. "en").
+    A value of `None` is returned if the locale was not found or invalid.
+
+    :param headers: Mapping of request headers.
+
+    :returns:       locale string or None
+    """
+    lang = {k.lower(): v for k, v in headers.items()}.get('accept-language')
+    if lang:
+        LOGGER.debug(f"Got locale '{lang}' from 'Accept-Language' header")
+    return lang
+
+
+def locale_from_params(params) -> str:
+    """
+    Gets a valid Locale from a request query parameters dictionary.
+    Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
+    web locales (e.g. "en-US") or basic language tags (e.g. "en").
+    A value of `None` is returned if the locale was not found or invalid.
+
+    :param params:  Mapping of request query parameters.
+
+    :returns:       locale string or None
+    """
+    lang = params.get(QUERY_PARAM)
+    if lang:
+        LOGGER.debug(f"Got locale '{lang}' from query parameter '{QUERY_PARAM}'")  # noqa
+    return lang
+
+
+def add_locale(url, locale_):
+    """ Adds a locale query parameter (e.g. 'l=en-US') to a URL.
+    If `locale_` is None or an empty string, the URL will be returned as-is.
+
+    :param url:     The web page URL (may contain query string).
+    :param locale_: The web locale or language tag to append to the query.
+    :returns:       A new URL with a 'l=<locale>' query parameter.
+    :raises:        requests.exceptions.MissingSchema
+    """
+    loc = str2locale(locale_, True)
+    if not loc:
+        # Validation of locale failed
+        LOGGER.warning(
+            f"Invalid locale '{locale_}': returning URL as-is")
+        return url
+
+    try:
+        url_comp = parse.urlparse(url)
+        params = dict(parse.parse_qsl(url_comp.query))
+        params[QUERY_PARAM] = locale2str(loc)
+        qstr = parse.urlencode(params, quote_via=parse.quote, safe='/')
+        return parse.urlunparse((
+            url_comp.scheme,
+            url_comp.netloc,
+            url_comp.path,
+            url_comp.params,
+            qstr,
+            url_comp.fragment
+        ))
+    except (TypeError, ValueError):
+        LOGGER.warning(
+            f"Failed to append '{QUERY_PARAM}={loc}': returning URL as-is")  # noqa
+    return url
+
+
+def get_locales(config: dict) -> list:
+    """ Reads the configured locales/languages from the given configuration.
+    The first Locale in the returned list should be the default locale.
+
+    :param config:  A pygeaapi configuration dict
+    :returns:       A list of supported Locale instances
+    """
+    try:
+        # New setting (multiple languages, first specifies default)
+        lang = config.get('server', {})['languages']
+    except KeyError:
+        # Old setting (single language)
+        lang = [config.get('server', {}).get('language')]
+
+    if not lang:
+        LOGGER.error("Missing 'language(s)' key in config or empty value")
+        raise LocaleError('No languages have been configured')
+
+    try:
+        return [str2locale(loc) for loc in lang]
+    except LocaleError as err:
+        LOGGER.debug(err)
+        raise LocaleError('Config error in supported server languages')
+
+
+def get_plugin_locale(config: dict, requested_locale: str) -> Union[Locale, None]:  # noqa
+    """ Returns the supported locale (best match) for a plugin
+    based on the requested raw locale string.
+    Returns None if the plugin does not support any locales.
+    Returns the default (= first) locale that the plugin supports
+    if no match for the requested locale could be found.
+
+    :param config:              The plugin definition
+    :param requested_locale:    The requested locale string (or None)
+    """
+    plugin_name = f"{config.get('name', '')} plugin".strip()
+    if not requested_locale:
+        LOGGER.debug(f'No requested locale for {plugin_name}')
+        requested_locale = ''
+
+    LOGGER.debug(f'Requested {plugin_name} locale: {requested_locale}')
+    locales = config.get('languages', [])
+    if locales:
+        locale = best_match(requested_locale, locales)
+        LOGGER.info(f'{plugin_name} locale set to {locale}')
+        return locale
+
+    LOGGER.info(f'{plugin_name} has no locale support')
+    return None

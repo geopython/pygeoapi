@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+from pygeoapi import l10n
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,11 +36,12 @@ LOGGER = logging.getLogger(__name__)
 class BaseFormatter:
     """generic Formatter ABC"""
 
-    def __init__(self, formatter_def, **kwargs):
+    def __init__(self, formatter_def, requested_locale: str = None):
         """
         Initialize object
 
-        :param formatter_def: formatter definition
+        :param formatter_def:       formatter definition
+        :param requested_locale:    requested formatter locale
 
         :returns: pygeoapi.formatter.base.BaseFormatter
         """
@@ -50,6 +52,9 @@ class BaseFormatter:
         self.name = formatter_def['name']
         if 'geom' in formatter_def:
             self.geom = formatter_def['geom']
+
+        # locale support
+        self.locale = l10n.get_plugin_locale(formatter_def, requested_locale)
 
     def write(self, options={}, data=None):
         """

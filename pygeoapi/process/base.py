@@ -29,25 +29,31 @@
 
 import logging
 
+from pygeoapi import l10n
+
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
-    def __init__(self, processor_def, process_metadata, **kwargs):
+    def __init__(self, processor_def, process_metadata, requested_locale: str = None):  # noqa
         """
         Initialize object
 
-        :param processor_def: processor definition
-        :param process_metadata: process metadata `dict`
+        :param processor_def:       processor definition
+        :param process_metadata:    process metadata `dict`
+        :param requested_locale:    requested process locale
 
         :returns: pygeoapi.processor.base.BaseProvider
         """
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def execute(self):
+        # locale support
+        self.locale = l10n.get_plugin_locale(processor_def, requested_locale)
+
+    def execute(self, data):
         """
         execute the process
 

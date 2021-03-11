@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 class CSVFormatter(BaseFormatter):
     """CSV formatter"""
 
-    def __init__(self, formatter_def, **kwargs):
+    def __init__(self, formatter_def, requested_locale=None):
         """
         Initialize object
 
@@ -53,7 +53,7 @@ class CSVFormatter(BaseFormatter):
         if 'geom' in formatter_def:
             geom = formatter_def['geom']
 
-        super().__init__({'name': 'csv', 'geom': geom}, **kwargs)
+        super().__init__({'name': 'csv', 'geom': geom}, requested_locale)
         self.mimetype = 'text/csv'
 
     def write(self, options={}, data=None):

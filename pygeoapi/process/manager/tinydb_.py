@@ -43,7 +43,7 @@ LOGGER = logging.getLogger(__name__)
 class TinyDBManager(BaseManager):
     """TinyDB Manager"""
 
-    def __init__(self, manager_def, **kwargs):
+    def __init__(self, manager_def, locale=None):
         """
         Initialize object
 
@@ -52,7 +52,7 @@ class TinyDBManager(BaseManager):
         :returns: `pygeoapi.process.manager.base.BaseManager`
         """
 
-        super().__init__(manager_def, **kwargs)
+        super().__init__(manager_def, locale)
         self.is_async = True
 
     def _connect(self):
