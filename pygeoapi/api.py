@@ -272,9 +272,9 @@ class API:
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
-        path = '/'.join([self.config['server']['url'].rstrip('/'), 'openapi'])
-
         if format_ == 'html':
+            path = '/'.join([self.config['server']['url'].rstrip('/'),
+                            'openapi'])
             data = {
                 'openapi-document-path': path
             }
@@ -285,7 +285,10 @@ class API:
         headers_['Content-Type'] = \
             'application/vnd.oai.openapi+json;version=3.0'
 
-        return headers_, 200, to_json(openapi, self.pretty_print)
+        if isinstance(openapi, dict):
+            return headers_, 200, to_json(openapi, self.pretty_print)
+        else:
+            return headers_, 200, openapi.read()
 
     @pre_process
     def conformance(self, headers_, format_):

@@ -103,16 +103,20 @@ async def openapi(request: Request):
     """
 
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        openapi = yaml_load(ff)
+        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
+            openapi = yaml_load(ff)
+        else:  # JSON file, do not transform
+            openapi = ff
 
-    headers, status_code, content = api_.openapi(
-        request.headers, request.query_params, openapi)
+        headers, status_code, content = api_.openapi(
+            request.headers, request.query_params, openapi)
 
-    response = Response(content=content, status_code=status_code)
-    if headers:
-        response.headers.update(headers)
+        response = Response(content=content, status_code=status_code)
 
-    return response
+        if headers:
+            response.headers.update(headers)
+
+        return response
 
 
 @app.route('/conformance')
