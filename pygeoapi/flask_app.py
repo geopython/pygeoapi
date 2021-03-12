@@ -121,18 +121,22 @@ def openapi():
 
     :returns: HTTP response
     """
+
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        openapi = yaml_load(ff)
+        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
+            openapi = yaml_load(ff)
+        else:  # JSON file, do not transform
+            openapi = ff
 
-    headers, status_code, content = api_.openapi(request.headers, request.args,
-                                                 openapi)
+        headers, status_code, content = api_.openapi(
+            request.headers, request.args, openapi)
 
-    response = make_response(content, status_code)
+        response = make_response(content, status_code)
 
-    if headers:
-        response.headers = headers
+        if headers:
+            response.headers = headers
 
-    return response
+        return response
 
 
 @BLUEPRINT.route('/conformance')

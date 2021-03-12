@@ -38,7 +38,7 @@ from pygeoapi import __version__
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, yaml_load)
+                           filter_providers_by_type, to_json, yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -938,11 +938,17 @@ def get_oas(cfg, version='3.0'):
 @click.command('generate-openapi-document')
 @click.pass_context
 @click.option('--config', '-c', 'config_file', help='configuration file')
-def generate_openapi_document(ctx, config_file):
+@click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
+              default='yaml', help='output format (json|yaml)')
+def generate_openapi_document(ctx, config_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
     with open(config_file) as ff:
         s = yaml_load(ff)
-        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        pretty_print = s['server'].get('pretty_print', False)
+        if format_ == 'yaml':
+            click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        else:
+            click.echo(to_json(get_oas(s), pretty=pretty_print))
