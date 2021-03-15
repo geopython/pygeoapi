@@ -55,10 +55,10 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
    class MyCoolVectorDataProvider(BaseProvider):
        """My cool vector data provider"""
 
-       def __init__(self, provider_def):
+       def __init__(self, provider_def, requested_locale=None):
            """Inherit from parent class"""
 
-           super().__init__(provider_def)
+           super().__init__(provider_def, requested_locale)
 
        def get_fields(self):
 
@@ -97,6 +97,9 @@ as well as implement the ``get`` method accordingly.  As long as the plugin impl
 its base provider, all other functionality is left to the provider implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
+
+.. note::   You can add language support to your plugin using :ref:`these guides<language>`.
+
 
 Connecting to pygeoapi
 ^^^^^^^^^^^^^^^^^^^^^^
