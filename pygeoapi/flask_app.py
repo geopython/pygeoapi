@@ -465,6 +465,39 @@ def get_process_job_result_resource(process_id, job_id, resource):
     return response
 
 
+@BLUEPRINT.route('/collections/<collection_id>/position')
+@BLUEPRINT.route('/collections/<collection_id>/area')
+@BLUEPRINT.route('/collections/<collection_id>/cube')
+@BLUEPRINT.route('/collections/<collection_id>/trajectory')
+@BLUEPRINT.route('/collections/<collection_id>/corridor')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/position')  # noqa
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/area')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/cube')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/trajectory')  # noqa
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/corridor')  # noqa
+def get_collection_edr_query(collection_id, instance_id=None):
+    """
+    OGC EDR API endpoints
+
+    :param collection_id: collection identifier
+    :param instance_id: instance identifier
+
+    :returns: HTTP response
+    """
+
+    query_type = request.path.split('/')[-1]
+
+    headers, status_code, content = api_.get_collection_edr_query(
+        request.headers, request.args, collection_id, instance_id, query_type)
+
+    response = make_response(content, status_code)
+
+    if headers:
+        response.headers = headers
+
+    return response
+
+
 @BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """

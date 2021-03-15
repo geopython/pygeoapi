@@ -467,6 +467,46 @@ async def get_process_job_result_resource(request: Request, process_id=None,
     return response
 
 
+@app.route('/collections/{collection_id}/position')
+@app.route('/collections/{collection_id}/area')
+@app.route('/collections/{collection_id}/cube')
+@app.route('/collections/{collection_id}/trajectory')
+@app.route('/collections/{collection_id}/corridor')
+@app.route('/collections/{collection_id}/instances/{instance_id}/position')
+@app.route('/collections/{collection_id}/instances/{instance_id}/area')
+@app.route('/collections/{collection_id}/instances/{instance_id}/cube')
+@app.route('/collections/{collection_id}/instances/{instance_id}/trajectory')
+@app.route('/collections/{collection_id}/instances/{instance_id}/corridor')
+async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
+    """
+    OGC EDR API endpoints
+
+    :param collection_id: collection identifier
+    :param instance_id: instance identifier
+
+    :returns: HTTP response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    if 'instance_id' in request.path_params:
+        instance_id = request.path_params['instance_id']
+
+    query_type = request.path.split('/')[-1]
+
+    headers, status_code, content = api_.get_collection_edr_query(
+        request.headers, request.query_params, collection_id, instance_id,
+        query_type)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
 @app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
