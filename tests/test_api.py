@@ -1192,16 +1192,14 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = api_.get_collection_edr_query(
         req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-17'},
         'icoads-sst', instance=None, query_type='position')
-#    assert code == 204
+    assert code == 204
 
     # no data
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-15'},
-        'icoads-sst', instance=None, query_type='position')
+#    req_headers = make_req_headers()
+#    rsp_headers, code, response = api_.get_collection_edr_query(
+#        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-15'},
+#        'icoads-sst', instance=None, query_type='position')
 #    assert code == 204
-
-    print(response)
 
 
 def test_validate_bbox():
