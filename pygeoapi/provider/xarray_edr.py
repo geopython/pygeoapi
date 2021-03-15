@@ -35,7 +35,7 @@ from pygeoapi.provider.xarray_ import _to_datetime_string, XarrayProvider
 LOGGER = logging.getLogger(__name__)
 
 
-class EDRProvider(XarrayProvider):
+class XarrayEDRProvider(XarrayProvider):
     """EDR Provider"""
 
     def __init__(self, provider_def):
@@ -127,11 +127,16 @@ class EDRProvider(XarrayProvider):
         LOGGER.debug('query parameters: {}'.format(query_params))
 
         try:
-            if select_properties is not None:
+            if select_properties:
                 self.fields = select_properties
                 data = self._data[[*select_properties]]
-            data = data.sel(query_params)
+            else:
+                data = self._data
+            data = data.sel(query_params, method='nearest')
         except KeyError:
+            raise ProviderNoDataError()
+
+        if len(data.coords[self.time_field].values) < 1:
             raise ProviderNoDataError()
 
         try:

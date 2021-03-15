@@ -2207,10 +2207,6 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         parameternames = args.get('parameter-name', [])
         if parameternames:
             parameternames = parameternames.split(',')
-        else:
-            msg = 'missing parameter-name parameter'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing coords parameter')
         wkt = args.get('coords', None)
@@ -2264,7 +2260,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         )
 
         if len(parametername_matches) < len(parameternames):
-            msg = 'Invalid parameter name'
+            msg = 'Invalid parameter-name'
             return self.get_exception(
                 400, headers_, format_, 'InvalidParameterValue', msg)
 

@@ -180,13 +180,14 @@ resources:
                   name: GRIB2
                   mimetype: application/x-grib2
 
-    edr-test:
+    icoads-sst:
         type: collection
-        title: EDR test
-        description: EDR test
+        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
+        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
         keywords:
-            - edr
-            - test
+            - icoads
+            - sst
+            - air temperature
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -195,11 +196,11 @@ resources:
             - type: text/html
               rel: canonical
               title: information
-              href: https://eccc-msc.github.io/open-data/msc-data/nwp_gdps/readme_gdps_en
-              hreflang: en-CA
+              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
+              hreflang: en-US
         providers:
             - type: edr
-              name: EDR
+              name: xarray-edr
               data: tests/data/coads_sst.nc
               format:
                   name: NetCDF

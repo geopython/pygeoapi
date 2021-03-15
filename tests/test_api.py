@@ -1116,6 +1116,94 @@ def test_delete_process_job(api_):
     assert code == 404
 
 
+def test_get_collection_edr_query(config, api_):
+    # no coords parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {}, 'icoads-sst', instance=None, query_type='position')
+    assert code == 400
+
+    # bad query type
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
+        query_type='corridor')
+    assert code == 400
+
+    # bad coords parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'gah'}, 'icoads-sst', instance=None,
+        query_type='position')
+    assert code == 400
+
+    # bad parameter-name parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'bad'},
+        'icoads-sst', instance=None, query_type='position')
+    assert code == 400
+
+    # all parameters
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
+        query_type='position')
+    assert code == 200
+
+    data = json.loads(response)
+
+    axes = list(data['domain']['axes'].keys())
+    axes.sort()
+    assert len(axes) == 3
+    assert axes == ['TIME', 'x', 'y']
+
+    assert data['domain']['axes']['x']['start'] == 11.0
+    assert data['domain']['axes']['x']['stop'] == 11.0
+    assert data['domain']['axes']['y']['start'] == 11.0
+    assert data['domain']['axes']['y']['stop'] == 11.0
+
+    parameters = list(data['parameters'].keys())
+    parameters.sort()
+    assert len(parameters) == 4
+    assert parameters == ['AIRT', 'SST', 'UWND', 'VWND']
+
+    # single parameter
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'SST'},
+        'icoads-sst', instance=None, query_type='position')
+    assert code == 200
+
+    data = json.loads(response)
+
+    assert len(data['parameters'].keys()) == 1
+    assert list(data['parameters'].keys())[0] == 'SST'
+
+    # some data
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-16'},
+        'icoads-sst', instance=None, query_type='position')
+    assert code == 200
+
+    # no data
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-17'},
+        'icoads-sst', instance=None, query_type='position')
+#    assert code == 204
+
+    # no data
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-15'},
+        'icoads-sst', instance=None, query_type='position')
+#    assert code == 204
+
+    print(response)
+
+
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
     assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]

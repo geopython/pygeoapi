@@ -758,7 +758,7 @@ def get_oas_30(cfg):
                         'operationId': eqe['op_id'],
                         'parameters': [
                             {'$ref': '{}/parameters/{}Coords.yaml'.format(OPENAPI_YAML['oaedr'], eqe['qt'])},  # noqa
-                            {'$ref': '{}/parameters/datetime.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])},  # noqa
                             {'$ref': '{}/parameters/parameter-name.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
                             {'$ref': '{}/parameters/z.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
                             {'$ref': '#/components/parameters/f'}

@@ -79,7 +79,7 @@ The `xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
 
 .. note::
    `Zarr`_ files are directories with files and subdirectories.  Therefore
-    a zip file is returned upon request for said format.
+   a zip file is returned upon request for said format.
 
 Data access examples
 --------------------
