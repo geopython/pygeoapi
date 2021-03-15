@@ -1,0 +1,80 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ data['collections_path'] }}">Collections</a>
+{% for link in data['links'] %}
+  {% if link.rel == 'collection' %} /
+    <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
+    {% set col_title = link['title'] %}
+  {% endif %}
+{% endfor %}
+/ <a href="{{ data['items_path']}}">Items</a>
+{% endblock %}
+{% block extrahead %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet-coverage@0.7/leaflet-coverage.css">
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/covutils@0.6/covutils.min.js"></script>
+    <script src="https://unpkg.com/covjson-reader@0.16/covjson-reader.src.js"></script>
+    <script src="https://unpkg.com/leaflet-coverage@0.7/leaflet-coverage.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <section id="coverage">
+    <div id="items-map"></div>
+  </section>
+{% endblock %}
+
+{% block extrafoot %}
+{% if data %}
+<!--
+    <script>
+    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
+    map.addLayer(new L.TileLayer(
+        '{{ config['server']['map']['url'] }}', {
+            maxZoom: 18,
+            attribution: '{{ config['server']['map']['attribution'] }}'
+        }
+    ));
+
+var cov = CovJSON.read(JSON.parse('{{ data |to_json }}'), parameters: ['SST']);
+
+//var cov = CovJSON.load('https://raw.githubusercontent.com/covjson/cookbook/master/examples/coverages/grid.covjson');
+
+var layer = new C.dataLayer(cov, {parameter: 'SST'});
+
+    </script>
+-->
+
+    <script>
+    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
+    map.addLayer(new L.TileLayer(
+        '{{ config['server']['map']['url'] }}', {
+            maxZoom: 18,
+            attribution: '{{ config['server']['map']['attribution'] }}'
+        }
+    ));
+
+    var layers = L.control.layers(null, null, {collapsed: false}).addTo(map)
+
+    var layer
+    CovJSON.read(JSON.parse('{{ data | to_json }}')).then(function (coverage) {
+      layer = C.dataLayer(coverage, {parameter: 'SST'})
+        .on('afterAdd', function () {
+          C.legend(layer).addTo(map)
+          map.fitBounds(layer.getBounds())
+        })
+        .addTo(map)
+      layers.addOverlay(layer, 'Temperature')
+      map.setZoom(5)
+    })
+
+    map.on('click', function (e) {
+      new C.DraggableValuePopup({
+        layers: [layer]
+      }).setLatLng(e.latlng).openOn(map)
+    })
+
+</script>
+{% endif %}
+{% endblock %}

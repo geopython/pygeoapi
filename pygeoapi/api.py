@@ -43,6 +43,8 @@ import urllib.parse
 from copy import deepcopy
 
 from dateutil.parser import parse as dateparse
+from shapely.wkt import loads as shapely_loads
+from shapely.errors import WKTReadingError
 import pytz
 
 from pygeoapi import __version__
@@ -79,6 +81,8 @@ HEADERS = {
 FORMATS = ['json', 'html', 'jsonld']
 
 CONFORMANCE = [
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
@@ -88,13 +92,12 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/core',
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/req/collections',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html'
+    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
 ]
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
@@ -532,14 +535,15 @@ class API:
                         p = load_plugin('provider', get_provider_by_type(
                             self.config['resources'][k]['providers'],
                             'coverage'))
+                        collection['crs'] = [p.crs]
+                        collection['domainset'] = p.get_coverage_domainset()
+                        collection['rangetype'] = p.get_coverage_rangetype()
                     except ProviderConnectionError:
                         msg = 'connection error (check logs)'
                         return self.get_exception(
                             500, headers_, format_, 'NoApplicableCode', msg)
-
-                    collection['crs'] = [p.crs]
-                    collection['domainset'] = p.get_coverage_domainset()
-                    collection['rangetype'] = p.get_coverage_rangetype()
+                    except ProviderTypeError:
+                        pass
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
@@ -562,6 +566,45 @@ class API:
                     'href': '{}/collections/{}/tiles?f=html'.format(
                         self.config['server']['url'], k)
                 })
+
+            try:
+                edr = get_provider_by_type(v['providers'], 'edr')
+            except ProviderTypeError:
+                edr = None
+
+            if edr and dataset is not None:
+                LOGGER.debug('Adding EDR links')
+                try:
+                    p = load_plugin('provider', get_provider_by_type(
+                        self.config['resources'][dataset]['providers'],
+                        'edr'))
+                    parameters = p.get_fields()
+                    if parameters:
+                        collection['parameters'] = {}
+                        for f in parameters['field']:
+                            collection['parameters'][f['id']] = f
+
+                    for qt in p.get_query_types():
+                        collection['links'].append({
+                            'type': 'text/json',
+                            'rel': 'data',
+                            'title': '{} query for this collection as JSON'.format(qt),  # noqa
+                            'href': '{}/collections/{}/{}?f=json'.format(
+                                self.config['server']['url'], k, qt)
+                        })
+                        collection['links'].append({
+                            'type': 'text/html',
+                            'rel': 'data',
+                            'title': '{} query for this collection as HTML'.format(qt),  # noqa
+                            'href': '{}/collections/{}/{}?f=html'.format(
+                                self.config['server']['url'], k, qt)
+                        })
+                except ProviderConnectionError:
+                    msg = 'connection error (check logs)'
+                    return self.get_exception(
+                        500, headers_, format_, 'NoApplicableCode', msg)
+                except ProviderTypeError:
+                    pass
 
             if dataset is not None and k == dataset:
                 fcm = collection
@@ -2114,6 +2157,142 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         LOGGER.info(response)
         return {}, http_status, response
+
+    def get_collection_edr_query(self, headers, args, dataset, instance,
+                                 query_type):
+        """
+        Queries collection EDR
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param dataset: instance name
+        :param query_type: EDR query type
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        query_args = {}
+        formats = FORMATS
+        formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        format_ = check_format(args, headers)
+
+        if dataset not in collections.keys():
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        if format_ is not None and format_ not in formats:
+            msg = 'Invalid format'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Processing datetime parameter')
+        datetime_ = args.get('datetime')
+        try:
+            datetime_ = validate_datetime(collections[dataset]['extents'],
+                                          datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing parameter-name parameter')
+        parameternames = args.get('parameter-name', [])
+        if parameternames:
+            parameternames = parameternames.split(',')
+
+        LOGGER.debug('Processing coords parameter')
+        wkt = args.get('coords', None)
+
+        if wkt is None:
+            msg = 'missing coords parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        try:
+            wkt = shapely_loads(wkt)
+        except WKTReadingError:
+            msg = 'invalid coords parameter'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing z parameter')
+        z = args.get('z')
+
+        LOGGER.debug('Loading provider')
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                collections[dataset]['providers'], 'edr'))
+        except ProviderTypeError:
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        if instance is not None and not p.get_instance(instance):
+            msg = 'Invalid instance identifier'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        if query_type not in p.get_query_types():
+            msg = 'Unsupported query type'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        parametername_matches = list(
+            filter(
+                lambda p: p['id'] in parameternames, p.get_fields()['field']
+            )
+        )
+
+        if len(parametername_matches) < len(parameternames):
+            msg = 'Invalid parameter-name'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        query_args = dict(
+            query_type=query_type,
+            instance=instance,
+            format_=format_,
+            datetime_=datetime_,
+            select_properties=parameternames,
+            wkt=wkt,
+            z=z
+        )
+
+        try:
+            data = p.query(**query_args)
+        except ProviderNoDataError:
+            msg = 'No data found'
+            return self.get_exception(
+                204, headers_, format_, 'NoMatch', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        if format_ == 'html':  # render
+            headers_['Content-Type'] = 'text/html'
+            content = render_j2_template(
+                self.config, 'collections/edr/query.html', data)
+        else:
+            content = to_json(data, self.pretty_print)
+
+        return headers_, 200, content
 
     @pre_process
     @jsonldify
