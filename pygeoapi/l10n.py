@@ -30,6 +30,7 @@
 import logging
 from typing import Union
 from collections import OrderedDict
+from copy import deepcopy
 
 from babel import Locale
 from babel import UnknownLocaleError as _UnknownLocaleError
@@ -42,6 +43,9 @@ QUERY_PARAM = 'l'
 
 # Cache Babel Locale lookups by string
 _lc_cache = {}
+
+# Cache translated configurations
+_cfg_cache = {}
 
 
 class LocaleError(Exception):
@@ -217,7 +221,7 @@ def best_match(accept_languages, available_locales) -> Locale:
         return match
 
 
-def translate(value, language):
+def translate(value, language: Union[Locale, str]):
     """
     If `value` is a language struct (where its keys are language codes
     and its values are translations for each language), this function tries to
@@ -266,6 +270,55 @@ def translate(value, language):
     # Find best language match and return value by its key
     out_locale = best_match(language, loc_items)
     return value[loc_items[out_locale]]
+
+
+def translate_dict(dictionary: dict, locale_: Locale, is_config: bool = False) -> dict:  # noqa
+    """ Returns a copy of a given dict, where all language structs
+    are filtered on the given locale. This results in a dictionary in which
+    the language structs are replaced by translated strings.
+
+    :param dictionary:  A dict to filter/translate.
+    :param locale_:     The Babel Locale to filter on.
+    :param is_config:   If True, the dict is treated as a pygeoapi config.
+                        This means that the first 2 levels won't be translated
+                        and the translated dict is cached for speed.
+    :returns:           A translated dict
+    """
+
+    def _translate_dict(d: dict, level: int = 0):
+        """ Recursive function to walk and translate a dictionary. """
+        for k, v in d.items():
+            if 0 <= level <= max_level and isinstance(v, dict):
+                # Skip first 2 levels (don't translate)
+                _translate_dict(v, level + 1)
+                continue
+            tr = translate(v, locale_)
+            if isinstance(tr, dict):
+                # Look for language structs in next level
+                _translate_dict(tr, level + 1)
+            else:
+                # Overwrite level with translated value
+                d[k] = tr
+
+    max_level = 1 if is_config else -1
+    result = {}
+    if not dictionary:
+        return result
+    if not locale_:
+        return dictionary
+
+    # Check if we already translated the dict before
+    result = _cfg_cache.get(locale_) if is_config else result
+    if not result:
+        # Create deep copy of config and translate/filter values
+        result = deepcopy(dictionary)
+        _translate_dict(result)
+
+        # Cache translated pygeoapi configs for faster retrieval next time
+        if is_config:
+            _cfg_cache[locale_] = result
+
+    return result
 
 
 def locale_from_headers(headers) -> str:
