@@ -208,9 +208,9 @@ def test_apirequest(api_):
     # Test without user language setting (should use default)
     req = make_request(ROUTE_OBS, {})
     apireq = APIRequest(req, api_.locales)
-    assert apireq.raw_locale is None
+    assert apireq.raw_locale == 'en-US'
     assert apireq.locale.language == api_.default_locale.language
-    assert 'Content-Language' not in apireq.get_response_headers()
+    assert apireq.get_response_headers()['Content-Language'] == 'en-US'
 
 
 def test_api(config, api_, openapi):
@@ -1189,37 +1189,35 @@ def test_get_collection_edr_query(config, api_):
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # no coords parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {}, 'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # bad query type
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'POINT(11 11)'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
-        query_type='corridor')
+        req, 'icoads-sst', None, 'corridor')
     assert code == 400
 
     # bad coords parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'gah'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'gah'}, 'icoads-sst', instance=None,
-        query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # bad parameter-name parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'parameter-name': 'bad'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'bad'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # all parameters
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'POINT(11 11)'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
-        query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     data = json.loads(response)
@@ -1240,10 +1238,11 @@ def test_get_collection_edr_query(config, api_):
     assert parameters == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # single parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'parameter-name': 'SST'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'SST'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     data = json.loads(response)
@@ -1252,25 +1251,20 @@ def test_get_collection_edr_query(config, api_):
     assert list(data['parameters'].keys())[0] == 'SST'
 
     # some data
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'datetime': '2000-01-16'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-16'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     # no data
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'datetime': '2000-01-17'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-17'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 204
-
-    # no data
-#    req_headers = make_req_headers()
-#    rsp_headers, code, response = api_.get_collection_edr_query(
-#        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-15'},
-#        'icoads-sst', instance=None, query_type='position')
-#    assert code == 204
 
 
 def test_validate_bbox():

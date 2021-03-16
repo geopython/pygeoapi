@@ -360,18 +360,9 @@ def get_collection_edr_query(collection_id, instance_id=None):
 
     :returns: HTTP response
     """
-
     query_type = request.path.split('/')[-1]
-
-    headers, status_code, content = api_.get_collection_edr_query(
-        request.headers, request.args, collection_id, instance_id, query_type)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_edr_query(request, collection_id,
+                                                      instance_id, query_type))
 
 
 @BLUEPRINT.route('/stac')

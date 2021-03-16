@@ -149,9 +149,8 @@ class APIRequest:
         self._path_info = request.headers.environ['PATH_INFO'].strip('/')
 
         # Extract locale from params or headers
-        # _l_param stores a boolean -> True if language was found in query str
-        self._raw_locale, self._locale, self._l_param = \
-            self._get_locale(request.headers, supported_locales)
+        self._raw_locale, self._locale = self._get_locale(request.headers,
+                                                          supported_locales)
 
         # Determine format
         self._format = self._get_format(request.headers)
@@ -173,18 +172,18 @@ class APIRequest:
         return {}
 
     def _get_locale(self, headers, supported_locales):
-        """ Detects locale from "l=<language>" or Accept-Language header.
-        Returns a tuple of (raw, locale, True) if found in the query params.
-        Returns a tuple of (raw, locale, False) if found in headers.
-        Returns a tuple of (raw, default locale, False) if not found.
+        """ Detects locale from "l=<language>" param or Accept-Language header.
+        Returns a tuple of (raw, locale) if found in params or headers.
+        Returns a tuple of (raw default, default locale) if not found.
 
         :param headers:             A dict with Request headers
         :param supported_locales:   List or set of supported Locale instances
-        :returns:                   A tuple of (Locale, bool)
+        :returns:                   A tuple of (str, Locale)
         """
         raw = None
         try:
             default_locale = l10n.str2locale(supported_locales[0])
+            default_str = l10n.locale2str(default_locale)
         except (TypeError, IndexError, l10n.LocaleError) as err:
             # This should normally not happen, since the API class already
             # loads the supported languages from the config, which raises
@@ -202,11 +201,11 @@ class APIRequest:
                     raw = loc_str
                 # Check of locale string is a good match for the UI
                 loc = l10n.best_match(loc_str, supported_locales)
-                precedence = func is l10n.locale_from_params
-                if loc != default_locale or precedence:
-                    return raw, loc, precedence
+                is_override = func is l10n.locale_from_params
+                if loc != default_locale or is_override:
+                    return raw, loc
 
-        return raw or supported_locales[0], default_locale, False
+        return raw or default_str, default_locale
 
     def _get_format(self, headers) -> Union[str, None]:
         """
@@ -781,7 +780,7 @@ class API:
                 try:
                     p = load_plugin('provider', get_provider_by_type(
                         self.config['resources'][dataset]['providers'],
-                        'edr'))
+                        'edr'), request.raw_locale)
                     parameters = p.get_fields()
                     if parameters:
                         collection['parameter-names'] = {}
@@ -2328,116 +2327,102 @@ class API:
         LOGGER.info(response)
         return {}, http_status, response
 
-    def get_collection_edr_query(self, headers, args, dataset, instance,
-                                 query_type):
+    @pre_process
+    def get_collection_edr_query(self, request: Union[APIRequest, Any],
+                                 dataset, instance, query_type):
         """
         Queries collection EDR
-        :param headers: dict of HTTP headers
-        :param args: dict of HTTP request parameters
+        :param request: APIRequest instance with query params
         :param dataset: dataset name
-        :param dataset: instance name
+        :param instance: instance name
         :param query_type: EDR query type
         :returns: tuple of headers, status code, content
         """
 
-        headers_ = HEADERS.copy()
-
-        query_args = {}
-        formats = FORMATS
-        formats.extend(f.lower() for f in PLUGINS['formatter'].keys())
+        if not request.is_valid(PLUGINS['formatter'].keys()):
+            return self.get_format_exception(request)
+        headers = request.get_response_headers()
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
 
-        format_ = check_format(args, headers)
-
         if dataset not in collections.keys():
             msg = 'Invalid collection'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
-
-        if format_ is not None and format_ not in formats:
-            msg = 'Invalid format'
-            return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing query parameters')
 
         LOGGER.debug('Processing datetime parameter')
-        datetime_ = args.get('datetime')
+        datetime_ = request.params.get('datetime')
         try:
             datetime_ = validate_datetime(collections[dataset]['extents'],
                                           datetime_)
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing parameter-name parameter')
-        parameternames = args.get('parameter-name', [])
-        if parameternames:
+        parameternames = request.params.get('parameter-name') or []
+        if isinstance(parameternames, str):
             parameternames = parameternames.split(',')
 
         LOGGER.debug('Processing coords parameter')
-        wkt = args.get('coords', None)
+        wkt = request.params.get('coords', None)
 
-        if wkt is None:
+        if not wkt:
             msg = 'missing coords parameter'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         try:
             wkt = shapely_loads(wkt)
         except WKTReadingError:
             msg = 'invalid coords parameter'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing z parameter')
-        z = args.get('z')
+        z = request.params.get('z')
 
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'edr'))
+                collections[dataset]['providers'], 'edr'), request.raw_locale)
         except ProviderTypeError:
             msg = 'invalid provider type'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         if instance is not None and not p.get_instance(instance):
             msg = 'Invalid instance identifier'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         if query_type not in p.get_query_types():
             msg = 'Unsupported query type'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
-        parametername_matches = list(
-            filter(
-                lambda p: p['id'] in parameternames, p.get_fields()['field']
-            )
-        )
-
-        if len(parametername_matches) < len(parameternames):
+        if parameternames and not any((fld['id'] in parameternames)
+                                      for fld in p.get_fields()['field']):
             msg = 'Invalid parameter-name'
             return self.get_exception(
-                400, headers_, format_, 'InvalidParameterValue', msg)
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         query_args = dict(
             query_type=query_type,
             instance=instance,
-            format_=format_,
+            format_=request.format,
             datetime_=datetime_,
             select_properties=parameternames,
             wkt=wkt,
@@ -2449,20 +2434,23 @@ class API:
         except ProviderNoDataError:
             msg = 'No data found'
             return self.get_exception(
-                204, headers_, format_, 'NoMatch', msg)
+                204, headers, request.format, 'NoMatch', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
-                500, headers_, format_, 'NoApplicableCode', msg)
+                500, headers, request.format, 'NoApplicableCode', msg)
 
-        if format_ == 'html':  # render
-            headers_['Content-Type'] = 'text/html'
+        if p.locale:
+            # If provider supports locales, override/set response locale
+            headers['Content-Language'] = p.locale
+
+        if request.format == 'html':  # render
             content = render_j2_template(
                 self.config, 'collections/edr/query.html', data)
         else:
             content = to_json(data, self.pretty_print)
 
-        return headers_, 200, content
+        return headers, 200, content
 
     @pre_process
     @jsonldify
