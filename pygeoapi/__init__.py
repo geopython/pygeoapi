@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-__version__ = '0.10.0'
+__version__ = '0.11.dev0'
 
 import click
 from pygeoapi.openapi import generate_openapi_document
