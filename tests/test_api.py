@@ -68,22 +68,6 @@ def make_request(route: str, params: dict, data=None, **headers):
     return request
 
 
-def make_req_headers(**kwargs):
-    environ = create_environ('/collections/obs/items',
-                             'http://localhost:5000/')
-    environ.update(kwargs)
-    request = Request(environ)
-    return request.headers
-
-
-def make_lakes_req_headers(**kwargs):
-    environ = create_environ('/collections/lakes/items',
-                             'http://localhost:5000/')
-    environ.update(kwargs)
-    request = Request(environ)
-    return request.headers
-
-
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:

@@ -26,9 +26,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+import os
 
 from babel import Locale
 from pygeoapi import l10n
+from pygeoapi.util import yaml_load
 
 import pytest
 
@@ -122,8 +124,8 @@ def test_translate(language_struct, nonlanguage_struct):
     assert l10n.translate(language_struct, Locale.parse('en_US')) == 'English (United States)'  # noqa
 
     with pytest.raises(l10n.LocaleError):
-        l10n.translate(language_struct, None)
-        l10n.translate(language_struct, 42)
+        l10n.translate(language_struct, None)  # noqa
+        l10n.translate(language_struct, 42)    # noqa
 
 
 def test_localefromheaders():
@@ -185,3 +187,52 @@ def test_getpluginlocale():
     assert l10n.get_plugin_locale({'languages': []}, 'nl') is None
     assert l10n.get_plugin_locale({'languages': ['en']}, 'fr') == Locale('en')
     assert l10n.get_plugin_locale({'languages': ['en', 'de']}, 'de') == Locale('de')  # noqa
+
+
+def get_test_file_path(filename):
+    """helper function to open test file safely"""
+
+    if os.path.isfile(filename):
+        return filename
+    else:
+        return 'tests/{}'.format(filename)
+
+
+@pytest.fixture()
+def config():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
+def locale_():
+    return Locale.parse('en_US')
+
+
+def test_translatedict(config, locale_):
+    cfg = l10n.translate_dict(config, locale_, True)
+    assert cfg['metadata']['identification']['title'] == 'pygeoapi default instance'  # noqa
+    assert cfg['metadata']['identification']['keywords'] == ['geospatial', 'data', 'api']  # noqa
+
+    # test full equality (must come from cache)
+    cfg2 = l10n.translate_dict(config, locale_, True)
+    assert cfg is cfg2
+
+    # missing locale_ should return the same dict
+    assert l10n.translate_dict(config, None) is config  # noqa
+
+    # missing or empty dict should return an empty dict
+    assert l10n.translate_dict(None, locale_) == {}  # noqa
+
+    # test custom dict (translate from level 0, do not cache)
+    test_dict = {
+        'level0': {
+            'en': 'test value',
+            'fr': 'valeur de test'
+        }
+    }
+    tr_dict = l10n.translate_dict(test_dict, locale_)
+    assert tr_dict['level0'] == 'test value'
+    tr_dict2 = l10n.translate_dict(test_dict, locale_)
+    assert tr_dict == tr_dict2
+    assert tr_dict is not tr_dict2

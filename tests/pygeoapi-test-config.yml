@@ -34,7 +34,10 @@ server:
     url: http://localhost:5000/
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
-    language: en-US
+    languages:
+        # First language is the default language
+        - en-US
+        - fr-CA
     cors: true
     pretty_print: true
     limit: 10
@@ -52,12 +55,21 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
-        description: pygeoapi provides an API to geospatial data
+        title:
+            en: pygeoapi default instance
+            fr: instance par défaut de pygeoapi
+        description:
+            en: pygeoapi provides an API to geospatial data
+            fr: pygeoapi fournit une API aux données géospatiales
         keywords:
-            - geospatial
-            - data
-            - api
+            en:
+                - geospatial
+                - data
+                - api
+            fr:
+                - géospatiale
+                - données
+                - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: http://example.org

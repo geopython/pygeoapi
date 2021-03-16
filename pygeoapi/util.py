@@ -302,14 +302,14 @@ def is_url(urlstring):
         return False
 
 
-# TODO: add locale as function argument
-def render_j2_template(config, template, data):
+def render_j2_template(config, template, data, locale_=None):
     """
     render Jinja2 template
 
     :param config: dict of configuration
     :param template: template (relative path)
     :param data: dict of data
+    :param locale_: the requested output Locale
 
     :returns: string of rendered template
     """
@@ -354,7 +354,8 @@ def render_j2_template(config, template, data):
         else:
             raise
 
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=l10n.translate_dict(config, locale_, True),
+                           data=data, version=__version__)
 
 
 def get_mimetype(filename):
