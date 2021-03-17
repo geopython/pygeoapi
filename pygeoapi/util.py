@@ -310,7 +310,7 @@ def render_j2_template(config, template, data, locale_=None):
         else:
             raise
 
-    return template.render(config=l10n.translate_dict(config, locale_, True),
+    return template.render(config=l10n.translate_struct(config, locale_, True),
                            data=data, version=__version__)
 
 

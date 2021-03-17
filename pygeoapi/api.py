@@ -321,11 +321,10 @@ class APIRequest:
         :returns:               A header dict
         """
         headers = HEADERS.copy()
-        if self._raw_locale or locale:
-            # Add a Content-Language response header if the user requested
-            # a specific language or if the locale override is applied
-            response_loc = l10n.locale2str(locale if locale else self._locale)
-            headers['Content-Language'] = response_loc
+        # Always add a Content-Language response header:
+        # use user-override if specified
+        response_loc = locale if locale else self._locale
+        l10n.set_response_language(headers, response_loc)
         if content_type:
             # Set custom MIME type if specified
             headers['Content-Type'] = content_type
@@ -736,7 +735,7 @@ class API:
                     try:
                         p = load_plugin('provider', get_provider_by_type(
                             self.config['resources'][k]['providers'],
-                            'coverage'), request.locale)
+                            'coverage'), request.raw_locale)
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
@@ -1216,11 +1215,8 @@ class API:
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
 
-        if p.locale:
-            # If provider supports locales, override/set response locale
-            headers['Content-Language'] = p.locale
-
         if request.format == 'html':  # render
+            l10n.set_response_language(headers, p.locale)
 
             # For constructing proper URIs to items
             if pathinfo:
@@ -1246,6 +1242,8 @@ class API:
                                          content, request.locale)
             return headers, 200, content
         elif request.format == 'csv':  # render
+            l10n.set_response_language(headers, p.locale)
+
             formatter = load_plugin('formatter',
                                     {'name': 'CSV', 'geom': True},
                                     request.raw_locale)
@@ -1268,9 +1266,11 @@ class API:
             return headers, 200, content
 
         elif request.format == 'jsonld':
+            l10n.set_response_language(headers, p.locale, True)
             content = geojson2geojsonld(self.config, content, dataset)
             return headers, 200, content
 
+        l10n.set_response_language(headers, p.locale, True)
         return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
@@ -1379,11 +1379,9 @@ class API:
                 self.config['server']['url'], dataset, identifier)
         }]
 
-        if p.locale:
-            # If provider supports locales, override/set response locale
-            headers['Content-Language'] = p.locale
-
         if request.format == 'html':  # render
+            l10n.set_response_language(headers, p.locale)
+
             content['title'] = l10n.translate(collections[dataset]['title'],
                                               request.locale)
             content['id_field'] = p.id_field
@@ -1396,11 +1394,14 @@ class API:
             return headers, 200, content
 
         elif request.format == 'jsonld':
+            l10n.set_response_language(headers, p.locale, True)
+
             content = geojson2geojsonld(
                 self.config, content, dataset, identifier=identifier
             )
             return headers, 200, content
 
+        l10n.set_response_language(headers, p.locale, True)
         return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
@@ -2442,15 +2443,13 @@ class API:
             return self.get_exception(
                 500, headers, request.format, 'NoApplicableCode', msg)
 
-        if p.locale:
-            # If provider supports locales, override/set response locale
-            headers['Content-Language'] = p.locale
-
         if request.format == 'html':  # render
+            l10n.set_response_language(headers, p.locale)
             content = render_j2_template(self.config,
                                          'collections/edr/query.html', data,
                                          request.locale)
         else:
+            l10n.set_response_language(headers, p.locale, True)
             content = to_json(data, self.pretty_print)
 
         return headers, 200, content
