@@ -71,7 +71,7 @@ class DummyManager(BaseManager):
         :param data_dict: `dict` of data parameters
         :param is_async: `bool` specifying sync or async processing.
 
-        :returns: tuple of response payload and status
+        :returns: tuple of MIME type, response payload and status
         """
 
         if is_async:
@@ -79,7 +79,7 @@ class DummyManager(BaseManager):
             LOGGER.debug('Forcing synchronous execution')
 
         try:
-            outputs = p.execute(data_dict)
+            jfmt, outputs = p.execute(data_dict)
             current_status = JobStatus.successful
         except Exception as err:
             outputs = {
@@ -89,7 +89,7 @@ class DummyManager(BaseManager):
             current_status = JobStatus.failed
             LOGGER.error(err)
 
-        return outputs, current_status
+        return jfmt, outputs, current_status
 
     def __repr__(self):
         return '<DummyManager> {}'.format(self.name)
