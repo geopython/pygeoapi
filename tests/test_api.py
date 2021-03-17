@@ -504,6 +504,11 @@ def test_get_collection_items(config, api_):
     assert code == 200
 
     rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'datetime': '2005-04-22'}, 'lakes')
+
+    assert code == 400
+
+    rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'skipGeometry': 'true'}, 'obs')
 
     assert json.loads(response)['features'][0]['geometry'] is None
