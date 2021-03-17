@@ -74,6 +74,8 @@ class DummyManager(BaseManager):
         :returns: tuple of MIME type, response payload and status
         """
 
+        jfmt = 'application/json'
+
         if is_async:
             LOGGER.debug('Dummy manager does not support asynchronous')
             LOGGER.debug('Forcing synchronous execution')
