@@ -109,6 +109,8 @@ def test_translate(language_struct, nonlanguage_struct):
     assert l10n.translate({}, 'en-US') == {}
     assert l10n.translate(42, 'fr') == 42
     assert l10n.translate(None, 'de') is None
+    assert l10n.translate(['list item'], Locale('en')) == ['list item']
+    assert l10n.translate({'nested dict': {'en': 1, 'fr': 2}}, 'en') == {'nested dict': {'en': 1, 'fr': 2}}  # noqa
 
     assert l10n.translate(nonlanguage_struct, 'fr') == nonlanguage_struct
     assert l10n.translate(nonlanguage_struct, 'fla') == 'non-language key'
@@ -166,6 +168,8 @@ def test_getlocales():
     assert l10n.get_locales(config) == [Locale.parse('en_US')]
     config['server']['language'] = 'de_CH'
     assert l10n.get_locales(config) == [Locale.parse('de_CH')]
+    config['server']['language'] = ['de', 'en-US']  # noqa
+    assert l10n.get_locales(config) == [Locale.parse('de'), Locale.parse('en_US')]  # noqa
 
     config = {
         'server': {
@@ -174,7 +178,11 @@ def test_getlocales():
     }
     with pytest.raises(l10n.LocaleError):
         l10n.get_locales(config)
-        config['server']['languages'] = [None]
+
+    config['server']['languages'] = [None]
+    with pytest.raises(l10n.LocaleError):
+        l10n.get_locales(config)
+
     config['server']['languages'] = ['de', 'en-US']
     assert l10n.get_locales(config) == [Locale.parse('de'), Locale.parse('en_US')]  # noqa
 
@@ -183,10 +191,33 @@ def test_getpluginlocale():
     assert l10n.get_plugin_locale({}, 'de') is None
     assert l10n.get_plugin_locale({}, None) is None  # noqa
     assert l10n.get_plugin_locale({}, '') is None
+    assert l10n.get_plugin_locale({'language': 'de'}, 'en') == Locale('de')
+    assert l10n.get_plugin_locale({'language': None}, 'en') is None
     assert l10n.get_plugin_locale({'languages': ['en']}, None) == Locale('en')  # noqa
     assert l10n.get_plugin_locale({'languages': []}, 'nl') is None
     assert l10n.get_plugin_locale({'languages': ['en']}, 'fr') == Locale('en')
     assert l10n.get_plugin_locale({'languages': ['en', 'de']}, 'de') == Locale('de')  # noqa
+
+
+def test_setresponselanguage():
+    # the following should not raise (just do nothing)
+    l10n.set_response_language(None, None)  # noqa
+
+    headers = {}
+    l10n.set_response_language(headers, None)  # noqa
+    assert headers == {}
+
+    l10n.set_response_language(headers, Locale('en'))
+    assert headers['Content-Language'] == 'en'
+
+    l10n.set_response_language(headers, Locale('de'))
+    assert headers['Content-Language'] == 'de'
+
+    l10n.set_response_language(headers, None)
+    assert headers['Content-Language'] == 'de'
+
+    l10n.set_response_language(headers, None, True)
+    assert 'Content-Language' not in headers
 
 
 def get_test_file_path(filename):
@@ -210,19 +241,19 @@ def locale_():
 
 
 def test_translatedict(config, locale_):
-    cfg = l10n.translate_dict(config, locale_, True)
+    cfg = l10n.translate_struct(config, locale_, True)
     assert cfg['metadata']['identification']['title'] == 'pygeoapi default instance'  # noqa
     assert cfg['metadata']['identification']['keywords'] == ['geospatial', 'data', 'api']  # noqa
 
     # test full equality (must come from cache)
-    cfg2 = l10n.translate_dict(config, locale_, True)
+    cfg2 = l10n.translate_struct(config, locale_, True)
     assert cfg is cfg2
 
     # missing locale_ should return the same dict
-    assert l10n.translate_dict(config, None) is config  # noqa
+    assert l10n.translate_struct(config, None) is config  # noqa
 
     # missing or empty dict should return an empty dict
-    assert l10n.translate_dict(None, locale_) == {}  # noqa
+    assert l10n.translate_struct(None, locale_) == {}  # noqa
 
     # test custom dict (translate from level 0, do not cache)
     test_dict = {
@@ -231,8 +262,43 @@ def test_translatedict(config, locale_):
             'fr': 'valeur de test'
         }
     }
-    tr_dict = l10n.translate_dict(test_dict, locale_)
+    tr_dict = l10n.translate_struct(test_dict, locale_)
     assert tr_dict['level0'] == 'test value'
-    tr_dict2 = l10n.translate_dict(test_dict, locale_)
+    tr_dict2 = l10n.translate_struct(test_dict, locale_)
     assert tr_dict == tr_dict2
     assert tr_dict is not tr_dict2
+
+    # test mixed structure
+    test_input = [
+        {'test': {
+            'en': 'test value',
+            'fr': 'valeur de test'
+        }},
+        'some string',
+        {'item1': 1},
+        {'item2a': [
+            'list_item1',
+            'list_item2',
+            {
+                'en': 'list value',
+                'fr': 'valeur de liste'
+            }
+        ],
+         'item2b': {
+            'en': 'test value',
+            'fr': 'valeur de test'
+        }}
+    ]
+    test_output = [
+        {'test': 'test value'},
+        'some string',
+        {'item1': 1},
+        {'item2a': [
+            'list_item1',
+            'list_item2',
+            'list value'
+        ],
+         'item2b': 'test value'
+        }
+    ]
+    assert l10n.translate_struct(test_input, locale_) == test_output

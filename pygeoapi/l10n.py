@@ -240,9 +240,10 @@ def translate(value, language: Union[Locale, str]):
     :returns:           A translated string or the original value.
     :raises:            LocaleError
     """
-    if not isinstance(value, dict):
-        # Perhaps use a translation service for strings at a later stage?
-        # For now just return the value as-is
+    nested_dicts = isinstance(value, dict) and any(isinstance(v, dict)
+                                                   for v in value.values())
+    if not isinstance(value, dict) or nested_dicts:
+        # Return non-dicts or dicts with nested dicts as-is
         return value
 
     # Validate language key by type (do not check if parsable)
@@ -272,25 +273,29 @@ def translate(value, language: Union[Locale, str]):
     return value[loc_items[out_locale]]
 
 
-def translate_dict(dictionary: dict, locale_: Locale, is_config: bool = False) -> dict:  # noqa
-    """ Returns a copy of a given dict, where all language structs
-    are filtered on the given locale. This results in a dictionary in which
-    the language structs are replaced by translated strings.
+def translate_struct(struct, locale_: Locale, is_config: bool = False):
+    """ Returns a copy of a given dict or list, where all language structs
+    are filtered on the given locale, i.e. all language structs are replaced
+    by translated values for the best matching locale.
 
-    :param dictionary:  A dict to filter/translate.
+    :param struct:      A dict or list (of dicts) to filter/translate.
     :param locale_:     The Babel Locale to filter on.
-    :param is_config:   If True, the dict is treated as a pygeoapi config.
+    :param is_config:   If True, the struct is treated as a pygeoapi config.
                         This means that the first 2 levels won't be translated
-                        and the translated dict is cached for speed.
-    :returns:           A translated dict
+                        and the translated struct is cached for speed.
+    :returns:           A translated dict or list
     """
 
-    def _translate_dict(d: dict, level: int = 0):
-        """ Recursive function to walk and translate a dictionary. """
-        for k, v in d.items():
-            if 0 <= level <= max_level and isinstance(v, dict):
+    def _translate_dict(obj, level: int = 0):
+        """ Recursive function to walk and translate a struct. """
+        items = obj.items() if isinstance(obj, dict) else enumerate(obj)
+        for k, v in items:
+            if 0 <= level <= max_level and isinstance(v, (dict, list)):
                 # Skip first 2 levels (don't translate)
                 _translate_dict(v, level + 1)
+                continue
+            if isinstance(v, list):
+                _translate_dict(v, level + 1)  # noqa
                 continue
             tr = translate(v, locale_)
             if isinstance(tr, dict):
@@ -298,20 +303,20 @@ def translate_dict(dictionary: dict, locale_: Locale, is_config: bool = False) -
                 _translate_dict(tr, level + 1)
             else:
                 # Overwrite level with translated value
-                d[k] = tr
+                obj[k] = tr
 
     max_level = 1 if is_config else -1
     result = {}
-    if not dictionary:
+    if not struct:
         return result
     if not locale_:
-        return dictionary
+        return struct
 
     # Check if we already translated the dict before
     result = _cfg_cache.get(locale_) if is_config else result
     if not result:
         # Create deep copy of config and translate/filter values
-        result = deepcopy(dictionary)
+        result = deepcopy(struct)
         _translate_dict(result)
 
         # Cache translated pygeoapi configs for faster retrieval next time
@@ -353,6 +358,38 @@ def locale_from_params(params) -> str:
     if lang:
         LOGGER.debug(f"Got locale '{lang}' from query parameter '{QUERY_PARAM}'")  # noqa
     return lang
+
+
+def set_response_language(headers: dict, locale_: Union[Locale, None], remove: bool = False):  # noqa
+    """ Sets the Content-Language on the given HTTP response headers dict.
+
+    If `locale_` is None and `remove` is True, this will delete an existing
+    Content-Language header. If `remove` is False (default), an existing
+    Content-Language header will never be deleted. In that case, if `locale_`
+    is None, the Content-Language will remain unchanged (if set).
+
+    :param headers: A dict of HTTP response headers.
+    :param locale_: The Babel Locale to which to set the Content-Language.
+    :param remove:  If True and `locale_` is None, the Content-Language header
+                    will be removed.
+    """
+    if not hasattr(headers, '__setitem__'):
+        LOGGER.warning(f"Cannot set headers on object '{headers}'")
+        return
+    if not isinstance(locale_, Locale):
+        if locale_ is None and remove:
+            try:
+                del headers['Content-Language']
+            except KeyError:
+                return
+            LOGGER.debug('No locale: removed Content-Language header')
+            return
+        LOGGER.debug('Keeping existing Content-Language header (if set)')
+        return
+
+    loc_str = locale2str(locale_)
+    LOGGER.debug(f'Setting Content-Language to {loc_str}')
+    headers['Content-Language'] = loc_str
 
 
 def add_locale(url, locale_):
@@ -397,22 +434,21 @@ def get_locales(config: dict) -> list:
     :param config:  A pygeaapi configuration dict
     :returns:       A list of supported Locale instances
     """
-    try:
-        # New setting (multiple languages, first specifies default)
-        lang = config.get('server', {})['languages']
-    except KeyError:
-        # Old setting (single language)
-        lang = [config.get('server', {}).get('language')]
+    srv_cfg = config.get('server', {})
+    lang = srv_cfg.get('languages', srv_cfg.get('language', []))
 
-    if not lang:
-        LOGGER.error("Missing 'language(s)' key in config or empty value")
+    if isinstance(lang, str):
+        LOGGER.info(f"pygeoapi only supports 1 language: {lang}")
+        lang = [lang]
+    if not isinstance(lang, list) or len(lang) == 0:
+        LOGGER.error("Missing 'language(s)' key in config or bad value(s)")
         raise LocaleError('No languages have been configured')
 
     try:
         return [str2locale(loc) for loc in lang]
     except LocaleError as err:
         LOGGER.debug(err)
-        raise LocaleError('Config error in supported server languages')
+        raise LocaleError('Bad value in supported server language(s)')
 
 
 def get_plugin_locale(config: dict, requested_locale: str) -> Union[Locale, None]:  # noqa
@@ -431,8 +467,10 @@ def get_plugin_locale(config: dict, requested_locale: str) -> Union[Locale, None
         requested_locale = ''
 
     LOGGER.debug(f'Requested {plugin_name} locale: {requested_locale}')
-    locales = config.get('languages', [])
+    locales = config.get('languages', config.get('language', []))
     if locales:
+        if not isinstance(locales, list):
+            locales = [locales]
         locale = best_match(requested_locale, locales)
         LOGGER.info(f'{plugin_name} locale set to {locale}')
         return locale
