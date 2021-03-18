@@ -125,6 +125,7 @@ class HelloWorldProcessor(BaseProcessor):
 
     def execute(self, data):
 
+        mimetype = 'application/json'
         name = data.get('name', None)
 
         if name is None:
@@ -137,7 +138,7 @@ class HelloWorldProcessor(BaseProcessor):
             'value': value
         }]
 
-        return outputs
+        return mimetype, outputs
 
     def __repr__(self):
         return '<HelloWorldProcessor> {}'.format(self.name)
