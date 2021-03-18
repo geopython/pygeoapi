@@ -2556,10 +2556,15 @@ def validate_datetime(resource_def, datetime_=None):
 
         te = resource_def['temporal']
 
-        if te['begin'] is not None and te['begin'].tzinfo is None:
-            te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
-        if te['end'] is not None and te['end'].tzinfo is None:
-            te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+        try:
+            if te['begin'] is not None and te['begin'].tzinfo is None:
+                te['begin'] = te['begin'].replace(tzinfo=pytz.UTC)
+            if te['end'] is not None and te['end'].tzinfo is None:
+                te['end'] = te['end'].replace(tzinfo=pytz.UTC)
+        except AttributeError:
+            msg = 'Configured times should be RFC3339'
+            LOGGER.error(msg)
+            raise ValueError(msg)
 
         if '/' in datetime_:  # envelope
             LOGGER.debug('detected time range')
