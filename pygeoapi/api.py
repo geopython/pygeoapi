@@ -2014,7 +2014,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         try:
             LOGGER.debug('Executing process')
-            outputs, status = self.manager.execute_process(
+            mime_type, outputs, status = self.manager.execute_process(
                 process, job_id, data_dict, is_async)
         except ProcessorExecuteError as err:
             LOGGER.error(err)
@@ -2025,11 +2025,9 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         if status == JobStatus.failed:
             response = outputs
 
-        ct = process.metadata['outputs'][0]['output']['formats'][0]['mimeType']
-
         if data.get('response', 'document') == 'raw':
-            headers_['Content-Type'] = ct
-            if format_ == 'json':
+            headers_['Content-Type'] = mime_type
+            if 'json' in mime_type:
                 response = to_json(outputs)
             else:
                 response = outputs
