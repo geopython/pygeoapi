@@ -45,7 +45,7 @@ class MongoProvider(BaseProvider):
     """Generic provider for Mongodb.
     """
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         MongoProvider Class constructor
 
@@ -58,7 +58,7 @@ class MongoProvider(BaseProvider):
         # Mongo id field is _id
         provider_def.setdefault('id_field', '_id')
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         LOGGER.info('Mongo source config: {}'.format(self.data))
 
@@ -98,7 +98,7 @@ class MongoProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query the provider
 
@@ -143,7 +143,7 @@ class MongoProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query the provider by id
 

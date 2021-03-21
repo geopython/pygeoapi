@@ -75,7 +75,7 @@ class OGRProvider(BaseProvider):
     # Setting for traditional CRS axis order.
     OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -110,7 +110,7 @@ class OGRProvider(BaseProvider):
         :returns: pygeoapi.provider.ogr.OGRProvider
         """
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         self.ogr = osgeo_ogr
         # http://trac.osgeo.org/gdal/wiki/PythonGotchas
@@ -291,7 +291,7 @@ class OGRProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query OGR source
 
@@ -372,7 +372,7 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get Feature by id
 

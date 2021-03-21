@@ -47,14 +47,14 @@ LOGGER = logging.getLogger(__name__)
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
         :param provider_def: provider definition
         :returns: pygeoapi.provider.xarray_.XarrayProvider
         """
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         try:
             if provider_def['data'].endswith('.zarr'):
@@ -74,7 +74,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
-    def get_coverage_domainset(self):
+    def get_coverage_domainset(self, *args, **kwargs):
         """
         Provide coverage domainset
 
@@ -140,7 +140,7 @@ class XarrayProvider(BaseProvider):
 
         return domainset
 
-    def get_coverage_rangetype(self):
+    def get_coverage_rangetype(self, *args, **kwargs):
         """
         Provide coverage rangetype
 
@@ -182,7 +182,7 @@ class XarrayProvider(BaseProvider):
         return rangetype
 
     def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
-              format_='json'):
+              format_='json', **kwargs):
         """
          Extract data from collection collection
 

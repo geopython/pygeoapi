@@ -29,7 +29,6 @@
 
 import logging
 
-from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderGenericError
 
 LOGGER = logging.getLogger(__name__)
@@ -38,24 +37,21 @@ LOGGER = logging.getLogger(__name__)
 class BaseTileProvider:
     """generic Tile Provider ABC"""
 
-    def __init__(self, provider_def, requested_locale: str = None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
-        :param provider_def:        provider definition
-        :param requested_locale:    requested provider locale
+        :param provider_def: provider definition
 
         :returns: pygeoapi.provider.tile.BaseTileProvider
         """
+
         self.name = provider_def['name']
         self.data = provider_def['data']
         self.format_type = provider_def['format']['name']
         self.mimetype = provider_def['format']['mimetype']
         self.options = provider_def.get('options', None)
         self.fields = {}
-
-        # locale support
-        self.locale = l10n.get_plugin_locale(provider_def, requested_locale)
 
     def get_layer(self):
         """

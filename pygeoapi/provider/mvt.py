@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 class MVTProvider(BaseTileProvider):
     """MVT Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -54,7 +54,7 @@ class MVTProvider(BaseTileProvider):
         :returns: pygeoapi.provider.MVT.MVTProvider
         """
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         if is_url(self.data):
             url = urlparse(self.data)
@@ -214,7 +214,7 @@ class MVTProvider(BaseTileProvider):
                     raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, tilejson=True):
+                     tileset=None, tilejson=True, **kwargs):
         """
         Gets tile metadata
 

@@ -42,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 class TinyDBCatalogueProvider(BaseProvider):
     """TinyDB Catalogue Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -55,7 +55,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             '_metadata-anytext',
         ]
 
-        BaseProvider.__init__(self, provider_def, requested_locale)
+        BaseProvider.__init__(self, provider_def)
 
         LOGGER.debug('Connecting to TinyDB db at {}'.format(self.data))
 
@@ -93,7 +93,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query TinyDB document store
 
@@ -203,7 +203,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get TinyDB document by id
 

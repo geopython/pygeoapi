@@ -52,7 +52,7 @@ class SQLiteGPKGProvider(BaseProvider):
     TODO: DELETE, UPDATE, CREATE
     """
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         SQLiteGPKGProvider Class constructor
 
@@ -61,7 +61,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         :returns: pygeoapi.provider.base.SQLiteProvider
         """
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.application_id = None
@@ -251,7 +251,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -310,7 +310,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/countries/items/1

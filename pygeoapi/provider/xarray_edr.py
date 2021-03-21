@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 class XarrayEDRProvider(XarrayProvider):
     """EDR Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -47,7 +47,7 @@ class XarrayEDRProvider(XarrayProvider):
         :returns: pygeoapi.provider.rasterio_.RasterioProvider
         """
 
-        XarrayProvider.__init__(self, provider_def, requested_locale)
+        XarrayProvider.__init__(self, provider_def)
         self.instances = []
 
     def get_fields(self):

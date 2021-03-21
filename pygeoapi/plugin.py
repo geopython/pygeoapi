@@ -65,13 +65,12 @@ PLUGINS = {
 }
 
 
-def load_plugin(plugin_type, plugin_def, locale=None):
+def load_plugin(plugin_type, plugin_def):
     """
     loads plugin by name
 
     :param plugin_type: type of plugin (provider, formatter)
     :param plugin_def: plugin definition
-    :param locale: the optional requested locale
 
     :returns: plugin object
     """
@@ -102,7 +101,7 @@ def load_plugin(plugin_type, plugin_def, locale=None):
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    plugin = class_(plugin_def, locale)
+    plugin = class_(plugin_def)
 
     return plugin
 

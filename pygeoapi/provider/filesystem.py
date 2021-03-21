@@ -44,7 +44,7 @@ LOGGER = logging.getLogger(__name__)
 class FileSystemProvider(BaseProvider):
     """filesystem Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -53,7 +53,7 @@ class FileSystemProvider(BaseProvider):
         :returns: pygeoapi.provider.filesystem.FileSystemProvider
         """
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         if not os.path.exists(self.data):
             msg = 'Directory does not exist: {}'.format(self.data)

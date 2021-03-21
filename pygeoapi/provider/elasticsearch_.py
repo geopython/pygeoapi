@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 class ElasticsearchProvider(BaseProvider):
     """Elasticsearch Provider"""
 
-    def __init__(self, provider_def, requested_locale=None):
+    def __init__(self, provider_def):
         """
         Initialize object
 
@@ -54,7 +54,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: pygeoapi.provider.elasticsearch_.ElasticsearchProvider
         """
 
-        super().__init__(provider_def, requested_locale)
+        super().__init__(provider_def)
 
         self.es_host, self.index_name = self.data.rsplit('/', 1)
 
@@ -144,7 +144,7 @@ class ElasticsearchProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query Elasticsearch index
 
@@ -344,7 +344,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get ES document by id
 
