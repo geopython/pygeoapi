@@ -70,7 +70,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
 
        def query(self,startindex=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
-                 select_properties=[], skip_geometry=False):
+                 select_properties=[], skip_geometry=False, **kwargs):
 
            # open data file (self.data) and process, return
            return {
@@ -163,13 +163,13 @@ The below template provides a minimal example (let's call the file ``mycoolraste
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
 
-       def get_coverage_domainset(self):
+       def get_coverage_domainset(self, *args, **kwargs):
            # return a CIS JSON DomainSet
 
-       def get_coverage_rangetype(self):
+       def get_coverage_rangetype(self, *args, **kwargs):
            # return a CIS JSON RangeType
 
-       def query(self, bands=[], subsets={}, format_='json'):
+       def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
            # query/extract coverage data
            if format_ == 'json':

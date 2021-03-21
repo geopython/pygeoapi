@@ -138,18 +138,18 @@ def test_localefromheaders():
 
 def test_localefromparams():
     assert l10n.locale_from_params({}) is None
-    assert l10n.locale_from_params({'l': 'de'}) == 'de'
+    assert l10n.locale_from_params({'lang': 'de'}) == 'de'
     assert l10n.locale_from_params({'language': 'en_US'}) is None
-    assert l10n.locale_from_params({'l': 'en_US'}) == 'en_US'
+    assert l10n.locale_from_params({'lang': 'en_US'}) == 'en_US'
 
 
 def test_addlocale():
     assert l10n.add_locale('http://a.pi/', None) == 'http://a.pi/'
-    assert l10n.add_locale('http://a.pi/', 'en') == 'http://a.pi/?l=en'
-    assert l10n.add_locale('http://a.pi', 'de_CH') == 'http://a.pi?l=de-CH'
+    assert l10n.add_locale('http://a.pi/', 'en') == 'http://a.pi/?lang=en'
+    assert l10n.add_locale('http://a.pi', 'de_CH') == 'http://a.pi?lang=de-CH'
     assert l10n.add_locale('http://a.pi', 'zz') == 'http://a.pi'
-    assert l10n.add_locale('http://a.pi?q=1', 'nl') == 'http://a.pi?q=1&l=nl'
-    assert l10n.add_locale('http://a.pi?l=de', 'nl') == 'http://a.pi?l=nl'
+    assert l10n.add_locale('http://a.pi?q=1', 'nl') == 'http://a.pi?q=1&lang=nl'  # noqa
+    assert l10n.add_locale('http://a.pi?lang=de', 'nl') == 'http://a.pi?lang=nl'  # noqa
 
 
 def test_getlocales():

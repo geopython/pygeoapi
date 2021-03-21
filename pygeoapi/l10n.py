@@ -39,7 +39,7 @@ from urllib import parse
 LOGGER = logging.getLogger(__name__)
 
 # Specifies the name of a request query parameter used to set a locale
-QUERY_PARAM = 'l'
+QUERY_PARAM = 'lang'
 
 # Cache Babel Locale lookups by string
 _lc_cache = {}

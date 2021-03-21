@@ -170,7 +170,7 @@ def get_oas_30(cfg):
             'operationId': 'getLandingPage',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/l'}
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -188,7 +188,7 @@ def get_oas_30(cfg):
             'operationId': 'getOpenapi',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/l'}
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
@@ -206,7 +206,7 @@ def get_oas_30(cfg):
             'operationId': 'getConformanceDeclaration',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/l'}
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -224,7 +224,7 @@ def get_oas_30(cfg):
             'operationId': 'getCollections',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/l'}
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -280,10 +280,10 @@ def get_oas_30(cfg):
                 'style': 'form',
                 'explode': False
             },
-            'l': {
-                'name': 'l',
+            'lang': {
+                'name': 'lang',
                 'in': 'query',
-                'description': 'The optional l parameter instructs the server to output text in a certain language, if supported.  If the language is not among the available values, the Accept-Language header will be used if that language is supported. If the header is missing, the default server language is used. Note that collection providers may only support a single language, that can be different from the server language.  Language strings can be written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.',  # noqa
+                'description': 'The optional lang parameter instructs the server return a response in a certain language, if supported.  If the language is not among the available values, the Accept-Language header language will be used if it is supported. If the header is missing, the default server language is used. Note that providers may only support a single language (or often no language at all), that can be different from the server language.  Language strings can be written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.',  # noqa
                 'required': False,
                 'schema': {
                     'type': 'string',
@@ -387,7 +387,7 @@ def get_oas_30(cfg):
 
     items_f = deepcopy(oas['components']['parameters']['f'])
     items_f['schema']['enum'].append('csv')
-    items_l = deepcopy(oas['components']['parameters']['l'])
+    items_l = deepcopy(oas['components']['parameters']['lang'])
 
     LOGGER.debug('setting up datasets')
     collections = filter_dict_by_key_value(cfg['resources'],
@@ -421,7 +421,7 @@ def get_oas_30(cfg):
                 'operationId': 'describe{}Collection'.format(name.capitalize()),  # noqa
                 'parameters': [
                     {'$ref': '#/components/parameters/f'},
-                    {'$ref': '#/components/parameters/l'}
+                    {'$ref': '#/components/parameters/lang'}
                 ],
                 'responses': {
                     '200': {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -557,7 +557,7 @@ def get_oas_30(cfg):
                     'parameters': [
                         {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '#/components/parameters/f'},
-                        {'$ref': '#/components/parameters/l'}
+                        {'$ref': '#/components/parameters/lang'}
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -585,7 +585,7 @@ def get_oas_30(cfg):
                     'operationId': 'get{}Coverage'.format(name.capitalize()),
                     'parameters': [
                         items_f,
-                        # items_l  TODO: is this useful?
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -608,7 +608,7 @@ def get_oas_30(cfg):
                         name.capitalize()),
                     'parameters': [
                         items_f,
-                        # items_l  TODO: is this useful?
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}/schemas/cis_1.1/domainSet.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
@@ -631,7 +631,7 @@ def get_oas_30(cfg):
                         name.capitalize()),
                     'parameters': [
                         items_f,
-                        # items_l  TODO: is this useful?
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}/schemas/cis_1.1/rangeType.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa

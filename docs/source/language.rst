@@ -4,7 +4,7 @@ Multilingual support
 ====================
 
 pygeoapi is language-aware and can handle multiple languages if these have been defined in pygeoapi's configuration (see `maintainer guide`_).
-Plugins (e.g. providers) can also handle multiple languages if configured. These may even be different from the languages that pygeoapi
+Providers can also handle multiple languages if configured. These may even be different from the languages that pygeoapi
 supports. Out-of-the-box, pygeoapi "speaks" English.
 
 The following sections provide more information how to use and set up languages in pygeoapi.
@@ -14,7 +14,7 @@ End user guide
 
 There are 2 ways to affect the language of the results returned by pygeoapi, both for the HTML and JSON(-LD) formats:
 
-1. After the requested pygeoapi URL, append a ``l=<code>`` query parameter, where ``<code>`` should be replaced by a well-known language code.
+1. After the requested pygeoapi URL, append a ``lang=<code>`` query parameter, where ``<code>`` should be replaced by a well-known language code.
    This can be an ISO 639-1 code (e.g. `de` for German), optionally accompanied by an ISO 3166-1 alpha-2 country code (e.g. `de-CH` for Swiss-German).
    Please refer to this `W3C article <https://www.w3.org/International/articles/language-tags/>`_ for more information or
    this `list of language codes <http://www.lingoes.net/en/translator/langcode.htm>`_ for more examples.
@@ -23,13 +23,13 @@ There are 2 ways to affect the language of the results returned by pygeoapi, bot
 
    For example, to view the pygeoapi landing page in Canadian-French, you could use this URL:
 
-   https://demo.pygeoapi.io/master?l=fr-CA
+   https://demo.pygeoapi.io/master?lang=fr-CA
 
 2. Alternatively, you can set an ``Accept-Language`` HTTP header for the requested pygeoapi URL. Language tags that are valid for
-   the ``l`` query parameter are also valid for this header value.
+   the ``lang`` query parameter are also valid for this header value.
    Please note that if your client application (e.g. browser) is configured for a certain language, it will likely set this
    header by default, so the returned response should be translated to the language of your client app. If you don't want this,
-   you can either change the language of your client app or append the ``l`` parameter to the URL, which will override
+   you can either change the language of your client app or append the ``lang`` parameter to the URL, which will override
    any language defined in the ``Accept-Language`` header.
 
 
@@ -48,7 +48,7 @@ Notes
 - For HTML results returned from a **provider**, the ``Content-Language`` HTTP header will be set to the best match for the
   provider language or the best-matching pygeoapi server language if the provider does not support languages.
 
-- For JSON(-LD) results that are returned by a **provider**, the ``Content-Language`` header will be **removed** if the provider
+- For JSON(-LD) results returned from a **provider**, the ``Content-Language`` header will be **removed** if the provider
   does not support any language. Otherwise, the header will be set to the best-matching provider language.
 
 
@@ -79,7 +79,7 @@ Next, you will have to provide translations for the configured languages. This i
 
 2. Verify if there are any Jinja2 HTML template translations for the configured language(s);
 
-3. Make sure that the provider plugins you need can handle this language as well, if you are empowered to do so.
+3. Make sure that the provider plugins you need can handle this language as well, if you have the ability to do so.
    See the `developer guide`_ for more details.
 
 
@@ -89,10 +89,10 @@ Notes
 - The **first** language you define in the configuration determines the default language, i.e. the language that pygeoapi will
   use if no other language was requested or no best match for the requested language could be found.
 
-- It is not possible to **disable** language support in pygeoapi. The functionality is always available. If results should always
+- It is not possible to **disable** language support in pygeoapi. The functionality is always on. If results should always
   be shown in a single language, you'd have to set that language only in the pygeoapi configuration.
 
-- Results returned by a provider may be in a different language than pygeoapi's own server language. The requested language
+- Results returned from a provider may be in a different language than pygeoapi's own server language. The requested language
   is always passed on to the provider, even if pygeoapi itself does not support it. For more information, see the `end user guide`_
   and the `developer guide`_.
 
@@ -149,19 +149,19 @@ those values will be returned. However, if a `fr-CH` tag can also be found, that
 Developer guide
 ---------------
 
-If you are a developer who wishes to create a pygeoapi plugin (e.g. a provider) that "speaks" a certain language,
-you will have to fully implement this yourself. Needless to say, if your plugin depends on some backend, it will only make sense to implement language support if the backend
-can be queried in another language as well.
+If you are a developer who wishes to create a pygeoapi provider plugin that "speaks" a certain language,
+you will have to fully implement this yourself. Needless to say, if your provider depends on some backend, it will only make sense to
+implement language support if the backend can be queried in another language as well.
 
 You are free to set up the language support anyway you like, but there are a couple of steps you'll have to walk through:
 
-1. You will have to define the supported languages in the plugin configuration YAML. This can be done in a similar fashion
+1. You will have to define the supported languages in the provider configuration YAML. This can be done in a similar fashion
    as the ``languages`` configuration for pygeoapi itself, as described in the `maintainer guide`_ section above.
-   For example, a provider that supports English and French could be set up like:
+   For example, a TinyDB records provider that supports English and French could be set up like:
 
    .. code-block:: yaml
 
-      canada-metadata:
+      my-records:
           type: collection
           ..
           providers:
@@ -172,45 +172,53 @@ You are free to set up the language support anyway you like, but there are a cou
                     - en
                     - fr
 
-2. Your plugin must implement a plugin base class (e.g. ``BaseProvider``, ``BaseFormatter``, etc.).
-   The base class will handle the incoming language request and set a ``locale`` instance attribute.
+2. If your provider implements any of the ``query``, ``get``, ``get_metadata``, ``get_coverage_domainset`` and ``get_coverage_rangetype``
+   methods of the base class and you wish to make them language-aware, either add a ``**kwargs`` parameter or a
+   ``language=None`` parameter to the method signature.
 
-3. Besides the plugin definition, you will also have to pass an optional ``requested_locale`` argument to the
-   ``__init__`` function.
-
-4. The ``requested_locale`` argument mentioned above should be passed on to the base plugin in the ``super()`` call.
-
-An example Python code block for a custom provider should start similar to this:
+An example Python code block for a custom provider with a language-aware ``query`` method could look like this:
 
 .. code-block:: python
 
-   class MyCustomProvider(BaseProvider):
-   """Custom Provider"""
+   class MyCoolVectorDataProvider(BaseProvider):
+   """My cool vector data provider"""
 
-   def __init__(self, provider_def, requested_locale=None):
-       super().__init__(provider_def, requested_locale)
+   def __init__(self, provider_def):
+       super().__init__(provider_def)
 
-The base class will make sure that the requested locale is available throughout the entire instance and can be obtained in
-each plugin method by the ``self.locale`` attribute. Within these methods, your code should decide what needs to be done with
-this locale and return results in the proper language. The pygeoapi API module will make sure that the correct HTTP ``Content-Language``
-headers are set on the response object.
+   def query(self, startindex=0, limit=10, resulttype='results', bbox=[],
+             datetime_=None, properties=[], sortby=[], select_properties=[],
+             skip_geometry=False, q=None, language=None):
+       LOGGER.debug(f'Provider queried in {language.english_name} language')
+       # Implement your logic here, returning JSON in the requested language
+
+Alternatively, you could also use ``**kwargs`` in the ``query`` method and get the ``language`` value:
+
+.. code-block:: python
+
+   def query(self, **kwargs):
+       LOGGER.debug(f"Provider locale set to: {kwargs.get('language')}")
+       # Implement your logic here, returning JSON in the requested language
+
+This is all that is required. The pygeoapi API class will make sure that the correct HTTP ``Content-Language`` headers are set on the response object.
 
 Notes
 ^^^^^
 
-- **Steps 3 and 4 above apply to all plugin classes, even if your plugin does not provide language support.**
+- If your provider implements any of the aforementioned ``query``, ``get``, ``get_metadata``, ``get_coverage_domainset`` and ``get_coverage_rangetype``
+  methods, it **must** add a ``**kwargs`` or ``language=None`` parameter, even if it does not need to use the language parameter.
 
 - Contrary to the pygeoapi server configuration, adding a ``language`` or ``languages`` (both are supported) property to the
-  plugin definition is **not** required and may be omitted. In that case, the ``self.locale`` attribute of the plugin will be set to ``None``.
-  This results in the following behavior:
+  provider definition is **not** required and may be omitted. In that case, the passed-in ``language`` parameter language-aware provider methods
+  (``query``, ``get``, etc.) will be set to ``None``. This results in the following behavior:
 
-  - HTML responses returned from **providers** will have the ``Content-Language`` header set to the best-matching pygeoapi server language.
-  - JSON(-LD) responses returned from providers will **not** have a ``Content-Language`` header if ``self.locale`` is ``None``.
+  - HTML responses returned from the providers will have the ``Content-Language`` header set to the best-matching pygeoapi server language.
+  - JSON(-LD) responses returned from providers will **not** have a ``Content-Language`` header if ``language`` is ``None``.
 
-- If the plugin does provide language support, ``self.locale`` will be set to the best matching
+- If the provider supports a requested language, the passed-in ``language`` will be set to the best matching
   `Babel Locale instance <http://babel.pocoo.org/en/latest/api/core.html#babel.core.Locale>`_.
-  Note that this may be the plugin default language if no proper match was found.
-  No matter the output format, **providers** will always return responses with a best-matching ``Content-Language`` header
-  if one ore more supported plugin languages were defined.
+  Note that this may be the provider default language if no proper match was found.
+  No matter the output format, API responses returned from providers will always contain a best-matching ``Content-Language``
+  header if one ore more supported provider languages were defined.
 
 - For general information about building plugins, please visit the :ref:`plugins` page.

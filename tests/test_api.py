@@ -161,7 +161,7 @@ def test_apirequest(api_):
     sup_lang = ('en-US', 'fr_CA')
     for lang_in, (lang_out, cl_out) in test_lang.items():
         # Using l query parameter
-        req = make_request(ROUTE_OBS, {'l': lang_in})
+        req = make_request(ROUTE_OBS, {'lang': lang_in})
         apireq = APIRequest(req, sup_lang)
         assert apireq.raw_locale == lang_in
         assert apireq.locale.language == lang_out
@@ -175,14 +175,14 @@ def test_apirequest(api_):
         assert apireq.get_response_headers()['Content-Language'] == cl_out
 
     # Test language override
-    req = make_request(ROUTE_OBS, {'l': 'fr'}, HTTP_ACCEPT_LANGUAGE='en_US')
+    req = make_request(ROUTE_OBS, {'lang': 'fr'}, HTTP_ACCEPT_LANGUAGE='en_US')
     apireq = APIRequest(req, sup_lang)
     assert apireq.raw_locale == 'fr'
     assert apireq.locale.language == 'fr'
     assert apireq.get_response_headers()['Content-Language'] == 'fr-CA'
 
     # Test locale territory
-    req = make_request(ROUTE_OBS, {'l': 'en-GB'})
+    req = make_request(ROUTE_OBS, {'lang': 'en-GB'})
     apireq = APIRequest(req, sup_lang)
     assert apireq.raw_locale == 'en-GB'
     assert apireq.locale.language == 'en'
