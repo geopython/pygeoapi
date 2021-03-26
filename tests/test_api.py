@@ -1122,6 +1122,16 @@ def test_delete_process_job(api_):
 
 
 def test_get_collection_edr_query(config, api_):
+    # edr resource
+    req_headers = make_req_headers()
+    rsp_headers, code, response = api_.describe_collections(
+        req_headers, {}, 'icoads-sst')
+    collection = json.loads(response)
+    parameter_names = list(collection['parameter-names'].keys())
+    parameter_names.sort()
+    assert len(parameter_names) == 4
+    assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
+
     # no coords parameter
     req_headers = make_req_headers()
     rsp_headers, code, response = api_.get_collection_edr_query(

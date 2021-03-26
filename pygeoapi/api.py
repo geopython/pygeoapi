@@ -580,9 +580,9 @@ class API:
                         'edr'))
                     parameters = p.get_fields()
                     if parameters:
-                        collection['parameters'] = {}
+                        collection['parameter-names'] = {}
                         for f in parameters['field']:
-                            collection['parameters'][f['id']] = f
+                            collection['parameter-names'][f['id']] = f
 
                     for qt in p.get_query_types():
                         collection['links'].append({
