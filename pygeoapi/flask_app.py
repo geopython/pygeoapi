@@ -201,7 +201,7 @@ def collection_queryables(collection_id=None):
     return response
 
 
-@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
@@ -214,8 +214,12 @@ def collection_items(collection_id, item_id=None):
     """
 
     if item_id is None:
-        headers, status_code, content = api_.get_collection_items(
+        if request.method == 'GET':  # list items
+            headers, status_code, content = api_.get_collection_items(
             request.headers, request.args, collection_id)
+        elif request.method == 'POST':  # filter items
+            headers, status_code, content = api_.post_collection_items(
+                request.headers, request.args, collection_id, request.data)
     else:
         headers, status_code, content = api_.get_collection_item(
             request.headers, request.args, collection_id, item_id)

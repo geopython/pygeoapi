@@ -31,6 +31,7 @@ import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
+from pygeoapi.models.cql import CQLModel
 
 
 @pytest.fixture()
@@ -41,6 +42,63 @@ def config():
         'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
         'id_field': 'geonameid'
     }
+
+
+@pytest.fixture()
+def config_cql():
+    return {
+        'name': 'Elasticsearch',
+        'type': 'feature',
+        'data': 'http://localhost:9200/nhsl_hazard_threat_all_indicators_s_bc',  # noqa
+        'id_field': 'Sauid'
+    }
+
+
+@pytest.fixture()
+def between():
+    between_ = {
+        "between": {
+            "value": { "property": "properties.pop_max" },
+            "lower": 10000,
+            "upper": 100000
+        }
+    }
+    return CQLModel.parse_obj(between_)
+
+
+@pytest.fixture()
+def eq():
+    eq_ = { 
+        "eq": [
+            {"property": "properties.featurecla"},
+            "Admin-0 capital"
+        ]
+    }
+    return CQLModel.parse_obj(eq_)
+
+
+@pytest.fixture()
+def _and(eq, between):
+    and_ = {
+        "and": [
+            {
+                "between": {
+                    "value": {
+                        "property": "properties.pop_max"
+                    },
+                    "lower": 100000,
+                    "upper": 1000000
+                }
+            },
+            { 
+                "eq": [
+                    {"property": "properties.featurecla"},
+                    "Admin-0 capital"
+                ]
+            }
+        ]
+    }
+    return CQLModel.parse_obj(and_)
 
 
 def test_query(config):
@@ -121,3 +179,38 @@ def test_get_not_existing_item_raise_exception(config):
     p = ElasticsearchProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get('404')
+
+
+def test_post_cql_json_between_query(
+    config, between):
+    """Testing cql json query for a between object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=100, filterq=between)
+
+    assert len(results['features']) == 23
+    assert results['numberMatched'] == 23
+    assert results['numberReturned'] == 23
+
+    for item in results['features']:
+        assert 10000 <= item["properties"]["pop_max"] <= 100000
+
+
+def test_post_cql_json_eq_query(
+    config, eq):
+    """Testing cql json query for an eq object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=100, filterq=eq)
+
+    assert len(results['features']) == 1
+
+
+def test_post_cql_json_and_query(
+    config, _and):
+    """Testing cql json query for an and object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=1000, filterq=_and)
+
+    assert len(results['features']) == 77
