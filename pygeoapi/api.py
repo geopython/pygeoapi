@@ -63,6 +63,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
+from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
@@ -1077,6 +1078,243 @@ class API:
             content = geojson2geojsonld(self.config, content, dataset)
             return headers_, 200, content
 
+        return headers_, 200, to_json(content, self.pretty_print)
+
+    def post_collection_items(self, headers, args, dataset, data, pathinfo=None):
+        """
+        Queries collection or create an item
+
+        :param headers: dict of HTTP headers
+        :param args: dict of HTTP request parameters
+        :param dataset: dataset name
+        :param data: query data
+        :param pathinfo: path location
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers_ = HEADERS.copy()
+
+        properties = []
+        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+                               'resulttype', 'datetime', 'sortby',
+                               'properties', 'skipGeometry', 'q',
+                               'filter-lang']
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        format_ = check_format(args, headers)
+
+        if format_ != 'json':
+            msg = 'Invalid format for query'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        if dataset not in collections.keys():
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Processing startindex parameter')
+        try:
+            startindex = int(args.get('startindex'))
+            if startindex < 0:
+                msg = 'startindex value should be positive or zero'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        except TypeError as err:
+            LOGGER.warning(err)
+            startindex = 0
+        except ValueError:
+            msg = 'startindex value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing limit parameter')
+        try:
+            limit = int(args.get('limit'))
+            # TODO: We should do more validation, against the min and max
+            # allowed by the server configuration
+            if limit <= 0:
+                msg = 'limit value should be strictly positive'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        except TypeError as err:
+            LOGGER.warning(err)
+            limit = int(self.config['server']['limit'])
+        except ValueError:
+            msg = 'limit value should be an integer'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        resulttype = args.get('resulttype') or 'results'
+
+        LOGGER.debug('Processing bbox parameter')
+
+        bbox = args.get('bbox')
+
+        if bbox is None:
+            bbox = []
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing datetime parameter')
+        datetime_ = args.get('datetime')
+        try:
+            datetime_ = validate_datetime(collections[dataset]['extents'],
+                                          datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('processing q parameter')
+        val = args.get('q')
+
+        if val is not None:
+            q = val
+        else:
+            q = None
+
+        LOGGER.debug('Loading provider')
+
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                collections[dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers_, format_, 'NoApplicableCode', msg)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers_, format_, 'NoApplicableCode', msg)
+
+        LOGGER.debug('processing property parameters')
+        for k, v in args.items():
+            if k not in reserved_fieldnames and k not in p.fields.keys():
+                msg = 'unknown query parameter: {}'.format(k)
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+            elif k not in reserved_fieldnames and k in p.fields.keys():
+                LOGGER.debug('Add property filter {}={}'.format(k, v))
+                properties.append((k, v))
+
+        LOGGER.debug('processing sort parameter')
+        val = args.get('sortby')
+
+        if val is not None:
+            sortby = []
+            sorts = val.split(',')
+            for s in sorts:
+                prop = s
+                order = '+'
+                if s[0] in ['+', '-']:
+                    order = s[0]
+                    prop = s[1:]
+
+                if prop not in p.fields.keys():
+                    msg = 'bad sort property'
+                    return self.get_exception(
+                        400, headers_, format_, 'InvalidParameterValue', msg)
+
+                sortby.append({'property': prop, 'order': order})
+        else:
+            sortby = []
+
+        LOGGER.debug('processing properties parameter')
+        val = args.get('properties')
+
+        if val is not None:
+            select_properties = val.split(',')
+            properties_to_check = set(p.properties) | set(p.fields.keys())
+
+            if (len(list(set(select_properties) -
+                         set(properties_to_check))) > 0):
+                msg = 'unknown properties specified'
+                return self.get_exception(
+                    400, headers_, format_, 'InvalidParameterValue', msg)
+        else:
+            select_properties = []
+
+        LOGGER.debug('processing skipGeometry parameter')
+        val = args.get('skipGeometry')
+        if val is not None:
+            skip_geometry = str2bool(val)
+        else:
+            skip_geometry = False
+
+        LOGGER.debug('Processing filter-lang parameter')
+        filter_lang = args.get('filter-lang')
+        if filter_lang == 'cql-json': # @TODO add check from the configuration
+            val = filter_lang
+        else:
+            msg = 'Invalid filter language'
+            return self.get_exception(
+                400, headers_, format_, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Querying provider')
+        LOGGER.debug('startindex: {}'.format(startindex))
+        LOGGER.debug('limit: {}'.format(limit))
+        LOGGER.debug('resulttype: {}'.format(resulttype))
+        LOGGER.debug('sortby: {}'.format(sortby))
+        LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('datetime: {}'.format(datetime_))
+        LOGGER.debug('properties: {}'.format(select_properties))
+        LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
+        LOGGER.debug('q: {}'.format(q))
+        LOGGER.debug('filter-lang: {}'.format(filter_lang))
+
+        LOGGER.debug('Processing headers')
+
+        LOGGER.debug('Processing content-type header')
+        if headers.get('Content-Type') != 'application/query-cql-json':
+            msg = ('Invalid body content-type')
+            return self.get_exception(
+                400, headers_, format_, 'InvalidHeaderValue', msg)
+        
+        LOGGER.debug('Processing body')
+        
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers_, format_, 'MissingParameterValue', msg)
+
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+            LOGGER.debug(data)
+            # @TODO validation function
+            filter_ = None
+            if val:
+                filter_ = CQLModel.parse_raw(data)
+            content = p.query(startindex=startindex, limit=limit,
+                              resulttype=resulttype, bbox=bbox,
+                              datetime_=datetime_, properties=properties,
+                              sortby=sortby,
+                              select_properties=select_properties,
+                              skip_geometry=skip_geometry,
+                              q=q,
+                              filterq=filter_)
+        except (UnicodeDecodeError, AttributeError):
+            pass
+        
         return headers_, 200, to_json(content, self.pretty_print)
 
     @pre_process

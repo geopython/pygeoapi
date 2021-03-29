@@ -7,3 +7,5 @@ PyYAML
 rasterio
 shapely
 unicodecsv
+pydantic
+elasticsearch-dsl
