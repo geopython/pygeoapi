@@ -2587,10 +2587,10 @@ def validate_datetime(resource_def, datetime_=None):
                     datetime_end = datetime_end.replace(tzinfo=pytz.UTC)
 
             datetime_invalid = any([
-                (te['begin'] is not None and datetime_begin != '..' and
-                    datetime_begin < te['begin']),
-                (te['end'] is not None and datetime_end != '..' and
-                    datetime_end > te['end'])
+                (te['end'] is not None and datetime_begin != '..' and
+                    datetime_begin > te['end']),
+                (te['begin'] is not None and datetime_end != '..' and
+                    datetime_end < te['begin'])
             ])
 
         else:  # time instant
