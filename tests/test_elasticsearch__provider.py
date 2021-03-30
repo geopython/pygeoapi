@@ -201,9 +201,9 @@ def test_post_cql_json_eq_query(
     """Testing cql json query for an eq object"""
     p = ElasticsearchProvider(config)
 
-    results = p.query(limit=100, filterq=eq)
+    results = p.query(limit=500, filterq=eq)
 
-    assert len(results['features']) == 1
+    assert len(results['features']) == 235
 
 
 def test_post_cql_json_and_query(

@@ -595,7 +595,17 @@ def _build_query(q, cql):
                 }
             })
         q.must(query)
-    
+    elif not getattr(node, '__root__', 0) == 0:
+        next_op, next_node =  get_next_node(node)
+        if not getattr(next_node, 'eq', 0) == 0:
+            scalars = tuple(next_node.eq.__root__)
+            property = scalars[0].__root__.property
+            value = scalars[1].__root__.__root__
+            query = Q(
+                {'match': 
+                    { f'{property}': f'{value}' }
+                })
+            q.must(query)
     return q.build()
 
 
@@ -605,4 +615,7 @@ def update_query(input_query: Dict, cql: CQLModel):
     output_query = _build_query(query, cql)
     s = s.query(output_query)
 
+    LOGGER.debug('Enhanced query: {}'.format(
+        json.dumps(s.to_dict())
+    ))
     return s.to_dict()
