@@ -491,6 +491,11 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(
         req_headers, {'datetime': '1999/2005-04-22'}, 'obs')
 
+    assert code == 200
+
+    rsp_headers, code, response = api_.get_collection_items(
+        req_headers, {'datetime': '1999/2000-04-22'}, 'obs')
+
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_items(
@@ -1265,13 +1270,13 @@ def test_validate_datetime():
             '2001-10-30/2002-10-30')
 
     with pytest.raises(ValueError):
-        _ = validate_datetime(config, '1999/..')
+        _ = validate_datetime(config, '2007-11-01/..')
     with pytest.raises(ValueError):
-        _ = validate_datetime(config, '2000/..')
+        _ = validate_datetime(config, '2009/..')
     with pytest.raises(ValueError):
-        _ = validate_datetime(config, '../2007')
+        _ = validate_datetime(config, '../2000-09')
     with pytest.raises(ValueError):
-        _ = validate_datetime(config, '../2010')
+        _ = validate_datetime(config, '../1999')
 
 
 def test_get_exception(config, api_):
