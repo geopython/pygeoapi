@@ -216,7 +216,7 @@ def collection_items(collection_id, item_id=None):
     if item_id is None:
         if request.method == 'GET':  # list items
             headers, status_code, content = api_.get_collection_items(
-            request.headers, request.args, collection_id)
+                request.headers, request.args, collection_id)
         elif request.method == 'POST':  # filter items
             headers, status_code, content = api_.post_collection_items(
                 request.headers, request.args, collection_id, request.data)

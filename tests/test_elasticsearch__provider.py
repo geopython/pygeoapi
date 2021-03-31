@@ -58,7 +58,7 @@ def config_cql():
 def between():
     between_ = {
         "between": {
-            "value": { "property": "properties.pop_max" },
+            "value": {"property": "properties.pop_max"},
             "lower": 10000,
             "upper": 100000
         }
@@ -68,7 +68,7 @@ def between():
 
 @pytest.fixture()
 def eq():
-    eq_ = { 
+    eq_ = {
         "eq": [
             {"property": "properties.featurecla"},
             "Admin-0 capital"
@@ -90,7 +90,7 @@ def _and(eq, between):
                     "upper": 1000000
                 }
             },
-            { 
+            {
                 "eq": [
                     {"property": "properties.featurecla"},
                     "Admin-0 capital"
@@ -181,8 +181,7 @@ def test_get_not_existing_item_raise_exception(config):
         p.get('404')
 
 
-def test_post_cql_json_between_query(
-    config, between):
+def test_post_cql_json_between_query(config, between):
     """Testing cql json query for a between object"""
     p = ElasticsearchProvider(config)
 
@@ -196,8 +195,7 @@ def test_post_cql_json_between_query(
         assert 10000 <= item["properties"]["pop_max"] <= 100000
 
 
-def test_post_cql_json_eq_query(
-    config, eq):
+def test_post_cql_json_eq_query(config, eq):
     """Testing cql json query for an eq object"""
     p = ElasticsearchProvider(config)
 
@@ -206,8 +204,7 @@ def test_post_cql_json_eq_query(
     assert len(results['features']) == 235
 
 
-def test_post_cql_json_and_query(
-    config, _and):
+def test_post_cql_json_and_query(config, _and):
     """Testing cql json query for an and object"""
     p = ElasticsearchProvider(config)
 

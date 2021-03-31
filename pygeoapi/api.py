@@ -1080,7 +1080,8 @@ class API:
 
         return headers_, 200, to_json(content, self.pretty_print)
 
-    def post_collection_items(self, headers, args, dataset, data, pathinfo=None):
+    def post_collection_items(self, headers, args, dataset, data,
+                              pathinfo=None):
         """
         Queries collection or create an item
 
@@ -1262,7 +1263,7 @@ class API:
 
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = args.get('filter-lang')
-        if filter_lang == 'cql-json': # @TODO add check from the configuration
+        if filter_lang == 'cql-json':  # @TODO add check from the configuration
             val = filter_lang
         else:
             msg = 'Invalid filter language'
@@ -1288,9 +1289,9 @@ class API:
             msg = ('Invalid body content-type')
             return self.get_exception(
                 400, headers_, format_, 'InvalidHeaderValue', msg)
-        
+
         LOGGER.debug('Processing body')
-        
+
         if not data:
             msg = 'missing request data'
             return self.get_exception(
@@ -1314,7 +1315,7 @@ class API:
                               filterq=filter_)
         except (UnicodeDecodeError, AttributeError):
             pass
-        
+
         return headers_, 200, to_json(content, self.pretty_print)
 
     @pre_process
