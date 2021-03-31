@@ -585,8 +585,14 @@ def _build_query(q, cql):
         q.must(query_list)
     elif not getattr(node, 'between', 0) == 0:
         property = node.between.value.__root__.__root__.property
-        lower = node.between.lower.__root__.__root__
-        upper = node.between.upper.__root__.__root__
+        lower = None
+        if not getattr(node.between.lower,
+                       '__root__', 0) == 0:
+            lower = node.between.lower.__root__.__root__
+        upper = None
+        if not getattr(node.between.upper,
+                       '__root__', 0) == 0:
+            upper = node.between.upper.__root__.__root__
         query = Q(
             {
                 'range':

@@ -67,6 +67,28 @@ def between():
 
 
 @pytest.fixture()
+def between_upper():
+    between_ = {
+        "between": {
+            "value": {"property": "properties.pop_max"},
+            "upper": 100000
+        }
+    }
+    return CQLModel.parse_obj(between_)
+
+
+@pytest.fixture()
+def between_lower():
+    between_ = {
+        "between": {
+            "value": {"property": "properties.pop_max"},
+            "lower": 10000
+        }
+    }
+    return CQLModel.parse_obj(between_)
+
+
+@pytest.fixture()
 def eq():
     eq_ = {
         "eq": [
@@ -193,6 +215,34 @@ def test_post_cql_json_between_query(config, between):
 
     for item in results['features']:
         assert 10000 <= item["properties"]["pop_max"] <= 100000
+
+
+def test_post_cql_json_between_lte_query(config, between_upper):
+    """Testing cql json query for a between object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=100, filterq=between_upper)
+
+    assert len(results['features']) == 28
+    assert results['numberMatched'] == 28
+    assert results['numberReturned'] == 28
+
+    for item in results['features']:
+        assert item["properties"]["pop_max"] <= 100000
+
+
+def test_post_cql_json_between_gte_query(config, between_lower):
+    """Testing cql json query for a between object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=500, filterq=between_lower)
+
+    assert len(results['features']) == 237
+    assert results['numberMatched'] == 237
+    assert results['numberReturned'] == 237
+
+    for item in results['features']:
+        assert 10000 <= item["properties"]["pop_max"]
 
 
 def test_post_cql_json_eq_query(config, eq):
