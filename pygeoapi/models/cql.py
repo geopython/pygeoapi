@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -42,11 +42,11 @@ class AndExpression(BaseModel):
 
 
 class NotExpression(BaseModel):
-    not_: List[Any] = Field(..., alias='not', max_items=1, min_items=1)
+    not_: List[Any] = Field(..., alias='not')
 
 
 class OrExpression(BaseModel):
-    or_: List[Any] = Field(..., alias='or', min_items=2)
+    or_: List[Any] = Field(..., alias='or')
 
 
 class PropertyRef(BaseModel):
@@ -71,8 +71,8 @@ class LinestringCoordinate(BaseModel):
 
 class Linestring(BaseModel):
     type: LineStringType
-    coordinates: List[LinestringCoordinate] = Field(..., min_items=2)
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    coordinates: List[LinestringCoordinate] = Field(...)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class MultiLineStringType(Enum):
@@ -86,7 +86,7 @@ class MultilineStringCoordinate(BaseModel):
 class Multilinestring(BaseModel):
     type: MultiLineStringType
     coordinates: List[List[MultilineStringCoordinate]]
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class MultiPointType(Enum):
@@ -96,7 +96,7 @@ class MultiPointType(Enum):
 class Multipoint(BaseModel):
     type: MultiPointType
     coordinates: List[List[float]]
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class MultiPolygonType(Enum):
@@ -110,7 +110,7 @@ class MultipolygonCoordinateItem(BaseModel):
 class Multipolygon(BaseModel):
     type: MultiPolygonType
     coordinates: List[List[List[MultipolygonCoordinateItem]]]
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class PointType(Enum):
@@ -119,8 +119,8 @@ class PointType(Enum):
 
 class Point(BaseModel):
     type: PointType
-    coordinates: List[float] = Field(..., min_items=2)
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    coordinates: List[float] = Field(...)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class PolygonType(Enum):
@@ -134,7 +134,7 @@ class PolygonCoordinatesItem(BaseModel):
 class Polygon(BaseModel):
     type: PolygonType
     coordinates: List[List[PolygonCoordinatesItem]]
-    bbox: Optional[List[float]] = Field(None, min_items=4)
+    bbox: Optional[List[float]] = Field(None)
 
 
 class TimeString(BaseModel):
@@ -156,7 +156,7 @@ class TypedTimeString(BaseModel):
 
 
 class PeriodString(BaseModel):
-    __root__: List[Union[TimeString, str]] = Field(..., max_items=2, min_items=2)
+    __root__: List[Union[TimeString, str]] = Field(...)
 
 
 class SpatialLiteral(BaseModel):
@@ -370,7 +370,7 @@ class WithinExpression(BaseModel):
 
 class ArrayExpression(BaseModel):
     __root__: List[Union[PropertyRef, FunctionRef, ArrayLiteral]] = Field(
-        ...# , max_items=2, min_items=2
+        ...  # , max_items=2, min_items=2
     )
 
 
@@ -395,19 +395,21 @@ class LteExpression(BaseModel):
 
 
 class ScalarExpression(BaseModel):
-    __root__: Union[ScalarLiteral, PropertyRef, FunctionRef, ArithmeticExpression]
+    __root__: Union[ScalarLiteral, PropertyRef,
+                    FunctionRef, ArithmeticExpression]
 
 
 class ScalarOperands(BaseModel):
-    __root__: List[ScalarExpression] = Field(..., max_items=2, min_items=2)
+    __root__: List[ScalarExpression] = Field(...)
 
 
 class SpatialOperands(BaseModel):
-    __root__: List[GeomExpression] = Field(...) # , max_items=2, min_items=2)
+    __root__: List[GeomExpression] = Field(...)
 
 
 class TemporalOperands(BaseModel):
-    __root__: List[TemporalExpression] = Field(...) # , max_items=2, min_items=2)
+    __root__: List[TemporalExpression] = Field(...)
+    # , max_items=2, min_items=2)
 
 
 class ValueExpression(BaseModel):
@@ -480,7 +482,7 @@ class SubExpression(BaseModel):
 class ArithmeticOperands(BaseModel):
     __root__: List[
         Union[ArithmeticExpression, PropertyRef, FunctionRef, float]
-    ] = Field(..., max_items=2, min_items=2)
+    ] = Field(...)
 
 
 CQLModel.update_forward_refs()
@@ -527,10 +529,13 @@ GteExpression.update_forward_refs()
 LtExpression.update_forward_refs()
 LteExpression.update_forward_refs()
 ScalarExpression.update_forward_refs()
+ScalarOperands.update_forward_refs()
 SpatialOperands.update_forward_refs()
 TemporalOperands.update_forward_refs()
 ArithmeticExpression.update_forward_refs()
 ArrayLiteral.update_forward_refs()
+ScalarLiteral.update_forward_refs()
+PropertyRef.update_forward_refs()
 FunctionRef.update_forward_refs()
 AddExpression.update_forward_refs()
 DivExpression.update_forward_refs()
@@ -543,33 +548,33 @@ def get_next_node(obj):
     if obj.__repr_name__() == 'AndExpression':
         next_node = obj.and_
         logical_op = 'and'
-    elif obj.__repr_name__() ==  'OrExpression':
+    elif obj.__repr_name__() == 'OrExpression':
         next_node = obj.or_
         logical_op = 'or'
-    elif obj.__repr_name__() ==  'NotExpression':
+    elif obj.__repr_name__() == 'NotExpression':
         next_node = obj.not_
         logical_op = 'not'
-    elif obj.__repr_name__() ==  'ComparisonPredicate':
+    elif obj.__repr_name__() == 'ComparisonPredicate':
         next_node = obj.__root__
-    elif obj.__repr_name__() ==  'SpatialPredicate':
+    elif obj.__repr_name__() == 'SpatialPredicate':
         next_node = obj.__root__
-    elif obj.__repr_name__() ==  'TemporalPredicate':
+    elif obj.__repr_name__() == 'TemporalPredicate':
         next_node = obj.__root__
     elif obj.__repr_name__() == 'IsBetweenPredicate':
         next_node = obj.between
-    elif obj.__repr_name__() ==  'Between':
+    elif obj.__repr_name__() == 'Between':
         next_node = obj.value
-    elif obj.__repr_name__() ==  'ValueExpression':
+    elif obj.__repr_name__() == 'ValueExpression':
         next_node = obj.__root__ or obj.lower or obj.upper
-    elif obj.__repr_name__() ==  'ScalarExpression':
+    elif obj.__repr_name__() == 'ScalarExpression':
         next_node = obj.__root__
-    elif obj.__repr_name__() ==  'ScalarLiteral':
+    elif obj.__repr_name__() == 'ScalarLiteral':
         next_node = obj.__root__
-    elif obj.__repr_name__() ==  'PropertyRef':
+    elif obj.__repr_name__() == 'PropertyRef':
         next_node = obj.property
-    elif obj.__repr_name__() ==  'BinaryComparisonPredicate':
+    elif obj.__repr_name__() == 'BinaryComparisonPredicate':
         next_node = obj.__root__
-    elif obj.__repr_name__() ==  'EqExpression':
+    elif obj.__repr_name__() == 'EqExpression':
         next_node = obj.eq
         logical_op = 'eq'
     else:

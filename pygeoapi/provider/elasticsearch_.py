@@ -508,11 +508,11 @@ class ESQueryBuilder:
         self.must_value = {}
         self.should_value = {}
         self.mustnot_value = {}
-    
+
     def must(self, must_value):
         self.must_value = must_value
         return self
-    
+
     def should(self, should_value):
         self.should_value = should_value
         return self
@@ -520,7 +520,7 @@ class ESQueryBuilder:
     def must_not(self, mustnot_value):
         self.mustnot_value = mustnot_value
         return self
-    
+
     @property
     def operation(self):
         return self._operation
@@ -528,7 +528,7 @@ class ESQueryBuilder:
     @operation.setter
     def operation(self, value):
         self._operation = value
-        
+
     def build(self):
         if self.must_value:
             must_clause = self.must_value or {}
@@ -560,51 +560,53 @@ def _build_query(q, cql):
     if isinstance(node, list):
         query_list = []
         for elem in node:
-            op, next_node =  get_next_node(elem)
+            op, next_node = get_next_node(elem)
             if not getattr(next_node, 'between', 0) == 0:
                 property = next_node.between.value.__root__.__root__.property
                 lower = next_node.between.lower.__root__.__root__
                 upper = next_node.between.upper.__root__.__root__
                 query_list.append(Q(
-                    {'range': 
-                        {   
-                            f'{property}': {
-                                'gte': lower, 'lte': upper
+                    {
+                        'range':
+                            {
+                                f'{property}': {
+                                    'gte': lower, 'lte': upper
+                                }
                             }
-                        }
-                    }))
+                    }
+                ))
             if not getattr(next_node, '__root__', 0) == 0:
                 scalars = tuple(next_node.__root__.eq.__root__)
                 property = scalars[0].__root__.property
                 value = scalars[1].__root__.__root__
                 query_list.append(Q(
-                    {'match': 
-                        { f'{property}': f'{value}' }
-                    }))
+                    {'match': {f'{property}': f'{value}'}}
+                ))
         q.must(query_list)
     elif not getattr(node, 'between', 0) == 0:
         property = node.between.value.__root__.__root__.property
         lower = node.between.lower.__root__.__root__
         upper = node.between.upper.__root__.__root__
         query = Q(
-            {'range': 
-                {   
-                    f'{property}': {
-                        'gte': lower, 'lte': upper
+            {
+                'range':
+                    {
+                        f'{property}': {
+                            'gte': lower, 'lte': upper
+                        }
                     }
-                }
-            })
+            }
+        )
         q.must(query)
     elif not getattr(node, '__root__', 0) == 0:
-        next_op, next_node =  get_next_node(node)
+        next_op, next_node = get_next_node(node)
         if not getattr(next_node, 'eq', 0) == 0:
             scalars = tuple(next_node.eq.__root__)
             property = scalars[0].__root__.property
             value = scalars[1].__root__.__root__
             query = Q(
-                {'match': 
-                    { f'{property}': f'{value}' }
-                })
+                {'match': {f'{property}': f'{value}'}}
+            )
             q.must(query)
     return q.build()
 
