@@ -172,9 +172,9 @@ You are free to set up the language support anyway you like, but there are a cou
                     - en
                     - fr
 
-2. If your provider implements any of the ``query``, ``get``, ``get_metadata``, ``get_coverage_domainset`` and ``get_coverage_rangetype``
-   methods of the base class and you wish to make them language-aware, either add a ``**kwargs`` parameter or a
-   ``language=None`` parameter to the method signature.
+2. If your provider implements any of the ``query``, ``get`` or ``get_metadata`` methods of the base class and you wish
+   to make them language-aware, either add an implicit ``**kwargs`` parameter or an explicit ``language=None`` parameter
+   to the method signature.
 
 An example Python code block for a custom provider with a language-aware ``query`` method could look like this:
 
@@ -205,8 +205,8 @@ This is all that is required. The pygeoapi API class will make sure that the cor
 Notes
 ^^^^^
 
-- If your provider implements any of the aforementioned ``query``, ``get``, ``get_metadata``, ``get_coverage_domainset`` and ``get_coverage_rangetype``
-  methods, it **must** add a ``**kwargs`` or ``language=None`` parameter, even if it does not need to use the language parameter.
+- If your provider implements any of the aforementioned ``query``, ``get`` and ``get_metadata`` methods,
+  it **must** add a ``**kwargs`` or ``language=None`` parameter, even if it does not need to use the language parameter.
 
 - Contrary to the pygeoapi server configuration, adding a ``language`` or ``languages`` (both are supported) property to the
   provider definition is **not** required and may be omitted. In that case, the passed-in ``language`` parameter language-aware provider methods

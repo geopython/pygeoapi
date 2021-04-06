@@ -600,8 +600,8 @@ def test_get_collection_items(config, api_):
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '1999/2000-04-22'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '1999/2000-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
@@ -1163,9 +1163,8 @@ def test_delete_process_job(api_):
 
 def test_get_collection_edr_query(config, api_):
     # edr resource
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {}, 'icoads-sst')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
     parameter_names = list(collection['parameter-names'].keys())
     parameter_names.sort()
@@ -1173,7 +1172,6 @@ def test_get_collection_edr_query(config, api_):
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # no coords parameter
-    req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
     assert code == 400

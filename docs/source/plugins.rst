@@ -55,10 +55,10 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
    class MyCoolVectorDataProvider(BaseProvider):
        """My cool vector data provider"""
 
-       def __init__(self, provider_def, requested_locale=None):
+       def __init__(self, provider_def):
            """Inherit from parent class"""
 
-           super().__init__(provider_def, requested_locale)
+           super().__init__(provider_def)
 
        def get_fields(self):
 
@@ -163,10 +163,10 @@ The below template provides a minimal example (let's call the file ``mycoolraste
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
 
-       def get_coverage_domainset(self, *args, **kwargs):
+       def get_coverage_domainset(self):
            # return a CIS JSON DomainSet
 
-       def get_coverage_rangetype(self, *args, **kwargs):
+       def get_coverage_rangetype(self):
            # return a CIS JSON RangeType
 
        def query(self, bands=[], subsets={}, format_='json', **kwargs):

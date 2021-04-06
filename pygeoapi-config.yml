@@ -246,18 +246,16 @@ resources:
                 - canada
                 - donn\u00e9es ouvertes
         links:
-            en:
-                - type: text/html
-                  rel: canonical
-                  title: information
-                  href: https://open.canada.ca/en/open-data
-                  hreflang: en-CA
-            fr:
-                - type: text/html
-                  rel: canonical
-                  title: informations
-                  href: https://ouvert.canada.ca/fr/donnees-ouvertes
-                  hreflang: fr-CA
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://open.canada.ca/en/open-data
+              hreflang: en-CA
+            - type: text/html
+              rel: canonical
+              title: informations
+              href: https://ouvert.canada.ca/fr/donnees-ouvertes
+              hreflang: fr-CA
         extents:
             spatial:
                 bbox: [-180,-90,180,90]

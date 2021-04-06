@@ -81,7 +81,7 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
-#: Formats allowed for ?f= requests
+#: Formats allowed for ?f= requests (order matters)
 FORMATS = OrderedDict((
     ('html', 'text/html'),
     ('jsonld', 'application/ld+json'),
@@ -111,8 +111,9 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 
 def pre_process(func):
-    """ Decorator that transforms the incoming Request instance specific to the
-    web framework (Flask, Starlette) into an APIRequest instance.
+    """ Decorator that transforms an incoming Request instance specific to the
+    web framework (i.e. Flask or Starlette) into a generic :class:`APIRequest`
+    instance.
 
     :param func: decorated function
 
@@ -134,6 +135,65 @@ def pre_process(func):
 class APIRequest:
     """ Transforms an incoming server-specific Request into an object
     with some generic helper methods and properties.
+
+    .. note::   Typically, this instance is created automatically by the
+                :func:`pre_process` decorator. **Every** API method that has
+                been routed to a REST endpoint should be decorated by the
+                :func:`pre_process` function.
+                Therefore, **all** routed API methods should at least have 1
+                argument that holds the (transformed) request.
+
+    The following example API method will:
+
+    - transform the incoming Flask/Starlette `Request` into an `APIRequest`
+      using the :func:`pre_process` decorator;
+    - call :meth:`is_valid` to check if the incoming request was valid, i.e.
+      that the user requested a valid output format or no format at all
+      (which means the default format);
+    - call :meth:`API.get_format_exception` if the requested format was
+      invalid;
+    - create a `dict` with the appropriate `Content-Type` header for the
+      requested format and a `Content-Language` header if any specific language
+      was requested.
+
+    .. code-block:: python
+
+       @pre_process
+       def example_method(self, request: Union[APIRequest, Any], custom_arg):
+          if not request.is_valid():
+             return self.get_format_exception(request)
+
+          headers = request.get_response_headers()
+
+          # generate response_body here
+
+          return headers, 200, response_body
+
+
+    The following example API method is similar as the one above, but will also
+    allow the user to request a non-standard format (e.g. ``f=xml``).
+    If `xml` was requested, we set the `Content-Type` ourselves. For the
+    standard formats, the `APIRequest` object sets the `Content-Type`.
+
+    .. code-block:: python
+
+       @pre_process
+       def example_method(self, request: Union[APIRequest, Any], custom_arg):
+          if not request.is_valid(['xml']):
+             return self.get_format_exception(request)
+
+          content_type = 'application/xml' if request.format == 'xml' else None
+          headers = request.get_response_headers(content_type)
+
+          # generate response_body here
+
+          return headers, 200, response_body
+
+    Note that you don't *have* to call :meth:`is_valid`, but that you can also
+    perform a custom check on the requested output format by looking at the
+    :attr:`format` property.
+    Other query parameters are available through the :attr:`params` property as
+    a `dict`.
 
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
@@ -235,7 +295,7 @@ class APIRequest:
 
     @property
     def data(self):
-        """ Returns the additional data send with the Request. """
+        """ Returns the additional data send with the Request (bytes). """
         return self._data
 
     @property
@@ -291,9 +351,11 @@ class APIRequest:
 
     def is_valid(self, additional_formats=None) -> bool:
         """ Returns True if:
-        - the format is not set (None)
-        - the requested format is supported
-        - the requested format exists in a list if additional formats
+            - the format is not set (None)
+            - the requested format is supported
+            - the requested format exists in a list if additional formats
+
+        .. note::   Format names are matched in a case-insensitive manner.
 
         :param additional_formats:  Optional additional supported formats list
         :returns:   A boolean
@@ -544,9 +606,6 @@ class API:
             'links': []
         }
 
-        # Used to store provider locale (if supported)
-        prv_locale = None
-
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
 
@@ -746,15 +805,9 @@ class API:
                     except ProviderTypeError:
                         pass
                     else:
-                        # Get provider language (if any)
-                        prv_locale = l10n.get_plugin_locale(provider_def,
-                                                            request.raw_locale)
-
                         collection['crs'] = [p.crs]
-                        collection['domainset'] = p.get_coverage_domainset(
-                            language=prv_locale)
-                        collection['rangetype'] = p.get_coverage_rangetype(
-                            language=prv_locale)
+                        collection['domainset'] = p.get_coverage_domainset()
+                        collection['rangetype'] = p.get_coverage_rangetype()
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
@@ -847,8 +900,6 @@ class API:
             })
 
         if request.format == 'html':  # render
-            l10n.set_response_language(headers, prv_locale)
-
             if dataset is not None:
                 content = render_j2_template(self.config,
                                              'collections/collection.html',
@@ -861,8 +912,6 @@ class API:
             return headers, 200, content
 
         if request.format == 'jsonld':
-            l10n.set_response_language(headers, prv_locale, True)
-
             jsonld = self.fcmld.copy()  # noqa
             if dataset is not None:
                 jsonld['dataset'] = jsonldify_collection(self, fcm,
@@ -874,7 +923,6 @@ class API:
                 ]
             return headers, 200, to_json(jsonld, self.pretty_print)
 
-        l10n.set_response_language(headers, prv_locale, True)
         return headers, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
@@ -1582,11 +1630,7 @@ class API:
 
             p = load_plugin('provider', collection_def)
 
-            # Get provider language (if any)
-            prv_locale = l10n.get_plugin_locale(collection_def,
-                                                request.raw_locale)
-
-            data = p.get_coverage_domainset(language=prv_locale)
+            data = p.get_coverage_domainset()
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
@@ -1601,12 +1645,9 @@ class API:
                 500, headers, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
-            l10n.set_response_language(headers, prv_locale, True)
             return headers, 200, to_json(data, self.pretty_print)
 
         elif format_ == 'html':
-            l10n.set_response_language(headers, prv_locale)
-
             data['id'] = dataset
             data['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale)
@@ -1638,11 +1679,7 @@ class API:
 
             p = load_plugin('provider', collection_def)
 
-            # Get provider language (if any)
-            prv_locale = l10n.get_plugin_locale(collection_def,
-                                                request.raw_locale)
-
-            data = p.get_coverage_rangetype(language=prv_locale)
+            data = p.get_coverage_rangetype()
         except KeyError:
             msg = 'collection does not exist'
             return self.get_exception(
@@ -1657,12 +1694,9 @@ class API:
                 500, headers, format_, 'NoApplicableCode', msg)
 
         if format_ == 'json':
-            l10n.set_response_language(headers, prv_locale, True)
             return headers, 200, to_json(data, self.pretty_print)
 
         elif format_ == 'html':
-            l10n.set_response_language(headers, prv_locale)
-
             data['id'] = dataset
             data['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale)
