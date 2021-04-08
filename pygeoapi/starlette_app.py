@@ -367,6 +367,10 @@ async def get_processes(request: Request, process_id=None):
 
     :returns: Starlette HTTP Response
     """
+
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+
     headers, status_code, content = api_.describe_processes(
         request.headers, request.query_params, process_id)
 
@@ -392,13 +396,19 @@ async def get_process_jobs(request: Request, process_id=None, job_id=None):
     :returns: Starlette HTTP Response
     """
 
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+
     if job_id is None:  # list of submit job
         if request.method == 'GET':
             headers, status_code, content = api_.get_process_jobs(
                 request.headers, request.query_params, process_id)
         elif request.method == 'POST':
+            request_body = await request.body()
             headers, status_code, content = api_.execute_process(
-                request.headers, request.query_params, request.data,
+                request.headers, request.query_params, request_body,
                 process_id)
     else:  # get or delete job
         if request.method == 'DELETE':
@@ -429,6 +439,11 @@ async def get_process_job_result(request: Request, process_id=None,
     :returns: HTTP response
     """
 
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+
     headers, status_code, content = api_.get_process_job_result(
         request.headers, request.args, process_id, job_id)
 
@@ -455,6 +470,13 @@ async def get_process_job_result_resource(request: Request, process_id=None,
 
     :returns: HTTP response
     """
+
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+    if 'resource' in request.path_params:
+        resource = request.path_params['resource']
 
     headers, status_code, content = api_.get_process_job_result_resource(
         request.headers, request.args, process_id, job_id, resource)
