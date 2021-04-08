@@ -393,12 +393,12 @@ def set_response_language(headers: dict, locale_: Union[Locale, None], remove: b
 
 
 def add_locale(url, locale_):
-    """ Adds a locale query parameter (e.g. 'l=en-US') to a URL.
+    """ Adds a locale query parameter (e.g. 'lang=en-US') to a URL.
     If `locale_` is None or an empty string, the URL will be returned as-is.
 
     :param url:     The web page URL (may contain query string).
     :param locale_: The web locale or language tag to append to the query.
-    :returns:       A new URL with a 'l=<locale>' query parameter.
+    :returns:       A new URL with a 'lang=<locale>' query parameter.
     :raises:        requests.exceptions.MissingSchema
     """
     loc = str2locale(locale_, True)

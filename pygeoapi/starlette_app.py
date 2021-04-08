@@ -335,9 +335,7 @@ async def get_process_jobs(request: Request, process_id=None, job_id=None):
         if request.method == 'GET':
             return get_response(api_.get_process_jobs(request, process_id))
         elif request.method == 'POST':
-            request_body = await request.body()
-            return get_response(api_.execute_process(
-                request, request_body, process_id))
+            return get_response(api_.execute_process(request, process_id))
     else:  # get or delete job
         if request.method == 'DELETE':
             return get_response(api_.delete_process_job(process_id, job_id))

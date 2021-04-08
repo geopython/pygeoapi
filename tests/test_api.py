@@ -142,9 +142,9 @@ def test_apirequest(api_):
     # Test data
     for d in (None, '', 'test', {'key': 'value'}):
         req = make_request(ROUTE_OBS, {}, d)
-        apireq = APIRequest(req, api_.locales)
+        apireq = APIRequest.with_data(req, api_.locales)
         if not d:
-            assert apireq.data is None
+            assert apireq.data == b''
         elif isinstance(d, dict):
             assert d == json.loads(apireq.data)
         else:

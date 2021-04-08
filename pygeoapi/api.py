@@ -40,6 +40,7 @@ import logging
 import os
 import uuid
 import re
+import asyncio
 import urllib.parse
 from copy import deepcopy
 from typing import Union, Any
@@ -121,13 +122,12 @@ def pre_process(func):
     """
 
     def inner(*args):
-        cls = args[0]
-        req = APIRequest(args[1], getattr(cls, 'locales', set()))
+        cls, req_in = args[:2]
+        req_out = APIRequest.with_data(req_in, getattr(cls, 'locales', set()))
         if len(args) > 2:
-            args = args[2:]
-            return func(cls, req, *args)
+            return func(cls, req_out, *args[2:])
         else:
-            return func(cls, req)
+            return func(cls, req_out)
 
     return inner
 
@@ -193,14 +193,19 @@ class APIRequest:
     perform a custom check on the requested output format by looking at the
     :attr:`format` property.
     Other query parameters are available through the :attr:`params` property as
-    a `dict`.
+    a `dict`. The request body is available through the :attr:`data` property.
+
+    .. note::   If the request data (body) is important, **always** create a
+                new `APIRequest` instance using the :meth:`with_data` factory
+                method.
+                The :func:`pre_process` decorator will use this automatically.
 
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
     """
     def __init__(self, request, supported_locales):
-        # Get request data (if any)
-        self._data = getattr(request, 'data', None) or None
+        # Set default request data
+        self._data = b''
 
         # Copy request query parameters
         self._args = self._get_params(request)
@@ -215,12 +220,37 @@ class APIRequest:
         # Determine format
         self._format = self._get_format(request.headers)
 
+    @classmethod
+    def with_data(cls, request, supported_locales) -> 'APIRequest':
+        """ Factory class method to create an `APIRequest` instance with data.
+
+        If the request body is required, an `APIRequest` should always be
+        instantiated using this class method. The reason for this is, that the
+        Starlette request body needs to be awaited (async), which cannot be
+        achieved in the :meth:`__init__` method of the `APIRequest`.
+        However, `APIRequest` can still be initialized using :meth:`__init__`,
+        but then the :attr:`data` property value will always be empty.
+
+        :param request:             The web platform specific Request instance.
+        :param supported_locales:   List or set of supported Locale instances.
+        :returns:                   An `APIRequest` instance with data.
+        """
+        api_req = cls(request, supported_locales)
+        if hasattr(request, 'data'):
+            # Set data from Flask request
+            api_req._data = request.data
+        elif hasattr(request, 'body'):
+            # Set data from Starlette request after async coroutine completion
+            loop = asyncio.get_event_loop()
+            api_req._data = loop.run_until_complete(request.body())
+        return api_req
+
     @staticmethod
     def _get_params(request):
-        """ Extracts the query parameters from the Request object.
+        """ Extracts the query parameters from the `Request` object.
 
         :param request: A Flask or Starlette Request instance
-        :returns:       ImmutableMultiDict or empty dict
+        :returns:       `ImmutableMultiDict` or empty `dict`
         """
         if hasattr(request, 'args'):
             # Return ImmutableMultiDict from Flask request
@@ -232,8 +262,8 @@ class APIRequest:
         return {}
 
     def _get_locale(self, headers, supported_locales):
-        """ Detects locale from "l=<language>" param or Accept-Language header.
-        Returns a tuple of (raw, locale) if found in params or headers.
+        """ Detects locale from "lang=<language>" param or `Accept-Language`
+        header. Returns a tuple of (raw, locale) if found in params or headers.
         Returns a tuple of (raw default, default locale) if not found.
 
         :param headers:             A dict with Request headers
@@ -269,7 +299,7 @@ class APIRequest:
 
     def _get_format(self, headers) -> Union[str, None]:
         """
-        Get Request format type from query parameters or headers.
+        Get `Request` format type from query parameters or headers.
 
         :param headers: Dict of Request headers
         :returns:       format value or None if not found/specified
@@ -294,7 +324,7 @@ class APIRequest:
         return format_ or None
 
     @property
-    def data(self):
+    def data(self) -> bytes:
         """ Returns the additional data send with the Request (bytes). """
         return self._data
 
@@ -319,8 +349,8 @@ class APIRequest:
                     that the user requested. It may also not be the language
                     that is supported by a collection provider, for example.
                     For this reason, you should pass the `raw_locale` property
-                    to all plugins, so (e.g.) providers can determine the best
-                    matching locale themselves.
+                    to the :func:`l10n.get_plugin_locale` function, so that
+                    the best match for the provider can be determined.
 
         :returns:   babel.core.Locale
         """
@@ -328,13 +358,13 @@ class APIRequest:
 
     @property
     def raw_locale(self) -> str:
-        """ Returns the raw locale string from the Request object.
-        If no "l" query parameter or Accept-Language header was found,
+        """ Returns the raw locale string from the `Request` object.
+        If no "lang" query parameter or `Accept-Language` header was found,
         the first (= default) language tag from the server configuration is
         returned.
-        Pass this value to the :func:`load_plugin` function to let the plugin
-        determine a best match for the locale, which may be different from the
-        locale used by pygeoapi's UI.
+        Pass this value to the :func:`l10n.get_plugin_locale` function to let
+        the provider determine a best match for the locale, which may be
+        different from the locale used by pygeoapi's UI.
 
         :returns:   a locale string
         """
@@ -351,6 +381,7 @@ class APIRequest:
 
     def is_valid(self, additional_formats=None) -> bool:
         """ Returns True if:
+
             - the format is not set (None)
             - the requested format is supported
             - the requested format exists in a list if additional formats
@@ -1019,7 +1050,7 @@ class API:
         headers = request.get_response_headers()
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'l', 'limit', 'startindex',
+        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'startindex',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q']
 
@@ -2194,14 +2225,14 @@ class API:
         process = load_plugin('process',
                               processes_config[process_id]['processor'])
 
-        if not request.data:
+        data = request.data
+        if not data:
             # TODO not all processes require input, e.g. time-dependent or
             #      random value generators
             msg = 'missing request data'
             return self.get_exception(
                 400, headers, request.format, 'MissingParameterValue', msg)
 
-        data = request.data
         try:
             # Parse bytes data, if applicable
             data = data.decode()
