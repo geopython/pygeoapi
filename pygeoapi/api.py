@@ -2000,7 +2000,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         else:
             LOGGER.debug(data_dict)
 
-        job_id = str(uuid.uuid1())
+        job_id = data.get("job_id", str(uuid.uuid1()))
         url = '{}/processes/{}/jobs/{}'.format(
             self.config['server']['url'], process_id, job_id)
 
