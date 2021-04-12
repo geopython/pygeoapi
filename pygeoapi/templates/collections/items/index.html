@@ -73,7 +73,7 @@
           <table class="striped">
             <thead>
             <tr>
-                <th>id</th>
+                <th>{{ data['id_field'] }}</th>
                 {% if data['title_field'] %}
                   <th>{{ data['title_field'] }}</th>
                 {% endif %}
@@ -88,8 +88,12 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
+                {% if data.get('id_field') != 'id' %}
+                <td data-label="{{ data.get('id_field') }}"><a href="{{ ft.get('properties').get(data.get('id_field'))}}" title="{{ ft.id }}">{{ft['properties'][data.get('id_field')]}}</a></td>
+                {% else %}
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
-                {% if data['title_field'] %}
+                {% endif %}
+                  {% if data['title_field'] %}
                   <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
                 {% endif %}
                 {% for k, v in ft['properties'].items() %}
