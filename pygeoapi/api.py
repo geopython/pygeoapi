@@ -1047,7 +1047,7 @@ class API:
 
             if p.title_field is not None:
                 content['title_field'] = p.title_field
-            content['id_field'] = p.title_field
+            content['id_field'] = p.uri_field or 'id'
 
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
@@ -1074,7 +1074,10 @@ class API:
             return headers_, 200, content
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
-            content = geojson2geojsonld(self.config, content, dataset)
+            content = geojson2geojsonld(
+                self.config, content, dataset, identifier_field=(p.uri_field or 'id')
+            )
+            content = to_json(content, self.pretty_print)
             return headers_, 200, content
 
         return headers_, 200, to_json(content, self.pretty_print)
@@ -1147,24 +1150,27 @@ class API:
             msg = 'identifier not found'
             return self.get_exception(400, headers_, format_, 'NotFound', msg)
 
+        if p.uri_field is not None:
+            uri = content['properties'].get( p.uri_field )
+        else:
+            uri = '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier)
+        
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items/{}?f=json'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=json'.format(uri)
             }, {
             'rel': 'self' if format_ == 'jsonld' else 'alternate',
             'type': 'application/ld+json',
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items/{}?f=jsonld'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=jsonld'.format(uri)
             }, {
             'rel': 'self' if format_ == 'html' else 'alternate',
             'type': 'text/html',
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items/{}?f=html'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': '{}?f=html'.format(uri)
             }, {
             'rel': 'collection',
             'type': 'application/json',
@@ -1174,13 +1180,11 @@ class API:
             }, {
             'rel': 'prev',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': uri
             }, {
             'rel': 'next',
             'type': 'application/geo+json',
-            'href': '{}/collections/{}/items/{}'.format(
-                self.config['server']['url'], dataset, identifier)
+            'href': uri
             }
         ]
 
@@ -1191,6 +1195,8 @@ class API:
             content['id_field'] = p.id_field
             if p.title_field is not None:
                 content['title_field'] = p.title_field
+            if p.uri_field is not None:
+                content['properties'] = {'uri': uri, **content['properties']}
 
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
@@ -1199,8 +1205,9 @@ class API:
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
             content = geojson2geojsonld(
-                self.config, content, dataset, identifier=identifier
+                self.config, content, dataset, uri, (p.uri_field or 'id')
             )
+            content = to_json(content, self.pretty_print)
             return headers_, 200, content
 
         return headers_, 200, to_json(content, self.pretty_print)
@@ -2000,7 +2007,7 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
         else:
             LOGGER.debug(data_dict)
 
-        job_id = data.get("job_id", str(uuid.uuid1()))
+        job_id = str(uuid.uuid1())
         url = '{}/processes/{}/jobs/{}'.format(
             self.config['server']['url'], process_id, job_id)
 
