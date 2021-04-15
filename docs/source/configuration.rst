@@ -242,7 +242,7 @@ For collections, at the level of an item or items, the default the JSON-LD repre
 
 The optional configuration options for collections, at the level of an item of items, are:
 
-- If ``geojsonld`` is not specified or is True, the JSON-LD will conform to the default configuration. If geojsonld is False, the properties block will be expanded   into the main body, non-point geometry will be removed, and a custom ``@context`` will be used in the JSON-LD.
+- If ``geojsonld`` is not specified or is True, the JSON-LD will conform to the default configuration. If ``geojsonld`` is False, the properties block will be expanded   into the main body, non-point geometry will be removed, and a custom ``@context`` will be used in the JSON-LD.
 - If ``uri_field`` is specied, JSON-LD will be updated such that ``@id:uri``.
 
 .. note::
