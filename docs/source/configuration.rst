@@ -147,6 +147,7 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
+          geojsonld: True # use default geojsonld behavior (see Linked Data section)
           context:  # linked data configuration (see Linked Data section)
               - datetime: https://schema.org/DateTime
               - vocab: https://example.com/vocab#
@@ -175,6 +176,7 @@ default.
                 name: CSV
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
+                uri_field: uri # opetional field corresponding to the Uniform Resource Identifier (see Linked Data section)
                 time_field: datetimestamp  # optional field corresponding to the temporal property of the dataset
                 title_field: foo # optional field of which property to display as title/label on HTML pages
                 format:  # optional default format
@@ -232,11 +234,16 @@ The metadata for an instance is determined by the content of the `metadata`_ sec
 This metadata is included automatically, and is sufficient for inclusion in major indices of datasets, including the
 `Google Dataset Search`_.
 
-For collections, at the level of an item or items, by default the JSON-LD representation adds:
+For collections, at the level of an item or items, the default the JSON-LD representation adds:
 
 - The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
 - An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
   in pygeoapi)
+
+The optional configuration options for collections, at the level of an item of items, are:
+
+- If ``geojsonld`` is not specified or is True, the JSON-LD will conform to the default configuration. If geojsonld is False, the properties block will be expanded   into the main body, non-point geometry will be removed, and a custom ``@context`` will be used in the JSON-LD.
+- If ``uri_field`` is specied, JSON-LD will be updated such that ``@id:uri``.
 
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
