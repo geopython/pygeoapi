@@ -209,7 +209,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
  
     if not geojsonld:
         ldjsonData = {
-            "@context": [{identifier_field: "@id", "schema":"https://schema.org"},  *(context or []), *(geocontext or [])],
+            "@context": [{identifier_field: "@id", "schema":"https://schema.org/"},  *(context or []), *(geocontext or [])],
             **data
         }
     else:
