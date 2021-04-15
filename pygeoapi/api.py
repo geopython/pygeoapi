@@ -987,7 +987,7 @@ class API:
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items?f=html{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
-            }
+           }
         ]
 
         if startindex > 0:
@@ -1045,9 +1045,11 @@ class API:
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
+            if p.uri_field is not None:
+                content['uri_field'] = p.uri_field
             if p.title_field is not None:
                 content['title_field'] = p.title_field
-            content['id_field'] = p.uri_field or 'id'
+            content['id_field'] = p.title_field
 
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
@@ -1193,10 +1195,10 @@ class API:
 
             content['title'] = collections[dataset]['title']
             content['id_field'] = p.id_field
+            if p.uri_field is not None:
+                content['uri_field'] = p.uri_field
             if p.title_field is not None:
                 content['title_field'] = p.title_field
-            if p.uri_field is not None:
-                content['properties'] = {'uri': uri, **content['properties']}
 
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
