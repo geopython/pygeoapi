@@ -243,7 +243,7 @@ For collections, at the level of an item or items, the default the JSON-LD repre
 The optional configuration options for collections, at the level of an item of items, are:
 
 - If ``geojsonld`` is not specified or is True, the JSON-LD will conform to the default configuration. If ``geojsonld`` is False, the properties block will be expanded into the main body, non-point geometry will be removed, and a custom ``@context`` will be used in the JSON-LD.
-- If ``uri_field`` is specified, JSON-LD will be updated such that ``@id:uri`` for each item in a collection.
+- If ``uri_field`` is specified, JSON-LD will be updated such that ``@id:uri_field`` for each item in a collection.
 
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
