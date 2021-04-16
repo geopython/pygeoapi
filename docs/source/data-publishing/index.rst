@@ -23,4 +23,5 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    ogcapi-tiles
    ogcapi-processes
    ogcapi-records
+   ogcapi-edr
    stac

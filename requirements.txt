@@ -5,4 +5,5 @@ python-dateutil
 pytz
 PyYAML
 rasterio
+shapely
 unicodecsv

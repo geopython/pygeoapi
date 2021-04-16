@@ -38,7 +38,7 @@ from pygeoapi import __version__
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, yaml_load)
+                           filter_providers_by_type, to_json, yaml_load)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +48,8 @@ OPENAPI_YAML = {
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
-    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi'  # noqa
+    'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
+    'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
 }
 
 
@@ -726,6 +727,56 @@ def get_oas_30(cfg):
                 }
             }
 
+        LOGGER.debug('setting up tiles endpoints')
+        edr_extension = filter_providers_by_type(
+            collections[k]['providers'], 'edr')
+
+        if edr_extension:
+            ep = load_plugin('provider', edr_extension)
+
+            edr_query_endpoints = []
+
+            for qt in ep.get_query_types():
+                edr_query_endpoints.append({
+                    'path': '{}/{}'.format(collection_name_path, qt),
+                    'qt': qt,
+                    'op_id': 'query{}{}'.format(qt.capitalize(), k.capitalize())  # noqa
+                })
+                if ep.instances:
+                    edr_query_endpoints.append({
+                        'path': '{}/instances/{{instanceId}}/{}'.format(collection_name_path, qt),  # noqa
+                        'qt': qt,
+                        'op_id': 'query{}Instance{}'.format(qt.capitalize(), k.capitalize())  # noqa
+                    })
+
+            for eqe in edr_query_endpoints:
+                paths[eqe['path']] = {
+                    'get': {
+                        'summary': 'query {} by {}'.format(v['description'], eqe['qt']),  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': eqe['op_id'],
+                        'parameters': [
+                            {'$ref': '{}/parameters/{}Coords.yaml'.format(OPENAPI_YAML['oaedr'], eqe['qt'])},  # noqa
+                            {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])},  # noqa
+                            {'$ref': '{}/parameters/parameter-name.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '{}/parameters/z.yaml'.format(OPENAPI_YAML['oaedr'])},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {
+                                'description': 'Response',
+                                'content': {
+                                    'application/prs.coverage+json': {
+                                        'schema': {
+                                            '$ref': '{}/schemas/coverageJSON.yaml'.format(OPENAPI_YAML['oaedr'])}  # noqa
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],
                                                 'type', 'stac-collection')
@@ -938,11 +989,17 @@ def get_oas(cfg, version='3.0'):
 @click.command('generate-openapi-document')
 @click.pass_context
 @click.option('--config', '-c', 'config_file', help='configuration file')
-def generate_openapi_document(ctx, config_file):
+@click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
+              default='yaml', help='output format (json|yaml)')
+def generate_openapi_document(ctx, config_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
     with open(config_file) as ff:
         s = yaml_load(ff)
-        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        pretty_print = s['server'].get('pretty_print', False)
+        if format_ == 'yaml':
+            click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        else:
+            click.echo(to_json(get_oas(s), pretty=pretty_print))

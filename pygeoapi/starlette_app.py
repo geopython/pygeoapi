@@ -103,16 +103,20 @@ async def openapi(request: Request):
     """
 
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        openapi = yaml_load(ff)
+        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
+            openapi = yaml_load(ff)
+        else:  # JSON file, do not transform
+            openapi = ff
 
-    headers, status_code, content = api_.openapi(
-        request.headers, request.query_params, openapi)
+        headers, status_code, content = api_.openapi(
+            request.headers, request.query_params, openapi)
 
-    response = Response(content=content, status_code=status_code)
-    if headers:
-        response.headers.update(headers)
+        response = Response(content=content, status_code=status_code)
 
-    return response
+        if headers:
+            response.headers.update(headers)
+
+        return response
 
 
 @app.route('/conformance')
@@ -363,6 +367,10 @@ async def get_processes(request: Request, process_id=None):
 
     :returns: Starlette HTTP Response
     """
+
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+
     headers, status_code, content = api_.describe_processes(
         request.headers, request.query_params, process_id)
 
@@ -388,13 +396,19 @@ async def get_process_jobs(request: Request, process_id=None, job_id=None):
     :returns: Starlette HTTP Response
     """
 
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+
     if job_id is None:  # list of submit job
         if request.method == 'GET':
             headers, status_code, content = api_.get_process_jobs(
                 request.headers, request.query_params, process_id)
         elif request.method == 'POST':
+            request_body = await request.body()
             headers, status_code, content = api_.execute_process(
-                request.headers, request.query_params, request.data,
+                request.headers, request.query_params, request_body,
                 process_id)
     else:  # get or delete job
         if request.method == 'DELETE':
@@ -425,6 +439,11 @@ async def get_process_job_result(request: Request, process_id=None,
     :returns: HTTP response
     """
 
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+
     headers, status_code, content = api_.get_process_job_result(
         request.headers, request.args, process_id, job_id)
 
@@ -452,8 +471,55 @@ async def get_process_job_result_resource(request: Request, process_id=None,
     :returns: HTTP response
     """
 
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+    if 'job_id' in request.path_params:
+        job_id = request.path_params['job_id']
+    if 'resource' in request.path_params:
+        resource = request.path_params['resource']
+
     headers, status_code, content = api_.get_process_job_result_resource(
         request.headers, request.args, process_id, job_id, resource)
+
+    response = Response(content=content, status_code=status_code)
+
+    if headers:
+        response.headers.update(headers)
+
+    return response
+
+
+@app.route('/collections/{collection_id}/position')
+@app.route('/collections/{collection_id}/area')
+@app.route('/collections/{collection_id}/cube')
+@app.route('/collections/{collection_id}/trajectory')
+@app.route('/collections/{collection_id}/corridor')
+@app.route('/collections/{collection_id}/instances/{instance_id}/position')
+@app.route('/collections/{collection_id}/instances/{instance_id}/area')
+@app.route('/collections/{collection_id}/instances/{instance_id}/cube')
+@app.route('/collections/{collection_id}/instances/{instance_id}/trajectory')
+@app.route('/collections/{collection_id}/instances/{instance_id}/corridor')
+async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
+    """
+    OGC EDR API endpoints
+
+    :param collection_id: collection identifier
+    :param instance_id: instance identifier
+
+    :returns: HTTP response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    if 'instance_id' in request.path_params:
+        instance_id = request.path_params['instance_id']
+
+    query_type = request.path.split('/')[-1]
+
+    headers, status_code, content = api_.get_collection_edr_query(
+        request.headers, request.query_params, collection_id, instance_id,
+        query_type)
 
     response = Response(content=content, status_code=status_code)
 

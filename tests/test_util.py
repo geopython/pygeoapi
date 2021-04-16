@@ -124,7 +124,7 @@ def test_filter_dict_by_key_value():
 
     collections = util.filter_dict_by_key_value(d['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 4
+    assert len(collections) == 5
 
     notfound = util.filter_dict_by_key_value(d['resources'],
                                              'type', 'foo')

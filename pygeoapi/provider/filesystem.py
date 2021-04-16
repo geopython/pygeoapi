@@ -70,8 +70,6 @@ class FileSystemProvider(BaseProvider):
 
         thispath = os.path.join(baseurl, urlpath)
 
-        print("THISPATH", thispath)
-
         resource_type = None
         root_link = None
         child_links = []
