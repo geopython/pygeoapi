@@ -209,12 +209,23 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
  
     if not geojsonld:
         ldjsonData = {
-            "@context": [{identifier_field: "@id", "schema":"https://schema.org/"},  *(context or []), *(geocontext or [])],
+            "@context": [
+                {
+                "schema":"https://schema.org/",
+                identifier_field: "@id",
+                "type": "@type",
+                },
+                *(context or []),
+                *(geocontext or [])
+            ],
             **data
         }
     else:
         ldjsonData = {
-            "@context": [defaultVocabulary, *(context or []), *(geocontext or [])],
+            "@context": [
+                defaultVocabulary,
+                *(context or [])
+            ],
             **data
         }
 
@@ -224,6 +235,8 @@ def make_jsonld( feature ):
     # Expand properties block
     feature = {**feature, **feature.get('properties')}
     feature.pop('properties')
+
+    feature['type'] = 'schema:Place'
 
     # Remove non-point geometry
     if feature.get('geometry').get('type').lower() != 'point':
