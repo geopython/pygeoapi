@@ -177,11 +177,6 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
     """
     context = config['resources'][dataset].get('context', [])
     geojsonld = config['resources'][dataset].get('geojsonld', True)
-    geocontext = []
-
-    if data.get('timeStamp', False):
-        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
-    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
 
     if identifier:
     # Single geojsonld
@@ -192,6 +187,8 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
             data['id'] = identifier
     else:
     # Collection of geojsonld
+        data['@id'] = '{}/collections/{}/items/'.format(
+            config['server']['url'], dataset)
         for i, feature in enumerate(data['features']):
             identifier = feature.get(identifier_field, feature.get('properties').get(identifier_field, ''))
             if not is_url(str(identifier)):
@@ -206,7 +203,11 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
                 feature['id'] = identifier
            
             data['features'][i] = feature
- 
+
+    if data.get('timeStamp', False):
+        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+
+    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
     if not geojsonld:
         ldjsonData = {
             "@context": [
