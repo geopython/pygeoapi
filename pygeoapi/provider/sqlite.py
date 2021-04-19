@@ -146,7 +146,7 @@ class SQLiteGPKGProvider(BaseProvider):
                 rd.pop('AsGeoJSON({})'.format(self.geom_col))
                 )
             feature['properties'] = rd
-            feature['id'] = str(feature['properties'].pop(self.id_field))
+            feature['id'] = feature['properties'].pop(self.id_field)
 
             return feature
         else:
