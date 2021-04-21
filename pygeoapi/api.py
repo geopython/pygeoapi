@@ -987,7 +987,7 @@ class API:
             'title': 'This document as HTML',
             'href': '{}/collections/{}/items?f=html{}'.format(
                 self.config['server']['url'], dataset, serialized_query_params)
-           }
+            }
         ]
 
         if startindex > 0:
@@ -1077,7 +1077,7 @@ class API:
         elif format_ == 'jsonld':
             headers_['Content-Type'] = 'application/ld+json'
             content = geojson2geojsonld(
-                self.config, content, dataset, identifier_field=(p.uri_field or 'id')
+                self.config, content, dataset, id_field=(p.uri_field or 'id')
             )
             return headers_, 200, to_json(content, self.pretty_print)
 
@@ -1151,10 +1151,10 @@ class API:
             msg = 'identifier not found'
             return self.get_exception(400, headers_, format_, 'NotFound', msg)
 
-        uri = content['properties'].get( p.uri_field ) if p.uri_field is not None else \
-              '{}/collections/{}/items/{}'.format( \
-              self.config['server']['url'], dataset, identifier)
-        
+        uri = content['properties'].get(p.uri_field) if p.uri_field else \
+            '{}/collections/{}/items/{}'.format(
+                self.config['server']['url'], dataset, identifier)
+
         content['links'] = [{
             'rel': 'self' if not format_ or format_ == 'json' else 'alternate',
             'type': 'application/geo+json',
