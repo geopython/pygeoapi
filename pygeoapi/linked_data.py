@@ -30,7 +30,6 @@
 Returns content as linked data representations
 """
 
-import json
 import logging
 
 from pygeoapi.util import is_url
@@ -161,7 +160,7 @@ def jsonldify_collection(cls, collection):
     return dataset
 
 
-def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='id'):
+def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
     read from, and extended by, the pygeoapi configuration for a particular
@@ -171,7 +170,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
     :param data: dict of data:
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
-    :param identifier_field: item identifier_field (optional)
+    :param id_field: item identifier_field (optional)
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
@@ -179,29 +178,35 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
     geojsonld = config['resources'][dataset].get('geojsonld', True)
 
     if identifier:
-    # Single geojsonld
+        # Single geojsonld
         if not geojsonld:
             data, geocontext = make_jsonld(data)
-            data[identifier_field] = identifier
+            data[id_field] = identifier
         else:
             data['id'] = identifier
+
     else:
-    # Collection of geojsonld
+        # Collection of geojsonld
         data['@id'] = '{}/collections/{}/items/'.format(
             config['server']['url'], dataset)
         for i, feature in enumerate(data['features']):
-            identifier = feature.get(identifier_field, feature.get('properties').get(identifier_field, ''))
+            identifier = feature.get(id_field,
+                                     feature['properties'].get(id_field, ''))
             if not is_url(str(identifier)):
                 identifier = '{}/collections/{}/items/{}'.format(
-                            config['server']['url'], dataset, feature['id'])
+                    config['server']['url'], dataset, feature['id'])
 
             if not geojsonld:
                 feature, geocontext = make_jsonld(feature)
-                # Note: @id or https://schema.org/url or both or something else?
-                feature[identifier_field] = identifier
+                geocontext.append({
+                    "features": "schema:itemListElement",
+                    "FeatureCollection": "schema:itemList"
+                })
+                # Note: @id or https://schema.org/url, both or something else?
+                feature[id_field] = identifier
             else:
                 feature['id'] = identifier
-           
+
             data['features'][i] = feature
 
     if data.get('timeStamp', False):
@@ -212,9 +217,9 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
         ldjsonData = {
             "@context": [
                 {
-                "schema":"https://schema.org/",
-                identifier_field: "@id",
-                "type": "@type",
+                 "schema": "https://schema.org/",
+                 id_field: "@id",
+                 "type": "@type",
                 },
                 *(context or []),
                 *(geocontext or [])
@@ -232,7 +237,8 @@ def geojson2geojsonld(config, data, dataset, identifier=None, identifier_field='
 
     return ldjsonData
 
-def make_jsonld( feature ):
+
+def make_jsonld(feature):
     # Expand properties block
     feature = {**feature, **feature.get('properties')}
     feature.pop('properties')
@@ -246,14 +252,14 @@ def make_jsonld( feature ):
     else:
         feature.get('geometry').update({
                 "lat": feature.get('geometry').get('coordinates')[1],
-                "long": feature.get('geometry').get('coordinates')[0]   
+                "long": feature.get('geometry').get('coordinates')[0]
                 })
         feature.get('geometry').pop('coordinates')
         geocontext = [{
-                        "geometry":"schema:geo",
+                        "geometry": "schema:geo",
                         "Point": "schema:GeoCoordinates",
-                        "lat":"schema:latitude",
-                        "long":"schema:longitude"
-        },]
+                        "lat": "schema:latitude",
+                        "long": "schema:longitude"
+        }, ]
 
     return feature, geocontext
