@@ -30,6 +30,8 @@
                   <thead>
                     <tr>
                       <th>URL</th>
+                      <th>Last Modified</th>
+                      <th>Size</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -39,6 +41,8 @@
                       <a title="{{ link['href'] }}" href="{{ link['href'] }}">
                       <span>{{ link['href'] | get_path_basename }}</span></a>
                     </td>
+                    <td data-label="created">{{ link['created'] }}</td>
+                    <td data-label="size">{{ link['file:size'] | human_size }}</td>
                   </tr>
                   {% endfor %}
                   </tbody>

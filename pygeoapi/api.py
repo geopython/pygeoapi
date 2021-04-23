@@ -2302,20 +2302,17 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 400, headers_, format_, 'InvalidParameterValue', msg)
 
         id_ = 'pygeoapi-stac'
-        stac_version = '0.6.2'
+        stac_version = '1.0.0-rc.2'
         stac_url = os.path.join(self.config['server']['url'], 'stac')
 
         content = {
             'id': id_,
+            'type': 'Catalog',
             'stac_version': stac_version,
             'title': self.config['metadata']['identification']['title'],
             'description': self.config['metadata']['identification']['description'],  # noqa
-            'license': self.config['metadata']['license']['name'],
-            'providers': [{
-                'name': self.config['metadata']['provider']['name'],
-                'url': self.config['metadata']['provider']['url'],
-            }],
-            'links': []
+            'links': [],
+
         }
 
         stac_collections = filter_dict_by_key_value(self.config['resources'],
@@ -2323,12 +2320,12 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
 
         for key, value in stac_collections.items():
             content['links'].append({
-                'rel': 'collection',
+                'rel': 'child',
                 'href': '{}/{}?f=json'.format(stac_url, key),
                 'type': 'application/json'
             })
             content['links'].append({
-                'rel': 'collection',
+                'rel': 'child',
                 'href': '{}/{}'.format(stac_url, key),
                 'type': 'text/html'
             })
@@ -2373,14 +2370,14 @@ tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}?f=mvt'
                 500, headers_, format_, 'NoApplicableCode', msg)
 
         id_ = '{}-stac'.format(dataset)
-        stac_version = '0.6.2'
+        stac_version = '1.0.0-rc.2'
         description = stac_collections[dataset]['description']
 
         content = {
             'id': id_,
+            'type': 'Catalog',
             'stac_version': stac_version,
             'description': description,
-            'extent': stac_collections[dataset]['extents'],
             'links': []
         }
         try:
