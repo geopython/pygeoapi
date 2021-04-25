@@ -375,7 +375,7 @@ class ElasticsearchProvider(BaseProvider):
                 'query': {
                     'bool': {
                         'filter': [{
-                            'match': {
+                            'match_phrase': {
                                 self.mask_prop(self.id_field): identifier
                             }
                         }]
@@ -383,12 +383,16 @@ class ElasticsearchProvider(BaseProvider):
                 }
             }
 
-            result = self.es.search(index=self.index_name, body=query)
-            if len(result['hits']['hits']) == 0:
-                LOGGER.error(err)
-                raise ProviderItemNotFoundError(err)
-            LOGGER.debug('Serializing feature')
-            feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            try:
+                result = self.es.search(index=self.index_name, body=query)
+                if len(result['hits']['hits']) == 0:
+                    LOGGER.error(err)
+                    raise ProviderItemNotFoundError(err)
+                LOGGER.debug('Serializing feature')
+                feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            except exceptions.RequestError as err2:
+                LOGGER.error(err2)
+                raise ProviderItemNotFoundError(err2)
         except Exception as err:
             LOGGER.error(err)
             return None
