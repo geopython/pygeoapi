@@ -186,6 +186,49 @@ def format_datetime(value, format_=DATETIME_FORMAT):
     return dateutil.parser.isoparse(value).strftime(format_)
 
 
+def file_modified_iso8601(filepath):
+    """
+    Provide a file's ctime in ISO8601
+
+    :param filepath: path to file
+
+    :returns: string of ISO8601
+    """
+
+    return datetime.fromtimestamp(
+        os.path.getctime(filepath)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def human_size(nbytes):
+    """
+    Provides human readable file size
+
+    source: https://stackoverflow.com/a/14996816
+
+    :param nbytes: int of file size (bytes)
+    :param units: list of unit abbreviations
+
+    :returns: string of human readable filesize
+    """
+
+    suffixes = ['B', 'K', 'M', 'G', 'T', 'P']
+
+    i = 0
+
+    while nbytes >= 1024 and i < len(suffixes)-1:
+        nbytes /= 1024.
+        i += 1
+
+    if suffixes[i] == 'K':
+        f = str(int(nbytes)).rstrip('0').rstrip('.')
+    elif suffixes[i] == 'B':
+        return nbytes
+    else:
+        f = '{:.1f}'.format(nbytes).rstrip('0').rstrip('.')
+
+    return '{}{}'.format(f, suffixes[i])
+
+
 def format_duration(start, end=None):
     """
     Parse a start and (optional) end datetime as ISO 8601 strings, calculate
@@ -279,6 +322,7 @@ def render_j2_template(config, template, data):
     env.filters['to_json'] = to_json
     env.filters['format_datetime'] = format_datetime
     env.filters['format_duration'] = format_duration
+    env.filters['human_size'] = human_size
     env.globals.update(to_json=to_json)
 
     env.filters['get_path_basename'] = get_path_basename
