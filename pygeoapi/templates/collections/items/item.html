@@ -77,6 +77,12 @@
               </tr>
             </thead>
             <tbody>
+            {% if data.uri_field %}
+              <tr>
+                <td>{{ data.uri_field }}</td>
+                <td><a href="{{ data['properties'].get(data.uri_field) }}" title="{{ data['properties'].get(data.uri_field) }}">{{ data['properties'].pop(data.uri_field) }}</a></td>
+              </tr>
+              {% endif %}
               <tr>
                 <td>id</td>
                 <td>{{ data.id }}</td>
@@ -86,7 +92,7 @@
                 <tr>
                   <td>{{ k }}</td>
                   {% if k in ['links', 'associations'] %}
-                  <td> 
+                  <td>
                     <ul>
                       {% for l in v %}
                         {% if l['href'] %}
