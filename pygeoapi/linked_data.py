@@ -30,7 +30,6 @@
 Returns content as linked data representations
 """
 
-import json
 import logging
 
 from pygeoapi.util import is_url
@@ -161,7 +160,7 @@ def jsonldify_collection(cls, collection):
     return dataset
 
 
-def geojson2geojsonld(config, data, dataset, identifier=None):
+def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
     read from, and extended by, the pygeoapi configuration for a particular
@@ -171,35 +170,96 @@ def geojson2geojsonld(config, data, dataset, identifier=None):
     :param data: dict of data:
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
+    :param id_field: item identifier_field (optional)
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
     context = config['resources'][dataset].get('context', [])
-    data['id'] = (
-        '{}/collections/{}/items/{}' if identifier
-        else '{}/collections/{}/items'
-    ).format(
-        *[config['server']['url'], dataset, identifier]
-    )
+    geojsonld = config['resources'][dataset].get('geojsonld', True)
+
+    if identifier:
+        # Single geojsonld
+        if not geojsonld:
+            data, geocontext = make_jsonld(data)
+            data[id_field] = identifier
+        else:
+            data['id'] = identifier
+
+    else:
+        # Collection of geojsonld
+        data['@id'] = '{}/collections/{}/items/'.format(
+            config['server']['url'], dataset)
+        for i, feature in enumerate(data['features']):
+            identifier = feature.get(id_field,
+                                     feature['properties'].get(id_field, ''))
+            if not is_url(str(identifier)):
+                identifier = '{}/collections/{}/items/{}'.format(
+                    config['server']['url'], dataset, feature['id'])
+
+            if not geojsonld:
+                feature, geocontext = make_jsonld(feature)
+                geocontext.append({
+                    "features": "schema:itemListElement",
+                    "FeatureCollection": "schema:itemList"
+                })
+                # Note: @id or https://schema.org/url, both or something else?
+                feature[id_field] = identifier
+            else:
+                feature['id'] = identifier
+
+            data['features'][i] = feature
+
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
-    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
-    ldjsonData = {
-        "@context": [defaultVocabulary, *(context or [])],
-        **data
-    }
-    isCollection = identifier is None
-    if isCollection:
-        for i, feature in enumerate(data['features']):
-            featureId = feature.get(
-                'id', None
-            ) or feature.get('properties', {}).get('id', None)
-            if featureId is None:
-                continue
-            # Note: @id or https://schema.org/url or both or something else?
-            if is_url(str(featureId)):
-                feature['id'] = featureId
-            else:
-                feature['id'] = '{}/{}'.format(data['id'], featureId)
 
-    return json.dumps(ldjsonData)
+    defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
+    if not geojsonld:
+        ldjsonData = {
+            "@context": [
+                {
+                 "schema": "https://schema.org/",
+                 id_field: "@id",
+                 "type": "@type",
+                },
+                *(context or []),
+                *(geocontext or [])
+            ],
+            **data
+        }
+    else:
+        ldjsonData = {
+            "@context": [
+                defaultVocabulary,
+                *(context or [])
+            ],
+            **data
+        }
+
+    return ldjsonData
+
+
+def make_jsonld(feature):
+    # Expand properties block
+    feature = {**feature, **feature.get('properties')}
+    feature.pop('properties')
+
+    feature['type'] = 'schema:Place'
+
+    # Remove non-point geometry
+    if feature.get('geometry').get('type').lower() != 'point':
+        feature.pop('geometry')
+        geocontext = []
+    else:
+        feature.get('geometry').update({
+                "lat": feature.get('geometry').get('coordinates')[1],
+                "long": feature.get('geometry').get('coordinates')[0]
+                })
+        feature.get('geometry').pop('coordinates')
+        geocontext = [{
+                        "geometry": "schema:geo",
+                        "Point": "schema:GeoCoordinates",
+                        "lat": "schema:latitude",
+                        "long": "schema:longitude"
+        }, ]
+
+    return feature, geocontext

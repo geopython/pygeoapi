@@ -53,6 +53,7 @@ class BaseProvider:
 
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
+        self.uri_field = provider_def.get('uri_field', None)
         self.x_field = provider_def.get('x_field', None)
         self.y_field = provider_def.get('y_field', None)
         self.time_field = provider_def.get('time_field')
