@@ -15,16 +15,27 @@
       <thead>
         <tr>
           <th>Name</th>
+          <th>Last modified</th>
+          <th>Size</th>
         </tr>
       </thead>
       <tbody>
         {% for link in data['links'] %}
-        {% if link['type'] == 'text/html' and link['rel'] in ['child', 'item'] %}
+        {% if link['rel'] in ['child', 'item'] %}
         <tr>
           <td data-label="name">
-            <a title="{{ link['href'] }}" href="{{ link['href'] }}">
-             <span>{{ link['href'] | get_path_basename }}</span></a>
+            {% if link['title'] %}
+            <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['title'] | get_path_basename }}</span></a>
+            {% else %}
+            <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['href'] | get_path_basename }}</span></a>
+            {% endif %}
           </td>
+          <td data-label="created">{{ link['created'] }}</td>
+          {% if link['file:size'] %}
+          <td data-label="size">{{ link['file:size'] | human_size }}</td>
+          {% else %}
+          <td data-label="size">-</td>
+          {% endif %}
         </tr>
         {% endif %}
         {% endfor %}
