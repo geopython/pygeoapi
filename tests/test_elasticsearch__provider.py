@@ -3,6 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -121,6 +122,26 @@ def _and(eq, between):
         ]
     }
     return CQLModel.parse_obj(and_)
+
+
+@pytest.fixture()
+def intersects():
+    intersects = {"intersects": [
+        {"property": "geometry"},
+        {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [10.497565, 41.520355],
+                    [10.497565, 43.308645],
+                    [15.111823, 43.308645],
+                    [15.111823, 41.520355],
+                    [10.497565, 41.520355]
+                ]
+            ]
+        }
+    ]}
+    return CQLModel.parse_obj(intersects)
 
 
 def test_query(config):
@@ -261,3 +282,12 @@ def test_post_cql_json_and_query(config, _and):
     results = p.query(limit=1000, filterq=_and)
 
     assert len(results['features']) == 77
+
+
+def test_post_cql_json_intersects_query(config, intersects):
+    """Testing cql json query for an intersects object"""
+    p = ElasticsearchProvider(config)
+
+    results = p.query(limit=100, filterq=intersects)
+
+    assert len(results['features']) == 2

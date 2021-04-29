@@ -3,6 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2021 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,11 +28,12 @@
 #
 # =================================================================
 
-from typing import Dict
+from typing import Dict, List
 from collections import OrderedDict
 import json
 import logging
 from urllib.parse import urlparse
+from shapely.geometry import Polygon
 
 from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
@@ -512,6 +514,7 @@ class ESQueryBuilder:
         self.must_value = {}
         self.should_value = {}
         self.mustnot_value = {}
+        self.filter_value = {}
 
     def must(self, must_value):
         self.must_value = must_value
@@ -523,6 +526,10 @@ class ESQueryBuilder:
 
     def must_not(self, mustnot_value):
         self.mustnot_value = mustnot_value
+        return self
+
+    def filter(self, filter_value):
+        self.filter_value = filter_value
         return self
 
     @property
@@ -540,18 +547,40 @@ class ESQueryBuilder:
             should_clause = self.should_value or {}
         if self.mustnot_value:
             mustnot_clause = self.mustnot_value or {}
+        if self.filter_value:
+            filter_clause = self.filter_value or {}
+        else:
+            filter_clause = {}
 
         # to figure out how to deal with logical operations
         # return match_clause & range_clause
         clauses = must_clause or should_clause or mustnot_clause
+        filters = filter_clause
         if self.operation == 'and':
-            res = Q('bool', must=[clause for clause in clauses])
+            res = Q(
+                'bool',
+                must=[clause for clause in clauses],
+                filter=[filter for filter in filters])
         elif self.operation == 'or':
-            res = Q('bool', should=[clause for clause in clauses])
+            res = Q(
+                'bool',
+                should=[clause for clause in clauses],
+                filter=[filter for filter in filters])
         elif self.operation == 'not':
-            res = Q('bool', must_not=[clause for clause in clauses])
+            res = Q(
+                'bool',
+                must_not=[clause for clause in clauses],
+                filter=[filter for filter in filters])
         else:
-            res = clauses
+            if filters:
+                res = Q(
+                    'bool',
+                    must=[clauses],
+                    filter=[filters])
+            else:
+                res = Q(
+                    'bool',
+                    must=[clauses])
 
         return res
 
@@ -618,6 +647,36 @@ def _build_query(q, cql):
                 {'match': {f'{property}': f'{value}'}}
             )
             q.must(query)
+    elif not getattr(node, 'intersects', 0) == 0:
+        property = node.intersects.__root__[0].__root__.property
+        if property == 'geometry':
+            geom_type = node.intersects.__root__[
+                1].__root__.__root__.__root__.type
+            if geom_type.value == 'Polygon':
+                coordinates = node.intersects.__root__[
+                    1].__root__.__root__.__root__.coordinates
+                coords_list = [
+                    poly_coords.__root__ for poly_coords in coordinates[0]
+                ]
+                filter_ = Q(
+                    {
+                        'geo_shape': {
+                            'geometry': {
+                                'shape': {
+                                    'type': 'envelope',
+                                    'coordinates': _get_envelope(
+                                        coords_list)
+                                },
+                                'relation': 'intersects'
+                            }
+                        }
+                    }
+                )
+                query_all = Q(
+                    {'match_all': {}}
+                )
+                q.must(query_all)
+                q.filter(filter_)
     return q.build()
 
 
@@ -631,3 +690,11 @@ def update_query(input_query: Dict, cql: CQLModel):
         json.dumps(s.to_dict())
     ))
     return s.to_dict()
+
+
+def _get_envelope(coords_list: List[List[float]]):
+    coords = [tuple(item) for item in coords_list]
+    polygon = Polygon(coords)
+    bounds = polygon.bounds
+    return [[bounds[0], bounds[3]],
+            [bounds[2], bounds[1]]]

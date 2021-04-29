@@ -9,3 +9,4 @@ rasterio
 scipy
 xarray
 zarr
+elasticsearch-dsl
