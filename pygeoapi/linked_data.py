@@ -33,6 +33,7 @@ Returns content as linked data representations
 import logging
 
 from pygeoapi.util import is_url
+from shapely.geometry import shape
 
 LOGGER = logging.getLogger(__name__)
 
@@ -174,13 +175,13 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
-    context = config['resources'][dataset].get('context', [])
+    context = config['resources'][dataset].get('context', []).copy()
     geojsonld = config['resources'][dataset].get('geojsonld', True)
 
     if identifier:
         # Single geojsonld
         if not geojsonld:
-            data, geocontext = make_jsonld(data)
+            data = make_jsonld(data)
             data[id_field] = identifier
         else:
             data['id'] = identifier
@@ -189,6 +190,10 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
         # Collection of geojsonld
         data['@id'] = '{}/collections/{}/items/'.format(
             config['server']['url'], dataset)
+        context.append({
+                    "features": "schema:itemListElement",
+                    "FeatureCollection": "schema:itemList"
+                })
         for i, feature in enumerate(data['features']):
             identifier = feature.get(id_field,
                                      feature['properties'].get(id_field, ''))
@@ -197,11 +202,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
                     config['server']['url'], dataset, feature['id'])
 
             if not geojsonld:
-                feature, geocontext = make_jsonld(feature)
-                geocontext.append({
-                    "features": "schema:itemListElement",
-                    "FeatureCollection": "schema:itemList"
-                })
+                feature = make_jsonld(feature)
                 # Note: @id or https://schema.org/url, both or something else?
                 feature[id_field] = identifier
             else:
@@ -214,15 +215,16 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
     if not geojsonld:
+        data['links'] = data.pop('links')
         ldjsonData = {
             "@context": [
                 {
                  "schema": "https://schema.org/",
                  id_field: "@id",
                  "type": "@type",
+                 "geosparql" : "http://www.opengis.net/ont/geosparql#"
                 },
-                *(context or []),
-                *(geocontext or [])
+                *(context or [])
             ],
             **data
         }
@@ -237,29 +239,23 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     return ldjsonData
 
-
 def make_jsonld(feature):
     # Expand properties block
+    feature['type'] = 'schema:Place'
+
+    geo = feature.pop('geometry')
+    geom = shape(geo)
+
+    feature["geosparql:hasGeometry"] = {
+        "@type": "http://www.opengis.net/ont/sf#{}".format(geom.geom_type),
+        "geosparql:asWKT": {
+            "@type": "http://www.opengis.net/ont/geosparql#wktLiteral",
+            "@value": "{}".format(geom.wkt)
+        }
+    }
+
     feature = {**feature, **feature.get('properties')}
     feature.pop('properties')
 
-    feature['type'] = 'schema:Place'
-
-    # Remove non-point geometry
-    if feature.get('geometry').get('type').lower() != 'point':
-        feature.pop('geometry')
-        geocontext = []
-    else:
-        feature.get('geometry').update({
-                "lat": feature.get('geometry').get('coordinates')[1],
-                "long": feature.get('geometry').get('coordinates')[0]
-                })
-        feature.get('geometry').pop('coordinates')
-        geocontext = [{
-                        "geometry": "schema:geo",
-                        "Point": "schema:GeoCoordinates",
-                        "lat": "schema:latitude",
-                        "long": "schema:longitude"
-        }, ]
-
-    return feature, geocontext
+    return feature
+    
