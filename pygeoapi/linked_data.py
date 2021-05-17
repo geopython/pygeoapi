@@ -203,13 +203,13 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
                 identifier = '{}/collections/{}/items/{}'.format(
                     config['server']['url'], dataset, feature['id'])
             if not geojsonld:
-                context.append({
+                context = [{
                     "features": "schema:itemListElement",
                     "FeatureCollection": "schema:itemList"
-                })
+                }, ]
+                make_jsonld(feature.copy())
                 # Note: @id or https://schema.org/url, both or something else?
                 feature = {
-                    'schema': 'https://schema.org/',
                     id_field: identifier,
                     'type': 'schema:Place'
                 }
@@ -244,7 +244,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
 def make_jsonld(feature):
     feature['type'] = 'schema:Place'
-    geo = feature.pop('geometry')
+    geo = feature.get('geometry')
     geom = asShape(geo)
 
     # Geosparql geometry
@@ -268,26 +268,45 @@ def make_jsonld(feature):
 
 # GeoJSON to Schema
 def geojson2schema(geom):
+    schema_geo = {"@type": "schema:GeoShape"}
     if geom.geom_type == 'Point':
         return {
             "@type": "schema:GeoCoordinates",
             "schema:longitude": geom.x,
             "schema:latitude": geom.y
         }
-
-    schema_geo = {"@type": "schema:GeoShape"}
-    if geom.geom_type == 'LineString':
-        schema_geo['schema:line'] = str(*geom.coords[:])
+    elif geom.geom_type == 'MultiPoint':
+        poly_geom = [(p.x, p.y) for p in geom.geoms]
+        poly_geom.append(poly_geom[0])
+    elif geom.geom_type == 'LineString':
+        _ = ['{},{}'.format(x, y) for (x, y) in geom.coords[:]]
+        schema_geo['schema:line'] = ' '.join(_)
+        return schema_geo
+    elif geom.geom_type == 'MultiLineString':
+        points = list()
+        [points.extend(p.coords[:]) for p in geom.geoms]
+        _ = ['{},{}'.format(x, y) for (x, y) in points]
+        schema_geo['schema:line'] = ' '.join(_)
+        return schema_geo
     elif geom.geom_type == 'Polygon':
-        schema_geo['schema:polygon'] = str(list(geom.coords))
-    else:
+        poly_geom = geom.exterior.coords[:]
+    elif geom.geom_type == 'MultiPolygon':
         poly = unary_union(geom.buffer(0))
-        if not poly.is_valid or poly.geom_type.startswith('Multi'):
+        if poly.geom_type.startswith('Multi') or not poly.is_valid:
             LOGGER.debug('Invalid Poly: {}'.format(poly.geom_type))
             poly = poly.convex_hull
             LOGGER.debug('New Poly: {}'.format(poly.geom_type))
+        poly_geom = poly.exterior.coords[:]
+    else:
+        poly_geom = list()
+        for p in geom.geoms:
+            try:
+                poly_geom.extend(p.coords[:])
+            except NotImplementedError:
+                poly_geom.extend(p.exterior.coords[:])
 
-        _ = ['{},{}'.format(*row) for row in poly.exterior.coords[:]]
-        schema_geo['schema:polygon'] = ' '.join(_)
+    LOGGER.debug(poly_geom)
+    _ = ['{},{}'.format(*row) for row in poly_geom]
+    schema_geo['schema:polygon'] = ' '.join(_)
 
     return schema_geo
