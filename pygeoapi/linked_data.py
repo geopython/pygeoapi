@@ -33,9 +33,12 @@ Returns content as linked data representations
 import logging
 
 from pygeoapi.util import is_url
-from shapely.geometry import shape
+from shapely.geometry import asShape
+from shapely.ops import unary_union
+from shapely import speedups
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.debug("Shapely Speedups enabled: {}".format(speedups.enabled))
 
 
 def jsonldify(func):
@@ -181,6 +184,8 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
     if identifier:
         # Single geojsonld
         if not geojsonld:
+            context.append({
+                "geosparql": "http://www.opengis.net/ont/geosparql#"})
             data = make_jsonld(data)
             data[id_field] = identifier
         else:
@@ -190,21 +195,24 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
         # Collection of geojsonld
         data['@id'] = '{}/collections/{}/items/'.format(
             config['server']['url'], dataset)
-        context.append({
-                    "features": "schema:itemListElement",
-                    "FeatureCollection": "schema:itemList"
-                })
+
         for i, feature in enumerate(data['features']):
             identifier = feature.get(id_field,
                                      feature['properties'].get(id_field, ''))
             if not is_url(str(identifier)):
                 identifier = '{}/collections/{}/items/{}'.format(
                     config['server']['url'], dataset, feature['id'])
-
             if not geojsonld:
-                feature = make_jsonld(feature)
+                context.append({
+                    "features": "schema:itemListElement",
+                    "FeatureCollection": "schema:itemList"
+                })
                 # Note: @id or https://schema.org/url, both or something else?
-                feature[id_field] = identifier
+                feature = {
+                    'schema': 'https://schema.org/',
+                    id_field: identifier,
+                    'type': 'schema:Place'
+                }
             else:
                 feature['id'] = identifier
 
@@ -212,40 +220,34 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+    data['links'] = data.pop('links')
 
     defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
+
     if not geojsonld:
-        data['links'] = data.pop('links')
-        ldjsonData = {
-            "@context": [
-                {
-                 "schema": "https://schema.org/",
-                 id_field: "@id",
-                 "type": "@type",
-                 "geosparql" : "http://www.opengis.net/ont/geosparql#"
-                },
-                *(context or [])
-            ],
-            **data
+        defaultVocabulary = {
+            "schema": "https://schema.org/",
+            id_field: "@id",
+            "type": "@type"
         }
-    else:
-        ldjsonData = {
-            "@context": [
-                defaultVocabulary,
-                *(context or [])
-            ],
-            **data
-        }
+
+    ldjsonData = {
+        "@context": [
+            defaultVocabulary,
+            *(context or [])
+        ],
+        **data
+    }
 
     return ldjsonData
 
+
 def make_jsonld(feature):
-    # Expand properties block
     feature['type'] = 'schema:Place'
-
     geo = feature.pop('geometry')
-    geom = shape(geo)
+    geom = asShape(geo)
 
+    # Geosparql geometry
     feature["geosparql:hasGeometry"] = {
         "@type": "http://www.opengis.net/ont/sf#{}".format(geom.geom_type),
         "geosparql:asWKT": {
@@ -254,8 +256,38 @@ def make_jsonld(feature):
         }
     }
 
+    # Schema Geometry
+    feature["schema:geo"] = geojson2schema(geom)
+
+    # Expand properties block
     feature = {**feature, **feature.get('properties')}
     feature.pop('properties')
 
     return feature
-    
+
+
+# GeoJSON to Schema
+def geojson2schema(geom):
+    if geom.geom_type == 'Point':
+        return {
+            "@type": "schema:GeoCoordinates",
+            "schema:longitude": geom.x,
+            "schema:latitude": geom.y
+        }
+
+    schema_geo = {"@type": "schema:GeoShape"}
+    if geom.geom_type == 'LineString':
+        schema_geo['schema:line'] = str(*geom.coords[:])
+    elif geom.geom_type == 'Polygon':
+        schema_geo['schema:polygon'] = str(list(geom.coords))
+    else:
+        poly = unary_union(geom.buffer(0))
+        if not poly.is_valid or poly.geom_type.startswith('Multi'):
+            LOGGER.debug('Invalid Poly: {}'.format(poly.geom_type))
+            poly = poly.convex_hull
+            LOGGER.debug('New Poly: {}'.format(poly.geom_type))
+
+        _ = ['{},{}'.format(*row) for row in poly.exterior.coords[:]]
+        schema_geo['schema:polygon'] = ' '.join(_)
+
+    return schema_geo
