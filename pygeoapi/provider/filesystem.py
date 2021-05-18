@@ -342,10 +342,19 @@ def _describe_file(filepath):
                 if d.driver == 'ESRI Shapefile':
                     id_ = os.path.splitext(os.path.basename(filepath))[0]
                     content['assets'] = {}
-                    for suffix in ['shx', 'dbf', 'prj', 'shp.xml']:
-                        content['assets'][suffix] = {
-                            'href': './{}.{}'.format(id_, suffix)
-                        }
+                    for suffix in ['shx', 'dbf', 'prj']:
+                        fullpath = '{}.{}'.format(
+                            os.path.splitext(filepath)[0], suffix)
+
+                        if os.path.exists(fullpath):
+                            filectime = file_modified_iso8601(fullpath)
+                            filesize = os.path.getsize(fullpath)
+
+                            content['assets'][suffix] = {
+                                'href': './{}.{}'.format(id_, suffix),
+                                'created': filectime,
+                                'file:size': filesize
+                            }
 
             except fiona.errors.DriverError:
                 LOGGER.debug('Could not detect raster or vector data')
