@@ -50,7 +50,8 @@ PLUGINS = {
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
-        'xarray-edr': 'pygeoapi.provider.xarray_edr.XarrayEDRProvider'
+        'xarray-edr': 'pygeoapi.provider.xarray_edr.XarrayEDRProvider',
+        'SPARQL': 'pygeoapi.provider.sparql.SPARQLProvider'
     },
     'formatter': {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
