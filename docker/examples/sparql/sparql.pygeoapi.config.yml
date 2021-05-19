@@ -1,0 +1,194 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#
+# Copyright (c) 2020 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+server:
+    bind:
+        host: localhost #change to your hostname if running your own instance
+        port: 5000
+    url: http://localhost:5000 #change to host URL  if running your own instance
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    pretty_print: true
+    limit: 10
+    map:
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>'
+    ogc_schemas_location: /opt/schemas.opengis.net
+
+logging:
+    level: DEBUG
+    logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: geoconnex reference features
+        description: Provides reference features for geoconnex.us.
+        keywords:
+            - geospatial
+            - data
+            - api
+        keywords_type: theme
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/
+        url: https://github.com/internetofwater/geoconnex.us
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: Team geoconnex
+        url: https://github.com/internetofwater/geoconnex.us
+    contact:
+        address: 2111 Campus Dr
+        city: Durham
+        stateorprovince: North Carolina
+        postalcode: 27708
+        country: USA
+        email: kyle.onda@duke.edu
+        url: https://internetofwater.org
+        role: pointOfContact
+
+resources:
+    places:
+        type: collection
+        title: Places
+        description: Cities around the world and their DBpedia context
+        keywords:
+            - Places
+            - RDF
+        geojsonld: false
+        context:
+            - name: schema:name
+              description: schema:description
+              subjectOf: schema:subjectOf
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: http://dbpedia.org/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+          - type: feature
+            name: SPARQL
+            data: /ext_data/places.csv
+            id_field: index
+            geometry:
+                x_field: lon
+                y_field: lat
+            sparql_provider: CSV
+            sparql_endpoint: https://dbpedia.org/sparql
+            sparql_subject: uri
+            sparql_predicates:
+                population: dbo:populationTotal
+                country: <http://dbpedia.org/ontology/country>
+                leader: dbpedia2:leaderName
+    populated:
+        type: collection
+        title: Populated Places
+        description: Populated places, public domain
+        keywords:
+            - populated
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: SPARQL
+              data: /ext_data/ne_110m_populated_places_simple.geojson
+              id_field: id
+              sparql_provider: GeoJSON
+              sparql_endpoint: https://dbpedia.org/sparql
+              sparql_subject: uri
+              sparql_predicates:
+                leader: dbpedia2:leaderName|dbp:leaderName
+                population: dbo:populationTotal|dbp:populationCensus
+    states:
+        type: collection
+        title: States
+        description: U.S. States
+        keywords:
+            - States
+            - Census
+        geojsonld: false
+        context:
+            - NAME: schema:name
+              description: schema:description
+              subjectOf: schema:subjectOf
+              census_profile: subjectOf
+              senator: 
+                "@id": http://dbpedia.org/property/senators
+                "@type": "@id"
+        links:
+            - type: application/html
+              rel: canonical
+              title: geographic data source
+              href: https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html
+              hreflang: en-US
+            - type: application/html
+              rel: canonical
+              title: Census data source
+              href: https://data.census.gov/cedsci
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-170,15,-51,72]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+            - type: feature
+              name: SPARQL
+              data: /ext_data/states.gpkg
+              id_field: GEOID
+              table: states
+            #   uri_field: uri
+              sparql_provider: SQLiteGPKG
+              sparql_endpoint: https://dbpedia.org/sparql
+              sparql_subject: ' :NAME'
+              sparql_predicates:
+                senator: dbp:senators
+                motto: dbo:motto|dbp:motto

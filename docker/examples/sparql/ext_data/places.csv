@@ -1,0 +1,9 @@
+index,city,uri,lat,lon
+0,Berlin,http://dbpedia.org/resource/Berlin,52.5200,13.4050
+1,Paris,http://dbpedia.org/resource/Paris,48.8566,2.3522
+2,New York,http://dbpedia.org/resource/New_York_City,40.7306,-73.9352
+3,Los Angeles,http://dbpedia.org/resource/Los_Angeles,34.0522,-118.2436
+4,Tokyo,http://dbpedia.org/resource/Tokyo,35.6528,139.8394
+5,Abu Dhabi,http://dbpedia.org/resource/Abu_Dhabi,24.4539,54.3773
+6,Cape Town,http://dbpedia.org/resource/Cape_Town,-33.9249,18.4241
+7,Quito,http://dbpedia.org/resource/Quito,-0.1807,-78.4678
