@@ -5,6 +5,7 @@ netCDF4
 psycopg2-binary==2.8.4
 pygeometa
 pymongo==3.10.1
+SPARQLWrapper==1.8.5
 rasterio
 scipy
 xarray
