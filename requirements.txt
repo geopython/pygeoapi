@@ -1,4 +1,4 @@
-click
+click<8
 Flask
 pyproj
 python-dateutil
@@ -6,4 +6,5 @@ pytz
 PyYAML
 rasterio
 shapely
+tinydb
 unicodecsv
