@@ -389,8 +389,10 @@ class PostgreSQLProvider(BaseProvider):
             feature = {
                 'type': 'Feature'
             }
-            feature["geometry"] = json.loads(
-                rd.pop('st_asgeojson'))
+
+            geom = rd.pop('st_asgeojson')
+
+            feature['geometry'] = json.loads(geom) if geom is not None else None
 
             feature['properties'] = rd
             feature['id'] = feature['properties'].get(self.id_field)
