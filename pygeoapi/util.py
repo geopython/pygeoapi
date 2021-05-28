@@ -485,3 +485,7 @@ def read_data(path):
         LOGGER.debug('network file')
         with urlopen(path) as r:
             return r.read()
+
+
+def url_join(*parts):
+    return '/'.join([p.strip().strip('/') for p in parts])
