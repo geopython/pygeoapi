@@ -231,7 +231,7 @@ resources:
               name: TinyDBCatalogue
               data: tests/data/open.canada.ca/sample-records.tinydb
               id_field: externalId
-              time_field: record-created
+              time_field: recordCreated
               title_field: title
 
     hello-world:
