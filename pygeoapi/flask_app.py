@@ -76,7 +76,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
     if not os.path.exists(OGC_SCHEMAS_LOCATION):
         raise RuntimeError('OGC schemas misconfigured')
 
-    @APP.route('/schemas/<path:path>', methods=['GET'])
+    @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
     def schemas(path):
         """
         Serve OGC schemas locally
@@ -419,7 +419,8 @@ def get_process_jobs(process_id=None, job_id=None):
     return response
 
 
-@APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>/results',
+                 methods=['GET'])
 def get_process_job_result(process_id=None, job_id=None):
     """
     OGC API - Processes job result endpoint
@@ -441,8 +442,8 @@ def get_process_job_result(process_id=None, job_id=None):
     return response
 
 
-@APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
-           methods=['GET'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
+                 methods=['GET'])
 def get_process_job_result_resource(process_id, job_id, resource):
     """
     OGC API - Processes job result resource endpoint
