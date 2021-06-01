@@ -1,0 +1,87 @@
+name: build ⚙️
+
+on: [ push, pull_request ]
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.6
+          - python-version: 3.7
+    env:
+      PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Setup Python ${{ matrix.python-version }}
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Configure sysctl limits
+      run: |
+        sudo swapoff -a
+        sudo sysctl -w vm.swappiness=1
+        sudo sysctl -w fs.file-max=262144
+        sudo sysctl -w vm.max_map_count=262144
+    - name: Install and run PostgreSQL/PostGIS 📦
+      uses: huaxk/postgis-action@v1
+      with:
+        postgresql password: ${{ secrets.DatabasePassword }}
+        postgresql db: 'test'
+    - name: Install and run Elasticsearch 📦
+      uses: getong/elasticsearch-action@v1.2
+      with:
+        elasticsearch version: '7.6.1'
+        host port: 9200
+        container port: 9200
+        host node port: 9300
+        node port: 9300
+        discovery type: 'single-node'
+    - name: Install and run MongoDB
+      uses: supercharge/mongodb-github-action@1.5.0
+      with:
+        mongodb-version: 4.4
+    - name: Install requirements 📦
+      run: |
+        pip3 install -r requirements.txt
+        pip3 install -r requirements-dev.txt
+        pip3 install -r requirements-provider.txt
+        python3 setup.py install
+        #pip3 install --upgrade rasterio==1.1.8
+    - name: setup test data ⚙️
+      run: |
+        python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
+        python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
+        #gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
+    - name: run unit tests ⚙️
+      run: |
+        pytest tests/test_api.py
+        pytest tests/test_config.py
+        pytest tests/test_csv__formatter.py
+        pytest tests/test_csv__provider.py
+        pytest tests/test_elasticsearch__provider.py
+        pytest tests/test_filesystem_provider.py
+        pytest tests/test_geojson_provider.py
+        pytest tests/test_mongo_provider.py
+        #pytest tests/test_ogr_csv_provider.py
+        #pytest tests/test_ogr_esrijson_provider.py
+        #pytest tests/test_ogr_gpkg_provider.py
+        #pytest tests/test_ogr_shapefile_provider.py
+        #pytest tests/test_ogr_sqlite_provider.py
+        #pytest tests/test_ogr_wfs_provider.py
+        pytest tests/test_openapi.py
+        #pytest tests/test_postgresql_provider.py
+        pytest tests/test_rasterio_provider.py
+        #pytest tests/test_sqlite_geopackage_provider.py
+        pytest tests/test_tinydb_catalogue_provider.py
+        pytest tests/test_util.py
+        pytest tests/test_xarray_netcdf_provider.py
+        pytest tests/test_xarray_zarr_provider.py
+    - name: run flake8 ⚙️
+      run: find . -type f -name "*.py" | xargs flake8
+    - name: build docs 🏗️
+      run: cd docs && make html
+
