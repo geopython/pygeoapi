@@ -187,9 +187,9 @@ async def get_collection_tiles(request: Request, name=None):
     {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
 @app.route('/collections/{name}/tiles/\
     {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
-def get_collection_items_tiles(request: Request, name=None,
-                               tileMatrixSetId=None, tile_matrix=None,
-                               tileRow=None, tileCol=None):
+async def get_collection_items_tiles(request: Request, name=None,
+                                     tileMatrixSetId=None, tile_matrix=None,
+                                     tileRow=None, tileCol=None):
     """
     OGC open api collection tiles service
 
@@ -243,7 +243,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
 
 
 @app.route('/collections/{collection_id}/coverage')
-def collection_coverage(request: Request, collection_id):
+async def collection_coverage(request: Request, collection_id):
     """
     OGC API - Coverages coverage endpoint
 
@@ -259,7 +259,7 @@ def collection_coverage(request: Request, collection_id):
 
 
 @app.route('/collections/{collection_id}/coverage/domainset')
-def collection_coverage_domainset(request: Request, collection_id):
+async def collection_coverage_domainset(request: Request, collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
 
@@ -276,7 +276,7 @@ def collection_coverage_domainset(request: Request, collection_id):
 
 
 @app.route('/collections/{collection_id}/coverage/rangetype')
-def collection_coverage_rangetype(request: Request, collection_id):
+async def collection_coverage_rangetype(request: Request, collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
 
