@@ -42,8 +42,8 @@ server:
       # path: /path/to/Jinja2/templates
       # static: /path/to/static/folder # css/js/img
     map:
-        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 #    manager:
 #        name: TinyDB
 #        connection: /tmp/pygeoapi-process-manager.db
@@ -180,32 +180,6 @@ resources:
                   name: GRIB2
                   mimetype: application/x-grib2
 
-    icoads-sst:
-        type: collection
-        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        keywords:
-            - icoads
-            - sst
-            - air temperature
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
-              hreflang: en-US
-        providers:
-            - type: edr
-              name: xarray-edr
-              data: tests/data/coads_sst.nc
-              format:
-                  name: NetCDF
-                  mimetype: application/x-netcdf
-
     test-data:
         type: stac-collection
         title: pygeoapi test data
@@ -257,7 +231,7 @@ resources:
               name: TinyDBCatalogue
               data: tests/data/open.canada.ca/sample-records.tinydb
               id_field: externalId
-              time_field: record-created
+              time_field: recordCreated
               title_field: title
 
     hello-world:

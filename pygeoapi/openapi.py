@@ -50,6 +50,7 @@ OPENAPI_YAML = {
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
+    'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
 
 
@@ -695,19 +696,25 @@ def get_oas_30(cfg):
                     'description': v['description'],
                     'tags': [k],
                     'operationId': 'get{}Tiles'.format(k.capitalize()),
-                    'parameters': [{
-                        'name': 'f',
-                        'in': 'query',
-                        'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
-                        'required': False,
-                        'schema': {
-                            'type': 'string',
-                            'enum': [tp.format_type],
-                            'default': tp.format_type
-                        },
-                        'style': 'form',
-                        'explode': False
-                    }],
+                    'parameters': [
+                        {'$ref': '{}#/components/parameters/tileMatrixSetId'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileMatrix'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileRow'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileCol'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {
+                            'name': 'f',
+                            'in': 'query',
+                            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
+                            'required': False,
+                            'schema': {
+                                'type': 'string',
+                                'enum': [tp.format_type],
+                                'default': tp.format_type
+                            },
+                            'style': 'form',
+                            'explode': False
+                        }
+                    ],
                     'responses': {
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
