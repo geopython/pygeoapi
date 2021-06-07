@@ -1,0 +1,138 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#
+# Copyright (c) 2020 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+server:
+    bind:
+        host: localhost #change to your hostname if running your own instance
+        port: 5000
+    url: http://localhost:5000 #change to host URL  if running your own instance
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    pretty_print: true
+    limit: 100
+    map:
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>'
+    # ogc_schemas_location: /opt/schemas.opengis.net
+    # templates:
+    #   path: /skin-dashboard/templates
+    #   static: /skin-dashboard/static
+
+logging:
+    level: DEBUG
+    logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: Sensorthings API BRGM example enpoint.
+        description: Provides STA reference features.
+        keywords:
+            - geospatial
+            - sensorthingsapi
+            - api
+        keywords_type: theme
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/
+        url: https://github.com/internetofwater/geoconnex.us
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: Team geoconnex
+        url: https://github.com/internetofwater/geoconnex.us
+    contact:
+        address: 2111 Campus Dr
+        city: Durham
+        stateorprovince: North Carolina
+        postalcode: 27708
+        country: USA
+        email: kyle.onda@duke.edu
+        url: https://internetofwater.org
+        role: pointOfContact
+
+resources:
+    thing:
+        type: collection
+        title: Thing
+        description: Sensothings API Thing
+        keywords:
+            - Test Datastreams
+        geojsonld: False
+        context:
+            - name: schema:name
+              description: schema:description
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://sensorthings-wq.brgm-rec.fr/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+          - type: feature
+            name: Sensorthings 
+            entity: Datastreams 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: "@iot.id"
+    staf:
+        type: collection
+        title: SensorThingLocationPropertyStream
+        description: Monitoring Locations
+        keywords:
+            - Test Datastreams
+        geojsonld: False
+        context:
+            - name: schema:name
+              description: schema:description
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://sensorthings-wq.brgm-rec.fr/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:          
+          - type: record
+            name: Sensorthings 
+            entity: Observations 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: "@iot.id"
