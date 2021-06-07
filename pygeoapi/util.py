@@ -485,3 +485,19 @@ def read_data(path):
         LOGGER.debug('network file')
         with urlopen(path) as r:
             return r.read()
+
+
+def url_join(*parts):
+    """
+    helper function to join a URL from a number of parts/fragments.
+    Implemented because urllib.parse.urljoin strips subpaths from
+    host urls if they are specified
+
+    Per https://github.com/geopython/pygeoapi/issues/695
+
+    :param parts: list of parts to join
+
+    :returns: str of resulting URL
+    """
+
+    return '/'.join([p.strip().strip('/') for p in parts])

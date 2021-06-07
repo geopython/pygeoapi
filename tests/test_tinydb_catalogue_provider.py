@@ -54,7 +54,7 @@ def config():
         'type': 'feature',
         'data': path,
         'id_field': 'externalId',
-        'time_field': 'record-created'
+        'time_field': 'recordCreated'
     }
 
 
@@ -63,7 +63,7 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 10
-    assert fields['record-created']['type'] == 'string'
+    assert fields['recordCreated']['type'] == 'string'
     assert fields['title']['type'] == 'string'
     assert fields['q']['type'] == 'string'
 

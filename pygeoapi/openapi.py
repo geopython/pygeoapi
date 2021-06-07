@@ -696,24 +696,25 @@ def get_oas_30(cfg):
                     'description': v['description'],
                     'tags': [k],
                     'operationId': 'get{}Tiles'.format(k.capitalize()),
-                    'parameters': [ 
+                    'parameters': [
                         {'$ref': '{}#/components/parameters/tileMatrixSetId'.format(OPENAPI_YAML['oat'])},  # noqa
                         {'$ref': '{}#/components/parameters/tileMatrix'.format(OPENAPI_YAML['oat'])},  # noqa
                         {'$ref': '{}#/components/parameters/tileRow'.format(OPENAPI_YAML['oat'])},  # noqa
                         {'$ref': '{}#/components/parameters/tileCol'.format(OPENAPI_YAML['oat'])},  # noqa
                         {
-                        'name': 'f',
-                        'in': 'query',
-                        'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
-                        'required': False,
-                        'schema': {
-                            'type': 'string',
-                            'enum': [tp.format_type],
-                            'default': tp.format_type
-                        },
-                        'style': 'form',
-                        'explode': False
-                    }],
+                            'name': 'f',
+                            'in': 'query',
+                            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
+                            'required': False,
+                            'schema': {
+                                'type': 'string',
+                                'enum': [tp.format_type],
+                                'default': tp.format_type
+                            },
+                            'style': 'form',
+                            'explode': False
+                        }
+                    ],
                     'responses': {
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa

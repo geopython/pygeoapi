@@ -31,8 +31,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2019-03-18T14:30:23",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2019-03-18T14:30:23",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Critical Habitat for Species at Risk, British Columbia - Rigid Apple Moss (Bartramia stricta)",
                 "description": "This dataset displays the geographic areas within which critical habitat for species at risk listed on Schedule 1 of the federal Species at Risk Act (SARA) occurs in British Columbia. However, not all of the area within these boundaries is necessarily critical habitat. To precisely define what constitutes critical habitat for a particular species it is essential that this geo-spatial information be considered in conjunction with complementary information provided in a species\u2019 recovery document. Recovery documents are available from the Species at Risk (SAR) Public Registry (http://www.sararegistry.gc.ca). The recovery documents contain important information about the interpretation of the geo-spatial information, especially regarding the biological and environmental features (\u201cbiophysical attributes\u201d) that complete the definition of a species\u2019 critical habitat.\n\nEach species\u2019 dataset is part of a larger collection of critical habitat data that is available for download. The collection includes both \u201cfinal\u201d and \u201cproposed\u201d critical habitat as it is depicted in the recovery documents. \u201cProposed\u201d critical habitat depicted in proposed recovery documents has not been formally identified and is subject to change before it is posted as final. Despite the use of the term \u201cfinal\u201d, it is important to note that recovery documents (and therefore critical habitat) may be amended from time to time. Species are added as the data becomes ready, which may occur after the recovery document has been posted on the SAR Public Registry. You should always consider the SAR Public Registry as the main source for critical habitat information. In cases where the data is sensitive (e.g. species noted in the List of Species and Ecosystems Susceptible to Persecution or Harm that are managed by the Province of British Columbia), the geographic area within which critical habitat occurs may be represented as \u201cgrid squares\u201d. These are coarse (1, 10, 50 or 100 km2) squares based on a UTM grid that serve as a flag to review the associated species\u2019 recovery document. To reiterate, not all of the area within these boundaries is necessarily critical habitat. \n\nCritical habitat is defined in the federal Species at Risk Act (SARA) as \u201cthe habitat that is necessary for the survival or recovery of a listed wildlife species and that is identified as the species\u2019 critical habitat in the recovery strategy or action plan for the species\u201d. Critical habitat identification alone is not an automatic \u201cprotection\u201d designation. Federal or non-federal laws or bylaws may be in place to provide protection.",
@@ -121,8 +121,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-09-17T03:03:22",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-09-17T03:03:22",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Frost-free days for cool season/overwintering crops (>-2\u00b0C)",
                 "description": "Frost free days are the number of days in the forecast period with a minimum temperature above the frost temperature; the temperature at which frost damage occurs. This temperature is -2\u00b0C for cool season crops (ffd_cool).\n\nWeek 1 and week 2 forecasted index is available daily from April 1 to October 31.\nWeek 3 and week 4 forecasted index is available weekly (Thursday) from April 1 to October 31.\n\nCool season crops require a relatively low temperature condition. Typical examples include wheat, barley, canola, oat, rye, pea, and potato. They normally grow in late spring and summer, and mature between the end of summer and early fall in the southern agricultural areas of Canada. The optimum temperature for such crops is 25\u00b0C.\n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily and weekly basis.",
@@ -207,8 +207,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2019-03-18T14:30:21",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2019-03-18T14:30:21",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Critical Habitat for Species at Risk, British Columbia - Showy Phlox (Phlox speciosa ssp. occidentalis )",
                 "description": "This dataset displays the geographic areas within which critical habitat for species at risk listed on Schedule 1 of the federal Species at Risk Act (SARA) occurs in British Columbia. However, not all of the area within these boundaries is necessarily critical habitat. To precisely define what constitutes critical habitat for a particular species it is essential that this geo-spatial information be considered in conjunction with complementary information provided in a species\u2019 recovery document. Recovery documents are available from the Species at Risk (SAR) Public Registry (http://www.sararegistry.gc.ca). The recovery documents contain important information about the interpretation of the geo-spatial information, especially regarding the biological and environmental features (\u201cbiophysical attributes\u201d) that complete the definition of a species\u2019 critical habitat.\n\nEach species\u2019 dataset is part of a larger collection of critical habitat data that is available for download. The collection includes both \u201cfinal\u201d and \u201cproposed\u201d critical habitat as it is depicted in the recovery documents. \u201cProposed\u201d critical habitat depicted in proposed recovery documents has not been formally identified and is subject to change before it is posted as final. Despite the use of the term \u201cfinal\u201d, it is important to note that recovery documents (and therefore critical habitat) may be amended from time to time. Species are added as the data becomes ready, which may occur after the recovery document has been posted on the SAR Public Registry. You should always consider the SAR Public Registry as the main source for critical habitat information. In cases where the data is sensitive (e.g. species noted in the List of Species and Ecosystems Susceptible to Persecution or Harm that are managed by the Province of British Columbia), the geographic area within which critical habitat occurs may be represented as \u201cgrid squares\u201d. These are coarse (1, 10, 50 or 100 km2) squares based on a UTM grid that serve as a flag to review the associated species\u2019 recovery document. To reiterate, not all of the area within these boundaries is necessarily critical habitat. \n\nCritical habitat is defined in the federal Species at Risk Act (SARA) as \u201cthe habitat that is necessary for the survival or recovery of a listed wildlife species and that is identified as the species\u2019 critical habitat in the recovery strategy or action plan for the species\u201d. Critical habitat identification alone is not an automatic \u201cprotection\u201d designation. Federal or non-federal laws or bylaws may be in place to provide protection.",
@@ -289,8 +289,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-09-17T03:03:10",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-09-17T03:03:10",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Cool wave days for cool season/overwintering crops (< 5\u00b0C)",
                 "description": "Cool Wave Days are the number of days in the forecast period with a minimum temperature below the cardinal minimum temperature, the lowest temperature at which crop growth will begin (dcw_cool). This temperature is 5\u00b0C for cool season crops.\n\nWeek 1 and week 2 forecasted index is available daily from April 1 to October 31.\nWeek 3 and week 4 forecasted index is available weekly (Thursday) from April 1 to October 31.\n\nCool season crops require a relatively low temperature condition. Typical examples include wheat, barley, canola, oat, rye, pea, and potato. They normally grow in late spring and summer, and mature between the end of summer and early fall in the southern agricultural areas of Canada. The optimum temperature for such crops is 25\u00b0C.\n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily and weekly basis.",
@@ -375,8 +375,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-09-17T03:03:03",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-09-17T03:03:03",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Probability of Ice freeze days (woody crops) in dormant period (< -30\u00b0C)",
                 "description": "The probability (likelihood) of ice freeze days, the number of days in the forecast period with a minimum temperature below the frost temperature,  -30\u00b0C for woody crops over the dormant period (ifd_wood_dorm_prob).\n\nWeek 1 and week 2 forecasted probability is available daily from November 1 to March 31.\nWeek 3 and week 4 forecasted probability is available weekly (Thursday) from November 1 to March 31.\n\nOver-wintering crops are biennial and perennial field crops such as herbaceous plants (strawberry, alfalfa, timothy, and many other forage crops) and woody fruit trees (apple, pear, peach, cherry, plum, apricot, chestnut, pecan, grape, etc.). These crops normally grow and develop in the growing season and become dormant in the non-growing season. However, extreme weather and climate events such as cold waves in the growing season and ice freezing events during the winter are a major constraint for their success of production and survival in Canada. The winter survival of these plants depends largely on agrometeorological conditions from late autumn to early spring, especially ice-freezing damage during the winter season. The optimum temperature for such crops is 25\u00b0C.\n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily basis.",
@@ -461,8 +461,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-09-17T03:02:59",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-09-17T03:02:59",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Probability of Ice freeze days (herbaceous crops) during non-growing season (<-5\u00b0C)",
                 "description": "The probability (likelihood) of ice freeze days, the number of days in the forecast period with a minimum temperature below the frost temperature, -5\u00b0C for herbaceous crops over the non-growing season (ifd_herb_nogrow_prob).\n\nWeek 1 and week 2 forecasted probability is available daily from November 1 to March 31.\nWeek 3 and week 4 forecasted probability is available weekly (Thursday) from November 1 to March 31.\n\nOver-wintering crops are biennial and perennial field crops such as herbaceous plants (strawberry, alfalfa, timothy, and many other forage crops) and woody fruit trees (apple, pear, peach, cherry, plum, apricot, chestnut, pecan, grape, etc.). These crops normally grow and develop in the growing season and become dormant in the non-growing season. However, extreme weather and climate events such as cold waves in the growing season and ice freezing events during the winter are a major constraint for their success of production and survival in Canada. The winter survival of these plants depends largely on agrometeorological conditions from late autumn to early spring, especially ice-freezing damage during the winter season. The optimum temperature for such crops is 25\u00b0C.\n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily basis.",
@@ -547,8 +547,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-10-22T18:32:55",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-10-22T18:32:55",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Major Drainage Systems of the Watersheds Project - 2013",
                 "description": "The \u201cMajor Drainage Systems of the AAFC Watersheds Project - 2013\u201d dataset is a geospatial data layer containing polygon features representing the three (3) major drainage system basins of the Agriculture and Agri-Food Canada (AAFC) Watersheds Project. The Project area has been split according into which body of water it drains: the Arctic Ocean, Hudson Bay or Gulf of Mexico.",
@@ -645,8 +645,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2019-03-18T14:36:48",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2019-03-18T14:36:48",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Critical Habitat for Species at Risk, British Columbia - Dwarf Woolly-heads, Southern Mountain pop. (Psilocarphus brevissimus)",
                 "description": "This dataset displays the geographic areas within which critical habitat for species at risk listed on Schedule 1 of the federal Species at Risk Act (SARA) occurs in British Columbia. However, not all of the area within these boundaries is necessarily critical habitat. To precisely define what constitutes critical habitat for a particular species it is essential that this geo-spatial information be considered in conjunction with complementary information provided in a species\u2019 recovery document. Recovery documents are available from the Species at Risk (SAR) Public Registry (http://www.sararegistry.gc.ca). The recovery documents contain important information about the interpretation of the geo-spatial information, especially regarding the biological and environmental features (\u201cbiophysical attributes\u201d) that complete the definition of a species\u2019 critical habitat.\n\nEach species\u2019 dataset is part of a larger collection of critical habitat data that is available for download. The collection includes both \u201cfinal\u201d and \u201cproposed\u201d critical habitat as it is depicted in the recovery documents. \u201cProposed\u201d critical habitat depicted in proposed recovery documents has not been formally identified and is subject to change before it is posted as final. Despite the use of the term \u201cfinal\u201d, it is important to note that recovery documents (and therefore critical habitat) may be amended from time to time. Species are added as the data becomes ready, which may occur after the recovery document has been posted on the SAR Public Registry. You should always consider the SAR Public Registry as the main source for critical habitat information. In cases where the data is sensitive (e.g. species noted in the List of Species and Ecosystems Susceptible to Persecution or Harm that are managed by the Province of British Columbia), the geographic area within which critical habitat occurs may be represented as \u201cgrid squares\u201d. These are coarse (1, 10, 50 or 100 km2) squares based on a UTM grid that serve as a flag to review the associated species\u2019 recovery document. To reiterate, not all of the area within these boundaries is necessarily critical habitat. \n\nCritical habitat is defined in the federal Species at Risk Act (SARA) as \u201cthe habitat that is necessary for the survival or recovery of a listed wildlife species and that is identified as the species\u2019 critical habitat in the recovery strategy or action plan for the species\u201d. Critical habitat identification alone is not an automatic \u201cprotection\u201d designation. Federal or non-federal laws or bylaws may be in place to provide protection.",
@@ -735,8 +735,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2019-03-15T19:51:14",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2019-03-15T19:51:14",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Effective growing season degree days for warm season crops, for 2 weeks",
                 "description": "An accumulated value of heat degrees that the average temperature is above a specified threshold, 10\u00b0C for warm season crops. This condition must be maintained for at least 5 consecutive days in order for EGDD to be accumulated (egdd_warm).\n\nWeek 1 and week 2 forecasted index is available daily from April 1 to October 31.\nWeek 3 and week 4 forecasted index is available weekly (Thursday) from April 1 to October 31.\n\nCumulative heat-energy satisfies the essential requirement of field crop growth and development towards a high yield and good quality of agricultural crop products.\n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily and weekly basis.",
@@ -821,8 +821,8 @@
                 ]
             },
             "properties": {
-                "record-created": "2020-09-17T03:02:56",
-                "record-updated": "2021-02-19T12:28:38Z",
+                "recordCreated": "2020-09-17T03:02:56",
+                "recordUpdated": "2021-02-19T12:28:38Z",
                 "type": "RI_622",
                 "title": "Ice freeze days (herbaceous\u00a0 crops) in dormant period (< -15\u00b0C)",
                 "description": "The number of days in the forecast period with a minimum temperature below the frost temperature. It is -15\u00b0C for herbaceous crops over the dormant period (ifd_herb_dorm).\n\nWeek 1 and week 2 forecasted index is available daily from November 1 to March 31.\nWeek 3 and week 4 forecasted index is available weekly (Thursday) from November 1 to March 31.\n\nOver-wintering crops are biennial and perennial field crops such as herbaceous plants (strawberry, alfalfa, timothy, and many other forage crops) and woody fruit trees (apple, pear, peach, cherry, plum, apricot, chestnut, pecan, grape, etc.). These crops normally grow and develop in the growing season and become dormant in the non-growing season. However, extreme weather and climate events such as cold waves in the growing season and ice freezing events during the winter are a major constraint for their success of production and survival in Canada. The winter survival of these plants depends largely on agrometeorological conditions from late autumn to early spring, especially ice-freezing damage during the winter season.  \n\nAgriculture and Agri-Food Canada (AAFC) and Environment and Climate Change Canada (ECCC) have together developed a suite of extreme agrometeorological indices based on four main categories of weather factors: temperature, precipitation, heat, and wind.  The extreme weather indices are intended as short-term prediction tools and generated using ECCC\u2019s medium range forecasts to create a weekly index product on a daily and weekly basis.",
