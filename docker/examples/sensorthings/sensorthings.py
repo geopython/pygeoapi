@@ -1,12 +1,8 @@
 # =================================================================
 #
-# Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.net>
-#          Tom Kralidis <tomkralidis@gmail.com>
-#          Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2021 Tom Kralidis
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2021 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
