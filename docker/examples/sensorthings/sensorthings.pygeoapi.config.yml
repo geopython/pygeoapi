@@ -78,15 +78,18 @@ metadata:
         role: pointOfContact
 
 resources:
-    thing:
+    Things:
         type: collection
         title: Thing
         description: Sensothings API Thing
         keywords:
-            - Test Datastreams
+            - STA Thing
         geojsonld: False
         context:
-            - name: schema:name
+            - sosa: "http://www.w3.org/ns/sosa/"
+              ssn: "http://www.w3.org/ns/ssn/"
+              Datastreams: sosa:ObservationCollection
+              name: schema:name
               description: schema:description
         links:
             - type: application/html
@@ -104,18 +107,27 @@ resources:
         providers:
           - type: feature
             name: Sensorthings 
-            entity: Datastreams 
+            entity: Things 
             data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: "@iot.id"
-    staf:
+            id_field: '@iot.id'
+            rel_link: http://localhost:5000
+            properties:
+                - name
+                - Datastreams
+                - '@iot.selfLink'
+    Datastreams:
         type: collection
-        title: SensorThingLocationPropertyStream
-        description: Monitoring Locations
+        title: Datastream
+        description: Sensorthings API Datastream
         keywords:
             - Test Datastreams
         geojsonld: False
         context:
-            - name: schema:name
+            - sosa: http://www.w3.org/ns/sosa/
+              ssn: http://www.w3.org/ns/ssn/
+              Observations: sosa:hasMember
+              Thing: sosa:hasFeatureOfInterest
+              name: schema:name
               description: schema:description
         links:
             - type: application/html
@@ -131,8 +143,55 @@ resources:
                 begin: null
                 end: null
         providers:          
-          - type: record
+          - type: feature
+            name: Sensorthings 
+            entity: Datastreams 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: '@iot.id'
+            rel_link: http://localhost:5000
+            properties:
+                - name
+                - Thing
+                - Observations
+                - Sensor
+                - ObservedProperty
+                - '@iot.selfLink'
+    Observations:
+        type: collection
+        title: Observation
+        description: Sensorthings API Observation
+        keywords:
+            - Test STA Observations
+        geojsonld: False
+        context:
+            - sosa: http://www.w3.org/ns/sosa/
+              ssn: http://www.w3.org/ns/ssn/
+              Datastreams: sosa:isMemberOf
+              name: schema:name
+              description: schema:description
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://sensorthings-wq.brgm-rec.fr/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+          - type: feature
             name: Sensorthings 
             entity: Observations 
             data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: "@iot.id"
+            id_field: '@iot.id'
+            rel_link: http://localhost:5000
+            properties:
+                - phenomenonTime
+                - result
+                - '@iot.selfLink'
+                - Datastream
+                - FeatureOfInterest
