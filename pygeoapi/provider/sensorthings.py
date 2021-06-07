@@ -40,24 +40,12 @@ from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
 LOGGER = logging.getLogger(__name__)
 LOGGER.debug("Logger Init")
 
-EXPAND = \
-    'Thing(' \
-    + '$select=@iot.id,@iot.selflink,name,description' \
-    + ';$expand=Locations($select=location)' +\
-    '),Sensor(' \
-    + '$select=@iot.id,@iot.selflink,name,description' +\
-    '),ObservedProperty(' \
-    + '$select=@iot.id,@iot.selflink,name,description' +\
-    '),Observations(' \
-    + '$select=@iot.id,@iot.selflink,result,phenomenonTime' \
-    + ';$orderby=phenomenonTime desc' \
-    + ';$top=1' +\
-    ')'
-
-DEFAULT_KEYS = [
-                'name', 'description', 'Observations', 'Sensor',
-                'Thing', 'ObservedProperty', '@iot.selfLink'
-                ]
+EXPAND = {
+    'Things': 'Locations,Datastreams',
+    'Datastreams': 'Sensor,ObservedProperty,Thing,\
+        Observations($orderby=phenomenonTime desc)',
+    'Observations': 'Datastream,FeatureOfInterest'
+}
 
 
 class SensorthingsProvider(BaseProvider):
@@ -73,9 +61,10 @@ class SensorthingsProvider(BaseProvider):
 
         :returns: pygeoapi.provider.base.SensorthingsProvider
         """
-        LOGGER.debug("Logger SDFInit")
+        LOGGER.debug("Logger STA Init")
         super().__init__(provider_def)
         self.entity = provider_def.get('entity')
+        self.rel_link = provider_def.get('rel_link')
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
@@ -101,7 +90,7 @@ class SensorthingsProvider(BaseProvider):
         }
 
         params = {
-         '$expand': EXPAND, '$skip': startindex, '$top': limit
+         '$expand': EXPAND[self.entity], '$skip': startindex, '$top': limit
          }
 
         # Form URL for GET request
@@ -134,8 +123,14 @@ class SensorthingsProvider(BaseProvider):
             # Make geometry
             if not skip_geometry:
                 try:
-                    f['geometry'] = entity['Thing'] \
-                        .pop('Locations')[0]['location']
+                    if self.entity == 'Things':
+                        f['geometry'] = entity \
+                            .pop('Locations')[0]['location']
+                    elif self.entity == 'Datastreams':
+                        f['geometry'] = entity.pop('observedArea')
+                    elif self.entity == 'Observations':
+                        f['geometry'] = entity \
+                            .get('FeatureOfInterest').pop('feature')
                 except ProviderItemNotFoundError as err:
                     LOGGER.error(err)
                     raise ProviderItemNotFoundError(err)
@@ -144,7 +139,7 @@ class SensorthingsProvider(BaseProvider):
             if self.properties or select_properties:
                 keys = set(self.properties) | set(select_properties)
             else:
-                keys = DEFAULT_KEYS
+                keys = ()
             f['properties'] = self._parse_properties(entity, keys)
 
             feature_collection['features'].append(f)
@@ -154,32 +149,46 @@ class SensorthingsProvider(BaseProvider):
         else:
             return feature_collection
 
-    def _parse_properties(self, entity, keys):
+    def _parse_properties(self, entity, keys=()):
         """
         Private function: parse sensorthings entity into feature property
         :param entity: sensorthings entity
         :param keys: keys used in properties block
         :returns: dict of sensorthings feature properties
         """
-        ret = {}
-        for p in keys:
-
+        for k, v in entity.items():
             # Clean @iot.selflink for html
-            if isinstance(entity[p], dict) and entity[p].get('@iot.selfLink'):
-                entity[p]['@iot.selfLink'] += '?'
-            elif isinstance(entity[p], list) and entity[p][0].get('@iot.selfLink'):
-                entity[p][0]['@iot.selfLink'] += '?'
-            elif p == '@iot.selfLink':
-                entity[p] += '?'
+            if isinstance(v, dict) and v.get('@iot.selfLink'):
+                v['@iot.selfLink'] += '?'
+            elif isinstance(v, list) and v[0].get('@iot.selfLink'):
+                v[0]['@iot.selfLink'] += '?'
+            elif k == '@iot.selfLink':
+                entity[k] += '?'
 
-            # Make properties block
-            try:
-                ret[p] = entity[p]
-            except KeyError as err:
-                LOGGER.error(err)
-                raise ProviderQueryError(err)
+            # Create relative links
+            if k in ['Thing', 'Datastream']:
+                entity[k] = '{}/collections/{}/items/{}'.format(
+                    self.rel_link, k + 's', v['@iot.id']
+                )
+            elif k in ['Datastreams', 'Observations']:
+                for i, _ in enumerate(v):
+                    v[i] = '{}/collections/{}/items/{}'.format(
+                        self.rel_link, k, _['@iot.id']
+                    )
 
-        return ret
+        if keys:
+            ret = {}
+            for k in keys:
+                # Make properties block
+                try:
+                    ret[k] = entity.pop(k)
+                except KeyError as err:
+                    LOGGER.error(err)
+                    raise ProviderQueryError(err)
+
+            return ret
+
+        return entity
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
