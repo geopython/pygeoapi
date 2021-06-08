@@ -5,7 +5,7 @@ Multilingual support
 
 pygeoapi is language-aware and can handle multiple languages if these have been defined in pygeoapi's configuration (see `maintainer guide`_).
 Providers can also handle multiple languages if configured. These may even be different from the languages that pygeoapi
-supports. Out-of-the-box, pygeoapi "speaks" English.
+supports. Out-of-the-box, pygeoapi "speaks" English. System messages and exceptions are always English only.
 
 The following sections provide more information how to use and set up languages in pygeoapi.
 
@@ -36,26 +36,34 @@ There are 2 ways to affect the language of the results returned by pygeoapi, bot
 Notes
 ^^^^^
 
-- If pygeoapi cannot find a good match to the requested language, the response is returned in the default language (usually English).
+- If pygeoapi cannot find a good match to the requested language, the response is returned in the default language (US English mostly).
+  The default language is the *first* language defined in pygeoapi's server configuration YAML (see `maintainer guide`_).
 
-- Even if pygeoapi *itself* supports the requested language, provider plugins might not support that language or perhaps don't even
-  support (multiple) languages at all. In that case the provider will reply in its own default language, which may not be the same language
-  as the default pygeoapi server language.
+- Even if pygeoapi *itself* supports the requested language, provider plugins may not support that particular language or perhaps don't even
+  support any language at all. In that case the provider will reply in its own "unknown" language, which may not be the same language
+  as the default pygeoapi server language set in the ``Content-Language`` HTTP response header.
+
+- It is up to the creator of the provider to properly define at least 1 supported language in the provider configuration, as described
+  in the `developer guide`_. This will ensure that the ``Content-Language`` HTTP response header is always set properly.
 
 - If pygeoapi found a match to the requested language, the response will include a ``Content-Language`` HTTP header,
-  set to the best-matching server language code. This is the default behavior for all pygeoapi requests.
+  set to the best-matching server language code. This is the default behavior for most pygeoapi requests. However, note that some responses
+  (e.g. exceptions) always have a ``Content-Language: en-US`` header, regardless of the requested language.
 
-- For HTML results returned from a **provider**, the ``Content-Language`` HTTP header will be set to the best match for the
-  provider language or the best-matching pygeoapi server language if the provider does not support languages.
+- For results returned by a **provider**, the ``Content-Language`` HTTP header will be set to the best-matching
+  provider language or the best-matching pygeoapi server language if the provider is not language-aware.
 
-- For JSON(-LD) results returned from a **provider**, the ``Content-Language`` header will be **removed** if the provider
-  does not support any language. Otherwise, the header will be set to the best-matching provider language.
+- If the provider supports a requested language, but pygeoapi does *not* support that same language, the ``Content-Language``
+  header will contain both the provider language *and* the best-matching pygeoapi server language.
+
+- Please note that the ``Content-Language`` HTTP response header only *indicates the language of the intended audience*.
+  It does not necessarily mean that the content is actually written in that particular language.
 
 
 Maintainer guide
 ----------------
 
-Every pygeoapi instance needs to support at least 1 language. In the server configuration, there must be a ``language``
+Every pygeoapi instance should support at least 1 language. In the server configuration, there must be a ``language``
 or a ``languages`` (note the `s`) property. The property can be set to a single language tag or a list of tags respectively.
 
 If you wish to set up a multilingual pygeoapi instance, you will have to add more than 1 language to the
@@ -89,10 +97,11 @@ Notes
 - The **first** language you define in the configuration determines the default language, i.e. the language that pygeoapi will
   use if no other language was requested or no best match for the requested language could be found.
 
-- It is not possible to **disable** language support in pygeoapi. The functionality is always on. If results should always
-  be shown in a single language, you'd have to set that language only in the pygeoapi configuration.
+- It is not possible to **disable** language support in pygeoapi. The functionality is always on and a ``Content-Language``
+  HTTP response header is always set. If results should be available in a single language, you'd have to set that language only
+  in the pygeoapi configuration.
 
-- Results returned from a provider may be in a different language than pygeoapi's own server language. The requested language
+- Results returned from a provider may be in a different language than pygeoapi's own server language. The "raw" requested language
   is always passed on to the provider, even if pygeoapi itself does not support it. For more information, see the `end user guide`_
   and the `developer guide`_.
 

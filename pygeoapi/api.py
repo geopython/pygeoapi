@@ -82,12 +82,19 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
-#: Formats allowed for ?f= requests (order matters)
-FORMATS = OrderedDict((
-    ('html', 'text/html'),
-    ('jsonld', 'application/ld+json'),
-    ('json', 'application/json'),
+F_JSON = 'json'
+F_HTML = 'html'
+F_JSONLD = 'jsonld'
+
+#: Formats allowed for ?f= requests (order matters for complex MIME types)
+FORMAT_TYPES = OrderedDict((
+    (F_HTML, 'text/html'),
+    (F_JSONLD, 'application/ld+json'),
+    (F_JSON, 'application/json'),
 ))
+
+#: Locale used for system responses (e.g. exceptions)
+SYSTEM_LOCALE = l10n.Locale('en', 'US')
 
 CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
@@ -182,8 +189,8 @@ class APIRequest:
           if not request.is_valid(['xml']):
              return self.get_format_exception(request)
 
-          content_type = 'application/xml' if request.format == 'xml' else None
-          headers = request.get_response_headers(content_type)
+          force_type = 'application/xml' if request.format == 'xml' else None
+          headers = request.get_response_headers(force_type)
 
           # generate response_body here
 
@@ -241,6 +248,8 @@ class APIRequest:
             api_req._data = request.data
         elif hasattr(request, 'body'):
             # Set data from Starlette request after async coroutine completion
+            # TODO: this now blocks, but once Flask v2 with async support
+            #       has been implemented, with_data() can become async too
             loop = asyncio.get_event_loop()
             api_req._data = loop.run_until_complete(request.body())
         return api_req
@@ -273,7 +282,6 @@ class APIRequest:
         raw = None
         try:
             default_locale = l10n.str2locale(supported_locales[0])
-            default_str = l10n.locale2str(default_locale)
         except (TypeError, IndexError, l10n.LocaleError) as err:
             # This should normally not happen, since the API class already
             # loads the supported languages from the config, which raises
@@ -289,13 +297,13 @@ class APIRequest:
                 if not raw:
                     # This is the first-found locale string: set as raw
                     raw = loc_str
-                # Check of locale string is a good match for the UI
+                # Check if locale string is a good match for the UI
                 loc = l10n.best_match(loc_str, supported_locales)
                 is_override = func is l10n.locale_from_params
                 if loc != default_locale or is_override:
                     return raw, loc
 
-        return raw or default_str, default_locale
+        return raw, default_locale
 
     def _get_format(self, headers) -> Union[str, None]:
         """
@@ -306,7 +314,7 @@ class APIRequest:
         """
 
         # Optional f=html or f=json query param
-        # Overrides Accept header and might differ from FORMATS
+        # Overrides Accept header and might differ from FORMAT_TYPES
         format_ = (self._args.get('f') or '').strip()
         if format_:
             return format_
@@ -314,7 +322,7 @@ class APIRequest:
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
         for h in (v.strip() for k, v in headers.items() if k.lower() == 'accept'):  # noqa
-            for fmt, mime in FORMATS.items():
+            for fmt, mime in FORMAT_TYPES.items():
                 # basic support for complex types (i.e. with "q=0.x")
                 types_ = (t.split(';')[0].strip() for t in h.split(',') if t)
                 if mime.strip() in types_:
@@ -357,16 +365,15 @@ class APIRequest:
         return self._locale
 
     @property
-    def raw_locale(self) -> str:
+    def raw_locale(self) -> Union[str, None]:
         """ Returns the raw locale string from the `Request` object.
         If no "lang" query parameter or `Accept-Language` header was found,
-        the first (= default) language tag from the server configuration is
-        returned.
+        `None` is returned.
         Pass this value to the :func:`l10n.get_plugin_locale` function to let
         the provider determine a best match for the locale, which may be
         different from the locale used by pygeoapi's UI.
 
-        :returns:   a locale string
+        :returns:   a locale string or None
         """
         return self._raw_locale
 
@@ -379,6 +386,23 @@ class APIRequest:
         """
         return self._format
 
+    def get_linkrel(self, format_: str) -> str:
+        """ Returns the hyperlink relationship (rel) attribute value for
+        the given API format string.
+
+        The string is compared against the request format and if it matches,
+        the value 'self' is returned. Otherwise, 'alternate' is returned.
+        However, if `format_` is 'json' and *no* request format was found,
+        the relationship 'self' is returned as well (JSON is the default).
+
+        :param format_: The format to compare the request format against.
+        :returns:       A string 'self' or 'alternate'.
+        """
+        fmt = format_.lower()
+        if fmt == self._format or (fmt == F_JSON and not self._format):
+            return 'self'
+        return 'alternate'
+
     def is_valid(self, additional_formats=None) -> bool:
         """ Returns True if:
 
@@ -389,40 +413,49 @@ class APIRequest:
         .. note::   Format names are matched in a case-insensitive manner.
 
         :param additional_formats:  Optional additional supported formats list
-        :returns:   A boolean
+        :returns:                   A boolean
         """
         if not self._format:
             return True
-        if self._format in FORMATS.keys():
+        if self._format in FORMAT_TYPES.keys():
             return True
         if self._format in (f.lower() for f in (additional_formats or ())):
             return True
         return False
 
-    def get_response_headers(self, content_type: str = None,
-                             locale: l10n.Locale = None) -> dict:
+    def get_response_headers(self, force_lang: l10n.Locale = None,
+                             force_type: str = None) -> dict:
         """ Prepares and returns a dictionary with Response object headers.
-        Adds a 'Content-Language' header if the Request had a valid
-        language query parameter or if a `locale` override is provided.
-        If the user does not specify `content_type`, the 'Content-Type` header
-        is based on the `format` property. If that is invalid, the default
-        'application/json' is used.
 
-        :param content_type:    An optional Content-Type header override.
-        :param locale:          An optional Locale for the Content-Language.
-        :returns:               A header dict
+        This method always adds a 'Content-Language' header, where the value
+        is determined by the 'lang' query parameter or 'Accept-Language'
+        header from the request.
+        If no language was requested, the default pygeoapi language is used,
+        unless a `force_lang` override was specified (see notes below).
+
+        A 'Content-Type' header is also always added to the response.
+        If the user does not specify `force_type`, the header is based on
+        the `format` APIRequest property. If that is invalid, the default MIME
+        type `application/json` is used.
+
+        ..note::    If a `force_lang` override is applied, that language
+                    is always set as the 'Content-Language', regardless of
+                    a 'lang' query parameter or 'Accept-Language' header.
+                    If an API response always needs to be in the same
+                    language, 'force_lang' should be set to that language.
+
+        :param force_lang:    An optional Content-Language header override.
+        :param force_type:    An optional Content-Type header override.
+        :returns:             A header dict
         """
         headers = HEADERS.copy()
-        # Always add a Content-Language response header:
-        # use user-override if specified
-        response_loc = locale if locale else self._locale
-        l10n.set_response_language(headers, response_loc)
-        if content_type:
+        l10n.set_response_language(headers, force_lang or self._locale)
+        if force_type:
             # Set custom MIME type if specified
-            headers['Content-Type'] = content_type
-        elif self.is_valid() and self.format:
+            headers['Content-Type'] = force_type
+        elif self.is_valid() and self._format:
             # Set MIME type for valid formats
-            headers['Content-Type'] = FORMATS[self.format]
+            headers['Content-Type'] = FORMAT_TYPES[self._format]
         return headers
 
 
@@ -441,7 +474,7 @@ class API:
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
-        # Process language settings
+        # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)
         self.default_locale = self.locales[0]
 
@@ -498,20 +531,20 @@ class API:
         LOGGER.debug('Creating links')
         # TODO: put title text in config or translatable files?
         fcm['links'] = [{
-            'rel': 'self' if request.format in (None, 'json') else 'alternate',
-            'type': FORMATS['json'],
+            'rel': request.get_linkrel(F_JSON),
+            'type': FORMAT_TYPES[F_JSON],
             'title': 'This document as JSON',
-            'href': '{}?f=json'.format(self.config['server']['url'])
+            'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
         }, {
-            'rel': 'self' if request.format == 'jsonld' else 'alternate',
-            'type': FORMATS['jsonld'],
+            'rel': request.get_linkrel(F_JSONLD),
+            'type': FORMAT_TYPES[F_JSONLD],
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}?f=jsonld'.format(self.config['server']['url'])
+            'href': '{}?f={}'.format(self.config['server']['url'], F_JSONLD)
         }, {
-            'rel': 'self' if request.format == 'html' else 'alternate',
-            'type': FORMATS['html'],
+            'rel': request.get_linkrel(F_HTML),
+            'type': FORMAT_TYPES[F_HTML],
             'title': 'This document as HTML',
-            'href': '{}?f=html'.format(self.config['server']['url']),
+            'href': '{}?f={}'.format(self.config['server']['url'], F_HTML),
             'hreflang': self.default_locale
         }, {
             'rel': 'service-desc',
@@ -520,24 +553,25 @@ class API:
             'href': '{}/openapi'.format(self.config['server']['url'])
         }, {
             'rel': 'service-doc',
-            'type': 'text/html',
+            'type': FORMAT_TYPES[F_HTML],
             'title': 'The OpenAPI definition as HTML',
-            'href': '{}/openapi?f=html'.format(self.config['server']['url']),
+            'href': '{}/openapi?f={}'.format(self.config['server']['url'],
+                                             F_HTML),
             'hreflang': self.default_locale
         }, {
             'rel': 'conformance',
-            'type': 'application/json',
+            'type': FORMAT_TYPES[F_JSON],
             'title': 'Conformance',
             'href': '{}/conformance'.format(self.config['server']['url'])
         }, {
             'rel': 'data',
-            'type': 'application/json',
+            'type': FORMAT_TYPES[F_JSON],
             'title': 'Collections',
             'href': '{}/collections'.format(self.config['server']['url'])
         }]
 
         headers = request.get_response_headers()
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
 
             fcm['processes'] = False
             fcm['stac'] = False
@@ -554,7 +588,7 @@ class API:
                                          request.locale)
             return headers, 200, content
 
-        if request.format == 'jsonld':
+        if request.format == F_JSONLD:
             return headers, 200, to_json(self.fcmld, self.pretty_print)  # noqa
 
         return headers, 200, to_json(fcm, self.pretty_print)
@@ -574,7 +608,7 @@ class API:
             return self.get_format_exception(request)
 
         headers = request.get_response_headers()
-        if request.format == 'html':
+        if request.format == F_HTML:
             path = '/'.join([self.config['server']['url'].rstrip('/'),
                             'openapi'])
             data = {
@@ -609,7 +643,7 @@ class API:
         }
 
         headers = request.get_response_headers()
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             content = render_j2_template(self.config, 'conformance.html',
                                          conformance, request.locale)
             return headers, 200, content
@@ -699,118 +733,120 @@ class API:
 
                 collection['links'].append(lnk)
 
+            # TODO: provide translations
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
-                'type': 'application/json',
-                'rel': 'self' if not request.format
-                or request.format == 'json' else 'alternate',
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': request.get_linkrel(F_JSON),
                 'title': 'This document as JSON',
-                'href': '{}/collections/{}?f=json'.format(
-                    self.config['server']['url'], k)
+                'href': '{}/collections/{}?f={}'.format(
+                    self.config['server']['url'], k, F_JSON)
             })
             collection['links'].append({
-                'type': 'application/ld+json',
-                'rel': 'self' if request.format == 'jsonld' else 'alternate',
+                'type': FORMAT_TYPES[F_JSONLD],
+                'rel': request.get_linkrel(F_JSONLD),
                 'title': 'This document as RDF (JSON-LD)',
-                'href': '{}/collections/{}?f=jsonld'.format(
-                    self.config['server']['url'], k)
+                'href': '{}/collections/{}?f={}'.format(
+                    self.config['server']['url'], k, F_JSONLD)
             })
             collection['links'].append({
-                'type': 'text/html',
-                'rel': 'self' if request.format == 'html' else 'alternate',
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': request.get_linkrel(F_HTML),
                 'title': 'This document as HTML',
-                'href': '{}/collections/{}?f=html'.format(
-                    self.config['server']['url'], k)
+                'href': '{}/collections/{}?f={}'.format(
+                    self.config['server']['url'], k, F_HTML)
             })
 
             if collection_data_type in ['feature', 'record']:
+                # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
                 collection['links'].append({
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': 'queryables',
                     'title': 'Queryables for this collection as JSON',
-                    'href': '{}/collections/{}/queryables?f=json'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/queryables?f={}'.format(
+                        self.config['server']['url'], k, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': 'queryables',
                     'title': 'Queryables for this collection as HTML',
-                    'href': '{}/collections/{}/queryables?f=html'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/queryables?f={}'.format(
+                        self.config['server']['url'], k, F_HTML)
                 })
                 collection['links'].append({
                     'type': 'application/geo+json',
                     'rel': 'items',
                     'title': 'items as GeoJSON',
-                    'href': '{}/collections/{}/items?f=json'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/items?f={}'.format(
+                        self.config['server']['url'], k, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'application/ld+json',
+                    'type': FORMAT_TYPES[F_JSONLD],
                     'rel': 'items',
                     'title': 'items as RDF (GeoJSON-LD)',
-                    'href': '{}/collections/{}/items?f=jsonld'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/items?f={}'.format(
+                        self.config['server']['url'], k, F_JSONLD)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': 'items',
                     'title': 'Items as HTML',
-                    'href': '{}/collections/{}/items?f=html'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/items?f={}'.format(
+                        self.config['server']['url'], k, F_HTML)
                 })
 
             elif collection_data_type == 'coverage':
+                # TODO: translate
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': 'collection',
                     'title': 'Detailed Coverage metadata in JSON',
-                    'href': '{}/collections/{}?f=json'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}?f={}'.format(
+                        self.config['server']['url'], k, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': 'collection',
                     'title': 'Detailed Coverage metadata in HTML',
-                    'href': '{}/collections/{}?f=html'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}?f={}'.format(
+                        self.config['server']['url'], k, F_HTML)
                 })
                 coverage_url = '{}/collections/{}/coverage'.format(
                         self.config['server']['url'], k)
 
                 collection['links'].append({
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': '{}/coverage-domainset'.format(OGC_RELTYPES_BASE),
                     'title': 'Coverage domain set of collection in JSON',
-                    'href': '{}/domainset?f=json'.format(coverage_url)
+                    'href': '{}/domainset?f={}'.format(coverage_url, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': '{}/coverage-domainset'.format(OGC_RELTYPES_BASE),
                     'title': 'Coverage domain set of collection in HTML',
-                    'href': '{}/domainset?f=html'.format(coverage_url)
+                    'href': '{}/domainset?f={}'.format(coverage_url, F_HTML)
                 })
                 collection['links'].append({
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': '{}/coverage-rangetype'.format(OGC_RELTYPES_BASE),
                     'title': 'Coverage range type of collection in JSON',
-                    'href': '{}/rangetype?f=json'.format(coverage_url)
+                    'href': '{}/rangetype?f={}'.format(coverage_url, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': '{}/coverage-rangetype'.format(OGC_RELTYPES_BASE),
                     'title': 'Coverage range type of collection in HTML',
-                    'href': '{}/rangetype?f=html'.format(coverage_url)
+                    'href': '{}/rangetype?f={}'.format(coverage_url, F_HTML)
                 })
                 collection['links'].append({
                     'type': 'application/prs.coverage+json',
                     'rel': '{}/coverage'.format(OGC_RELTYPES_BASE),
                     'title': 'Coverage data',
-                    'href': '{}/collections/{}/coverage?f=json'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/coverage?f={}'.format(
+                        self.config['server']['url'], k, F_JSON)
                 })
                 if collection_data_format is not None:
                     collection['links'].append({
@@ -846,20 +882,21 @@ class API:
                 tile = None
 
             if tile:
+                # TODO: translate
                 LOGGER.debug('Adding tile links')
                 collection['links'].append({
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': 'tiles',
                     'title': 'Tiles as JSON',
-                    'href': '{}/collections/{}/tiles?f=json'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/tiles?f={}'.format(
+                        self.config['server']['url'], k, F_JSON)
                 })
                 collection['links'].append({
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': 'tiles',
                     'title': 'Tiles as HTML',
-                    'href': '{}/collections/{}/tiles?f=html'.format(
-                        self.config['server']['url'], k)
+                    'href': '{}/collections/{}/tiles?f={}'.format(
+                        self.config['server']['url'], k, F_HTML)
                 })
 
             try:
@@ -868,6 +905,7 @@ class API:
                 edr = None
 
             if edr and dataset is not None:
+                # TODO: translate
                 LOGGER.debug('Adding EDR links')
                 try:
                     p = load_plugin('provider', get_provider_by_type(
@@ -883,15 +921,15 @@ class API:
                             'type': 'text/json',
                             'rel': 'data',
                             'title': '{} query for this collection as JSON'.format(qt),  # noqa
-                            'href': '{}/collections/{}/{}?f=json'.format(
-                                self.config['server']['url'], k, qt)
+                            'href': '{}/collections/{}/{}?f={}'.format(
+                                self.config['server']['url'], k, qt, F_JSON)
                         })
                         collection['links'].append({
-                            'type': 'text/html',
+                            'type': FORMAT_TYPES[F_HTML],
                             'rel': 'data',
                             'title': '{} query for this collection as HTML'.format(qt),  # noqa
-                            'href': '{}/collections/{}/{}?f=html'.format(
-                                self.config['server']['url'], k, qt)
+                            'href': '{}/collections/{}/{}?f={}'.format(
+                                self.config['server']['url'], k, qt, F_HTML)
                         })
                 except ProviderConnectionError:
                     msg = 'connection error (check logs)'
@@ -907,30 +945,30 @@ class API:
             fcm['collections'].append(collection)
 
         if dataset is None:
+            # TODO: translate
             fcm['links'].append({
-                'type': 'application/json',
-                'rel': 'self' if not format
-                or request.format == 'json' else 'alternate',
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': request.get_linkrel(F_JSON),
                 'title': 'This document as JSON',
-                'href': '{}/collections?f=json'.format(
-                    self.config['server']['url'])
+                'href': '{}/collections?f={}'.format(
+                    self.config['server']['url'], F_JSON)
             })
             fcm['links'].append({
-                'type': 'application/ld+json',
-                'rel': 'self' if request.format == 'jsonld' else 'alternate',
+                'type': FORMAT_TYPES[F_JSONLD],
+                'rel': request.get_linkrel(F_JSONLD),
                 'title': 'This document as RDF (JSON-LD)',
-                'href': '{}/collections?f=jsonld'.format(
-                    self.config['server']['url'])
+                'href': '{}/collections?f={}'.format(
+                    self.config['server']['url'], F_JSONLD)
             })
             fcm['links'].append({
-                'type': 'text/html',
-                'rel': 'self' if request.format == 'html' else 'alternate',
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': request.get_linkrel(F_HTML),
                 'title': 'This document as HTML',
-                'href': '{}/collections?f=html'.format(
-                    self.config['server']['url'])
+                'href': '{}/collections?f={}'.format(
+                    self.config['server']['url'], F_HTML)
             })
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             if dataset is not None:
                 content = render_j2_template(self.config,
                                              'collections/collection.html',
@@ -942,7 +980,7 @@ class API:
 
             return headers, 200, content
 
-        if request.format == 'jsonld':
+        if request.format == F_JSONLD:
             jsonld = self.fcmld.copy()  # noqa
             if dataset is not None:
                 jsonld['dataset'] = jsonldify_collection(self, fcm,
@@ -999,7 +1037,8 @@ class API:
 
         queryables = {
             'type': 'object',
-            'title': self.config['resources'][dataset]['title'],
+            'title': l10n.translate(
+                self.config['resources'][dataset]['title'], request.locale),
             'properties': {},
             '$schema': 'http://json-schema.org/draft/2019-09/schema',
             '$id': '{}/collections/{}/queryables'.format(
@@ -1022,7 +1061,7 @@ class API:
                 if 'values' in v:
                     queryables['properties'][k]['enum'] = v['values']
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             queryables['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale)
             content = render_j2_template(self.config,
@@ -1047,7 +1086,10 @@ class API:
 
         if not request.is_valid(PLUGINS['formatter'].keys()):
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+
+        # Set Content-Language to system locale until provider locale
+        # has been determined
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'startindex',
@@ -1083,7 +1125,7 @@ class API:
         try:
             limit = int(request.params.get('limit'))
             # TODO: We should do more validation, against the min and max
-            # allowed by the server configuration
+            #       allowed by the server configuration
             if limit <= 0:
                 msg = 'limit value should be strictly positive'
                 return self.get_exception(
@@ -1251,24 +1293,28 @@ class API:
                 serialized_query_params += '='
                 serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
+        # TODO: translate titles
         content['links'] = [{
             'type': 'application/geo+json',
-            'rel': 'self' if request.format in (None, 'json') else 'alternate',
+            'rel': request.get_linkrel(F_JSON),
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f=json{}'.format(
-                self.config['server']['url'], dataset, serialized_query_params)
+            'href': '{}/collections/{}/items?f={}{}'.format(
+                self.config['server']['url'], dataset, F_JSON,
+                serialized_query_params)
         }, {
-            'rel': 'self' if request.format == 'jsonld' else 'alternate',
-            'type': 'application/ld+json',
+            'rel': request.get_linkrel(F_JSONLD),
+            'type': FORMAT_TYPES[F_JSONLD],
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items?f=jsonld{}'.format(
-                self.config['server']['url'], dataset, serialized_query_params)
+            'href': '{}/collections/{}/items?f={}{}'.format(
+                self.config['server']['url'], dataset, F_JSONLD,
+                serialized_query_params)
         }, {
-            'type': 'text/html',
-            'rel': 'self' if request.format == 'html' else 'alternate',
+            'type': FORMAT_TYPES[F_HTML],
+            'rel': request.get_linkrel(F_HTML),
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f=html{}'.format(
-                self.config['server']['url'], dataset, serialized_query_params)
+            'href': '{}/collections/{}/items?f={}{}'.format(
+                self.config['server']['url'], dataset, F_HTML,
+                serialized_query_params)
         }]
 
         if startindex > 0:
@@ -1298,7 +1344,7 @@ class API:
 
         content['links'].append(
             {
-                'type': 'application/json',
+                'type': FORMAT_TYPES[F_JSON],
                 'title': l10n.translate(
                     collections[dataset]['title'], request.locale),
                 'rel': 'collection',
@@ -1309,9 +1355,12 @@ class API:
         content['timeStamp'] = datetime.utcnow().strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
 
-        if request.format == 'html':  # render
-            l10n.set_response_language(headers, prv_locale)
+        # Set response language to requested provider locale
+        # (if it supports language) and/or otherwise the requested pygeoapi
+        # locale (or fallback default locale)
+        l10n.set_response_language(headers, prv_locale, request.locale)
 
+        if request.format == F_HTML:  # render
             # For constructing proper URIs to items
             if pathinfo:
                 path_info = '/'.join([
@@ -1338,8 +1387,6 @@ class API:
                                          content, request.locale)
             return headers, 200, content
         elif request.format == 'csv':  # render
-            l10n.set_response_language(headers, prv_locale)
-
             formatter = load_plugin('formatter',
                                     {'name': 'CSV', 'geom': True})
 
@@ -1360,11 +1407,9 @@ class API:
 
             return headers, 200, content
 
-        elif request.format == 'jsonld':
-            l10n.set_response_language(headers, prv_locale, True)
+        elif request.format == F_JSONLD:
             content = geojson2geojsonld(self.config, content, dataset)
 
-        l10n.set_response_language(headers, prv_locale, True)
         return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
@@ -1381,7 +1426,10 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+
+        # Set Content-Language to system locale until provider locale
+        # has been determined
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1445,23 +1493,23 @@ class API:
                 self.config['server']['url'], dataset, identifier)
 
         content['links'] = [{
-            'rel': 'self' if request.format in (None, 'json') else 'alternate',
+            'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
-            'href': '{}?f=json'.format(uri)
+            'href': '{}?f={}'.format(uri, F_JSON)
             }, {
-            'rel': 'self' if request.format == 'jsonld' else 'alternate',
-            'type': 'application/ld+json',
+            'rel': request.get_linkrel(F_JSONLD),
+            'type': FORMAT_TYPES[F_JSONLD],
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}?f=jsonld'.format(uri)
+            'href': '{}?f={}'.format(uri, F_JSONLD)
             }, {
-            'rel': 'self' if request.format == 'html' else 'alternate',
-            'type': 'text/html',
+            'rel': request.get_linkrel(F_HTML),
+            'type': FORMAT_TYPES[F_HTML],
             'title': 'This document as HTML',
-            'href': '{}?f=html'.format(uri)
+            'href': '{}?f={}'.format(uri, F_HTML)
             }, {
             'rel': 'collection',
-            'type': 'application/json',
+            'type': FORMAT_TYPES[F_JSON],
             'title': l10n.translate(collections[dataset]['title'],
                                     request.locale),
             'href': '{}/collections/{}'.format(
@@ -1477,9 +1525,12 @@ class API:
             }
         ]
 
-        if request.format == 'html':  # render
-            l10n.set_response_language(headers, prv_locale)
+        # Set response language to requested provider locale
+        # (if it supports language) and/or otherwise the requested pygeoapi
+        # locale (or fallback default locale)
+        l10n.set_response_language(headers, prv_locale, request.locale)
 
+        if request.format == F_HTML:  # render
             content['title'] = l10n.translate(collections[dataset]['title'],
                                               request.locale)
             content['id_field'] = p.id_field
@@ -1493,14 +1544,11 @@ class API:
                                          content, request.locale)
             return headers, 200, content
 
-        elif request.format == 'jsonld':
-            l10n.set_response_language(headers, prv_locale, True)
-
+        elif request.format == F_JSONLD:
             content = geojson2geojsonld(
                 self.config, content, dataset, uri, (p.uri_field or 'id')
             )
 
-        l10n.set_response_language(headers, prv_locale, True)
         return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
@@ -1516,8 +1564,11 @@ class API:
         """
 
         query_args = {}
-        format_ = 'json'
-        headers = request.get_response_headers(FORMATS['json'])
+        format_ = F_JSON
+
+        # Force content type and language (en-US only) headers
+        headers = request.get_response_headers(SYSTEM_LOCALE,
+                                               FORMAT_TYPES[F_JSON])
 
         LOGGER.debug('Loading provider')
         try:
@@ -1633,7 +1684,7 @@ class API:
         if format_ == mt:
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
-        elif format_ == 'json':
+        elif format_ == F_JSON:
             headers['Content-Type'] = 'application/prs.coverage+json'
             return headers, 200, to_json(data, self.pretty_print)
         else:
@@ -1651,8 +1702,8 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        format_ = request.format or 'json'
-        headers = request.get_response_headers()
+        format_ = request.format or F_JSON
+        headers = request.get_response_headers(self.default_locale)
 
         LOGGER.debug('Loading provider')
         try:
@@ -1675,16 +1726,17 @@ class API:
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
-        if format_ == 'json':
+        if format_ == F_JSON:
             return headers, 200, to_json(data, self.pretty_print)
 
-        elif format_ == 'html':
+        elif format_ == F_HTML:
             data['id'] = dataset
             data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], request.locale)
+                self.config['resources'][dataset]['title'],
+                self.default_locale)
             content = render_j2_template(self.config,
                                          'collections/coverage/domainset.html',
-                                         data, request.locale)
+                                         data, self.default_locale)
             return headers, 200, content
         else:
             return self.get_format_exception(request)
@@ -1700,8 +1752,8 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-        format_ = request.format or 'json'
-        headers = request.get_response_headers()
+        format_ = request.format or F_JSON
+        headers = request.get_response_headers(self.default_locale)
 
         LOGGER.debug('Loading provider')
         try:
@@ -1724,16 +1776,17 @@ class API:
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
-        if format_ == 'json':
+        if format_ == F_JSON:
             return headers, 200, to_json(data, self.pretty_print)
 
-        elif format_ == 'html':
+        elif format_ == F_HTML:
             data['id'] = dataset
             data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], request.locale)
+                self.config['resources'][dataset]['title'],
+                self.default_locale)
             content = render_j2_template(self.config,
                                          'collections/coverage/rangetype.html',
-                                         data, request.locale)
+                                         data, self.default_locale)
             return headers, 200, content
         else:
             return self.get_format_exception(request)
@@ -1752,7 +1805,7 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
@@ -1784,31 +1837,31 @@ class API:
             'title': dataset,
             'description': l10n.translate(
                 self.config['resources'][dataset]['description'],
-                request.locale),
+                SYSTEM_LOCALE),
             'links': [],
             'tileMatrixSetLinks': []
         }
 
         tiles['links'].append({
-            'type': 'application/json',
-            'rel': 'self' if request.format == 'json' else 'alternate',
+            'type': FORMAT_TYPES[F_JSON],
+            'rel': request.get_linkrel(F_JSON),
             'title': 'This document as JSON',
-            'href': '{}/collections/{}/tiles?f=json'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/tiles?f={}'.format(
+                self.config['server']['url'], dataset, F_JSON)
         })
         tiles['links'].append({
-            'type': 'application/ld+json',
-            'rel': 'self' if request.format == 'jsonld' else 'alternate',
+            'type': FORMAT_TYPES[F_JSONLD],
+            'rel': request.get_linkrel(F_JSONLD),
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/tiles?f=jsonld'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/tiles?f={}'.format(
+                self.config['server']['url'], dataset, F_JSONLD)
         })
         tiles['links'].append({
-            'type': 'text/html',
-            'rel': 'self' if request.format == 'html' else 'alternate',
+            'type': FORMAT_TYPES[F_HTML],
+            'rel': request.get_linkrel(F_HTML),
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/tiles?f=html'.format(
-                self.config['server']['url'], dataset)
+            'href': '{}/collections/{}/tiles?f={}'.format(
+                self.config['server']['url'], dataset, F_HTML)
         })
 
         for service in p.get_tiles_service(
@@ -1821,10 +1874,10 @@ class API:
         tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
         metadata_format = p.options['metadata_format']
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], request.locale)
+                self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
             tiles['tilesets'] = [
                 scheme['tileMatrixSet'] for scheme in p.get_tiling_schemes()]
             tiles['format'] = metadata_format
@@ -1835,7 +1888,7 @@ class API:
 
             content = render_j2_template(self.config,
                                          'collections/tiles/index.html', tiles,
-                                         request.locale)
+                                         SYSTEM_LOCALE)
 
             return headers, 200, content
 
@@ -1862,7 +1915,7 @@ class API:
         format_ = request.format
         if not format_:
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         LOGGER.debug('Processing tiles')
 
@@ -1915,12 +1968,12 @@ class API:
                 500, headers, format_, 'NoApplicableCode', msg)
         except ProviderTileNotFoundError as err:
             LOGGER.error(err)
-            msg = 'tile not found (check logs)'
+            msg = 'Tile not found (check logs)'
             return self.get_exception(
                 404, headers, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
+            msg = 'Generic error (check logs)'
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
@@ -1984,7 +2037,12 @@ class API:
             layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson,
             language=prv_locale)
 
-        if request.format == 'html':  # render
+        # Set response language to requested provider locale
+        # (if it supports language) and/or otherwise the requested pygeoapi
+        # locale (or fallback default locale)
+        l10n.set_response_language(headers, prv_locale, request.locale)
+
+        if request.format == F_HTML:  # render
             metadata = dict(metadata=tiles_metadata)
             metadata['id'] = dataset
             metadata['title'] = l10n.translate(
@@ -2038,33 +2096,33 @@ class API:
                 p = load_plugin('process',
                                 processes_config[key]['processor'])
 
-                p2 = deepcopy(p.metadata)
+                p2 = l10n.translate_struct(deepcopy(p.metadata),
+                                           request.locale)
 
                 p2['jobControlOptions'] = ['sync-execute']
                 if self.manager.is_async:
                     p2['jobControlOptions'].append('async-execute')
 
                 p2['outputTransmission'] = ['value']
-                p2['links'] = l10n.translate(p2.get('links', []),
-                                             request.locale)
+                p2['links'] = p2.get('links', [])
 
                 jobs_url = '{}/processes/{}/jobs'.format(
                     self.config['server']['url'], key)
 
                 # TODO translation support
                 link = {
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'rel': 'collection',
-                    'href': '{}?f=html'.format(jobs_url),
+                    'href': '{}?f={}'.format(jobs_url, F_HTML),
                     'title': 'jobs for this process as HTML',
                     'hreflang': self.default_locale
                 }
                 p2['links'].append(link)
 
                 link = {
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'rel': 'collection',
-                    'href': '{}?f=json'.format(jobs_url),
+                    'href': '{}?f={}'.format(jobs_url, F_JSON),
                     'title': 'jobs for this process as JSON',
                     'hreflang': self.default_locale
                 }
@@ -2079,7 +2137,7 @@ class API:
                 'processes': processes
             }
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             if process is not None:
                 response = render_j2_template(self.config,
                                               'processes/process.html',
@@ -2107,7 +2165,7 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         processes = filter_dict_by_key_value(
             self.config['resources'], 'type', 'process')
@@ -2142,26 +2200,28 @@ class API:
                 'job_end_datetime': job_['job_end_datetime']
             }
 
-            if JobStatus[job_['status']] in [
-               JobStatus.successful, JobStatus.running, JobStatus.accepted]:
+            # TODO: translate
+            if JobStatus[job_['status']] in (
+               JobStatus.successful, JobStatus.running, JobStatus.accepted):
 
                 job_result_url = '{}/processes/{}/jobs/{}/results'.format(
                     self.config['server']['url'],
                     process_id, job_['identifier'])
 
                 job2['links'] = [{
-                    'href': '{}?f=html'.format(job_result_url),
+                    'href': '{}?f={}'.format(job_result_url, F_HTML),
                     'rel': 'about',
-                    'type': 'text/html',
+                    'type': FORMAT_TYPES[F_HTML],
                     'title': 'results of job {} as HTML'.format(job_id)
                 }, {
-                    'href': '{}?f=json'.format(job_result_url),
+                    'href': '{}?f={}'.format(job_result_url, F_JSON),
                     'rel': 'about',
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'title': 'results of job {} as JSON'.format(job_id)
                 }]
 
-                if job_['mimetype'] not in ['application/json', 'text/html']:
+                if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
+                                            FORMAT_TYPES[F_HTML]):
                     job2['links'].append({
                         'href': job_result_url,
                         'rel': 'about',
@@ -2178,18 +2238,18 @@ class API:
             serialized_jobs = serialized_jobs[0]
             j2_template = 'processes/jobs/job.html'
 
-        if request.format == 'html':
+        if request.format == F_HTML:
             data = {
                 'process': {
                     'id': process_id,
                     'title': l10n.translate(p.metadata['title'],
-                                            request.locale)
+                                            SYSTEM_LOCALE)
                 },
                 'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
             response = render_j2_template(self.config, j2_template, data,
-                                          request.locale)
+                                          SYSTEM_LOCALE)
             return headers, 200, response
 
         return headers, 200, to_json(serialized_jobs, self.pretty_print)
@@ -2207,7 +2267,9 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+
+        # Responses are always in US English only
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         processes_config = filter_dict_by_key_value(
             self.config['resources'], 'type', 'process'
@@ -2251,15 +2313,15 @@ class API:
 
         try:
             data_dict = {}
-            for input in data.get('inputs', []):
-                id = input['id']
-                value = input['value']
-                if id not in data_dict:
-                    data_dict[id] = value
-                elif id in data_dict and isinstance(data_dict[id], list):
-                    data_dict[id].append(value)
+            for input_ in data.get('inputs', []):
+                id_ = input_['id']
+                value = input_['value']
+                if id_ not in data_dict:
+                    data_dict[id_] = value
+                elif id_ in data_dict and isinstance(data_dict[id_], list):
+                    data_dict[id_].append(value)
                 else:
-                    data_dict[id] = [data_dict[id], value]
+                    data_dict[id_] = [data_dict[id_], value]
         except KeyError:
             # Return 4XX client error for missing 'id' or 'value' in an input
             msg = 'invalid request data'
@@ -2274,9 +2336,7 @@ class API:
 
         headers['Location'] = url
 
-        outputs = status = None
         is_async = data.get('mode', 'auto') == 'async'
-
         if is_async:
             LOGGER.debug('Asynchronous request mode detected')
 
@@ -2296,7 +2356,7 @@ class API:
 
         if data.get('response', 'document') == 'raw':
             headers['Content-Type'] = mime_type
-            if 'json' in mime_type:
+            if F_JSON in mime_type:
                 response = to_json(outputs)
             else:
                 response = outputs
@@ -2325,7 +2385,7 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(SYSTEM_LOCALE)
 
         processes_config = filter_dict_by_key_value(self.config['resources'],
                                                     'type', 'process')
@@ -2370,24 +2430,27 @@ class API:
 
         mimetype, job_output = self.manager.get_job_result(process_id, job_id)
 
-        if mimetype not in [None, 'application/json']:
+        if mimetype not in (None, FORMAT_TYPES[F_JSON]):
             headers['Content-Type'] = mimetype
             content = job_output
         else:
-            if request.format == 'json':
+            if request.format == F_JSON:
                 content = json.dumps(job_output, sort_keys=True, indent=4,
                                      default=json_serial)
             else:
+                # HTML
                 data = {
                     'process': {
-                        'id': process_id, 'title': process.metadata['title']
+                        'id': process_id,
+                        'title': l10n.translate(process.metadata['title'],
+                                                SYSTEM_LOCALE)
                     },
                     'job': {'id': job_id},
                     'result': job_output
                 }
                 content = render_j2_template(self.config,
                                              'processes/jobs/results/index.html',  # noqa
-                                             data, request.locale)
+                                             data, SYSTEM_LOCALE)
 
         return headers, 200, content
 
@@ -2420,12 +2483,13 @@ class API:
                 'links': [{
                     'href': jobs_url,
                     'rel': 'up',
-                    'type': 'application/json',
+                    'type': FORMAT_TYPES[F_JSON],
                     'title': 'The job list for the current process'
                 }]
             }
 
         LOGGER.info(response)
+        # TODO: this response does not have any headers
         return {}, http_status, response
 
     @pre_process
@@ -2442,7 +2506,7 @@ class API:
 
         if not request.is_valid(PLUGINS['formatter'].keys()):
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(self.default_locale)
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -2541,10 +2605,10 @@ class API:
             return self.get_exception(
                 500, headers, request.format, 'NoApplicableCode', msg)
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             content = render_j2_template(self.config,
                                          'collections/edr/query.html', data,
-                                         request.locale)
+                                         self.default_locale)
         else:
             content = to_json(data, self.pretty_print)
 
@@ -2581,16 +2645,16 @@ class API:
         for key, value in stac_collections.items():
             content['links'].append({
                 'rel': 'child',
-                'href': '{}/{}?f=json'.format(stac_url, key),
-                'type': 'application/json'
+                'href': '{}/{}?f={}'.format(stac_url, key, F_JSON),
+                'type': FORMAT_TYPES[F_JSON]
             })
             content['links'].append({
                 'rel': 'child',
                 'href': '{}/{}'.format(stac_url, key),
-                'type': 'text/html'
+                'type': FORMAT_TYPES[F_HTML]
             })
 
-        if request.format == 'html':  # render
+        if request.format == F_HTML:  # render
             content = render_j2_template(self.config, 'stac/collection.html',
                                          content, request.locale)
             return headers, 200, content
@@ -2631,13 +2695,13 @@ class API:
 
         id_ = '{}-stac'.format(dataset)
         stac_version = '1.0.0-rc.2'
-        description = stac_collections[dataset]['description']
 
         content = {
             'id': id_,
             'type': 'Catalog',
             'stac_version': stac_version,
-            'description': l10n.translate(description, request.locale),
+            'description': l10n.translate(
+                stac_collections[dataset]['description'], request.locale),
             'links': []
         }
         try:
@@ -2659,11 +2723,9 @@ class API:
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
-            content['links'].extend(
-                l10n.translate(stac_collections[dataset]['links'],
-                               request.locale))
+            content['links'].extend(stac_collections[dataset]['links'])
 
-            if request.format == 'html':  # render
+            if request.format == F_HTML:  # render
                 content['path'] = path
                 if 'assets' in content:  # item view
                     content = render_j2_template(self.config,
@@ -2701,10 +2763,10 @@ class API:
             'description': description
         }
 
-        if format_ == 'html':
-            headers['Content-Type'] = 'text/html'
+        if format_ == F_HTML:
+            headers['Content-Type'] = FORMAT_TYPES[F_HTML]
             content = render_j2_template(
-                self.config, 'exception.html', exception, self.default_locale)
+                self.config, 'exception.html', exception, SYSTEM_LOCALE)
         else:
             content = to_json(exception, self.pretty_print)
 
@@ -2717,10 +2779,11 @@ class API:
 
         :returns:       tuple of (headers, status, message)
         """
-        headers = request.get_response_headers()
+        # Content-Language is in the system locale (ignore language settings)
+        headers = request.get_response_headers(SYSTEM_LOCALE)
         msg = f'Invalid format: {request.format}'
         return self.get_exception(
-            400, headers, 'json', 'InvalidParameterValue', msg)
+            400, headers, F_JSON, 'InvalidParameterValue', msg)
 
 
 def validate_bbox(value=None):
@@ -2778,7 +2841,7 @@ def validate_datetime(resource_def, datetime_=None):
 
     datetime_invalid = False
 
-    if (datetime_ is not None and 'temporal' in resource_def):
+    if datetime_ is not None and 'temporal' in resource_def:
 
         dateparse_begin = partial(dateparse, default=datetime.min)
         dateparse_end = partial(dateparse, default=datetime.max)

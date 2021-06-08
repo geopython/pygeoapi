@@ -197,15 +197,18 @@ def test_getpluginlocale():
     assert l10n.get_plugin_locale({'languages': []}, 'nl') is None
     assert l10n.get_plugin_locale({'languages': ['en']}, 'fr') == Locale('en')
     assert l10n.get_plugin_locale({'languages': ['en', 'de']}, 'de') == Locale('de')  # noqa
+    assert l10n.get_plugin_locale({'languages': ['en', 'de']}, None) == Locale('en')  # noqa
 
 
 def test_setresponselanguage():
-    # the following should not raise (just do nothing)
+    # the following should not raise (only logs warning)
     l10n.set_response_language(None, None)  # noqa
 
     headers = {}
-    l10n.set_response_language(headers, None)  # noqa
-    assert headers == {}
+    with pytest.raises(l10n.LocaleError):
+        l10n.set_response_language(headers, None)  # noqa
+        l10n.set_response_language(headers, None, None)  # noqa
+        l10n.set_response_language(headers, None, 'rubbish')  # noqa
 
     l10n.set_response_language(headers, Locale('en'))
     assert headers['Content-Language'] == 'en'
@@ -213,11 +216,11 @@ def test_setresponselanguage():
     l10n.set_response_language(headers, Locale('de'))
     assert headers['Content-Language'] == 'de'
 
-    l10n.set_response_language(headers, None)
-    assert headers['Content-Language'] == 'de'
+    l10n.set_response_language(headers, Locale('de'), Locale('en', 'US'))
+    assert headers['Content-Language'] == 'de, en-US'
 
-    l10n.set_response_language(headers, None, True)
-    assert 'Content-Language' not in headers
+    l10n.set_response_language(headers, Locale('en'), Locale('en'))
+    assert headers['Content-Language'] == 'en'
 
 
 def get_test_file_path(filename):

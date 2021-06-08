@@ -38,7 +38,8 @@ from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from werkzeug.datastructures import ImmutableMultiDict
 from pygeoapi.api import (
-    API, APIRequest, FORMATS, validate_bbox, validate_datetime
+    API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
+    F_HTML, F_JSON, F_JSONLD
 )
 from pygeoapi.util import yaml_load
 
@@ -94,7 +95,7 @@ def test_apirequest(api_):
         APIRequest(req, ['zz'])
 
     # Test all supported formats from query args
-    for f, mt in FORMATS.items():
+    for f, mt in FORMAT_TYPES.items():
         req = make_request(ROUTE_OBS, {'f': f})
         apireq = APIRequest(req, api_.locales)
         assert apireq.is_valid()
@@ -102,7 +103,7 @@ def test_apirequest(api_):
         assert apireq.get_response_headers()['Content-Type'] == mt
 
     # Test all supported formats from Accept header
-    for f, mt in FORMATS.items():
+    for f, mt in FORMAT_TYPES.items():
         req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=mt)
         apireq = APIRequest(req, api_.locales)
         assert apireq.is_valid()
@@ -115,29 +116,37 @@ def test_apirequest(api_):
     assert not apireq.is_valid()
     assert apireq.format == 'foo'
     assert apireq.is_valid(('foo',))
-    assert apireq.get_response_headers()['Content-Type'] == FORMATS['json']
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_JSON]
 
     # Test without format
     req = make_request(ROUTE_OBS, {})
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
     assert apireq.format is None
-    assert apireq.get_response_headers()['Content-Type'] == FORMATS['json']
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_JSON]
+    assert apireq.get_linkrel(F_JSON) == 'self'
+    assert apireq.get_linkrel(F_HTML) == 'alternate'
 
     # Test complex format string
     hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
     req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=hh)
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
-    assert apireq.format == 'html'
-    assert apireq.get_response_headers()['Content-Type'] == FORMATS['html']
+    assert apireq.format == F_HTML
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_HTML]
+    assert apireq.get_linkrel(F_HTML) == 'self'
+    assert apireq.get_linkrel(F_JSON) == 'alternate'
 
     # Overrule HTTP content negotiation
     req = make_request(ROUTE_OBS, {'f': 'html'}, HTTP_ACCEPT='application/json')  # noqa
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
-    assert apireq.format == 'html'
-    assert apireq.get_response_headers()['Content-Type'] == FORMATS['html']
+    assert apireq.format == F_HTML
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_HTML]
 
     # Test data
     for d in (None, '', 'test', {'key': 'value'}):
@@ -152,7 +161,7 @@ def test_apirequest(api_):
 
     # Test multilingual
     test_lang = {
-        'nl': ('en', 'en-US'),
+        'nl': ('en', 'en-US'),  # unsupported lang should return default
         'en-US': ('en', 'en-US'),
         'de_CH': ('en', 'en-US'),
         'fr-CH, fr;q=0.9, en;q=0.8': ('fr', 'fr-CA'),
@@ -189,12 +198,22 @@ def test_apirequest(api_):
     assert apireq.locale.territory == 'US'
     assert apireq.get_response_headers()['Content-Language'] == 'en-US'
 
-    # Test without user language setting (should use default)
+    # Test without Accept-Language header or 'lang' query parameter
+    # (should return default language from YAML config)
     req = make_request(ROUTE_OBS, {})
     apireq = APIRequest(req, api_.locales)
-    assert apireq.raw_locale == 'en-US'
+    assert apireq.raw_locale is None
     assert apireq.locale.language == api_.default_locale.language
     assert apireq.get_response_headers()['Content-Language'] == 'en-US'
+
+    # Test without Accept-Language header or 'lang' query param
+    # (should return first in custom list of languages)
+    sup_lang = ('de', 'fr', 'en')
+    req = make_request(ROUTE_LAKES, {})
+    apireq = APIRequest(req, sup_lang)
+    assert apireq.raw_locale is None
+    assert apireq.locale.language == 'de'
+    assert apireq.get_response_headers()['Content-Language'] == 'de'
 
 
 def test_api(config, api_, openapi):
@@ -204,22 +223,33 @@ def test_api(config, api_, openapi):
     req = make_request(ROUTE_OBS, {}, HTTP_CONTENT_TYPE='application/json')
     rsp_headers, code, response = api_.openapi(req, openapi)
     assert rsp_headers['Content-Type'] == 'application/vnd.oai.openapi+json;version=3.0'  # noqa
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
     root = json.loads(response)
     assert isinstance(root, dict)
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=a)
     rsp_headers, code, response = api_.openapi(req, openapi)
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
+           FORMAT_TYPES[F_HTML]
 
     req = make_request(ROUTE_LAKES, {'f': 'foo'})
     rsp_headers, code, response = api_.openapi(req, openapi)
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
 
 
 def test_api_exception(config, api_):
     req = make_request(ROUTE_OBS, {'f': 'foo'})
     rsp_headers, code, response = api_.landing_page(req)
+    assert rsp_headers['Content-Language'] == 'en-US'
+    assert code == 400
+
+    # When a language is set, the exception should still be English
+    req = make_request(ROUTE_OBS, {'f': 'foo', 'lang': 'fr'})
+    rsp_headers, code, response = api_.landing_page(req)
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
 
 
@@ -228,13 +258,15 @@ def test_root(config, api_):
     rsp_headers, code, response = api_.landing_page(req)
     root = json.loads(response)
 
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == 'application/json' == \
+           FORMAT_TYPES[F_JSON]
     assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     assert isinstance(root, dict)
     assert 'links' in root
     assert root['links'][0]['rel'] == 'self'
-    assert root['links'][0]['type'] == 'application/json'
+    assert root['links'][0]['type'] == FORMAT_TYPES[F_JSON]
     assert root['links'][0]['href'].endswith('?f=json')
     assert any(link['href'].endswith('f=jsonld') and link['rel'] == 'alternate'
                for link in root['links'])
@@ -248,7 +280,8 @@ def test_root(config, api_):
 
     req = make_request(ROUTE_OBS, {'f': 'html'})
     rsp_headers, code, response = api_.landing_page(req)
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_root_structured_data(config, api_):
@@ -256,7 +289,9 @@ def test_root_structured_data(config, api_):
     rsp_headers, code, response = api_.landing_page(req)
     root = json.loads(response)
 
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    assert rsp_headers['Content-Type'] == 'application/ld+json' == \
+           FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
 
     assert isinstance(root, dict)
@@ -295,7 +330,9 @@ def test_conformance(config, api_):
 
     req = make_request(ROUTE_OBS, {'f': 'html'})
     rsp_headers, code, response = api_.conformance(req)
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_describe_collections(config, api_):
@@ -305,7 +342,7 @@ def test_describe_collections(config, api_):
 
     req = make_request(ROUTE_OBS, {"f": "html"})
     rsp_headers, code, response = api_.describe_collections(req)
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
     req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.describe_collections(req)
@@ -324,6 +361,7 @@ def test_describe_collections(config, api_):
     rsp_headers, code, response = api_.describe_collections(req, 'obs')
     collection = json.loads(response)
 
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
@@ -341,9 +379,20 @@ def test_describe_collections(config, api_):
         }
     }
 
-    req = make_request(ROUTE_OBS, {'f': 'html'})
+    # French language request
+    req = make_request(ROUTE_OBS, {'lang': 'fr'})
     rsp_headers, code, response = api_.describe_collections(req, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
+    collection = json.loads(response)
+
+    assert rsp_headers['Content-Language'] == 'fr-CA'
+    assert collection['title'] == 'Observations'
+    assert collection['description'] == 'Mes belles observations'
+
+    # Check HTML request in an unsupported language
+    req = make_request(ROUTE_OBS, {'f': 'html', 'lang': 'de'})
+    rsp_headers, code, response = api_.describe_collections(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.describe_collections(req,
@@ -362,7 +411,7 @@ def test_get_collection_queryables(config, api_):
 
     req = make_request(ROUTE_OBS, {'f': 'html'})
     rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
     req = make_request(ROUTE_OBS, {'f': 'json'})
     rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
@@ -380,6 +429,8 @@ def test_get_collection_queryables(config, api_):
 
     assert 'properties' in queryables
     assert len(queryables['properties']) == 1
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_describe_collections_json_ld(config, api_):
@@ -413,6 +464,9 @@ def test_describe_collections_json_ld(config, api_):
     assert dataset['http://schema.org/temporalCoverage'][0][
         '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
 
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
 
 def test_get_collection_items(config, api_):
     req = make_request(ROUTE_OBS, {})
@@ -437,13 +491,16 @@ def test_get_collection_items(config, api_):
 
     assert code == 400
 
-    req = make_request(ROUTE_OBS, {'f': 'html'})
+    req = make_request(ROUTE_OBS, {'f': 'html', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
 
     req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     assert len(features['features']) == 5
 
@@ -634,7 +691,9 @@ def test_get_collection_items_json_ld(config, api_):
         'limit': 2
     })
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
     collection = json.loads(response)
 
     assert '@context' in collection
@@ -689,7 +748,8 @@ def test_get_collection_item(config, api_):
     req = make_request(ROUTE_OBS, {'f': 'html'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
 
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
@@ -701,7 +761,8 @@ def test_get_collection_item(config, api_):
 def test_get_collection_item_json_ld(config, api_):
     req = make_request(ROUTE_OBS, {'f': 'jsonld'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
     assert '@context' in feature
     assert feature['@context'][
@@ -720,6 +781,11 @@ def test_get_collection_item_json_ld(config, api_):
             '@type'] == 'https://schema.org/Text'
     assert expanded['https://purl.org/geojson/vocab#properties'][0][
         'https://schema.org/identifier'][0]['@value'] == '35'
+
+    req = make_request(ROUTE_OBS, {'f': 'jsonld', 'lang': 'fr'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
 
 
 def test_get_coverage_domainset(config, api_):
@@ -842,12 +908,17 @@ def test_get_collection_coverage(config, api_):
 def test_get_collection_tiles(config, api_):
     req = make_request(ROUTE_LAKES, {})
     rsp_headers, code, response = api_.get_collection_tiles(req, 'obs')
-
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
-
     assert code == 200
+
+    # Language settings should be ignored (return system default)
+    req = make_request(ROUTE_LAKES, {'lang': 'fr'})
+    rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
+    assert rsp_headers['Content-Language'] == 'en-US'
+    content = json.loads(response)
+    assert content['description'] == 'lakes of the world, public domain'
 
 
 def test_describe_processes(config, api_):
@@ -869,7 +940,7 @@ def test_describe_processes(config, api_):
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     process = json.loads(response)
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert process['id'] == 'hello-world'
     assert process['version'] == '0.2.0'
     assert process['title'] == 'Hello World'
@@ -886,25 +957,47 @@ def test_describe_processes(config, api_):
     req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT='text/html')
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested in headers
     req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT='application/json')
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check HTML response when requested with query parameter
     req = make_request(ROUTE_OBS, {'f': 'html'})
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested with query parameter
     req = make_request(ROUTE_OBS, {'f': 'json'})
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+    # Check JSON response when requested with French language parameter
+    req = make_request(ROUTE_OBS, {'lang': 'fr'})
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
+    process = json.loads(response)
+    assert process['title'] == 'Bonjour le Monde'
+
+    # Check JSON response when language requested in headers
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT_LANGUAGE='fr')
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
 
     # Test for undefined process
     req = make_request(ROUTE_OBS, {})
@@ -912,7 +1005,7 @@ def test_describe_processes(config, api_):
     data = json.loads(response)
     assert code == 404
     assert data['code'] == 'NoSuchProcess'
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
 
 def test_execute_process(config, api_):
@@ -968,6 +1061,7 @@ def test_execute_process(config, api_):
     # Test posting empty payload to existing process
     req = make_request(ROUTE_OBS, {}, '')
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     data = json.loads(response)
     assert code == 400

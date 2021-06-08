@@ -360,34 +360,34 @@ def locale_from_params(params) -> str:
     return lang
 
 
-def set_response_language(headers: dict, locale_: Union[Locale, None], remove: bool = False):  # noqa
+def set_response_language(headers: dict, *locale_: Locale):
     """ Sets the Content-Language on the given HTTP response headers dict.
 
-    If `locale_` is None and `remove` is True, this will delete an existing
-    Content-Language header. If `remove` is False (default), an existing
-    Content-Language header will never be deleted. In that case, if `locale_`
-    is None, the Content-Language will remain unchanged (if set).
-
-    :param headers: A dict of HTTP response headers.
-    :param locale_: The Babel Locale to which to set the Content-Language.
-    :param remove:  If True and `locale_` is None, the Content-Language header
-                    will be removed.
+    :param headers:     A dict of HTTP response headers.
+    :param locale_:     The Babel Locale(s) to which to set the
+                        Content-Language header.
+                        Multiple locales can be set for this header.
+                        Note that duplicates will be removed.
+    :raises:            LocaleError if no valid Babel Locale was found.
     """
     if not hasattr(headers, '__setitem__'):
         LOGGER.warning(f"Cannot set headers on object '{headers}'")
         return
-    if not isinstance(locale_, Locale):
-        if locale_ is None and remove:
-            try:
-                del headers['Content-Language']
-            except KeyError:
-                return
-            LOGGER.debug('No locale: removed Content-Language header')
-            return
-        LOGGER.debug('Keeping existing Content-Language header (if set)')
-        return
 
-    loc_str = locale2str(locale_)
+    locales = []
+    for loc in locale_:
+        try:
+            loc_str = locale2str(loc)
+        except LocaleError:
+            if len(locale_) == 1:
+                raise
+        else:
+            if loc_str not in locales:
+                locales.append(loc_str)
+
+    if not locales:
+        raise LocaleError('no valid locales set')
+    loc_str = ', '.join(locales)
     LOGGER.debug(f'Setting Content-Language to {loc_str}')
     headers['Content-Language'] = loc_str
 
@@ -451,7 +451,7 @@ def get_locales(config: dict) -> list:
         raise LocaleError('Bad value in supported server language(s)')
 
 
-def get_plugin_locale(config: dict, requested_locale: str) -> Union[Locale, None]:  # noqa
+def get_plugin_locale(config: dict, requested_locale: Union[str, None]) -> Union[Locale, None]:  # noqa
     """ Returns the supported locale (best match) for a plugin
     based on the requested raw locale string.
     Returns None if the plugin does not support any locales.

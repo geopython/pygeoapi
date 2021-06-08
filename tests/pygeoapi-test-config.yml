@@ -98,8 +98,12 @@ metadata:
 resources:
     obs:
         type: collection
-        title: Observations
-        description: My cool observations
+        title:
+            en: Observations
+            fr: Observations
+        description:
+            en: My cool observations
+            fr: Mes belles observations
         keywords:
             - observations
             - monitoring
@@ -172,8 +176,12 @@ resources:
 
     lakes:
         type: collection
-        title: Large Lakes
-        description: lakes of the world, public domain
+        title:
+            en: Large Lakes
+            fr: Grands Lacs
+        description:
+            en: lakes of the world, public domain
+            fr: lacs du monde, domaine public
         keywords:
             - lakes
         links:
