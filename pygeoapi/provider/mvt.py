@@ -214,7 +214,7 @@ class MVTProvider(BaseTileProvider):
                     raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, tilejson=True):
+                     tileset=None, tilejson=True, **kwargs):
         """
         Gets tile metadata
 

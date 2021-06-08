@@ -43,11 +43,13 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 
 import dateutil.parser
+# from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -277,6 +279,8 @@ def json_serial(obj):
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
+    elif isinstance(obj, l10n.Locale):
+        return l10n.locale2str(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
@@ -298,13 +302,14 @@ def is_url(urlstring):
         return False
 
 
-def render_j2_template(config, template, data):
+def render_j2_template(config, template, data, locale_=None):
     """
     render Jinja2 template
 
     :param config: dict of configuration
     :param template: template (relative path)
     :param data: dict of data
+    :param locale_: the requested output Locale
 
     :returns: string of rendered template
     """
@@ -312,11 +317,13 @@ def render_j2_template(config, template, data):
     custom_templates = False
     try:
         templates_path = config['server']['templates']['path']
-        env = Environment(loader=FileSystemLoader(templates_path))
+        env = Environment(loader=FileSystemLoader(templates_path),
+                          extensions=['jinja2.ext.i18n'])
         custom_templates = True
         LOGGER.debug('using custom templates: {}'.format(templates_path))
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        env = Environment(loader=FileSystemLoader(TEMPLATES),
+                          extensions=['jinja2.ext.i18n'])
         LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
@@ -334,18 +341,21 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
+    # TODO: insert Babel Translation stuff here
     try:
         template = env.get_template(template)
     except TemplateNotFound as err:
         if custom_templates:
             LOGGER.debug(err)
             LOGGER.debug('Custom template not found; using default')
-            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            env = Environment(loader=FileSystemLoader(TEMPLATES),
+                              extensions=['jinja2.ext.i18n'])
             template = env.get_template(template)
         else:
             raise
 
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=l10n.translate_struct(config, locale_, True),
+                           data=data, version=__version__)
 
 
 def get_mimetype(filename):

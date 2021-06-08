@@ -36,10 +36,17 @@ from pyld import jsonld
 import pytest
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
-from pygeoapi.api import API, check_format, validate_bbox, validate_datetime
+from werkzeug.datastructures import ImmutableMultiDict
+from pygeoapi.api import (
+    API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
+    F_HTML, F_JSON, F_JSONLD
+)
 from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
+
+ROUTE_OBS = '/collections/obs/items'
+ROUTE_LAKES = '/collections/lakes/items'
 
 
 def get_test_file_path(filename):
@@ -51,20 +58,15 @@ def get_test_file_path(filename):
         return 'tests/{}'.format(filename)
 
 
-def make_req_headers(**kwargs):
-    environ = create_environ('/collections/obs/items',
-                             'http://localhost:5000/')
-    environ.update(kwargs)
+def make_request(route: str, params: dict, data=None, **headers):
+    if isinstance(data, dict):
+        environ = create_environ(route, 'http://localhost:5000/', json=data)
+    else:
+        environ = create_environ(route, 'http://localhost:5000/', data=data)
+    environ.update(headers)
     request = Request(environ)
-    return request.headers
-
-
-def make_lakes_req_headers(**kwargs):
-    environ = create_environ('/collections/lakes/items',
-                             'http://localhost:5000/')
-    environ.update(kwargs)
-    request = Request(environ)
-    return request.headers
+    request.args = ImmutableMultiDict(params.items())
+    return request
 
 
 @pytest.fixture()
@@ -84,47 +86,187 @@ def api_(config):
     return API(config)
 
 
+def test_apirequest(api_):
+    # Test without (valid) locales
+    with pytest.raises(ValueError):
+        req = make_request(ROUTE_OBS, {})
+        APIRequest(req, [])
+        APIRequest(req, None)
+        APIRequest(req, ['zz'])
+
+    # Test all supported formats from query args
+    for f, mt in FORMAT_TYPES.items():
+        req = make_request(ROUTE_OBS, {'f': f})
+        apireq = APIRequest(req, api_.locales)
+        assert apireq.is_valid()
+        assert apireq.format == f
+        assert apireq.get_response_headers()['Content-Type'] == mt
+
+    # Test all supported formats from Accept header
+    for f, mt in FORMAT_TYPES.items():
+        req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=mt)
+        apireq = APIRequest(req, api_.locales)
+        assert apireq.is_valid()
+        assert apireq.format == f
+        assert apireq.get_response_headers()['Content-Type'] == mt
+
+    # Test nonsense format
+    req = make_request(ROUTE_OBS, {'f': 'foo'})
+    apireq = APIRequest(req, api_.locales)
+    assert not apireq.is_valid()
+    assert apireq.format == 'foo'
+    assert apireq.is_valid(('foo',))
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_JSON]
+
+    # Test without format
+    req = make_request(ROUTE_OBS, {})
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format is None
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_JSON]
+    assert apireq.get_linkrel(F_JSON) == 'self'
+    assert apireq.get_linkrel(F_HTML) == 'alternate'
+
+    # Test complex format string
+    hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=hh)
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format == F_HTML
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_HTML]
+    assert apireq.get_linkrel(F_HTML) == 'self'
+    assert apireq.get_linkrel(F_JSON) == 'alternate'
+
+    # Overrule HTTP content negotiation
+    req = make_request(ROUTE_OBS, {'f': 'html'}, HTTP_ACCEPT='application/json')  # noqa
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format == F_HTML
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_HTML]
+
+    # Test data
+    for d in (None, '', 'test', {'key': 'value'}):
+        req = make_request(ROUTE_OBS, {}, d)
+        apireq = APIRequest.with_data(req, api_.locales)
+        if not d:
+            assert apireq.data == b''
+        elif isinstance(d, dict):
+            assert d == json.loads(apireq.data)
+        else:
+            assert apireq.data == d.encode()
+
+    # Test multilingual
+    test_lang = {
+        'nl': ('en', 'en-US'),  # unsupported lang should return default
+        'en-US': ('en', 'en-US'),
+        'de_CH': ('en', 'en-US'),
+        'fr-CH, fr;q=0.9, en;q=0.8': ('fr', 'fr-CA'),
+        'fr-CH, fr-BE;q=0.9': ('fr', 'fr-CA'),
+    }
+    sup_lang = ('en-US', 'fr_CA')
+    for lang_in, (lang_out, cl_out) in test_lang.items():
+        # Using l query parameter
+        req = make_request(ROUTE_OBS, {'lang': lang_in})
+        apireq = APIRequest(req, sup_lang)
+        assert apireq.raw_locale == lang_in
+        assert apireq.locale.language == lang_out
+        assert apireq.get_response_headers()['Content-Language'] == cl_out
+
+        # Using Accept-Language header
+        req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT_LANGUAGE=lang_in)
+        apireq = APIRequest(req, sup_lang)
+        assert apireq.raw_locale == lang_in
+        assert apireq.locale.language == lang_out
+        assert apireq.get_response_headers()['Content-Language'] == cl_out
+
+    # Test language override
+    req = make_request(ROUTE_OBS, {'lang': 'fr'}, HTTP_ACCEPT_LANGUAGE='en_US')
+    apireq = APIRequest(req, sup_lang)
+    assert apireq.raw_locale == 'fr'
+    assert apireq.locale.language == 'fr'
+    assert apireq.get_response_headers()['Content-Language'] == 'fr-CA'
+
+    # Test locale territory
+    req = make_request(ROUTE_OBS, {'lang': 'en-GB'})
+    apireq = APIRequest(req, sup_lang)
+    assert apireq.raw_locale == 'en-GB'
+    assert apireq.locale.language == 'en'
+    assert apireq.locale.territory == 'US'
+    assert apireq.get_response_headers()['Content-Language'] == 'en-US'
+
+    # Test without Accept-Language header or 'lang' query parameter
+    # (should return default language from YAML config)
+    req = make_request(ROUTE_OBS, {})
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.raw_locale is None
+    assert apireq.locale.language == api_.default_locale.language
+    assert apireq.get_response_headers()['Content-Language'] == 'en-US'
+
+    # Test without Accept-Language header or 'lang' query param
+    # (should return first in custom list of languages)
+    sup_lang = ('de', 'fr', 'en')
+    req = make_request(ROUTE_LAKES, {})
+    apireq = APIRequest(req, sup_lang)
+    assert apireq.raw_locale is None
+    assert apireq.locale.language == 'de'
+    assert apireq.get_response_headers()['Content-Language'] == 'de'
+
+
 def test_api(config, api_, openapi):
     assert api_.config == config
     assert isinstance(api_.config, dict)
 
-    req_headers = make_req_headers(HTTP_CONTENT_TYPE='application/json')
-    rsp_headers, code, response = api_.openapi(req_headers, {}, openapi)
-    assert rsp_headers['Content-Type'] ==\
-        'application/vnd.oai.openapi+json;version=3.0'
+    req = make_request(ROUTE_OBS, {}, HTTP_CONTENT_TYPE='application/json')
+    rsp_headers, code, response = api_.openapi(req, openapi)
+    assert rsp_headers['Content-Type'] == 'application/vnd.oai.openapi+json;version=3.0'  # noqa
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
     root = json.loads(response)
-
     assert isinstance(root, dict)
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    req_headers = make_req_headers(HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.openapi(req_headers, {}, openapi)
-    assert rsp_headers['Content-Type'] == 'text/html'
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT=a)
+    rsp_headers, code, response = api_.openapi(req, openapi)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
+           FORMAT_TYPES[F_HTML]
 
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.openapi(req_headers, {'f': 'foo'},
-                                               openapi)
+    req = make_request(ROUTE_LAKES, {'f': 'foo'})
+    rsp_headers, code, response = api_.openapi(req, openapi)
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
 
 
 def test_api_exception(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'foo'})
+    req = make_request(ROUTE_OBS, {'f': 'foo'})
+    rsp_headers, code, response = api_.landing_page(req)
+    assert rsp_headers['Content-Language'] == 'en-US'
+    assert code == 400
+
+    # When a language is set, the exception should still be English
+    req = make_request(ROUTE_OBS, {'f': 'foo', 'lang': 'fr'})
+    rsp_headers, code, response = api_.landing_page(req)
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
 
 
 def test_root(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.landing_page(req_headers, {})
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.landing_page(req)
     root = json.loads(response)
 
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == 'application/json' == \
+           FORMAT_TYPES[F_JSON]
     assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     assert isinstance(root, dict)
     assert 'links' in root
     assert root['links'][0]['rel'] == 'self'
-    assert root['links'][0]['type'] == 'application/json'
+    assert root['links'][0]['type'] == FORMAT_TYPES[F_JSON]
     assert root['links'][0]['href'].endswith('?f=json')
     assert any(link['href'].endswith('f=jsonld') and link['rel'] == 'alternate'
                for link in root['links'])
@@ -136,17 +278,20 @@ def test_root(config, api_):
     assert 'description' in root
     assert root['description'] == 'pygeoapi provides an API to geospatial data'
 
-    rsp_headers, code, response = api_.landing_page(req_headers, {'f': 'html'})
-    assert rsp_headers['Content-Type'] == 'text/html'
+    req = make_request(ROUTE_OBS, {'f': 'html'})
+    rsp_headers, code, response = api_.landing_page(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_root_structured_data(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.landing_page(
-        req_headers, {"f": "jsonld"})
+    req = make_request(ROUTE_OBS, {"f": "jsonld"})
+    rsp_headers, code, response = api_.landing_page(req)
     root = json.loads(response)
 
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    assert rsp_headers['Content-Type'] == 'application/ld+json' == \
+           FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert rsp_headers['X-Powered-By'].startswith('pygeoapi')
 
     assert isinstance(root, dict)
@@ -171,49 +316,52 @@ def test_root_structured_data(config, api_):
 
 
 def test_conformance(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.conformance(req_headers, {})
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.conformance(req)
     root = json.loads(response)
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
     assert len(root['conformsTo']) == 16
 
-    rsp_headers, code, response = api_.conformance(req_headers, {'f': 'foo'})
+    req = make_request(ROUTE_OBS, {'f': 'foo'})
+    rsp_headers, code, response = api_.conformance(req)
     assert code == 400
 
-    rsp_headers, code, response = api_.conformance(req_headers, {'f': 'html'})
-    assert rsp_headers['Content-Type'] == 'text/html'
+    req = make_request(ROUTE_OBS, {'f': 'html'})
+    rsp_headers, code, response = api_.conformance(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_describe_collections(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {'f': 'foo'})
+    req = make_request(ROUTE_OBS, {"f": "foo"})
+    rsp_headers, code, response = api_.describe_collections(req)
     assert code == 400
 
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {'f': 'html'})
-    assert rsp_headers['Content-Type'] == 'text/html'
+    req = make_request(ROUTE_OBS, {"f": "html"})
+    rsp_headers, code, response = api_.describe_collections(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
-    rsp_headers, code, response = api_.describe_collections(req_headers, {})
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req)
     collections = json.loads(response)
 
     assert len(collections) == 2
     assert len(collections['collections']) == 5
     assert len(collections['links']) == 3
 
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {}, 'foo')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req, 'foo')
     collection = json.loads(response)
-
     assert code == 400
 
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {}, 'obs')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req, 'obs')
     collection = json.loads(response)
 
+    assert rsp_headers['Content-Language'] == 'en-US'
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
@@ -231,12 +379,24 @@ def test_describe_collections(config, api_):
         }
     }
 
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {'f': 'html'}, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
+    # French language request
+    req = make_request(ROUTE_OBS, {'lang': 'fr'})
+    rsp_headers, code, response = api_.describe_collections(req, 'obs')
+    collection = json.loads(response)
 
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {}, 'gdps-temperature')
+    assert rsp_headers['Content-Language'] == 'fr-CA'
+    assert collection['title'] == 'Observations'
+    assert collection['description'] == 'Mes belles observations'
+
+    # Check HTML request in an unsupported language
+    req = make_request(ROUTE_OBS, {'f': 'html', 'lang': 'de'})
+    rsp_headers, code, response = api_.describe_collections(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req,
+                                                            'gdps-temperature')
     collection = json.loads(response)
 
     assert collection['id'] == 'gdps-temperature'
@@ -244,18 +404,17 @@ def test_describe_collections(config, api_):
 
 
 def test_get_collection_queryables(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_queryables(
-        req_headers, {}, 'notfound')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.get_collection_queryables(req,
+                                                                 'notfound')
     assert code == 400
 
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_queryables(
-        req_headers, {'f': 'html'}, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
+    req = make_request(ROUTE_OBS, {'f': 'html'})
+    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
-    rsp_headers, code, response = api_.get_collection_queryables(
-        req_headers, {'f': 'json'}, 'obs')
+    req = make_request(ROUTE_OBS, {'f': 'json'})
+    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
     queryables = json.loads(response)
 
     assert 'properties' in queryables
@@ -264,18 +423,19 @@ def test_get_collection_queryables(config, api_):
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
 
-    rsp_headers, code, response = api_.get_collection_queryables(
-        req_headers, {'f': 'json'}, 'obs')
+    req = make_request(ROUTE_OBS, {'f': 'json'})
+    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
     queryables = json.loads(response)
 
     assert 'properties' in queryables
     assert len(queryables['properties']) == 1
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_describe_collections_json_ld(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {'f': 'jsonld'}, 'obs')
+    req = make_request(ROUTE_OBS, {'f': 'jsonld'})
+    rsp_headers, code, response = api_.describe_collections(req, 'obs')
     collection = json.loads(response)
 
     assert '@context' in collection
@@ -304,57 +464,61 @@ def test_describe_collections_json_ld(config, api_):
     assert dataset['http://schema.org/temporalCoverage'][0][
         '@value'] == '2000-10-30T18:24:39+00:00/2007-10-30T08:57:29+00:00'
 
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
 
 def test_get_collection_items(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {}, 'foo')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.get_collection_items(req, 'foo')
+    features = json.loads(response)
+    assert code == 400
+
+    req = make_request(ROUTE_OBS, {'f': 'foo'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'f': 'foo'}, 'obs')
+    req = make_request(ROUTE_OBS, {'bbox': '1,2,3'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'bbox': '1,2,3'}, 'obs')
-    features = json.loads(response)
+    req = make_request(ROUTE_OBS, {'bbox': '1,2,3,4c'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'bbox': '1,2,3,4c'}, 'obs')
+    req = make_request(ROUTE_OBS, {'f': 'html', 'lang': 'fr'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
 
-    assert code == 400
-
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'f': 'html'}, 'obs')
-    assert rsp_headers['Content-Type'] == 'text/html'
-
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {}, 'obs')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     assert len(features['features']) == 5
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'resulttype': 'hits'}, 'obs')
+    req = make_request(ROUTE_OBS, {'resulttype': 'hits'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 0
 
     # Invalid limit
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'limit': 0}, 'obs')
+    req = make_request(ROUTE_OBS, {'limit': 0})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'limit': 2}, 'obs')
+    req = make_request(ROUTE_OBS, {'limit': 2})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 2
@@ -374,14 +538,14 @@ def test_get_collection_items(config, api_):
     assert links[4]['rel'] == 'collection'
 
     # Invalid startindex
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'startindex': -1}, 'obs')
+    req = make_request(ROUTE_OBS, {'startindex': -1})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'startindex': 2}, 'obs')
+    req = make_request(ROUTE_OBS, {'startindex': 2})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 3
@@ -400,12 +564,12 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {
-            'startindex': 1,
-            'limit': 1,
-            'bbox': '-180,90,180,90'
-        }, 'obs')
+    req = make_request(ROUTE_OBS, {
+        'startindex': 1,
+        'limit': 1,
+        'bbox': '-180,90,180,90'
+    })
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 1
@@ -430,108 +594,106 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[5]['href']
     assert links[5]['rel'] == 'collection'
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {
-            'sortby': 'bad-property',
-            'stn_id': '35'
-        }, 'obs')
+    req = make_request(ROUTE_OBS, {
+        'sortby': 'bad-property',
+        'stn_id': '35'
+    })
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'sortby': 'stn_id'}, 'obs')
+    req = make_request(ROUTE_OBS, {'sortby': 'stn_id'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'sortby': '+stn_id'}, 'obs')
+    req = make_request(ROUTE_OBS, {'sortby': '+stn_id'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'sortby': '-stn_id'}, 'obs')
+    req = make_request(ROUTE_OBS, {'sortby': '-stn_id'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'f': 'csv'}, 'obs')
+    req = make_request(ROUTE_OBS, {'f': 'csv'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2003'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '2003'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '1999'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '1999'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2010-04-22'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '2010-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2001-11-11/2003-12-18'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '2001-11-11/2003-12-18'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '../2003-12-18'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '../2003-12-18'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2001-11-11/..'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '2001-11-11/..'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '1999/2005-04-22'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '1999/2005-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '1999/2000-04-22'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '1999/2000-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
-
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
 
     api_.config['resources']['obs']['extents'].pop('temporal')
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2002/2014-04-22'}, 'obs')
+    req = make_request(ROUTE_OBS, {'datetime': '2002/2014-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'datetime': '2005-04-22'}, 'lakes')
+    req = make_request(ROUTE_OBS, {'datetime': '2005-04-22'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'lakes')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'skipGeometry': 'true'}, 'obs')
+    req = make_request(ROUTE_OBS, {'skipGeometry': 'true'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert json.loads(response)['features'][0]['geometry'] is None
 
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {'properties': 'foo,bar'}, 'obs')
+    req = make_request(ROUTE_OBS, {'properties': 'foo,bar'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 400
 
 
 def test_get_collection_items_json_ld(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_items(
-        req_headers, {
-            'f': 'jsonld',
-            'limit': 2
-        }, 'obs')
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    req = make_request(ROUTE_OBS, {
+        'f': 'jsonld',
+        'limit': 2
+    })
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
     collection = json.loads(response)
 
     assert '@context' in collection
@@ -562,44 +724,45 @@ def test_get_collection_items_json_ld(config, api_):
 
 
 def test_get_collection_item(config, api_):
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'f': 'foo'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+
+    assert code == 400
+
+    req = make_request(ROUTE_OBS, {'f': 'json'})
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'foo'}, 'obs', '371')
+        req, 'gdps-temperature', '371')
+
+    assert code == 400
+
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.get_collection_item(req, 'foo', '371')
 
     assert code == 400
 
     rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'json'}, 'gdps-temperature', '371')
-
-    assert code == 400
-
-    rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'foo', '371')
-
-    assert code == 400
-
-    rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'obs', 'notfound')
+        req, 'obs', 'notfound')
 
     assert code == 404
 
-    rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'html'}, 'obs', '371')
+    req = make_request(ROUTE_OBS, {'f': 'html'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
 
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
-    rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {}, 'obs', '371')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
     feature = json.loads(response)
 
     assert feature['properties']['stn_id'] == '35'
 
 
 def test_get_collection_item_json_ld(config, api_):
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.get_collection_item(
-        req_headers, {'f': 'jsonld'}, 'obs', '371')
-    assert rsp_headers['Content-Type'] == 'application/ld+json'
+    req = make_request(ROUTE_OBS, {'f': 'jsonld'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
     assert '@context' in feature
     assert feature['@context'][
@@ -619,16 +782,21 @@ def test_get_collection_item_json_ld(config, api_):
     assert expanded['https://purl.org/geojson/vocab#properties'][0][
         'https://schema.org/identifier'][0]['@value'] == '35'
 
+    req = make_request(ROUTE_OBS, {'f': 'jsonld', 'lang': 'fr'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
+
 
 def test_get_coverage_domainset(config, api_):
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
-        req_headers, {}, 'obs')
+        req, 'obs')
 
     assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
-        req_headers, {}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     domainset = json.loads(response)
 
@@ -640,14 +808,14 @@ def test_get_coverage_domainset(config, api_):
 
 
 def test_get_collection_coverage_rangetype(config, api_):
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
-        req_headers, {}, 'obs')
+        req, 'obs')
 
     assert code == 500
 
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
-        req_headers, {}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     rangetype = json.loads(response)
 
@@ -659,29 +827,33 @@ def test_get_collection_coverage_rangetype(config, api_):
 
 
 def test_get_collection_coverage(config, api_):
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {}, 'obs')
+        req, 'obs')
 
     assert code == 400
 
+    req = make_request(ROUTE_OBS, {'rangeSubset': '12'})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'rangeSubset': '12'}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 400
 
+    req = make_request(ROUTE_OBS, {'subset': 'bad_axis(10:20)'})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'bad_axis(10:20)'}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 400
 
+    req = make_request(ROUTE_OBS, {'f': 'blah'})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'f': 'blah'}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 400
 
+    req = make_request(ROUTE_OBS, {'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'Lat(5:10),Long(5:10)'}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 200
     content = json.loads(response)
@@ -692,8 +864,9 @@ def test_get_collection_coverage(config, api_):
     assert 'TMP' in content['ranges']
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
+    req = make_request(ROUTE_OBS, {'bbox': '-79,45,-75,49'})
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'bbox': '-79,45,-75,49'}, 'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 200
     content = json.loads(response)
@@ -703,67 +876,71 @@ def test_get_collection_coverage(config, api_):
     assert content['domain']['axes']['y']['start'] == 49.0
     assert content['domain']['axes']['y']['stop'] == 45.0
 
+    req = make_request(ROUTE_OBS, {
+        'subset': 'Lat(5:10),Long(5:10)',
+        'f': 'GRIB'
+    })
     rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'Lat(5:10),Long(5:10)', 'f': 'GRIB'},
-        'gdps-temperature')
+        req, 'gdps-temperature')
 
     assert code == 200
     assert isinstance(response, bytes)
 
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'}, 'cmip5')  # noqa
+    req = make_request(ROUTE_OBS, {
+        'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
+    })
+    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
 
     assert code == 200
     assert isinstance(json.loads(response), dict)
 
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'lat(1:2'}, 'cmip5')
+    req = make_request(ROUTE_OBS, {'subset': 'lat(1:2'})
+    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
 
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req_headers, {'subset': 'lat(1:2)'}, 'cmip5')
+    req = make_request(ROUTE_OBS, {'subset': 'lat(1:2)'})
+    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
 
     assert code == 204
 
 
 def test_get_collection_tiles(config, api_):
-    req_headers = make_lakes_req_headers()
-    rsp_headers, code, response = api_.get_collection_tiles(
-        req_headers, {}, 'obs')
-
+    req = make_request(ROUTE_LAKES, {})
+    rsp_headers, code, response = api_.get_collection_tiles(req, 'obs')
     assert code == 400
 
-    req_headers = make_lakes_req_headers()
-    rsp_headers, code, response = api_.get_collection_tiles(
-        req_headers, {}, 'lakes')
-
+    rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
     assert code == 200
+
+    # Language settings should be ignored (return system default)
+    req = make_request(ROUTE_LAKES, {'lang': 'fr'})
+    rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
+    assert rsp_headers['Content-Language'] == 'en-US'
+    content = json.loads(response)
+    assert content['description'] == 'lakes of the world, public domain'
 
 
 def test_describe_processes(config, api_):
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {})
 
     # Test for undefined process
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'foo')
+    rsp_headers, code, response = api_.describe_processes(req, 'foo')
     data = json.loads(response)
     assert code == 404
     assert data['code'] == 'NoSuchProcess'
 
     # Test for description of all processes
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {})
+    rsp_headers, code, response = api_.describe_processes(req)
     data = json.loads(response)
     assert code == 200
     assert len(data['processes']) == 1
 
-    # Test for particular, defined procss
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'hello-world')
+    # Test for particular, defined process
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     process = json.loads(response)
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert process['id'] == 'hello-world'
     assert process['version'] == '0.2.0'
     assert process['title'] == 'Hello World'
@@ -777,45 +954,61 @@ def test_describe_processes(config, api_):
     assert 'async-execute' in process['jobControlOptions']
 
     # Check HTML response when requested in headers
-    req_headers = make_req_headers(HTTP_ACCEPT='text/html')
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'hello-world')
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested in headers
-    req_headers = make_req_headers(HTTP_ACCEPT='application/json')
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'hello-world')
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check HTML response when requested with query parameter
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {'f': 'html'}, 'hello-world')
+    req = make_request(ROUTE_OBS, {'f': 'html'})
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'text/html'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: return default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested with query parameter
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {'f': 'json'}, 'hello-world')
+    req = make_request(ROUTE_OBS, {'f': 'json'})
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
     assert code == 200
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+    # Check JSON response when requested with French language parameter
+    req = make_request(ROUTE_OBS, {'lang': 'fr'})
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
+    process = json.loads(response)
+    assert process['title'] == 'Bonjour le Monde'
+
+    # Check JSON response when language requested in headers
+    req = make_request(ROUTE_OBS, {}, HTTP_ACCEPT_LANGUAGE='fr')
+    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    assert code == 200
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Language'] == 'fr-CA'
 
     # Test for undefined process
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_processes(
-        req_headers, {}, 'goodbye-world')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_processes(req, 'goodbye-world')
     data = json.loads(response)
     assert code == 404
     assert data['code'] == 'NoSuchProcess'
-    assert rsp_headers['Content-Type'] == 'application/json'
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
 
 def test_execute_process(config, api_):
-    req_headers = make_req_headers()
     req_body = {
         'inputs': [{
             'id': 'name',
@@ -866,24 +1059,24 @@ def test_execute_process(config, api_):
     cleanup_jobs = set()
 
     # Test posting empty payload to existing process
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, '', 'hello-world')
+    req = make_request(ROUTE_OBS, {}, '')
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    assert rsp_headers['Content-Language'] == 'en-US'
 
     data = json.loads(response)
     assert code == 400
     assert 'Location' not in rsp_headers
     assert data['code'] == 'MissingParameterValue'
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'foo')
+    req = make_request(ROUTE_OBS, {}, req_body)
+    rsp_headers, code, response = api_.execute_process(req, 'foo')
 
     data = json.loads(response)
     assert code == 404
     assert 'Location' not in rsp_headers
     assert data['code'] == 'NoSuchProcess'
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -895,8 +1088,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_2), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body_2)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -906,8 +1099,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_3), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body_3)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -917,8 +1110,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_4), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body_4)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -927,20 +1120,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_5), 'hello-world')
-    data = json.loads(response)
-    assert code == 200
-    assert 'Location' in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_6), 'hello-world')
-
+    req = make_request(ROUTE_OBS, {}, req_body_5)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
@@ -950,8 +1131,20 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_7), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body_6)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'Error updating job'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = make_request(ROUTE_OBS, {}, req_body_7)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 400
@@ -959,8 +1152,8 @@ def test_execute_process(config, api_):
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'invalid request data'
 
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_8), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body_8)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
     assert code == 400
@@ -968,18 +1161,15 @@ def test_execute_process(config, api_):
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'invalid request data'
 
-    # req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'goodbye-world')
+    req = make_request(ROUTE_OBS, {}, req_body)
+    rsp_headers, code, response = api_.execute_process(req, 'goodbye-world')
 
     response = json.loads(response)
     assert code == 404
     assert 'Location' not in rsp_headers
     assert response['code'] == 'NoSuchProcess'
 
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     response = json.loads(response)
     assert code == 200
@@ -987,16 +1177,13 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req_headers = make_req_headers()
-
     req_body['mode'] = 'async'
-    rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body), 'hello-world')
+    req = make_request(ROUTE_OBS, {}, req_body)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     assert 'Location' in rsp_headers
     response = json.loads(response)
     assert isinstance(response, dict)
-
     assert code == 201
 
     cleanup_jobs.add(tuple(['hello-world',
@@ -1010,72 +1197,12 @@ def test_execute_process(config, api_):
         assert code == 200
 
 
-def test_check_format():
-    args = {'f': 'html'}
-
-    req_headers = {}
-
-    assert check_format({}, req_headers) is None
-
-    assert check_format(args, req_headers) == 'html'
-
-    args['f'] = 'json'
-    assert check_format(args, req_headers) == 'json'
-
-    args['f'] = 'jsonld'
-    assert check_format(args, req_headers) == 'jsonld'
-
-    args['f'] = 'html'
-    assert check_format(args, req_headers) == 'html'
-
-    req_headers['Accept'] = 'text/html'
-    assert check_format({}, req_headers) == 'html'
-
-    req_headers['Accept'] = 'application/json'
-    assert check_format({}, req_headers) == 'json'
-
-    req_headers['Accept'] = 'application/ld+json'
-    assert check_format({}, req_headers) == 'jsonld'
-
-    req_headers['accept'] = 'text/html'
-    assert check_format({}, req_headers) == 'html'
-
-    hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
-
-    req_headers['Accept'] = hh
-    assert check_format({}, req_headers) == 'html'
-
-    req_headers['accept'] = hh
-    assert check_format({}, req_headers) == 'html'
-
-    req_headers = make_req_headers(HTTP_ACCEPT=hh)
-    assert check_format({}, req_headers) == 'html'
-
-    req_headers = make_req_headers(HTTP_ACCEPT='text/html')
-    assert check_format({}, req_headers) == 'html'
-
-    req_headers = make_req_headers(HTTP_ACCEPT='application/json')
-    assert check_format({}, req_headers) == 'json'
-
-    req_headers = make_req_headers(HTTP_ACCEPT='application/ld+json')
-    assert check_format({}, req_headers) == 'jsonld'
-
-    # Overrule HTTP content negotiation
-    args['f'] = 'html'
-    assert check_format(args, req_headers) == 'html'
-
-    req_headers = make_req_headers(HTTP_ACCEPT='text/html')
-    args['f'] = 'json'
-    assert check_format(args, req_headers) == 'json'
-
-
 def test_delete_process_job(api_):
     rsp_headers, code, response = api_.delete_process_job(
         'does-not-exist', 'does-not-exist')
 
     assert code == 404
 
-    req_headers = make_req_headers()
     req_body_sync = {
         'inputs': [{
             'id': 'name',
@@ -1091,8 +1218,9 @@ def test_delete_process_job(api_):
         }]
     }
 
+    req = make_request(ROUTE_OBS, {}, req_body_sync)
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_sync), 'hello-world')
+        req, 'hello-world')
 
     data = json.loads(response)
     assert code == 200
@@ -1109,8 +1237,9 @@ def test_delete_process_job(api_):
         'hello-world', job_id)
     assert code == 404
 
+    req = make_request(ROUTE_OBS, {}, req_body_async)
     rsp_headers, code, response = api_.execute_process(
-        req_headers, {}, json.dumps(req_body_async), 'hello-world')
+        req, 'hello-world')
 
     assert code == 201
     assert 'Location' in rsp_headers
@@ -1128,9 +1257,8 @@ def test_delete_process_job(api_):
 
 def test_get_collection_edr_query(config, api_):
     # edr resource
-    req_headers = make_req_headers()
-    rsp_headers, code, response = api_.describe_collections(
-        req_headers, {}, 'icoads-sst')
+    req = make_request(ROUTE_OBS, {})
+    rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
     parameter_names = list(collection['parameter-names'].keys())
     parameter_names.sort()
@@ -1138,37 +1266,34 @@ def test_get_collection_edr_query(config, api_):
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # no coords parameter
-    req_headers = make_req_headers()
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {}, 'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # bad query type
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'POINT(11 11)'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
-        query_type='corridor')
+        req, 'icoads-sst', None, 'corridor')
     assert code == 400
 
     # bad coords parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'gah'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'gah'}, 'icoads-sst', instance=None,
-        query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # bad parameter-name parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'parameter-name': 'bad'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'bad'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 400
 
     # all parameters
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {'coords': 'POINT(11 11)'})
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)'}, 'icoads-sst', instance=None,
-        query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     data = json.loads(response)
@@ -1189,10 +1314,11 @@ def test_get_collection_edr_query(config, api_):
     assert parameters == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # single parameter
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'parameter-name': 'SST'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'parameter-name': 'SST'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     data = json.loads(response)
@@ -1201,25 +1327,20 @@ def test_get_collection_edr_query(config, api_):
     assert list(data['parameters'].keys())[0] == 'SST'
 
     # some data
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'datetime': '2000-01-16'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-16'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 200
 
     # no data
-    req_headers = make_req_headers()
+    req = make_request(ROUTE_OBS, {
+        'coords': 'POINT(11 11)', 'datetime': '2000-01-17'
+    })
     rsp_headers, code, response = api_.get_collection_edr_query(
-        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-17'},
-        'icoads-sst', instance=None, query_type='position')
+        req, 'icoads-sst', None, 'position')
     assert code == 204
-
-    # no data
-#    req_headers = make_req_headers()
-#    rsp_headers, code, response = api_.get_collection_edr_query(
-#        req_headers, {'coords': 'POINT(11 11)', 'datetime': '2000-01-15'},
-#        'icoads-sst', instance=None, query_type='position')
-#    assert code == 204
 
 
 def test_validate_bbox():

@@ -70,7 +70,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
 
        def query(self,startindex=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
-                 select_properties=[], skip_geometry=False):
+                 select_properties=[], skip_geometry=False, **kwargs):
 
            # open data file (self.data) and process, return
            return {
@@ -97,6 +97,9 @@ as well as implement the ``get`` method accordingly.  As long as the plugin impl
 its base provider, all other functionality is left to the provider implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
+
+.. note::   You can add language support to your plugin using :ref:`these guides<language>`.
+
 
 Connecting to pygeoapi
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -166,7 +169,7 @@ The below template provides a minimal example (let's call the file ``mycoolraste
        def get_coverage_rangetype(self):
            # return a CIS JSON RangeType
 
-       def query(self, bands=[], subsets={}, format_='json'):
+       def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
            # query/extract coverage data
            if format_ == 'json':
