@@ -38,10 +38,18 @@ LOGGER = logging.getLogger(__name__)
 PROCESS_METADATA = {
     'version': '0.2.0',
     'id': 'hello-world',
-    'title': 'Hello World',
-    'description': 'An example process that takes a name as input, and echoes'
-                   'it back as output. Intended to demonstrate a simple'
-                   'process with a single literal input.',
+    'title': {
+        'en': 'Hello World',
+        'fr': 'Bonjour le Monde'
+    },
+    'description': {
+        'en': 'An example process that takes a name as input, and echoes '
+              'it back as output. Intended to demonstrate a simple '
+              'process with a single literal input.',
+        'fr': 'Un exemple de processus qui prend un nom en entrée et le '
+              'renvoie en sortie. Destiné à démontrer un processus '
+              'simple avec une seule entrée littérale.',
+    },
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',

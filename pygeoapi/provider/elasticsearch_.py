@@ -144,7 +144,7 @@ class ElasticsearchProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query Elasticsearch index
 
@@ -344,7 +344,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get ES document by id
 
