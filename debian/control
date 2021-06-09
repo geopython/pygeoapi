@@ -22,7 +22,7 @@ Depends: ${python3:Depends},
          python3-unicodecsv,
          python3-yaml,
          ${misc:Depends}
-Suggests: python3-elasticsearch, python3-fiona, python3-geojson, python3-pygeometa, python3-pyproj, python3-rasterio
+Suggests: python3-babel, python3-elasticsearch, python3-fiona, python3-geojson, python3-pygeometa, python3-pyproj, python3-rasterio
 Description: pygeoapi provides an API to geospatial data.
  .
  This package the pygeoapi module for Python 3.

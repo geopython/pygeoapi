@@ -97,14 +97,18 @@ if (OGC_SCHEMAS_LOCATION is not None and
 
 
 def get_response(result: tuple):
-    """ Creates a Flask Response object and updates matching headers.
-
-    :param result:  The result of the API call.
-                    This should be a tuple of (headers, status, content).
-    :returns:       A Response instance.
     """
+    Creates a Flask Response object and updates matching headers.
+
+    :param result: The result of the API call.
+                   This should be a tuple of (headers, status, content).
+
+    :returns: A Response instance.
+    """
+
     headers, status, content = result
     response = make_response(content, status)
+
     if headers:
         response.headers = headers
     return response
