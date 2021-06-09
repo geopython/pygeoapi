@@ -32,7 +32,7 @@ import logging
 
 import unicodecsv as csv
 
-from pygeoapi.formatter.base import BaseFormatter
+from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,17 +85,22 @@ class CSVFormatter(BaseFormatter):
 
         LOGGER.debug('CSV fields: {}'.format(fields))
 
-        output = io.BytesIO()
-        writer = csv.DictWriter(output, fields)
-        writer.writeheader()
+        try:
+            output = io.BytesIO()
+            writer = csv.DictWriter(output, fields)
+            writer.writeheader()
 
-        for feature in data['features']:
-            fp = feature['properties']
-            if is_point:
-                fp['x'] = feature['geometry']['coordinates'][0]
-                fp['y'] = feature['geometry']['coordinates'][1]
-            LOGGER.debug(fp)
-            writer.writerow(fp)
+            for feature in data['features']:
+                fp = feature['properties']
+                if is_point:
+                    fp['x'] = feature['geometry']['coordinates'][0]
+                    fp['y'] = feature['geometry']['coordinates'][1]
+                LOGGER.debug(fp)
+                writer.writerow(fp)
+        except ValueError as err:
+            LOGGER.error(err)
+            raise FormatterSerializationError('Error writing CSV output')
+
         return output.getvalue()
 
     def __repr__(self):
