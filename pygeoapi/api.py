@@ -189,8 +189,8 @@ class APIRequest:
           if not request.is_valid(['xml']):
              return self.get_format_exception(request)
 
-          force_type = 'application/xml' if request.format == 'xml' else None
-          headers = request.get_response_headers(force_type)
+          content_type = 'application/xml' if request.format == 'xml' else None
+          headers = request.get_response_headers(content_type)
 
           # generate response_body here
 
