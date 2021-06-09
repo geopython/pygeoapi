@@ -52,6 +52,7 @@ from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import __version__, l10n
+from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
@@ -1413,14 +1414,20 @@ class API:
             formatter = load_plugin('formatter',
                                     {'name': 'CSV', 'geom': True})
 
-            content = formatter.write(
-                data=content,
-                options={
-                    'provider_def': get_provider_by_type(
-                                        collections[dataset]['providers'],
-                                        'feature')
-                }
-            )
+            try:
+                content = formatter.write(
+                    data=content,
+                    options={
+                        'provider_def': get_provider_by_type(
+                                            collections[dataset]['providers'],
+                                            'feature')
+                    }
+                )
+            except FormatterSerializationError as err:
+                LOGGER.error(err)
+                msg = 'Error serializing output'
+                return self.get_exception(
+                    500, headers, request.format, 'NoApplicableCode', msg)
 
             headers['Content-Type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
