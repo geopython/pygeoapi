@@ -1,3 +1,4 @@
+Babel
 click<8
 Flask
 pyproj
@@ -8,4 +9,3 @@ rasterio
 shapely
 tinydb
 unicodecsv
-Babel

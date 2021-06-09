@@ -1,7 +1,7 @@
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
-#
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2020 Tom Kralidis
@@ -76,14 +76,18 @@ api_ = API(CONFIG)
 
 
 def get_response(result: tuple) -> Response:
-    """ Creates a Starlette Response object and updates matching headers.
-
-    :param result:  The result of the API call.
-                    This should be a tuple of (headers, status, content).
-    :returns:       A Response instance.
     """
+    Creates a Starlette Response object and updates matching headers.
+
+    :param result: The result of the API call.
+                   This should be a tuple of (headers, status, content).
+
+    :returns: A Response instance.
+    """
+
     headers, status, content = result
     response = Response(content=content, status_code=status)
+
     if headers is not None:
         response.headers.update(headers)
     return response
