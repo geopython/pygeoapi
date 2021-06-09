@@ -198,7 +198,7 @@ resources:
               options:
                   DATA_ENCODING: COMPLEX_PACKING
               format:
-                  name: GRIB2
+                  name: GRIB
                   mimetype: application/x-grib2
 
     test-data:
