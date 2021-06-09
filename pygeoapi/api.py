@@ -33,32 +33,29 @@
 Returns content from plugins and sets responses.
 """
 
+import asyncio
+from collections import OrderedDict
+from copy import deepcopy
 from datetime import datetime, timezone
 from functools import partial
 import json
 import logging
 import os
-import uuid
 import re
-import asyncio
+from typing import Any, Tuple, Union
 import urllib.parse
-from copy import deepcopy
-from typing import Union, Any
-from collections import OrderedDict
+import uuid
 
 from dateutil.parser import parse as dateparse
-from shapely.wkt import loads as shapely_loads
-from shapely.errors import WKTReadingError
 import pytz
+from shapely.errors import WKTReadingError
+from shapely.wkt import loads as shapely_loads
 
-from pygeoapi import __version__
-from pygeoapi import l10n
+from pygeoapi import __version__, l10n
 from pygeoapi.linked_data import (geojson2geojsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import (
-    ProcessorExecuteError
-)
+from pygeoapi.process.base import ProcessorExecuteError
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -68,6 +65,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
+
 from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
@@ -119,7 +117,8 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 
 def pre_process(func):
-    """ Decorator that transforms an incoming Request instance specific to the
+    """
+    Decorator that transforms an incoming Request instance specific to the
     web framework (i.e. Flask or Starlette) into a generic :class:`APIRequest`
     instance.
 
@@ -140,7 +139,8 @@ def pre_process(func):
 
 
 class APIRequest:
-    """ Transforms an incoming server-specific Request into an object
+    """
+    Transforms an incoming server-specific Request into an object
     with some generic helper methods and properties.
 
     .. note::   Typically, this instance is created automatically by the
@@ -229,7 +229,8 @@ class APIRequest:
 
     @classmethod
     def with_data(cls, request, supported_locales) -> 'APIRequest':
-        """ Factory class method to create an `APIRequest` instance with data.
+        """
+        Factory class method to create an `APIRequest` instance with data.
 
         If the request body is required, an `APIRequest` should always be
         instantiated using this class method. The reason for this is, that the
@@ -242,6 +243,7 @@ class APIRequest:
         :param supported_locales:   List or set of supported Locale instances.
         :returns:                   An `APIRequest` instance with data.
         """
+
         api_req = cls(request, supported_locales)
         if hasattr(request, 'data'):
             # Set data from Flask request
@@ -256,11 +258,13 @@ class APIRequest:
 
     @staticmethod
     def _get_params(request):
-        """ Extracts the query parameters from the `Request` object.
+        """
+        Extracts the query parameters from the `Request` object.
 
         :param request: A Flask or Starlette Request instance
-        :returns:       `ImmutableMultiDict` or empty `dict`
+        :returns: `ImmutableMultiDict` or empty `dict`
         """
+
         if hasattr(request, 'args'):
             # Return ImmutableMultiDict from Flask request
             return request.args
@@ -271,14 +275,16 @@ class APIRequest:
         return {}
 
     def _get_locale(self, headers, supported_locales):
-        """ Detects locale from "lang=<language>" param or `Accept-Language`
+        """
+        Detects locale from "lang=<language>" param or `Accept-Language`
         header. Returns a tuple of (raw, locale) if found in params or headers.
         Returns a tuple of (raw default, default locale) if not found.
 
-        :param headers:             A dict with Request headers
-        :param supported_locales:   List or set of supported Locale instances
-        :returns:                   A tuple of (str, Locale)
+        :param headers: A dict with Request headers
+        :param supported_locales: List or set of supported Locale instances
+        :returns: A tuple of (str, Locale)
         """
+
         raw = None
         try:
             default_locale = l10n.str2locale(supported_locales[0])
@@ -310,7 +316,7 @@ class APIRequest:
         Get `Request` format type from query parameters or headers.
 
         :param headers: Dict of Request headers
-        :returns:       format value or None if not found/specified
+        :returns: format value or None if not found/specified
         """
 
         # Optional f=html or f=json query param
@@ -333,22 +339,23 @@ class APIRequest:
 
     @property
     def data(self) -> bytes:
-        """ Returns the additional data send with the Request (bytes). """
+        """Returns the additional data send with the Request (bytes)"""
         return self._data
 
     @property
     def params(self):
-        """ Returns the Request query parameters dict. """
+        """Returns the Request query parameters dict"""
         return self._args
 
     @property
     def path_info(self):
-        """ Returns the web server request path info part. """
+        """Returns the web server request path info part"""
         return self._path_info
 
     @property
     def locale(self) -> l10n.Locale:
-        """ Returns the user-defined locale from the request object.
+        """
+        Returns the user-defined locale from the request object.
         If no locale has been defined or if it is invalid,
         the default server locale is returned.
 
@@ -360,34 +367,40 @@ class APIRequest:
                     to the :func:`l10n.get_plugin_locale` function, so that
                     the best match for the provider can be determined.
 
-        :returns:   babel.core.Locale
+        :returns: babel.core.Locale
         """
+
         return self._locale
 
     @property
     def raw_locale(self) -> Union[str, None]:
-        """ Returns the raw locale string from the `Request` object.
+        """
+        Returns the raw locale string from the `Request` object.
         If no "lang" query parameter or `Accept-Language` header was found,
         `None` is returned.
         Pass this value to the :func:`l10n.get_plugin_locale` function to let
         the provider determine a best match for the locale, which may be
         different from the locale used by pygeoapi's UI.
 
-        :returns:   a locale string or None
+        :returns: a locale string or None
         """
+
         return self._raw_locale
 
     @property
     def format(self) -> Union[str, None]:
-        """ Returns the content type format from the
+        """
+        Returns the content type format from the
         request query parameters or headers.
 
-        :returns:   Format name or None
+        :returns: Format name or None
         """
+
         return self._format
 
     def get_linkrel(self, format_: str) -> str:
-        """ Returns the hyperlink relationship (rel) attribute value for
+        """
+        Returns the hyperlink relationship (rel) attribute value for
         the given API format string.
 
         The string is compared against the request format and if it matches,
@@ -396,25 +409,28 @@ class APIRequest:
         the relationship 'self' is returned as well (JSON is the default).
 
         :param format_: The format to compare the request format against.
-        :returns:       A string 'self' or 'alternate'.
+        :returns: A string 'self' or 'alternate'.
         """
+
         fmt = format_.lower()
         if fmt == self._format or (fmt == F_JSON and not self._format):
             return 'self'
         return 'alternate'
 
     def is_valid(self, additional_formats=None) -> bool:
-        """ Returns True if:
-
+        """
+        Returns True if:
             - the format is not set (None)
             - the requested format is supported
             - the requested format exists in a list if additional formats
 
         .. note::   Format names are matched in a case-insensitive manner.
 
-        :param additional_formats:  Optional additional supported formats list
-        :returns:                   A boolean
+        :param additional_formats: Optional additional supported formats list
+
+        :returns: bool
         """
+
         if not self._format:
             return True
         if self._format in FORMAT_TYPES.keys():
@@ -425,7 +441,8 @@ class APIRequest:
 
     def get_response_headers(self, force_lang: l10n.Locale = None,
                              force_type: str = None) -> dict:
-        """ Prepares and returns a dictionary with Response object headers.
+        """
+        Prepares and returns a dictionary with Response object headers.
 
         This method always adds a 'Content-Language' header, where the value
         is determined by the 'lang' query parameter or 'Accept-Language'
@@ -444,10 +461,11 @@ class APIRequest:
                     If an API response always needs to be in the same
                     language, 'force_lang' should be set to that language.
 
-        :param force_lang:    An optional Content-Language header override.
-        :param force_type:    An optional Content-Type header override.
-        :returns:             A header dict
+        :param force_lang: An optional Content-Language header override.
+        :param force_type: An optional Content-Type header override.
+        :returns: A header dict
         """
+
         headers = HEADERS.copy()
         l10n.set_response_language(headers, force_lang or self._locale)
         if force_type:
@@ -505,9 +523,10 @@ class API:
 
     @pre_process
     @jsonldify
-    def landing_page(self, request: Union[APIRequest, Any]):
+    def landing_page(self,
+                     request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         """
-        Provide API
+        Provide API landing page
 
         :param request: A request object
 
@@ -594,7 +613,8 @@ class API:
         return headers, 200, to_json(fcm, self.pretty_print)
 
     @pre_process
-    def openapi(self, request: Union[APIRequest, Any], openapi):
+    def openapi(self, request: Union[APIRequest, Any],
+                openapi) -> Tuple[dict, int, str]:
         """
         Provide OpenAPI document
 
@@ -626,7 +646,8 @@ class API:
             return headers, 200, openapi.read()
 
     @pre_process
-    def conformance(self, request: Union[APIRequest, Any]):
+    def conformance(self,
+                    request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         """
         Provide conformance definition
 
@@ -652,7 +673,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_collections(self, request: Union[APIRequest, Any], dataset=None):  # noqa
+    def describe_collections(self, request: Union[APIRequest, Any],
+                             dataset=None) -> Tuple[dict, int, str]:
         """
         Provide collection metadata
 
@@ -996,7 +1018,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_queryables(self, request: Union[APIRequest, Any], dataset=None):  # noqa
+    def get_collection_queryables(self, request: Union[APIRequest, Any],
+                                  dataset=None) -> Tuple[dict, int, str]:
         """
         Provide collection queryables
 
@@ -1413,7 +1436,8 @@ class API:
         return headers, 200, to_json(content, self.pretty_print)
 
     @pre_process
-    def get_collection_item(self, request: Union[APIRequest, Any], dataset, identifier):  # noqa
+    def get_collection_item(self, request: Union[APIRequest, Any],
+                            dataset, identifier) -> Tuple[dict, int, str]:
         """
         Get a single collection item
 
@@ -1553,7 +1577,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_coverage(self, request: Union[APIRequest, Any], dataset):  # noqa
+    def get_collection_coverage(self, request: Union[APIRequest, Any],
+                                dataset) -> Tuple[dict, int, str]:
         """
         Returns a subset of a collection coverage
 
@@ -1692,7 +1717,9 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_coverage_domainset(self, request: Union[APIRequest, Any], dataset):  # noqa
+    def get_collection_coverage_domainset(
+            self, request: Union[APIRequest, Any],
+            dataset) -> Tuple[dict, int, str]:
         """
         Returns a collection coverage domainset
 
@@ -1743,7 +1770,9 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_coverage_rangetype(self, request: Union[APIRequest, Any], dataset):  # noqa
+    def get_collection_coverage_rangetype(
+            self, request: Union[APIRequest, Any],
+            dataset) -> Tuple[dict, int, str]:
         """
         Returns a collection coverage rangetype
 
@@ -1793,7 +1822,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_tiles(self, request: Union[APIRequest, Any], dataset=None):  # noqa
+    def get_collection_tiles(self, request: Union[APIRequest, Any],
+                             dataset=None) -> Tuple[dict, int, str]:
         """
         Provide collection tiles
 
@@ -1896,9 +1926,10 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_tiles_data(self, request: Union[APIRequest, Any],
-                                  dataset=None, matrix_id=None,
-                                  z_idx=None, y_idx=None, x_idx=None):
+    def get_collection_tiles_data(
+            self, request: Union[APIRequest, Any],
+            dataset=None, matrix_id=None,
+            z_idx=None, y_idx=None, x_idx=None) -> Tuple[dict, int, str]:
         """
         Get collection items tiles
 
@@ -1979,8 +2010,9 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_collection_tiles_metadata(self, request: Union[APIRequest, Any],
-                                      dataset=None, matrix_id=None):
+    def get_collection_tiles_metadata(
+            self, request: Union[APIRequest, Any],
+            dataset=None, matrix_id=None) -> Tuple[dict, int, str]:
         """
         Get collection items tiles
 
@@ -2060,7 +2092,8 @@ class API:
 
     @pre_process
     @jsonldify
-    def describe_processes(self, request: Union[APIRequest, Any], process=None):  # noqa
+    def describe_processes(self, request: Union[APIRequest, Any],
+                           process=None) -> Tuple[dict, int, str]:
         """
         Provide processes metadata
 
@@ -2152,7 +2185,8 @@ class API:
         return headers, 200, to_json(response, self.pretty_print)
 
     @pre_process
-    def get_process_jobs(self, request: Union[APIRequest, Any], process_id, job_id=None):  # noqa
+    def get_process_jobs(self, request: Union[APIRequest, Any],
+                         process_id, job_id=None) -> Tuple[dict, int, str]:
         """
         Get process jobs
 
@@ -2255,7 +2289,8 @@ class API:
         return headers, 200, to_json(serialized_jobs, self.pretty_print)
 
     @pre_process
-    def execute_process(self, request: Union[APIRequest, Any], process_id):
+    def execute_process(self, request: Union[APIRequest, Any],
+                        process_id) -> Tuple[dict, int, str]:
         """
         Execute process
 
@@ -2372,7 +2407,8 @@ class API:
         return headers, http_status, to_json(response, self.pretty_print)
 
     @pre_process
-    def get_process_job_result(self, request: Union[APIRequest, Any], process_id, job_id):  # noqa
+    def get_process_job_result(self, request: Union[APIRequest, Any],
+                               process_id, job_id) -> Tuple[dict, int, str]:
         """
         Get result of job (instance of a process)
 
@@ -2454,8 +2490,10 @@ class API:
 
         return headers, 200, content
 
-    def delete_process_job(self, process_id, job_id):
+    def delete_process_job(self, process_id, job_id) -> Tuple[dict, int, str]:
         """
+        Delete a process job
+
         :param process_id: process identifier
         :param job_id: job identifier
 
@@ -2493,14 +2531,17 @@ class API:
         return {}, http_status, response
 
     @pre_process
-    def get_collection_edr_query(self, request: Union[APIRequest, Any],
-                                 dataset, instance, query_type):
+    def get_collection_edr_query(
+            self, request: Union[APIRequest, Any],
+            dataset, instance, query_type) -> Tuple[dict, int, str]:
         """
         Queries collection EDR
+
         :param request: APIRequest instance with query params
         :param dataset: dataset name
         :param instance: instance name
         :param query_type: EDR query type
+
         :returns: tuple of headers, status code, content
         """
 
@@ -2616,7 +2657,15 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_stac_root(self, request: Union[APIRequest, Any]):
+    def get_stac_root(
+            self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+        """
+        Provide STAC root page
+
+        :param request: APIRequest instance with query params
+
+        :returns: tuple of headers, status code, content
+        """
 
         if not request.is_valid():
             return self.get_format_exception(request)
@@ -2663,7 +2712,15 @@ class API:
 
     @pre_process
     @jsonldify
-    def get_stac_path(self, request: Union[APIRequest, Any], path):
+    def get_stac_path(self, request: Union[APIRequest, Any],
+                      path) -> Tuple[dict, int, str]:
+        """
+        Provide STAC resource path
+
+        :param request: APIRequest instance with query params
+
+        :returns: tuple of headers, status code, content
+        """
 
         if not request.is_valid():
             return self.get_format_exception(request)
@@ -2744,7 +2801,8 @@ class API:
             headers.pop('Content-Type', None)
             return headers, 200, stac_data
 
-    def get_exception(self, status, headers, format_, code, description):
+    def get_exception(self, status, headers, format_, code,
+                      description) -> Tuple[dict, int, str]:
         """
         Exception handler
 
@@ -2772,13 +2830,15 @@ class API:
 
         return headers, status, content
 
-    def get_format_exception(self, request):
-        """ Returns a format exception.
+    def get_format_exception(self, request) -> Tuple[dict, int, str]:
+        """
+        Returns a format exception.
 
         :param request: An APIRequest instance.
 
-        :returns:       tuple of (headers, status, message)
+        :returns: tuple of (headers, status, message)
         """
+
         # Content-Language is in the system locale (ignore language settings)
         headers = request.get_response_headers(SYSTEM_LOCALE)
         msg = f'Invalid format: {request.format}'
@@ -2786,7 +2846,7 @@ class API:
             400, headers, F_JSON, 'InvalidParameterValue', msg)
 
 
-def validate_bbox(value=None):
+def validate_bbox(value=None) -> list:
     """
     Helper function to validate bbox parameter
 
@@ -2822,7 +2882,7 @@ def validate_bbox(value=None):
     return bbox
 
 
-def validate_datetime(resource_def, datetime_=None):
+def validate_datetime(resource_def, datetime_=None) -> str:
     """
     Helper function to validate temporal parameter
 

@@ -54,17 +54,21 @@ class LocaleError(Exception):
 
 
 def str2locale(value, silent: bool = False) -> Union[Locale, None]:
-    """ Converts a web locale or language tag into a Babel Locale instance.
+    """
+    Converts a web locale or language tag into a Babel Locale instance.
 
     .. note::   If `value` already is a Locale, it is returned as-is.
 
-    :param value:   A string containing a (web) locale (e.g. 'fr-CH')
+    :param value: A string containing a (web) locale (e.g. 'fr-CH')
                     or language tag (e.g. 'de').
-    :param silent:  If True (default = False), no errors will be raised
-                    when parsing failed. Instead, `None` will be returned.
-    :returns:       babel.core.Locale or None
-    :raises:        LocaleError
+    :param silent: If True (default = False), no errors will be raised
+                   when parsing failed. Instead, `None` will be returned.
+
+    :returns: babel.core.Locale or None
+
+    :raises: LocaleError
     """
+
     if isinstance(value, Locale):
         return value
 
@@ -75,10 +79,12 @@ def str2locale(value, silent: bool = False) -> Union[Locale, None]:
 
     try:
         loc = Locale.parse(value.strip().replace('-', '_'))
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError) as err:
+        LOGGER.warning(err)
         if not silent:
             raise LocaleError(f"invalid locale '{value}'")
     except _UnknownLocaleError as err:
+        LOGGER.warning(err)
         if not silent:
             raise LocaleError(err)
     else:
@@ -89,20 +95,25 @@ def str2locale(value, silent: bool = False) -> Union[Locale, None]:
 
 
 def locale2str(value: Locale) -> str:
-    """ Converts a Babel Locale instance into a web locale string.
-
-    :param value:   babel.core.Locale
-    :returns:       A string containing a web locale (e.g. 'fr-CH')
-                    or language tag (e.g. 'de').
-    :raises:        LocaleError
     """
+    Converts a Babel Locale instance into a web locale string.
+
+    :param value: babel.core.Locale
+
+    :returns: A string containing a web locale (e.g. 'fr-CH')
+              or language tag (e.g. 'de').
+
+    :raises: LocaleError
+    """
+
     if not isinstance(value, Locale):
         raise LocaleError(f"'{value}' is not of type {Locale.__name__}")
     return str(value).replace('_', '-')
 
 
 def best_match(accept_languages, available_locales) -> Locale:
-    """ Takes an Accept-Languages string (from header or request query params)
+    """
+    Takes an Accept-Languages string (from header or request query params)
     and finds the best matching locale from a list of available locales.
 
     This function provides a framework-independent alternative to the
@@ -120,19 +131,21 @@ def best_match(accept_languages, available_locales) -> Locale:
                 or unknown locale is ignored. However, if no
                 `available_locales` are specified, a `LocaleError` is raised.
 
-    :param accept_languages:    A Locale or string with one or more languages.
-                                This can be as simple as "de" for example,
-                                but it's also possible to include a territory
-                                (e.g. "en-US" or "fr_BE") or even a complex
-                                string with quality values, e.g.
-                                "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5".
-    :param available_locales:   A list containing the available locales.
-                                For example, a pygeoapi provider might only
-                                support ["de", "en"].
-                                Locales in the list can be specified as strings
-                                (e.g. "nl-NL") or `Locale` instances.
-    :returns:                   babel.core.Locale
-    :raises:                    LocaleError
+    :param accept_languages: A Locale or string with one or more languages.
+                             This can be as simple as "de" for example,
+                             but it's also possible to include a territory
+                             (e.g. "en-US" or "fr_BE") or even a complex
+                             string with quality values, e.g.
+                             "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5".
+    :param available_locales: A list containing the available locales.
+                              For example, a pygeoapi provider might only
+                              support ["de", "en"].
+                              Locales in the list can be specified as strings
+                              (e.g. "nl-NL") or `Locale` instances.
+
+    :returns: babel.core.Locale
+
+    :raises: LocaleError
     """
 
     def get_match(locale_, available_locales_):
@@ -158,6 +171,7 @@ def best_match(accept_languages, available_locales) -> Locale:
     if isinstance(accept_languages, Locale):
         # If a Babel Locale was used as input, transform back into a string
         accept_languages = locale2str(accept_languages)
+
     if not isinstance(accept_languages, str):
         # If `accept_languages` is not a string, ignore it
         LOGGER.debug(f"ignoring invalid accept-languages '{accept_languages}'")
@@ -234,12 +248,15 @@ def translate(value, language: Union[Locale, str]):
 
     If `language` is not a string or Locale, a LocaleError is raised.
 
-    :param value:       A value to translate. Typically either a string or
-                        a language struct dictionary.
-    :param language:    A locale string (e.g. "en-US" or "en") or Babel Locale.
-    :returns:           A translated string or the original value.
-    :raises:            LocaleError
+    :param value: A value to translate. Typically either a string or
+                  a language struct dictionary.
+    :param language: A locale string (e.g. "en-US" or "en") or Babel Locale.
+
+    :returns: A translated string or the original value.
+
+    :raises: LocaleError
     """
+
     nested_dicts = isinstance(value, dict) and any(isinstance(v, dict)
                                                    for v in value.values())
     if not isinstance(value, dict) or nested_dicts:
@@ -274,16 +291,18 @@ def translate(value, language: Union[Locale, str]):
 
 
 def translate_struct(struct, locale_: Locale, is_config: bool = False):
-    """ Returns a copy of a given dict or list, where all language structs
+    """
+    Returns a copy of a given dict or list, where all language structs
     are filtered on the given locale, i.e. all language structs are replaced
     by translated values for the best matching locale.
 
-    :param struct:      A dict or list (of dicts) to filter/translate.
-    :param locale_:     The Babel Locale to filter on.
-    :param is_config:   If True, the struct is treated as a pygeoapi config.
-                        This means that the first 2 levels won't be translated
-                        and the translated struct is cached for speed.
-    :returns:           A translated dict or list
+    :param struct: A dict or list (of dicts) to filter/translate.
+    :param locale_: The Babel Locale to filter on.
+    :param is_config: If True, the struct is treated as a pygeoapi config.
+                      This means that the first 2 levels won't be translated
+                      and the translated struct is cached for speed.
+
+    :returns: A translated dict or list
     """
 
     def _translate_dict(obj, level: int = 0):
@@ -335,8 +354,9 @@ def locale_from_headers(headers) -> str:
 
     :param headers: Mapping of request headers.
 
-    :returns:       locale string or None
+    :returns: locale string or None
     """
+
     lang = {k.lower(): v for k, v in headers.items()}.get('accept-language')
     if lang:
         LOGGER.debug(f"Got locale '{lang}' from 'Accept-Language' header")
@@ -350,10 +370,11 @@ def locale_from_params(params) -> str:
     web locales (e.g. "en-US") or basic language tags (e.g. "en").
     A value of `None` is returned if the locale was not found or invalid.
 
-    :param params:  Mapping of request query parameters.
+    :param params: Mapping of request query parameters.
 
-    :returns:       locale string or None
+    :returns: locale string or None
     """
+
     lang = params.get(QUERY_PARAM)
     if lang:
         LOGGER.debug(f"Got locale '{lang}' from query parameter '{QUERY_PARAM}'")  # noqa
@@ -361,15 +382,18 @@ def locale_from_params(params) -> str:
 
 
 def set_response_language(headers: dict, *locale_: Locale):
-    """ Sets the Content-Language on the given HTTP response headers dict.
-
-    :param headers:     A dict of HTTP response headers.
-    :param locale_:     The Babel Locale(s) to which to set the
-                        Content-Language header.
-                        Multiple locales can be set for this header.
-                        Note that duplicates will be removed.
-    :raises:            LocaleError if no valid Babel Locale was found.
     """
+    Sets the Content-Language on the given HTTP response headers dict.
+
+    :param headers: A dict of HTTP response headers.
+    :param locale_: The Babel Locale(s) to which to set the
+                    Content-Language header.
+                    Multiple locales can be set for this header.
+                    Note that duplicates will be removed.
+
+    :raises: LocaleError if no valid Babel Locale was found.
+    """
+
     if not hasattr(headers, '__setitem__'):
         LOGGER.warning(f"Cannot set headers on object '{headers}'")
         return
@@ -388,19 +412,24 @@ def set_response_language(headers: dict, *locale_: Locale):
     if not locales:
         raise LocaleError('no valid locales set')
     loc_str = ', '.join(locales)
+
     LOGGER.debug(f'Setting Content-Language to {loc_str}')
     headers['Content-Language'] = loc_str
 
 
-def add_locale(url, locale_):
-    """ Adds a locale query parameter (e.g. 'lang=en-US') to a URL.
+def add_locale(url, locale_) -> str:
+    """
+    Adds a locale query parameter (e.g. 'lang=en-US') to a URL.
     If `locale_` is None or an empty string, the URL will be returned as-is.
 
-    :param url:     The web page URL (may contain query string).
+    :param url: The web page URL (may contain query string).
     :param locale_: The web locale or language tag to append to the query.
-    :returns:       A new URL with a 'lang=<locale>' query parameter.
-    :raises:        requests.exceptions.MissingSchema
+
+    :returns: A new URL with a 'lang=<locale>' query parameter.
+
+    :raises: requests.exceptions.MissingSchema
     """
+
     loc = str2locale(locale_, True)
     if not loc:
         # Validation of locale failed
@@ -428,12 +457,15 @@ def add_locale(url, locale_):
 
 
 def get_locales(config: dict) -> list:
-    """ Reads the configured locales/languages from the given configuration.
+    """
+    Reads the configured locales/languages from the given configuration.
     The first Locale in the returned list should be the default locale.
 
-    :param config:  A pygeaapi configuration dict
-    :returns:       A list of supported Locale instances
+    :param config: A pygeaapi configuration dict
+
+    :returns: A list of supported Locale instances
     """
+
     srv_cfg = config.get('server', {})
     lang = srv_cfg.get('languages', srv_cfg.get('language', []))
 
@@ -451,16 +483,20 @@ def get_locales(config: dict) -> list:
         raise LocaleError('Bad value in supported server language(s)')
 
 
-def get_plugin_locale(config: dict, requested_locale: Union[str, None]) -> Union[Locale, None]:  # noqa
-    """ Returns the supported locale (best match) for a plugin
+def get_plugin_locale(
+        config: dict,
+        requested_locale: Union[str, None]) -> Union[Locale, None]:
+    """
+    Returns the supported locale (best match) for a plugin
     based on the requested raw locale string.
     Returns None if the plugin does not support any locales.
     Returns the default (= first) locale that the plugin supports
     if no match for the requested locale could be found.
 
-    :param config:              The plugin definition
-    :param requested_locale:    The requested locale string (or None)
+    :param config: The plugin definition
+    :param requested_locale: The requested locale string (or None)
     """
+
     plugin_name = f"{config.get('name', '')} plugin".strip()
     if not requested_locale:
         LOGGER.debug(f'No requested locale for {plugin_name}')
