@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,6 +30,7 @@
 from collections import OrderedDict
 import json
 import logging
+from urllib.parse import urlparse
 
 from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
@@ -55,18 +56,39 @@ class ElasticsearchProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        url_tokens = self.data.split('/')
+        self.es_host, self.index_name = self.data.rsplit('/', 1)
 
         LOGGER.debug('Setting Elasticsearch properties')
-        self.es_host = url_tokens[2]
-        self.index_name = url_tokens[-1]
         self.is_gdal = False
 
         LOGGER.debug('host: {}'.format(self.es_host))
         LOGGER.debug('index: {}'.format(self.index_name))
 
+        self.type_name = 'FeatureCollection'
+        self.url_parsed = urlparse(self.es_host)
+
         LOGGER.debug('Connecting to Elasticsearch')
-        self.es = Elasticsearch(self.es_host)
+
+        if self.url_parsed.port is None:  # proxy to default HTTP(S) port
+            if self.url_parsed.scheme == 'https':
+                port = 443
+            else:
+                port = 80
+        else:  # was set explictly
+            port = self.url_parsed.port
+
+        url_settings = {
+            'scheme': self.url_parsed.scheme,
+            'host': self.url_parsed.hostname,
+            'port': port
+        }
+
+        if self.url_parsed.path:
+            url_settings['url_prefix'] = self.url_parsed.path
+
+        LOGGER.debug('URL settings: {}'.format(url_settings))
+        LOGGER.debug('Connecting to Elasticsearch')
+        self.es = Elasticsearch([url_settings])
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
@@ -115,13 +137,14 @@ class ElasticsearchProvider(BaseProvider):
                     type_ = 'string'
                 else:
                     type_ = v['type']
-                fields_[k] = type_
+
+                fields_[k] = {'type': type_}
 
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query Elasticsearch index
 
@@ -134,6 +157,7 @@ class ElasticsearchProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -219,14 +243,14 @@ class ElasticsearchProvider(BaseProvider):
 
                 sp = sort['property']
 
-                if self.fields[sp] == 'string':
+                if self.fields[sp]['type'] == 'string':
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:
                     sort_property = self.mask_prop(sp)
 
                 sort_order = 'asc'
-                if sort['order'] == 'D':
+                if sort['order'] == '-':
                     sort_order = 'desc'
 
                 sort_ = {
@@ -235,6 +259,18 @@ class ElasticsearchProvider(BaseProvider):
                     }
                 }
                 query['sort'].append(sort_)
+
+        if q is not None:
+            LOGGER.debug('Adding free-text search')
+            query['query']['bool']['must'] = {'query_string': {'query': q}}
+
+            query['_source'] = {
+                'excludes': [
+                    'properties._metadata-payload',
+                    'properties._metadata-schema',
+                    'properties._metadata-format'
+                ]
+            }
 
         if self.properties or select_properties:
             LOGGER.debug('including specified fields: {}'.format(
@@ -308,7 +344,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get ES document by id
 
@@ -330,7 +366,7 @@ class ElasticsearchProvider(BaseProvider):
                 'query': {
                     'bool': {
                         'filter': [{
-                            'match': {
+                            'match_phrase': {
                                 self.mask_prop(self.id_field): identifier
                             }
                         }]
@@ -338,12 +374,16 @@ class ElasticsearchProvider(BaseProvider):
                 }
             }
 
-            result = self.es.search(index=self.index_name, body=query)
-            if len(result['hits']['hits']) == 0:
-                LOGGER.error(err)
-                raise ProviderItemNotFoundError(err)
-            LOGGER.debug('Serializing feature')
-            feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            try:
+                result = self.es.search(index=self.index_name, body=query)
+                if len(result['hits']['hits']) == 0:
+                    LOGGER.error(err)
+                    raise ProviderItemNotFoundError(err)
+                LOGGER.debug('Serializing feature')
+                feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            except exceptions.RequestError as err2:
+                LOGGER.error(err2)
+                raise ProviderItemNotFoundError(err2)
         except Exception as err:
             LOGGER.error(err)
             return None
@@ -416,3 +456,42 @@ class ElasticsearchProvider(BaseProvider):
 
     def __repr__(self):
         return '<ElasticsearchProvider> {}'.format(self.data)
+
+
+class ElasticsearchCatalogueProvider(ElasticsearchProvider):
+    """Elasticsearch Provider"""
+
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
+
+    def _excludes(self):
+        return [
+            'properties._metadata-anytext'
+        ]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for i in self._excludes():
+            del fields[i]
+
+        fields['q'] = {'type': 'string'}
+
+        return fields
+
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
+
+        records = super().query(
+            startindex=startindex, limit=limit,
+            resulttype=resulttype, bbox=bbox,
+            datetime_=datetime_, properties=properties,
+            sortby=sortby,
+            select_properties=select_properties,
+            skip_geometry=skip_geometry,
+            q=q)
+
+        return records
+
+    def __repr__(self):
+        return '<ElasticsearchCatalogueProvider> {}'.format(self.data)

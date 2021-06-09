@@ -148,7 +148,7 @@ class BaseManager:
             args=(p, job_id, data_dict)
         )
         _process.start()
-        return None, JobStatus.accepted
+        return 'application/json', None, JobStatus.accepted
 
     def _execute_handler_sync(self, p, job_id, data_dict):
         """
@@ -162,7 +162,7 @@ class BaseManager:
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
 
-        :returns: tuple of response payload and status
+        :returns: tuple of MIME type, response payload and status
         """
 
         process_id = p.metadata['id']
@@ -190,10 +190,8 @@ class BaseManager:
             else:
                 job_filename = None
 
-            jfmt = p.metadata['outputs'][0]['output']['formats'][0]['mimeType']
-
             current_status = JobStatus.running
-            outputs = p.execute(data_dict)
+            jfmt, outputs = p.execute(data_dict)
 
             self.update_job(process_id, job_id, {
                 'status': current_status.value,
@@ -245,9 +243,11 @@ class BaseManager:
                 'message': f'{code}: {outputs["description"]}'
             }
 
+            jfmt = 'application/json'
+
             self.update_job(process_id, job_id, job_metadata)
 
-        return outputs, current_status
+        return jfmt, outputs, current_status
 
     def execute_process(self, p, job_id, data_dict, is_async=False):
         """
@@ -258,7 +258,7 @@ class BaseManager:
         :param data_dict: `dict` of data parameters
         :param is_async: `bool` specifying sync or async processing.
 
-        :returns: tuple of response payload and status
+        :returns: tuple of MIME type, response payload and status
         """
 
         if not is_async:

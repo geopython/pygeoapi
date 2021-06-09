@@ -1,25 +1,35 @@
 {% extends "_base.html" %}
+{% set ptitle = data['properties'][data['title_field']] or ("Item {}".format(data['id'])) %}
 {# Optionally renders an img element, otherwise standard value or link rendering #}
 {% macro render_item_value(v, width) -%}
     {% set val = v | string | trim %}
     {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
         {# Ends with image extension: render img element with link to image #}
-        <a href="{{ val }}"><img src="{{ val }}" alt="" width="{{ width }}"/></a>
+        <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
+    {% elif v is string or v is number %}
+        {{ val | urlize() }}
+    {% elif v is mapping %}
+      {% for i,j in v.items() %}
+        <i>{{ i }}:</i> {{ render_item_value(j, 60) }}<br/>
+      {% endfor %}
+    {% elif v is iterable %}
+      {% for i in v %}
+        {{ render_item_value(i, 60) }}
+      {% endfor %}
     {% else %}
-        {# All other cases: text or link value #}
-        {{ v | urlize() }}
+      {{ val | urlize() }}
     {% endif %}
 {%- endmacro %}
-{% block title %}{{ super() }} {{ data['title'] }} - {{ data['id'] }}{% endblock %}
+{% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../../../collections">Collections</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
-/  <a href="{{ link['href'] }}">{{ link['title'] }}</a>
+/  <a href="{{ link['href'] }}">{{ link['title'] | truncate( 25 ) }}</a>
   {% endif %}
 {% endfor %}
 / <a href="../items">Items</a>
-/ <a href="./{{ data['id'] }}">Item {{ data['id'] }}</a>
+/ <a href="./{{ data['id'] }}">{{ ptitle | truncate( 25 ) }}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -30,7 +40,7 @@
     <section id="item">
       <div class="row">
         <div class="col-sm">
-          <h2>Item {{ data['id'] }}</h2>
+          <h1>{{ ptitle }}</h1>
         </div>
       </div>
       <div class="row">
@@ -67,25 +77,39 @@
               </tr>
             </thead>
             <tbody>
+            {% if data.uri_field %}
+              <tr>
+                <td>{{ data.uri_field }}</td>
+                <td><a href="{{ data['properties'].get(data.uri_field) }}" title="{{ data['properties'].get(data.uri_field) }}">{{ data['properties'].pop(data.uri_field) }}</a></td>
+              </tr>
+              {% endif %}
               <tr>
                 <td>id</td>
                 <td>{{ data.id }}</td>
               </tr>
               {% for k, v in data['properties'].items() %}
-              <tr>
-                <td>{{ k }}</td>
-                {% if k == 'links' %}
-                <td>
+                {% if k != data['id_field'] %}
+                <tr>
+                  <td>{{ k }}</td>
+                  {% if k in ['links', 'associations'] %}
+                  <td>
                     <ul>
-                        {% for l in v %}
-                        <li><a href="{{ l['href'] }}">{{ l['title'] }}</a></li>
-                        {% endfor %}
+                      {% for l in v %}
+                        {% if l['href'] %}
+                          <li><a href="{{ l['href'] }}" title="{{ l['title'] or l['href'].split('/') }}">{{ l['title'] or (l['href'].split('/') | last) | truncate( 25 ) }}</a>
+                          {% if l['type'] %}
+                            ({{ l['type'] }})
+                          {% endif %}
+                          </li>
+                        {% endif %}
+                      {% endfor %}
                     </ul>
-                </td>
-                {% else %}
-                  <td>{{ render_item_value(v, 80) }}</td>
+                  </td>
+                  {% else %}
+                    <td>{{ render_item_value(v, 80) }}</td>
+                  {% endif %}
+                </tr>
                 {% endif %}
-              </tr>
               {% endfor %}
             </tbody>
             </table>

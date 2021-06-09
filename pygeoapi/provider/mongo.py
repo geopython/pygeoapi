@@ -3,6 +3,7 @@
 # Authors: Timo Tuunanen <timo.tuunanen@rdvelho.com>
 #
 # Copyright (c) 2019 Timo Tuunanen
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -97,7 +98,7 @@ class MongoProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query the provider
 
@@ -122,7 +123,7 @@ class MongoProvider(BaseProvider):
         filterobj = {'$and': and_filter} if and_filter else {}
 
         sort_list = [("properties." + sort['property'],
-                      ASCENDING if (sort['order'] == 'A') else DESCENDING)
+                      ASCENDING if (sort['order'] == '+') else DESCENDING)
                      for sort in sortby]
 
         featurelist, matchcount = self._get_feature_list(filterobj,
@@ -142,7 +143,7 @@ class MongoProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query the provider by id
 

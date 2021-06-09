@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -53,9 +53,11 @@ class BaseProvider:
 
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
+        self.uri_field = provider_def.get('uri_field', None)
         self.x_field = provider_def.get('x_field', None)
         self.y_field = provider_def.get('y_field', None)
         self.time_field = provider_def.get('time_field')
+        self.title_field = provider_def.get('title_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
         self.fields = {}

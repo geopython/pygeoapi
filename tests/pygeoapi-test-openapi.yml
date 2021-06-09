@@ -45,17 +45,16 @@ components:
         type: string
       style: form
     sortby:
-      description: The optional sortby parameter indicates the sort property and order
-        on which the server shall present results in the response document using the
-        convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and
-        `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple
-        properties is supported by providing a comma-separated list.
-      explode: false
-      in: query
       name: sortby
+      in: query
       required: false
       schema:
-        type: string
+        type: array
+        minItems: 1
+        items:
+          type: string
+          pattern: "[+|-][A-Za-z_][A-Za-z_0-9]*"
+      explode: false
       style: form
     startindex:
       description: The optional startindex parameter indicates the index within the
@@ -77,7 +76,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/exception.yaml
+            $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/exception.yaml
       description: Unexpected error
 info:
   contact:
@@ -276,7 +275,7 @@ paths:
                 type: text/plain
                 value: hi there
             schema:
-              $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/execute.yaml
+              $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/execute.yaml
         description: Mandatory execute request JSON
         required: true
       responses:

@@ -62,13 +62,13 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 ARG TIMEZONE="Europe/London"
 ARG LOCALE="en_US.UTF-8"
 ARG BUILD_DEV_IMAGE="false"
-ARG ADD_DEB_PACKAGES="python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-pandas python3-pyproj python3-elasticsearch python3-pymongo python3-zarr python3-tinydb"
+ARG ADD_DEB_PACKAGES="python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-pandas python3-pyproj python3-elasticsearch python3-pymongo python3-zarr python3-dask python3-tinydb"
 
 # ENV settings
 ENV TZ=${TIMEZONE} \
 	DEBIAN_FRONTEND="noninteractive" \
 	DEB_BUILD_DEPS="software-properties-common curl unzip" \
-	DEB_PACKAGES="python3-pip python3-setuptools python3-distutils python3-yaml python3-dateutil python3-tz python3-flask python3-flask-cors python3-unicodecsv python3-click python3-greenlet python3-gevent python3-wheel gunicorn libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}"
+	DEB_PACKAGES="python3-pip python3-setuptools python3-distutils python3-shapely python3-yaml python3-dateutil python3-tz python3-flask python3-flask-cors python3-unicodecsv python3-click python3-greenlet python3-gevent python3-wheel gunicorn libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}"
 
 RUN mkdir -p /pygeoapi/pygeoapi
 # Add files required for pip/setuptools

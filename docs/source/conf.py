@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -98,7 +98,7 @@ master_doc = 'index'
 project = 'pygeoapi'
 author = 'pygeoapi team'
 license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'  # noqa
-copyright = '2018-2020, ' + author + ' ' + license
+copyright = '2018-2021, ' + author + ' ' + license
 
 today_fmt = '%Y-%m-%d'
 
@@ -107,7 +107,7 @@ today_fmt = '%Y-%m-%d'
 # built documents.
 #
 # The short X.Y version.
-version = '0.10.dev0'
+version = '0.11.dev0'
 # The full version, including alpha/beta/rc tags.
 release = version
 

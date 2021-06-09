@@ -62,7 +62,7 @@ Collection queryables
 
 http://localhost:5000/collections/obs/queryables
 
-The queryables endpoint provides a list of queryable properties and their associated datatypes.
+The queryables endpoint provides the collection's queryable properties and associated datatypes.
 
 
 Collection items
@@ -138,6 +138,48 @@ This page provides freeform tiles metadata.
 
 http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
 
+Metadata Records
+----------------
+
+http://localhost:5000/collections/metadata-records/items?q=crops&bbox=-142,42,-52,84
+
+This page provides metadata catalogue search capabilities
+
+.. seealso::
+   :ref:`ogcapi-records` for more OGC API - Records request examples.
+
+
+Processes
+---------
+
+The processes page provides a list of process integrated onto the server, along with a name and description.
+
+.. todo::
+   Expand with more info once OAProc HTML is better flushed out.
+
+.. seealso::
+   :ref:`ogcapi-processes` for more OGC API - Processes request examples.
+
+
+Environmental data retrieval
+----------------------------
+
+http://localhost:5000/collections/edr-test
+
+This page provides, in addition to a common collection description, specific
+link relations for EDR queries if the collection has an EDR capability, as
+well as supported parameter names to select.
+
+http://localhost:5000/collections/edr-test/position?coords=POINT(111 13)&parameter-name=SST&f=json
+
+This page executes a position query against a given parameter name, providing
+a response in CoverageJSON.
+
+
+.. seealso::
+   :ref:`ogcapi-edr` for more OGC API - EDR request examples.
+
+
 SpatioTemporal Assets
 ---------------------
 
@@ -150,17 +192,6 @@ the file.
 
 .. seealso::
    :ref:`stac` for more STAC request examples.
-
-Processes
----------
-
-The processes page provides a list of process integrated onto the server, along with a name and description.
-
-.. todo::
-   Expand with more info once OAProc HTML is better flushed out.
-
-.. seealso::
-   :ref:`ogcapi-processes` for more OGC API - Processes request examples.
 
 API Documentation
 -----------------

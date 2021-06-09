@@ -70,7 +70,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
 
        def query(self,startindex=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
-                 select_properties=[], skip_geometry=False):
+                 select_properties=[], skip_geometry=False, **kwargs):
 
            # open data file (self.data) and process, return
            return {
@@ -97,6 +97,9 @@ as well as implement the ``get`` method accordingly.  As long as the plugin impl
 its base provider, all other functionality is left to the provider implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
+
+.. note::   You can add language support to your plugin using :ref:`these guides<language>`.
+
 
 Connecting to pygeoapi
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -166,7 +169,7 @@ The below template provides a minimal example (let's call the file ``mycoolraste
        def get_coverage_rangetype(self):
            # return a CIS JSON RangeType
 
-       def query(self, bands=[], subsets={}, format_='json'):
+       def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
            # query/extract coverage data
            if format_ == 'json':
@@ -226,4 +229,24 @@ under development, the implementation in ``pygeoapi/process/hello_world.py`` pro
 for the time being.
 
 
+Featured plugins
+----------------
+
+The following plugins provide useful examples of pygeoapi plugins implemented
+by downstream applications.
+
+.. csv-table::
+   :header: "Plugin(s)", "Organization/Project","Description"
+   :align: left
+
+   `msc-pygeoapi`_,Meteorological Service of Canada,processes for weather/climate/water data workflows
+   `pygeoapi-kubernetes-papermill`_,Euro Data Cube,processes for executing Jupyter notebooks via Kubernetes
+   `local-outlier-factor-plugin`_,Manaaki Whenua – Landcare Research,processes for local outlier detection
+   `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
+
+
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter-pypackage
+.. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
+.. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill
+.. _`local-outlier-factor-plugin`: https://github.com/manaakiwhenua/local-outlier-factor-plugin
+.. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi

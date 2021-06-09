@@ -5,7 +5,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -88,12 +88,11 @@ class SQLiteGPKGProvider(BaseProvider):
         """
 
         if not self.fields:
-
             results = self.cursor.execute(
                 'PRAGMA table_info({})'.format(self.table)).fetchall()
-            [self.fields.update(
-                {item["name"]:item["type"].lower()}
-                ) for item in results]
+            for item in results:
+                self.fields[item['name']] = {'type': item['type']}
+
         return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
@@ -252,7 +251,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -268,6 +267,7 @@ class SQLiteGPKGProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: GeoJSON FeaturesCollection
         """
@@ -310,7 +310,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/countries/items/1

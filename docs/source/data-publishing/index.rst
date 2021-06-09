@@ -4,7 +4,7 @@ Data publishing
 ===============
 
 Let's start working on integrating your data into pygeoapi.  pygeoapi provides the capability to
-publish vector data, processes, and exposing filesystems of geospatial data.
+publish vector/coverage data, processes, catalogues, and exposing filesystems of geospatial data.
 
 Providers overview
 ------------------
@@ -22,4 +22,6 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    ogcapi-coverages
    ogcapi-tiles
    ogcapi-processes
+   ogcapi-records
+   ogcapi-edr
    stac

@@ -57,7 +57,7 @@ class XarrayProvider(BaseProvider):
         super().__init__(provider_def)
 
         try:
-            if provider_def['format']['name'] == 'zarr':
+            if provider_def['data'].endswith('.zarr'):
                 open_func = xarray.open_zarr
             else:
                 open_func = xarray.open_dataset
@@ -74,7 +74,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
-    def get_coverage_domainset(self):
+    def get_coverage_domainset(self, *args, **kwargs):
         """
         Provide coverage domainset
 
@@ -140,7 +140,7 @@ class XarrayProvider(BaseProvider):
 
         return domainset
 
-    def get_coverage_rangetype(self):
+    def get_coverage_rangetype(self, *args, **kwargs):
         """
         Provide coverage rangetype
 
@@ -182,7 +182,7 @@ class XarrayProvider(BaseProvider):
         return rangetype
 
     def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
-              format_='json'):
+              format_='json', **kwargs):
         """
          Extract data from collection collection
 
@@ -312,10 +312,19 @@ class XarrayProvider(BaseProvider):
         minx, miny, maxx, maxy = metadata['bbox']
         mint, maxt = metadata['time']
 
-        if data.coords[self.y_field].values[0] > data.coords[self.y_field].values[-1]:  # noqa
+        try:
+            tmp_min = data.coords[self.y_field].values[0]
+        except IndexError:
+            tmp_min = data.coords[self.y_field].values
+        try:
+            tmp_max = data.coords[self.y_field].values[-1]
+        except IndexError:
+            tmp_max = data.coords[self.y_field].values
+
+        if tmp_min > tmp_max:
             LOGGER.debug('Reversing direction of {}'.format(self.y_field))
-            miny = data.coords[self.y_field].values[-1]
-            maxy = data.coords[self.y_field].values[0]
+            miny = tmp_max
+            maxy = tmp_min
 
         cj = {
             'type': 'Coverage',

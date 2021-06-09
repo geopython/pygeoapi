@@ -2,7 +2,7 @@
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="../collections">Collections</a>
-/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
 {% endblock %}
 
 {% block extrahead %}
@@ -28,21 +28,21 @@
           <div id="collection-map"></div>
         </div>
       </div>
-      {% if data['itemType'] == 'Feature' %}
+      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
+      <h3>Browse</h3>
+      <ul>
+        <li>
+          <div>
+            <a title="Browse Items" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
+              Browse through the items of "{{ data['title'] }}"</a></div>
+        </li>
+      </ul>
       <h3>Queryables</h3>
       <ul>
         <li>
           <div>
             <a title="Display Queryables" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
               Display Queryables of "{{ data['title'] }}"</a></div>
-        </li>
-      </ul>
-      <h3>View</h3>
-      <ul>
-        <li>
-          <div>
-            <a title="Browse Items" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
-              Browse through the items of "{{ data['title'] }}"</a></div>
         </li>
       </ul>
       {% for provider in config['resources'][data['id']]['providers'] %}

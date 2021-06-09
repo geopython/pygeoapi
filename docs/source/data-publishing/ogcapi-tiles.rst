@@ -70,7 +70,7 @@ Data access examples
   - `http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt <http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt>`_
 
 
-.. _`OGC API - Tiles`: https://github.com/opengeospatial/OGC-API-Tiles
+.. _`OGC API - Tiles`: https://github.com/opengeospatial/ogcapi-tiles
 .. _`MapProxy`: https://mapproxy.org
 .. _`tippecanoe`: https://github.com/mapbox/tippecanoe
 .. _`Mapbox Vector Tiles`: https://docs.mapbox.com/vector-tiles/reference

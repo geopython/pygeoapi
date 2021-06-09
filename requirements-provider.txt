@@ -1,10 +1,10 @@
 elasticsearch==7.1.0
 fiona
-GDAL>=3.0.0
+#GDAL>=3.0.0
 netCDF4
 psycopg2-binary==2.8.4
+pygeometa
 pymongo==3.10.1
-rasterio
 scipy
 xarray
 zarr
