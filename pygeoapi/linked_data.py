@@ -33,28 +33,30 @@ Returns content as linked data representations
 import logging
 
 from pygeoapi.util import is_url
+from pygeoapi import l10n
+
 from shapely.geometry import asShape
 from shapely.ops import unary_union
 from shapely import speedups
 
 LOGGER = logging.getLogger(__name__)
-LOGGER.debug("Shapely Speedups enabled: {}".format(speedups.enabled))
 
 
 def jsonldify(func):
     """
         Decorator that transforms app configuration\
         to include a JSON-LD representation
-
         :param func: decorated function
-
         :returns: `func`
     """
 
     def inner(*args, **kwargs):
-        format_ = args[2]
+        apireq = args[1]
+        format_ = getattr(apireq, 'format', None)
         if not format_ == 'jsonld':
             return func(*args, **kwargs)
+        # Function args have been pre-processed, so get locale from APIRequest
+        locale_ = getattr(apireq, 'locale', None)
         LOGGER.debug('Creating JSON-LD representation')
         cls = args[0]
         cfg = cls.config
@@ -67,14 +69,17 @@ def jsonldify(func):
           "@type": "DataCatalog",
           "@id": cfg.get('server', {}).get('url', None),
           "url": cfg.get('server', {}).get('url', None),
-          "name": ident.get('title', None),
-          "description": ident.get('description', None),
-          "keywords": ident.get('keywords', None),
-          "termsOfService": ident.get('terms_of_service', None),
+          "name": l10n.translate(ident.get('title', None), locale_),
+          "description": l10n.translate(
+              ident.get('description', None), locale_),
+          "keywords": l10n.translate(
+              ident.get('keywords', None), locale_),
+          "termsOfService": l10n.translate(
+              ident.get('terms_of_service', None), locale_),
           "license": meta.get('license', {}).get('url', None),
           "provider": {
             "@type": "Organization",
-            "name": provider.get('name', None),
+            "name": l10n.translate(provider.get('name', None), locale_),
             "url": provider.get('url', None),
             "address": {
                 "@type": "PostalAddress",
@@ -92,10 +97,13 @@ def jsonldify(func):
                 "url": contact.get('url', None),
                 "hoursAvailable": {
                     "opens": contact.get('hours', None),
-                    "description": contact.get('instructions', None)
+                    "description": l10n.translate(
+                        contact.get('instructions', None), locale_)
                 },
-                "contactType": contact.get('role', None),
-                "description": contact.get('position', None)
+                "contactType": l10n.translate(
+                    contact.get('role', None), locale_),
+                "description": l10n.translate(
+                    contact.get('position', None), locale_)
             }
           }
         }
@@ -104,14 +112,13 @@ def jsonldify(func):
     return inner
 
 
-def jsonldify_collection(cls, collection):
+def jsonldify_collection(cls, collection, locale_):
     """
         Transforms collection into a JSON-LD representation
-
         :param cls: API object
         :param collection: `collection` as prepared for non-LD JSON
                            representation
-
+        :param locale_: The locale to use for translations (if supported)
         :returns: `collection` a dictionary, mapped into JSON-LD, of
                   type schema:Dataset
     """
@@ -129,10 +136,10 @@ def jsonldify_collection(cls, collection):
             cls.config['server']['url'],
             collection['id']
         ),
-        "name": collection['title'],
-        "description": collection['description'],
+        "name": l10n.translate(collection['title'], locale_),
+        "description": l10n.translate(collection['description'], locale_),
         "license": cls.fcmld['license'],
-        "keywords": collection.get('keywords', None),
+        "keywords": l10n.translate(collection.get('keywords', None), locale_),
         "spatial": None if (not hascrs84 or not bbox) else [{
             "@type": "Place",
             "geo": {
@@ -152,9 +159,9 @@ def jsonldify_collection(cls, collection):
             "@type": "DataDownload",
             "contentURL": link['href'],
             "encodingFormat": link['type'],
-            "description": link['title'],
+            "description": l10n.translate(link['title'], locale_),
             "inLanguage": link.get(
-                'hreflang', cls.config.get('server', {}).get('language', None)
+                'hreflang', l10n.locale2str(cls.default_locale)
             ),
             "author": link['rel'] if link.get(
                 'rel', None
