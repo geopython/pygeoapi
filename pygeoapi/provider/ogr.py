@@ -291,7 +291,7 @@ class OGRProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query OGR source
 
@@ -372,7 +372,7 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get Feature by id
 
