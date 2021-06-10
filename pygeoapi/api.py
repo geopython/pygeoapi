@@ -1600,7 +1600,7 @@ class API:
         query_args = {}
         format_ = F_JSON
 
-        # Force content type and language (en-US only) headers
+        # Force response content type and language (en-US only) headers
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                FORMAT_TYPES[F_JSON])
 
@@ -1653,7 +1653,8 @@ class API:
 
         query_args['datetime_'] = datetime_
 
-        if request.format:
+        if 'f' in request.params:
+            # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
         range_subset = request.params.get('rangeSubset')
@@ -1714,14 +1715,7 @@ class API:
                 500, headers, format_, 'NoApplicableCode', msg)
 
         mt = collection_def['format']['name']
-        coverage_format = request.params.get('f')
-
-        is_native_format = any([
-            coverage_format is None,
-            coverage_format == mt
-        ])
-
-        if is_native_format:  # native format
+        if format_ == mt:  # native format
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
         elif format_ == F_JSON:
@@ -2857,14 +2851,8 @@ class API:
         # Content-Language is in the system locale (ignore language settings)
         headers = request.get_response_headers(SYSTEM_LOCALE)
         msg = f'Invalid format: {request.format}'
-
-        if headers['Content-Type'] == 'text/html':
-            format_ = F_HTML
-        else:
-            format_ = F_JSON
-
         return self.get_exception(
-            400, headers, format_, 'InvalidParameterValue', msg)
+            400, headers, request.format, 'InvalidParameterValue', msg)
 
 
 def validate_bbox(value=None) -> list:
