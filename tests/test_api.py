@@ -698,36 +698,20 @@ def test_get_collection_items_json_ld(config, api_):
         'limit': 2
     })
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     # No language requested: return default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
     collection = json.loads(response)
 
     assert '@context' in collection
-    assert collection['@context'][
-        0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
+    assert all((i in collection['@context'][0] for
+        i in ('schema', 'id', 'type', 'features', 'FeatureCollection')))
     assert len(collection['@context']) > 1
-    assert 'schema' in collection['@context'][1]
     assert collection['@context'][1]['schema'] == 'https://schema.org/'
     expanded = jsonld.expand(collection)[0]
-    featuresUri = 'https://purl.org/geojson/vocab#features'
+    featuresUri = 'https://schema.org/itemListElement'
     assert len(expanded[featuresUri]) == 2
-    geometryUri = 'https://purl.org/geojson/vocab#geometry'
-    assert all((geometryUri in f) for f in expanded[featuresUri])
-    assert all((f[geometryUri][0]['@type'][0] ==
-                'https://purl.org/geojson/vocab#Point')
-               for f in expanded[featuresUri])
-    propertiesUri = 'https://purl.org/geojson/vocab#properties'
-    assert all(propertiesUri in f for f in expanded[featuresUri])
-    assert all(
-        len(f[propertiesUri][0].keys()) > 0 for f in expanded[featuresUri])
-    assert all(('https://schema.org/observationDate' in f[propertiesUri][0])
-               for f in expanded[featuresUri])
-    assert all((f[propertiesUri][0]['https://schema.org/observationDate'][0][
-        '@type'] == 'https://schema.org/DateTime')
-               for f in expanded[featuresUri])
-    assert any((f[propertiesUri][0]['https://schema.org/observationDate'][0][
-        '@value'] == '2001-10-30T14:24:55Z') for f in expanded[featuresUri])
 
 
 def test_get_collection_item(config, api_):
@@ -772,22 +756,30 @@ def test_get_collection_item_json_ld(config, api_):
     assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
     assert '@context' in feature
-    assert feature['@context'][
-        0] == 'https://geojson.org/geojson-ld/geojson-context.jsonld'
+    assert all((i in feature['@context'][0] for
+        i in ('schema', 'id', 'type', 'geosparql')))
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'
-    assert feature['properties']['stn_id'] == '35'
+    assert feature['stn_id'] == '35'
     assert feature['id'].startswith('http://')
     assert feature['id'].endswith('/collections/obs/items/371')
     expanded = jsonld.expand(feature)[0]
     assert expanded['@id'].startswith('http://')
     assert expanded['@id'].endswith('/collections/obs/items/371')
-    assert expanded['https://purl.org/geojson/vocab#properties'][0][
-        'https://schema.org/identifier'][0][
+    assert expanded['https://schema.org/identifier'][0][
             '@type'] == 'https://schema.org/Text'
-    assert expanded['https://purl.org/geojson/vocab#properties'][0][
-        'https://schema.org/identifier'][0]['@value'] == '35'
+    assert expanded['https://schema.org/identifier'][0][
+            '@value'] == '35'
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'POINT (-75 45)'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/latitude'][0][
+            '@value'] == 45.0
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/longitude'][0][
+            '@value'] == -75.0
 
     req = mock_request({'f': 'jsonld', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
