@@ -858,6 +858,13 @@ def test_get_collection_coverage(config, api_):
 
     assert code == 400
 
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req, 'gdps-temperature')
+
+    assert code == 400
+    assert rsp_headers['Content-Type'] == 'text/html'
+
     req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
