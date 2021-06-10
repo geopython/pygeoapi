@@ -1438,7 +1438,9 @@ class API:
             return headers, 200, content
 
         elif request.format == F_JSONLD:
-            content = geojson2geojsonld(self.config, content, dataset)
+            content = geojson2geojsonld(
+                self.config, content, dataset, id_field=(p.uri_field or 'id')
+            )
 
         return headers, 200, to_json(content, self.pretty_print)
 
