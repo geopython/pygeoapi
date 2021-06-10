@@ -34,7 +34,10 @@ server:
     url: http://localhost:5000/
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
-    language: en-US
+    languages:
+        # First language is the default language
+        - en-US
+        - fr-CA
     cors: true
     pretty_print: true
     limit: 10
@@ -52,12 +55,21 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
-        description: pygeoapi provides an API to geospatial data
+        title:
+            en: pygeoapi default instance
+            fr: instance par défaut de pygeoapi
+        description:
+            en: pygeoapi provides an API to geospatial data
+            fr: pygeoapi fournit une API aux données géospatiales
         keywords:
-            - geospatial
-            - data
-            - api
+            en:
+                - geospatial
+                - data
+                - api
+            fr:
+                - géospatiale
+                - données
+                - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: http://example.org
@@ -86,8 +98,12 @@ metadata:
 resources:
     obs:
         type: collection
-        title: Observations
-        description: My cool observations
+        title:
+            en: Observations
+            fr: Observations
+        description:
+            en: My cool observations
+            fr: Mes belles observations
         keywords:
             - observations
             - monitoring
@@ -160,8 +176,12 @@ resources:
 
     lakes:
         type: collection
-        title: Large Lakes
-        description: lakes of the world, public domain
+        title:
+            en: Large Lakes
+            fr: Grands Lacs
+        description:
+            en: lakes of the world, public domain
+            fr: lacs du monde, domaine public
         keywords:
             - lakes
         links:

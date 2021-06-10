@@ -208,7 +208,7 @@ class PostgreSQLProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -330,7 +330,7 @@ class PostgreSQLProvider(BaseProvider):
         id_ = item[0]['id'] if item else identifier
         return id_
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
