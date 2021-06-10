@@ -230,7 +230,7 @@ def test_api(config, api_, openapi):
     assert api_.config == config
     assert isinstance(api_.config, dict)
 
-    req = mock_request(HTTP_CONTENT_TYPE='application/json')
+    req = mock_request(HTTP_ACCEPT='application/json')
     rsp_headers, code, response = api_.openapi(req, openapi)
     assert rsp_headers['Content-Type'] == 'application/vnd.oai.openapi+json;version=3.0'  # noqa
     # No language requested: should be set to default from YAML
@@ -864,6 +864,13 @@ def test_get_collection_coverage(config, api_):
 
     assert code == 400
     assert rsp_headers['Content-Type'] == 'text/html'
+
+    req = mock_request(HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req, 'gdps-temperature')
+
+    assert code == 200
+    assert rsp_headers['Content-Type'] == 'application/prs.coverage+json'
 
     req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
