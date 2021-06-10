@@ -705,8 +705,8 @@ def test_get_collection_items_json_ld(config, api_):
     collection = json.loads(response)
 
     assert '@context' in collection
-    assert all((i in collection['@context'][0] for
-        i in ('schema', 'id', 'type', 'features', 'FeatureCollection')))
+    assert all((f in collection['@context'][0] for
+                f in ('schema', 'type', 'features', 'FeatureCollection')))
     assert len(collection['@context']) > 1
     assert collection['@context'][1]['schema'] == 'https://schema.org/'
     expanded = jsonld.expand(collection)[0]
@@ -756,8 +756,8 @@ def test_get_collection_item_json_ld(config, api_):
     assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
     assert '@context' in feature
-    assert all((i in feature['@context'][0] for
-        i in ('schema', 'id', 'type', 'geosparql')))
+    assert all((f in feature['@context'][0] for
+                f in ('schema', 'type', 'geosparql')))
     assert len(feature['@context']) > 1
     assert 'schema' in feature['@context'][1]
     assert feature['@context'][1]['schema'] == 'https://schema.org/'
