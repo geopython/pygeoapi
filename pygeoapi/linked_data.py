@@ -35,10 +35,6 @@ import logging
 from pygeoapi.util import is_url
 from pygeoapi import l10n
 
-from shapely.geometry import asShape
-from shapely.ops import unary_union
-from shapely import speedups
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -46,7 +42,9 @@ def jsonldify(func):
     """
         Decorator that transforms app configuration\
         to include a JSON-LD representation
+
         :param func: decorated function
+
         :returns: `func`
     """
 
@@ -115,10 +113,12 @@ def jsonldify(func):
 def jsonldify_collection(cls, collection, locale_):
     """
         Transforms collection into a JSON-LD representation
+
         :param cls: API object
         :param collection: `collection` as prepared for non-LD JSON
                            representation
         :param locale_: The locale to use for translations (if supported)
+
         :returns: `collection` a dictionary, mapped into JSON-LD, of
                   type schema:Dataset
     """
@@ -185,15 +185,13 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
-    context = config['resources'][dataset].get('context', []).copy()
+    context = config['resources'][dataset].get('context', [])
     geojsonld = config['resources'][dataset].get('geojsonld', True)
 
     if identifier:
         # Single geojsonld
         if not geojsonld:
-            context.append({
-                "geosparql": "http://www.opengis.net/ont/geosparql#"})
-            data = make_jsonld(data)
+            data, geocontext = make_jsonld(data)
             data[id_field] = identifier
         else:
             data['id'] = identifier
@@ -202,24 +200,21 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
         # Collection of geojsonld
         data['@id'] = '{}/collections/{}/items/'.format(
             config['server']['url'], dataset)
-
         for i, feature in enumerate(data['features']):
             identifier = feature.get(id_field,
                                      feature['properties'].get(id_field, ''))
             if not is_url(str(identifier)):
                 identifier = '{}/collections/{}/items/{}'.format(
                     config['server']['url'], dataset, feature['id'])
+
             if not geojsonld:
-                context = [{
+                feature, geocontext = make_jsonld(feature)
+                geocontext.append({
                     "features": "schema:itemListElement",
                     "FeatureCollection": "schema:itemList"
-                }, ]
-                make_jsonld(feature.copy())
+                })
                 # Note: @id or https://schema.org/url, both or something else?
-                feature = {
-                    id_field: identifier,
-                    'type': 'schema:Place'
-                }
+                feature[id_field] = identifier
             else:
                 feature['id'] = identifier
 
@@ -227,93 +222,55 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
 
     if data.get('timeStamp', False):
         data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
-    data['links'] = data.pop('links')
 
     defaultVocabulary = "https://geojson.org/geojson-ld/geojson-context.jsonld"
-
     if not geojsonld:
-        defaultVocabulary = {
-            "schema": "https://schema.org/",
-            id_field: "@id",
-            "type": "@type"
+        ldjsonData = {
+            "@context": [
+                {
+                 "schema": "https://schema.org/",
+                 id_field: "@id",
+                 "type": "@type",
+                },
+                *(context or []),
+                *(geocontext or [])
+            ],
+            **data
         }
-
-    ldjsonData = {
-        "@context": [
-            defaultVocabulary,
-            *(context or [])
-        ],
-        **data
-    }
+    else:
+        ldjsonData = {
+            "@context": [
+                defaultVocabulary,
+                *(context or [])
+            ],
+            **data
+        }
 
     return ldjsonData
 
 
 def make_jsonld(feature):
-    feature['type'] = 'schema:Place'
-    geo = feature.get('geometry')
-    geom = asShape(geo)
-
-    # Geosparql geometry
-    feature["geosparql:hasGeometry"] = {
-        "@type": "http://www.opengis.net/ont/sf#{}".format(geom.geom_type),
-        "geosparql:asWKT": {
-            "@type": "http://www.opengis.net/ont/geosparql#wktLiteral",
-            "@value": "{}".format(geom.wkt)
-        }
-    }
-
-    # Schema Geometry
-    feature["schema:geo"] = geojson2schema(geom)
-
     # Expand properties block
     feature = {**feature, **feature.get('properties')}
     feature.pop('properties')
 
-    return feature
+    feature['type'] = 'schema:Place'
 
-
-# GeoJSON to Schema
-def geojson2schema(geom):
-    schema_geo = {"@type": "schema:GeoShape"}
-    if geom.geom_type == 'Point':
-        return {
-            "@type": "schema:GeoCoordinates",
-            "schema:longitude": geom.x,
-            "schema:latitude": geom.y
-        }
-    elif geom.geom_type == 'MultiPoint':
-        poly_geom = [(p.x, p.y) for p in geom.geoms]
-        poly_geom.append(poly_geom[0])
-    elif geom.geom_type == 'LineString':
-        _ = ['{},{}'.format(x, y) for (x, y) in geom.coords[:]]
-        schema_geo['schema:line'] = ' '.join(_)
-        return schema_geo
-    elif geom.geom_type == 'MultiLineString':
-        points = list()
-        [points.extend(p.coords[:]) for p in geom.geoms]
-        _ = ['{},{}'.format(x, y) for (x, y) in points]
-        schema_geo['schema:line'] = ' '.join(_)
-        return schema_geo
-    elif geom.geom_type == 'Polygon':
-        poly_geom = geom.exterior.coords[:]
-    elif geom.geom_type == 'MultiPolygon':
-        poly = unary_union(geom.buffer(0))
-        if poly.geom_type.startswith('Multi') or not poly.is_valid:
-            LOGGER.debug('Invalid Poly: {}'.format(poly.geom_type))
-            poly = poly.convex_hull
-            LOGGER.debug('New Poly: {}'.format(poly.geom_type))
-        poly_geom = poly.exterior.coords[:]
+    # Remove non-point geometry
+    if feature.get('geometry').get('type').lower() != 'point':
+        feature.pop('geometry')
+        geocontext = []
     else:
-        poly_geom = list()
-        for p in geom.geoms:
-            try:
-                poly_geom.extend(p.coords[:])
-            except NotImplementedError:
-                poly_geom.extend(p.exterior.coords[:])
+        feature.get('geometry').update({
+                "lat": feature.get('geometry').get('coordinates')[1],
+                "long": feature.get('geometry').get('coordinates')[0]
+                })
+        feature.get('geometry').pop('coordinates')
+        geocontext = [{
+                        "geometry": "schema:geo",
+                        "Point": "schema:GeoCoordinates",
+                        "lat": "schema:latitude",
+                        "long": "schema:longitude"
+        }, ]
 
-    LOGGER.debug(poly_geom)
-    _ = ['{},{}'.format(*row) for row in poly_geom]
-    schema_geo['schema:polygon'] = ' '.join(_)
-
-    return schema_geo
+    return feature, geocontext
