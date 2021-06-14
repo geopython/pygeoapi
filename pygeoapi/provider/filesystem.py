@@ -240,7 +240,7 @@ def _describe_file(filepath):
     content = {
         'bbox': None,
         'geometry': None,
-        'properties': {'datetime': None}
+        'properties': {}
     }
 
     mcf_file = '{}.yml'.format(os.path.splitext(filepath)[0])
