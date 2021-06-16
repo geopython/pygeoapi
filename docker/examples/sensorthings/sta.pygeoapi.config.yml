@@ -1,0 +1,213 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#
+# Copyright (c) 2020 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+server:
+    bind:
+        host: 0.0.0.0 #change to your hostname if running your own instance
+        port: 5000
+    url: http://localhost:5000 #change to host URL  if running your own instance
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    languages:
+        # First language is the default language
+        - en-US
+        - fr-CA
+    # cors: true
+    pretty_print: true
+    limit: 10
+    map:
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>'
+    # templates:
+      # path: /path/to/Jinja2/templates
+      # static: /path/to/static/folder # css/js/img
+    # ogc_schemas_location: /opt/schemas.opengis.net
+
+logging:
+    level: DEBUG
+    logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title: 
+            en: Sensorthings API BRGM example enpoint.
+            fr: Sensorthings API BRGM exemple enpoint.
+        description: Provides STA reference features.
+        keywords:
+            en:
+                - geospatial
+                - sensorthingsapi
+                - api
+            fr:
+                - géospatiale
+                - sensorthingsapi
+                - api
+        keywords_type: theme
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/
+        url: https://github.com/internetofwater/geoconnex.us
+    license:
+        name: CC-BY 4.0 license
+        url: https://creativecommons.org/licenses/by/4.0/
+    provider:
+        name: Organization Name
+        url: https://pygeoapi.io
+    contact:
+        name: Lastname, Firstname
+        position: Position Title
+        address: Mailing Address
+        city: City
+        stateorprovince: Administrative Area
+        postalcode: Zip or Postal Code
+        country: Country
+        phone: +xx-xxx-xxx-xxxx
+        fax: +xx-xxx-xxx-xxxx
+        email: you@example.org
+        url: Contact URL
+        hours: Mo-Fr 08:00-17:00
+        instructions: During hours of service. Off on weekends.
+        role: pointOfContact
+
+resources:
+    Things:
+        type: collection
+        title: STA Things
+        description: Example Sensorthings API Thing
+        keywords:
+            - Things
+            - Sensorthings
+            - BRGM
+        context:
+            - sosa: "http://www.w3.org/ns/sosa/"
+              ssn: "http://www.w3.org/ns/ssn/"
+              Datastreams: sosa:ObservationCollection
+              name: schema:name
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://www.brgm.fr/en
+              hreflang: fr-CA
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+          - type: feature
+            name: Sensorthings 
+            entity: Things 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: '@iot.id'
+            relative_link: http://localhost:5000
+            properties:
+                - name
+                - Datastreams
+                - '@iot.selfLink'
+    Datastreams:
+        type: collection
+        title: STA Datastreams
+        description: Example Sensorthings API Datastream
+        keywords:
+            - Datastreams
+            - Sensorthings
+            - BRGM
+        context:
+            - sosa: http://www.w3.org/ns/sosa/
+              ssn: http://www.w3.org/ns/ssn/
+              Observations: sosa:hasMember
+              Thing: sosa:hasFeatureOfInterest
+              name: schema:name
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://www.brgm.fr/en
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:          
+          - type: feature
+            name: Sensorthings 
+            entity: Datastreams 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: '@iot.id'
+            relative_link: http://localhost:5000
+            properties:
+                - name
+                - Thing
+                - Observations
+                - Sensor
+                - ObservedProperty
+                - '@iot.selfLink'
+    Observations:
+        type: collection
+        title: STA Observation
+        description: Example Sensorthings API Observation
+        keywords:
+            - Observations
+            - Sensorthings
+            - BRGM
+        context:
+            - sosa: http://www.w3.org/ns/sosa/
+              ssn: http://www.w3.org/ns/ssn/
+              Datastreams: sosa:isMemberOf
+              name: schema:name
+        links:
+            - type: application/html
+              rel: canonical
+              title: data source
+              href: https://www.brgm.fr/en
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+          - type: feature
+            name: Sensorthings 
+            entity: Observations 
+            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            id_field: '@iot.id'
+            relative_link: http://localhost:5000
+            properties:
+                - phenomenonTime
+                - result
+                - Datastream
+                - FeatureOfInterest
+                - '@iot.selfLink'
