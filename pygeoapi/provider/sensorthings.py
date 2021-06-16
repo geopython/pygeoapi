@@ -29,6 +29,7 @@
 
 from requests import get
 from requests import codes
+from requests.compat import urljoin
 import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
@@ -260,14 +261,16 @@ class SensorthingsProvider(BaseProvider):
         for k, v in entity.items():
             # Create relative links
             if k in ['Thing', 'Datastream']:
-                entity[k] = '{}/collections/{}/items/{}'.format(
-                    self.rel_link, k + 's', v['@iot.id']
+                _ = 'collections/{}/items/{}'.format(
+                    k + 's', v['@iot.id']
                 )
+                entity[k] = urljoin(self.rel_link, _)
             elif k in ['Datastreams', 'Observations']:
-                for i, _ in enumerate(v):
-                    v[i] = '{}/collections/{}/items/{}'.format(
-                        self.rel_link, k, _['@iot.id']
+                for i, _v in enumerate(v):
+                    _ = 'collections/{}/items/{}'.format(
+                        k, _v['@iot.id']
                     )
+                    v[i] = urljoin(self.rel_link, _)
 
         if keys:
             ret = {}
