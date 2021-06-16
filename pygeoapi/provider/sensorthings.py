@@ -27,30 +27,31 @@
 #
 # =================================================================
 
-import requests
+from requests import get
+from requests import codes
 import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
                                     ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
-LOGGER.debug("Logger Init")
 
 EXPAND = {
-    'Things': 'Locations,Datastreams',
-    'Datastreams': 'Sensor,ObservedProperty,Thing,\
-        Observations($orderby=phenomenonTime desc)',
-    'Observations': 'Datastream,FeatureOfInterest'
+    'Things': 'Locations,Datastreams($select=@iot.id)',
+    'Observations': 'Datastream($select=@iot.id),FeatureOfInterest',
+    'Datastreams': 'Sensor,ObservedProperty,Thing($select=@iot.id),\
+     Observations($select=@iot.id;$expand=FeatureOfInterest($select=feature);\
+      $orderby=phenomenonTime desc)'
 }
 
 
 class SensorthingsProvider(BaseProvider):
-    """Sensorthings API Provider
+    """Sensorthings API (STA) Provider
     """
 
     def __init__(self, provider_def):
         """
-        Sensorthings Class constructor
+        STA Class constructor
 
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
@@ -60,13 +61,37 @@ class SensorthingsProvider(BaseProvider):
         LOGGER.debug("Logger STA Init")
         super().__init__(provider_def)
         self.entity = provider_def.get('entity')
-        self.rel_link = provider_def.get('rel_link')
+        self.url = self.data + self.entity
+        self.rel_link = provider_def.get('relative_link')
+        self.get_fields()
+
+    def get_fields(self):
+        """
+         Get fields from STA Provider
+
+        :returns: dict of fields
+        """
+        if not self.fields:
+            p = {'$expand': EXPAND[self.entity], '$top': 1}
+            r = get(self.url, params=p)
+            results = r.json()['value'][0]
+
+            for (n, v) in results.items():
+
+                if isinstance(v, (int, float)) or \
+                   (isinstance(v, (dict, list)) and n in EXPAND[self.entity]):
+                    self.fields[n] = {'type': 'number'}
+                elif isinstance(v, str):
+                    self.fields[n] = {'type': 'string'}
+
+        return self.fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
-              select_properties=[], skip_geometry=False, q=None):
+              sortby=[], select_properties=[], skip_geometry=False, q=None):
         """
-        Load sensorthings data
+        Load STA data
+
         :param startindex: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
@@ -77,30 +102,34 @@ class SensorthingsProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
+
         :returns: dict of GeoJSON FeatureCollection
         """
+        # Make params
+        params = {
+            '$expand': EXPAND[self.entity], '$skip': startindex, '$top': limit
+        }
+        if properties:
+            params['$filter'] = self._make_filter(properties)
+        if sortby:
+            params['$orderby'] = self._make_orderby(sortby)
+
+        # Form URL for GET request
+        if identifier:
+            r = get(f'{self.url}({identifier})', params=params)
+            v = [r.json(), ]
+        else:
+            r = get(self.url, params=params)
+            v = r.json().get('value')
+
+        if r.status_code == codes.bad:
+            LOGGER.error('Bad http response code')
+            raise ProviderConnectionError('Bad http response code')
 
         feature_collection = {
             'type': 'FeatureCollection',
             'features': []
         }
-
-        params = {
-         '$expand': EXPAND[self.entity], '$skip': startindex, '$top': limit
-         }
-
-        # Form URL for GET request
-        url = self.data + self.entity
-        if identifier:
-            r = requests.get(url + f'({identifier})', params=params)
-            v = [r.json(), ]
-        else:
-            r = requests.get(url, params=params)
-            v = r.json().get('value')
-
-        if r.status_code == requests.codes.bad:
-            LOGGER.error('Bad http response code')
-            raise ProviderConnectionError('Bad http response code')
 
         # if hits, return count
         if resulttype == 'hits':
@@ -108,35 +137,22 @@ class SensorthingsProvider(BaseProvider):
             feature_collection['numberMatched'] = len(v)
             return feature_collection
 
+        keys = () if not self.properties and not select_properties else \
+            set(self.properties) | set(select_properties)
+
         for entity in v:
             # Make feature
             f = {
                 'type': 'Feature', 'properties': {},
-                'geometry': None,
-                'id': str(entity.pop(self.id_field))
-                }
+                'geometry': None, 'id': str(entity.pop(self.id_field))
+            }
 
             # Make geometry
             if not skip_geometry:
-                try:
-                    if self.entity == 'Things':
-                        f['geometry'] = entity \
-                            .pop('Locations')[0]['location']
-                    elif self.entity == 'Datastreams':
-                        f['geometry'] = entity.pop('observedArea')
-                    elif self.entity == 'Observations':
-                        f['geometry'] = entity \
-                            .get('FeatureOfInterest').pop('feature')
-                except ProviderItemNotFoundError as err:
-                    LOGGER.error(err)
-                    raise ProviderItemNotFoundError(err)
+                f['geometry'] = self._geometry(entity)
 
             # Fill properties block
-            if self.properties or select_properties:
-                keys = set(self.properties) | set(select_properties)
-            else:
-                keys = ()
-            f['properties'] = self._parse_properties(entity, keys)
+            f['properties'] = self._expand_properties(entity, keys)
 
             feature_collection['features'].append(f)
 
@@ -145,22 +161,103 @@ class SensorthingsProvider(BaseProvider):
         else:
             return feature_collection
 
-    def _parse_properties(self, entity, keys=()):
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
-        Private function: parse sensorthings entity into feature property
+        STA query
+
+        :param startindex: starting record to return (default 0)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime_: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
+
+        :returns: dict of GeoJSON FeatureCollection
+        """
+
+        return self._load(startindex, limit, resulttype, properties=properties,
+                          sortby=sortby, select_properties=select_properties,
+                          skip_geometry=skip_geometry)
+
+    def get(self, identifier, **kwargs):
+        """
+        Query the STA by id
+
+        :param identifier: feature id
+        :returns: dict of single GeoJSON feature
+        """
+        return self._load(identifier=identifier)
+
+    def _make_filter(self, properties):
+        """
+        Make STA filter from query properties
+
+        :param properties: list of tuples (name, value)
+
+        :returns: STA $filter string of properties
+        """
+        ret = []
+        for (name, value) in properties:
+            if name in EXPAND[self.entity]:
+                ret.append(f'{name}/@iot.id eq {value}')
+            else:
+                ret.append(f'{name} eq {value}')
+
+        return ' and '.join(ret)
+
+    def _make_orderby(self, sortby):
+        """
+        Make STA filter from query properties
+
+        :param sortby: list of dicts (property, order)
+
+        :returns: STA $orderby string
+        """
+        ret = []
+        _map = {'+': 'asc', '-': 'desc'}
+        for _ in sortby:
+            if _['property'] in EXPAND[self.entity]:
+                ret.append(f'{_["property"]}/@iot.id {_map[_["order"]]}')
+            else:
+                ret.append(f'{property} {_map[_["order"]]}')
+        return ','.join(ret)
+
+    def _geometry(self, entity):
+        """
+        Private function: Retrieve STA geometry
+
+        :param entity: sensorthings entity
+
+        :returns: GeoJSON Geometry for feature
+        """
+        try:
+            if self.entity == 'Things':
+                return entity.pop('Locations')[0]['location']
+            elif self.entity == 'Datastreams':
+                return entity['Observations'][0][
+                    'FeatureOfInterest'].pop('feature')
+            elif self.entity == 'Observations':
+                return entity.get('FeatureOfInterest').pop('feature')
+        except ProviderItemNotFoundError as err:
+            LOGGER.error(err)
+            raise ProviderItemNotFoundError(err)
+
+    def _expand_properties(self, entity, keys=()):
+        """
+        Private function: Parse STA entity into feature
+
         :param entity: sensorthings entity
         :param keys: keys used in properties block
+
         :returns: dict of sensorthings feature properties
         """
         for k, v in entity.items():
-            # Clean @iot.selflink for html
-            if isinstance(v, dict) and v.get('@iot.selfLink'):
-                v['@iot.selfLink'] += '?'
-            elif isinstance(v, list) and v[0].get('@iot.selfLink'):
-                v[0]['@iot.selfLink'] += '?'
-            elif k == '@iot.selfLink':
-                entity[k] += '?'
-
             # Create relative links
             if k in ['Thing', 'Datastream']:
                 entity[k] = '{}/collections/{}/items/{}'.format(
@@ -186,35 +283,5 @@ class SensorthingsProvider(BaseProvider):
 
         return entity
 
-    def query(self, startindex=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
-        """
-        Sensorthings query
-        :param startindex: starting record to return (default 0)
-        :param limit: number of records to return (default 10)
-        :param resulttype: return results or hit limit (default results)
-        :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime_: temporal (datestamp or extent)
-        :param properties: list of tuples (name, value)
-        :param sortby: list of dicts (property, order)
-        :param select_properties: list of property names
-        :param skip_geometry: bool of whether to skip geometry (default False)
-        :param q: full-text search term(s)
-        :returns: dict of GeoJSON FeatureCollection
-        """
-
-        return self._load(startindex, limit, resulttype,
-                          select_properties=select_properties,
-                          skip_geometry=skip_geometry)
-
-    def get(self, identifier):
-        """
-        query the provider by id
-        :param identifier: feature id
-        :returns: dict of single GeoJSON feature
-        """
-        return self._load(identifier=identifier)
-
     def __repr__(self):
-        return '<SensorthingsProvider> {}, {}'.format(self.data, self.table)
+        return '<SensorthingsProvider> {}, {}'.format(self.data, self.entity)
