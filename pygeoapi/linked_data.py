@@ -173,7 +173,7 @@ def jsonldify_collection(cls, collection, locale_):
     return dataset
 
 
-def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
+def geojson2jsonld(config, data, dataset, identifier=None, id_field='id'):
     """
         Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
         read from, and extended by, the pygeoapi configuration for a particular
@@ -227,7 +227,6 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
                 identifier = '{}/collections/{}/items/{}'.format(
                     config['server']['url'], dataset, feature['id'])
 
-            # Note: @id or https://schema.org/url, both or something else?
             data['features'][i] = {
                 id_field: identifier,
                 'type': 'schema:Place'
@@ -272,26 +271,36 @@ def jsonldify_geometry(feature):
     }
 
     # Schema geometry
-    feature['schema:geo'] = {'@type': 'schema:GeoShape'}
+    feature['schema:geo'] = geom2schemageo(geom)
+
+
+def geom2schemageo(geom):
+    """
+        Render Schema Geometry from a GeoJSON base.
+
+        :param geom: shapely geom of feature
+
+        :returns: dict of rendered schema:geo geometry
+    """
+    f = {'@type': 'schema:GeoShape'}
     if geom.geom_type == 'Point':
-        feature['schema:geo'] = {
+        return {
             '@type': 'schema:GeoCoordinates',
             'schema:longitude': geom.x,
             'schema:latitude': geom.y
         }
-        return
 
     elif geom.geom_type == 'LineString':
         _ = [f'{x},{y}' for (x, y) in geom.coords[:]]
-        feature['schema:geo']['schema:line'] = ' '.join(_)
-        return
+        f['schema:line'] = ' '.join(_)
+        return f
 
     elif geom.geom_type == 'MultiLineString':
         points = list()
         [points.extend(p.coords[:]) for p in geom.geoms]
         _ = [f'{x},{y}' for (x, y) in points]
-        feature['schema:geo']['schema:line'] = ' '.join(_)
-        return
+        f['schema:line'] = ' '.join(_)
+        return f
 
     elif geom.geom_type == 'MultiPoint':
         poly_geom = [(p.x, p.y) for p in geom.geoms]
@@ -318,4 +327,5 @@ def jsonldify_geometry(feature):
                 poly_geom.extend(p.exterior.coords[:])
 
     _ = [f'{x},{y}' for (x, y) in poly_geom]
-    feature['schema:geo']['schema:polygon'] = ' '.join(_)
+    f['schema:polygon'] = ' '.join(_)
+    return f
