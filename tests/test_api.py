@@ -359,7 +359,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 5
+    assert len(collections['collections']) == 6
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -751,35 +751,65 @@ def test_get_collection_item(config, api_):
 
 def test_get_collection_item_json_ld(config, api_):
     req = mock_request({'f': 'jsonld'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    rsp_headers, _, response = api_.get_collection_item(req, 'objects', '3')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
     assert '@context' in feature
     assert all((f in feature['@context'][0] for
                 f in ('schema', 'type', 'geosparql')))
-    assert len(feature['@context']) > 1
-    assert 'schema' in feature['@context'][1]
-    assert feature['@context'][1]['schema'] == 'https://schema.org/'
-    assert feature['stn_id'] == '35'
-    assert feature['id'].startswith('http://')
-    assert feature['id'].endswith('/collections/obs/items/371')
+    assert len(feature['@context']) == 1
+    assert 'schema' in feature['@context'][0]
+    assert feature['@context'][0]['schema'] == 'https://schema.org/'
+    assert feature['id'] == 3
     expanded = jsonld.expand(feature)[0]
+
     assert expanded['@id'].startswith('http://')
-    assert expanded['@id'].endswith('/collections/obs/items/371')
-    assert expanded['https://schema.org/identifier'][0][
-            '@type'] == 'https://schema.org/Text'
-    assert expanded['https://schema.org/identifier'][0][
-            '@value'] == '35'
+    assert expanded['@id'].endswith('/collections/objects/items/Point')
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
             'http://www.opengis.net/ont/geosparql#asWKT'][0][
-            '@value'] == 'POINT (-75 45)'
+            '@value'] == 'POINT (-85 33)'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/latitude'][0][
-            '@value'] == 45.0
+            '@value'] == 33
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/longitude'][0][
-            '@value'] == -75.0
+            '@value'] == -85
+
+    _, _, response = api_.get_collection_item(req, 'objects', '2')
+    feature = json.loads(response)
+    assert feature['geometry']['type'] == 'MultiPoint'
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'MULTIPOINT (10 40, 40 30, 20 20, 30 10)'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/polygon'][0][
+            '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"
+
+    _, _, response = api_.get_collection_item(req, 'objects', '4')
+    feature = json.loads(response)
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'MULTILINESTRING ((10 10, 20 20, 10 40), ' \
+        '(40 40, 30 30, 40 20, 30 10))'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/line'][0][
+            '@value'] == '10.0,10.0 20.0,20.0 10.0,40.0 40.0,40.0 ' \
+        '30.0,30.0 40.0,20.0 30.0,10.0'
+
+    _, _, response = api_.get_collection_item(req, 'objects', '7')
+    feature = json.loads(response)
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), '\
+        '((15 5, 40 10, 10 20, 5 10, 15 5)))'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/polygon'][0][
+            '@value'] == '15.0,5.0 5.0,10.0 10.0,40.0 '\
+        '45.0,40.0 40.0,10.0 15.0,5.0'
 
     req = mock_request({'f': 'jsonld', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
