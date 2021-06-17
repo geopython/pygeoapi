@@ -59,7 +59,7 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # add "--build-arg BUILD_DEV_IMAGE=true" to Docker build command when building with test/doc tools
 
 # ARGS
-ARG TIMEZONE="Etc/UTC"
+ARG TZ="Etc/UTC"
 ARG LANG="en_US.UTF-8"
 ARG BUILD_DEV_IMAGE="false"
 ARG ADD_DEB_PACKAGES="python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-pandas python3-pyproj python3-elasticsearch python3-pymongo python3-zarr python3-dask python3-tinydb"
