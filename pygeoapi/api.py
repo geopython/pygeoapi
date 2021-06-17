@@ -344,12 +344,12 @@ class APIRequest:
         return self._data
 
     @property
-    def params(self):
+    def params(self) -> dict:
         """Returns the Request query parameters dict"""
         return self._args
 
     @property
-    def path_info(self):
+    def path_info(self) -> str:
         """Returns the web server request path info part"""
         return self._path_info
 
@@ -609,7 +609,7 @@ class API:
             return headers, 200, content
 
         if request.format == F_JSONLD:
-            return headers, 200, to_json(self.fcmld, self.pretty_print)  # noqa
+            return headers, 200, to_json(self.fcmld, self.pretty_print)
 
         return headers, 200, to_json(fcm, self.pretty_print)
 
@@ -1004,7 +1004,7 @@ class API:
             return headers, 200, content
 
         if request.format == F_JSONLD:
-            jsonld = self.fcmld.copy()  # noqa
+            jsonld = self.fcmld.copy()
             if dataset is not None:
                 jsonld['dataset'] = jsonldify_collection(self, fcm,
                                                          request.locale)
@@ -1097,7 +1097,9 @@ class API:
         return headers, 200, to_json(queryables, self.pretty_print)
 
     @pre_process
-    def get_collection_items(self, request: Union[APIRequest, Any], dataset, pathinfo=None):  # noqa
+    def get_collection_items(
+            self, request: Union[APIRequest, Any],
+            dataset, pathinfo=None) -> Tuple[dict, int, str]:
         """
         Queries collection
 
@@ -1598,7 +1600,7 @@ class API:
         query_args = {}
         format_ = F_JSON
 
-        # Force content type and language (en-US only) headers
+        # Force response content type and language (en-US only) headers
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                FORMAT_TYPES[F_JSON])
 
@@ -1651,7 +1653,8 @@ class API:
 
         query_args['datetime_'] = datetime_
 
-        if request.format:
+        if 'f' in request.params:
+            # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
         range_subset = request.params.get('rangeSubset')
@@ -1712,8 +1715,7 @@ class API:
                 500, headers, format_, 'NoApplicableCode', msg)
 
         mt = collection_def['format']['name']
-
-        if format_ == mt:
+        if format_ == mt:  # native format
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
         elif format_ == F_JSON:
@@ -2491,9 +2493,9 @@ class API:
                     'job': {'id': job_id},
                     'result': job_output
                 }
-                content = render_j2_template(self.config,
-                                             'processes/jobs/results/index.html',  # noqa
-                                             data, SYSTEM_LOCALE)
+                content = render_j2_template(
+                    self.config, 'processes/jobs/results/index.html',
+                    data, SYSTEM_LOCALE)
 
         return headers, 200, content
 
@@ -2850,7 +2852,7 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
         msg = f'Invalid format: {request.format}'
         return self.get_exception(
-            400, headers, F_JSON, 'InvalidParameterValue', msg)
+            400, headers, request.format, 'InvalidParameterValue', msg)
 
 
 def validate_bbox(value=None) -> list:
