@@ -765,7 +765,7 @@ def test_get_collection_item_json_ld(config, api_):
     expanded = jsonld.expand(feature)[0]
 
     assert expanded['@id'].startswith('http://')
-    assert expanded['@id'].endswith('/collections/objects/items/Point')
+    assert expanded['@id'].endswith('/collections/objects/items/3')
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
             'http://www.opengis.net/ont/geosparql#asWKT'][0][
             '@value'] == 'POINT (-85 33)'
@@ -787,6 +787,16 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/polygon'][0][
             '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"
 
+    _, _, response = api_.get_collection_item(req, 'objects', '1')
+    feature = json.loads(response)
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'LINESTRING (30 10, 10 30, 40 40)'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/line'][0][
+            '@value'] == '30.0,10.0 10.0,30.0 40.0,40.0'
+
     _, _, response = api_.get_collection_item(req, 'objects', '4')
     feature = json.loads(response)
     expanded = jsonld.expand(feature)[0]
@@ -798,6 +808,16 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/line'][0][
             '@value'] == '10.0,10.0 20.0,20.0 10.0,40.0 40.0,40.0 ' \
         '30.0,30.0 40.0,20.0 30.0,10.0'
+
+    _, _, response = api_.get_collection_item(req, 'objects', '5')
+    feature = json.loads(response)
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/polygon'][0][
+            '@value'] == '30.0,10.0 40.0,40.0 20.0,40.0 10.0,20.0 30.0,10.0'
 
     _, _, response = api_.get_collection_item(req, 'objects', '7')
     feature = json.loads(response)

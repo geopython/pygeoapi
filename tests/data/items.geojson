@@ -11,7 +11,7 @@
       },
         "properties": {
           "fid": 1,
-          "uri": "http://localhost:5000/collections/objects/items/LineString",
+          "uri": "http://localhost:5000/collections/objects/items/1",
           "name": "LineString"
       }
     },
@@ -25,7 +25,7 @@
       },
         "properties": {
           "fid": 2,
-          "uri": "http://localhost:5000/collections/objects/items/MultiPoint",
+          "uri": "http://localhost:5000/collections/objects/items/2",
           "name": "MultiPoint"
         }
     },
@@ -40,7 +40,7 @@
       },
       "properties": {
         "fid": 3,
-        "uri": "http://localhost:5000/collections/objects/items/Point",
+        "uri": "http://localhost:5000/collections/objects/items/3",
         "name": "Point"
       }
     },
@@ -55,7 +55,7 @@
       },
       "properties": {
         "fid": 4,
-        "uri": "http://localhost:5000/collections/objects/items/MultiLineString",
+        "uri": "http://localhost:5000/collections/objects/items/4",
         "name": "MultiLineString"
       }
     },
@@ -69,7 +69,7 @@
       },
       "properties": {
         "fid": 5,
-        "uri": "http://localhost:5000/collections/objects/items/Polygon",
+        "uri": "http://localhost:5000/collections/objects/items/5",
         "name": "Polygon"
       }
     },
@@ -84,7 +84,7 @@
       },
       "properties": {
         "fid": 6,
-        "uri": "http://localhost:5000/collections/objects/items/PolygonHole",
+        "uri": "http://localhost:5000/collections/objects/items/6",
         "name": "PolygonHole"
       }
     },
@@ -103,7 +103,7 @@
       },
       "properties": {
         "fid": 7,
-        "uri": "http://localhost:5000/collections/objects/items/MultiPolygon",
+        "uri": "http://localhost:5000/collections/objects/items/7",
         "name": "MultiPolygon"
       }
     },
@@ -123,7 +123,7 @@
       },
       "properties": {
         "fid": 8,
-        "uri": "http://localhost:5000/collections/objects/items/MultiPolygonWithHole",
+        "uri": "http://localhost:5000/collections/objects/items/8",
         "name": "MultiPolygonWithHole"
       }
     },
@@ -152,7 +152,7 @@
       },
       "properties": {
         "fid": 9,
-        "uri": "http://localhost:5000/collections/objects/items/GeometryCollection",
+        "uri": "http://localhost:5000/collections/objects/items/9",
         "name": "GeometryCollection"
       }
     }
