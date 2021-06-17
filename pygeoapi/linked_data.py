@@ -195,7 +195,7 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
     }
 
     if identifier:
-        # Single geojsonld
+        # Single jsonld
         defaultVocabulary.update({
             'geosparql': 'http://www.opengis.net/ont/geosparql#'
         })
@@ -209,10 +209,10 @@ def geojson2geojsonld(config, data, dataset, identifier=None, id_field='id'):
         data[id_field] = identifier
 
     else:
-        # Collection of geojsonld
+        # Collection of jsonld
         defaultVocabulary.update({
-                'features': 'schema:itemListElement',
-                'FeatureCollection': 'schema:itemList'
+            'features': 'schema:itemListElement',
+            'FeatureCollection': 'schema:itemList'
         })
 
         data['@id'] = '{}/collections/{}/items/'.format(
@@ -301,6 +301,7 @@ def jsonldify_geometry(feature):
         poly_geom = geom.exterior.coords[:]
 
     elif geom.geom_type == 'MultiPolygon':
+        # MultiPolygon to Polygon (buffer of 0 helps ensure manifold polygon)
         poly = unary_union(geom.buffer(0))
         if poly.geom_type.startswith('Multi') or not poly.is_valid:
             LOGGER.debug('Invalid Poly: {}'.format(poly.geom_type))

@@ -233,15 +233,18 @@ The metadata for an instance is determined by the content of the `metadata`_ sec
 This metadata is included automatically, and is sufficient for inclusion in major indices of datasets, including the
 `Google Dataset Search`_.
 
-For collections, at the level of item, the default the JSON-LD representation adds:
+For collections, at the level of item, the default JSON-LD representation adds:
 
 - An ``@id`` for the item, which is the URL for that item. If uri_field is specified,
   it is used, otherwise the URL is to its HTML representation in pygeoapi.
-- separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry.
+- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo` 
+  only supports point, line, and polygon geometries. Multipart lines are merged into a single line.
+  The rest of the multipart geometries are transformed reduced and into a polygon via unary union
+  or convex hull transform.
 - ``@context`` for the GeoSPARQL and schema geometries.
 - The unpacked properties block into the main body of the item.
 
-For collections, at the level of items, the default the JSON-LD representation adds:
+For collections, at the level of items, the default JSON-LD representation adds:
 
 - A schema.org itemList of the ``@id`` and ``@type`` of each feature in the collection.
 
