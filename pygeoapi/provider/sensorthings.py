@@ -34,6 +34,8 @@ import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import yaml_load
+import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,15 +62,22 @@ class SensorthingsProvider(BaseProvider):
         :returns: pygeoapi.provider.base.SensorthingsProvider
         """
         LOGGER.debug("Logger STA Init")
+
         super().__init__(provider_def)
         self.entity = provider_def.get('entity')
         self.url = self.data + self.entity
-        self.rel_link = provider_def.get('relative_link')
+        if self.id_field is None:
+            self.id_field = '@iot.id'
+
+        with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+            CONFIG = yaml_load(fh)
+        self.rel_link = CONFIG['server']['url']
+
         self.get_fields()
 
     def get_fields(self):
         """
-         Get fields from STA Provider
+         Get fields of STA Provider
 
         :returns: dict of fields
         """

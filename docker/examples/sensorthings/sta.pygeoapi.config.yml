@@ -125,8 +125,6 @@ resources:
             name: Sensorthings 
             entity: Things 
             data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: '@iot.id'
-            relative_link: http://localhost:5000
             properties:
                 - name
                 - Datastreams
@@ -163,8 +161,6 @@ resources:
             name: Sensorthings 
             entity: Datastreams 
             data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: '@iot.id'
-            relative_link: http://localhost:5000
             properties:
                 - name
                 - Thing
@@ -203,8 +199,6 @@ resources:
             name: Sensorthings 
             entity: Observations 
             data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: '@iot.id'
-            relative_link: http://localhost:5000
             properties:
                 - phenomenonTime
                 - result
