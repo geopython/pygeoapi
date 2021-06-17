@@ -147,7 +147,6 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
-          geojsonld: true # use default geojsonld behavior (see Linked Data section)
           context:  # linked data configuration (see Linked Data section)
               - datetime: https://schema.org/DateTime
               - vocab: https://example.com/vocab#
@@ -234,17 +233,24 @@ The metadata for an instance is determined by the content of the `metadata`_ sec
 This metadata is included automatically, and is sufficient for inclusion in major indices of datasets, including the
 `Google Dataset Search`_.
 
-For collections, at the level of an item or items, the default the JSON-LD representation adds:
+For collections, at the level of item, the default JSON-LD representation adds:
 
-- The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
-  in pygeoapi)
+- An ``@id`` for the item, which is the URL for that item. If uri_field is specified,
+  it is used, otherwise the URL is to its HTML representation in pygeoapi.
+- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo` 
+  only supports point, line, and polygon geometries. Multipart lines are merged into a single line.
+  The rest of the multipart geometries are transformed reduced and into a polygon via unary union
+  or convex hull transform.
+- ``@context`` for the GeoSPARQL and schema geometries.
+- The unpacked properties block into the main body of the item.
+
+For collections, at the level of items, the default JSON-LD representation adds:
+
+- A schema.org itemList of the ``@id`` and ``@type`` of each feature in the collection.
 
 The optional configuration options for collections, at the level of an item of items, are:
 
-- If ``geojsonld`` is not specified or is ``true``, the JSON-LD will conform to the default configuration presenting GeoJSON-LD. If ``geojsonld`` is ``false`` the individual item JSON-LD will conform to standard JSON-LD, and the ``@context`` will not include the geojson vocabulary, but only one specifying the ``@id`` property, the ``@type`` property, and schema.org/ vocabulary. In addition, properties block will be expanded into the main body, non-point geometry will be removed, and point-type geometry will be represented as https://schema.org geometry instead of geojson.
-- If ``uri_field`` is specified, JSON-LD will be updated such that ``@id:uri_field`` for each item in a collection.
-
+- If ``uri_field`` is specified, JSON-LD will be updated such that the ``@id`` has the value of ``uri_field`` for each item in a collection
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.
