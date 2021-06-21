@@ -1,0 +1,160 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString", 
+        "coordinates": [
+          [30.0, 10.0], [10.0, 30.0], [40.0, 40.0]
+        ]
+      },
+        "properties": {
+          "fid": 1,
+          "uri": "http://localhost:5000/collections/objects/items/1",
+          "name": "LineString"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint", 
+        "coordinates": [
+            [10.0, 40.0], [40.0, 30.0], [20.0, 20.0], [30.0, 10.0]
+        ]
+      },
+        "properties": {
+          "fid": 2,
+          "uri": "http://localhost:5000/collections/objects/items/2",
+          "name": "MultiPoint"
+        }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85,
+          33
+        ]
+      },
+      "properties": {
+        "fid": 3,
+        "uri": "http://localhost:5000/collections/objects/items/3",
+        "name": "Point"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiLineString", 
+        "coordinates": [
+            [[10.0, 10.0], [20.0, 20.0], [10.0, 40.0]], 
+            [[40.0, 40.0], [30.0, 30.0], [40.0, 20.0], [30.0, 10.0]]
+        ]
+      },
+      "properties": {
+        "fid": 4,
+        "uri": "http://localhost:5000/collections/objects/items/4",
+        "name": "MultiLineString"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon", 
+        "coordinates": [
+          [[30.0, 10.0], [40.0, 40.0], [20.0, 40.0], [10.0, 20.0], [30.0, 10.0]]
+        ]
+      },
+      "properties": {
+        "fid": 5,
+        "uri": "http://localhost:5000/collections/objects/items/5",
+        "name": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon", 
+        "coordinates": [
+            [[35.0, 10.0], [45.0, 45.0], [15.0, 40.0], [10.0, 20.0], [35.0, 10.0]], 
+            [[20.0, 30.0], [35.0, 35.0], [30.0, 20.0], [20.0, 30.0]]
+        ]
+      },
+      "properties": {
+        "fid": 6,
+        "uri": "http://localhost:5000/collections/objects/items/6",
+        "name": "PolygonHole"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+          "type": "MultiPolygon", 
+          "coordinates": [
+              [
+                  [[30.0, 20.0], [45.0, 40.0], [10.0, 40.0], [30.0, 20.0]]
+              ], 
+              [
+                  [[15.0, 5.0], [40.0, 10.0], [10.0, 20.0], [5.0, 10.0], [15.0, 5.0]]
+              ]
+          ]
+      },
+      "properties": {
+        "fid": 7,
+        "uri": "http://localhost:5000/collections/objects/items/7",
+        "name": "MultiPolygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+          "type": "MultiPolygon", 
+          "coordinates": [
+              [
+                  [[40.0, 40.0], [20.0, 45.0], [45.0, 30.0], [40.0, 40.0]]
+              ], 
+              [
+                  [[20.0, 35.0], [10.0, 30.0], [10.0, 10.0], [30.0, 5.0], [45.0, 20.0], [20.0, 35.0]], 
+                  [[30.0, 20.0], [20.0, 15.0], [20.0, 25.0], [30.0, 20.0]]
+              ]
+          ]
+      },
+      "properties": {
+        "fid": 8,
+        "uri": "http://localhost:5000/collections/objects/items/8",
+        "name": "MultiPolygonWithHole"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+          "type": "GeometryCollection",
+          "geometries": [
+              {
+                  "type": "Point",
+                  "coordinates": [40.0, 10.0]
+              },
+              {
+                  "type": "LineString",
+                  "coordinates": [
+                      [10.0, 10.0], [20.0, 20.0], [10.0, 40.0]
+                  ]
+              },
+              {
+                  "type": "Polygon",
+                  "coordinates": [
+                      [[40.0, 40.0], [20.0, 45.0], [45.0, 30.0], [40.0, 40.0]]
+                  ]
+              }
+          ]
+      },
+      "properties": {
+        "fid": 9,
+        "uri": "http://localhost:5000/collections/objects/items/9",
+        "name": "GeometryCollection"
+      }
+    }
+  ]
+}
