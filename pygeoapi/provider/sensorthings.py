@@ -27,8 +27,7 @@
 #
 # =================================================================
 
-from requests import get
-from requests import codes
+from requests import get, codes
 from requests.compat import urljoin
 import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
@@ -39,13 +38,39 @@ import os
 
 LOGGER = logging.getLogger(__name__)
 
-EXPAND = {
-    'Things': 'Locations,Datastreams($select=@iot.id)',
-    'Observations': 'Datastream($select=@iot.id),FeatureOfInterest',
-    'Datastreams': 'Sensor,ObservedProperty,Thing($select=@iot.id),\
-     Observations($select=@iot.id;$expand=FeatureOfInterest($select=feature);\
-      $orderby=phenomenonTime desc)'
+_EXPAND = {
+    'Things': """
+        Locations,
+        Datastreams(
+            $select=@iot.id,properties
+            )
+    """,
+    'Observations': """
+        Datastream(
+            $select=@iot.id,properties
+            ),
+        FeatureOfInterest
+    """,
+    'Datastreams': """
+        Sensor
+        ,ObservedProperty
+        ,Thing(
+            $select=@iot.id,properties
+            )
+        ,Thing/Locations(
+            $select=location
+            )
+        ,Observations(
+            $select=@iot.id;
+            $orderby=phenomenonTime_desc
+            )
+        ,Observations/FeatureOfInterest(
+            $select=feature
+            )
+    """
 }
+EXPAND = {k: ''.join(v.split()).replace('_', ' ')
+          for (k, v) in _EXPAND.items()}
 
 
 class SensorthingsProvider(BaseProvider):
@@ -66,6 +91,7 @@ class SensorthingsProvider(BaseProvider):
         super().__init__(provider_def)
         self.entity = provider_def.get('entity')
         self.url = self.data + self.entity
+        self.intralink = provider_def.get('intralink', False)
         if self.id_field is None:
             self.id_field = '@iot.id'
 
@@ -119,8 +145,8 @@ class SensorthingsProvider(BaseProvider):
         params = {
             '$expand': EXPAND[self.entity], '$skip': startindex, '$top': limit
         }
-        if properties:
-            params['$filter'] = self._make_filter(properties)
+        if properties or bbox or datetime_:
+            params['$filter'] = self._make_filter(properties, bbox, datetime_)
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
 
@@ -191,7 +217,8 @@ class SensorthingsProvider(BaseProvider):
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, limit, resulttype, properties=properties,
+        return self._load(startindex, limit, resulttype, bbox=bbox,
+                          datetime_=datetime_, properties=properties,
                           sortby=sortby, select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
@@ -204,11 +231,13 @@ class SensorthingsProvider(BaseProvider):
         """
         return self._load(identifier=identifier)
 
-    def _make_filter(self, properties):
+    def _make_filter(self, properties, bbox=[], datetime_=None):
         """
         Make STA filter from query properties
 
         :param properties: list of tuples (name, value)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime_: temporal (datestamp or extent)
 
         :returns: STA $filter string of properties
         """
@@ -218,6 +247,30 @@ class SensorthingsProvider(BaseProvider):
                 ret.append(f'{name}/@iot.id eq {value}')
             else:
                 ret.append(f'{name} eq {value}')
+
+        if bbox:
+            minx, miny, maxx, maxy = bbox
+            bbox_ = f'POLYGON (({minx} {miny}, {maxx} {miny}, \
+                     {maxx} {maxy}, {minx} {maxy}, {minx} {miny}))'
+            if self.entity == 'Things':
+                loc = 'Locations/location'
+            elif self.entity == 'Datastreams':
+                loc = 'Thing/Locations/location'
+            elif self.entity == 'Observations':
+                loc = 'FeatureOfInterest/feature'
+            ret.append(f"st_within({loc}, geography'{bbox_}')")
+
+        if datetime_ is not None:
+            if self.time_field is None:
+                LOGGER.error('time_field not enabled for collection')
+                raise ProviderQueryError()
+
+            if '/' in datetime_:
+                time_start, time_end = datetime_.split('/')
+                ret.append(f'{self.time_field} ge {time_start}')
+                ret.append(f'{self.time_field} le {time_end}')
+            else:
+                ret.append(f'{self.time_field} eq {datetime_}')
 
         return ' and '.join(ret)
 
@@ -232,10 +285,11 @@ class SensorthingsProvider(BaseProvider):
         ret = []
         _map = {'+': 'asc', '-': 'desc'}
         for _ in sortby:
-            if _['property'] in EXPAND[self.entity]:
-                ret.append(f'{_["property"]}/@iot.id {_map[_["order"]]}')
+            if (self.id_field == '@iot.id'
+                    and _['property'] in EXPAND[self.entity]):
+                ret.append(f"{_['property']}/@iot.id {_map[_['order']]}")
             else:
-                ret.append(f'{property} {_map[_["order"]]}')
+                ret.append(f"{_['property']} {_map[_['order']]}")
         return ','.join(ret)
 
     def _geometry(self, entity):
@@ -250,48 +304,65 @@ class SensorthingsProvider(BaseProvider):
             if self.entity == 'Things':
                 return entity.pop('Locations')[0]['location']
             elif self.entity == 'Datastreams':
-                return entity['Observations'][0][
-                    'FeatureOfInterest'].pop('feature')
+                return entity['Thing'].pop('Locations')[
+                    0]['location']
             elif self.entity == 'Observations':
                 return entity.get('FeatureOfInterest').pop('feature')
         except ProviderItemNotFoundError as err:
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
 
-    def _expand_properties(self, entity, keys=()):
+    def _expand_properties(self, entity, keys=(), uri=''):
         """
         Private function: Parse STA entity into feature
 
         :param entity: sensorthings entity
         :param keys: keys used in properties block
+        :param uri: uri of STA entity
 
         :returns: dict of sensorthings feature properties
         """
         for k, v in entity.items():
-            # Create relative links
-            if k in ['Thing', 'Datastream']:
-                _ = 'collections/{}/items/{}'.format(
-                    k + 's', v['@iot.id']
-                )
-                entity[k] = urljoin(self.rel_link, _)
-            elif k in ['Datastreams', 'Observations']:
-                for i, _v in enumerate(v):
-                    _ = 'collections/{}/items/{}'.format(
-                        k, _v['@iot.id']
-                    )
-                    v[i] = urljoin(self.rel_link, _)
+            # Create intra links
+            path_ = 'collections/{}/items/{}'
 
+            if self.uri_field is not None and k in ['properties']:
+                uri = v.get(self.uri_field, '')
+
+            elif self.intralink and k in ['Thing', 'Datastream']:
+                if self.uri_field is not None:
+                    entity[k] = v['properties'][self.uri_field]
+                elif self.id_field == '@iot.id':
+                    entity[k] = urljoin(
+                        self.rel_link,
+                        path_.format(k + 's', v['@iot.id'])
+                    )
+
+            elif self.intralink and k in ['Datastreams', 'Observations']:
+                if self.uri_field is not None and k not in ['Observations']:
+                    for i, _v in enumerate(v):
+                        v[i] = _v['properties'][self.uri_field]
+                elif self.id_field == '@iot.id':
+                    for i, _v in enumerate(v):
+                        v[i] = urljoin(
+                            self.rel_link,
+                            path_.format(k, _v['@iot.id'])
+                        )
+
+        # Make properties block
         if keys:
             ret = {}
             for k in keys:
-                # Make properties block
                 try:
                     ret[k] = entity.pop(k)
                 except KeyError as err:
                     LOGGER.error(err)
                     raise ProviderQueryError(err)
+            entity = ret
 
-            return ret
+        # Retain URI if present
+        if self.uri_field is not None and uri != '':
+            entity[self.uri_field] = uri
 
         return entity
 
