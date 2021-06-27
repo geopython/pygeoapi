@@ -212,11 +212,11 @@ class SQLiteGPKGProvider(BaseProvider):
         if self.application_id:
             cursor.execute("SELECT AutoGPKGStart()")
             result = cursor.fetchall()
-            if result[0][0] == 1:
+            if result[0][0] >= 1:
                 LOGGER.info("Loaded Geopackage support")
             else:
                 LOGGER.info("SELECT AutoGPKGStart() returned 0." +
-                            "Detected GPKG but couldnt load support")
+                            "Detected GPKG but couldn't load support")
                 raise InvalidPluginError
 
         if self.application_id:
