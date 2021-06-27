@@ -75,7 +75,6 @@ jobs:
         pytest tests/test_openapi.py
         #pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
-        pytest tests/test_sensorthings__provider.py 
         #pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
         pytest tests/test_util.py
