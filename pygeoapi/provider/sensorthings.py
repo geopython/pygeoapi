@@ -38,6 +38,13 @@ import os
 
 LOGGER = logging.getLogger(__name__)
 
+ENTITY = {
+    'Thing', 'Things', 'Observation', 'Observations',
+    'Location', 'Locations', 'Sensor', 'Sensors',
+    'Datastream', 'Datastreams', 'ObservedProperty',
+    'ObservedProperties', 'FeatureOfInterest', 'FeaturesOfInterest',
+    'HistoricalLocation', 'HistoricalLocations'
+    }
 _EXPAND = {
     'Things': """
         Locations,
@@ -89,15 +96,22 @@ class SensorthingsProvider(BaseProvider):
         LOGGER.debug("Logger STA Init")
 
         super().__init__(provider_def)
-        self.entity = provider_def.get('entity')
-        self.url = self.data + self.entity
+        try:
+            self.entity = provider_def['entity']
+            self.url = self.data + self.entity
+        except KeyError:
+            raise RuntimeError('name/type/data are required')
+
         self.intralink = provider_def.get('intralink', False)
-        if self.id_field is None:
+        if self.id_field is None or not self.id_field:
             self.id_field = '@iot.id'
 
-        with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-            CONFIG = yaml_load(fh)
-        self.rel_link = CONFIG['server']['url']
+        if provider_def.get('rel_link') and self.intralink:
+            self.rel_link = provider_def['rel_link']
+        elif self.intralink:
+            with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+                CONFIG = yaml_load(fh)
+                self.rel_link = CONFIG['server']['url']
 
         self.get_fields()
 
@@ -113,9 +127,8 @@ class SensorthingsProvider(BaseProvider):
             results = r.json()['value'][0]
 
             for (n, v) in results.items():
-
                 if isinstance(v, (int, float)) or \
-                   (isinstance(v, (dict, list)) and n in EXPAND[self.entity]):
+                   (isinstance(v, (dict, list)) and n in ENTITY):
                     self.fields[n] = {'type': 'number'}
                 elif isinstance(v, str):
                     self.fields[n] = {'type': 'string'}
@@ -149,6 +162,8 @@ class SensorthingsProvider(BaseProvider):
             params['$filter'] = self._make_filter(properties, bbox, datetime_)
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
+        if resulttype == 'hits':
+            params.pop('$top')
 
         # Form URL for GET request
         if identifier:
@@ -157,7 +172,6 @@ class SensorthingsProvider(BaseProvider):
         else:
             r = get(self.url, params=params)
             v = r.json().get('value')
-
         if r.status_code == codes.bad:
             LOGGER.error('Bad http response code')
             raise ProviderConnectionError('Bad http response code')
@@ -191,6 +205,9 @@ class SensorthingsProvider(BaseProvider):
             f['properties'] = self._expand_properties(entity, keys)
 
             feature_collection['features'].append(f)
+
+        feature_collection['numberReturned'] = len(
+            feature_collection['features'])
 
         if identifier:
             return f
@@ -243,7 +260,7 @@ class SensorthingsProvider(BaseProvider):
         """
         ret = []
         for (name, value) in properties:
-            if name in EXPAND[self.entity]:
+            if name in ENTITY:
                 ret.append(f'{name}/@iot.id eq {value}')
             else:
                 ret.append(f'{name} eq {value}')
@@ -267,8 +284,10 @@ class SensorthingsProvider(BaseProvider):
 
             if '/' in datetime_:
                 time_start, time_end = datetime_.split('/')
-                ret.append(f'{self.time_field} ge {time_start}')
-                ret.append(f'{self.time_field} le {time_end}')
+                if time_start != '..':
+                    ret.append(f'{self.time_field} ge {time_start}')
+                if time_end != '..':
+                    ret.append(f'{self.time_field} le {time_end}')
             else:
                 ret.append(f'{self.time_field} eq {datetime_}')
 
@@ -286,7 +305,7 @@ class SensorthingsProvider(BaseProvider):
         _map = {'+': 'asc', '-': 'desc'}
         for _ in sortby:
             if (self.id_field == '@iot.id'
-                    and _['property'] in EXPAND[self.entity]):
+                    and _['property'] in ENTITY):
                 ret.append(f"{_['property']}/@iot.id {_map[_['order']]}")
             else:
                 ret.append(f"{_['property']} {_map[_['order']]}")

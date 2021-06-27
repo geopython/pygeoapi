@@ -25,6 +25,7 @@ parameters.
    OGR,✅,results/hits,✅,❌,❌,❌
    PostgreSQL,✅,results/hits,✅,❌,❌,❌
    SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
+   SensorThingsAPI,✅,results/hits,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -195,6 +196,28 @@ GeoPackage file:
          data: ./tests/data/poi_portugal.gpkg
          id_field: osm_id
          table: poi_portugal
+
+
+SensorThings API
+^^^^^^^^^^^^^^^^
+
+The Sensorthings API (STA) provider is capable of creating collections for the STA entities: 
+`Things`, `Datastreams`, and `Observations`. Each entity expands all STA entites 
+within a first degree relationship to itself; A pygeoapi configuration with all three entities represents 
+an entire STA endpoint. If intralink is `true`, the relationship between each entity will output as a 
+link within pygeoapi to the other entity collection. Futhermore, if uri_field is specified 
+(Observations cannot have a uri), it will overwrite the intra-pygeoapi link to the other entity.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: Sensorthings
+         data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+         id_field: '@iot.id'
+         entity: Datastreams 
+         time_field: phenomenonTime
+         intralink: true
 
 
 Data access examples
