@@ -201,12 +201,16 @@ GeoPackage file:
 SensorThings API
 ^^^^^^^^^^^^^^^^
 
-The Sensorthings API (STA) provider is capable of creating collections for the STA entities: 
-`Things`, `Datastreams`, and `Observations`. Each entity expands all STA entites 
-within a first degree relationship to itself; A pygeoapi configuration with all three entities represents 
-an entire STA endpoint. If intralink is `true`, the relationship between each entity will output as a 
-link within pygeoapi to the other entity collection. Futhermore, if uri_field is specified 
-(Observations cannot have a uri), it will overwrite the intra-pygeoapi link to the other entity.
+The Sensorthings API (STA) provider is capable of creating feature collections 
+for the STA entities: ``Things``, ``Datastreams``, and ``Observations``. Each 
+pygeoapi STA feature expands all entities within a first degree relationship 
+of itself. The default id_field is ``@iot.id``. The STA provider adds one 
+required field, entity, and an optional field, intralink. If intralink is 
+``true`` for an adjacent STA entity collection within a pygeoapi instance, 
+the expanded entity is instead represented by an intra-pygeoapi link 
+to the other entity. If both uri_field and intralink are declared by the 
+adjacent STA entity, the relationship to the adjacent entity is instead 
+represented by value of ``uri_field`` of the adjacent entity.
 
 .. code-block:: yaml
 
@@ -214,10 +218,14 @@ link within pygeoapi to the other entity collection. Futhermore, if uri_field is
        - type: feature
          name: Sensorthings
          data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-         id_field: '@iot.id'
+         uri_field: uri
          entity: Datastreams 
          time_field: phenomenonTime
          intralink: true
+
+A complete STA instance can be proxied with a pygeoapi configuration declaring 
+configurations for each of the three STA entities. There is a configuration 
+file in the docker examples.
 
 
 Data access examples

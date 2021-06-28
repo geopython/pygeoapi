@@ -58,8 +58,7 @@ def test_query(config):
     results = p.query()
     assert len(results['features']) == 10
     assert results['numberReturned'] == 10
-    assert results['features'][0]['properties'][
-        'Thing'] == 'http://localhost:5000/collections/Things/items/5'
+    assert len(results['features'][0]['properties']['Thing']) == 2
     assert len(results['features'][0]['properties']['Observations']) == 18
 
     assert results['features'][0]['geometry']['coordinates'][0] == -105.581
