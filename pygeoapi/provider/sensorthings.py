@@ -360,8 +360,13 @@ class SensorthingsProvider(BaseProvider):
             if self.entity == 'Things':
                 return entity.pop('Locations')[0]['location']
             elif self.entity == 'Datastreams':
-                return entity['Thing'].pop('Locations')[
+                try:
+                    geo = entity['Observations'][0][
+                        'FeatureOfInterest'].pop('feature')
+                except KeyError:
+                    geo = entity['Thing'].pop('Locations')[
                     0]['location']
+                return geo
             elif self.entity == 'Observations':
                 return entity.get('FeatureOfInterest').pop('feature')
         except ProviderItemNotFoundError as err:
