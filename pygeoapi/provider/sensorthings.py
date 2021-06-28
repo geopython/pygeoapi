@@ -252,7 +252,7 @@ class SensorthingsProvider(BaseProvider):
             return feature_collection
 
         v = [r.json(), ] if identifier else r.json().get('value')
-        
+
         # properties filter & display
         keys = (() if not self.properties and not select_properties else
                 set(self.properties) | set(select_properties))
@@ -365,7 +365,7 @@ class SensorthingsProvider(BaseProvider):
                         'FeatureOfInterest'].pop('feature')
                 except KeyError:
                     geo = entity['Thing'].pop('Locations')[
-                    0]['location']
+                        0]['location']
                 return geo
             elif self.entity == 'Observations':
                 return entity.get('FeatureOfInterest').pop('feature')

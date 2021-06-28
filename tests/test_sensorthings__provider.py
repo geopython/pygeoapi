@@ -85,6 +85,7 @@ def test_query_datastreams(config):
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
 
+
 def test_query_observations(config):
     config['properties'] = ['Datastream', 'phenomenonTime',
                             'FeatureOfInterest', 'result']
