@@ -119,7 +119,7 @@ resources:
           - type: feature
             name: Sensorthings 
             data: https://sta-demo.internetofwater.dev/api/v1.1/
-            uri_field: uri
+            # uri_field: uri
             entity: Things 
             intralink: true
             properties:
@@ -133,7 +133,6 @@ resources:
         keywords:
             - Datastreams
             - Sensorthings
-            - BRGM
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
@@ -151,16 +150,16 @@ resources:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: null
-                end: null
+                begin: 1944-10-14T12:00:00.00Z
+                end: 2021-02-09T15:55:01.00Z
         providers:          
           - type: feature
             name: Sensorthings 
             data: https://sta-demo.internetofwater.dev/api/v1.1/
-            uri_field: uri
+            # uri_field: uri
             entity: Datastreams 
             intralink: true
-            time_field: phenomenonTime
+            time_field: resultTime
             properties:
                 - name
                 - Thing
@@ -179,7 +178,7 @@ resources:
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
-              Datastreams: sosa:isMemberOf
+              Datastream: sosa:isMemberOf
               name: schema:name
         links:
             - type: application/html
@@ -192,8 +191,8 @@ resources:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: null
-                end: null
+                begin: 1944-10-14T12:00:00Z
+                end: 2021-02-09T15:55:01Z
         providers:
           - type: feature
             name: Sensorthings 
@@ -202,7 +201,6 @@ resources:
             intralink: true
             time_field: phenomenonTime
             properties:
-                - phenomenonTime
                 - result
                 - Datastream
                 - FeatureOfInterest
