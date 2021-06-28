@@ -2,7 +2,7 @@
 #
 # Authors: Gregory Petrochenkov <gpetrochenkov@usgs.gov>
 #
-# Copyright (c) 2020 Gregory Petrochenkov
+# Copyright (c) 2021 Gregory Petrochenkov
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
