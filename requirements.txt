@@ -1,6 +1,7 @@
 Babel
 click<8
 Flask
+jsonschema
 pyproj
 python-dateutil
 pytz

@@ -27,7 +27,24 @@
 #
 # =================================================================
 
-from pygeoapi.openapi import get_ogc_schemas_location
+import pytest
+
+from pygeoapi.openapi import get_oas, get_ogc_schemas_location, validate
+from pygeoapi.util import yaml_load
+
+from .util import get_test_file_path
+
+
+@pytest.fixture()
+def config():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
+def openapi():
+    with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
+        return yaml_load(fh)
 
 
 def test_str2bool():
@@ -45,3 +62,19 @@ def test_str2bool():
 
     default['ogc_schemas_location'] = '/opt/schemas.opengis.net'
     osl = get_ogc_schemas_location(default)
+
+
+def test_get_oas(config, openapi):
+    openapi_doc = get_oas(config)
+
+    assert isinstance(openapi_doc, dict)
+
+    is_valid = validate(openapi_doc)
+
+    assert is_valid is True
+
+
+def test_validate(openapi):
+    is_valid = validate(openapi)
+
+    assert is_valid is True
