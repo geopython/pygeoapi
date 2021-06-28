@@ -138,7 +138,7 @@ class ElasticsearchProvider(BaseProvider):
                 elif v['type'] == 'date':
                     fields_[k] = {'type': 'string', 'format': 'date'}
                 else:
-                    fields_[k] = {'type': 'string'}
+                    fields_[k] = {'type': v['type']}
 
         return fields_
 
