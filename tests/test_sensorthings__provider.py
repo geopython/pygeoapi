@@ -45,7 +45,7 @@ def config():
     }
 
 
-def test_query(config):
+def test_query_datastreams(config):
     p = SensorthingsProvider(config)
 
     fields = p.get_fields()
@@ -58,7 +58,6 @@ def test_query(config):
     results = p.query()
     assert len(results['features']) == 10
     assert results['numberReturned'] == 10
-    assert len(results['features'][0]['properties']['Thing']) == 2
     assert len(results['features'][0]['properties']['Observations']) == 18
 
     assert results['features'][0]['geometry']['coordinates'][0] == -105.581
@@ -74,9 +73,6 @@ def test_query(config):
 
     assert len(results['features'][0]['properties']) == 17
 
-    results = p.query(resulttype='hits')
-    assert results['numberMatched'] == 100
-
     results = p.query(bbox=[-109, 36, -106, 37])
     assert results['numberReturned'] == 8
 
@@ -89,10 +85,14 @@ def test_query(config):
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
 
+def test_query_observations(config):
     config['properties'] = ['Datastream', 'phenomenonTime',
                             'FeatureOfInterest', 'result']
     config['entity'] = 'Observations'
     p = SensorthingsProvider(config)
+
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 184352
 
     results = p.query(properties=[('result', 4), ])
     assert results['features'][0]['properties']['result'] == 4

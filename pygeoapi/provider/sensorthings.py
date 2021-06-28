@@ -233,7 +233,7 @@ class SensorthingsProvider(BaseProvider):
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
         if resulttype == 'hits':
-            params.pop('$top')
+            params['$count'] = 'true'
 
         # Form URL for GET request
         if identifier:
@@ -245,14 +245,14 @@ class SensorthingsProvider(BaseProvider):
             LOGGER.error('Bad http response code')
             raise ProviderConnectionError('Bad http response code')
 
-        v = [r.json(), ] if identifier else r.json().get('value')
-
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
-            feature_collection['numberMatched'] = len(v)
+            feature_collection['numberMatched'] = r.json().get('@iot.count')
             return feature_collection
 
+        v = [r.json(), ] if identifier else r.json().get('value')
+        
         # properties filter & display
         keys = (() if not self.properties and not select_properties else
                 set(self.properties) | set(select_properties))
