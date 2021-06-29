@@ -113,8 +113,6 @@ class SensorthingsProvider(BaseProvider):
         else:
             self._from_env()
 
-        LOGGER.debug(self._linkables)
-
         self.get_fields()
 
     def get_fields(self):

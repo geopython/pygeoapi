@@ -37,7 +37,7 @@ def config():
     return {
         'name': 'Sensorthings',
         'type': 'feature',
-        'data': 'https://sta-demo.internetofwater.dev/api/v1.1/',
+        'data': 'http://localhost:8080/FROST-Server/v1.1/',
         'rel_link': 'http://localhost:5000',
         'entity': 'Datastreams',
         'intralink': True,

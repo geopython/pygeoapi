@@ -43,6 +43,11 @@ jobs:
       uses: supercharge/mongodb-github-action@1.5.0
       with:
         mongodb-version: 4.4
+    - name: Install and run SensorthingsAPI
+        ses: actions/checkout@v2
+        run: |
+          wget https://raw.githubusercontent.com/FraunhoferIOSB/FROST-Server/master/scripts/docker-compose.yaml
+          docker-compose up -d
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
@@ -56,6 +61,7 @@ jobs:
         python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         #gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
+        python3 tests/load_sta_data.py tests/data/sta_iow_datastreams.geojson
     - name: run unit tests ⚙️
       run: |
         pytest tests/test_api.py
