@@ -125,13 +125,13 @@ properties:
                 description: server identification
                 properties:
                     title:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: the title of the service
                     description:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: some descriptive text about the service
                     keywords:
-                        $ref: '#/definitions/multilingual_array'
+                        $ref: '#/definitions/i18n_array'
                         description: list of keywords about the service
                     keywords_type:
                         type: string
@@ -143,7 +143,7 @@ properties:
                             - theme
                             - stratum
                     terms_of_service:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: terms of service
                     url:
                         type: string
@@ -158,10 +158,10 @@ properties:
                 description: licensing details
                 properties:
                     name:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: licensing details
                     url:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: license URL
                 required:
                     - name
@@ -170,10 +170,10 @@ properties:
                 description: service provider details
                 properties:
                     name:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: organization name
                     url:
-                        $ref: '#/definitions/multilingual_string'
+                        $ref: '#/definitions/i18n_string'
                         description: URL of provider
                 required:
                     - name
@@ -246,13 +246,13 @@ properties:
                                   - collection
                                   - stac-collection
                           title:
-                              $ref: '#/definitions/multilingual_string'
+                              $ref: '#/definitions/i18n_string'
                               description: the title of the service
                           description:
-                              $ref: '#/definitions/multilingual_string'
+                              $ref: '#/definitions/i18n_string'
                               description: some descriptive text about the service
                           keywords:
-                              $ref: '#/definitions/multilingual_array'
+                              $ref: '#/definitions/i18n_array'
                               description: list of keywords about the service
                           context:
                               type: array
@@ -441,9 +441,8 @@ properties:
                       required:
                           - type
                           - processor
-
 definitions:
-    multilingual_string:
+    i18n_string:
         oneOf:
             - type: string
             - type: object
@@ -451,8 +450,7 @@ definitions:
                   "^[a-z]{2}$":
                       allOf:
                           - type: string
-
-    multilingual_array:
+    i18n_array:
         oneOf:
             - type: array
               items:
@@ -464,7 +462,6 @@ definitions:
                           - type: array
                             items:
                                 type: string
-
 required:
     - server
     - logging
