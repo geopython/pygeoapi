@@ -456,7 +456,7 @@ def get_provider_default(providers):
 
     try:
         default = (next(d for i, d in enumerate(providers) if 'default' in d
-                   and d['default'] is True))
+                   and d['default']))
         LOGGER.debug('found default provider type')
     except StopIteration:
         LOGGER.debug('no default provider type.  Returning first provider')

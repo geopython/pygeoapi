@@ -29,6 +29,8 @@
 
 import pytest
 
+from jsonschema.exceptions import ValidationError
+
 from pygeoapi.openapi import (get_oas, get_ogc_schemas_location,
                               validate_openapi_document)
 from pygeoapi.util import yaml_load
@@ -72,10 +74,12 @@ def test_get_oas(config, openapi):
 
     is_valid = validate_openapi_document(openapi_doc)
 
-    assert is_valid is True
+    assert is_valid
 
 
 def test_validate_openapi_document(openapi):
     is_valid = validate_openapi_document(openapi)
+    assert is_valid
 
-    assert is_valid is True
+    with pytest.raises(ValidationError):
+        is_valid = validate_openapi_document({'foo': 'bar'})

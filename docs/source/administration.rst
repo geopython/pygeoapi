@@ -56,26 +56,7 @@ utility that can be run as follows:
 
 .. code-block:: bash
 
-   pygeoapi validate-openapi-document -o /path/to/my-pygeoapi-openapi.yml
-
-
-Verifying configuration files
------------------------------
-
-To ensure your YAML configurations are correctly formatted, you can use any YAML validator, or try
-the Python one-liner per below:
-
-.. code-block:: bash
-
-   python -c 'import yaml, sys; yaml.safe_load(sys.stdin)' < /path/to/my-pygeoapi-config.yml
-   python -c 'import yaml, sys; yaml.safe_load(sys.stdin)' < /path/to/my-pygeoapi-openapi.yml
-
-To ensure your OpenAPI JSON is correctly formatted, you can use any JSON validator, or try
-the Python one-liner per below:
-
-.. code-block:: bash
-
-   cat /path/to/my-pygeoapi-openapi.json | python -m json.tool
+   pygeoapi openapi validate -o /path/to/my-pygeoapi-openapi.yml
 
 
 Setting system environment variables

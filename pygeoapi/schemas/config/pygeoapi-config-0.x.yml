@@ -1,0 +1,472 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml
+title: pygeoapi configuration schema
+description: pygeoapi configuration schema
+
+type: object
+properties:
+    server:
+        type: object
+        description: server object
+        properties:
+            bind:
+                type: object
+                description: binding server information
+                properties:
+                    host:
+                        type: string
+                        description: binding IP
+                    port:
+                        type: integer
+                        description: binding port
+                required:
+                    - host
+                    - port
+            url:
+                type: string
+                description: URL of server (as used by client)
+            mimetype:
+                type: string
+                description: default MIME type
+            encoding:
+                type: string
+                description: default server encoding
+            language:
+                type: string
+                description: default server language
+            cors:
+                type: boolean
+                description: boolean on whether server should support CORS
+                default: false
+            pretty_print:
+                type: boolean
+                description: whether JSON responses should be pretty-printed
+                default: false
+            limit:
+                type: integer
+                description: server limit on number of items to return
+                default: 10
+            templates:
+                type: object
+                description: optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
+                properties:
+                    path:
+                        type: string
+                        description: path to templates folder containing the jinja2 template HTML files
+                    static:
+                        type: string
+                        description: path to static folder containing css, js, images and other static files referenced by the template
+            map:
+                type: object
+                description: leaflet map setup for HTML pages
+                properties:
+                    url:
+                        type: string
+                        description: URI template of tile server
+                    attribution:
+                        type: string
+                        description: map attribution
+                required:
+                    - url
+                    - attribution
+            ogc_schemas_location:
+                type: string
+                description: local copy of http://schemas.opengis.net
+            manager:
+                type: object
+                description: optional OGC API - Processes asynchronous job management
+                properties:
+                    name:
+                        type: string
+                        description: plugin name (see `pygeoapi.plugin` for supported process_managers)
+                    connection:
+                        type: string
+                        description: connection info to store jobs (e.g. filepath)
+                    output_dir:
+                        type: string
+                        description: temporary file area for storing job results (files)
+                required:
+                    - name
+                    - connection
+                    - output_dir
+        required:
+            - bind
+            - url
+            - mimetype
+            - encoding
+            - map
+    logging:
+        type: object
+        description: logging definitions
+        properties:
+            level:
+                type: string
+                description: |-
+                    The logging level (see https://docs.python.org/3/library/logging.html#logging-levels).
+                    If level is defined and logfile is undefined, logging messages are output to the server’s stdout
+                enum:
+                    - CRITICAL
+                    - ERROR
+                    - WARNING
+                    - INFO
+                    - DEBUG
+                    - NOTSET
+            logfile:
+                type: string
+                description: the full file path to the logfile.
+        required:
+            - level
+    metadata:
+        type: object
+        description: server metadata
+        properties:
+            identification:
+                type: object
+                description: server identification
+                properties:
+                    title:
+                        $ref: '#/definitions/multilingual_string'
+                        description: the title of the service
+                    description:
+                        $ref: '#/definitions/multilingual_string'
+                        description: some descriptive text about the service
+                    keywords:
+                        $ref: '#/definitions/multilingual_array'
+                        description: list of keywords about the service
+                    keywords_type:
+                        type: string
+                        description: keyword type as per the ISO 19115 MD_KeywordTypeCode codelist
+                        enum:
+                            - discipline
+                            - temporal
+                            - place
+                            - theme
+                            - stratum
+                    terms_of_service:
+                        $ref: '#/definitions/multilingual_string'
+                        description: terms of service
+                    url:
+                        type: string
+                        description: informative URL about the service
+                required:
+                    - title
+                    - description
+                    - keywords
+                    - url
+            license:
+                type: object
+                description: licensing details
+                properties:
+                    name:
+                        $ref: '#/definitions/multilingual_string'
+                        description: licensing details
+                    url:
+                        $ref: '#/definitions/multilingual_string'
+                        description: license URL
+                required:
+                    - name
+            provider:
+                type: object
+                description: service provider details
+                properties:
+                    name:
+                        $ref: '#/definitions/multilingual_string'
+                        description: organization name
+                    url:
+                        $ref: '#/definitions/multilingual_string'
+                        description: URL of provider
+                required:
+                    - name
+            contact:
+                type: object
+                description: service contact details
+                properties:
+                    name:
+                        type: string
+                        description: Lastname, Firstname
+                    position:
+                        type: string
+                        description: position
+                    address:
+                        type: string
+                        description: postal address
+                    city:
+                        type: string
+                        description: city
+                    stateorprovince:
+                        type: string
+                        description: administrative area
+                    postalcode:
+                        type: string
+                        description: postal or ZIP code
+                    country:
+                        type: string
+                        description: country
+                    phone:
+                        type: string
+                        description: phone number
+                    fax:
+                        type: string
+                        description: fax number
+                    email:
+                        type: string
+                        description: email address
+                    url:
+                        type: string
+                        description: URL of contact
+                    hours:
+                        type: string
+                        description: hours of service
+                    instructions:
+                        type: string
+                        description: contact instructions
+                    role:
+                        type: string
+                        description: role as per the ISO 19115 CI_RoleCode codelist
+                required:
+                    - name
+        required:
+            - identification
+            - license
+            - provider
+            - contact
+    resources:
+        type: object
+        description: collections or processes published by the server
+        patternProperties:
+            "^.*$":
+                anyOf:
+                    - type: object
+                      description: base resource object
+                      properties:
+                          type:
+                              type: string
+                              description: resource type
+                              enum:
+                                  - collection
+                                  - stac-collection
+                          title:
+                              $ref: '#/definitions/multilingual_string'
+                              description: the title of the service
+                          description:
+                              $ref: '#/definitions/multilingual_string'
+                              description: some descriptive text about the service
+                          keywords:
+                              $ref: '#/definitions/multilingual_array'
+                              description: list of keywords about the service
+                          context:
+                              type: array
+                              description: linked data configuration
+                              items:
+                                  - type: object
+                                    patternProperties:
+                                        "^.*$":
+                                            anyOf:
+                                                - type: string
+                                                - type: object
+                          links:
+                              type: array
+                              description: list of related links
+                              minItems: 0
+                              items:
+                                  type: object
+                                  properties:
+                                      type:
+                                          type: string
+                                          description: MIME type
+                                      rel:
+                                          type: string
+                                          description: link relations per https://www.iana.org/assignments/link-relations/link-relations.xhtml
+                                      title:
+                                          type: string
+                                          description: title
+                                      href:
+                                          type: string
+                                          description: URL
+                                      hreflang:
+                                          type: string
+                                          description: language
+                                  required:
+                                      - type
+                                      - rel
+                                      - href
+                          extents:
+                              type: object
+                              description: spatial and temporal extents
+                              properties:
+                                  spatial:
+                                      type: object
+                                      description: spatial extent and CRS
+                                      properties:
+                                          bbox:
+                                              type: array
+                                              description: bounding box of resource
+                                              items:
+                                                  type: number
+                                              minItems: 4
+                                              maxItems: 6
+                                          crs:
+                                              type: string
+                                              description: coordinate reference system of bbox
+                                              default: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                                      required:
+                                          - bbox
+                                  temporal:
+                                      type: object
+                                      description: temporal extent of resource
+                                      properties:
+                                          begin:
+                                              type: [string, 'null']
+                                              format: date-time
+                                              nullable: true
+                                          end:
+                                              type: [string, 'null']
+                                              format: date-time
+                                              nullable: true
+                              required:
+                                  - spatial
+                          providers:
+                              type: array
+                              description: required connection information
+                              items:
+                                  type: object
+                                  properties:
+                                      type:
+                                          type: string
+                                          description: underlying data geospatial type
+                                          enum:
+                                              - feature
+                                              - coverage
+                                              - record
+                                              - tile
+                                              - edr
+                                              - stac
+                                      default:
+                                          type: boolean
+                                          description: |-
+                                              whether the provider is the default.  If not specified, the
+                                              first provider definition is considered the default
+                                      name:
+                                          type: string
+                                          description: |-
+                                              see `pygeoapi.plugin` for supported provider names.
+                                              For custom built plugins, use the import path (e.g. `mypackage.provider.MyProvider`)
+                                      data:
+                                          anyOf:
+                                              - type: string
+                                              - type: object
+                                          description: the data filesystem path or URL, depending on plugin setup
+                                      table:
+                                          type: string
+                                          description: table name for RDBMS-based providers
+                                      id_field:
+                                          type: string
+                                          description: required for vector data, the field corresponding to the ID
+                                      geometry:
+                                          type: object
+                                          description: the field corresponding to the geometry
+                                          properties:
+                                              x_field:
+                                                  type: string
+                                                  description: the field corresponding to the x geometry
+                                              y_field:
+                                                  type: string
+                                                  description: the field corresponding to the y geometry
+                                          required:
+                                              - x_field
+                                              - y_field
+                                      time_field:
+                                          type: string
+                                          description: optional field corresponding to the temporal property of the dataset
+                                      title_field:
+                                          type: string
+                                          description: optional field of which property to display as title/label on HTML pages
+                                      format:
+                                          type: object
+                                          description: default format
+                                          properties:
+                                              name:
+                                                  type: string
+                                                  description: format name
+                                              mimetype:
+                                                  type: string
+                                                  description: format mimetype
+                                          required:
+                                              - name
+                                              - mimetype
+                                      options:
+                                          type: object
+                                          description: optional options key value pairs to pass to provider (i.e. GDAL creation)
+                                          patternProperties:
+                                              "^[a-z]{2}$":
+                                                  allOf:
+                                                      - type: string
+                                      properties:
+                                          type: array
+                                          description: only return the following properties, in order
+                                          items:
+                                              type: string
+                                          minItems: 1
+                                          uniqueItems: true
+                                  required:
+                                      - type
+                                      - name
+                                      - data
+                      required:
+                          - type
+                          - title
+                          - description
+                          - keywords
+                          - extents
+                          - providers
+                    - type: object
+                      description: process object
+                      properties:
+                          type:
+                              type: string
+                              description: resource type
+                              enum:
+                                  - process
+                          processor:
+                              type: object
+                              description: process binding
+                              properties:
+                                  name:
+                                      type: string
+                                      description: |-
+                                          see `pygeoapi.plugin` for supported provider names.
+                                          For custom built plugins, use the import path (e.g. `mypackage.provider.MyProvider`)
+                              required:
+                                  - name
+                      required:
+                          - type
+                          - processor
+
+definitions:
+    multilingual_string:
+        oneOf:
+            - type: string
+            - type: object
+              patternProperties:
+                  "^[a-z]{2}$":
+                      allOf:
+                          - type: string
+
+    multilingual_array:
+        oneOf:
+            - type: array
+              items:
+                  type: string
+            - type: object
+              patternProperties:
+                  "^[a-z]{2}$":
+                      allOf:
+                          - type: array
+                            items:
+                                type: string
+
+required:
+    - server
+    - logging
+    - metadata
+    - resources
