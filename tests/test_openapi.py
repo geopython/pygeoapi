@@ -29,7 +29,8 @@
 
 import pytest
 
-from pygeoapi.openapi import get_oas, get_ogc_schemas_location, validate
+from pygeoapi.openapi import (get_oas, get_ogc_schemas_location,
+                              validate_openapi_document)
 from pygeoapi.util import yaml_load
 
 from .util import get_test_file_path
@@ -69,12 +70,12 @@ def test_get_oas(config, openapi):
 
     assert isinstance(openapi_doc, dict)
 
-    is_valid = validate(openapi_doc)
+    is_valid = validate_openapi_document(openapi_doc)
 
     assert is_valid is True
 
 
-def test_validate(openapi):
-    is_valid = validate(openapi)
+def test_validate_openapi_document(openapi):
+    is_valid = validate_openapi_document(openapi)
 
     assert is_valid is True

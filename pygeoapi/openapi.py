@@ -1030,7 +1030,7 @@ def get_oas(cfg, version='3.0'):
         raise RuntimeError('OpenAPI version not supported')
 
 
-def validate(instance_dict):
+def validate_openapi_document(instance_dict):
     """
     Validate an OpenAPI document against the OpenAPI schema
 
@@ -1049,12 +1049,18 @@ def validate(instance_dict):
         return True
 
 
-@click.command('generate-openapi-document')
+@click.group()
+def openapi():
+    """OpenAPI management"""
+    pass
+
+
+@click.command()
 @click.pass_context
 @click.option('--config', '-c', 'config_file', help='configuration file')
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
-def generate_openapi_document(ctx, config_file, format_='yaml'):
+def generate(ctx, config_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
@@ -1068,10 +1074,10 @@ def generate_openapi_document(ctx, config_file, format_='yaml'):
             click.echo(to_json(get_oas(s), pretty=pretty_print))
 
 
-@click.command('validate-openapi-document')
+@click.command()
 @click.pass_context
 @click.option('--openapi', '-o', 'openapi_file', help='OpenAPI document')
-def validate_openapi_document(ctx, openapi_file):
+def validate(ctx, openapi_file):
     """Validate OpenAPI Document"""
 
     if openapi_file is None:
@@ -1080,5 +1086,9 @@ def validate_openapi_document(ctx, openapi_file):
     with open(openapi_file) as ff:
         click.echo('Validating {}'.format(openapi_file))
         instance = yaml_load(ff)
-        validate(instance)
+        validate_openapi_document(instance)
         click.echo('Valid OpenAPI document')
+
+
+openapi.add_command(generate)
+openapi.add_command(validate)
