@@ -447,7 +447,7 @@ definitions:
             - type: string
             - type: object
               patternProperties:
-                  "^[a-z]{2}$":
+                  "^[a-zA-Z]{2,3}([-_][a-zA-Z0-9]{2,3})?$":
                       allOf:
                           - type: string
     i18n_array:
@@ -457,7 +457,7 @@ definitions:
                   type: string
             - type: object
               patternProperties:
-                  "^[a-z]{2}$":
+                  "^[a-zA-Z]{2,3}([-_][a-zA-Z0-9]{2,3})?$":
                       allOf:
                           - type: array
                             items:
