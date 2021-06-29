@@ -2,7 +2,7 @@
 #
 # Authors: Gregory Petrochenkov <gpetrochenkov@usgs.gov>
 #
-# Copyright (c) 2020 Gregory Petrochenkov
+# Copyright (c) 2021 Gregory Petrochenkov
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,20 +27,11 @@
 #
 # =================================================================
 
-import os
 import pytest
 
 from pygeoapi.provider.xarray_ import XarrayProvider
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
-
+from .util import get_test_file_path
 
 path = get_test_file_path(
     'data/analysed_sst.zarr')

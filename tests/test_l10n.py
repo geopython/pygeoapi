@@ -26,13 +26,14 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-import os
 
 from babel import Locale
+import pytest
+
 from pygeoapi import l10n
 from pygeoapi.util import yaml_load
 
-import pytest
+from .util import get_test_file_path
 
 
 def test_str2locale():
@@ -221,15 +222,6 @@ def test_setresponselanguage():
 
     l10n.set_response_language(headers, Locale('en'), Locale('en'))
     assert headers['Content-Language'] == 'en'
-
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
 
 
 @pytest.fixture()
