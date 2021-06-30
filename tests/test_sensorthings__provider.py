@@ -67,7 +67,8 @@ def test_query_datastreams(config):
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '1'
 
-    results = p.query(startindex=2, limit=1)
+    results = p.query(startindex=2, limit=1,
+                      sortby=[{'property': '@iot.id', 'order': '+'}])
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '3'
 
