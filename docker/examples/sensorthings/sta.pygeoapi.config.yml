@@ -183,7 +183,7 @@ resources:
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
-              Datastreams: sosa:isMemberOf
+              Datastream: sosa:isMemberOf
               name: schema:name
         links:
             - type: application/html

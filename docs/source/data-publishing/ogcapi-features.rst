@@ -201,16 +201,23 @@ GeoPackage file:
 SensorThings API
 ^^^^^^^^^^^^^^^^
 
-The Sensorthings API (STA) provider is capable of creating feature collections 
-for the STA entities: ``Things``, ``Datastreams``, and ``Observations``. Each 
-pygeoapi STA feature expands all entities within a first degree relationship 
-of itself. The default id_field is ``@iot.id``. The STA provider adds one 
-required field, entity, and an optional field, intralink. If intralink is 
-``true`` for an adjacent STA entity collection within a pygeoapi instance, 
-the expanded entity is instead represented by an intra-pygeoapi link 
-to the other entity. If both uri_field and intralink are declared by the 
-adjacent STA entity, the relationship to the adjacent entity is instead 
-represented by value of ``uri_field`` of the adjacent entity.
+The STA provider is capable of creating feature collections from OGC SensorThings 
+API endpoints three of the STA entities are configurable: Things, Datastreams, and 
+Observations. For a full description of the SensorThings entity model, see 
+[here](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#figure_2). 
+The ``Things`` are expanded to include the associated ``Location``, from which the 
+geometry for feature collection is derived. The ``Datastreams` are expanded to 
+include the associated ``Sensor`` and ``ObservedProperty``. The default id_field is 
+``@iot.id``. The STA provider adds one required field, entity, and an optional field, 
+intralink. If intralink is true for an adjacent STA entity collection within a 
+pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi 
+link to the other entity. Thus, if all three entities are configured, correctly, 
+the STA provider will represent a complete STA endpoint as OGC-API feature collections. 
+The ``Things`` features will include links to the associated features in the `Datastreams` 
+feature collection, and the ``Observations`` features will include links to the associated 
+features in the `Datastreams` feature collection.  If both uri_field and intralink are 
+declared by the adjacent STA entity, the relationship to the adjacent entity is instead 
+represented by value of uri_field of the adjacent entity.
 
 .. code-block:: yaml
 
@@ -223,9 +230,7 @@ represented by value of ``uri_field`` of the adjacent entity.
          time_field: phenomenonTime
          intralink: true
 
-A complete STA instance can be proxied with a pygeoapi configuration declaring 
-configurations for each of the three STA entities. There is a configuration 
-file in the docker examples.
+There are elaborated configuration files in the docker examples.
 
 
 Data access examples
