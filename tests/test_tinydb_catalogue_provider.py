@@ -27,22 +27,12 @@
 #
 # =================================================================
 
-import os
-
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.tinydb_ import TinyDBCatalogueProvider
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
-
+from .util import get_test_file_path
 
 path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
 

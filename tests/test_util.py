@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,21 +29,13 @@
 
 from datetime import datetime, date, time
 from decimal import Decimal
-import os
 
 import pytest
 
 from pygeoapi import util
 from pygeoapi.provider.base import ProviderTypeError
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
+from .util import get_test_file_path
 
 
 def test_get_typed_value():
