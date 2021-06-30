@@ -21,8 +21,8 @@ The API is accessible at the ``/openapi`` endpoint, providing a Swagger-based we
    the pygeoapi demo OpenAPI/Swagger endpoint at https://demo.pygeoapi.io/master/openapi
 
 
-Using OpenAPI
--------------
+Using OpenAPI via Swagger
+-------------------------
 
 Accessing the Swagger webpage we have the following structure:
 
@@ -61,6 +61,13 @@ properties, but is provided as a GeoJSON root property of ``id``.
 This identifier can be used to obtain a specific item from the dataset using the ``items{id}`` endpoint as follows:
 
 .. image:: /_static/openapi_get_item_id2.png
+
+Using OpenAPI via ReDoc
+-----------------------
+
+pygeoapi also supports OpenAPI document rendering via `ReDoc <https://redoc.ly/>`_.
+
+ReDoc rendering is accessible at the same ``/openapi`` endpoint, adding ``ui=redoc`` to the request URL.
 
 Summary
 -------

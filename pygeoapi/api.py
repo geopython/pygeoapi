@@ -629,13 +629,18 @@ class API:
             return self.get_format_exception(request)
 
         headers = request.get_response_headers()
+
         if request.format == F_HTML:
+            template = 'openapi/swagger.html'
+            if request._args.get('ui') == 'redoc':
+                template = 'openapi/redoc.html'
+
             path = '/'.join([self.config['server']['url'].rstrip('/'),
                             'openapi'])
             data = {
                 'openapi-document-path': path
             }
-            content = render_j2_template(self.config, 'openapi.html', data,
+            content = render_j2_template(self.config, template, data,
                                          request.locale)
             return headers, 200, content
 
