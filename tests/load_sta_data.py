@@ -43,6 +43,7 @@ def main(filename):
             clean(v)
             requests.post(url, json.dumps(v))
             time.sleep(0.02)
+    print(f"Added {len(requests.get(url).json()['value'])} entities")
 
 
 def clean(dirty_dict):
