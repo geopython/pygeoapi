@@ -33,13 +33,14 @@ import json
 
 url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 
+
 def main(filename):
     with open(filename) as fh:
         data = json.load(fh)
         data = data.get('value')
         for v in data:
             clean(v)
-            r = requests.post(url, json.dumps(v))
+            requests.post(url, json.dumps(v))
     print(f"Added {len(requests.get(url).json()['value'])} entities")
 
 
@@ -64,5 +65,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
         sys.exit(1)
-        
+
     main(sys.argv[1])
