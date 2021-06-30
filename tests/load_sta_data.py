@@ -35,8 +35,13 @@ url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 
 def main(filename):
     success, failed = 0, 0
-    with open(filename) as f:
-        data = json.load(f).get('value')
+    print(requests.get(url).json())
+    with open(filename) as fh:
+        print(fh)
+        data = json.load(fh)
+        print(len(data))
+        data = data.get('value')
+        print(len(data))
         for v in data:
             clean(v)
             r = requests.post(url, json.dumps(v))
