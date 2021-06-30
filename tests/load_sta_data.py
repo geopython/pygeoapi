@@ -34,24 +34,12 @@ import json
 url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 
 def main(filename):
-    success, failed = 0, 0
-    print(requests.get(url).json())
     with open(filename) as fh:
-        print(fh)
         data = json.load(fh)
-        print(len(data))
         data = data.get('value')
-        print(len(data))
         for v in data:
             clean(v)
             r = requests.post(url, json.dumps(v))
-            print(r.text)
-            if r.status_code == requests.codes.bad:
-                failed += 1
-            elif r.status_code == requests.codes.ok:
-                success += 1
-    print(requests.get(url).json())
-    print(f'Added {success} entities. {failed} entities failed to be added')
 
 
 def clean(dirty_dict):
@@ -68,8 +56,6 @@ def clean(dirty_dict):
                         clean(_v)
 
         for k in keys:
-            if k == '@iot.id':
-                dirty_dict['_id'] = dirty_dict.get(k)
             dirty_dict.pop(k)
 
 
