@@ -208,6 +208,16 @@ def test_api(config, api_, openapi):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
            FORMAT_TYPES[F_HTML]
 
+    assert 'Swagger UI' in response
+
+    a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    req = mock_request({'ui': 'redoc'}, HTTP_ACCEPT=a)
+    rsp_headers, code, response = api_.openapi(req, openapi)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
+           FORMAT_TYPES[F_HTML]
+
+    assert 'ReDoc' in response
+
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.openapi(req, openapi)
     assert rsp_headers['Content-Language'] == 'en-US'

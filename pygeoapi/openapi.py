@@ -192,7 +192,20 @@ def get_oas_30(cfg):
             'operationId': 'getOpenapi',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/lang'}
+                {'$ref': '#/components/parameters/lang'},
+                {
+                    'name': 'ui',
+                    'in': 'query',
+                    'description': 'UI to render the OpenAPI document',
+                    'required': False,
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['swagger', 'redoc'],
+                        'default': 'swagger'
+                    },
+                    'style': 'form',
+                    'explode': False
+                },
             ],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
