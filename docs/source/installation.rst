@@ -31,7 +31,7 @@ For developers and the truly impatient
    vi example-config.yml
    export PYGEOAPI_CONFIG=example-config.yml
    export PYGEOAPI_OPENAPI=example-openapi.yml
-   pygeoapi generate-openapi-document -c $PYGEOAPI_CONFIG > $PYGEOAPI_OPENAPI
+   pygeoapi openapi generate -c $PYGEOAPI_CONFIG > $PYGEOAPI_OPENAPI
    pygeoapi serve
    curl http://localhost:5000
 
