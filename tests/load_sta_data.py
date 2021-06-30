@@ -31,15 +31,17 @@ import requests
 import sys
 import json
 
+url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 
-def main(_, filename):
 
-    with open(filename) as f:
-        data = json.load(f).get('value')
-    url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
-    for v in data:
-        clean(v)
-        requests.post(url, json.dumps(v))
+def main(filename):
+    with open(filename) as fh:
+        data = json.load(fh)
+        data = data.get('value')
+        for v in data:
+            clean(v)
+            requests.post(url, json.dumps(v))
+    print(f"Added {len(requests.get(url).json()['value'])} entities")
 
 
 def clean(dirty_dict):
@@ -56,8 +58,6 @@ def clean(dirty_dict):
                         clean(_v)
 
         for k in keys:
-            if k == '@iot.id':
-                dirty_dict['_id'] = dirty_dict.get(k)
             dirty_dict.pop(k)
 
 
@@ -65,4 +65,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
         sys.exit(1)
-    main(*sys.argv)
+
+    main(sys.argv[1])

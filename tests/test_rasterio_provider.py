@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,20 +27,11 @@
 #
 # =================================================================
 
-import os
 import pytest
 
 from pygeoapi.provider.rasterio_ import RasterioProvider
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
-
+from .util import get_test_file_path
 
 path = get_test_file_path(
     'tests/data/CMC_glb_TMP_TGL_2_latlon.15x.15_2020081000_P000.grib2')

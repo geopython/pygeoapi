@@ -65,11 +65,11 @@ def test_query_datastreams(config):
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '9'
+    assert results['features'][0]['id'] == '1'
 
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '11'
+    assert results['features'][0]['id'] == '3'
 
     assert len(results['features'][0]['properties']) == 17
 
@@ -93,7 +93,7 @@ def test_query_observations(config):
     p = SensorthingsProvider(config)
 
     results = p.query(resulttype='hits')
-    assert results['numberMatched'] == 184352
+    assert results['numberMatched'] == 5298
 
     results = p.query(properties=[('result', 4), ])
     assert results['features'][0]['properties']['result'] == 4
@@ -110,7 +110,7 @@ def test_query_observations(config):
         'phenomenonTime'] == '2021-02-09T15:55:01.000Z'
 
     results = p.query(sortby=[{'property': 'result', 'order': '+'}])
-    assert results['features'][0]['properties']['result'] == 0.0051
+    assert results['features'][0]['properties']['result'] == 0.0091
 
     results = p.query(sortby=[{'property': 'result', 'order': '-'}])
     assert results['features'][0]['properties']['result'] == 7476
@@ -118,12 +118,12 @@ def test_query_observations(config):
     results = p.query(datetime_='../2000-01-01T00:00:00.00Z',
                       sortby=[{'property': 'phenomenonTime', 'order': '-'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '2000-01-01T00:00:00.000Z'
+        'phenomenonTime'] == '1999-12-29T00:00:00.000Z'
 
     results = p.query(datetime_='2000-01-01T00:00:00.00Z/..',
                       sortby=[{'property': 'phenomenonTime', 'order': '+'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '2000-01-01T00:00:00.000Z'
+        'phenomenonTime'] == '2000-02-07T22:45:00.000Z'
 
 
 def test_get(config):
@@ -131,4 +131,5 @@ def test_get(config):
 
     result = p.get('9')
     assert result['id'] == '9'
-    assert result['properties']['name'] == 'Depth Below Surface'
+    assert result['properties']['name'] == 'Water level (NGVD29)'
+    assert isinstance(result['properties']['Thing'], dict)
