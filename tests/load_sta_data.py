@@ -31,18 +31,20 @@ import time
 import requests
 import sys
 import json
+import os.path
 
 url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
+data_url = 'https://raw.githubusercontent.com/webb-ben/data/main/'
 
 
-def main(filename):
-    with open(filename) as fh:
-        data = json.load(fh)
-        data = data.get('value')
-        for v in data:
-            clean(v)
-            requests.post(url, json.dumps(v))
-            time.sleep(0.02)
+def main(path_):
+    filename = os.path.basename(path_)
+    r = requests.get(f'{data_url}{filename}')
+    data = r.json().get('value')
+    for v in data:
+        clean(v)
+        requests.post(url, json.dumps(v))
+        time.sleep(0.02)
     print(f"Added {len(requests.get(url).json()['value'])} entities")
 
 
