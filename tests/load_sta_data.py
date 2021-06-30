@@ -31,15 +31,20 @@ import requests
 import sys
 import json
 
+url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 
-def main(_, filename):
-
+def main(filename):
+    success, failed = 0, 0
     with open(filename) as f:
         data = json.load(f).get('value')
-    url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
-    for v in data:
-        clean(v)
-        requests.post(url, json.dumps(v))
+        for v in data:
+            clean(v)
+            r = requests.post(url, json.dumps(v))
+            if r.status_code == requests.codes.bad:
+                failed += 1
+            elif r.status_code == 400:
+                success += 1
+    print(f'Added {success} entities. {failed} entities failed to be added')
 
 
 def clean(dirty_dict):
@@ -65,4 +70,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
         sys.exit(1)
-    main(*sys.argv)
+        
+    main(sys.argv[1])
