@@ -48,7 +48,7 @@ def main(filename):
             print(r.text)
             if r.status_code == requests.codes.bad:
                 failed += 1
-            elif r.status_code == requests.codes.good:
+            elif r.status_code == requests.codes.ok:
                 success += 1
     print(requests.get(url).json())
     print(f'Added {success} entities. {failed} entities failed to be added')
