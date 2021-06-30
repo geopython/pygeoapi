@@ -45,10 +45,12 @@ def main(filename):
         for v in data:
             clean(v)
             r = requests.post(url, json.dumps(v))
+            print(r.text)
             if r.status_code == requests.codes.bad:
                 failed += 1
-            elif r.status_code == 400:
+            elif r.status_code == requests.codes.good:
                 success += 1
+    print(requests.get(url).json())
     print(f'Added {success} entities. {failed} entities failed to be added')
 
 
