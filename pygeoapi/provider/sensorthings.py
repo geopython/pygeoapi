@@ -224,7 +224,9 @@ class SensorthingsProvider(BaseProvider):
         }
         # Make params
         params = {
-            '$expand': EXPAND[self.entity], '$skip': startindex, '$top': limit
+            '$expand': EXPAND[self.entity],
+            '$skip': str(startindex),
+            '$top': str(limit)
         }
         if properties or bbox or datetime_:
             params['$filter'] = self._make_filter(properties, bbox, datetime_)
