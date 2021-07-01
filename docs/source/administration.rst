@@ -20,19 +20,19 @@ To generate the OpenAPI document, run the following:
 
 .. code-block:: bash
 
-   pygeoapi openapi generate -c /path/to/my-pygeoapi-config.yml
+   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml
 
 This will dump the OpenAPI document as YAML to your system's ``stdout``.  To save to a file on disk, run:
 
 .. code-block:: bash
 
-   pygeoapi openapi generate -c /path/to/my-pygeoapi-config.yml > /path/to/my-pygeoapi-openapi.yml
+   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml > /path/to/my-pygeoapi-openapi.yml
 
 To generate the OpenAPI document as JSON, run:
 
 .. code-block:: bash
 
-   pygeoapi openapi generate -c /path/to/my-pygeoapi-config.yml -f json > /path/to/my-pygeoapi-openapi.json
+   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml -f json > /path/to/my-pygeoapi-openapi.json
 
 .. note::
    Generate as YAML or JSON?  If your OpenAPI YAML definition is slow to render as JSON,
@@ -56,7 +56,7 @@ utility that can be run as follows:
 
 .. code-block:: bash
 
-   pygeoapi openapi validate -o /path/to/my-pygeoapi-openapi.yml
+   pygeoapi openapi validate /path/to/my-pygeoapi-openapi.yml
 
 
 Setting system environment variables

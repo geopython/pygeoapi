@@ -1057,7 +1057,7 @@ def openapi():
 
 @click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
+@click.argument('config_file', type=click.File())
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
 def generate(ctx, config_file, format_='yaml'):
@@ -1065,29 +1065,28 @@ def generate(ctx, config_file, format_='yaml'):
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
-    with open(config_file) as ff:
-        s = yaml_load(ff)
-        pretty_print = s['server'].get('pretty_print', False)
-        if format_ == 'yaml':
-            click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
-        else:
-            click.echo(to_json(get_oas(s), pretty=pretty_print))
+
+    s = yaml_load(config_file)
+    pretty_print = s['server'].get('pretty_print', False)
+    if format_ == 'yaml':
+        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+    else:
+        click.echo(to_json(get_oas(s), pretty=pretty_print))
 
 
 @click.command()
 @click.pass_context
-@click.option('--openapi', '-o', 'openapi_file', help='OpenAPI document')
+@click.argument('openapi_file', type=click.File())
 def validate(ctx, openapi_file):
     """Validate OpenAPI Document"""
 
     if openapi_file is None:
         raise click.ClickException('--openapi/-o required')
 
-    with open(openapi_file) as ff:
-        click.echo('Validating {}'.format(openapi_file))
-        instance = yaml_load(ff)
-        validate_openapi_document(instance)
-        click.echo('Valid OpenAPI document')
+    click.echo('Validating {}'.format(openapi_file))
+    instance = yaml_load(openapi_file)
+    validate_openapi_document(instance)
+    click.echo('Valid OpenAPI document')
 
 
 openapi.add_command(generate)
