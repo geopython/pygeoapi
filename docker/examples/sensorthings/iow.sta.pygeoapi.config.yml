@@ -55,13 +55,12 @@ logging:
 metadata:
     identification:
         title: 
-            en: Sensorthings API example enpoint.
-            fr: Sensorthings API exemple enpoint.
+            en: SensorThings API example endpoint.
         description: Provides STA reference features.
         keywords:
             en:
                 - geospatial
-                - sensorthingsapi
+                - SensorThingsapi
                 - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
@@ -91,12 +90,12 @@ metadata:
 resources:
     Things:
         type: collection
-        title: STA Things
-        description: Example Sensorthings API Thing
+        title: IoW STA Things
+        description: demo IoW SensorThings API Things
         keywords:
             - Things
-            - Sensorthings
-            - iow
+            - SensorThings
+            - IoW
         context:
             - sosa: "http://www.w3.org/ns/sosa/"
               ssn: "http://www.w3.org/ns/ssn/"
@@ -117,7 +116,7 @@ resources:
                 end: null
         providers:
           - type: feature
-            name: Sensorthings 
+            name: SensorThings 
             data: https://sta-demo.internetofwater.dev/api/v1.1/
             # uri_field: uri
             entity: Things 
@@ -128,11 +127,12 @@ resources:
                 - '@iot.selfLink'
     Datastreams:
         type: collection
-        title: STA Datastreams
-        description: Example Sensorthings API Datastream
+        title: IoW STA Datastreams
+        description: demo IoW SensorThings API Datastreams
         keywords:
             - Datastreams
-            - Sensorthings
+            - SensorThings
+            - IoW
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
@@ -154,7 +154,7 @@ resources:
                 end: 2021-02-09T15:55:01.00Z
         providers:          
           - type: feature
-            name: Sensorthings 
+            name: SensorThings 
             data: https://sta-demo.internetofwater.dev/api/v1.1/
             # uri_field: uri
             entity: Datastreams 
@@ -169,12 +169,12 @@ resources:
                 - '@iot.selfLink'
     Observations:
         type: collection
-        title: STA Observation
-        description: Example Sensorthings API Observation
+        title: IoW STA Observations
+        description: demo IoW SensorThings API Observations
         keywords:
             - Observations
-            - Sensorthings
-            - BRGM
+            - SensorThings
+            - IoW
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
@@ -195,7 +195,7 @@ resources:
                 end: 2021-02-09T15:55:01Z
         providers:
           - type: feature
-            name: Sensorthings 
+            name: SensorThings 
             data: https://sta-demo.internetofwater.dev/api/v1.1/
             entity: Observations 
             intralink: true

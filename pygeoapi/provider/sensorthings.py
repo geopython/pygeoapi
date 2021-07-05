@@ -79,8 +79,8 @@ EXPAND = {k: ''.join(v.split()).replace('_', ' ')
           for (k, v) in _EXPAND.items()}
 
 
-class SensorthingsProvider(BaseProvider):
-    """Sensorthings API (STA) Provider
+class SensorThingsProvider(BaseProvider):
+    """SensorThings API (STA) Provider
     """
 
     def __init__(self, provider_def):
@@ -90,7 +90,7 @@ class SensorthingsProvider(BaseProvider):
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
 
-        :returns: pygeoapi.provider.base.SensorthingsProvider
+        :returns: pygeoapi.provider.base.SensorThingsProvider
         """
         LOGGER.debug("Logger STA Init")
 
@@ -187,7 +187,7 @@ class SensorthingsProvider(BaseProvider):
 
                 for p in rs['providers']:
                     # Validate linkable provider
-                    if (p['name'] != 'Sensorthings'
+                    if (p['name'] != 'SensorThings'
                             or not p.get('intralink', False)):
                         continue
 
@@ -352,7 +352,7 @@ class SensorthingsProvider(BaseProvider):
         """
         Private function: Retrieve STA geometry
 
-        :param entity: sensorthings entity
+        :param entity: SensorThings entity
 
         :returns: GeoJSON Geometry for feature
         """
@@ -377,11 +377,11 @@ class SensorthingsProvider(BaseProvider):
         """
         Private function: Parse STA entity into feature
 
-        :param entity: sensorthings entity
+        :param entity: SensorThings entity
         :param keys: keys used in properties block
         :param uri: uri of STA entity
 
-        :returns: dict of sensorthings feature properties
+        :returns: dict of SensorThings feature properties
         """
         for k, v in entity.items():
             # Create intra links
@@ -428,4 +428,4 @@ class SensorthingsProvider(BaseProvider):
         return entity
 
     def __repr__(self):
-        return '<SensorthingsProvider> {}, {}'.format(self.data, self.entity)
+        return '<SensorThingsProvider> {}, {}'.format(self.data, self.entity)

@@ -37,7 +37,6 @@ server:
     languages:
         # First language is the default language
         - en-US
-        - fr-CA
     # cors: true
     pretty_print: true
     limit: 10
@@ -56,16 +55,12 @@ logging:
 metadata:
     identification:
         title: 
-            en: Sensorthings API BRGM example enpoint.
-            fr: Sensorthings API BRGM exemple enpoint.
+            en: SensorThings API example endpoint.
+            fr: SensorThings API exemple enpoint.
         description: Provides STA reference features.
         keywords:
             en:
                 - geospatial
-                - sensorthingsapi
-                - api
-            fr:
-                - géospatiale
                 - sensorthingsapi
                 - api
         keywords_type: theme
@@ -97,11 +92,10 @@ resources:
     Things:
         type: collection
         title: STA Things
-        description: Example Sensorthings API Thing
+        description: Example SensorThings API Things
         keywords:
             - Things
-            - Sensorthings
-            - BRGM
+            - SensorThings
         context:
             - sosa: "http://www.w3.org/ns/sosa/"
               ssn: "http://www.w3.org/ns/ssn/"
@@ -111,8 +105,8 @@ resources:
             - type: application/html
               rel: canonical
               title: data source
-              href: https://www.brgm.fr/en
-              hreflang: fr-CA
+              href: https://www.geoconnex.us
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -122,9 +116,8 @@ resources:
                 end: null
         providers:
           - type: feature
-            name: Sensorthings 
-            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-            id_field: '@iot.id'
+            name: SensorThings 
+            data: http://host.docker.internal:8080/FROST-Server/v1.1/
             entity: Things 
             intralink: true
             properties:
@@ -134,11 +127,10 @@ resources:
     Datastreams:
         type: collection
         title: STA Datastreams
-        description: Example Sensorthings API Datastream
+        description: Example SensorThings API Datastreams
         keywords:
             - Datastreams
-            - Sensorthings
-            - BRGM
+            - SensorThings
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
@@ -149,22 +141,22 @@ resources:
             - type: application/html
               rel: canonical
               title: data source
-              href: https://www.brgm.fr/en
+              href: https://www.geoconnex.us/
               hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: null
-                end: null
+                begin: 1944-10-14T12:00:00.00Z
+                end: 2021-02-09T15:55:01.00Z
         providers:          
           - type: feature
-            name: Sensorthings 
-            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            name: SensorThings 
+            data: http://host.docker.internal:8080/FROST-Server/v1.1/
             entity: Datastreams 
-            time_field: phenomenonTime
             intralink: true
+            time_field: resultTime
             properties:
                 - name
                 - Thing
@@ -175,11 +167,10 @@ resources:
     Observations:
         type: collection
         title: STA Observation
-        description: Example Sensorthings API Observation
+        description: Example SensorThings API Observation
         keywords:
             - Observations
-            - Sensorthings
-            - BRGM
+            - SensorThings
         context:
             - sosa: http://www.w3.org/ns/sosa/
               ssn: http://www.w3.org/ns/ssn/
@@ -196,17 +187,16 @@ resources:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: null
-                end: null
+                begin: 1944-10-14T12:00:00Z
+                end: 2021-02-09T15:55:01Z
         providers:
           - type: feature
-            name: Sensorthings 
-            data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+            name: SensorThings 
+            data: http://host.docker.internal:8080/FROST-Server/v1.1/
             entity: Observations 
-            time_field: phenomenonTime
             intralink: true
+            time_field: phenomenonTime
             properties:
-                - phenomenonTime
                 - result
                 - Datastream
                 - FeatureOfInterest

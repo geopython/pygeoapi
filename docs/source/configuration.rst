@@ -295,8 +295,8 @@ implementation of JSON-LD structured data is available for any data provider but
 by the dataset provider, not pygeoapi.
 
 An example of a data provider that includes relationships between items is the SensorThings API provider.
-Sensorthings API, by default, has relationships between entities within its data model.
-Setting the ``intralink`` field of the Sensorthings provider to ``true`` sets pygeoapi 
+SensorThings API, by default, has relationships between entities within its data model.
+Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi 
 to represent the relationship between configured entities as intra-pygeoapi links or URIs. 
 This relationship can further be maintained in the JSON-LD structured data using the appropiate 
 ``@context`` with the sosa/ssn ontology. For example:

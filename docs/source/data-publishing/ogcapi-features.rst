@@ -222,7 +222,7 @@ link to the other entity or it's ``uri_field`` if declared.
 
    providers:
        - type: feature
-         name: Sensorthings
+         name: SensorThings
          data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
          uri_field: uri
          entity: Datastreams 
@@ -234,7 +234,7 @@ endpoint as OGC-API feature collections. The ``Things`` features will include li
 to the associated features in the ``Datastreams`` feature collection, and the 
 ``Observations`` features will include links to the associated features in the 
 ``Datastreams`` feature collection. Examples with three entities configured
-are included in the docker examples for Sensorthings.
+are included in the docker examples for SensorThings.
 
 Data access examples
 --------------------

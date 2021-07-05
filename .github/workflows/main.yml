@@ -43,7 +43,7 @@ jobs:
       uses: supercharge/mongodb-github-action@1.5.0
       with:
         mongodb-version: 4.4
-    - name: Install and run SensorthingsAPI
+    - name: Install and run SensorThingsAPI
       run: |
         wget https://raw.githubusercontent.com/FraunhoferIOSB/FROST-Server/master/scripts/docker-compose.yaml
         docker-compose up -d
