@@ -29,13 +29,13 @@
 
 import pytest
 
-from pygeoapi.provider.sensorthings import SensorthingsProvider
+from pygeoapi.provider.sensorthings import SensorThingsProvider
 
 
 @pytest.fixture()
 def config():
     return {
-        'name': 'Sensorthings',
+        'name': 'SensorThings',
         'type': 'feature',
         'data': 'http://localhost:8080/FROST-Server/v1.1/',
         'rel_link': 'http://localhost:5000',
@@ -46,7 +46,7 @@ def config():
 
 
 def test_query_datastreams(config):
-    p = SensorthingsProvider(config)
+    p = SensorThingsProvider(config)
 
     fields = p.get_fields()
     assert len(fields) == 15
@@ -91,7 +91,7 @@ def test_query_observations(config):
     config['properties'] = ['Datastream', 'phenomenonTime',
                             'FeatureOfInterest', 'result']
     config['entity'] = 'Observations'
-    p = SensorthingsProvider(config)
+    p = SensorThingsProvider(config)
 
     results = p.query(resulttype='hits')
     assert results['numberMatched'] == 5298
@@ -128,7 +128,7 @@ def test_query_observations(config):
 
 
 def test_get(config):
-    p = SensorthingsProvider(config)
+    p = SensorThingsProvider(config)
 
     result = p.get('9')
     assert result['id'] == '9'
