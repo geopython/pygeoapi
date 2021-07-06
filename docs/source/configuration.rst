@@ -200,6 +200,17 @@ default.
    :ref:`plugins` for more information on plugins
 
 
+Validating the configuration
+----------------------------
+
+To ensure your configuration is valid, pygeoapi provides a validation
+utility that can be run as follows:
+
+.. code-block:: bash
+
+   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
+
+
 Using environment variables
 ---------------------------
 

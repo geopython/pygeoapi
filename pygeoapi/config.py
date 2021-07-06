@@ -27,45 +27,57 @@
 #
 # =================================================================
 
+import click
+import json
+from jsonschema import validate as jsonschema_validate
+import logging
 import os
 
-from jsonschema.exceptions import ValidationError
-import pytest
+from pygeoapi.util import to_json, yaml_load
 
-from pygeoapi.config import validate_config
-from pygeoapi.util import yaml_load
-
-from .util import get_test_file_path
+LOGGER = logging.getLogger(__name__)
+THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
-@pytest.fixture()
+def validate_config(instance_dict):
+    """
+    Validate pygeoapi configuration against pygeoapi schema
+
+    :param instance_dict: dict of configuration
+
+    :returns: `bool` of validation
+    """
+
+    schema_file = os.path.join(THISDIR, 'schemas', 'config',
+                               'pygeoapi-config-0.x.yml')
+
+    with open(schema_file) as fh2:
+        schema_dict = yaml_load(fh2)
+        jsonschema_validate(json.loads(to_json(instance_dict)), schema_dict)
+
+        return True
+
+
+@click.group()
 def config():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        return yaml_load(fh)
+    """Configuration management"""
+    pass
 
 
-def test_config_envvars():
-    os.environ['PYGEOAPI_PORT'] = '5001'
-    os.environ['PYGEOAPI_TITLE'] = 'my title'
+@click.command()
+@click.pass_context
+@click.option('--config', '-c', 'config_file', help='configuration file')
+def validate(ctx, config_file):
+    """Validate configuration"""
 
-    with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:
-        config = yaml_load(fh)
+    if config_file is None:
+        raise click.ClickException('--config/-c required')
 
-    assert isinstance(config, dict)
-    assert config['server']['bind']['port'] == 5001
-    assert config['metadata']['identification']['title'] == \
-        'pygeoapi default instance my title'
-
-    os.environ.pop('PYGEOAPI_PORT')
-
-    with pytest.raises(EnvironmentError):
-        with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:  # noqa
-            config = yaml_load(fh)
+    with open(config_file) as ff:
+        click.echo('Validating {}'.format(config_file))
+        instance = yaml_load(ff)
+        validate_config(instance)
+        click.echo('Valid configuration')
 
 
-def test_validate_config(config):
-    is_valid = validate_config(config)
-    assert is_valid
-
-    with pytest.raises(ValidationError):
-        is_valid = validate_config({'foo': 'bar'})
+config.add_command(validate)

@@ -30,6 +30,7 @@
 __version__ = '0.11.dev0'
 
 import click
+from pygeoapi.config import config
 from pygeoapi.openapi import openapi
 
 
@@ -58,4 +59,5 @@ def serve(ctx, server):
         raise click.ClickException('--flask/--starlette is required')
 
 
+cli.add_command(config)
 cli.add_command(openapi)

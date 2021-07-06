@@ -59,19 +59,19 @@ def test_yaml_load():
 
 
 def test_str2bool():
-    assert util.str2bool(False) is False
-    assert util.str2bool('0') is False
-    assert util.str2bool('no') is False
-    assert util.str2bool('yes') is True
-    assert util.str2bool('1') is True
-    assert util.str2bool(True) is True
-    assert util.str2bool('true') is True
-    assert util.str2bool('True') is True
-    assert util.str2bool('TRUE') is True
-    assert util.str2bool('tRuE') is True
-    assert util.str2bool('on') is True
-    assert util.str2bool('On') is True
-    assert util.str2bool('off') is False
+    assert not util.str2bool(False)
+    assert not util.str2bool('0')
+    assert not util.str2bool('no')
+    assert util.str2bool('yes')
+    assert util.str2bool('1')
+    assert util.str2bool(True)
+    assert util.str2bool('true')
+    assert util.str2bool('True')
+    assert util.str2bool('TRUE')
+    assert util.str2bool('tRuE')
+    assert util.str2bool('on')
+    assert util.str2bool('On')
+    assert not util.str2bool('off')
 
 
 def test_json_serial():
