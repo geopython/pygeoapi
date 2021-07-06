@@ -208,7 +208,7 @@ utility that can be run as follows:
 
 .. code-block:: bash
 
-   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
+   pygeoapi config validate /path/to/my-pygeoapi-config.yml
 
 
 Using environment variables
