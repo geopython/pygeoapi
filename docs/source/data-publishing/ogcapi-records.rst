@@ -3,7 +3,7 @@
 Publishing metadata to OGC API - Records
 ========================================
 
-`OGC API - Records `_ provides geospatial data access functionality to vector data.
+`OGC API - Records`_ provides geospatial data access functionality to vector data.
 
 To add vector data to pygeoapi, you can use the dataset example in :ref:`configuration`
 as a baseline and modify accordingly.

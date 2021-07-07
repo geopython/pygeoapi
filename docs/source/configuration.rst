@@ -200,6 +200,17 @@ default.
    :ref:`plugins` for more information on plugins
 
 
+Validating the configuration
+----------------------------
+
+To ensure your configuration is valid, pygeoapi provides a validation
+utility that can be run as follows:
+
+.. code-block:: bash
+
+   pygeoapi config validate /path/to/my-pygeoapi-config.yml
+
+
 Using environment variables
 ---------------------------
 
@@ -293,6 +304,34 @@ This example demonstrates how to use this feature with a CSV data provider, usin
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
 ``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
+
+An example of a data provider that includes relationships between items is the SensorThings API provider.
+SensorThings API, by default, has relationships between entities within its data model.
+Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi 
+to represent the relationship between configured entities as intra-pygeoapi links or URIs. 
+This relationship can further be maintained in the JSON-LD structured data using the appropiate 
+``@context`` with the sosa/ssn ontology. For example:
+
+.. code-block:: yaml
+
+    Things:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastreams: sosa:ObservationCollection
+
+    Datastreams:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Observations: sosa:hasMember
+            Thing: sosa:hasFeatureOfInterest
+
+    Observations:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastream: sosa:isMemberOf
 
 
 Summary

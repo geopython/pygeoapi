@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2021 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,37 +27,44 @@
 #
 # =================================================================
 
-__version__ = '0.11.dev0'
+version: "3"
 
-import click
-from pygeoapi.config import config
-from pygeoapi.openapi import openapi
+services:
 
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+    ports:
+      - "5000:80"
+    volumes:
+      - ./brgm.sta.pygeoapi.config.yml:/pygeoapi/local.config.yml
 
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+#     depends_on:
+#       - web
+#     restart: always
+#   web:
+#     image: fraunhoferiosb/frost-server:latest
+#     environment:
+#       - serviceRootUrl=http://localhost:8080/FROST-Server
+#       - http_cors_enable=true
+#       - http_cors_allowed.origins=*
+#       - persistence_db_driver=org.postgresql.Driver
+#       - persistence_db_url=jdbc:postgresql://database:5432/sensorthings
+#       - persistence_db_username=sensorthings
+#       - persistence_db_password=ChangeMe
+#       - persistence_autoUpdateDatabase=true
+#     ports:
+#       - 8080:8080
+#       - 1883:1883
+#     depends_on:
+#       - database
 
-
-@cli.command()
-@click.option('--flask', 'server', flag_value="flask", default=True)
-@click.option('--starlette', 'server', flag_value="starlette")
-@click.pass_context
-def serve(ctx, server):
-    """Run the server with different daemon type (--flask is the default)"""
-
-    if server == "flask":
-        from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
-    elif server == "starlette":
-        from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
-    else:
-        raise click.ClickException('--flask/--starlette is required')
-
-
-cli.add_command(config)
-cli.add_command(openapi)
+#   database:
+#     image: postgis/postgis:11-2.5-alpine
+#     environment:
+#       - POSTGRES_DB=sensorthings
+#       - POSTGRES_USER=sensorthings
+#       - POSTGRES_PASSWORD=ChangeMe
+#     volumes:
+#       - postgis_volume:/var/lib/postgresql/data
+# volumes:
+#     postgis_volume:

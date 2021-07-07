@@ -360,6 +360,7 @@ resources:
               id_field: objectid
 
     cases_italy_per_region_from_github:
+        type: collection
         title: "Cases in Italy - DPC GitHub"
         description: "Current situation within Italy, number of cases with variation per Italy, provided by ESRI, source data from DPC."
         keywords: [Daily, Cases Variation, Region]
