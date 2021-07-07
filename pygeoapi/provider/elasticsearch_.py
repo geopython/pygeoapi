@@ -140,11 +140,11 @@ class ElasticsearchProvider(BaseProvider):
         for k, v in p['properties'].items():
             if 'type' in v:
                 if v['type'] == 'text':
-                    type_ = 'string'
+                    fields_[k] = {'type': 'string'}
+                elif v['type'] == 'date':
+                    fields_[k] = {'type': 'string', 'format': 'date'}
                 else:
-                    type_ = v['type']
-
-                fields_[k] = {'type': type_}
+                    fields_[k] = {'type': v['type']}
 
         return fields_
 

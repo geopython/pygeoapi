@@ -28,10 +28,12 @@
 # =================================================================
 
 from copy import deepcopy
+import json
 import logging
 import os
 
 import click
+from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import __version__
@@ -53,6 +55,8 @@ OPENAPI_YAML = {
     'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
+
+THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_ogc_schemas_location(server_config):
@@ -188,7 +192,20 @@ def get_oas_30(cfg):
             'operationId': 'getOpenapi',
             'parameters': [
                 {'$ref': '#/components/parameters/f'},
-                {'$ref': '#/components/parameters/lang'}
+                {'$ref': '#/components/parameters/lang'},
+                {
+                    'name': 'ui',
+                    'in': 'query',
+                    'description': 'UI to render the OpenAPI document',
+                    'required': False,
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['swagger', 'redoc'],
+                        'default': 'swagger'
+                    },
+                    'style': 'form',
+                    'explode': False
+                },
             ],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
@@ -417,7 +434,7 @@ def get_oas_30(cfg):
             'get': {
                 'summary': 'Get {} metadata'.format(title),
                 'description': desc,
-                'tags': name,
+                'tags': [name],
                 'operationId': 'describe{}Collection'.format(name.capitalize()),  # noqa
                 'parameters': [
                     {'$ref': '#/components/parameters/f'},
@@ -508,7 +525,7 @@ def get_oas_30(cfg):
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
-            for field, type in p.fields.items():
+            for field, type_ in p.fields.items():
 
                 if p.properties and field not in p.properties:
                     LOGGER.debug('Provider specified not to advertise property')  # noqa
@@ -518,25 +535,23 @@ def get_oas_30(cfg):
                     LOGGER.debug('q parameter already declared, skipping')
                     continue
 
-                if type == 'date':
+                if type_ == 'date':
                     schema = {
                         'type': 'string',
                         'format': 'date'
                     }
-                elif type == 'float':
+                elif type_ == 'float':
                     schema = {
                         'type': 'number',
                         'format': 'float'
                     }
-                elif type == 'long':
+                elif type_ == 'long':
                     schema = {
                         'type': 'integer',
                         'format': 'int64'
                     }
                 else:
-                    schema = {
-                        'type': type
-                    }
+                    schema = type_
 
                 path_ = '{}/items'.format(collection_name_path)
                 paths['{}'.format(path_)]['get']['parameters'].append({
@@ -756,6 +771,7 @@ def get_oas_30(cfg):
             }
             mimetype = tile_extension['format']['mimetype']
             paths[tiles_data_path]['get']['responses']['200'] = {
+                'description': 'successful operation',
                 'content': {
                     mimetype: {
                         'schema': {
@@ -1027,20 +1043,64 @@ def get_oas(cfg, version='3.0'):
         raise RuntimeError('OpenAPI version not supported')
 
 
-@click.command('generate-openapi-document')
+def validate_openapi_document(instance_dict):
+    """
+    Validate an OpenAPI document against the OpenAPI schema
+
+    :param instance_dict: dict of OpenAPI instance
+
+    :returns: `bool` of validation
+    """
+
+    schema_file = os.path.join(THISDIR, 'schemas', 'openapi',
+                               'openapi-3.0.x.json')
+
+    with open(schema_file) as fh2:
+        schema_dict = json.load(fh2)
+        jsonschema_validate(instance_dict, schema_dict)
+
+        return True
+
+
+@click.group()
+def openapi():
+    """OpenAPI management"""
+    pass
+
+
+@click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
+@click.argument('config_file', type=click.File())
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
-def generate_openapi_document(ctx, config_file, format_='yaml'):
+def generate(ctx, config_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
-    with open(config_file) as ff:
-        s = yaml_load(ff)
-        pretty_print = s['server'].get('pretty_print', False)
-        if format_ == 'yaml':
-            click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
-        else:
-            click.echo(to_json(get_oas(s), pretty=pretty_print))
+
+    s = yaml_load(config_file)
+    pretty_print = s['server'].get('pretty_print', False)
+    if format_ == 'yaml':
+        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+    else:
+        click.echo(to_json(get_oas(s), pretty=pretty_print))
+
+
+@click.command()
+@click.pass_context
+@click.argument('openapi_file', type=click.File())
+def validate(ctx, openapi_file):
+    """Validate OpenAPI Document"""
+
+    if openapi_file is None:
+        raise click.ClickException('--openapi/-o required')
+
+    click.echo('Validating {}'.format(openapi_file))
+    instance = yaml_load(openapi_file)
+    validate_openapi_document(instance)
+    click.echo('Valid OpenAPI document')
+
+
+openapi.add_command(generate)
+openapi.add_command(validate)
