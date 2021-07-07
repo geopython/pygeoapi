@@ -33,7 +33,7 @@ import requests
 from pathlib import Path
 from urllib.parse import urlparse, urljoin
 
-from pygeoapi.util import is_url
+from pygeoapi.util import is_url, url_join
 from pygeoapi.provider.tile import (
     BaseTileProvider, ProviderTileNotFoundError)
 from pygeoapi.provider.base import ProviderConnectionError
@@ -69,7 +69,7 @@ class MVTProvider(BaseTileProvider):
                     'tileCol',
                     param_type)
 
-            self._service_url = urljoin(baseurl, servicepath)
+            self._service_url = url_join(baseurl, servicepath)
             self._service_metadata_url = urljoin(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
@@ -149,7 +149,7 @@ class MVTProvider(BaseTileProvider):
                 'tileCol',
                 tile_type)
 
-        self._service_url = urljoin(baseurl, servicepath)
+        self._service_url = url_join(baseurl, servicepath)
         self._service_metadata_url = urljoin(
             self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
@@ -214,7 +214,7 @@ class MVTProvider(BaseTileProvider):
                     raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, tilejson=True):
+                     tileset=None, tilejson=True, **kwargs):
         """
         Gets tile metadata
 

@@ -355,7 +355,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get ES document by id
 

@@ -73,13 +73,16 @@
           <table class="striped">
             <thead>
             <tr>
+              {% if data.get('uri_field') %}
+              <th>{{ data['uri_field'] }}</th>
+              {% endif %}
                 <th>id</th>
                 {% if data['title_field'] %}
                   <th>{{ data['title_field'] }}</th>
                 {% endif %}
                 {% for k, v in data['features'][0]['properties'].items() %}
                   {# start with id & title then take first 5 columns for table #}
-                  {% if loop.index < 5 and k != data['id_field'] and k != data['title_field'] %}
+                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
                   <th>{{ k }}</th>
                   {% endif %}
                 {% endfor %}
@@ -88,12 +91,15 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
+                {% if data.get('uri_field') %}
+                <td data-label="{{ data.get('uri_field') }}"><a href="{{ ft['properties'].get(data['uri_field'])}}" title="{{ ft['properties'][data['uri_field']] }}">{{ft['properties'][data.get('uri_field')]}}</a></td>
+                {% endif %}
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
                 {% if data['title_field'] %}
                   <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
                 {% endif %}
                 {% for k, v in ft['properties'].items() %}
-                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], 'extent'] %}
+                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
                   <td data-label="{{ k }}">{{ v | string | truncate( 35 ) }}</td>
                   {% endif %}
                 {% endfor %}

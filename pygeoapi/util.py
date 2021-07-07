@@ -43,11 +43,13 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 
 import dateutil.parser
+# from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -186,6 +188,49 @@ def format_datetime(value, format_=DATETIME_FORMAT):
     return dateutil.parser.isoparse(value).strftime(format_)
 
 
+def file_modified_iso8601(filepath):
+    """
+    Provide a file's ctime in ISO8601
+
+    :param filepath: path to file
+
+    :returns: string of ISO8601
+    """
+
+    return datetime.fromtimestamp(
+        os.path.getctime(filepath)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def human_size(nbytes):
+    """
+    Provides human readable file size
+
+    source: https://stackoverflow.com/a/14996816
+
+    :param nbytes: int of file size (bytes)
+    :param units: list of unit abbreviations
+
+    :returns: string of human readable filesize
+    """
+
+    suffixes = ['B', 'K', 'M', 'G', 'T', 'P']
+
+    i = 0
+
+    while nbytes >= 1024 and i < len(suffixes)-1:
+        nbytes /= 1024.
+        i += 1
+
+    if suffixes[i] == 'K':
+        f = str(int(nbytes)).rstrip('0').rstrip('.')
+    elif suffixes[i] == 'B':
+        return nbytes
+    else:
+        f = '{:.1f}'.format(nbytes).rstrip('0').rstrip('.')
+
+    return '{}{}'.format(f, suffixes[i])
+
+
 def format_duration(start, end=None):
     """
     Parse a start and (optional) end datetime as ISO 8601 strings, calculate
@@ -234,6 +279,8 @@ def json_serial(obj):
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
+    elif isinstance(obj, l10n.Locale):
+        return l10n.locale2str(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
@@ -255,13 +302,14 @@ def is_url(urlstring):
         return False
 
 
-def render_j2_template(config, template, data):
+def render_j2_template(config, template, data, locale_=None):
     """
     render Jinja2 template
 
     :param config: dict of configuration
     :param template: template (relative path)
     :param data: dict of data
+    :param locale_: the requested output Locale
 
     :returns: string of rendered template
     """
@@ -269,16 +317,19 @@ def render_j2_template(config, template, data):
     custom_templates = False
     try:
         templates_path = config['server']['templates']['path']
-        env = Environment(loader=FileSystemLoader(templates_path))
+        env = Environment(loader=FileSystemLoader(templates_path),
+                          extensions=['jinja2.ext.i18n'])
         custom_templates = True
         LOGGER.debug('using custom templates: {}'.format(templates_path))
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        env = Environment(loader=FileSystemLoader(TEMPLATES),
+                          extensions=['jinja2.ext.i18n'])
         LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
     env.filters['format_datetime'] = format_datetime
     env.filters['format_duration'] = format_duration
+    env.filters['human_size'] = human_size
     env.globals.update(to_json=to_json)
 
     env.filters['get_path_basename'] = get_path_basename
@@ -290,18 +341,21 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
+    # TODO: insert Babel Translation stuff here
     try:
         template = env.get_template(template)
     except TemplateNotFound as err:
         if custom_templates:
             LOGGER.debug(err)
             LOGGER.debug('Custom template not found; using default')
-            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            env = Environment(loader=FileSystemLoader(TEMPLATES),
+                              extensions=['jinja2.ext.i18n'])
             template = env.get_template(template)
         else:
             raise
 
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=l10n.translate_struct(config, locale_, True),
+                           data=data, version=__version__)
 
 
 def get_mimetype(filename):
@@ -441,3 +495,19 @@ def read_data(path):
         LOGGER.debug('network file')
         with urlopen(path) as r:
             return r.read()
+
+
+def url_join(*parts):
+    """
+    helper function to join a URL from a number of parts/fragments.
+    Implemented because urllib.parse.urljoin strips subpaths from
+    host urls if they are specified
+
+    Per https://github.com/geopython/pygeoapi/issues/695
+
+    :param parts: list of parts to join
+
+    :returns: str of resulting URL
+    """
+
+    return '/'.join([p.strip().strip('/') for p in parts])

@@ -40,8 +40,25 @@
         <a href="{{ config['server']['url'] }}">Home</a>
         {% endblock %}
         <span style="float:right">
-          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=json">JSON</a>
-          <a href="{{ data['links'] | map(rel='self') | attr('href') }}?f=jsonld">JSON-LD</a>
+          {% set links_found = namespace(json=0, jsonld=0) %}
+
+          {% for link in data['links'] %}
+          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
+          {% set links_found.json = 1 %}
+          <a href="{{ link['href'] }}">JSON</a>
+          {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
+          {% set links_found.jsonld = 1 %}
+          <a href="{{ link['href'] }}">JSON-LD</a>
+          {% endif %}
+          {% endfor %}
+
+          {% if links_found.json == 0 %}
+          <a href="?f=json">JSON</a>
+          {% endif %}
+          {% if links_found.jsonld == 0 %}
+          <a href="?f=jsonld">JSON-LD</a>
+          {% endif %}
+
         </span>
       </div>
     </div>

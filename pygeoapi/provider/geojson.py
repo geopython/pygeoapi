@@ -116,7 +116,7 @@ class GeoJSONProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query the provider
 
@@ -148,7 +148,7 @@ class GeoJSONProvider(BaseProvider):
 
         return data
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query the provider by id
 

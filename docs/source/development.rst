@@ -17,7 +17,7 @@ exist in ``/tests`` and are developed for providers, formatters, processes, as w
 overall API.
 
 Tests can be run locally as part of development workflow.  They are also run on pygeoapi’s
-`Travis setup`_ against all commits and pull requests to the code repository.
+`GitHub Actions setup`_ against all commits and pull requests to the code repository.
 
 To run all tests, simply run ``pytest`` in the repository.  To run a specific test file,
 run ``pytest tests/test_api.py``, for example.
@@ -68,4 +68,4 @@ Set the variable for the Spatialite library under OSX:
    SPATIALITE_LIBRARY_PATH=/usr/local/lib/mod_spatialite.dylib
 
 
-.. _`Travis setup`: https://github.com/geopython/pygeoapi/blob/master/.travis.yml
+.. _`GitHub Actions setup`: https://github.com/geopython/pygeoapi/blob/master/.github/workflows/main.yml
