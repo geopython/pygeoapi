@@ -46,7 +46,8 @@ from shapely.geometry import Polygon
 
 import dateutil.parser
 # from babel.support import Translations
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from babel.support import Translations
 from jinja2.exceptions import TemplateNotFound
 import yaml
 
@@ -320,12 +321,16 @@ def render_j2_template(config, template, data, locale_=None):
     try:
         templates_path = config['server']['templates']['path']
         env = Environment(loader=FileSystemLoader(templates_path),
-                          extensions=['jinja2.ext.i18n'])
+                          extensions=['jinja2.ext.i18n',
+                                      'jinja2.ext.autoescape'],
+                          autoescape=select_autoescape(['html', 'xml']))
         custom_templates = True
         LOGGER.debug('using custom templates: {}'.format(templates_path))
     except (KeyError, TypeError):
         env = Environment(loader=FileSystemLoader(TEMPLATES),
-                          extensions=['jinja2.ext.i18n'])
+                          extensions=['jinja2.ext.i18n',
+                                      'jinja2.ext.autoescape'],
+                          autoescape=select_autoescape(['html', 'xml']))
         LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
@@ -343,7 +348,9 @@ def render_j2_template(config, template, data, locale_=None):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
-    # TODO: insert Babel Translation stuff here
+    translations = Translations.load('locale', [locale_])
+    env.install_gettext_translations(translations)
+
     try:
         template = env.get_template(template)
     except TemplateNotFound as err:

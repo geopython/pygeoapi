@@ -1,12 +1,12 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} SpatioTemporal Asset Catalog {% endblock %}
+{% block title %}{{ super() }} {% trans %}SpatioTemporal Asset Catalog{% endtrans %} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="./stac">SpatioTemporal Asset Catalog</a>
+/ <a href="./stac">{% trans %}SpatioTemporal Asset Catalog{% endtrans %}</a>
 {% endblock %}
 {% block body %}
 
     <section id="identification">
-      <h4>STAC Version: {{ data['stac_version'] }}</h4>
+      <h4>{% trans %}STAC Version{% endtrans %}: {{ data['stac_version'] }}</h4>
     </section>
 
     <section id="collections">
@@ -14,8 +14,8 @@
             <table class="striped">
               <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Description{% endtrans %}</th>
               </tr>
               </thead>
               <tbody>

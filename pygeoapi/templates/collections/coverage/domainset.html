@@ -8,30 +8,30 @@
     <section id="collection">
       <h1>{{ data['title'] }}</h1>
       <p>{{ data['description'] }}</p>
-      <h3>Coverage domain set</h3>
-      <h4>Axis labels</h4>
+      <h3>{% trans %}Coverage domain set{% endtrans %}</h3>
+      <h4>{% trans %}Axis labels{% endtrans %}</h4>
       <ul>
 	{% for al in data['generalGrid']['axisLabels'] %}
 	<li>{{ al }}</li>
 	{% endfor %}
       </ul>
-      <h4>Extent</h4>
+      <h4>{% trans %}Extent{% endtrans %}</h4>
       <ul>
         <li>minx: {{ data['generalGrid']['axis'][0]['lowerBound'] }}</li>
-	<li>miny: {{ data['generalGrid']['axis'][1]['lowerBound'] }}</li>
+	      <li>miny: {{ data['generalGrid']['axis'][1]['lowerBound'] }}</li>
         <li>maxx: {{ data['generalGrid']['axis'][0]['upperBound'] }}</li>
         <li>maxy: {{ data['generalGrid']['axis'][1]['upperBound'] }}</li>
-        <li>Coordinate reference system: {{ data['generalGrid']['srsName'] }}</li>
+        <li>{% trans %}Coordinate reference system{% endtrans %}: {{ data['generalGrid']['srsName'] }}</li>
       </ul>
-      <h4>Size</h4>
+      <h4>{% trans %}Size{% endtrans %}</h4>
       <ul>
-        <li>width: {{ data['generalGrid']['gridLimits']['axis'][0]['upperBound'] }} </li>
-        <li>height: {{ data['generalGrid']['gridLimits']['axis'][1]['upperBound'] }} </li>
+        <li>{% trans %}width{% endtrans %}: {{ data['generalGrid']['gridLimits']['axis'][0]['upperBound'] }} </li>
+        <li>{% trans %}{height% endtrans %}: {{ data['generalGrid']['gridLimits']['axis'][1]['upperBound'] }} </li>
       </ul>
-      <h4>Resolution</h4>
+      <h4>{% trans %}Resolution{% endtrans %}</h4>
       <ul>
-        <li>x: {{ data['generalGrid']['axis'][0]['resolution'] }} </li>
-        <li>y: {{ data['generalGrid']['axis'][1]['resolution'] }} </li>
+        <li>{% trans %}x{% endtrans %}: {{ data['generalGrid']['axis'][0]['resolution'] }} </li>
+        <li>{% trans %}y{% endtrans %}: {{ data['generalGrid']['axis'][1]['resolution'] }} </li>
       </ul>
     </section>
 {% endblock %}

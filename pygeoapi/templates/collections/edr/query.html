@@ -1,14 +1,14 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="{{ data['collections_path'] }}">Collections</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %} /
     <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
     {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
-/ <a href="{{ data['items_path']}}">Items</a>
+/ <a href="{{ data['items_path']}}">{% trans %}Items{% endtrans %}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
