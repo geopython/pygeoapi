@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} stac/{{ data['path'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="{{ config['server']['url'] }}/stac">SpatioTemporal Asset Catalog</a>
+/ <a href="{{ config['server']['url'] }}/stac">{% trans %}SpatioTemporal Asset Catalog{% endtrans %}</a>
 {% for link in get_breadcrumbs(data['path']) %}
 / <a class="crumbs-path" href="{{config['server']['url'] }}/stac/{{ link['href'] }}">{{ link['title'] }}</a>
 {% endfor %}
@@ -14,9 +14,9 @@
     <table class="striped">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Last modified</th>
-          <th>Size</th>
+          <th>{% trans %}Name{% endtrans %}</th>
+          <th>{% trans %}Last modified{% endtrans %}</th>
+          <th>{% trans %}Size{% endtrans %}</th>
         </tr>
       </thead>
       <tbody>

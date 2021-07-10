@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} stac/{{ data['path'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="{{ config['server']['url'] }}/stac">SpatioTemporal Asset Catalog</a>
+/ <a href="{{ config['server']['url'] }}/stac">{% trans %}SpatioTemporal Asset Catalog{% endtrans %}</a>
 {% for link in get_breadcrumbs(data['path']) %}
 / <a class="crumbs-path" href="{{config['server']['url'] }}/stac/{{ link['href'] }}">{{ link['title'] }}</a>
 {% endfor %}
@@ -16,7 +16,7 @@
     <section id="item">
       <div class="row">
         <div class="col-sm">
-          <h2>Item {{ data['id'] }}</h2>
+          <h2>{% trans %}Item{% endtrans %} {{ data['id'] }}</h2>
         </div>
       </div>
       <div class="row">
@@ -25,13 +25,13 @@
             <div class="col-sm-12">
               <div id="items-map"></div>
               <div id="assets">
-                <h4>Assets</h4>
+                <h4>{% trans %}Assets{% endtrans %}</h4>
                 <table class="striped">
                   <thead>
                     <tr>
-                      <th>URL</th>
-                      <th>Last Modified</th>
-                      <th>Size</th>
+                      <th>{% trans %}URL{% endtrans %}</th>
+                      <th>{% trans %}Last Modified{% endtrans %}</th>
+                      <th>{% trans %}Size{% endtrans %}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -55,13 +55,13 @@
             <table class="striped">
               <thead>
               <tr>
-                <th>Property</th>
-                <th>Value</th>
+                <th>{% trans %}Property{% endtrans %}</th>
+                <th>{% trans %}Value{% endtrans %}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>id</td>
+                <td>{% trans %}id{% endtrans %}</td>
                 <td>{{ data.id }}</td>
               </tr>
               {% for k, v in data['properties'].items() %}
