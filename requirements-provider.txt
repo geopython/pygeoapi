@@ -5,7 +5,7 @@ netCDF4
 psycopg2-binary==2.8.4
 pygeometa
 pymongo==3.10.1
-numpy==1.17.4
+numpy
 scipy
 xarray
 zarr
