@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import time
 import requests
 import sys
 import json
@@ -44,8 +43,8 @@ def main(path_):
     for v in data:
         clean(v)
         requests.post(url, json.dumps(v))
-        time.sleep(0.02)
     print(f"Added {len(requests.get(url).json()['value'])} entities")
+    print(requests.get(url).json()['value'])
 
 
 def clean(dirty_dict):
