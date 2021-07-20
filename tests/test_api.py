@@ -338,7 +338,7 @@ def test_describe_collections(config, api_):
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
     collection = json.loads(response)
-    assert code == 400
+    assert code == 404
 
     rsp_headers, code, response = api_.describe_collections(req, 'obs')
     collection = json.loads(response)
@@ -389,7 +389,7 @@ def test_get_collection_queryables(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.get_collection_queryables(req,
                                                                  'notfound')
-    assert code == 400
+    assert code == 404
 
     req = mock_request({'f': 'html'})
     rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
@@ -453,7 +453,7 @@ def test_get_collection_items(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.get_collection_items(req, 'foo')
     features = json.loads(response)
-    assert code == 400
+    assert code == 404
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
@@ -703,7 +703,7 @@ def test_get_collection_item(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.get_collection_item(req, 'foo', '371')
 
-    assert code == 400
+    assert code == 404
 
     rsp_headers, code, response = api_.get_collection_item(
         req, 'obs', 'notfound')
