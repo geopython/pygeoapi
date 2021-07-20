@@ -58,7 +58,7 @@ def test_query_datastreams(config):
     results = p.query()
     assert len(results['features']) == 10
     assert results['numberReturned'] == 10
-    assert len(results['features'][0]['properties']['Observations']) == 18
+    assert len(results['features'][0]['properties']['Observations']) == 19
 
     assert results['features'][0]['geometry']['coordinates'][0] == -105.581
     assert results['features'][0]['geometry']['coordinates'][1] == 36.713
