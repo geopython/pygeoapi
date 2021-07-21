@@ -346,7 +346,7 @@ async def get_process_jobs(request: Request, process_id=None, job_id=None):
 
 @app.route('/processes/{process_id}/execution', methods=['POST'])
 @app.route('/processes/{process_id}/execution/', methods=['POST'])
-async def get_process_jobs(request: Request, process_id):
+async def execute_process_jobs(request: Request, process_id):
     """
     OGC API - Processes jobs endpoint
 
