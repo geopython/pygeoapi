@@ -15,17 +15,17 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
+   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display), CQL
    :align: left
 
-   CSV,❌,results/hits,❌,❌,❌,✅
-   Elasticsearch,✅,results/hits,✅,✅,✅,✅
-   GeoJSON,❌,results/hits,❌,❌,❌,❌
-   MongoDB,✅,results,✅,✅,✅,❌
-   OGR,✅,results/hits,✅,❌,❌,❌
-   PostgreSQL,✅,results/hits,✅,❌,❌,❌
-   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
-   SensorThingsAPI,✅,results/hits,✅,✅,✅,✅
+   CSV,❌,results/hits,❌,❌,❌,✅,❌
+   Elasticsearch,✅,results/hits,✅,✅,✅,✅,✅
+   GeoJSON,❌,results/hits,❌,❌,❌,❌,❌
+   MongoDB,✅,results,✅,✅,✅,❌,❌
+   OGR,✅,results/hits,✅,❌,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,❌,❌,❌
+   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌,❌
+   SensorThingsAPI,✅,results/hits,✅,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -65,6 +65,7 @@ To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
          data: tests/data/file.json
          id_field: id
 
+.. _Elasticsearch:
 
 Elasticsearch
 ^^^^^^^^^^^^^
@@ -86,6 +87,11 @@ To publish an Elasticsearch index, the following are required in your index:
          data: http://localhost:9200/ne_110m_populated_places_simple
          id_field: geonameid
          time_field: datetimefield
+
+This provider has the support for the CQL queries as indicated in the table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
 
 OGR
 ^^^

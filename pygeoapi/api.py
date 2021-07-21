@@ -66,7 +66,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
-
+from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
@@ -219,7 +219,10 @@ class APIRequest:
         self._args = self._get_params(request)
 
         # Get path info
-        self._path_info = request.headers.environ['PATH_INFO'].strip('/')
+        if hasattr(request, 'scope'):
+            self._path_info = request.scope['path'].strip('/')
+        elif hasattr(request.headers, 'environ'):
+            self._path_info = request.headers.environ['PATH_INFO'].strip('/')
 
         # Extract locale from params or headers
         self._raw_locale, self._locale = self._get_locale(request.headers,
@@ -227,6 +230,9 @@ class APIRequest:
 
         # Determine format
         self._format = self._get_format(request.headers)
+
+        # Get received headers
+        self._headers = self.get_request_headers(request.headers)
 
     @classmethod
     def with_data(cls, request, supported_locales) -> 'APIRequest':
@@ -250,11 +256,17 @@ class APIRequest:
             # Set data from Flask request
             api_req._data = request.data
         elif hasattr(request, 'body'):
-            # Set data from Starlette request after async coroutine completion
-            # TODO: this now blocks, but once Flask v2 with async support
-            #       has been implemented, with_data() can become async too
-            loop = asyncio.get_event_loop()
-            api_req._data = loop.run_until_complete(request.body())
+            try:
+                import nest_asyncio
+                nest_asyncio.apply()
+                # Set data from Starlette request after async
+                # coroutine completion
+                # TODO: this now blocks, but once Flask v2 with async support
+                # has been implemented, with_data() can become async too
+                loop = asyncio.get_event_loop()
+                api_req._data = loop.run_until_complete(request.body())
+            except ModuleNotFoundError:
+                LOGGER.error("Module nest-asyncio not found")
         return api_req
 
     @staticmethod
@@ -399,6 +411,17 @@ class APIRequest:
 
         return self._format
 
+    @property
+    def headers(self) -> dict:
+        """
+        Returns the dictionary of the headers from
+        the request.
+
+        :returns: Request headers dictionary
+        """
+
+        return self._headers
+
     def get_linkrel(self, format_: str) -> str:
         """
         Returns the hyperlink relationship (rel) attribute value for
@@ -476,6 +499,19 @@ class APIRequest:
             # Set MIME type for valid formats
             headers['Content-Type'] = FORMAT_TYPES[self._format]
         return headers
+
+    def get_request_headers(self, headers) -> dict:
+        """
+        Obtains and returns a dictionary with Request object headers.
+
+        This method adds the headers of the original request and
+        makes them available to the API object.
+
+        :returns: A header dict
+        """
+
+        headers_ = {item[0]: item[1] for item in headers.items()}
+        return headers_
 
 
 class API:
@@ -1104,13 +1140,12 @@ class API:
     @pre_process
     def get_collection_items(
             self, request: Union[APIRequest, Any],
-            dataset, pathinfo=None) -> Tuple[dict, int, str]:
+            dataset) -> Tuple[dict, int, str]:
         """
         Queries collection
 
         :param request: A request object
         :param dataset: dataset name
-        :param pathinfo: path location
 
         :returns: tuple of headers, status code, content
         """
@@ -1393,14 +1428,9 @@ class API:
 
         if request.format == F_HTML:  # render
             # For constructing proper URIs to items
-            if pathinfo:
-                path_info = '/'.join([
-                    self.config['server']['url'].rstrip('/'),
-                    pathinfo.strip('/')])
-            else:
-                path_info = '/'.join([
-                    self.config['server']['url'].rstrip('/'),
-                    request.path_info])
+            path_info = '/'.join([
+                self.config['server']['url'].rstrip('/'),
+                request.path_info])
 
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
@@ -1448,6 +1478,245 @@ class API:
             content = geojson2jsonld(
                 self.config, content, dataset, id_field=(p.uri_field or 'id')
             )
+
+        return headers, 200, to_json(content, self.pretty_print)
+
+    @pre_process
+    def post_collection_items(
+            self, request: Union[APIRequest, Any],
+            dataset) -> Tuple[dict, int, str]:
+        """
+        Queries collection or filter an item
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        request_headers = request.headers
+
+        if not request.is_valid(PLUGINS['formatter'].keys()):
+            return self.get_format_exception(request)
+
+        # Set Content-Language to system locale until provider locale
+        # has been determined
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+
+        properties = []
+        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+                               'resulttype', 'datetime', 'sortby',
+                               'properties', 'skipGeometry', 'q',
+                               'filter-lang']
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        if dataset not in collections.keys():
+            msg = 'Invalid collection'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Processing startindex parameter')
+        try:
+            startindex = int(request.params.get('startindex'))
+            if startindex < 0:
+                msg = 'startindex value should be positive or zero'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+        except TypeError as err:
+            LOGGER.warning(err)
+            startindex = 0
+        except ValueError:
+            msg = 'startindex value should be an integer'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing limit parameter')
+        try:
+            limit = int(request.params.get('limit'))
+            # TODO: We should do more validation, against the min and max
+            # allowed by the server configuration
+            if limit <= 0:
+                msg = 'limit value should be strictly positive'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+        except TypeError as err:
+            LOGGER.warning(err)
+            limit = int(self.config['server']['limit'])
+        except ValueError:
+            msg = 'limit value should be an integer'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        resulttype = request.params.get('resulttype') or 'results'
+
+        LOGGER.debug('Processing bbox parameter')
+
+        bbox = request.params.get('bbox')
+
+        if bbox is None:
+            bbox = []
+        else:
+            try:
+                bbox = validate_bbox(bbox)
+            except ValueError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Processing datetime parameter')
+        datetime_ = request.params.get('datetime')
+        try:
+            datetime_ = validate_datetime(collections[dataset]['extents'],
+                                          datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('processing q parameter')
+        val = request.params.get('q')
+
+        q = None
+        if val is not None:
+            q = val
+
+        LOGGER.debug('Loading provider')
+
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                collections[dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            try:
+                p = load_plugin('provider', get_provider_by_type(
+                    collections[dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                return self.get_exception(
+                    400, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+
+        LOGGER.debug('processing property parameters')
+        for k, v in request.params.items():
+            if k not in reserved_fieldnames and k not in p.fields.keys():
+                msg = 'unknown query parameter: {}'.format(k)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+            elif k not in reserved_fieldnames and k in p.fields.keys():
+                LOGGER.debug('Add property filter {}={}'.format(k, v))
+                properties.append((k, v))
+
+        LOGGER.debug('processing sort parameter')
+        val = request.params.get('sortby')
+
+        if val is not None:
+            sortby = []
+            sorts = val.split(',')
+            for s in sorts:
+                prop = s
+                order = '+'
+                if s[0] in ['+', '-']:
+                    order = s[0]
+                    prop = s[1:]
+
+                if prop not in p.fields.keys():
+                    msg = 'bad sort property'
+                    return self.get_exception(
+                        400, headers, request.format,
+                        'InvalidParameterValue', msg)
+
+                sortby.append({'property': prop, 'order': order})
+        else:
+            sortby = []
+
+        LOGGER.debug('processing properties parameter')
+        val = request.params.get('properties')
+
+        if val is not None:
+            select_properties = val.split(',')
+            properties_to_check = set(p.properties) | set(p.fields.keys())
+
+            if (len(list(set(select_properties) -
+                         set(properties_to_check))) > 0):
+                msg = 'unknown properties specified'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+        else:
+            select_properties = []
+
+        LOGGER.debug('processing skipGeometry parameter')
+        val = request.params.get('skipGeometry')
+        if val is not None:
+            skip_geometry = str2bool(val)
+        else:
+            skip_geometry = False
+
+        LOGGER.debug('Processing filter-lang parameter')
+        filter_lang = request.params.get('filter-lang')
+        if filter_lang == 'cql-json':  # @TODO add check from the configuration
+            val = filter_lang
+        else:
+            msg = 'Invalid filter language'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        LOGGER.debug('Querying provider')
+        LOGGER.debug('startindex: {}'.format(startindex))
+        LOGGER.debug('limit: {}'.format(limit))
+        LOGGER.debug('resulttype: {}'.format(resulttype))
+        LOGGER.debug('sortby: {}'.format(sortby))
+        LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('datetime: {}'.format(datetime_))
+        LOGGER.debug('properties: {}'.format(select_properties))
+        LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
+        LOGGER.debug('q: {}'.format(q))
+        LOGGER.debug('filter-lang: {}'.format(filter_lang))
+
+        LOGGER.debug('Processing headers')
+
+        LOGGER.debug('Processing request content-type header')
+        if (request_headers.get(
+            'Content-Type') or request_headers.get(
+                'content-type')) != 'application/query-cql-json':
+            msg = ('Invalid body content-type')
+            return self.get_exception(
+                400, headers, request.format, 'InvalidHeaderValue', msg)
+
+        LOGGER.debug('Processing body')
+
+        if not request.data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg)
+
+        try:
+            # Parse bytes data, if applicable
+            data = request.data.decode()
+            LOGGER.debug(data)
+            # @TODO validation function
+            filter_ = None
+            if val:
+                filter_ = CQLModel.parse_raw(data)
+            content = p.query(startindex=startindex, limit=limit,
+                              resulttype=resulttype, bbox=bbox,
+                              datetime_=datetime_, properties=properties,
+                              sortby=sortby,
+                              select_properties=select_properties,
+                              skip_geometry=skip_geometry,
+                              q=q,
+                              filterq=filter_)
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
         return headers, 200, to_json(content, self.pretty_print)
 

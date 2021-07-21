@@ -10,3 +10,4 @@ pymongo==3.10.1
 scipy
 xarray
 zarr
+elasticsearch-dsl
