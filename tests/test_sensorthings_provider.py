@@ -95,8 +95,8 @@ def test_query_observations(config):
     results = p.query(resulttype='hits')
     assert results['numberMatched'] == 2752
 
-    results = p.query(properties=[('result', 4), ])
-    assert results['features'][0]['properties']['result'] == 4
+    results = p.query(properties=[('result', 7475), ])
+    assert results['features'][0]['properties']['result'] == 7475
 
     results = p.query()
     assert len(results['features'][0]['properties']) == 4
