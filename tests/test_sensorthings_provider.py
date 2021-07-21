@@ -74,7 +74,7 @@ def test_query_datastreams(config):
     assert len(results['features'][0]['properties']) == 17
 
     results = p.query(bbox=[-109, 36, -106, 37])
-    assert results['numberReturned'] == 8
+    assert results['numberReturned'] == 2
 
     results = p.query(select_properties=['Thing'])
     assert len(results['features'][0]['properties']) == 1
@@ -93,7 +93,7 @@ def test_query_observations(config):
     p = SensorThingsProvider(config)
 
     results = p.query(resulttype='hits')
-    assert results['numberMatched'] == 5298
+    assert results['numberMatched'] == 2752
 
     results = p.query(properties=[('result', 4), ])
     assert results['features'][0]['properties']['result'] == 4
@@ -131,5 +131,5 @@ def test_get(config):
 
     result = p.get('9')
     assert result['id'] == '9'
-    assert result['properties']['name'] == 'Water level (NGVD29)'
+    assert result['properties']['name'] == 'Depth Below Surface'
     assert isinstance(result['properties']['Thing'], dict)
