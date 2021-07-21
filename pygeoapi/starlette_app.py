@@ -315,8 +315,7 @@ async def get_processes(request: Request, process_id=None):
     return get_response(api_.describe_processes(request, process_id))
 
 
-@app.route('/processes/{process_id}/jobs', methods=['GET', 'POST'])
-@app.route('/processes/{process_id}/jobs/', methods=['GET', 'POST'])
+@app.route('/processes/{process_id}/jobs')
 @app.route('/processes/{process_id}/jobs/{job_id}', methods=['GET', 'DELETE'])
 @app.route('/processes/{process_id}/jobs/{job_id}/', methods=['GET', 'DELETE'])
 async def get_process_jobs(request: Request, process_id=None, job_id=None):
@@ -336,16 +335,31 @@ async def get_process_jobs(request: Request, process_id=None, job_id=None):
         job_id = request.path_params['job_id']
 
     if job_id is None:  # list of submit job
-        if request.method == 'GET':
-            return get_response(api_.get_process_jobs(request, process_id))
-        elif request.method == 'POST':
-            return get_response(api_.execute_process(request, process_id))
+        return get_response(api_.get_process_jobs(request, process_id))
     else:  # get or delete job
         if request.method == 'DELETE':
             return get_response(api_.delete_process_job(process_id, job_id))
         else:  # Return status of a specific job
             return get_response(api_.get_process_jobs(
                 request, process_id, job_id))
+
+
+@app.route('/processes/{process_id}/execution', methods=['POST'])
+@app.route('/processes/{process_id}/execution/', methods=['POST'])
+async def get_process_jobs(request: Request, process_id):
+    """
+    OGC API - Processes jobs endpoint
+
+    :param request: Starlette Request instance
+    :param process_id: process identifier
+
+    :returns: Starlette HTTP Response
+    """
+
+    if 'process_id' in request.path_params:
+        process_id = request.path_params['process_id']
+
+    return get_response(api_.execute_process(request, process_id))
 
 
 @app.route('/processes/{process_id}/jobs/{job_id}/results', methods=['GET'])
