@@ -44,7 +44,6 @@ def main(path_):
         clean(v)
         requests.post(url, json.dumps(v))
     print(f"Added {len(requests.get(url).json()['value'])} entities")
-    print([r.get('@iot.id') for r in requests.get(url).json()['value']])
 
 
 def clean(dirty_dict):
