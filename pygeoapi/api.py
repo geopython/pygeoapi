@@ -703,9 +703,9 @@ class API:
                                                'type', 'collection')
 
         if all([dataset is not None, dataset not in collections.keys()]):
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Creating collections')
         for k, v in collections.items():
@@ -1042,9 +1042,9 @@ class API:
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Creating collection queryables')
         try:
@@ -1131,9 +1131,9 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -1477,9 +1477,9 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Loading provider')
 
@@ -1856,9 +1856,9 @@ class API:
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -1970,9 +1970,9 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Loading tile provider')
         try:
@@ -2046,9 +2046,9 @@ class API:
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
 
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Creating collection tiles')
         LOGGER.debug('Loading provider')
@@ -2147,6 +2147,11 @@ class API:
 
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
+
+                if process is None:
+                    p2.pop('inputs')
+                    p2.pop('outputs')
+                    p2.pop('example')
 
                 p2['jobControlOptions'] = ['sync-execute']
                 if self.manager.is_async:
@@ -2569,9 +2574,9 @@ class API:
                                                'type', 'collection')
 
         if dataset not in collections.keys():
-            msg = 'Invalid collection'
+            msg = 'Collection not found'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                404, headers, request.format, 'NotFound', msg)
 
         LOGGER.debug('Processing query parameters')
 
@@ -2752,7 +2757,7 @@ class API:
                                                     'type', 'stac-collection')
 
         if dataset not in stac_collections:
-            msg = 'collection not found'
+            msg = 'Collection not found'
             return self.get_exception(404, headers, request.format,
                                       'NotFound', msg)
 

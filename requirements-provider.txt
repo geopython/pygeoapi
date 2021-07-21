@@ -2,10 +2,11 @@ elasticsearch==7.1.0
 fiona
 #GDAL>=3.0.0
 netCDF4
+pandas; python_version < '3.7'
+pandas==1.2.5; python_version >= '3.7'
 psycopg2-binary==2.8.4
 pygeometa
 pymongo==3.10.1
-numpy
 scipy
 xarray
 zarr
