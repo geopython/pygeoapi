@@ -118,7 +118,7 @@ def test_query_observations(config):
     results = p.query(datetime_='../2000-01-01T00:00:00.00Z',
                       sortby=[{'property': 'phenomenonTime', 'order': '-'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '1999-12-29T00:00:00.000Z'
+        'phenomenonTime'] == '1999-10-15T17:45:00.000Z'
 
     results = p.query(datetime_='2000-01-01T00:00:00.00Z/..',
                       sortby=[{'property': 'phenomenonTime', 'order': '+'}])
