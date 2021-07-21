@@ -51,7 +51,7 @@ def clean(dirty_dict):
     if isinstance(dirty_dict, dict):
         keys = []
         for (k, v) in dirty_dict.items():
-            if '@' in k:
+            if '@' in k and k != '@iot.id':
                 keys.append(k)
             elif isinstance(v, dict):
                 clean(v)
