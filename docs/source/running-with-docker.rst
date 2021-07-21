@@ -57,6 +57,8 @@ For a cleaner approach, You can use ``docker-compose`` as per below:
        image: geopython/pygeoapi:latest
        volumes:
          - ./my.config.yml:/pygeoapi/local.config.yml
+       ports:
+         - "5000:80"
 
 Or you can create a ``Dockerfile`` extending the base image and **copy** in your configuration:
 

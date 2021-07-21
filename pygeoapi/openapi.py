@@ -919,7 +919,10 @@ def get_oas_30(cfg):
                         '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     }
-                },
+                }
+            }
+
+            paths['{}/execution'.format(process_name_path)] = {
                 'post': {
                     'summary': 'Process {} execution'.format(
                         l10n.translate(p.metadata['title'], locale_)),
@@ -958,7 +961,7 @@ def get_oas_30(cfg):
                 }
             }
             if 'example' in p.metadata:
-                paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+                paths['{}/execution'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
             name_in_path = {
                 'name': 'jobId',

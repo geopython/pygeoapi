@@ -289,7 +289,7 @@ def get_processes(process_id=None):
     return get_response(api_.describe_processes(request, process_id))
 
 
-@BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>/jobs')
 @BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
                  methods=['GET', 'DELETE'])
 def get_process_jobs(process_id=None, job_id=None):
@@ -301,17 +301,28 @@ def get_process_jobs(process_id=None, job_id=None):
 
     :returns: HTTP response
     """
+
     if job_id is None:
-        if request.method == 'GET':  # list jobs
-            return get_response(api_.get_process_jobs(request, process_id))
-        elif request.method == 'POST':  # submit job
-            return get_response(api_.execute_process(request, process_id))
+        return get_response(api_.get_process_jobs(request, process_id))
     else:
         if request.method == 'DELETE':  # dismiss job
             return get_response(api_.delete_process_job(process_id, job_id))
         else:  # Return status of a specific job
             return get_response(api_.get_process_jobs(
                 request, process_id, job_id))
+
+
+@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
+def execute_process_jobs(process_id):
+    """
+    OGC API - Processes execution endpoint
+
+    :param process_id: process identifier
+
+    :returns: HTTP response
+    """
+
+    return get_response(api_.execute_process(request, process_id))
 
 
 @BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>/results',
