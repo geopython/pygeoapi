@@ -2148,6 +2148,11 @@ class API:
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
 
+                if process is None:
+                    p2.pop('inputs')
+                    p2.pop('outputs')
+                    p2.pop('example')
+
                 p2['jobControlOptions'] = ['sync-execute']
                 if self.manager.is_async:
                     p2['jobControlOptions'].append('async-execute')
