@@ -65,12 +65,11 @@ def test_query_datastreams(config):
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '1'
+    assert results['features'][0]['id'] == '9'
 
-    results = p.query(startindex=2, limit=1,
-                      sortby=[{'property': '@iot.id', 'order': '+'}])
+    results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '3'
+    assert results['features'][0]['id'] == '11'
 
     assert len(results['features'][0]['properties']) == 17
 
