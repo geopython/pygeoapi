@@ -53,7 +53,7 @@ msgstr "Conditions d'utilisation"
 
 #: pygeoapi/templates/landing_page.html:35
 msgid "License"
-msgstr "License"
+msgstr "Licence"
 
 #: pygeoapi/templates/collections/coverage/rangetype.html:4
 #: pygeoapi/templates/collections/edr/query.html:4

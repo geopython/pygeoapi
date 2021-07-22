@@ -45,7 +45,6 @@ from urllib.parse import urlparse
 from shapely.geometry import Polygon
 
 import dateutil.parser
-# from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
 from jinja2.exceptions import TemplateNotFound
