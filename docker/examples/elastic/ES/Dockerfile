@@ -51,16 +51,9 @@ RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/load_
 RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml
 RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 
-RUN yum install -y python3
-
 RUN yum --enablerepo=extras -y install epel-release \
-	&& yum install -y python3-pip \
-	&& yum install -y python3-setuptools
-	
-	RUN yum install python-typing -y
-
-	RUN pip3 install --upgrade pip
-	RUN pip3 install elasticsearch \
+        && yum install -y python3 python3-pip python3-setuptools python-typing \
+        && pip3 install --upgrade pip elasticsearch elasticsearch-dsl \
 	&& yum clean packages
 
 USER elasticsearch
