@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 import base64
+from typing import List
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
@@ -41,6 +42,7 @@ import os
 import re
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from shapely.geometry import Polygon
 
 import dateutil.parser
 # from babel.support import Translations
@@ -511,3 +513,20 @@ def url_join(*parts):
     """
 
     return '/'.join([p.strip().strip('/') for p in parts])
+
+
+def get_envelope(coords_list: List[List[float]]):
+    """
+    helper function to get the envelope for a given coordinates
+    list through the Shapely API.
+
+    :param coords_list: list of coordinates
+
+    :returns: list of the envelope's coordinates
+    """
+
+    coords = [tuple(item) for item in coords_list]
+    polygon = Polygon(coords)
+    bounds = polygon.bounds
+    return [[bounds[0], bounds[3]],
+            [bounds[2], bounds[1]]]
