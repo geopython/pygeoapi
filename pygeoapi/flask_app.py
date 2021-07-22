@@ -175,7 +175,7 @@ def collection_queryables(collection_id=None):
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
@@ -187,9 +187,16 @@ def collection_items(collection_id, item_id=None):
     :returns: HTTP response
     """
     if item_id is None:
-        return get_response(api_.get_collection_items(request, collection_id))
-    return get_response(
-        api_.get_collection_item(request, collection_id, item_id))
+        if request.method == 'GET':  # list items
+            return get_response(
+                api_.get_collection_items(request, collection_id))
+        elif request.method == 'POST':  # filter items
+            return get_response(
+                api_.post_collection_items(request, collection_id))
+
+    else:
+        return get_response(
+            api_.get_collection_item(request, collection_id, item_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/coverage')

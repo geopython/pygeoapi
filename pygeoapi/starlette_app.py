@@ -220,8 +220,8 @@ async def get_collection_items_tiles(request: Request, name=None,
         request, name, tileMatrixSetId, tile_matrix, tileRow, tileCol))
 
 
-@app.route('/collections/{collection_id}/items')
-@app.route('/collections/{collection_id}/items/')
+@app.route('/collections/{collection_id}/items', methods=['GET', 'POST'])
+@app.route('/collections/{collection_id}/items/', methods=['GET', 'POST'])
 @app.route('/collections/{collection_id}/items/{item_id}')
 @app.route('/collections/{collection_id}/items/{item_id}/')
 async def collection_items(request: Request, collection_id=None, item_id=None):
@@ -239,8 +239,14 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     if 'item_id' in request.path_params:
         item_id = request.path_params['item_id']
     if item_id is None:
-        return get_response(api_.get_collection_items(
-            request, collection_id, pathinfo=request.scope['path']))
+        if request.method == 'GET':  # list items
+            return get_response(
+                api_.get_collection_items(
+                    request, collection_id))
+        elif request.method == 'POST':  # filter items
+            return get_response(
+                api_.post_collection_items(
+                    request, collection_id))
     else:
         return get_response(api_.get_collection_item(
             request, collection_id, item_id))
