@@ -97,7 +97,7 @@ PROCESS_METADATA = {
     'example': {
         'inputs': {
             'name': 'World',
-            'messsage': 'An optional message.',
+            'message': 'An optional message.',
         }
     }
 }
