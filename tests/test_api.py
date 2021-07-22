@@ -1047,50 +1047,33 @@ def test_describe_processes(config, api_):
 
 def test_execute_process(config, api_):
     req_body = {
-        'inputs': [{
-            'id': 'name',
-            'value': 'Test'
-        }]
+        'inputs': {
+            'name': 'Test'
+        }
     }
     req_body_2 = {
-        'inputs': [{
-            'id': 'name',
-            'value': 'Tést'
-        }]
+        'inputs': {
+            'name': 'Tést'
+        }
     }
     req_body_3 = {
-        'inputs': [{
-            'id': 'name',
-            'value': 'Tést'
-        }, {
-            'id': 'message',
-            'value': 'This is a test.'
-        }]
+        'inputs': {
+            'name': 'Tést',
+            'message': 'This is a test.'
+        }
     }
     req_body_4 = {
-        'inputs': [{
-            'id': 'foo',
-            'value': 'Tést'
-        }]
+        'inputs': {
+            'foo': 'Tést'
+        }
     }
     req_body_5 = {
-        'inputs': []
+        'inputs': {}
     }
     req_body_6 = {
-        'inputs': [{
-            'id': 'name',
-            'value': None
-        }]
-    }
-    req_body_7 = {
-        'inputs': [{
-            'id': 'name'
-        }]
-    }
-    req_body_8 = {
-        'inputs': [{
-            'value': 'Test'
-        }]
+        'inputs': {
+            'name': None
+        }
     }
 
     cleanup_jobs = set()
@@ -1180,24 +1163,6 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_7)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == 400
-    assert 'Location' not in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'invalid request data'
-
-    req = mock_request(data=req_body_8)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == 400
-    assert 'Location' not in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'invalid request data'
-
     req = mock_request(data=req_body)
     rsp_headers, code, response = api_.execute_process(req, 'goodbye-world')
 
@@ -1241,18 +1206,16 @@ def test_delete_process_job(api_):
     assert code == 404
 
     req_body_sync = {
-        'inputs': [{
-            'id': 'name',
-            'value': 'Sync Test Deletion'
-        }]
+        'inputs': {
+            'name': 'Sync Test Deletion'
+        }
     }
 
     req_body_async = {
         'mode': 'async',
-        'inputs': [{
-            'id': 'name',
-            'value': 'Async Test Deletion'
-        }]
+        'inputs': {
+            'name': 'Async Test Deletion'
+        }
     }
 
     req = mock_request(data=req_body_sync)
