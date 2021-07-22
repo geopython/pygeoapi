@@ -27,27 +27,19 @@
             </tr>
             </thead>
             <tbody>
-              {% for input_ in data['inputs'] %}
+              {% for key, value in data['inputs'].items() %}
               <tr itemprop="parameter" itemscope>
                 <td itemprop="id" data-label="ID">
-                  {{ input_.id }}
+                  {{ key }}
                 </td>
                 <td itemprop="name" data-label="Title">
-                  {{ input_.title|striptags|truncate }}
+                  {{ value.title|striptags|truncate }}
                 </td>
-                <td itemprop="name" data-label="Title">
-                  {% with literalDataDomain = input_.input.literalDataDomain %}
-                    {% if literalDataDomain %}
-                      {{ literalDataDomain.dataType }}
-                    {% else %}
-                      {% for format in input_.input.formats %}
-                        {{ format.mimeType }}{% if not loop.last %},{% endif %}
-                      {% endfor %}
-                    {% endif %}
-                  {% endwith %}
+                <td itemprop="name" data-label="Data Type">
+                  {{ value.schema.type }}
                 </td>
                 <td itemprop="description" data-label="Description">
-                  {{ input_.abstract }}
+                  {{ value.description }}
                 </td>
               </tr>
               {% endfor %}
@@ -65,12 +57,12 @@
             </tr>
             </thead>
             <tbody>
-              {% for output_ in data['outputs'] %}
+              {% for key, value in data['outputs'].items() %}
               <tr itemprop="parameter" itemscope>
-                <td itemprop="id" data-label="ID">{{ output_['id'] }}</td>
-                <td itemprop="name" data-label="Title">{{ output_['title'] }}</td>
+                <td itemprop="id" data-label="ID">{{ key }}</td>
+                <td itemprop="name" data-label="Title">{{ value.title }}</td>
                 <td itemprop="description" data-label="Description">
-                  {{ output_['description'] | striptags | truncate }}
+                  {{ value.description | striptags | truncate }}
                 </td>
               </tr>
               {% endfor %}

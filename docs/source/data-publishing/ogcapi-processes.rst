@@ -65,11 +65,11 @@ Processing examples
 - show all jobs for the ``hello-world`` process
   - http://localhost:5000/processes/hello-world/jobs
 - execute a job for the ``hello-world`` process
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
 - execute a job for the ``hello-world`` process with a raw response
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs?response=raw" -H "Content-Type: application/json" -d "{\"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution?response=raw" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
 - execute a job for the ``hello-world`` process in asynchronous mode
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/jobs" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":[{\"id\":\"name\",\"type\":\"text/plain\",\"value\":\"hi there2\"}]}"``
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":{\"name\": \"hi there2\"}}"``
 
 .. todo:: add more examples once OAProc implementation is complete
 

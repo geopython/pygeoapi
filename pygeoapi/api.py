@@ -2642,15 +2642,13 @@ class API:
 
         try:
             data_dict = {}
-            for input_ in data.get('inputs', []):
-                id_ = input_['id']
-                value = input_['value']
-                if id_ not in data_dict:
-                    data_dict[id_] = value
-                elif id_ in data_dict and isinstance(data_dict[id_], list):
-                    data_dict[id_].append(value)
+            for key, value in data.get('inputs', {}).items():
+                if key not in data_dict:
+                    data_dict[key] = value
+                elif key in data_dict and isinstance(data_dict[key], list):
+                    data_dict[key].append(value)
                 else:
-                    data_dict[id_] = [data_dict[id_], value]
+                    data_dict[key] = [data_dict[key], value]
         except KeyError:
             # Return 4XX client error for missing 'id' or 'value' in an input
             msg = 'invalid request data'
@@ -2668,6 +2666,10 @@ class API:
         is_async = data.get('mode', 'auto') == 'async'
         if is_async:
             LOGGER.debug('Asynchronous request mode detected')
+
+        if is_async and not self.manager.is_async:
+            LOGGER.debug('async manager not configured/enabled')
+            is_async = False
 
         try:
             LOGGER.debug('Executing process')

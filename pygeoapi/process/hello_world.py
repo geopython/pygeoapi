@@ -58,61 +58,47 @@ PROCESS_METADATA = {
         'href': 'https://example.org/process',
         'hreflang': 'en-US'
     }],
-    'inputs': [{
-        'id': 'name',
-        'title': 'Name',
-        'abstract': 'The name of the person or entity that you wish to be'
-                    'echoed back as an output',
-        'input': {
-            'literalDataDomain': {
-                'dataType': 'string',
-                'valueDefinition': {
-                    'anyValue': True
-                }
-            }
+    'inputs': {
+        'name': {
+            'title': 'Name',
+            'description': 'The name of the person or entity that you wish to'
+                           'be echoed back as an output',
+            'schema': {
+                'type': 'string'
+            },
+            'minOccurs': 1,
+            'maxOccurs': 1,
+            'metadata': None,  # TODO how to use?
+            'keywords': ['full name', 'personal']
         },
-        'minOccurs': 1,
-        'maxOccurs': 1,
-        'metadata': None,  # TODO how to use?
-        'keywords': ['full name', 'personal']
-    }, {
-        'id': 'message',
-        'title': 'Message',
-        'abstract': 'An optional message to echo as well',
-        'input': {
-            'literalDataDomain': {
-                'dataType': 'string',
-                'valueDefinition': {
-                    'anyValue': True
-                }
-            }
-        },
-        'minOccurs': 0,
-        'maxOccurs': 1,
-        'metadata': None,
-        'keywords': ['message']
-    }],
-    'outputs': [{
-        'id': 'echo',
-        'title': 'Hello, world',
-        'description': 'A "hello world" echo with the name and (optional)'
-                       'message submitted for processing',
-        'output': {
-            'formats': [{
-                'mimeType': 'application/json'
-            }]
+        'message': {
+            'title': 'Message',
+            'description': 'An optional message to echo as well',
+            'schema': {
+                'type': 'string'
+            },
+            'minOccurs': 0,
+            'maxOccurs': 1,
+            'metadata': None,
+            'keywords': ['message']
         }
-    }],
+    },
+    'outputs': {
+        'echo': {
+            'title': 'Hello, world',
+            'description': 'A "hello world" echo with the name and (optional)'
+                           ' message submitted for processing',
+            'schema': {
+                'type': 'object',
+                'contentMediaType': 'application/json'
+            }
+        }
+    },
     'example': {
-        'inputs': [{
-            'id': 'name',
-            'value': 'World',
-            'type': 'text/plain'
-        }, {
-            'id': 'message',
-            'value': 'An optional message.',
-            'type': 'text/plain'
-        }]
+        'inputs': {
+            'name': 'World',
+            'messsage': 'An optional message.',
+        }
     }
 }
 
