@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import time
 import requests
 import sys
 import json
@@ -44,7 +43,6 @@ def main(path_):
     for v in data:
         clean(v)
         requests.post(url, json.dumps(v))
-        time.sleep(0.02)
     print(f"Added {len(requests.get(url).json()['value'])} entities")
 
 
@@ -52,7 +50,7 @@ def clean(dirty_dict):
     if isinstance(dirty_dict, dict):
         keys = []
         for (k, v) in dirty_dict.items():
-            if '@' in k:
+            if '@' in k and k != '@iot.id':
                 keys.append(k)
             elif isinstance(v, dict):
                 clean(v)
