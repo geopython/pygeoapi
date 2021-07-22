@@ -111,6 +111,10 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
 ]
 
