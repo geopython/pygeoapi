@@ -250,7 +250,7 @@ def bbox_intersects(record_bbox, input_bbox):
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = record_bbox[0][0]
+    bbox1 = record_bbox[0]
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
     LOGGER.debug('Record bbox: {}'.format(bbox1))
