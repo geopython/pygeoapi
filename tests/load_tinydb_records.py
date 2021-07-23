@@ -163,7 +163,7 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             'themes': themes,
             'extent': {
                 'spatial': {
-                    'bbox': [[bbox]],
+                    'bbox': [bbox],
                     'crs': bbox_crs
                 },
                 'temporal': {
