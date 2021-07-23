@@ -105,6 +105,7 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi_coverages-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
