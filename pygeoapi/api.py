@@ -2641,22 +2641,8 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
-        try:
-            data_dict = {}
-            for key, value in data.get('inputs', {}).items():
-                if key not in data_dict:
-                    data_dict[key] = value
-                elif key in data_dict and isinstance(data_dict[key], list):
-                    data_dict[key].append(value)
-                else:
-                    data_dict[key] = [data_dict[key], value]
-        except KeyError:
-            # Return 4XX client error for missing 'id' or 'value' in an input
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
-        else:
-            LOGGER.debug(data_dict)
+        data_dict = data.get('inputs', {})
+        LOGGER.debug(data_dict)
 
         job_id = data.get("job_id", str(uuid.uuid1()))
         url = '{}/processes/{}/jobs/{}'.format(
