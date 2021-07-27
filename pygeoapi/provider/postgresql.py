@@ -163,8 +163,16 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('ID_field:{}'.format(self.id_field))
         LOGGER.debug('Table:{}'.format(self.table))
 
-        LOGGER.debug('Get available fields/properties')
-        self.get_fields()
+        if "fields" in provider_def:
+            LOGGER.debug('Using user-defined fields/properties')
+            self.fields = {k: {'type': v} for k, v in provider_def['fields'].items()}
+        else:
+            LOGGER.debug('Get available fields/properties')
+            self.get_fields()
+
+    @property
+    def columns(self):
+        return SQL(', ').join(Identifier(k) for k in self.fields)
 
     def get_fields(self):
         """
@@ -260,7 +268,7 @@ class PostgreSQLProvider(BaseProvider):
 
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
              SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
-                format(db.columns,
+                format(self.columns,
                        Identifier(self.geom),
                        Identifier(self.table),
                        where_clause)
@@ -345,7 +353,7 @@ class PostgreSQLProvider(BaseProvider):
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \
-            from {} WHERE {}=%s").format(db.columns,
+            from {} WHERE {}=%s").format(self.columns,
                                          Identifier(self.geom),
                                          Identifier(self.table),
                                          Identifier(self.id_field))
