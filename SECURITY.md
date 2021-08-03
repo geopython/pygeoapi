@@ -3,7 +3,7 @@
 ## Supported Versions
 
 Security/vulnerability reports **should not** be submitted through GitHub issues or public discussions, but instead please send your report 
-to **tomkralidis nospam @ gmail.com** (remove the blanks and ‘nospam’).  
+to **tomkralidis nospam @ gmail.com** (remove the blanks and 'nospam').  
 
 Please follow the [contributor guidelines](https://github.com/geopython/pygeoapi/blob/master/CONTRIBUTING.md) when submitting a vulnerability report.
 
