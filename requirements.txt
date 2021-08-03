@@ -1,6 +1,7 @@
 Babel
 click<8
 Flask
+Flask-Login
 jsonschema
 pyproj
 python-dateutil

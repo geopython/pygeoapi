@@ -34,10 +34,12 @@ import os
 
 import click
 
-from flask import Flask, Blueprint, make_response, request, send_from_directory
+from flask import Flask, Blueprint, make_response, request, send_from_directory, url_for, redirect
+import flask_login
+import hashlib
 
 from pygeoapi.api import API
-from pygeoapi.util import get_mimetype, yaml_load
+from pygeoapi.util import get_mimetype, yaml_load, render_j2_template
 
 
 CONFIG = None
@@ -64,6 +66,10 @@ if CONFIG['server'].get('cors', False):
 
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
+
+login_manager = flask_login.LoginManager(APP)
+APP.secret_key = os.urandom(24)
+users = {os.environ['ADMIN_USER']: {'password': os.environ['ADMIN_PASS']}}
 
 api_ = API(CONFIG)
 
@@ -408,6 +414,65 @@ def stac_catalog_path(path):
     """
     return get_response(api_.get_stac_path(request, path))
 
+
+class User(flask_login.UserMixin):
+    pass
+
+
+@login_manager.user_loader
+def user_loader(email):
+    if email not in users:
+        return
+
+    user = User()
+    user.id = email
+    return user
+
+
+@login_manager.request_loader
+def request_loader(request):
+    email = request.form.get('email')
+    if email not in users:
+        return
+
+    user = User()
+    user.id = email
+
+    # DO NOT ever store passwords in plaintext and always compare password
+    # hashes using constant-time comparison!    
+    user.is_authenticated = request.form['password'] == users[email]['password']
+
+    return user
+
+@BLUEPRINT.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_j2_template(CONFIG, 'admin/login.html', {})
+
+    admin = request.form['admin']
+    if request.form['password'] == users[admin]['password']:
+        user = User()
+        user.id = admin
+        flask_login.login_user(user)
+        return redirect(url_for('pygeoapi.admin'))
+
+    return 'Bad login'
+
+
+@BLUEPRINT.route('/admin')
+# @flask_login.login_required
+def admin():
+    return render_j2_template(CONFIG, 'admin/index.html', {'config': CONFIG,
+     'islist': lambda _v: isinstance(_v, list), 'isdict': lambda _v: isinstance(_v, dict)})
+
+@BLUEPRINT.route('/logout')
+def logout():
+    flask_login.logout_user()
+    return 'Logged out'
+
+@login_manager.unauthorized_handler
+def unauthorized_handler():
+    return redirect(url_for('pygeoapi.login'))
 
 APP.register_blueprint(BLUEPRINT)
 

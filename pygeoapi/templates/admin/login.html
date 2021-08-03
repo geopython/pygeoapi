@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} Login {% endblock %}
+
+{% block body %}
+<form action='login' method='POST'>
+<input type='text' name='admin' id='admin' placeholder='admin'/> <br>
+<input type='password' name='password' id='password' placeholder='password'/> <br>
+<input type='submit' name='submit'/>
+</form>
+{% endblock %}
