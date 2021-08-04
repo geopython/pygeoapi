@@ -31,6 +31,8 @@
           Add additional menu items here
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
         -->
+        <a href="{{ config['server']['url']+'/logout' }}" role="button" class="button" style="float:right">Logout</a>
+        <a href="{{ config['server']['url']+'/admin' }}" role="button" class="button" style="float:right">Admin</a>
         <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
       </div>
     </header>

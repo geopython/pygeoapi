@@ -37,8 +37,8 @@ server:
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
-    cors: true
-    pretty_print: true
+    cors: 'true'
+    pretty_print: 'true'
     limit: 10
     # templates: /path/to/templates
     map:

@@ -27,35 +27,24 @@
   </div>
 {% endmacro %}
 
+{% block extrafoot %}
+<script src="https://unpkg.com/vue"></script>
+{% endblock %}
+
 {% block body %}
   
   <div id="app">
-    <p> [[ metadata  ]] {{ [[ metadata ]] }} [[ test ]]</p>
-    {{ render_block('Server',  data.config.server ) }}
-    {{ render_block('Metadata',  data.config.metadata ) }}
-    {{ render_block('Resources',  data.config.resources ) }}
-    <v-treeview
-      rounded
-      hoverable
-      activatable
-      :items="resources"
-    ></v-treeview>
+    <v-app id="inspire">
+      <v-data-table
+        :headers="headers"
+        :items="desserts"
+        class="elevation-1"
+      >
+      </v-data-table>
+    </v-app>
   </div>
-{% endblock %}
+  {{ render_block('Server',  data.config.server ) }}
+  {{ render_block('Metadata',  data.config.metadata ) }}
+  {{ render_block('Resources',  data.config.resources ) }}
 
-{% block extrafoot %}
-<script src="https://unpkg.com/vue"></script>
-<script>
-const app = new Vue({
-    el: '#app',
-    vuetify: new Vuetify(),
-    data: {
-        test: "fuck",
-        server: {{ data.config.server }},
-        metadata: {{ data.config.metadata }},
-        resources: {{ data.config.resources }}
-    },
-    delimiters: ['[[',']]']
-})
-</script>
 {% endblock %}
