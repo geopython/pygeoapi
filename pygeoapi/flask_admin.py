@@ -68,6 +68,39 @@ def on_load(state):
     users[os.getenv('ADMIN_USER')] = {'password': key, 'salt': salt}
 
 
+@ADMIN_BLUEPRINT.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_j2_template(CONFIG, 'admin/login.html', {})
+
+    admin = request.form[os.getenv('ADMIN_USER')]
+    login_key = hashlib.pbkdf2_hmac(
+        'sha256',
+        request.form['password'].encode('utf-8'),
+        users[os.getenv('ADMIN_USER')]['salt'],
+        100000
+    )
+    if login_key == users[os.getenv('ADMIN_USER')]['password']:
+        user = Admin()
+        user.id = admin
+        flask_login.login_user(user)
+        return redirect(url_for('pygeoapi_admin.admin'))
+
+    return redirect(url_for('pygeoapi_admin.login'))
+
+
+@ADMIN_BLUEPRINT.route('/admin')
+# @flask_login.login_required
+def admin():
+    return render_j2_template(CONFIG, 'admin/index.html', {'config': CONFIG})
+
+
+@ADMIN_BLUEPRINT.route('/logout')
+def logout():
+    flask_login.logout_user()
+    return redirect(url_for('pygeoapi.landing_page'))
+
+
 @login_manager.user_loader
 def user_loader(email):
     if email not in users:
@@ -76,42 +109,6 @@ def user_loader(email):
     user = Admin()
     user.id = email
     return user
-
-
-@ADMIN_BLUEPRINT.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'GET':
-        return render_j2_template(CONFIG, 'admin/login.html', {})
-
-    admin = request.form[os.environ['ADMIN_USER']]
-    login_key = hashlib.pbkdf2_hmac(
-        'sha256',
-        request.form['password'].encode('utf-8'),
-        users[admin]['salt'],
-        100000
-    )
-    if login_key == users[admin]['password']:
-        user = Admin()
-        user.id = admin
-        flask_login.login_user(user)
-        return redirect(url_for('pygeoapi_admin.admin'))
-
-    return 'Bad login'
-
-
-@ADMIN_BLUEPRINT.route('/admin')
-@flask_login.login_required
-def admin():
-    return render_j2_template(CONFIG, 'admin/index.html', {
-        'config': CONFIG,
-        'islist': lambda _v: isinstance(_v, list),
-        'isdict': lambda _v: isinstance(_v, dict)})
-
-
-@ADMIN_BLUEPRINT.route('/logout')
-def logout():
-    flask_login.logout_user()
-    return redirect(url_for('pygeoapi.landing_page'))
 
 
 @login_manager.unauthorized_handler

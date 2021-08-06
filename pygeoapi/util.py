@@ -53,6 +53,7 @@ import yaml
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
+from flask_login import current_user
 
 LOGGER = logging.getLogger(__name__)
 
@@ -357,7 +358,7 @@ def render_j2_template(config, template, data, locale_=None):
             raise
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
-                           data=data, version=__version__)
+                           data=data, current_user=current_user, version=__version__)
 
 
 def get_mimetype(filename):

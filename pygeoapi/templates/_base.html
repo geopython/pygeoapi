@@ -3,12 +3,18 @@
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
     <title>{% block title %}{{ config['metadata']['identification']['title'] }} -{% endblock %}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="language" content="{{ config['server']['language'] }}">
     <meta name="description" content="{{ config['metadata']['identification']['title'] }}">
     <meta name="keywords" content="{{ config['metadata']['identification']['keywords']|join(',') }}">
     <link rel="shortcut icon" href="{{ config['server']['url'] }}/static/img/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://unpkg.com/mini.css@3.0.1/dist/mini-default.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
     <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/default.css">
     <!--[if lt IE 9]>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
@@ -19,65 +25,108 @@
       <link rel="canonical" href="{{ link['href'].split('?')[0] }}" />
       {% endif %}
     {% endfor %}
+    {% block crumbs %}
+    {% endblock %}
     {% block extrahead %}
     {% endblock %}
   </head>
   <body>
-    <header class="sticky row">
-      <div class="col-sm-12 col-md-10 col-md-offset-1">
-        <a href="{{ config['server']['url'] }}" class="logo" role="button">
-          <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:40px;vertical-align: middle;" /></a>
-        <!--
-          Add additional menu items here
-          <a href="https://pygeoapi.io" role="button" class="button">About</a>
-        -->
-        <a href="{{ config['server']['url']+'/logout' }}" role="button" class="button" style="float:right">Logout</a>
-        <a href="{{ config['server']['url']+'/admin' }}" role="button" class="button" style="float:right">Admin</a>
-        <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
-      </div>
-    </header>
-    <div class="sticky row crumbs">
-      <div class="col-sm-12 col-md-10 col-md-offset-1">
-        {% block crumbs %}
-        <a href="{{ config['server']['url'] }}">Home</a>
-        {% endblock %}
-        <span style="float:right">
-          {% set links_found = namespace(json=0, jsonld=0) %}
+    <div id="app">
+      <v-navigation-drawer
+        absolute
+        permanent
+        expand-on-hover
+        clipped
+        dark
+      > 
+        <v-list nav>
+            <v-list-item
+            v-for="(item, i) in menu"
+            :key="i"
+            link
+            :href="item.href"
+            >
+              <v-list-item-icon>
+                <v-icon v-text="item.icon"></v-icon>
+              </v-list-item-icon>
+              <v-spacer></v-spacer>
+              <v-list-item-content>
+                <v-list-item-title>[[ item.title ]]</v-list-item-title>
+              </v-list-item-content> 
+            </v-list-item>
+        </v-list>
+      </v-navigation-drawer>
 
+      <v-app-bar app clipped-left>
+          <a href="{{ config['server']['url'] }}" class="logo" role="button">
+            <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" style="height:40px;vertical-align: middle;"/></a>
+          <v-spacer></v-spacer>
+          {% set links_found = namespace(json=0, jsonld=0) %}
           {% for link in data['links'] %}
-          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
-          {% set links_found.json = 1 %}
-          <a href="{{ link['href'] }}">JSON</a>
-          {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
-          {% set links_found.jsonld = 1 %}
-          <a href="{{ link['href'] }}">JSON-LD</a>
-          {% endif %}
+            {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
+              {% set links_found.json = 1 %}
+              <a href="{{ link['href'] }}" role="button" class="button">JSON</a>
+            {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
+              {% set links_found.jsonld = 1 %}
+              <a href="{{ link['href'] }}" role="button" class="button">JSON-LD</a>
+            {% endif %}
           {% endfor %}
 
           {% if links_found.json == 0 %}
-          <a href="?f=json">JSON</a>
+            <a href="?f=json" role="button" class="button">JSON</a>
           {% endif %}
           {% if links_found.jsonld == 0 %}
-          <a href="?f=jsonld">JSON-LD</a>
+            <a href="?f=jsonld" role="button" class="button">JSON-LD</a>
           {% endif %}
+      </v-app-bar>
+      
+      <v-main>
+        {% block main %}
+        <v-container fluid>
+          <v-row>
+            <div class="col-sm-12 col-md-10 col-md-offset-1">
+              <br/>
+              {% block body %}
+              {% endblock %}
+            </div>
+          </v-row>
+        </v-container>
+        {% endblock %}
+      </v-main>
 
-        </span>
-      </div>
+      <v-footer app>
+        Powered by <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}
+      </v-footer>
+
+      {% block vue %}
+      <script>
+        new Vue({
+          el: '#app',
+          vuetify: new Vuetify(),
+          delimiters: ['[[', ']]'],
+          data: function () {
+            return {
+              menu: [
+                { title: '', icon: ''},
+                { title: 'Home', icon: 'mdi-home', href: "/" },
+                {%- if current_user.is_authenticated -%}
+                { title: 'Admin', icon: 'mdi-account', href: "/admin" },
+                { title: 'Logout', icon: 'mdi-logout-variant', href: "/logout" },
+                {%- else -%}
+                { title: 'Login', icon: 'mdi-login-variant', href: "/login" },
+                {%- endif -%}
+                { title: 'Contact', icon: 'mdi-contact-mail', href: "mailto:{{ config['metadata']['contact']['email'] }}" },
+                {%- block menu -%}
+                {%- endblock -%}
+              ],
+              config: {{ to_json(config) }},
+            }
+          },
+        });
+      </script>
+      {% endblock %}
     </div>
-    <main>
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-12 col-md-10 col-md-offset-1">
-          <br/>
-          {% block body %}
-          {% endblock %}
-        </div>
-      </div>
-    </div>
-    </main>
-    <footer class="sticky">Powered by <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
-    {% block extrafoot %}
-    {% endblock %}
+
     <script>
       // Requests and embeds JSON-LD representation of current page
       var xhr = new XMLHttpRequest();
@@ -95,5 +144,7 @@
       };
       xhr.send();
     </script>
+    {% block extrafoot %}
+    {% endblock %}
   </body>
 </html>
