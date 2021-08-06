@@ -1,44 +1,96 @@
+
 {% extends "_base.html" %}
 {% block title %}{{ super() }} Admin {% endblock %}
 
-{% block crumbs %}
-<v-list nav>
-  <v-list-item
-  v-for="(item, i) in menu"
-  :key="i"
-  link
-  >
-    <v-list-item-icon>
-      <v-icon v-text="item.icon"></v-icon>
-    </v-list-item-icon>
-    <v-list-item-content>
-      <v-list-item-title>[[ item.title ]]</v-list-item-title>
-    </v-list-item-content>
-  </v-list-item>
-</v-list>
+{% block extrahead %}
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 {% endblock %}
 
-{% block body %}
-<v-card class="my-auto" width="500px" height="400px">
-</v-card>
+{% macro render_block(_key, _val, i) %}
+<div>
+  <table> 
+    <tbody>
+    
+    {% if data.isdict(_val) %}
+      {% for k, v in _val.items() %}
+      <tr>
+        <th> {{ k }} </th>
+        <td>
+          {% if data.isdict(v) %}
+            {{ render_block(k, v, i+1)}}
+          {% elif data.islist(v) %}
+            {% for _v in v %}
+              {{ render_block(loop.index, _v, i+1) }}
+            {% endfor %}
+          {% else %}
+            {{ v }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% block main %}
+  <div id="app">
+    <v-main>
+      <v-container>
+        <v-tabs v-model="tab">
+          <v-tab
+            v-for="(val, key) in config"
+            grow
+            :key="key"
+          >
+            [[ key ]]
+          </v-tab>
+        </v-tabs>
+        <v-spacer></v-spacer>
+        <v-tabs-items v-model="tab">
+          <v-tab-item
+            v-for="(val, key) in config"
+            :key="key"
+          >
+            <v-card v-if="key === 'server'">
+              {{ render_block("server", config.server, 2) }}
+            </v-card>
+            <v-card v-else-if="key === 'logging'"> 
+              {{ render_block("logging", config.logging, 1) }}
+            </v-card>
+            <v-card v-else-if="key === 'metadata'">
+              {{ render_block("metadata", config.metadata, 1) }}
+            </v-card>
+            <v-card v-else-if="key === 'resources'">
+              {{ render_block("resources", config.resources, 0) }}
+            </v-card>   
+          </v-tab-item>
+        </v-tabs-items>
+      </v-container>
+      
+    </v-main>
+  </div>
 {% endblock %}
 
-{% block vue %}
+{% block foot %}
+{% endblock %}
+
+{% block extrafoot %}
 <script>
-  const app = new Vue({
+  const vue = new Vue({
     el: '#app',
     vuetify: new Vuetify(),
     delimiters: ['[[', ']]'],
     data: function () {
       return {
-        menu: [
-          { title: 'Server', icon: 'mdi-server-network' },
-          { title: 'Metadata', icon: 'mdi-account-multiple' },
-          { title: 'Logging', icon: 'mdi-notebook' },
-          { title: 'Resources', icon: 'mdi-cloud-upload' },
-        ],
+        tab: null,
+        val: null,
         config: {{ to_json(config) }},
-        mini: true,
       }
     },
   })

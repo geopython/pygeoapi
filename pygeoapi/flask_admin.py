@@ -90,9 +90,12 @@ def login():
 
 
 @ADMIN_BLUEPRINT.route('/admin')
-# @flask_login.login_required
+@flask_login.login_required
 def admin():
-    return render_j2_template(CONFIG, 'admin/index.html', {'config': CONFIG})
+    return render_j2_template(CONFIG, 'admin/index.html', {
+        'config': CONFIG,
+        'islist': lambda _v: isinstance(_v, list),
+        'isdict': lambda _v: isinstance(_v, dict)})
 
 
 @ADMIN_BLUEPRINT.route('/logout')

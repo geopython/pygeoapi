@@ -116,7 +116,7 @@ resources:
               id_field: id
               geometry:
                   x_field: long
-                  y_field: long
+                  y_field: lat
 
     lakes:
         type: collection
