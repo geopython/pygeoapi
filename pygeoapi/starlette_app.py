@@ -445,7 +445,7 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     if 'instance_id' in request.path_params:
         instance_id = request.path_params['instance_id']
 
-    query_type = request.path.split('/')[-1]  # noqa
+    query_type = request["path"].split('/')[-1]  # noqa
     return get_response(api_.get_collection_edr_query(request, collection_id,
                                                       instance_id, query_type))
 
