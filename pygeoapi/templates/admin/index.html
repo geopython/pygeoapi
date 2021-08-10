@@ -3,43 +3,56 @@
 {% block title %}{{ super() }} Admin {% endblock %}
 
 {% block extrahead %}
-<link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 {% endblock %}
 
 {% macro render_block(_key, _val, i) %}
-<div>
-  <table> 
-    <tbody>
-    
+{% if i == 2 %}
+  <v-btn
+  class="mt-12"
+  @click="overlay = !overlay"
+  >
+    Expand
+  </v-btn>
+  {{ return }}
+
+{% else %}
+    <v-card
+     tile
+     hover
+     @click.stop="dialog = true"
+    >
     {% if data.isdict(_val) %}
-      {% for k, v in _val.items() %}
-      <tr>
-        <th> {{ k }} </th>
-        <td>
-          {% if data.isdict(v) %}
-            {{ render_block(k, v, i+1)}}
-          {% elif data.islist(v) %}
-            {% for _v in v %}
-              {{ render_block(loop.index, _v, i+1) }}
-            {% endfor %}
-          {% else %}
-            {{ v }}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
+      <table> 
+        <tbody>
+          {% for k, v in _val.items() %}
+          <tr>
+            <th> {{ k }} </th>
+            <td>
+              {% if data.isdict(v) %}
+                {{ render_block(k, v, i+1)}}
+              {% elif data.islist(v) %}
+                  {{ render_block(0, v, i+1) }}
+              {% else %}
+                {{ v }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% endif %}
-    </tbody>
-  </table>
-</div>
+
+    </v-card>
+    {% endif %}
 {% endmacro %}
 
 {% block main %}
-  <div id="app">
+  <div id="app" data-app>
     <v-main>
       <v-container>
         <v-tabs v-model="tab">
@@ -58,13 +71,13 @@
             :key="key"
           >
             <v-card v-if="key === 'server'">
-              {{ render_block("server", config.server, 2) }}
+              {{ render_block("server", config.server, 0) }}
             </v-card>
             <v-card v-else-if="key === 'logging'"> 
-              {{ render_block("logging", config.logging, 1) }}
+              {{ render_block("logging", config.logging, 0) }}
             </v-card>
             <v-card v-else-if="key === 'metadata'">
-              {{ render_block("metadata", config.metadata, 1) }}
+              {{ render_block("metadata", config.metadata, 0) }}
             </v-card>
             <v-card v-else-if="key === 'resources'">
               {{ render_block("resources", config.resources, 0) }}
@@ -72,9 +85,109 @@
           </v-tab-item>
         </v-tabs-items>
       </v-container>
-      
     </v-main>
+
+
+    <template>
+      <v-row justify="center">
+        <v-dialog
+          v-model="dialog"
+          persistent
+          max-width="600px"
+        >
+          <v-card>
+            <v-card-title>
+              <span class="text-h5">User Profile</span>
+            </v-card-title>
+            <v-card-text>
+              <v-container>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      label="Legal first name*"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      label="Legal middle name"
+                      hint="example of helper text only on focus"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                    md="4"
+                  >
+                    <v-text-field
+                      label="Legal last name*"
+                      hint="example of persistent helper text"
+                      persistent-hint
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      label="Email*"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      label="Password*"
+                      type="password"
+                      required
+                    ></v-text-field>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                  >
+                    <v-select
+                      :items="['0-17', '18-29', '30-54', '54+']"
+                      label="Age*"
+                      required
+                    ></v-select>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                  >
+                    <v-autocomplete
+                      :items="['Skiing', 'Ice hockey', 'Soccer', 'Basketball', 'Hockey', 'Reading', 'Writing', 'Coding', 'Basejump']"
+                      label="Interests"
+                      multiple
+                    ></v-autocomplete>
+                  </v-col>
+                </v-row>
+              </v-container>
+              <small>*indicates required field</small>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn
+                color="blue darken-1"
+                text
+                @click="dialog = false"
+              >
+                Close
+              </v-btn>
+              <v-btn
+                color="blue darken-1"
+                text
+                @click="dialog = false"
+              >
+                Save
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-row>
+    </template>
   </div>
+
+
+  
 {% endblock %}
 
 {% block foot %}
@@ -91,8 +204,11 @@
         tab: null,
         val: null,
         config: {{ to_json(config) }},
+        absolute: true,
+        dialog: false
       }
     },
+    dialog: false,
   })
 </script>
 {% endblock %}
