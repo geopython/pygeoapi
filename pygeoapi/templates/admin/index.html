@@ -70,18 +70,9 @@
             v-for="(val, key) in config"
             :key="key"
           >
-            <v-card v-if="key === 'server'">
-              {{ render_block("server", config.server, 0) }}
-            </v-card>
-            <v-card v-else-if="key === 'logging'"> 
-              {{ render_block("logging", config.logging, 0) }}
-            </v-card>
-            <v-card v-else-if="key === 'metadata'">
-              {{ render_block("metadata", config.metadata, 0) }}
-            </v-card>
-            <v-card v-else-if="key === 'resources'">
-              {{ render_block("resources", config.resources, 0) }}
-            </v-card>   
+            <v-card>
+              <gui-block :vals="val" depth=0> </gui-block>
+            </v-card>  
           </v-tab-item>
         </v-tabs-items>
       </v-container>
@@ -185,15 +176,52 @@
       </v-row>
     </template>
   </div>
-
-
-  
 {% endblock %}
 
 {% block foot %}
 {% endblock %}
 
 {% block extrafoot %}
+<script type="text/x-template" id="gui-block-template">
+  <div class="gui-block">
+    <v-container v-if="depth < 2">
+    <table> 
+      <tbody>
+        <tr 
+        v-for="(v, k) in vals"
+        :key="k">
+          <th> 
+            <span v-html="k"></span>
+          </th>
+          <td>
+            <span v-html="v"></span>
+              <gui-block :vals="v" :depth="depth += 1"></gui-block>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </v-container>
+  <v-container v-else>
+    <v-btn
+      color="blue darken-1"
+      text
+      @click="dialog = false"
+    >
+      Expand
+      [[ depth ]]
+    </v-btn>
+  </v-container>
+  </div>
+</script>
+
+<script> 
+  Vue.component('gui-block', {
+    props: ['vals', 'depth'],
+    name: 'gui-block',
+    template: '#gui-block-template'
+  })
+</script>
+
 <script>
   const vue = new Vue({
     el: '#app',
@@ -205,10 +233,9 @@
         val: null,
         config: {{ to_json(config) }},
         absolute: true,
-        dialog: false
+        dialog: false,
       }
     },
-    dialog: false,
   })
 </script>
 {% endblock %}
