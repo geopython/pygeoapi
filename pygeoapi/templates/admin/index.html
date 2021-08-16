@@ -10,54 +10,13 @@
 <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 {% endblock %}
 
-{% macro render_block(_key, _val, i) %}
-{% if i == 2 %}
-  <v-btn
-  class="mt-12"
-  @click="overlay = !overlay"
-  >
-    Expand
-  </v-btn>
-  {{ return }}
-
-{% else %}
-    <v-card
-     tile
-     hover
-     @click.stop="dialog = true"
-    >
-    {% if data.isdict(_val) %}
-      <table> 
-        <tbody>
-          {% for k, v in _val.items() %}
-          <tr>
-            <th> {{ k }} </th>
-            <td>
-              {% if data.isdict(v) %}
-                {{ render_block(k, v, i+1)}}
-              {% elif data.islist(v) %}
-                  {{ render_block(0, v, i+1) }}
-              {% else %}
-                {{ v }}
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
-
-    </v-card>
-    {% endif %}
-{% endmacro %}
-
 {% block main %}
   <div id="app" data-app>
     <v-main>
       <v-container>
         <v-tabs v-model="tab">
           <v-tab
-            v-for="(val, key) in config"
+            v-for="(val, key) in tree"
             grow
             :key="key"
           >
@@ -67,114 +26,21 @@
         <v-spacer></v-spacer>
         <v-tabs-items v-model="tab">
           <v-tab-item
-            v-for="(val, key) in config"
+            v-for="(val, key) in tree"
             :key="key"
           >
             <v-card>
-              <gui-block :vals="val" depth=0> </gui-block>
+              <gui-block 
+               :tree="tree"
+               :label="key" 
+               :vals="val" 
+              > 
+              </gui-block>
             </v-card>  
           </v-tab-item>
         </v-tabs-items>
       </v-container>
     </v-main>
-
-
-    <template>
-      <v-row justify="center">
-        <v-dialog
-          v-model="dialog"
-          persistent
-          max-width="600px"
-        >
-          <v-card>
-            <v-card-title>
-              <span class="text-h5">User Profile</span>
-            </v-card-title>
-            <v-card-text>
-              <v-container>
-                <v-row>
-                  <v-col>
-                    <v-text-field
-                      label="Legal first name*"
-                      required
-                    ></v-text-field>
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      label="Legal middle name"
-                      hint="example of helper text only on focus"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                    md="4"
-                  >
-                    <v-text-field
-                      label="Legal last name*"
-                      hint="example of persistent helper text"
-                      persistent-hint
-                      required
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      label="Email*"
-                      required
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      label="Password*"
-                      type="password"
-                      required
-                    ></v-text-field>
-                  </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                  >
-                    <v-select
-                      :items="['0-17', '18-29', '30-54', '54+']"
-                      label="Age*"
-                      required
-                    ></v-select>
-                  </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                  >
-                    <v-autocomplete
-                      :items="['Skiing', 'Ice hockey', 'Soccer', 'Basketball', 'Hockey', 'Reading', 'Writing', 'Coding', 'Basejump']"
-                      label="Interests"
-                      multiple
-                    ></v-autocomplete>
-                  </v-col>
-                </v-row>
-              </v-container>
-              <small>*indicates required field</small>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn
-                color="blue darken-1"
-                text
-                @click="dialog = false"
-              >
-                Close
-              </v-btn>
-              <v-btn
-                color="blue darken-1"
-                text
-                @click="dialog = false"
-              >
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-row>
-    </template>
   </div>
 {% endblock %}
 
@@ -182,43 +48,128 @@
 {% endblock %}
 
 {% block extrafoot %}
+<script type="text/x-template" id="dialog-block-template">
+<div
+ class="dialog-block"
+ >
+  <v-row justify="center">
+  <v-dialog
+    v-model="dialog"
+    width="70%"
+  >
+    <template v-slot:activator="{ on, attrs }">
+      <v-btn
+        v-bind="attrs"
+        v-on="on"
+      >
+      <span v-html="type"></span>
+      </v-btn>
+    </template>
+    <v-card>
+      <v-card-text>
+        <slot></slot>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn @click.stop="dialog = false">
+          Close
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+  </v-row>
+</div>
+</script>
+
 <script type="text/x-template" id="gui-block-template">
-  <div class="gui-block">
-    <v-container v-if="depth < 2">
-    <table> 
-      <tbody>
-        <tr 
-        v-for="(v, k) in vals"
-        :key="k">
-          <th> 
-            <span v-html="k"></span>
-          </th>
-          <td>
-            <span v-html="v"></span>
-              <gui-block :vals="v" :depth="depth += 1"></gui-block>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </v-container>
-  <v-container v-else>
-    <v-btn
-      color="blue darken-1"
-      text
-      @click="dialog = false"
+<div
+ class="gui-block"
+ :key="label"
+ @click.stop="editDialog"
+ >
+
+  <template v-if="typeof(vals) === 'string' || typeof(vals) === 'number'">
+    <span v-html="vals"></span>
+  </template>
+
+  <template v-else-if="depth_ === 2">
+    <dialog-block type="expand">
+      <v-card-title><span class="text-h5" v-html="label"></span></v-card-title>
+      <gui-block :label="label" :vals="vals"></gui-block>
+    </dialog-block>   
+  </template>
+
+  <template v-else>
+    <v-card
+     tile
+     append
+     hover
+     ripple
     >
-      Expand
-      [[ depth ]]
-    </v-btn>
-  </v-container>
-  </div>
+      <table>
+        <tbody>
+          <tr
+           v-for="(v, k) in vals_"
+           :key="k"
+           >
+            <th v-if="typeof(k) === 'string'"> 
+              <span v-html="k"></span>
+            </th>
+            <td>
+              <gui-block 
+               :key="label + '.' + k"
+               :label="k" 
+               :vals="v" 
+               :depth="depth_ + 1"
+               >
+               </gui-block>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </v-card>
+  </template>
+
+</div>
 </script>
 
 <script> 
-  Vue.component('gui-block', {
-    props: ['vals', 'depth'],
-    name: 'gui-block',
-    template: '#gui-block-template'
+  Vue.component('DialogBlock', {
+    props: ['type'],
+    name: 'DialogBlock',
+    template: '#dialog-block-template',
+    methods: {
+      editDialog: function () {
+        console.log(this.vals_)
+      }
+    },
+    data: function () {
+      return {
+          label_: this.label,
+          tree: this.$root.tree,
+          vals_: this.vals,
+          depth_: this.depth ? this.depth : 0,
+          dialog: false,
+          absolute: true,
+      }
+    },
+  })
+  Vue.component('GuiBlock', {
+    props: ['label', 'vals', 'depth'],
+    name: 'GuiBlock',
+    template: '#gui-block-template',
+    methods: {
+      editDialog: function () {
+        console.log(this.vals_)
+      }
+    },
+    data: function () {
+      return {
+          label_: this.label,
+          tree: this.$root.tree,
+          vals_: this.vals,
+          depth_: this.depth ? this.depth : 0,
+      }
+    },
   })
 </script>
 
@@ -231,7 +182,7 @@
       return {
         tab: null,
         val: null,
-        config: {{ to_json(config) }},
+        tree: {{ to_json(config) }},
         absolute: true,
         dialog: false,
       }
