@@ -127,10 +127,10 @@ class HelloWorldProcessor(BaseProcessor):
 
         value = 'Hello {}! {}'.format(name, data.get('message', '')).strip()
 
-        outputs = [{
+        outputs = {
             'id': 'echo',
             'value': value
-        }]
+        }
 
         return mimetype, outputs
 

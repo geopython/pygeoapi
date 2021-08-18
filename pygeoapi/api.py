@@ -2672,7 +2672,7 @@ class API:
         if status == JobStatus.failed:
             response = outputs
 
-        if data.get('response', 'document') == 'raw':
+        if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             if F_JSON in mime_type:
                 response = to_json(outputs)

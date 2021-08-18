@@ -66,8 +66,10 @@ Processing examples
   - http://localhost:5000/processes/hello-world/jobs
 - execute a job for the ``hello-world`` process
   - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
-- execute a job for the ``hello-world`` process with a raw response
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution?response=raw" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
+- execute a job for the ``hello-world`` process with a raw response (default)
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
+- execute a job for the ``hello-world`` process with a response document
+  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"},\"response\":\"document\"}"``
 - execute a job for the ``hello-world`` process in asynchronous mode
   - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":{\"name\": \"hi there2\"}}"``
 

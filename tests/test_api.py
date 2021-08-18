@@ -1046,10 +1046,16 @@ def test_describe_processes(config, api_):
 
 
 def test_execute_process(config, api_):
-    req_body = {
+    req_body_0 = {
         'inputs': {
             'name': 'Test'
         }
+    }
+    req_body_1 = {
+        'inputs': {
+            'name': 'Test'
+        },
+        'response': 'document'
     }
     req_body_2 = {
         'inputs': {
@@ -1088,7 +1094,7 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert data['code'] == 'MissingParameterValue'
 
-    req = mock_request(data=req_body)
+    req = mock_request(data=req_body_0)
     rsp_headers, code, response = api_.execute_process(req, 'foo')
 
     data = json.loads(response)
@@ -1096,6 +1102,23 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert data['code'] == 'NoSuchProcess'
 
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+
+    print("1", response)
+    print("2", json.loads(response))
+    print("3", type(json.loads(response)))
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+
+    assert len(data.keys()) == 1
+    assert data['id'] == 'echo'
+    assert data['value'] == 'Hello Test!'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_request(data=req_body_1)
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
