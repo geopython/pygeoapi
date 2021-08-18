@@ -2672,15 +2672,12 @@ class API:
         if status == JobStatus.failed:
             response = outputs
 
-        if data.get('response', 'document') == 'raw':
+        if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
-            if F_JSON in mime_type:
-                response = to_json(outputs)
-            else:
-                response = outputs
+            response = outputs
 
         elif status != JobStatus.failed and not is_async:
-            response['outputs'] = outputs
+            response['outputs'] = [outputs]
 
         if is_async:
             http_status = 201

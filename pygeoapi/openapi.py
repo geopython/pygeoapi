@@ -929,17 +929,6 @@ def get_oas_30(cfg):
                     'description': md_desc,
                     'tags': [name],
                     'operationId': 'execute{}Job'.format(name.capitalize()),
-                    'parameters': [{
-                        'name': 'response',
-                        'in': 'query',
-                        'description': 'Response type',
-                        'required': False,
-                        'schema': {
-                            'type': 'string',
-                            'enum': ['raw', 'document'],
-                            'default': 'document'
-                        }
-                    }],
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
                         '201': {'$ref': '{}/responses/ExecuteAsync.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
