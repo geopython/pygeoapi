@@ -50,7 +50,7 @@ class Admin(flask_login.UserMixin):
 
 ADMIN_BLUEPRINT = Blueprint('pygeoapi_admin', __name__,
                             template_folder="templates",
-                            static_folder="static",
+                            static_folder="/static",
                             )
 
 
@@ -90,12 +90,9 @@ def login():
 
 
 @ADMIN_BLUEPRINT.route('/admin')
-@flask_login.login_required
+# @flask_login.login_required
 def admin():
-    return render_j2_template(CONFIG, 'admin/index.html', {
-        'config': CONFIG,
-        'islist': lambda _v: isinstance(_v, list),
-        'isdict': lambda _v: isinstance(_v, dict)})
+    return render_j2_template(CONFIG, 'admin/index.html', {})
 
 
 @ADMIN_BLUEPRINT.route('/logout')

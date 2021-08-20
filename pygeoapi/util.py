@@ -344,6 +344,9 @@ def render_j2_template(config, template, data, locale_=None):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
+    env.filters['current_user'] = current_user
+    env.globals.update(current_user=current_user)
+
     # TODO: insert Babel Translation stuff here
     try:
         template = env.get_template(template)
@@ -358,8 +361,7 @@ def render_j2_template(config, template, data, locale_=None):
             raise
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
-                           data=data, current_user=current_user,
-                           version=__version__)
+                           data=data, version=__version__)
 
 
 def get_mimetype(filename):
