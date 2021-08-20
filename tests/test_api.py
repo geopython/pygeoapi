@@ -1046,10 +1046,16 @@ def test_describe_processes(config, api_):
 
 
 def test_execute_process(config, api_):
-    req_body = {
+    req_body_0 = {
         'inputs': {
             'name': 'Test'
         }
+    }
+    req_body_1 = {
+        'inputs': {
+            'name': 'Test'
+        },
+        'response': 'document'
     }
     req_body_2 = {
         'inputs': {
@@ -1088,7 +1094,7 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert data['code'] == 'MissingParameterValue'
 
-    req = mock_request(data=req_body)
+    req = mock_request(data=req_body_0)
     rsp_headers, code, response = api_.execute_process(req, 'foo')
 
     data = json.loads(response)
@@ -1101,7 +1107,22 @@ def test_execute_process(config, api_):
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
-    assert len(data['outputs']) == 1
+
+    assert len(data.keys()) == 2
+    assert data['id'] == 'echo'
+    assert data['value'] == 'Hello Test!'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_request(data=req_body_1)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+
+    data = json.loads(response)
+    assert code == 200
+    assert 'Location' in rsp_headers
+
+    assert len(data.keys()) == 1
     assert data['outputs'][0]['id'] == 'echo'
     assert data['outputs'][0]['value'] == 'Hello Test!'
 
@@ -1114,7 +1135,7 @@ def test_execute_process(config, api_):
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
-    assert data['outputs'][0]['value'] == 'Hello Tést!'
+    assert data['value'] == 'Hello Tést!'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
@@ -1125,7 +1146,7 @@ def test_execute_process(config, api_):
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
-    assert data['outputs'][0]['value'] == 'Hello Tést! This is a test.'
+    assert data['value'] == 'Hello Tést! This is a test.'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
@@ -1163,7 +1184,7 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body)
+    req = mock_request(data=req_body_0)
     rsp_headers, code, response = api_.execute_process(req, 'goodbye-world')
 
     response = json.loads(response)
@@ -1179,8 +1200,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req_body['mode'] = 'async'
-    req = mock_request(data=req_body)
+    req_body_1['mode'] = 'async'
+    req = mock_request(data=req_body_1)
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     assert 'Location' in rsp_headers
@@ -1225,7 +1246,7 @@ def test_delete_process_job(api_):
     data = json.loads(response)
     assert code == 200
     assert 'Location' in rsp_headers
-    assert data['outputs'][0]['value'] == 'Hello Sync Test Deletion!'
+    assert data['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
     rsp_headers, code, response = api_.delete_process_job(
