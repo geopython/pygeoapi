@@ -1,0 +1,94 @@
+<script>
+      Vue.component('GuiBlock', {
+    props: ['label', 'vals', 'depth'],
+    name: 'GuiBlock',
+    template: '#gui-block-template',
+    data: function () {
+      return {
+        dialog: this.$root.dialog,
+        label_: this.label,
+        key_: this.$vnode.key,
+        vals_: this.vals,
+        depth_: this.depth ? this.depth : 0,
+      }
+    },
+    methods: {
+      capitalize: function(input){
+        if (typeof input === 'string'){
+            var start = input.slice(0,1).toUpperCase()
+            var out = input.replace("_", " ")
+            return (start + out.slice(1))
+        } else {
+            console.log(input)
+            return input
+        }
+        
+      }
+    }
+  })
+
+</script>
+
+<script type="text/x-template" id="gui-block-template">
+    <div class="gui-block">
+    
+      <template v-if="typeof(vals) === 'string' || typeof(vals) === 'number' || typeof(vals) === 'boolean'">
+        <span v-html="vals"></span>
+      </template>
+    
+      <template v-else-if="depth_ === 2">
+        <dialog-block type="expand" :label="capitalize(label)">
+            <gui-block :label="label" :vals="vals"></gui-block>
+            <template v-slot:dialog-actions>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn @click.stop="dialog = false"> Close </v-btn>
+                </v-card-actions>
+            </template>
+        </dialog-block>  
+      </template>
+
+      <template v-else>
+        <v-card
+         append
+         hover
+         rounded
+        > 
+          <v-card-text>
+            <table class="striped">
+                <tr v-for="(v, k) in vals_" :key="k">
+
+                  <td v-if="typeof(k) === 'string'" style="text-align:center"> 
+                    <h4 v-html="capitalize(k)"></h4>
+                  </td>
+
+                  <td height="100%" style="text-align:center">
+                    <gui-block 
+                    :key="label + '.' + k"
+                    :label="k" 
+                    :vals="v"
+                    :depth="depth_ + 1"
+                    >
+                    </gui-block>
+                  </td>
+
+                </tr>
+
+            </table>
+          </v-card-text>
+    
+          <v-card-actions>
+    
+            <v-spacer></v-spacer>
+                <dialog-block type="edit" :label="capitalize(label)">
+                    <editable-block :vals="vals"></editable-block>
+                </dialog-block> 
+            <v-spacer></v-spacer>
+    
+          </v-card-actions>
+        </v-card>
+    
+      </template>
+    
+    </div>
+</script>

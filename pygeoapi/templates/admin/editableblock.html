@@ -1,0 +1,232 @@
+<script> 
+    Vue.component('EditableBlock', {
+      props: ['vals', 'd'],
+      name: 'EditableBlock',
+      template: '#editable-block',
+      data: function () {
+        return {
+          vals_: JSON.parse(JSON.stringify(this.vals)),
+        }
+      },
+      methods: {
+        saved: function() {
+            for (const [k, v] of Object.entries(this.vals_)){
+                this.vals[k] = v
+            }
+        },
+        closed: function() {
+            for (const [k, v] of Object.entries(this.vals)){
+                this.vals_[k] = v
+            }
+            this.$root.dialog = false
+        }
+      },
+    })
+</script>
+
+<script type="text/x-template" id="editable-block">
+    <div class="editable-block">
+        <v-row>
+        <template v-for="(v,k) in vals">
+            <template
+            v-if="['map','bind'].includes(k)"
+            >
+            </template>
+
+            <v-col v-else-if="k === 'host'" cols="12" sm="8" md="6">
+                <v-textarea
+                    v-model="vals_.host" reverse no-resize rows="1" :value="v" label="Host" hint="listening address"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'port'" cols="12" sm="8" md="6">
+                <v-textarea
+                    v-model="vals_.port" reverse no-resize rows="1" :value="v" label="Port" hint="listening port"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'url'" cols="12">
+                <v-textarea 
+                    v-model="vals_.url" reverse no-resize rows="1" :value="v" label="URL"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'mimetype'" cols="12" sm="10" md="8">
+                <v-textarea 
+                    v-model="vals_.mimetype" reverse no-resize rows="1" :value="v" label="Mimetype" hint="default: application/json; charset=UTF-8"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'encoding'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.encoding" reverse no-resize rows="1" :value="v" label="Encoding" hint="default: UTF-8"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'language'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.language" reverse no-resize rows="1" :value="v" label="Language"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'cors'" cols="12" sm="6" md="4">
+                <v-checkbox 
+                    v-model="vals_.cors" color="success" label="Cross Origin Requests"
+                ></v-checkbox>
+            </v-col>
+
+            <v-col v-else-if="k === 'pretty_print'" cols="12" sm="6" md="4">
+                <v-checkbox 
+                    v-model="vals_.pretty_print" color="success" label="JSON Print Print"
+                ></v-checkbox>
+            </v-col>
+
+            <v-col v-else-if="k === 'limit'" cols="12" sm="6" md="4">
+                <v-combobox 
+                    v-model="vals_.limit" :items="[5,10,25,50,100,250,500,1000]" auto-select-first reverse hint="Default Item Limit" persistent-hint
+                ></v-combobox>
+            </v-col>
+
+            <v-col v-else-if="k === 'attribution'" cols="12">
+                <v-textarea 
+                    v-model="vals_.attribution" reverse :value="v" label="Map Attribution" hint="html-like attribution"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'level'" cols="12">
+                <v-autocomplete 
+                    v-model="vals_.level" chips :items="['NOTSET','DEBUG','INFO','WARNING','ERROR','CRITICAL']" auto-select-first reverse hint="Logging Level" persistent-hint
+                ></v-autocomplete>
+            </v-col>
+
+            <v-col v-else-if="k === 'title'" cols="12" sm="8" md="6">
+                <v-textarea 
+                    v-model="vals_.title" reverse no-resize rows="1" :value="v" label="Title"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'description'" cols="12" sm="8" md="6">
+                <v-textarea 
+                    v-model="vals_.description" reverse rows="2" :value="v" label="Description"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'keywords'" cols="12" sm="8" md="6">
+                <v-textarea 
+                    v-model="vals_.keywords" reverse rows="2" :value="v" label="Keywords"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'keywords_type'" cols="12" sm="8" md="6">
+                <v-autocomplete 
+                    v-model="vals_.keywords_type" :items="['discipline','temporal','place','theme','stratum']" auto-select-first reverse hint="Keyword Type (ISO 19115)" persistent-hint
+                ></v-autocomplete>
+            </v-col>
+
+            <v-col v-else-if="k === 'terms_of_service'" cols="12">
+                <v-textarea 
+                    v-model="vals_.terms_of_service" reverse no-resize rows="1" :value="v" label="Terms of Service"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'name'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.name" reverse no-resize rows="1" :value="v" label="Name"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'position'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.position" reverse no-resize rows="1" :value="v" label="Position"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'address'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.address" reverse no-resize rows="1" :value="v" label="Address"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'city'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.address" reverse no-resize rows="1" :value="v" label="City"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'stateorprovince'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.stateorprovince" reverse no-resize rows="1" :value="v" label="State or Province"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'postalcode'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.postalcode" reverse no-resize rows="1" :value="v" label="Postal Code"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'country'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.country" reverse no-resize rows="1" :value="v" label="Country"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'phone'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.phone" reverse no-resize rows="1" :value="v" label="Phone"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'fax'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.fax" reverse no-resize rows="1" :value="v" label="Fax"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'email'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.email" reverse no-resize rows="1" :value="v" label="Email Address"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'hours'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.hours" reverse no-resize rows="1" :value="v" label="Hours"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'instructions'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.instructions" reverse no-resize rows="1" :value="v" label="Instructions"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'role'" cols="12" sm="6" md="4">
+                <v-textarea 
+                    v-model="vals_.role" reverse no-resize rows="1" :value="v" label="Role"
+                ></v-textarea>
+            </v-col>
+
+            <v-col v-else-if="k === 'type'" cols="12" md="6">
+                <v-autocomplete 
+                    v-model="vals_.type" :items="['collection', 'process', 'stac-collection']" auto-select-first reverse hint="Type" persistent-hint
+                ></v-autocomplete>
+            </v-col>
+
+            <v-col
+            v-else
+            cols="12" sm="6" md="4"
+            >
+                <v-textarea 
+                no-resize :value="v" :label="k"
+                ></v-textarea>
+            </v-col>
+        </template>
+        </v-row>
+        <v-row>
+            <v-spacer></v-spacer>
+            <v-btn @click.stop="saved"> Save </v-btn>
+            <v-btn @click.stop="closed"> Close </v-btn>
+        </v-row>
+    </div>
+</script>

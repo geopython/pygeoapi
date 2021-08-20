@@ -1,0 +1,31 @@
+<script>
+    Vue.component('DialogBlock', {
+        props: ['type', 'label'],
+        name: 'DialogBlock',
+        template: '#dialog-block-template',
+        computed: {
+            dialog: function () {
+                return this.$root.dialog
+            }
+        },
+    })
+</script>
+
+<script type="text/x-template" id="dialog-block-template">
+    <div class="dialog-block">
+        <v-row justify="center">
+            <v-dialog :value="dialog" width="65%">
+                
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn v-bind="attrs" v-on="on"> <span v-html="type"></span> </v-btn>
+                </template>
+                
+                <v-card>
+                    <v-card-title> <h3 v-html="label"></h3> <v-spacer></v-spacer> <span v-html="type"></span> </v-card-title>
+                    <v-card-text> <slot></slot> </v-card-text>
+                    <slot name="dialog-actions"></slot>
+                </v-card>
+            </v-dialog>
+        </v-row>
+    </div>
+</script>

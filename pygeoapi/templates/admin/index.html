@@ -1,4 +1,3 @@
-
 {% extends "_base.html" %}
 {% block title %}{{ super() }} Admin {% endblock %}
 
@@ -29,9 +28,8 @@
             v-for="(val, key) in tree"
             :key="key"
           >
-            <v-card>
+            <v-card rounded shaped>
               <gui-block 
-               :tree="tree"
                :label="key" 
                :vals="val" 
               > 
@@ -44,149 +42,28 @@
   </div>
 {% endblock %}
 
-{% block foot %}
-{% endblock %}
-
 {% block extrafoot %}
-<script type="text/x-template" id="dialog-block-template">
-<div
- class="dialog-block"
- >
-  <v-row justify="center">
-  <v-dialog
-    v-model="dialog"
-    width="70%"
-  >
-    <template v-slot:activator="{ on, attrs }">
-      <v-btn
-        v-bind="attrs"
-        v-on="on"
-      >
-      <span v-html="type"></span>
-      </v-btn>
-    </template>
-    <v-card>
-      <v-card-text>
-        <slot></slot>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn @click.stop="dialog = false">
-          Close
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-  </v-row>
-</div>
-</script>
+  
+  
+  {% include "admin/guiblock.html" %}
+  {% include "admin/dialogblock.html" %}
+  {% include "admin/editableblock.html" %}
+  
 
-<script type="text/x-template" id="gui-block-template">
-<div
- class="gui-block"
- :key="label"
- @click.stop="editDialog"
- >
-
-  <template v-if="typeof(vals) === 'string' || typeof(vals) === 'number'">
-    <span v-html="vals"></span>
-  </template>
-
-  <template v-else-if="depth_ === 2">
-    <dialog-block type="expand">
-      <v-card-title><span class="text-h5" v-html="label"></span></v-card-title>
-      <gui-block :label="label" :vals="vals"></gui-block>
-    </dialog-block>   
-  </template>
-
-  <template v-else>
-    <v-card
-     tile
-     append
-     hover
-     ripple
-    >
-      <table>
-        <tbody>
-          <tr
-           v-for="(v, k) in vals_"
-           :key="k"
-           >
-            <th v-if="typeof(k) === 'string'"> 
-              <span v-html="k"></span>
-            </th>
-            <td>
-              <gui-block 
-               :key="label + '.' + k"
-               :label="k" 
-               :vals="v" 
-               :depth="depth_ + 1"
-               >
-               </gui-block>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </v-card>
-  </template>
-
-</div>
-</script>
-
-<script> 
-  Vue.component('DialogBlock', {
-    props: ['type'],
-    name: 'DialogBlock',
-    template: '#dialog-block-template',
-    methods: {
-      editDialog: function () {
-        console.log(this.vals_)
-      }
-    },
-    data: function () {
-      return {
-          label_: this.label,
-          tree: this.$root.tree,
-          vals_: this.vals,
-          depth_: this.depth ? this.depth : 0,
-          dialog: false,
+  <script>
+    const vue = new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      delimiters: ['[[', ']]'],
+      data: function () {
+        return {
+          tab: null,
+          val: null,
+          tree: {{ to_json(config) }},
           absolute: true,
-      }
-    },
-  })
-  Vue.component('GuiBlock', {
-    props: ['label', 'vals', 'depth'],
-    name: 'GuiBlock',
-    template: '#gui-block-template',
-    methods: {
-      editDialog: function () {
-        console.log(this.vals_)
-      }
-    },
-    data: function () {
-      return {
-          label_: this.label,
-          tree: this.$root.tree,
-          vals_: this.vals,
-          depth_: this.depth ? this.depth : 0,
-      }
-    },
-  })
-</script>
-
-<script>
-  const vue = new Vue({
-    el: '#app',
-    vuetify: new Vuetify(),
-    delimiters: ['[[', ']]'],
-    data: function () {
-      return {
-        tab: null,
-        val: null,
-        tree: {{ to_json(config) }},
-        absolute: true,
-        dialog: false,
-      }
-    },
-  })
-</script>
+          dialog: false,
+        }
+      },
+    })
+  </script>
 {% endblock %}
