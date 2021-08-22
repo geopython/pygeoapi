@@ -1109,7 +1109,11 @@ class API:
             'type': 'object',
             'title': l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale),
-            'properties': {},
+            'properties': {
+                'geometry': {
+                    '$ref': 'https://geojson.org/schema/Geometry.json'
+                }
+            },
             '$schema': 'http://json-schema.org/draft/2019-09/schema',
             '$id': '{}/collections/{}/queryables'.format(
                 self.config['server']['url'], dataset)

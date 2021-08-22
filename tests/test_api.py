@@ -400,7 +400,7 @@ def test_get_collection_queryables(config, api_):
     queryables = json.loads(response)
 
     assert 'properties' in queryables
-    assert len(queryables['properties']) == 6
+    assert len(queryables['properties']) == 7
 
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
@@ -409,7 +409,10 @@ def test_get_collection_queryables(config, api_):
     queryables = json.loads(response)
 
     assert 'properties' in queryables
-    assert len(queryables['properties']) == 1
+    assert len(queryables['properties']) == 2
+    assert 'geometry' in queryables['properties']
+    assert queryables['properties']['geometry']['$ref'] == 'https://geojson.org/schema/Geometry.json'  # noqa
+
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
