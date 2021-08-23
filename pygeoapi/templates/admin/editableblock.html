@@ -28,10 +28,13 @@
     <div class="editable-block">
         <v-row>
         <template v-for="(v,k) in vals">
-            <template
-            v-if="['map','bind'].includes(k)"
+            <v-col cols="12"
+            v-if="['map','bind','context','links','extents','providers'].includes(k)"
             >
-            </template>
+                <dialog-block :type="'edit ' + k" :label="k">
+                    <editable-block :vals="v"></editable-block>
+                </dialog-block> 
+            </v-col>
 
             <v-col v-else-if="k === 'host'" cols="12" sm="8" md="6">
                 <v-textarea
@@ -226,7 +229,7 @@
         <v-row>
             <v-spacer></v-spacer>
             <v-btn @click.stop="saved"> Save </v-btn>
-            <v-btn @click.stop="closed"> Close </v-btn>
+            <v-btn @click.stop="closed"> Undo Edits </v-btn>
         </v-row>
     </div>
 </script>

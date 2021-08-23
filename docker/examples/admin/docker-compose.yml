@@ -34,8 +34,6 @@ services:
   pygeoapi:
     image: webbben/pygeoapi-admin
 
-    volumes:
-      - ./admin.config.yml:/pygeoapi/local.config.yml
     environment:
       - ADMIN_USER=admin
       - ADMIN_PASS=apassword
