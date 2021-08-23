@@ -1,0 +1,325 @@
+# French translations for pygeoapi.
+# Copyright (C) 2021 OSGeo
+# This file is distributed under the same license as the pygeoapi project.
+# FIRST AUTHOR Paul van Genuchten, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.11\n"
+"Report-Msgid-Bugs-To: pygeoapi@lists.osgeo.org\n"
+"POT-Creation-Date: 2021-07-10 23:50+0200\n"
+"PO-Revision-Date: 2021-07-11 00:15+0200\n"
+"Last-Translator: Paul van Genuchten\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.9.1\n"
+
+#: pygeoapi/templates/_base.html:40 pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "Domicile"
+
+#: pygeoapi/templates/_base.html:48 pygeoapi/templates/_base.html:56
+msgid "json"
+msgstr "json"
+
+#: pygeoapi/templates/_base.html:51 pygeoapi/templates/_base.html:59
+msgid "jsonld"
+msgstr "json-ld"
+
+#: pygeoapi/templates/_base.html:76
+msgid "prePoweredBy"
+msgstr "propulsé par"
+
+#: pygeoapi/templates/_base.html:76
+msgid "postPoweredBy"
+msgstr ""
+
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:78
+msgid "Conformance"
+msgstr "Conformité"
+
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "Exception"
+
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "Conditions d'utilisation"
+
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "Licence"
+
+#: pygeoapi/templates/collections/coverage/rangetype.html:4
+#: pygeoapi/templates/collections/edr/query.html:4
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:25
+#: pygeoapi/templates/collections/tiles/index.html:4
+#: pygeoapi/templates/collections/tiles/metadata.html:4
+#: pygeoapi/templates/landing_page.html:47
+msgid "Collections"
+msgstr "Collections"
+
+#: pygeoapi/templates/landing_page.html:49
+msgid "View the collections in this service"
+msgstr "Voir les collections de ce service"
+
+#: pygeoapi/templates/landing_page.html:54
+msgid "SpatioTemporal Assets"
+msgstr "Actifs spatiotemporels"
+
+#: pygeoapi/templates/landing_page.html:56
+msgid "View the SpatioTemporal Assets in this service"
+msgstr "Afficher les actifs spatiotemporels dans ce service"
+
+#: pygeoapi/templates/landing_page.html:62
+#: pygeoapi/templates/processes/process.html:4
+msgid "Processes"
+msgstr "Processus"
+
+#: pygeoapi/templates/landing_page.html:64
+msgid "View the processes in this service"
+msgstr "Afficher les processus de ce service"
+
+#: pygeoapi/templates/landing_page.html:69
+msgid "API Definition"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "Documentation"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "Swagger UI"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "ReDoc"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:74
+msgid "OpenAPI Document"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:80
+msgid "View the conformance classes of this service"
+msgstr "Afficher les classes de conformité de ce service"
+
+#: pygeoapi/templates/landing_page.html:87
+msgid "Provider"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:96
+msgid "Contact point"
+msgstr "Point de contact"
+
+#: pygeoapi/templates/landing_page.html:99
+msgid "Address"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:108
+msgid "Email"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:111
+msgid "Telephone"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:115
+msgid "Fax"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:119
+msgid "Contact URL"
+msgstr "URL de contact"
+
+#: pygeoapi/templates/landing_page.html:123
+msgid "Hours"
+msgstr "Les heures"
+
+#: pygeoapi/templates/landing_page.html:127
+msgid "Contact instructions"
+msgstr "Coordonnées"
+
+#: pygeoapi/templates/collections/coverage/rangetype.html:11
+msgid "Coverage range type"
+msgstr ""
+
+#: pygeoapi/templates/collections/coverage/rangetype.html:12
+msgid "Fields"
+msgstr "les champs"
+
+#: pygeoapi/templates/collections/edr/query.html:11
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:31
+msgid "Items"
+msgstr "Articles"
+
+#: pygeoapi/templates/collections/items/index.html:22
+msgid "Items in this collection"
+msgstr "Articles de cette collection"
+
+#: pygeoapi/templates/collections/items/index.html:35
+msgid "Warning: Higher limits not recommended!"
+msgstr "Attention : limites supérieures non recommandées ! "
+
+#: pygeoapi/templates/collections/items/index.html:40
+msgid "Limit"
+msgstr "Limite"
+
+#: pygeoapi/templates/collections/items/index.html:42
+msgid "default"
+msgstr "Defaut"
+
+#: pygeoapi/templates/collections/items/index.html:62
+#: pygeoapi/templates/collections/items/item.html:60
+msgid "Prev"
+msgstr "Précédent"
+
+#: pygeoapi/templates/collections/items/index.html:64
+#: pygeoapi/templates/collections/items/item.html:62
+msgid "Next"
+msgstr "Suivant"
+
+#: pygeoapi/templates/collections/items/index.html:114
+msgid "No items"
+msgstr "Pas d'objet"
+
+#: pygeoapi/templates/collections/items/item.html:75
+#: pygeoapi/templates/stac/item.html:58
+msgid "Property"
+msgstr "Propriété"
+
+#: pygeoapi/templates/collections/items/item.html:76
+#: pygeoapi/templates/stac/item.html:59
+msgid "Value"
+msgstr "Valeur"
+
+#: pygeoapi/templates/collections/tiles/index.html:6
+#: pygeoapi/templates/collections/tiles/metadata.html:6
+msgid "Tiles"
+msgstr ""
+
+#: pygeoapi/templates/collections/tiles/index.html:31
+msgid "Tile Matrix Set"
+msgstr ""
+
+#: pygeoapi/templates/collections/tiles/index.html:42
+msgid "Metadata"
+msgstr "Métadonnées"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:18
+msgid "Tiles metadata"
+msgstr "Métadonnées"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:18
+msgid "format"
+msgstr ""
+
+#: pygeoapi/templates/collections/tiles/metadata.html:19
+msgid "Tileset"
+msgstr ""
+
+#: pygeoapi/templates/processes/process.html:20
+msgid "Inputs"
+msgstr "Les entrées"
+
+#: pygeoapi/templates/processes/process.html:23
+#: pygeoapi/templates/processes/process.html:62
+msgid "Id"
+msgstr "Identifiant"
+
+#: pygeoapi/templates/processes/process.html:24
+#: pygeoapi/templates/processes/process.html:63
+msgid "Title"
+msgstr "Titre"
+
+#: pygeoapi/templates/processes/process.html:25
+msgid "Data Type"
+msgstr "Type de données"
+
+#: pygeoapi/templates/processes/process.html:26
+#: pygeoapi/templates/processes/process.html:64
+#: pygeoapi/templates/stac/collection.html:18
+#, fuzzy
+msgid "Description"
+msgstr "Exception"
+
+#: pygeoapi/templates/processes/process.html:59
+msgid "Outputs"
+msgstr "Les sorties"
+
+#: pygeoapi/templates/processes/process.html:79
+msgid "Execution modes"
+msgstr "Mode d'exécution"
+
+#: pygeoapi/templates/processes/process.html:81
+msgid "Synchronous"
+msgstr "Synchrone"
+
+#: pygeoapi/templates/processes/process.html:82
+msgid "Asynchronous"
+msgstr "Asynchrone"
+
+#: pygeoapi/templates/processes/process.html:84
+msgid "Jobs"
+msgstr "Les tâches"
+
+#: pygeoapi/templates/processes/process.html:85
+msgid "Browse jobs"
+msgstr "Parcourir les tâches"
+
+#: pygeoapi/templates/processes/process.html:86
+msgid "Links"
+msgstr "Liens"
+
+#: pygeoapi/templates/stac/catalog.html:4
+#: pygeoapi/templates/stac/collection.html:2
+#: pygeoapi/templates/stac/collection.html:4
+#: pygeoapi/templates/stac/item.html:4
+#, fuzzy
+msgid "SpatioTemporal Asset Catalog"
+msgstr "Actifs spatiotemporels"
+
+#: pygeoapi/templates/stac/catalog.html:17
+#: pygeoapi/templates/stac/collection.html:17
+msgid "Name"
+msgstr "Nom"
+
+#: pygeoapi/templates/stac/catalog.html:18
+msgid "Last modified"
+msgstr "Dernière modification"
+
+#: pygeoapi/templates/stac/catalog.html:19 pygeoapi/templates/stac/item.html:34
+msgid "Size"
+msgstr "Taille"
+
+#: pygeoapi/templates/stac/collection.html:9
+msgid "STAC Version"
+msgstr ""
+
+#: pygeoapi/templates/stac/item.html:19
+msgid "Item"
+msgstr "Objet"
+
+#: pygeoapi/templates/stac/item.html:28
+msgid "Assets"
+msgstr "Actifs"
+
+#: pygeoapi/templates/stac/item.html:32
+msgid "URL"
+msgstr ""
+
+#: pygeoapi/templates/stac/item.html:33
+msgid "Last Modified"
+msgstr "Dernière modification"
+
+#: pygeoapi/templates/stac/item.html:64
+msgid "id"
+msgstr "identifiant"
+

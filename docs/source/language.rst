@@ -154,6 +154,38 @@ those values will be returned. However, if a `fr-CH` tag can also be found, that
 
 .. todo::   Add docs on HTML templating.
 
+Translator guide
+----------------
+
+Hardcoded strings in pygeoapi templates are translated using the Babel translation system.
+Translation files are stored on the /locale folder.
+Translators can follow these steps to prepare their environment for translations.
+
+
+1. Extract from latest code the keys to be translated. These keys are captured in a .pot file.
+
+   .. code-block:: bash
+
+      pybabel extract -F babel-mapping.ini -o locale/messages.pot ./
+
+2. Update the existing .po language file: 
+
+   .. code-block:: bash
+
+      pybabel update -d locale -l fr -i locale/messages.pot
+
+3. Open the relevant .po file and contribute your translations. Then compile a .mo file to be used by the application: 
+
+   .. code-block:: bash
+
+      pybabel compile -d locale -l fr
+
+Within jinja templates keys are prepared to be translated by wrapping them in: 
+
+   .. code-block:: python
+
+      {% trans %}Key{% endtrans %}
+
 
 Developer guide
 ---------------
