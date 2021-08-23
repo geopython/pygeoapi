@@ -1,5 +1,5 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Home {% endblock %}
+{% block title %}{{ super() }} {% trans %}Home{% endtrans %} {% endblock %}
 {% block body %}
 
 <br/>
@@ -22,7 +22,7 @@
         {% if config['metadata']['identification']['terms_of_service'] %}
           <div class="row">
               <div class="col-sm-4">
-                Terms of service
+                {% trans %}Terms of service{% endtrans %}
               </div>
               <div class="col-sm-8">
                 {{ config['metadata']['identification']['terms_of_service'] | urlize() }}
@@ -32,7 +32,7 @@
         {% if config['metadata']['license']['url'] %}
           <div class="row">
               <div class="col-sm-4">
-                License
+                {% trans %}License{% endtrans %}
               </div>
               <div class="col-sm-8">
                   <a href="{{ config['metadata']['license']['url'] }}">
@@ -44,47 +44,47 @@
     </div>
   </section>
   <section id="collections">
-    <h2>Collections</h2>
+    <h2>{% trans %}Collections{% endtrans %}</h2>
     <p>
-      <a href="{{ config['server']['url'] }}/collections?f=html">View the collections in this service</a>
+      <a href="{{ config['server']['url'] }}/collections?f=html">{% trans %}View the collections in this service{% endtrans %}</a>
     </p>
   </section>
  {% if data['stac'] %}
   <section id="collections">
-    <h2>SpatioTemporal Assets</h2>
+    <h2>{% trans %}SpatioTemporal Assets{% endtrans %}</h2>
     <p>
-      <a href="{{ config['server']['url'] }}/stac?f=html">View the SpatioTemporal Assets in this service</a>
+      <a href="{{ config['server']['url'] }}/stac?f=html">{% trans %}View the SpatioTemporal Assets in this service{% endtrans %}</a>
     </p>
   </section>
  {% endif %}
  {% if data['processes'] %}
   <section id="processes">
-      <h2>Processes</h2>
+      <h2>{% trans %}Processes{% endtrans %}</h2>
       <p>
-        <a href="{{ config['server']['url'] }}/processes?f=html">View the processes in this service</a>
+        <a href="{{ config['server']['url'] }}/processes?f=html">{% trans %}View the processes in this service{% endtrans %}</a>
       </p>
   </section>
  {% endif %}
   <section id="openapi">
-      <h2>API Definition</h2>
+      <h2>{% trans %}API Definition{% endtrans %}</h2>
       <p>
-        Documentation: <a href="{{ config['server']['url'] }}/openapi?f=html">Swagger UI</a> <a href="{{ config['server']['url'] }}/openapi?f=html&ui=redoc">ReDoc</a>
+        {% trans %}Documentation{% endtrans %}: <a href="{{ config['server']['url'] }}/openapi?f=html">{% trans %}Swagger UI{% endtrans %}</a> <a href="{{ config['server']['url'] }}/openapi?f=html&ui=redoc">{% trans %}ReDoc{% endtrans %}</a>
       </p>
       <p>
-        <a href="{{ config['server']['url'] }}/openapi?f=json">OpenAPI Document</a>
+        <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
       </p>
   </section>
   <section id="conformance">
-      <h2>Conformance</h2>
+      <h2>{% trans %}Conformance{% endtrans %}</h2>
       <p>
-        <a href="{{ config['server']['url'] }}/conformance?f=html">View the conformance classes of this service</a>
+        <a href="{{ config['server']['url'] }}/conformance?f=html">{% trans %}View the conformance classes of this service{% endtrans %}</a>
       </p>
   </section>
   </div>
   <div class="col-md-4 col-sm-12">
     <div class="card fluid">
       <div class="section dark">
-       <b>Provider</b>
+       <b>{% trans %}Provider{% endtrans %}</b>
       </div>
       <div class="section">
         <b>{{ config['metadata']['provider']['name'] }}</b><br/>
@@ -93,10 +93,10 @@
     </div>
     <div class="card fluid">
       <div class="section dark">
-          <b>Contact point</b>
+          <b>{% trans %}Contact point{% endtrans %}</b>
       </div>
       <div class="section">
-        <b>Address</b><br/>
+        <b>{% trans %}Address{% endtrans %}</b><br/>
         <div class="section">
           <span>{{ config['metadata']['contact']['address'] }}</span><br/>
           <span>{{ config['metadata']['contact']['city'] }}</span>,
@@ -105,26 +105,26 @@
           <span>{{ config['metadata']['contact']['country'] }}</span>
         </div>
         <div>
-          <b>Email</b><br/>
+          <b>{% trans %}Email{% endtrans %}</b><br/>
           <span><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
           {% if config['metadata']['contact']['phone'] %}
-            <b>Telephone</b><br/>
+            <b>{% trans %}Telephone{% endtrans %}</b><br/>
             <span><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}</a></span><br/>
           {% endif %}
           {% if config['metadata']['contact']['fax'] %}
-            <b>Fax</b><br/>
+            <b>{% trans %}Fax{% endtrans %}</b><br/>
             <span><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}</a></span><br/>
           {% endif %}
           {% if config['metadata']['contact']['url'] %}
-            <b>Contact URL</b><br/>
+            <b>{% trans %}Contact URL{% endtrans %}</b><br/>
             <span><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
           {% endif %}
           {% if config['metadata']['contact']['hours'] %}
-            <b>Hours</b><br/>
+            <b>{% trans %}Hours{% endtrans %}</b><br/>
             <span>{{ config['metadata']['contact']['hours'] }}</span><br/>
           {% endif %}
           {% if config['metadata']['contact']['instructions'] %}
-            <b>Contact instructions</b><br/>
+            <b>{% trans %}Contact instructions{% endtrans %}</b><br/>
             <span>{{ config['metadata']['contact']['instructions'] }}</span>
           {% endif %}
         </div>

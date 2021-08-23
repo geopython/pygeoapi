@@ -1,0 +1,171 @@
+# German translations for PROJECT.
+# Copyright (C) 2021 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-07-10 23:50+0200\n"
+"PO-Revision-Date: 2021-07-11 00:15+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: de\n"
+"Language-Team: de <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.9.1\n"
+
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:78
+msgid "Conformance"
+msgstr "Konformität"
+
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "Fehler"
+
+#: pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "Heim"
+
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "Nutzungsbedingungen"
+
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "Lizenz"
+
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:25
+#: pygeoapi/templates/landing_page.html:47
+msgid "Collections"
+msgstr "Kollektionen"
+
+#: pygeoapi/templates/landing_page.html:49
+msgid "View the collections in this service"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:54
+msgid "SpatioTemporal Assets"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:56
+msgid "View the SpatioTemporal Assets in this service"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:62
+msgid "Processes"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:64
+msgid "View the processes in this service"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:69
+msgid "API Definition"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "Documentation"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "Swagger UI"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:71
+msgid "ReDoc"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:74
+msgid "OpenAPI Document"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:80
+msgid "View the conformance classes of this service"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:87
+msgid "Provider"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:96
+msgid "Contact point"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:99
+msgid "Address"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:108
+msgid "Email"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:111
+msgid "Telephone"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:115
+msgid "Fax"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:119
+msgid "Contact URL"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:123
+msgid "Hours"
+msgstr ""
+
+#: pygeoapi/templates/landing_page.html:127
+msgid "Contact instructions"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:31
+msgid "Items"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:22
+msgid "Items in this collection"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:35
+msgid "Warning: Higher limits not recommended!"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:40
+msgid "Limit"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:42
+msgid "default"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:62
+#: pygeoapi/templates/collections/items/item.html:60
+msgid "Prev"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:64
+#: pygeoapi/templates/collections/items/item.html:62
+msgid "Next"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/index.html:114
+msgid "No items"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/item.html:75
+msgid "Property"
+msgstr ""
+
+#: pygeoapi/templates/collections/items/item.html:76
+msgid "Value"
+msgstr ""
+
