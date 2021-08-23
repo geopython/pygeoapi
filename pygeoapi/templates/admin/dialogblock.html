@@ -1,11 +1,13 @@
 <script>
     Vue.component('DialogBlock', {
-        props: ['type', 'label'],
+        props: ['vals', 'label'],
         name: 'DialogBlock',
         template: '#dialog-block-template',
-        computed: {
-            dialog: function () {
-                return this.$root.dialog
+        data: function() {
+            return {
+                vals_: this.vals,
+                label_: this.label,
+                dialog: false,
             }
         },
     })
@@ -14,16 +16,23 @@
 <script type="text/x-template" id="dialog-block-template">
     <div class="dialog-block">
         <v-row justify="center">
-            <v-dialog :value="dialog" width="65%">
-                
+            <v-dialog v-model="dialog">
                 <template v-slot:activator="{ on, attrs }">
-                    <v-btn v-bind="attrs" v-on="on"> <span v-html="type"></span> </v-btn>
+                    <v-btn v-bind="attrs" v-on="on"> Expand </v-btn>
                 </template>
-                
                 <v-card>
-                    <v-card-title> <h3 v-html="label"></h3> <v-spacer></v-spacer> <span v-html="type"></span> </v-card-title>
-                    <v-card-text> <slot></slot> </v-card-text>
-                    <slot name="dialog-actions"></slot>
+                    <v-toolbar>
+                        <v-btn icon @click="dialog = false">
+                            <v-icon>mdi-close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title>
+                            <span v-html="label"></span> 
+                        </v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        </v-toolbar>
+                    <v-card-text> 
+                        <gui-block :vals="vals_" :label="label_" :key="$vnode.key"></gui-block>
+                    </v-card-text>
                 </v-card>
             </v-dialog>
         </v-row>

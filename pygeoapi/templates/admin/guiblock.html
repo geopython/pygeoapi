@@ -19,11 +19,19 @@
             var out = input.replace("_", " ")
             return (start + out.slice(1))
         } else {
-            console.log(input)
             return input
         }
-        
-      }
+      },
+    },
+    computed: {
+      editable: function(){
+        for (const [k, v] of Object.entries(this.vals)){
+          if (typeof(v) !== 'object'){
+            return true
+          }
+        }
+        return false
+      },
     }
   })
 
@@ -37,15 +45,7 @@
       </template>
     
       <template v-else-if="depth_ === 2">
-        <dialog-block type="expand" :label="capitalize(label)">
-            <gui-block :label="label" :vals="vals"></gui-block>
-            <template v-slot:dialog-actions>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn @click.stop="dialog = false"> Close </v-btn>
-                </v-card-actions>
-            </template>
-        </dialog-block>  
+        <dialog-block :vals="vals" :label="capitalize(label)" :key="key_+'.d'"></dialog-block> 
       </template>
 
       <template v-else>
@@ -61,9 +61,9 @@
                     <h4 v-html="capitalize(k)"></h4>
                   </td>
 
-                  <td height="100%" style="text-align:center">
+                  <td height="100%" style="align:center">
                     <gui-block 
-                    :key="label + '.' + k"
+                    :key="key_ + '.' + k"
                     :label="k" 
                     :vals="v"
                     :depth="depth_ + 1"
@@ -75,15 +75,11 @@
 
             </table>
           </v-card-text>
-    
-          <v-card-actions>
-    
+          
+          <v-card-actions v-if="!vals.length && editable">
             <v-spacer></v-spacer>
-                <dialog-block type="edit" :label="capitalize(label)">
-                    <editable-block :vals="vals"></editable-block>
-                </dialog-block> 
+            <editable-block :vals="vals" :label="capitalize(label)" :key="key_+'.e'"></editable-block>
             <v-spacer></v-spacer>
-    
           </v-card-actions>
         </v-card>
     

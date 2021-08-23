@@ -10,7 +10,7 @@
 <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 {% endblock %}
 
-{% block main %}
+{% block body %}
   <div id="app" data-app>
     <v-main>
       <v-container>
@@ -31,6 +31,7 @@
           >
             <v-card rounded shaped>
               <gui-block 
+               :key="key"
                :label="key" 
                :vals="val" 
               > 
@@ -60,8 +61,8 @@
         return {
           tab: null,
           val: null,
-          tree: {{ to_json(config) }},
           absolute: true,
+          tree: {{ to_json(config) | safe }},
           dialog: false,
         }
       },
