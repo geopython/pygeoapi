@@ -1832,16 +1832,24 @@ class API:
                                     request.locale),
             'href': '{}/collections/{}'.format(
                 self.config['server']['url'], dataset)
-        }, {
-            'rel': 'prev',
-            'type': 'application/geo+json',
-            'href': uri
-            }, {
-            'rel': 'next',
-            'type': 'application/geo+json',
-            'href': uri
-            }
-        ]
+        }]
+
+        if 'prev' in content:
+            content['links'].append({
+                'rel': 'prev',
+                'type': FORMAT_TYPES[request.format],
+                'href': '{}/collections/{}/items/{}?f={}'.format(
+                    self.config['server']['url'], dataset,
+                    content['prev'], request.format)
+            })
+        if 'next' in content:
+            content['links'].append({
+                'rel': 'next',
+                'type': FORMAT_TYPES[request.format],
+                'href': '{}/collections/{}/items/{}?f={}'.format(
+                    self.config['server']['url'], dataset,
+                    content['next'], request.format)
+            })
 
         # Set response language to requested provider locale
         # (if it supports language) and/or otherwise the requested pygeoapi
