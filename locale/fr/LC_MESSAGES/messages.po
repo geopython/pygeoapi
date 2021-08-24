@@ -19,7 +19,7 @@ msgstr ""
 
 #: pygeoapi/templates/_base.html:40 pygeoapi/templates/landing_page.html:2
 msgid "Home"
-msgstr "Domicile"
+msgstr "Accueil"
 
 #: pygeoapi/templates/_base.html:48 pygeoapi/templates/_base.html:56
 msgid "json"
@@ -75,7 +75,7 @@ msgstr "Actifs spatiotemporels"
 
 #: pygeoapi/templates/landing_page.html:56
 msgid "View the SpatioTemporal Assets in this service"
-msgstr "Afficher les actifs spatiotemporels dans ce service"
+msgstr "Afficher les actifs spatiotemporels de ce service"
 
 #: pygeoapi/templates/landing_page.html:62
 #: pygeoapi/templates/processes/process.html:4
@@ -88,7 +88,7 @@ msgstr "Afficher les processus de ce service"
 
 #: pygeoapi/templates/landing_page.html:69
 msgid "API Definition"
-msgstr ""
+msgstr "Définition de l'API"
 
 #: pygeoapi/templates/landing_page.html:71
 msgid "Documentation"
@@ -104,7 +104,7 @@ msgstr ""
 
 #: pygeoapi/templates/landing_page.html:74
 msgid "OpenAPI Document"
-msgstr ""
+msgstr "Document OpenAPI"
 
 #: pygeoapi/templates/landing_page.html:80
 msgid "View the conformance classes of this service"
@@ -112,7 +112,7 @@ msgstr "Afficher les classes de conformité de ce service"
 
 #: pygeoapi/templates/landing_page.html:87
 msgid "Provider"
-msgstr ""
+msgstr "Fournisseur"
 
 #: pygeoapi/templates/landing_page.html:96
 msgid "Contact point"
@@ -120,15 +120,15 @@ msgstr "Point de contact"
 
 #: pygeoapi/templates/landing_page.html:99
 msgid "Address"
-msgstr ""
+msgstr "Adresse"
 
 #: pygeoapi/templates/landing_page.html:108
 msgid "Email"
-msgstr ""
+msgstr "Courriel"
 
 #: pygeoapi/templates/landing_page.html:111
 msgid "Telephone"
-msgstr ""
+msgstr "Téléphone"
 
 #: pygeoapi/templates/landing_page.html:115
 msgid "Fax"
@@ -140,11 +140,11 @@ msgstr "URL de contact"
 
 #: pygeoapi/templates/landing_page.html:123
 msgid "Hours"
-msgstr "Les heures"
+msgstr "Heures"
 
 #: pygeoapi/templates/landing_page.html:127
 msgid "Contact instructions"
-msgstr "Coordonnées"
+msgstr "Instructions de contact"
 
 #: pygeoapi/templates/collections/coverage/rangetype.html:11
 msgid "Coverage range type"
@@ -152,21 +152,21 @@ msgstr ""
 
 #: pygeoapi/templates/collections/coverage/rangetype.html:12
 msgid "Fields"
-msgstr "les champs"
+msgstr "Champs"
 
 #: pygeoapi/templates/collections/edr/query.html:11
 #: pygeoapi/templates/collections/items/index.html:11
 #: pygeoapi/templates/collections/items/item.html:31
 msgid "Items"
-msgstr "Articles"
+msgstr "Items"
 
 #: pygeoapi/templates/collections/items/index.html:22
 msgid "Items in this collection"
-msgstr "Articles de cette collection"
+msgstr "Items dans cette collection"
 
 #: pygeoapi/templates/collections/items/index.html:35
 msgid "Warning: Higher limits not recommended!"
-msgstr "Attention : limites supérieures non recommandées ! "
+msgstr "Attention : limites supérieures non recommandées !"
 
 #: pygeoapi/templates/collections/items/index.html:40
 msgid "Limit"
@@ -174,7 +174,7 @@ msgstr "Limite"
 
 #: pygeoapi/templates/collections/items/index.html:42
 msgid "default"
-msgstr "Defaut"
+msgstr "défaut"
 
 #: pygeoapi/templates/collections/items/index.html:62
 #: pygeoapi/templates/collections/items/item.html:60
@@ -188,7 +188,7 @@ msgstr "Suivant"
 
 #: pygeoapi/templates/collections/items/index.html:114
 msgid "No items"
-msgstr "Pas d'objet"
+msgstr "Pas d'item"
 
 #: pygeoapi/templates/collections/items/item.html:75
 #: pygeoapi/templates/stac/item.html:58
@@ -215,7 +215,7 @@ msgstr "Métadonnées"
 
 #: pygeoapi/templates/collections/tiles/metadata.html:18
 msgid "Tiles metadata"
-msgstr "Métadonnées"
+msgstr ""
 
 #: pygeoapi/templates/collections/tiles/metadata.html:18
 msgid "format"
@@ -227,12 +227,12 @@ msgstr ""
 
 #: pygeoapi/templates/processes/process.html:20
 msgid "Inputs"
-msgstr "Les entrées"
+msgstr "Entrées"
 
 #: pygeoapi/templates/processes/process.html:23
 #: pygeoapi/templates/processes/process.html:62
 msgid "Id"
-msgstr "Identifiant"
+msgstr "Id"
 
 #: pygeoapi/templates/processes/process.html:24
 #: pygeoapi/templates/processes/process.html:63
@@ -248,11 +248,11 @@ msgstr "Type de données"
 #: pygeoapi/templates/stac/collection.html:18
 #, fuzzy
 msgid "Description"
-msgstr "Exception"
+msgstr "Description"
 
 #: pygeoapi/templates/processes/process.html:59
 msgid "Outputs"
-msgstr "Les sorties"
+msgstr "Sorties"
 
 #: pygeoapi/templates/processes/process.html:79
 msgid "Execution modes"
@@ -268,7 +268,7 @@ msgstr "Asynchrone"
 
 #: pygeoapi/templates/processes/process.html:84
 msgid "Jobs"
-msgstr "Les tâches"
+msgstr "Tâches"
 
 #: pygeoapi/templates/processes/process.html:85
 msgid "Browse jobs"
@@ -305,7 +305,7 @@ msgstr ""
 
 #: pygeoapi/templates/stac/item.html:19
 msgid "Item"
-msgstr "Objet"
+msgstr "Item"
 
 #: pygeoapi/templates/stac/item.html:28
 msgid "Assets"
@@ -321,5 +321,4 @@ msgstr "Dernière modification"
 
 #: pygeoapi/templates/stac/item.html:64
 msgid "id"
-msgstr "identifiant"
-
+msgstr "id"
