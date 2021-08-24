@@ -65,3 +65,13 @@ class BaseFormatter:
 
     def __repr__(self):
         return '<BaseFormatter> {}'.format(self.name)
+
+
+class FormatterGenericError(Exception):
+    """formatter generic error"""
+    pass
+
+
+class FormatterSerializationError(FormatterGenericError):
+    """formatter serialization error"""
+    pass

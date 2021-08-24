@@ -1,3 +1,4 @@
 aiofiles
 starlette
 uvicorn
+nest-asyncio

@@ -27,22 +27,12 @@
 #
 # =================================================================
 
-import os
-
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.tinydb_ import TinyDBCatalogueProvider
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
-
+from .util import get_test_file_path
 
 path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
 
@@ -54,7 +44,7 @@ def config():
         'type': 'feature',
         'data': path,
         'id_field': 'externalId',
-        'time_field': 'record-created'
+        'time_field': 'recordCreated'
     }
 
 
@@ -63,7 +53,7 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 10
-    assert fields['record-created']['type'] == 'string'
+    assert fields['recordCreated']['type'] == 'string'
     assert fields['title']['type'] == 'string'
     assert fields['q']['type'] == 'string'
 

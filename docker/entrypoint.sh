@@ -60,7 +60,7 @@ function error() {
 cd ${PYGEOAPI_HOME}
 
 echo "Trying to generate openapi.yml"
-pygeoapi generate-openapi-document -c ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
+pygeoapi openapi generate ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 

@@ -147,7 +147,7 @@ class CSVProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         CSV query
 
@@ -169,7 +169,7 @@ class CSVProvider(BaseProvider):
                           select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query CSV id
 

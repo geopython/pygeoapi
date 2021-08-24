@@ -28,13 +28,16 @@
 # =================================================================
 
 from copy import deepcopy
+import json
 import logging
 import os
 
 import click
+from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
@@ -50,7 +53,10 @@ OPENAPI_YAML = {
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
+    'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
+
+THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_ogc_schemas_location(server_config):
@@ -124,6 +130,10 @@ def get_oas_30(cfg):
 
     paths = {}
 
+    # TODO: make openapi multilingual (default language only for now)
+    server_locales = l10n.get_locales(cfg)
+    locale_ = server_locales[0]
+
     osl = get_ogc_schemas_location(cfg['server'])
     OPENAPI_YAML['oapif'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
 
@@ -133,9 +143,9 @@ def get_oas_30(cfg):
         'tags': []
     }
     info = {
-        'title': cfg['metadata']['identification']['title'],
-        'description': cfg['metadata']['identification']['description'],
-        'x-keywords': cfg['metadata']['identification']['keywords'],
+        'title': l10n.translate(cfg['metadata']['identification']['title'], locale_),  # noqa
+        'description': l10n.translate(cfg['metadata']['identification']['description'], locale_),  # noqa
+        'x-keywords': l10n.translate(cfg['metadata']['identification']['keywords'], locale_),  # noqa
         'termsOfService':
             cfg['metadata']['identification']['terms_of_service'],
         'contact': {
@@ -153,7 +163,7 @@ def get_oas_30(cfg):
 
     oas['servers'] = [{
         'url': cfg['server']['url'],
-        'description': cfg['metadata']['identification']['description']
+        'description': l10n.translate(cfg['metadata']['identification']['description'], locale_)  # noqa
     }]
 
     paths['/'] = {
@@ -163,7 +173,8 @@ def get_oas_30(cfg):
             'tags': ['server'],
             'operationId': 'getLandingPage',
             'parameters': [
-                {'$ref': '#/components/parameters/f'}
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/LandingPage'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -180,7 +191,21 @@ def get_oas_30(cfg):
             'tags': ['server'],
             'operationId': 'getOpenapi',
             'parameters': [
-                {'$ref': '#/components/parameters/f'}
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'},
+                {
+                    'name': 'ui',
+                    'in': 'query',
+                    'description': 'UI to render the OpenAPI document',
+                    'required': False,
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['swagger', 'redoc'],
+                        'default': 'swagger'
+                    },
+                    'style': 'form',
+                    'explode': False
+                },
             ],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
@@ -197,7 +222,8 @@ def get_oas_30(cfg):
             'tags': ['server'],
             'operationId': 'getConformanceDeclaration',
             'parameters': [
-                {'$ref': '#/components/parameters/f'}
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/ConformanceDeclaration'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -214,7 +240,8 @@ def get_oas_30(cfg):
             'tags': ['server'],
             'operationId': 'getCollections',
             'parameters': [
-                {'$ref': '#/components/parameters/f'}
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
                 '200': {'$ref': '{}#/components/responses/Collections'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -226,7 +253,7 @@ def get_oas_30(cfg):
 
     oas['tags'].append({
             'name': 'server',
-            'description': cfg['metadata']['identification']['description'],
+            'description': l10n.translate(cfg['metadata']['identification']['description'], locale_),  # noqa
             'externalDocs': {
                 'description': 'information',
                 'url': cfg['metadata']['identification']['url']}
@@ -269,6 +296,17 @@ def get_oas_30(cfg):
                 },
                 'style': 'form',
                 'explode': False
+            },
+            'lang': {
+                'name': 'lang',
+                'in': 'query',
+                'description': 'The optional lang parameter instructs the server return a response in a certain language, if supported.  If the language is not among the available values, the Accept-Language header language will be used if it is supported. If the header is missing, the default server language is used. Note that providers may only support a single language (or often no language at all), that can be different from the server language.  Language strings can be written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.',  # noqa
+                'required': False,
+                'schema': {
+                    'type': 'string',
+                    'enum': [l10n.locale2str(sl) for sl in server_locales],
+                    'default': l10n.locale2str(locale_)
+                }
             },
             'properties': {
                 'name': 'properties',
@@ -366,19 +404,23 @@ def get_oas_30(cfg):
 
     items_f = deepcopy(oas['components']['parameters']['f'])
     items_f['schema']['enum'].append('csv')
+    items_l = deepcopy(oas['components']['parameters']['lang'])
 
     LOGGER.debug('setting up datasets')
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
     for k, v in collections.items():
+        name = l10n.translate(k, locale_)
+        title = l10n.translate(v['title'], locale_)
+        desc = l10n.translate(v['description'], locale_)
         collection_name_path = '/collections/{}'.format(k)
         tag = {
-            'name': k,
-            'description': v['description'],
+            'name': name,
+            'description': desc,
             'externalDocs': {}
         }
-        for link in v['links']:
+        for link in l10n.translate(v['links'], locale_):
             if link['type'] == 'information':
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
@@ -390,12 +432,13 @@ def get_oas_30(cfg):
 
         paths[collection_name_path] = {
             'get': {
-                'summary': 'Get collection metadata'.format(v['title']),  # noqa
-                'description': v['description'],
-                'tags': [k],
-                'operationId': 'describe{}Collection'.format(k.capitalize()),
+                'summary': 'Get {} metadata'.format(title),
+                'description': desc,
+                'tags': [name],
+                'operationId': 'describe{}Collection'.format(name.capitalize()),  # noqa
                 'parameters': [
-                    {'$ref': '#/components/parameters/f'}
+                    {'$ref': '#/components/parameters/f'},
+                    {'$ref': '#/components/parameters/lang'}
                 ],
                 'responses': {
                     '200': {'$ref': '{}#/components/responses/Collection'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -429,12 +472,13 @@ def get_oas_30(cfg):
 
             paths[items_path] = {
                 'get': {
-                    'summary': 'Get {} items'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
-                    'operationId': 'get{}Features'.format(k.capitalize()),
+                    'summary': 'Get {} items'.format(title),  # noqa
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'get{}Features'.format(name.capitalize()),
                     'parameters': [
                         items_f,
+                        items_l,
                         {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                         coll_properties,
@@ -459,13 +503,14 @@ def get_oas_30(cfg):
 
                 paths[queryables_path] = {
                     'get': {
-                        'summary': 'Get {} queryables'.format(v['title']),
-                        'description': v['description'],
-                        'tags': [k],
+                        'summary': 'Get {} queryables'.format(title),
+                        'description': desc,
+                        'tags': [name],
                         'operationId': 'get{}Queryables'.format(
-                            k.capitalize()),
+                            name.capitalize()),
                         'parameters': [
                             items_f,
+                            items_l
                         ],
                         'responses': {
                             '200': {'$ref': '#/components/responses/Queryables'},  # noqa
@@ -480,7 +525,7 @@ def get_oas_30(cfg):
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': '{}#/components/parameters/datetime'.format(OPENAPI_YAML['oapif'])})  # noqa
 
-            for field, type in p.fields.items():
+            for field, type_ in p.fields.items():
 
                 if p.properties and field not in p.properties:
                     LOGGER.debug('Provider specified not to advertise property')  # noqa
@@ -490,25 +535,23 @@ def get_oas_30(cfg):
                     LOGGER.debug('q parameter already declared, skipping')
                     continue
 
-                if type == 'date':
+                if type_ == 'date':
                     schema = {
                         'type': 'string',
                         'format': 'date'
                     }
-                elif type == 'float':
+                elif type_ == 'float':
                     schema = {
                         'type': 'number',
                         'format': 'float'
                     }
-                elif type == 'long':
+                elif type_ == 'long':
                     schema = {
                         'type': 'integer',
                         'format': 'int64'
                     }
                 else:
-                    schema = {
-                        'type': type
-                    }
+                    schema = type_
 
                 path_ = '{}/items'.format(collection_name_path)
                 paths['{}'.format(path_)]['get']['parameters'].append({
@@ -522,13 +565,14 @@ def get_oas_30(cfg):
 
             paths['{}/items/{{featureId}}'.format(collection_name_path)] = {
                 'get': {
-                    'summary': 'Get {} item by id'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
-                    'operationId': 'get{}Feature'.format(k.capitalize()),
+                    'summary': 'Get {} item by id'.format(title),
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'get{}Feature'.format(name.capitalize()),
                     'parameters': [
                         {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        {'$ref': '#/components/parameters/f'}
+                        {'$ref': '#/components/parameters/f'},
+                        {'$ref': '#/components/parameters/lang'}
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Feature'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -550,12 +594,13 @@ def get_oas_30(cfg):
 
             paths[coverage_path] = {
                 'get': {
-                    'summary': 'Get {} coverage'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
-                    'operationId': 'get{}Coverage'.format(k.capitalize()),
+                    'summary': 'Get {} coverage'.format(title),
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'get{}Coverage'.format(name.capitalize()),
                     'parameters': [
                         items_f,
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -571,13 +616,14 @@ def get_oas_30(cfg):
 
             paths[coverage_domainset_path] = {
                 'get': {
-                    'summary': 'Get {} coverage domain set'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
+                    'summary': 'Get {} coverage domain set'.format(title),
+                    'description': desc,
+                    'tags': [name],
                     'operationId': 'get{}CoverageDomainSet'.format(
-                        k.capitalize()),
+                        name.capitalize()),
                     'parameters': [
                         items_f,
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}/schemas/cis_1.1/domainSet.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
@@ -593,13 +639,14 @@ def get_oas_30(cfg):
 
             paths[coverage_rangetype_path] = {
                 'get': {
-                    'summary': 'Get {} coverage range type'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
+                    'summary': 'Get {} coverage range type'.format(title),
+                    'description': desc,
+                    'tags': [name],
                     'operationId': 'get{}CoverageRangeType'.format(
-                        k.capitalize()),
+                        name.capitalize()),
                     'parameters': [
                         items_f,
+                        items_l
                     ],
                     'responses': {
                         '200': {'$ref': '{}/schemas/cis_1.1/rangeType.yaml'.format(OPENAPI_YAML['oacov'])},  # noqa
@@ -671,12 +718,13 @@ def get_oas_30(cfg):
 
             paths[tiles_path] = {
                 'get': {
-                    'summary': 'Fetch a {} tiles description'.format(v['title']), # noqa
-                    'description': v['description'],
-                    'tags': [k],
-                    'operationId': 'describe{}Tiles'.format(k.capitalize()),
+                    'summary': 'Fetch a {} tiles description'.format(title), # noqa
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'describe{}Tiles'.format(name.capitalize()),
                     'parameters': [
                         items_f,
+                        # items_l  TODO: is this useful?
                     ],
                     'responses': {
                         '200': {'$ref': '#/components/responses/Tiles'},
@@ -691,23 +739,29 @@ def get_oas_30(cfg):
 
             paths[tiles_data_path] = {
                 'get': {
-                    'summary': 'Get a {} tile'.format(v['title']),
-                    'description': v['description'],
-                    'tags': [k],
-                    'operationId': 'get{}Tiles'.format(k.capitalize()),
-                    'parameters': [{
-                        'name': 'f',
-                        'in': 'query',
-                        'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
-                        'required': False,
-                        'schema': {
-                            'type': 'string',
-                            'enum': [tp.format_type],
-                            'default': tp.format_type
-                        },
-                        'style': 'form',
-                        'explode': False
-                    }],
+                    'summary': 'Get a {} tile'.format(title),
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'get{}Tiles'.format(name.capitalize()),
+                    'parameters': [
+                        {'$ref': '{}#/components/parameters/tileMatrixSetId'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileMatrix'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileRow'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {'$ref': '{}#/components/parameters/tileCol'.format(OPENAPI_YAML['oat'])},  # noqa
+                        {
+                            'name': 'f',
+                            'in': 'query',
+                            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
+                            'required': False,
+                            'schema': {
+                                'type': 'string',
+                                'enum': [tp.format_type],
+                                'default': tp.format_type
+                            },
+                            'style': 'form',
+                            'explode': False
+                        }
+                    ],
                     'responses': {
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '404': {'$ref': '{}#/components/responses/NotFound'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -717,6 +771,7 @@ def get_oas_30(cfg):
             }
             mimetype = tile_extension['format']['mimetype']
             paths[tiles_data_path]['get']['responses']['200'] = {
+                'description': 'successful operation',
                 'content': {
                     mimetype: {
                         'schema': {
@@ -818,15 +873,17 @@ def get_oas_30(cfg):
         LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
+            name = l10n.translate(k, locale_)
             p = load_plugin('process', v['processor'])
 
-            process_name_path = '/processes/{}'.format(k)
+            md_desc = l10n.translate(p.metadata['description'], locale_)
+            process_name_path = '/processes/{}'.format(name)
             tag = {
-                'name': k,
-                'description': p.metadata['description'],
+                'name': name,
+                'description': md_desc,  # noqa
                 'externalDocs': {}
             }
-            for link in p.metadata['links']:
+            for link in l10n.translate(p.metadata['links'], locale_):
                 if link['type'] == 'information':
                     tag['externalDocs']['description'] = link['type']
                     tag['externalDocs']['url'] = link['url']
@@ -839,9 +896,9 @@ def get_oas_30(cfg):
             paths[process_name_path] = {
                 'get': {
                     'summary': 'Get process metadata',
-                    'description': p.metadata['description'],
-                    'tags': [k],
-                    'operationId': 'describe{}Process'.format(k.capitalize()),
+                    'description': md_desc,
+                    'tags': [name],
+                    'operationId': 'describe{}Process'.format(name.capitalize()),  # noqa
                     'parameters': [
                         {'$ref': '#/components/parameters/f'}
                     ],
@@ -854,32 +911,24 @@ def get_oas_30(cfg):
             paths['{}/jobs'.format(process_name_path)] = {
                 'get': {
                     'summary': 'Retrieve job list for process',
-                    'description': p.metadata['description'],
-                    'tags': [k],
-                    'operationId': 'get{}Jobs'.format(k.capitalize()),
+                    'description': md_desc,
+                    'tags': [name],
+                    'operationId': 'get{}Jobs'.format(name.capitalize()),
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
                         '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
                         'default': {'$ref': '#/components/responses/default'}
                     }
-                },
+                }
+            }
+
+            paths['{}/execution'.format(process_name_path)] = {
                 'post': {
                     'summary': 'Process {} execution'.format(
-                        p.metadata['title']),
-                    'description': p.metadata['description'],
-                    'tags': [k],
-                    'operationId': 'execute{}Job'.format(k.capitalize()),
-                    'parameters': [{
-                        'name': 'response',
-                        'in': 'query',
-                        'description': 'Response type',
-                        'required': False,
-                        'schema': {
-                            'type': 'string',
-                            'enum': ['raw', 'document'],
-                            'default': 'document'
-                        }
-                    }],
+                        l10n.translate(p.metadata['title'], locale_)),
+                    'description': md_desc,
+                    'tags': [name],
+                    'operationId': 'execute{}Job'.format(name.capitalize()),
                     'responses': {
                         '200': {'$ref': '#/components/responses/200'},
                         '201': {'$ref': '{}/responses/ExecuteAsync.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
@@ -901,7 +950,7 @@ def get_oas_30(cfg):
                 }
             }
             if 'example' in p.metadata:
-                paths['{}/jobs'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+                paths['{}/execution'.format(process_name_path)]['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
             name_in_path = {
                 'name': 'jobId',
@@ -919,12 +968,12 @@ def get_oas_30(cfg):
                     'get': {
                         'summary': 'Retrieve job details',
                         'description': '',
-                        'tags': [k],
+                        'tags': [name],
                         'parameters': [
                             name_in_path,
                             {'$ref': '#/components/parameters/f'}
                         ],
-                        'operationId': f'get{k.capitalize()}Job',
+                        'operationId': f'get{name.capitalize()}Job',
                         'responses': {
                             '200': {'$ref': '#/components/responses/200'},
                             '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
@@ -934,11 +983,11 @@ def get_oas_30(cfg):
                     'delete': {
                         'summary': 'Cancel / delete job',
                         'description': '',
-                        'tags': [k],
+                        'tags': [name],
                         'parameters': [
                             name_in_path
                         ],
-                        'operationId': f'delete{k.capitalize()}Job',
+                        'operationId': f'delete{name.capitalize()}Job',
                         'responses': {
                             '204': {'$ref': '#/components/responses/204'},
                             '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
@@ -951,12 +1000,12 @@ def get_oas_30(cfg):
                     'get': {
                         'summary': 'Retrieve job results',
                         'description': '',
-                        'tags': [k],
+                        'tags': [name],
                         'parameters': [
                             name_in_path,
                             {'$ref': '#/components/parameters/f'}
                         ],
-                        'operationId': f'get{k.capitalize()}JobResults',
+                        'operationId': f'get{name.capitalize()}JobResults',
                         'responses': {
                             '200': {'$ref': '#/components/responses/200'},
                             '404': {'$ref': '{}/responses/NotFound.yaml'.format(OPENAPI_YAML['oapip'])},  # noqa
@@ -986,20 +1035,64 @@ def get_oas(cfg, version='3.0'):
         raise RuntimeError('OpenAPI version not supported')
 
 
-@click.command('generate-openapi-document')
+def validate_openapi_document(instance_dict):
+    """
+    Validate an OpenAPI document against the OpenAPI schema
+
+    :param instance_dict: dict of OpenAPI instance
+
+    :returns: `bool` of validation
+    """
+
+    schema_file = os.path.join(THISDIR, 'schemas', 'openapi',
+                               'openapi-3.0.x.json')
+
+    with open(schema_file) as fh2:
+        schema_dict = json.load(fh2)
+        jsonschema_validate(instance_dict, schema_dict)
+
+        return True
+
+
+@click.group()
+def openapi():
+    """OpenAPI management"""
+    pass
+
+
+@click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
+@click.argument('config_file', type=click.File())
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
-def generate_openapi_document(ctx, config_file, format_='yaml'):
+def generate(ctx, config_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
-    with open(config_file) as ff:
-        s = yaml_load(ff)
-        pretty_print = s['server'].get('pretty_print', False)
-        if format_ == 'yaml':
-            click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
-        else:
-            click.echo(to_json(get_oas(s), pretty=pretty_print))
+
+    s = yaml_load(config_file)
+    pretty_print = s['server'].get('pretty_print', False)
+    if format_ == 'yaml':
+        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+    else:
+        click.echo(to_json(get_oas(s), pretty=pretty_print))
+
+
+@click.command()
+@click.pass_context
+@click.argument('openapi_file', type=click.File())
+def validate(ctx, openapi_file):
+    """Validate OpenAPI Document"""
+
+    if openapi_file is None:
+        raise click.ClickException('--openapi/-o required')
+
+    click.echo('Validating {}'.format(openapi_file))
+    instance = yaml_load(openapi_file)
+    validate_openapi_document(instance)
+    click.echo('Valid OpenAPI document')
+
+
+openapi.add_command(generate)
+openapi.add_command(validate)

@@ -42,6 +42,12 @@ having an associated ``birds.yml`` file).  If no MCF file is found, then
 pygeometa will generate the STAC item metadata from configuration and by
 reading the data's properties.
 
+Publishing ESRI Shapefiles
+--------------------------
+
+ESRI Shapefile publishing requires to specify all required component file extensions
+(``.shp``, ``.shx``, ``.dbf``) with the provider ``file_types`` option.
+
 Data access examples
 --------------------
 

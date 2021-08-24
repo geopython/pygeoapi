@@ -1,14 +1,14 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="{{ data['collections_path'] }}">Collections</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %} /
     <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
     {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
-/ <a href="{{ data['items_path']}}">Items</a>
+/ <a href="{{ data['items_path']}}">{% trans %}Items{% endtrans %}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -19,7 +19,7 @@
   <section id="items"></section>
   <section id="collection">
     <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
-    <p>Items in this collection.</p>
+    <p>{% trans %}Items in this collection{% endtrans %}.</p>
   </section>
   <section id="items">
     {% if data['features'] %}
@@ -32,14 +32,14 @@
           <div class="col-sm-12">
             <div class="row">
                 <div class="col-sm-12">
-                  Warning: Higher limits not recommended!
+                  {% trans %}Warning: Higher limits not recommended!{% endtrans %}
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12">
-                  Limit:
+                  {% trans %}Limit{% endtrans %}:
                   <select id="limits">
-                    <option value="10">10 (default)</option>
+                    <option value="10">10 ({% trans %}default{% endtrans %})</option>
                     <option value="100">100</option>
                     <option value="1000">1,000</option>
                     <option value="2000">2,000</option>
@@ -59,9 +59,9 @@
               <div class="col-sm-12">
                 {% for link in data['links'] %}
                 {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
-                <a role="button" href="{{ link['href'] }}">Prev</a>
+                <a role="button" href="{{ link['href'] }}">{% trans %}Prev{% endtrans %}</a>
                 {% elif link['rel'] == 'next' and data['features'] %}
-                <a role="button" href="{{ link['href'] }}">Next</a>
+                <a role="button" href="{{ link['href'] }}">{% trans %}Next{% endtrans %}</a>
                 {% endif %}
                 {% endfor %}
               </div>
@@ -73,13 +73,16 @@
           <table class="striped">
             <thead>
             <tr>
+              {% if data.get('uri_field') %}
+              <th>{{ data['uri_field'] }}</th>
+              {% endif %}
                 <th>id</th>
                 {% if data['title_field'] %}
                   <th>{{ data['title_field'] }}</th>
                 {% endif %}
                 {% for k, v in data['features'][0]['properties'].items() %}
                   {# start with id & title then take first 5 columns for table #}
-                  {% if loop.index < 5 and k != data['id_field'] and k != data['title_field'] %}
+                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
                   <th>{{ k }}</th>
                   {% endif %}
                 {% endfor %}
@@ -88,12 +91,15 @@
           <tbody>
             {% for ft in data['features'] %}
               <tr>
+                {% if data.get('uri_field') %}
+                <td data-label="{{ data.get('uri_field') }}"><a href="{{ ft['properties'].get(data['uri_field'])}}" title="{{ ft['properties'][data['uri_field']] }}">{{ft['properties'][data.get('uri_field')]}}</a></td>
+                {% endif %}
                 <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
                 {% if data['title_field'] %}
                   <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
                 {% endif %}
                 {% for k, v in ft['properties'].items() %}
-                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], 'extent'] %}
+                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
                   <td data-label="{{ k }}">{{ v | string | truncate( 35 ) }}</td>
                   {% endif %}
                 {% endfor %}
@@ -105,7 +111,7 @@
     </div>
     {% else %}
     <div class="row col-sm-12">
-        <p>No items</p>
+        <p>{% trans %}No items{% endtrans %}</p>
     </div>
     {% endif %}
     </section>

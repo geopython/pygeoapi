@@ -175,6 +175,7 @@ default.
                 name: CSV
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
+                uri_field: uri # optional field corresponding to the Uniform Resource Identifier (see Linked Data section)
                 time_field: datetimestamp  # optional field corresponding to the temporal property of the dataset
                 title_field: foo # optional field of which property to display as title/label on HTML pages
                 format:  # optional default format
@@ -197,6 +198,17 @@ default.
 
 .. seealso::
    :ref:`plugins` for more information on plugins
+
+
+Validating the configuration
+----------------------------
+
+To ensure your configuration is valid, pygeoapi provides a validation
+utility that can be run as follows:
+
+.. code-block:: bash
+
+   pygeoapi config validate /path/to/my-pygeoapi-config.yml
 
 
 Using environment variables
@@ -232,12 +244,24 @@ The metadata for an instance is determined by the content of the `metadata`_ sec
 This metadata is included automatically, and is sufficient for inclusion in major indices of datasets, including the
 `Google Dataset Search`_.
 
-For collections, at the level of an item or items, by default the JSON-LD representation adds:
+For collections, at the level of item, the default JSON-LD representation adds:
 
-- The GeoJSON JSON-LD `vocabulary and context <https://geojson.org/geojson-ld/>`_ to the ``@context``.
-- An ``@id`` for each item in a collection, that is the URL for that item (resolving to its HTML representation
-  in pygeoapi)
+- An ``@id`` for the item, which is the URL for that item. If uri_field is specified,
+  it is used, otherwise the URL is to its HTML representation in pygeoapi.
+- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo` 
+  only supports point, line, and polygon geometries. Multipart lines are merged into a single line.
+  The rest of the multipart geometries are transformed reduced and into a polygon via unary union
+  or convex hull transform.
+- ``@context`` for the GeoSPARQL and schema geometries.
+- The unpacked properties block into the main body of the item.
 
+For collections, at the level of items, the default JSON-LD representation adds:
+
+- A schema.org itemList of the ``@id`` and ``@type`` of each feature in the collection.
+
+The optional configuration options for collections, at the level of an item of items, are:
+
+- If ``uri_field`` is specified, JSON-LD will be updated such that the ``@id`` has the value of ``uri_field`` for each item in a collection
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.
@@ -280,6 +304,34 @@ This example demonstrates how to use this feature with a CSV data provider, usin
 implementation of JSON-LD structured data is available for any data provider but is currently limited to defining a
 ``@context``.  Relationships between items can be expressed but is dependent on such relationships being expressed
 by the dataset provider, not pygeoapi.
+
+An example of a data provider that includes relationships between items is the SensorThings API provider.
+SensorThings API, by default, has relationships between entities within its data model.
+Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi 
+to represent the relationship between configured entities as intra-pygeoapi links or URIs. 
+This relationship can further be maintained in the JSON-LD structured data using the appropiate 
+``@context`` with the sosa/ssn ontology. For example:
+
+.. code-block:: yaml
+
+    Things:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastreams: sosa:ObservationCollection
+
+    Datastreams:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Observations: sosa:hasMember
+            Thing: sosa:hasFeatureOfInterest
+
+    Observations:
+      context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastream: sosa:isMemberOf
 
 
 Summary

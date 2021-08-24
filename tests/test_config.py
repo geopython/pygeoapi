@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,18 +29,19 @@
 
 import os
 
+from jsonschema.exceptions import ValidationError
 import pytest
 
+from pygeoapi.config import validate_config
 from pygeoapi.util import yaml_load
 
+from .util import get_test_file_path
 
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
 
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
+@pytest.fixture()
+def config():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        return yaml_load(fh)
 
 
 def test_config_envvars():
@@ -60,3 +61,11 @@ def test_config_envvars():
     with pytest.raises(EnvironmentError):
         with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:  # noqa
             config = yaml_load(fh)
+
+
+def test_validate_config(config):
+    is_valid = validate_config(config)
+    assert is_valid
+
+    with pytest.raises(ValidationError):
+        is_valid = validate_config({'foo': 'bar'})

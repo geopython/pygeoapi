@@ -15,16 +15,17 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
+   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display), CQL
    :align: left
 
-   CSV,❌,results/hits,❌,❌,❌,✅
-   Elasticsearch,✅,results/hits,✅,✅,✅,✅
-   GeoJSON,❌,results/hits,❌,❌,❌,❌
-   MongoDB,✅,results,✅,✅,✅,❌
-   OGR,✅,results/hits,✅,❌,❌,❌
-   PostgreSQL,✅,results/hits,✅,❌,❌,❌
-   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
+   CSV,❌,results/hits,❌,❌,❌,✅,❌
+   Elasticsearch,✅,results/hits,✅,✅,✅,✅,✅
+   GeoJSON,❌,results/hits,❌,❌,❌,❌,❌
+   MongoDB,✅,results,✅,✅,✅,❌,❌
+   OGR,✅,results/hits,✅,❌,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,❌,❌,❌
+   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌,❌
+   SensorThingsAPI,✅,results/hits,✅,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -64,6 +65,7 @@ To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
          data: tests/data/file.json
          id_field: id
 
+.. _Elasticsearch:
 
 Elasticsearch
 ^^^^^^^^^^^^^
@@ -85,6 +87,11 @@ To publish an Elasticsearch index, the following are required in your index:
          data: http://localhost:9200/ne_110m_populated_places_simple
          id_field: geonameid
          time_field: datetimefield
+
+This provider has the support for the CQL queries as indicated in the table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
 
 OGR
 ^^^
@@ -196,6 +203,44 @@ GeoPackage file:
          id_field: osm_id
          table: poi_portugal
 
+
+SensorThings API
+^^^^^^^^^^^^^^^^
+
+The STA provider is capable of creating feature collections from OGC SensorThings 
+API endpoints. Three of the STA entities are configurable: Things, Datastreams, and 
+Observations. For a full description of the SensorThings entity model, see 
+`here <http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#figure_2>`_. 
+For each entity of ``Things``, pygeoapi will expand all entities directly related to
+the ``Thing``, including its associated ``Location``, from which the 
+geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to 
+include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``. 
+
+The default id_field is ``@iot.id``. The STA provider adds one required field, 
+``entity``, and an optional field, ``intralink``. The ``entity`` field refers to 
+which STA entity to use for the feature collection. The ``intralink`` field controls 
+how the provider is acted upon by other STA providers and is by default, False.
+If ``intralink`` is true for an adjacent STA provider collection within a 
+pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi 
+link to the other entity or it's ``uri_field`` if declared. 
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: SensorThings
+         data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+         uri_field: uri
+         entity: Datastreams 
+         time_field: phenomenonTime
+         intralink: true
+
+If all three entities are configured, the STA provider will represent a complete STA 
+endpoint as OGC-API feature collections. The ``Things`` features will include links 
+to the associated features in the ``Datastreams`` feature collection, and the 
+``Observations`` features will include links to the associated features in the 
+``Datastreams`` feature collection. Examples with three entities configured
+are included in the docker examples for SensorThings.
 
 Data access examples
 --------------------

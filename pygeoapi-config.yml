@@ -34,7 +34,10 @@ server:
     url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
-    language: en-US
+    languages:
+        # First language is the default language
+        - en-US
+        - fr-CA
     # cors: true
     pretty_print: true
     limit: 10
@@ -42,8 +45,8 @@ server:
       # path: /path/to/Jinja2/templates
       # static: /path/to/static/folder # css/js/img
     map:
-        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 #    manager:
 #        name: TinyDB
 #        connection: /tmp/pygeoapi-process-manager.db
@@ -56,12 +59,21 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
-        description: pygeoapi provides an API to geospatial data
+        title:
+            en: pygeoapi default instance
+            fr: instance par défaut de pygeoapi
+        description:
+            en: pygeoapi provides an API to geospatial data
+            fr: pygeoapi fournit une API aux données géospatiales
         keywords:
-            - geospatial
-            - data
-            - api
+            en:
+                - geospatial
+                - data
+                - api
+            fr:
+                - géospatiale
+                - données
+                - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: http://example.org
@@ -129,10 +141,19 @@ resources:
 
     lakes:
         type: collection
-        title: Large Lakes
-        description: lakes of the world, public domain
+        title:
+            en: Large Lakes
+            fr: Grands Lacs
+        description:
+            en: lakes of the world, public domain
+            fr: lacs du monde, domaine public
         keywords:
-            - lakes
+            en:
+                - lakes
+                - water bodies
+            fr:
+                - lacs
+                - plans d'eau
         links:
             - type: text/html
               rel: canonical
@@ -144,7 +165,7 @@ resources:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: 2011-11-11
+                begin: 2011-11-11T11:11:11Z
                 end: null  # or empty (either means open ended)
         providers:
             - type: feature
@@ -177,34 +198,8 @@ resources:
               options:
                   DATA_ENCODING: COMPLEX_PACKING
               format:
-                  name: GRIB2
+                  name: GRIB
                   mimetype: application/x-grib2
-
-    icoads-sst:
-        type: collection
-        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        keywords:
-            - icoads
-            - sst
-            - air temperature
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
-              hreflang: en-US
-        providers:
-            - type: edr
-              name: xarray-edr
-              data: tests/data/coads_sst.nc
-              format:
-                  name: NetCDF
-                  mimetype: application/x-netcdf
 
     test-data:
         type: stac-collection
@@ -237,17 +232,30 @@ resources:
 
     canada-metadata:
         type: collection
-        title: Sample metadata records from open.canada.ca
-        description: Sample metadata records from open.canada.ca
+        title:
+            en: Open Canada sample data
+            fr: Exemple de donn\u00e9es Canada Ouvert
+        description:
+            en: Sample metadata records from open.canada.ca
+            fr: Exemples d'enregistrements de m\u00e9tadonn\u00e9es sur ouvert.canada.ca
         keywords:
-            - canada
-            - open data
+            en:
+                - canada
+                - open data
+            fr:
+                - canada
+                - donn\u00e9es ouvertes
         links:
             - type: text/html
               rel: canonical
               title: information
               href: https://open.canada.ca/en/open-data
               hreflang: en-CA
+            - type: text/html
+              rel: canonical
+              title: informations
+              href: https://ouvert.canada.ca/fr/donnees-ouvertes
+              hreflang: fr-CA
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -257,7 +265,7 @@ resources:
               name: TinyDBCatalogue
               data: tests/data/open.canada.ca/sample-records.tinydb
               id_field: externalId
-              time_field: record-created
+              time_field: recordCreated
               title_field: title
 
     hello-world:

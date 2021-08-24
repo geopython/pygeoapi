@@ -152,8 +152,8 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             ]]
         },
         'properties': {
-            'record-created': issued,
-            'record-updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'recordCreated': issued,
+            'recordUpdated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'type': type_,
             'title': title,
             'description': description,
@@ -163,7 +163,7 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             'themes': themes,
             'extent': {
                 'spatial': {
-                    'bbox': [[bbox]],
+                    'bbox': [bbox],
                     'crs': bbox_crs
                 },
                 'temporal': {

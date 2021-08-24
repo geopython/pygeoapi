@@ -1,8 +1,8 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Exception {% endblock %}
+{% block title %}{{ super() }} {% trans %}Exception{% endtrans %} {% endblock %}
 {% block body %}
     <section id="exception">
-      <h2>Exception</h2>
+      <h2>{% trans %}Exception{% endtrans %}</h2>
       <p>{{ data['description'] }}</p>
     </section>
 {% endblock %}
