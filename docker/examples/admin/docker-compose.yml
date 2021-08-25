@@ -34,7 +34,11 @@ services:
   pygeoapi:
     image: webbben/pygeoapi-admin
 
+    volumes:
+      - ./admin.config.yml:/pygeoapi/local.config.yml
     environment:
+      - CONTAINER_HOST=0.0.0.0
+      - FORWARDING_PORT=5000
       - ADMIN_USER=admin
       - ADMIN_PASS=apassword
     ports:

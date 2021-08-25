@@ -31,13 +31,13 @@
 
 server:
     bind:
-        host: 0.0.0.0
-        port: 5000
+        host: ${CONTAINER_HOST}
+        port: ${FORWARDING_PORT}
     url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
-    cors: false
+    cors: true
     pretty_print: true
     limit: 10
     map:
