@@ -14,7 +14,7 @@
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
       </p>
-      <h3>{% trans %}Queryables{% trans %}</h3>
+      <h3>{% trans %}Queryables{% endtrans %}</h3>
       <ul>
       {% for qname, qinfo in data['properties'].items() %}
         <li>{{ qname }} (<code>{{ qinfo['type'] }}</code>)

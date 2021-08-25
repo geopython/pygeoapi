@@ -47,11 +47,11 @@
       </ul>
       {% for provider in config['resources'][data['id']]['providers'] %}
         {% if 'tile' in provider['type'] %}
-      <h3>{% trans %}Tiles{% trans %}</h3>
+      <h3>{% trans %}Tiles{% endtrans %}</h3>
       <ul>
         <li>
           <div>
-            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% trans %} "{{ data['title'] }}"</a>
+            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
           </div>
         </li>
       </ul>
