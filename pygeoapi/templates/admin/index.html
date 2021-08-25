@@ -1,5 +1,5 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Admin {% endblock %}
+{% block title %} Admin {% endblock %}
 
 {% block extrahead %}
 <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.css" rel="stylesheet">
@@ -15,28 +15,11 @@
     <v-main>
       <v-container>
         <v-tabs v-model="tab">
-          <v-tab
-            v-for="(val, key) in tree"
-            grow
-            :key="key"
-          >
-            [[ key ]]
-          </v-tab>
+          <v-tab v-for="(val, key) in tree" :key="key">[[ key ]]</v-tab>
         </v-tabs>
-        <v-spacer></v-spacer>
         <v-tabs-items v-model="tab">
-          <v-tab-item
-            v-for="(val, key) in tree"
-            :key="key"
-          >
-            <v-card rounded shaped>
-              <gui-block 
-               :key="key"
-               :label="key" 
-               :vals="val" 
-              > 
-              </gui-block>
-            </v-card>  
+          <v-tab-item v-for="(val, key) in tree" :key="key">
+            <gui-block :key="'tree.'+key" :label="key" :vals="val"></gui-block>  
           </v-tab-item>
         </v-tabs-items>
       </v-container>

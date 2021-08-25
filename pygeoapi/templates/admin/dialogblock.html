@@ -18,7 +18,9 @@
         <v-row justify="center">
             <v-dialog v-model="dialog">
                 <template v-slot:activator="{ on, attrs }">
-                    <v-btn v-bind="attrs" v-on="on"> Expand </v-btn>
+                    <v-btn block icon outlined raised rounded v-bind="attrs" v-on="on">
+                     <v-icon>mdi-open-in-new</v-icon> <span v-html="label"></span> 
+                    </v-btn>
                 </template>
                 <v-card>
                     <v-toolbar>

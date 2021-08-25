@@ -45,45 +45,46 @@
       </template>
     
       <template v-else-if="depth_ === 2">
-        <dialog-block :vals="vals" :label="capitalize(label)" :key="key_+'.d'"></dialog-block> 
+        <dialog-block :vals="vals" :label="label" :key="key_"></dialog-block> 
       </template>
 
       <template v-else>
-        <v-card
-         hover
-         rounded
-        > 
-          <v-card-text>
-            <table class="striped">
-                <tr v-for="(v, k) in vals_" :key="k">
+        <v-hover>
+          <template v-slot:default="{ hover }">
+            <v-container>
+                <v-card class="mx-auto" width="100%">
+                  <v-card-text>
+                    <v-simple-table class="striped">
+                        <tr v-for="(v, k) in vals" :key="k">
 
-                  <td v-if="typeof(k) === 'string'" style="text-align:center"> 
-                    <h4 v-html="capitalize(k)"></h4>
-                  </td>
+                          <td v-if="typeof(k) === 'string'" style="text-align:center"> 
+                            <h4 v-html="capitalize(k)"></h4>
+                          </td>
 
-                  <td height="100%" style="align:center">
-                    <gui-block 
-                    :key="key_ + '.' + k"
-                    :label="k" 
-                    :vals="v"
-                    :depth="depth_ + 1"
-                    >
-                    </gui-block>
-                  </td>
+                          <td height="100%" style="text-align:center">
+                            <gui-block 
+                            :key="key_ + '.' + k"
+                            :label="k" 
+                            :vals="v"
+                            :depth="depth_ + 1"
+                            >
+                            </gui-block>
+                          </td>
 
-                </tr>
+                        </tr>
 
-            </table>
-          </v-card-text>
-          
-          <v-card-actions v-if="!vals.length && editable">
-            <v-spacer></v-spacer>
-            <editable-block :vals="vals" :label="capitalize(label)" :key="key_+'.e'"></editable-block>
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-    
+                    </v-simple-table>
+                    
+                  </v-card-text>
+
+                  <v-card-actions v-if="(!vals.length && editable) || label === 'keywords'">
+                    <editable-block v-show="hover" :vals="vals" :label="label" :key="key_"></editable-block>
+                  </v-card-actions>
+
+                </v-card>
+            </v-container>
+          </template>
+        </v-hover>
       </template>
-    
     </div>
 </script>
