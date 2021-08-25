@@ -1,9 +1,9 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../collections">Collections</a>
+/ <a href="../../collections">{% trans %}Collections{% endtrans %}</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
-/ <a href="./{{ data['id'] }}queryables">Queryables</a>
+/ <a href="./{{ data['id'] }}queryables">{% trans %}Queryables{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collection">
@@ -14,7 +14,7 @@
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
       </p>
-      <h3>Queryables</h3>
+      <h3>{% trans %}Queryables{% trans %}</h3>
       <ul>
       {% for qname, qinfo in data['properties'].items() %}
         <li>{{ qname }} (<code>{{ qinfo['type'] }}</code>)

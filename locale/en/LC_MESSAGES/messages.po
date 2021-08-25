@@ -30,12 +30,8 @@ msgid "jsonld"
 msgstr "json-ld"
 
 #: pygeoapi/templates/_base.html:76
-msgid "prePoweredBy"
-msgstr "Powered by"
-
-#: pygeoapi/templates/_base.html:76
-msgid "postPoweredBy"
-msgstr " "
+msgid "Powered by"
+msgstr ""
 
 #: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
 #: pygeoapi/templates/conformance.html:8

@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../">Collections</a>
+/ <a href="../../">{% trans %}Collections{% endtrans %}</a>
 / <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}
@@ -26,7 +26,7 @@
       <h4>{% trans %}Size{% endtrans %}</h4>
       <ul>
         <li>{% trans %}width{% endtrans %}: {{ data['generalGrid']['gridLimits']['axis'][0]['upperBound'] }} </li>
-        <li>{% trans %}{height% endtrans %}: {{ data['generalGrid']['gridLimits']['axis'][1]['upperBound'] }} </li>
+        <li>{% trans %}height{% endtrans %}: {{ data['generalGrid']['gridLimits']['axis'][1]['upperBound'] }} </li>
       </ul>
       <h4>{% trans %}Resolution{% endtrans %}</h4>
       <ul>
