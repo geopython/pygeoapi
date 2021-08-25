@@ -127,7 +127,7 @@
             attribution: '{{ config['server']['map']['attribution'] }}'
         }
     ));
-    var geojson_data = {{ data['features'] | to_json }};
+    var geojson_data = {{ data['features'] | to_json | safe }};
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
             var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';
