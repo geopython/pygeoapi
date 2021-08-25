@@ -1446,11 +1446,12 @@ class API:
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
             content['startindex'] = startindex
 
+            content['id_field'] = p.id_field
             if p.uri_field is not None:
                 content['uri_field'] = p.uri_field
             if p.title_field is not None:
                 content['title_field'] = p.title_field
-            content['id_field'] = p.title_field
+                content['id_field'] = p.title_field
 
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
