@@ -724,6 +724,8 @@ def test_get_collection_item(config, api_):
     feature = json.loads(response)
 
     assert feature['properties']['stn_id'] == '35'
+    assert 'prev' not in feature['links']
+    assert 'next' not in feature['links']
 
 
 def test_get_collection_item_json_ld(config, api_):
