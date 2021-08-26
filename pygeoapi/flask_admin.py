@@ -29,20 +29,25 @@
 
 import os
 import flask_login
+import logging
 import hashlib
 from flask import Blueprint, request, url_for, redirect
 from pygeoapi.util import yaml_load, render_j2_template
 
-CONFIG = None
+LOGGER = logging.getLogger(__name__)
+
+TEMPLATE_CONFIG, CONFIG = None, None
 login_manager = flask_login.LoginManager()
 users = {}
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
+with open('template.config.yml', encoding='utf8') as fh:
+    TEMPLATE_CONFIG = yaml_load(fh)
+
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
-
 
 class Admin(flask_login.UserMixin):
     pass
@@ -92,7 +97,7 @@ def login():
 @ADMIN_BLUEPRINT.route('/admin')
 # @flask_login.login_required
 def admin():
-    return render_j2_template(CONFIG, 'admin/index.html', {})
+    return render_j2_template(CONFIG, 'admin/index.html', TEMPLATE_CONFIG)
 
 
 @ADMIN_BLUEPRINT.route('/logout')

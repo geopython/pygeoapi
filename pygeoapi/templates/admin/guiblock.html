@@ -54,7 +54,7 @@
             <v-container>
                 <v-card class="mx-auto" width="100%">
                   <v-card-text>
-                    <v-simple-table class="striped">
+                    <table class="striped">
                         <tr v-for="(v, k) in vals" :key="k">
 
                           <td v-if="typeof(k) === 'string'" style="text-align:center"> 
@@ -73,7 +73,7 @@
 
                         </tr>
 
-                    </v-simple-table>
+                    </table>
                     
                   </v-card-text>
 
