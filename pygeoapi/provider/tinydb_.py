@@ -155,7 +155,8 @@ class TinyDBCatalogueProvider(BaseProvider):
                 QUERY.append("(Q.properties['{}']=='{}')".format(*prop))
 
         if q is not None:
-            QUERY.append("(Q.properties['_metadata-anytext'].search('{}'))".format(q))  # noqa
+            for t in q.split():
+                QUERY.append("(Q.properties['_metadata-anytext'].search('{}'))".format(t))  # noqa
 
         QUERY_STRING = '&'.join(QUERY)
         LOGGER.debug('QUERY_STRING: {}'.format(QUERY_STRING))
