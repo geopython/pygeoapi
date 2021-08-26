@@ -69,6 +69,11 @@ def test_query(config):
     assert results['numberMatched'] == 6
     assert results['numberReturned'] == 6
 
+    results = p.query(q='crops barley')
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+
     results = p.query(limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
