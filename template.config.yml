@@ -46,7 +46,7 @@ server:
       static: /path/to/static/folder # css/js/img
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     manager:
        name: TinyDB
        connection: /tmp/pygeoapi-process-manager.db
@@ -100,114 +100,312 @@ metadata:
         role: pointOfContact
 
 resources:
-    obs:
+    csv:
         type: collection
-        title: Observations
-        description: My cool observations
+        title: 
+            en: Observations
+        description: 
+            en: observations of the world
         keywords:
-            - observations
-            - monitoring
+            en:
+                - observations
         context:
-            - datetime: https://schema.org/DateTime
-            - vocab: https://example.com/vocab#
-              stn_id: "vocab:stn_id"
-              value: "vocab:value"
+            - schema: https://schema.org/
         links:
             - type: text/csv
               rel: canonical
               title: data
-              href: https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv
-              hreflang: en-US
-            - type: text/csv
-              rel: alternate
-              title: data
-              href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
+              href: https://example.com/data.csv
               hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: 2000-10-30T18:24:39Z
-                end: 2007-10-30T08:57:29Z
+                begin: null
+                end: null
         providers:
             - type: feature
               name: CSV
-              data: tests/data/obs.csv
+              data: data/data.csv
               id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
               geometry:
                   x_field: long
                   y_field: lat
 
-    lakes:
+    geojson:
         type: collection
         title:
-            en: Large Lakes
-            fr: Grands Lacs
+            en: Lakes
         description:
-            en: lakes of the world, public domain
-            fr: lacs du monde, domaine public
+            en: lakes of the world
         keywords:
             en:
                 - lakes
-                - water bodies
-            fr:
-                - lacs
-                - plans d'eau
+        context:
+            - schema: https://schema.org/
         links:
-            - type: text/html
+            - type: text/csv
               rel: canonical
-              title: information
-              href: http://www.naturalearthdata.com/
+              title: data
+              href: https://example.com/data.geojson
               hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: 2011-11-11T11:11:11Z
-                end: null  # or empty (either means open ended)
+                begin: 2000-01-01T12:00:00Z
+                end: 2000-02-01T12:00:00Z
         providers:
             - type: feature
               name: GeoJSON
-              data: tests/data/ne_110m_lakes.geojson
+              data: data/data.geojson
               id_field: id
-              title_field: name
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
 
-    gdps-temperature:
+    elasticsearch:
         type: collection
-        title: Global Deterministic Prediction System sample
-        description: Global Deterministic Prediction System sample
+        title:
+            en: Mountains
+        description:
+            en: mountains of the world
         keywords:
-            - gdps
-            - global
+            en:
+                - mountains
+        context:
+            - schema: https://schema.org/
+        links:
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: https://example.com/data.zip
+              hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2000-01-01T12:00:00Z
+                end: 2000-02-01T12:00:00Z
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: http://elasticsearch:80/elasticsearchdb
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+
+    OGR:
+        type: collection
+        title:
+            en: Hills
+        description:
+            en: hills of the world
+        keywords:
+            en:
+                - hills
+        context:
+            - schema: https://schema.org/
         links:
-            - type: text/html
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: https://example.com/data.zip
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+            - type: feature
+              name: OGR
+              data:
+                  source_type: ESRI Shapefile
+                  source: tests/data/dutch_addresses_shape_4326/inspireadressen.shp
+                  source_options:
+                    ADJUST_GEOM_TYPE: FIRST_SHAPE
+                  gdal_ogr_options:
+                    SHPT: POINT
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+              layer: null
+
+    mongo:
+        type: collection
+        title:
+            en: Rivers
+        description:
+            en: rivers of the world
+        keywords:
+            en:
+                - rivers
+        context:
+            - schema: https://schema.org/
+        links:
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: https://example.com/data.zip
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+            - type: feature
+              name: MongoDB
+              data: mongodb://mongodb:1234/testdb
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+              collection: null
+
+    PostgreSQL:
+        type: collection
+        title:
+            en: Coves
+        description:
+            en: coves of the world
+        keywords:
+            en:
+                - coves
+        context:
+            - schema: https://schema.org/
+        links:
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: https://example.com/data.zip
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+            - type: feature
+              name: PostgreSQL
+              data:
+                host: 127.0.0.1
+                dbname: test
+                user: postgres
+                password: postgres
+                search_path: [osm, public]
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+              table: coves
+              geom_field: geom
+
+    SQLiteGPKG:
+        type: collection
+        title:
+            en: Coral Reefs
+        description:
+            en: coral reefs of the world
+        keywords:
+            en:
+                - coral
+                - reef
+        context:
+            - schema: https://schema.org/
+        links:
+            - type: application/gzip
+              rel: canonical
+              title: download
+              href: https://example.com/data.zip
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: null
+                end: null
+        providers:
+            - type: feature
+              name: SQLiteGPKG
+              data: /data/data.gpkg
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+              table: reefs
+
+    SensorThings:
+        type: collection
+        title:
+            en: Trees
+        description:
+            en: trees of the world
+        keywords:
+            en:
+                - tree
+        context:
+            - schema: https://schema.org/
+        links:
+            - type: application/gzip
               rel: canonical
               title: information
-              href: https://eccc-msc.github.io/open-data/msc-data/nwp_gdps/readme_gdps_en
-              hreflang: en-CA
+              href: https://example.com/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2000-01-01T12:00:00Z
+                end: 2000-02-01T12:00:00Z
         providers:
-            - type: coverage
-              name: rasterio
-              data: tests/data/CMC_glb_TMP_TGL_2_latlon.15x.15_2020081000_P000.grib2
-              options:
-                  DATA_ENCODING: COMPLEX_PACKING
-              format:
-                  name: GRIB
-                  mimetype: application/x-grib2
+            - type: feature
+              name: SQLiteGPKG
+              data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+              id_field: id
+              uri_field: null
+              title_field: null
+              time_field: null
+              properties: []
+              entity: Things
+              intralink: true
 
     test-data:
         type: stac-collection
-        title: pygeoapi test data
-        description: pygeoapi test data
+        title: 
+            en: pygeoapi test data
+        description: 
+            en: pygeoapi test data
         keywords:
-            - poi
-            - portugal
+            en:
+                - poi
+                - portugal
+        context:
+            - schema: https://schema.org/
         links:
             - type: text/html
               rel: canonical
@@ -234,17 +432,17 @@ resources:
         type: collection
         title:
             en: Open Canada sample data
-            fr: Exemple de donn\u00e9es Canada Ouvert
+            fr: Exemple de données Canada Ouvert
         description:
             en: Sample metadata records from open.canada.ca
-            fr: Exemples d'enregistrements de m\u00e9tadonn\u00e9es sur ouvert.canada.ca
+            fr: Exemples d'enregistrements de métadonnées sur ouvert.canada.ca
         keywords:
             en:
                 - canada
                 - open data
             fr:
                 - canada
-                - donn\u00e9es ouvertes
+                - données ouvertes
         links:
             - type: text/html
               rel: canonical
