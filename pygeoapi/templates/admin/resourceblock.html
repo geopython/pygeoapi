@@ -1,0 +1,61 @@
+<script> 
+    Vue.component('ResourceBlock', {
+      props: ['vals', 'label'],
+      name: 'ResourceBlock',
+      template: '#resource-block',
+      data: function () {
+        return {
+          vals_: Object.values(this.vals),
+          keys_: Object.keys(this.vals),
+          dialog: false,
+          window: 0,
+        }
+      },
+      methods: {
+        closed: function() {
+            this.dialog = false
+        },
+      },
+    })
+</script>  
+
+<script type="text/x-template" id="resource-block">
+    <div class="resource-block">
+      <v-card>
+          <v-slide-group
+            v-model="window"
+            show-arrows
+            center-active
+            mandatory
+          >
+            <v-slide-item
+              v-for="(v,k) in vals"
+              :key="k"
+              v-slot="{ active, toggle }"
+            >
+              <v-btn
+                class="mx-2"
+                :input-value="active"
+                depressed
+                rounded
+                @click="toggle"
+              >
+              <strong class="text-h4" v-html="$root.capitalize(k,1)"></strong>
+              </v-btn>
+            </v-slide-item>
+          </v-slide-group>
+
+        <v-card-text>
+          <v-row>
+            <v-col>
+              <v-window v-model="window">
+                <v-window-item v-for="(v, k) in vals" :key="k">
+                  <gui-block :key="$vnode.key+'.'+k" :label="k" :vals="v" depth="-1"></gui-block>
+                </v-window-item>
+              </v-window>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </div>
+  </script>

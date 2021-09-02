@@ -1,5 +1,5 @@
 <script>
-      Vue.component('GuiBlock', {
+  Vue.component('GuiBlock', {
     props: ['label', 'vals', 'depth'],
     name: 'GuiBlock',
     template: '#gui-block-template',
@@ -12,27 +12,33 @@
         depth_: this.depth ? this.depth : 0,
       }
     },
-    methods: {
-      capitalize: function(input){
-        if (typeof input === 'string'){
-            var start = input.slice(0,1).toUpperCase()
-            var out = input.replace("_", " ")
-            return (start + out.slice(1))
-        } else {
-            return input
-        }
-      },
-    },
     computed: {
       editable: function(){
+        if ( !this.vals || !typeof this.vals === 'object' ){
+          return false
+        }
         for (const [k, v] of Object.entries(this.vals)){
-          if (typeof(v) !== 'object'){
+          if (typeof(v) !== 'object' || v === null){
             return true
           }
         }
         return false
       },
-    }
+    },
+    watch: {
+      vals: function(val){
+        this.vals_ = this.$root.copy(val)
+      },
+    },
+    methods: {
+      additem: function(){
+        var item = this.$root.copy(this.vals).pop()
+        for (const [key, value] of Object.entries(item)) {
+          item[key] = ''
+        }
+        this.vals.push(this.$vnode.key.includes('context') ? {' ':''} : item)
+      },
+    },
   })
 
 </script>
@@ -40,12 +46,12 @@
 <script type="text/x-template" id="gui-block-template">
     <div class="gui-block">
     
-      <template v-if="typeof(vals) === 'string' || typeof(vals) === 'number' || typeof(vals) === 'boolean'">
-        <span v-html="vals"></span>
+      <template v-if="typeof(vals_) === 'string' || typeof(vals_) === 'number' || typeof(vals_) === 'boolean' || vals === null">
+        <span v-html="vals_"></span>
       </template>
     
-      <template v-else-if="depth_ === 2">
-        <dialog-block :vals="vals" :label="label" :key="key_"></dialog-block> 
+      <template v-else-if="depth_ === 3">
+        <dialog-block :vals="vals_" :label="label" :key="key_"></dialog-block> 
       </template>
 
       <template v-else>
@@ -56,32 +62,39 @@
                   <v-card-text>
                     <table class="striped">
                         <tr v-for="(v, k) in vals" :key="k">
-
-                          <td v-if="typeof(k) === 'string'" style="text-align:center"> 
-                            <h4 v-html="capitalize(k)"></h4>
+                          
+                          <td text-align="center">
+                            <v-row v-if="typeof(k) === 'string'"  no-gutters justify-center>
+                              <h4 v-html="$root.capitalize(k,1)"></h4>
+                            </v-row>
+                            <v-row  class="fill-height" justify="center">
+                              <v-col height="100%" 
+                              cols="12"
+                              >
+                                <gui-block :key="key_ + '.' + k" :label="k" :vals="v" :depth="depth_ + 1"></gui-block>
+                              </v-col>
+                            </v-row>
                           </td>
-
-                          <td height="100%" style="text-align:center">
-                            <gui-block 
-                            :key="key_ + '.' + k"
-                            :label="k" 
-                            :vals="v"
-                            :depth="depth_ + 1"
-                            >
-                            </gui-block>
-                          </td>
-
+                         
                         </tr>
 
                     </table>
                     
                   </v-card-text>
+                    <v-card-actions>
+                      <editable-block v-if="( !vals.length && editable) || label === 'keywords'" v-show="hover" :vals="vals" :label="label" :key="key_"></editable-block>
+                      <template v-if="!editable && $root.islist(vals)">
+                        <v-btn v-show="hover" large depressed @click.stop="additem">
+                          <v-icon>mdi-plus</v-icon> Add Item
+                        </v-btn>
+                        <v-spacer></v-spacer>
+                        <v-btn v-show="hover" large depressed @click.stop="vals.pop()" :disabled="(vals.length === 1)">
+                          <v-icon>mdi-minus</v-icon> Remove Last Item
+                        </v-btn>
+                      </template> 
+                    </v-card-actions>
+                  </v-card>
 
-                  <v-card-actions v-if="(!vals.length && editable) || label === 'keywords'">
-                    <editable-block v-show="hover" :vals="vals" :label="label" :key="key_"></editable-block>
-                  </v-card-actions>
-
-                </v-card>
             </v-container>
           </template>
         </v-hover>

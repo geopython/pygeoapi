@@ -12,10 +12,17 @@
       },
       methods: {
         saved: function() {
+            for (const [k, v] of Object.entries(this.vals)){
+                if (!this.keys_.includes(k)){ delete this.vals[k] }
+            }
             for (var i = 0; i < this.keys_.length; i++){
                 var [k, v] = [this.keys_[i], this.vals_[i]]
-                if (typeof(v) === 'string' && v.split(',').length > 1){
-                    this.vals[k] = v.split(',')
+                if (k === 'languages'){
+                    this.vals[k] = [...v.match(/([a-z]{2}-[A-Z]{2})/g)]
+                } else if (k === 'bbox'){
+                    this.vals[k] = [...v.match(/(-?[\d]+)/g)]
+                } else if ((this._key(k).includes('keywords') || k === 'properties') && typeof v === 'string'){
+                    this.vals[k] = [...v.match(/([-a-zA-Z0-9\u00C0-\u00ff])+/g)] 
                 } else {
                     this.vals[k] = v
                 }
@@ -24,34 +31,40 @@
         closed: function() {
             this.dialog = false
         },
-        indexof: function(k){
-            return this.keys_.indexOf(k)
-        },
-        capitalize: function(input,len){
-            if (typeof input === 'string'){
-                var start = input.slice(0,len).toUpperCase()
-                var out = input.replace("_", " ")
-                return (input.slice(0,len).toUpperCase() + input.replace("_", " ").slice(len))
-            } else {
-                return input
-            }
-        },
         _key: function(k){
             return this.$vnode.key + '.' + k
-        }
+        },
+        capitalize: function(input, len){
+            if (typeof input === 'string'){
+                return this.$root.capitalize(input,len)
+            } else {
+                var parent = this._key(input).match(/([a-z])+/g).pop()
+                return this.capitalize(parent,1) + ' [' + input + ']'
+            }
+        },
+        removeRow: function(i){
+            this.vals_.splice(i,1)
+            this.keys_.splice(i,1)
+            this.saved()
+        },
+        addRow: function(){
+            this.vals_.push('')
+            this.keys_.push(' ')
+            this.saved()
+        },
       },
       watch: {
         dialog: function() {
             var i = 0
             for (const [k, v] of Object.entries(this.vals)){
-                if (['languages'].includes(k)){
-                    this.vals_[i] = v.toString()
-                } else {
-                    this.vals_[i] = v
-                }
+                this.vals_[i] = ['languages'].includes(k) ? v.toString() : v
                 i ++
             }
         },
+        vals: function(){
+            this.vals_ = Object.values(this.vals)
+            this.keys_ = Object.keys(this.vals)
+        }
       },
       computed: {
           hints: function() {
@@ -104,15 +117,20 @@
                 'tree.server.limit': [5,10,25,50,100,250,500,1000],
                 'tree.logging.level': ['NOTSET','DEBUG','INFO','WARNING','ERROR','CRITICAL'],
                 'tree.metadata.identification.keywords_type': ['discipline','temporal','place','theme','stratum'],
+                'provider.type': ['feature', 'coverage', 'record', 'tile', 'edr'],
+                'resource.type': ['collection', 'process', 'stac-collection'],
               }
           },
-          exclude: function() {
-              return ['map','bind','templates','manager',
-               'context','links','extents','providers','geometry','title','description','keywords']
+          form: function() {
+              return {
+                'gui': ['map','bind','templates','manager','context','links','extents','providers','geometry','title','description','keywords','data'],
+                'small': ['encoding', 'output_dir', 'position', 'city', 'stateorprovince', 'postalcode', 'country', 'phone', 'fax', 'email', 'languages', 'cors', 'pretty_print'],
+              }
           },
       },
     })
 </script>
+
 <script type="text/x-template" id="editable-block">
     <div class="editable-block">
         <v-row justify="center" >
@@ -127,93 +145,98 @@
                 <v-card>
                     <v-toolbar>
                     <v-btn icon @click="closed"> <v-icon>mdi-close</v-icon> </v-btn>
-                    <v-toolbar-title> <span v-html="label ">Edit</span> </v-toolbar-title>
+                    <v-toolbar-title> <span v-html="capitalize(label,1)"></span> </v-toolbar-title>
                     <v-spacer></v-spacer>
-                    <v-toolbar-items> <v-btn @click="saved">Save</v-btn> </v-toolbar-items>
+                    <v-toolbar-items> <v-btn @click="saved"><v-icon>mdi-content-save</v-icon> </v-btn> </v-toolbar-items>
                     </v-toolbar>
-
                     <v-container>
                         <v-row> 
-                            <template v-for="(v,k) in vals">
+<template v-for="(v,k,i) in vals">
+    <template v-if="!k"></template>
 
-                                <v-col v-if="typeof(v) === 'object' && exclude.includes(k)"
-                                 cols="12">   
-                                    <span v-html="capitalize(k,1)"></span>
-                                    <gui-block :vals="v" :label="k" :key="_key(k)"></gui-block>
-                                </v-col>
+    <v-col v-else-if="form.gui.includes(k) && typeof(v) === 'object'"
+     cols="12">   
+        <span v-html="$root.capitalize(k,1)"></span>
+        <gui-block :vals="v" :label="k" :key="_key(k)"></gui-block>
+    </v-col>
 
-                                <v-col v-else-if="['encoding', 'languages', 'name', 'output_dir', 'position', 'city', 'stateorprovince', 'postalcode', 'country', 'phone', 'fax', 'email'].includes(k)"
-                                 cols="12" sm="6" md="3">
-                                    <v-textarea
-                                        v-model="vals_[indexof(k)]" reverse no-resize rows="1" :label="capitalize(k,1)" :hint="hints[_key(k)]"
-                                    ></v-textarea>
-                                </v-col>
+    <v-col v-else-if="form.small.includes(k)"
+     cols="12" sm="6" md="3">
+        <v-checkbox v-if="['cors', 'pretty_print'].includes(k)"
+            v-model="vals_[i]" :label="capitalize(k,1)" :hint="hints[_key(k)]" persistent-hint
+        ></v-checkbox>
+        <v-autocomplete v-else-if="k === 'keywords_type'"
+            v-model="vals_[i]" :items="opts[_key(k)]" :hint="hints[_key(k)]" auto-select-first reverse persistent-hint
+        ></v-autocomplete>
+        <v-textarea v-else
+            v-model="vals_[i]" :label="capitalize(k,1)" :hint="hints[_key(k)]" rows="1" reverse auto-grow 
+        ></v-textarea>
+    </v-col>
 
-                                <v-col v-else-if="['host', 'port', 'mimetype', 'path', 'static', 'terms_of_service', 'connection', 'address'].includes(k)" 
-                                cols="12" md="6">
-                                    <v-textarea 
-                                    v-model="vals_[indexof(k)]" reverse no-resize rows="1" :label="capitalize(k,1)" :hint="hints[_key(k)]"
-                                    ></v-textarea>
-                                </v-col>
+    <v-col v-else-if="['limit', 'level'].includes(k)" 
+     cols="12" md="6">
+        <v-combobox
+            v-model="vals_[i]" :items="opts[_key(k)]" :label="capitalize(k,1)" :hint="hints[_key(k)]" auto-select-first reverse persistent-hint
+        ></v-combobox>
+    </v-col>
 
-                                <v-col v-else-if="['url', 'attribution', 'ogc_schemas_location'].includes(k)" 
-                                 cols="12">
-                                    <v-textarea 
-                                    v-model="vals_[indexof(k)]" reverse no-resize rows="1" :label="capitalize(k, k !== 'attribution' ? 3 : 1)" :hint="hints[_key(k)]"
-                                    ></v-textarea>
-                                </v-col>
+    <v-col v-else-if="k === 'port'" 
+    cols="12" md="6">
+       <v-textarea
+           v-model.number="vals_[i]" :label="capitalize(k,1)" :hint="hints[_key(k)]" rows="1" reverse no-resize
+       ></v-textarea>
+   </v-col>
 
-                                <v-col v-else-if="['cors', 'pretty_print'].includes(k)" 
-                                cols="12" sm="6" md="3">
-                                    <v-checkbox 
-                                        v-model="vals_[indexof(k)]" color="success" :label="capitalize(k,1)" :hint="hints[_key(k)]" persistent-hint
-                                    ></v-checkbox>
-                                </v-col>
+    <v-col v-else-if="['url', 'attribution', 'ogc_schemas_location', 'href', 'crs', 'properties', 'file_types'].includes(k)" 
+    cols="12">
+       <v-textarea 
+           v-model="vals_[i]" :label="capitalize(k, 1)" :hint="hints[_key(k)]" rows="1" reverse auto-grow 
+       ></v-textarea>
+   </v-col> 
 
-                                <v-col v-else-if="['limit', 'level'].includes(k)" 
-                                cols="12" md="6">
-                                    <v-combobox 
-                                        v-model="vals_[indexof(k)]" :items="opts[_key(k)]" :label="capitalize(k,1)" :hint="hints[_key(k)]" auto-select-first reverse persistent-hint
-                                    ></v-combobox>
-                                </v-col>   
+    <v-col v-else-if="k === 'type'" 
+     cols="12" md="6">
+        <v-autocomplete v-if="$vnode.key.includes('provider')"
+            v-model="vals_[i]" :items="opts['provider.type']" hint="Provider type" auto-select-first reverse persistent-hint
+        ></v-autocomplete>
+        <v-textarea v-else-if="$vnode.key.includes('links')"
+            v-model="vals_[i]" reverse auto-grow rows="1" label="Mimetype"
+        ></v-textarea>
+        <v-autocomplete v-else
+            v-model="vals_[i]" :items="opts['resource.type']" hint="Resource type" auto-select-first reverse persistent-hint
+        ></v-autocomplete>
+    </v-col>
 
-                                <v-col v-else-if="['keywords_type'].includes(k)" 
-                                 cols="12" md="6">
-                                    <v-autocomplete 
-                                        v-model="vals_[indexof(k)]" :items="opts[_key(k)]"  :label="capitalize(k,1)" :hint="hints[_key(k)]" auto-select-first reverse persistent-hint
-                                    ></v-autocomplete>
-                                </v-col>
+    <v-col v-else-if="_key(k).includes('title') || _key(k).includes('description') || _key(k).includes('keywords')"
+     cols="12" md="6">
+        <v-textarea 
+            v-model.trim="vals_[i]" reverse auto-grow  rows="1" :label="capitalize(k,1)"
+        ></v-textarea>
+    </v-col>
 
-                                <v-col v-else-if="k === 'type'" 
-                                 cols="12" md="6">
-                                    <v-autocomplete 
-                                        v-if="$vnode.key.includes('provider')"
-                                        v-model="vals_[indexof(k)]" :items="['feature', 'coverage', 'record', 'tile', 'edr']" auto-select-first reverse hint="Data Type" persistent-hint
-                                    ></v-autocomplete>
-                                    <v-textarea 
-                                        v-else-if="$vnode.key.includes('links')"
-                                        v-model="vals_[indexof(k)]" reverse no-resize rows="1" label="Mimetype"
-                                    ></v-textarea>
-                                    <v-autocomplete 
-                                        v-else
-                                        v-model="vals_[indexof(k)]" :items="['collection', 'process', 'stac-collection']" auto-select-first reverse hint="Type" persistent-hint
-                                    ></v-autocomplete>
-                                </v-col>
+    <template v-else-if="_key(k).includes('context')">
+        <v-col cols="4">
+            <v-textarea v-model.trim="keys_[i]" reverse auto-grow rows="1" hint="Key" persistent-hint></v-textarea>
+        </v-col>
+        <v-col cols="6">
+            <v-textarea v-model="vals_[i]" reverse auto-grow rows="1" hint="Value" persistent-hint></v-textarea>
+        </v-col>
+        <v-btn depressed @click.stop="removeRow(i)"><v-icon>mdi-close</v-icon></v-btn>
+    </template>
 
-                                <v-col v-else-if="_key(k).includes('title') || _key(k).includes('description') || _key(k).includes('keywords')"
-                                 cols="12" md="6">
-                                    <v-textarea
-                                        v-model.trim="vals_[indexof(k)]" reverse no-resize rows="1" :label="capitalize(k,1)"
-                                    ></v-textarea>
-                                </v-col>
+    
 
-                                <v-col v-else cols="12" md="6">
-                                    <v-textarea 
-                                         no-resize rows="2" :value="v" :label="k"
-                                    ></v-textarea>
-                                </v-col>
-                            </template>
+    <v-col v-else cols="12" md="6">
+        <v-textarea
+            v-model="vals_[i]" :label="capitalize(k,1)" :hint="hints[_key(k)]" rows="1" reverse auto-grow
+        ></v-textarea>
+    </v-col>
+</template>
                         </v-row> 
+                        <v-row v-if="$vnode.key.includes('context')">
+                            <v-spacer></v-spacer>
+                            <v-btn depressed :disabled="keys_.includes('new key')" @click.stop="addRow"><v-icon>mdi-plus</v-icon></v-btn>
+                        </v-row>
                     </v-container>
                 </v-card>
             </v-dialog>

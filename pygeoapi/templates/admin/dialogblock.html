@@ -10,6 +10,11 @@
                 dialog: false,
             }
         },
+        watch: {
+            vals: function(val){
+                this.vals_ = this.$root.copy(val)
+            },
+        },
     })
 </script>
 
@@ -18,7 +23,7 @@
         <v-row justify="center">
             <v-dialog v-model="dialog">
                 <template v-slot:activator="{ on, attrs }">
-                    <v-btn block icon outlined raised rounded v-bind="attrs" v-on="on">
+                    <v-btn fab small block outlined raised rounded v-bind="attrs" v-on="on">
                      <v-icon>mdi-open-in-new</v-icon> <span v-html="label"></span> 
                     </v-btn>
                 </template>
@@ -28,7 +33,7 @@
                             <v-icon>mdi-close</v-icon>
                         </v-btn>
                         <v-toolbar-title>
-                            <span v-html="label"></span> 
+                            <span v-html="$root.capitalize(label_,1)"></span> 
                         </v-toolbar-title>
                         <v-spacer></v-spacer>
                         </v-toolbar>
