@@ -28,11 +28,17 @@
 # =================================================================
 
 import os
-import flask_login
 import logging
 import hashlib
+import jsonschema
+import yaml
+
 from flask import Blueprint, request, url_for, redirect
+import flask_login
+
 from pygeoapi.util import yaml_load, render_j2_template
+from pygeoapi.config import validate_config
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +54,7 @@ with open('template.config.yml', encoding='utf8') as fh:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
 
 class Admin(flask_login.UserMixin):
     pass
@@ -95,7 +102,7 @@ def login():
 
 
 @ADMIN_BLUEPRINT.route('/admin')
-# @flask_login.login_required
+@flask_login.login_required
 def admin():
     return render_j2_template(CONFIG, 'admin/index.html', TEMPLATE_CONFIG)
 
@@ -104,6 +111,25 @@ def admin():
 def logout():
     flask_login.logout_user()
     return redirect(url_for('pygeoapi.landing_page'))
+
+
+@ADMIN_BLUEPRINT.route('/admin/config', methods=['POST'])
+@flask_login.login_required
+def config():
+    with open("temp.config.yml", "w") as file:
+        yaml.safe_dump(request.get_json(force=True), file,
+                       sort_keys=False, indent=4, default_flow_style=False)
+
+    with open('temp.config.yml', encoding='utf8') as fh:
+        temp_config = yaml_load(fh)
+        try:
+            validate_config(temp_config)
+            with open(os.environ.get('PYGEOAPI_CONFIG'), "w") as file:
+                yaml.safe_dump(temp_config, file, sort_keys=False, indent=4,
+                               default_flow_style=False)
+            return 'Configuration file valid and applied to server'
+        except jsonschema.exceptions.ValidationError as err:
+            return {'msg': err.message, 'path': '.'.join(err.path)}, 422
 
 
 @login_manager.user_loader

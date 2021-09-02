@@ -36,7 +36,8 @@ server:
     url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
-    language: en-US
+    languages: 
+        - en-US
     cors: true
     pretty_print: true
     limit: 10

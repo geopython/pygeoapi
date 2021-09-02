@@ -1,0 +1,78 @@
+<script>
+    Vue.component('AddBlock', {
+        props: ['vals', 'label'],
+        name: 'AddBlock',
+        template: '#add-block-template',
+        data: function () {
+            return {
+                vals_: Object.values(this.vals),
+                keys_: Object.keys(this.vals),
+                dialog: false,
+                }
+        },
+        methods: {
+            saved: function() {
+                for (var i = 0; i < this.keys_.length; i++){
+                    var [k, v] = [this.keys_[i], this.vals_[i]]
+                    if (k === 'languages'){
+                        this.vals[k] = [...v.match(/([a-z]{2}-[A-Z]{2})/g)]
+                    } else if (this._key(k).includes('keywords') && typeof v === 'string'){
+                        this.vals[k] = [...v.match(/([-a-zA-Z0-9\u00C0-\u00ff])+/g)] 
+                    } else {
+                        this.vals[k] = v
+                    }
+                }
+            },
+            closed: function() {
+                this.dialog = false
+            },
+            indexof: function(k){
+                return this.keys_.indexOf(k)
+            },
+            _key: function(k){
+                return this.$vnode.key + '.' + k
+            },
+            capitalize: function(input, len){
+                if (typeof input === 'string'){
+                    return this.$root.capitalize(input,len)
+                } else {
+                    var parent = this._key(input).match(/([a-z])+/g).pop()
+                    return this.capitalize(parent,1) + ' [' + input + ']'
+                }
+            },
+        },
+    })
+</script>
+
+<script type="text/x-template" id="add-block-template">
+    <div class="add-block">
+        <v-row justify="center">
+            <v-dialog v-model="dialog">
+
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn fab small absolute block bottom outlined raised rounded v-bind="attrs" v-on="on">
+                     <v-icon>mdi-open-in-new</v-icon> <span v-html="label"></span> 
+                    </v-btn>
+                </template>
+
+                <v-card>
+                    <v-toolbar>
+                        <v-btn icon @click="dialog = false">
+                            <v-icon>mdi-close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title>
+                            <span v-html="capitalize(label,1)"></span> 
+                        </v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-toolbar-items> <v-btn @click="saved">Save</v-btn> </v-toolbar-items>
+                        </v-toolbar>
+                    <v-card-text> 
+                        <template v-for="(k,i) of keys_">
+                            <gui-block :vals="keys_[i]" :label="capitalize(k,0)" :key="_key(k)"></gui-block>
+                        </template>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+        </v-row>
+    </div>
+</script>
