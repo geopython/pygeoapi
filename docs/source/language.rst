@@ -83,7 +83,7 @@ as a list. For example, if you wish to support American English and Canadian Fre
 
 Next, you will have to provide translations for the configured languages. This involves 3 steps:
 
-1. `Add translations for configurable text values`_ in the server YAML file;
+1. `Add translations for configurable text values`_ in the pygeoapi configuration;
 
 2. Verify if there are any Jinja2 HTML template translations for the configured language(s);
 
@@ -158,11 +158,11 @@ Translator guide
 ----------------
 
 Hardcoded strings in pygeoapi templates are translated using the Babel translation system.
-Translation files are stored on the /locale folder.
+Translation files are stored on the `/locale` folder.
 Translators can follow these steps to prepare their environment for translations.
 
 
-1. Extract from latest code the keys to be translated. These keys are captured in a .pot file.
+1. Extract from latest code the keys to be translated. These keys are captured in a `.pot` file.  Note that the `.pot` file is not to be stored in version control, but as an intermediary file used to update `/locale/*/LC_MESSAGES/messages.po` files:
 
    .. code-block:: bash
 
