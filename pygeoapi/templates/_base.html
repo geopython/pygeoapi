@@ -31,7 +31,7 @@
           Add additional menu items here
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
         -->
-        {%- if current_user.is_authenticated -%}
+        {%- if not current_user.is_authenticated -%}
         <a href="{{ config['server']['url']+'/login' }}" role="button" class="button" style="float:right">Login</a>
         {%- else -%}
         <a href="{{ config['server']['url']+'/logout' }}" role="button" class="button" style="float:right">Logout</a>

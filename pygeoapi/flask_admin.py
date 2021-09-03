@@ -56,10 +56,11 @@ with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
 
-class Admin(flask_login.UserMixin):
+class User(flask_login.UserMixin):
     pass
 
 
+ADMIN = os.getenv('ADMIN_USER')
 ADMIN_BLUEPRINT = Blueprint('pygeoapi_admin', __name__,
                             template_folder="templates",
                             static_folder="/static",
@@ -69,7 +70,8 @@ ADMIN_BLUEPRINT = Blueprint('pygeoapi_admin', __name__,
 @ADMIN_BLUEPRINT.record_once
 def on_load(state):
     login_manager.init_app(state.app)
-    state.app.secret_key = os.urandom(24)
+    login_manager.session_protection = "strong"
+    state.app.secret_key = os.urandom(32)
     salt = os.urandom(32)
     key = hashlib.pbkdf2_hmac(
         'sha256',
@@ -77,7 +79,7 @@ def on_load(state):
         salt,
         100000
     )
-    users[os.getenv('ADMIN_USER')] = {'password': key, 'salt': salt}
+    users[ADMIN] = {'password': key, 'salt': salt}
 
 
 @ADMIN_BLUEPRINT.route('/login', methods=['GET', 'POST'])
@@ -85,15 +87,15 @@ def login():
     if request.method == 'GET':
         return render_j2_template(CONFIG, 'admin/login.html', {})
 
-    admin = request.form[os.getenv('ADMIN_USER')]
+    admin = request.form[ADMIN]
     login_key = hashlib.pbkdf2_hmac(
         'sha256',
         request.form['password'].encode('utf-8'),
-        users[os.getenv('ADMIN_USER')]['salt'],
+        users[ADMIN]['salt'],
         100000
     )
-    if login_key == users[os.getenv('ADMIN_USER')]['password']:
-        user = Admin()
+    if login_key == users[ADMIN]['password']:
+        user = User()
         user.id = admin
         flask_login.login_user(user)
         return redirect(url_for('pygeoapi_admin.admin'))
@@ -102,7 +104,7 @@ def login():
 
 
 @ADMIN_BLUEPRINT.route('/admin')
-@flask_login.login_required
+# @flask_login.login_required
 def admin():
     return render_j2_template(CONFIG, 'admin/index.html', TEMPLATE_CONFIG)
 
@@ -114,8 +116,9 @@ def logout():
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['POST'])
-@flask_login.login_required
+# @flask_login.login_required
 def config():
+
     with open("temp.config.yml", "w") as file:
         yaml.safe_dump(request.get_json(force=True), file,
                        sort_keys=False, indent=4, default_flow_style=False)
@@ -124,7 +127,13 @@ def config():
         temp_config = yaml_load(fh)
         try:
             validate_config(temp_config)
-            with open(os.environ.get('PYGEOAPI_CONFIG'), "w") as file:
+            with open(os.environ.get('PYGEOAPI_CONFIG'), "r") as file:
+                meta = file.readlines()
+
+            with open('temp'+os.environ.get('PYGEOAPI_CONFIG'), "w") as file:
+                for line in [*meta[:meta.index('\n')], '\n']:
+                    file.write(line)
+
                 yaml.safe_dump(temp_config, file, sort_keys=False, indent=4,
                                default_flow_style=False)
             return 'Configuration file valid and applied to server'
@@ -137,7 +146,19 @@ def user_loader(email):
     if email not in users:
         return
 
-    user = Admin()
+    user = User()
+    user.id = email
+    return user
+
+
+@login_manager.request_loader
+def request_loader(request):
+    email = request.form.get(ADMIN)
+    LOGGER.error(email)
+    if email not in users:
+        return
+
+    user = User()
     user.id = email
     return user
 

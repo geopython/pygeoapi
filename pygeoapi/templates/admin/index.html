@@ -7,8 +7,7 @@
 <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -31,14 +30,14 @@
 
           <v-tab v-for="(val, key) in tree" :key="key">[[ key ]]</v-tab>
           <v-spacer></v-spacer>
-          <v-btn @click="send(tree,'admin/config')" outlined depressed> Upload Configuation </v-btn>
+          <v-btn @click="send(tree,'/admin/config')" outlined depressed> Upload Configuation </v-btn>
 
         </v-tabs>
         <v-tabs-items v-model="tab">
           <v-tab-item v-for="(val, key) in tree" :key="key">
 
             <template v-if="key === 'resources'">
-              <resource-block :key="'tree.'+key" :label="key" :vals="val"></resource-block>  
+              <resource-block :key="'tree.'+key" :label="key" :vals="val"></resource-block>
             </template>
             <template v-else>
               <gui-block :key="'tree.'+key" :label="key" :vals="val"></gui-block>  
@@ -56,6 +55,7 @@
 {% include "admin/dialogblock.html" %}
 {% include "admin/editableblock.html" %}
 {% include "admin/resourceblock.html" %}
+{% include "admin/addblock.html" %}
 
   <script>
     const vue = new Vue({
@@ -66,7 +66,7 @@
         languages: function() { 
           const ret = {}
           for (const lang of this.tree.server.languages){
-            ret[lang.match( /([a-z]){2}/g )] = lang
+            ret[lang.match( /([a-z]){2}/g )] = ''
           }
           return ret
         }
@@ -102,24 +102,25 @@
         },
         send: function(d, path){
           var self = this;
-          $.ajax({
-            url: path,
-            data: JSON.stringify(d),
-            type: "POST",
-            processData: false,
-            success: function(data) {
+          return axios.post(path, data=d, { withCredentials: true })
+            .then(function(response) {
+              var data = response.data
               self.al.msg = data
               self.al.status = 'success'
               self.alert = true
-            },
-            error: function(e) {
-              var err = e.responseJSON
+            })
+            .catch(function(error) {
+              var err = error.response.data
               self.al.msg = err.msg
               self.al.path = 'Error at ' + err.path
               self.al.status = 'error'
               self.alert = true
-            }
-          });
+              return Promise.reject(error);
+            })
+            .then(function () {
+                  // always executed
+            })
+          ;
         },
       },
       data: function () {
@@ -131,8 +132,8 @@
             path: '',
             status: 'success'
           },
-          absolute: true,
-          tree: {{ to_json(config) | safe }},
+          tree: {{ config | to_json | safe }},
+          template: {{ data | to_json | safe }},
           dialog: false,
         }
       },
