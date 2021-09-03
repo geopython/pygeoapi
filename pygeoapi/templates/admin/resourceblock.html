@@ -15,6 +15,9 @@
         closed: function() {
             this.dialog = false
         },
+        i: function(){
+          return this.$root.copy(this.$root.template.resources)
+        }
       },
     })
 </script>  
@@ -22,12 +25,17 @@
 <script type="text/x-template" id="resource-block">
     <div class="resource-block">
       <v-card>
+          <v-col class="shrink">
+            <add-block :vals="i()" :label="label" :conf="vals" :key="$vnode.key"></add-block>
+          </v-col>
+
           <v-slide-group
             v-model="window"
             show-arrows
             center-active
             mandatory
           >
+
             <v-slide-item
               v-for="(v,k) in vals"
               :key="k"

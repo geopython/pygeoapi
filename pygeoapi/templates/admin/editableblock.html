@@ -21,7 +21,7 @@
                     this.vals[k] = [...v.match(/([a-z]{2}-[A-Z]{2})/g)]
                 } else if (k === 'bbox'){
                     this.vals[k] = [...v.match(/(-?[\d]+)/g)]
-                } else if ((this._key(k).includes('keywords') || k === 'properties') && typeof v === 'string'){
+                } else if ((this._key(k).includes('.keywords.') || k === 'properties') && typeof v === 'string'){
                     this.vals[k] = [...v.match(/([-a-zA-Z0-9\u00C0-\u00ff])+/g)] 
                 } else {
                     this.vals[k] = v

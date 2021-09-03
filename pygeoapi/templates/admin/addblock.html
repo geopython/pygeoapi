@@ -1,26 +1,49 @@
 <script>
     Vue.component('AddBlock', {
-        props: ['vals', 'label'],
+        props: ['vals', 'label', 'conf'],
         name: 'AddBlock',
         template: '#add-block-template',
         data: function () {
             return {
-                vals_: Object.values(this.vals),
-                keys_: Object.keys(this.vals),
                 dialog: false,
+                step: 1,
+                conf_: this.conf,
+                vals_: Object.values(this.$root.copy(this.vals)),
+                keys_: Object.keys(this.$root.copy(this.vals)),
+                keys_show_: [],
+                resourceChoice: null,
+                providerChoice: null,
+                new_key: '',
+                new_val: Object.values(this.$root.copy(this.vals))[0],
+                resources: ['collection', 'process', 'stac-collection']
                 }
+        },
+        watch: {
+            providerChoice: function(c){
+                this.new_val = this.vals[c]
+            },
+            resourceChoice: function(re){
+                if (!this.resources.includes(re)){
+                    this.resourceChoice = null
+                } else {
+                    var ks = new Set()
+                    for (var i = 0; i < this.keys_.length; i++){
+                        if (this.vals_[i]['type'] === this.resourceChoice){
+                            ks.add(this.keys_[i])
+                        }
+                    }
+                    this.keys_show_ = [...ks.values()]
+                }
+            }
         },
         methods: {
             saved: function() {
-                for (var i = 0; i < this.keys_.length; i++){
-                    var [k, v] = [this.keys_[i], this.vals_[i]]
-                    if (k === 'languages'){
-                        this.vals[k] = [...v.match(/([a-z]{2}-[A-Z]{2})/g)]
-                    } else if (this._key(k).includes('keywords') && typeof v === 'string'){
-                        this.vals[k] = [...v.match(/([-a-zA-Z0-9\u00C0-\u00ff])+/g)] 
-                    } else {
-                        this.vals[k] = v
-                    }
+                if (this.new_key){
+                    this.conf_[this.new_key] = this.new_val
+                    console.log(this.conf_)
+                    console.log(this.new_val)
+                    this.new_key = ''
+                    this.closed()
                 }
             },
             closed: function() {
@@ -46,31 +69,128 @@
 
 <script type="text/x-template" id="add-block-template">
     <div class="add-block">
-        <v-row justify="center">
-            <v-dialog v-model="dialog">
+        <v-row justify="center" >
+            <v-dialog v-model="dialog" width="75%">
 
                 <template v-slot:activator="{ on, attrs }">
-                    <v-btn fab small absolute block bottom outlined raised rounded v-bind="attrs" v-on="on">
-                     <v-icon>mdi-open-in-new</v-icon> <span v-html="label"></span> 
-                    </v-btn>
+                    <v-btn fab right fixed v-bind="attrs" v-on="on" > <v-icon>mdi-plus</v-icon> </v-btn>
                 </template>
 
                 <v-card>
                     <v-toolbar>
-                        <v-btn icon @click="dialog = false">
-                            <v-icon>mdi-close</v-icon>
-                        </v-btn>
-                        <v-toolbar-title>
-                            <span v-html="capitalize(label,1)"></span> 
-                        </v-toolbar-title>
-                        <v-spacer></v-spacer>
-                        <v-toolbar-items> <v-btn @click="saved">Save</v-btn> </v-toolbar-items>
-                        </v-toolbar>
-                    <v-card-text> 
-                        <template v-for="(k,i) of keys_">
-                            <gui-block :vals="keys_[i]" :label="capitalize(k,0)" :key="_key(k)"></gui-block>
-                        </template>
-                    </v-card-text>
+                        <v-toolbar-items>
+                            <v-btn @click="dialog = false"><v-icon>mdi-close</v-icon></v-btn>
+                        </v-toolbar-items>
+                    </v-toolbar>
+                    <v-container>
+                        <v-stepper v-model="step" vertical width="100%">
+
+
+                            <v-stepper-step :complete="step > 1" step="1">
+                                Create Resource
+                                <v-stepper-content step="1">
+                                    <v-divider></v-divider>
+                                    <v-card
+                                        width="100%"
+                                    >
+                                        <v-row>
+                                            <v-col cols="12" md="4">
+                                            <v-textarea
+                                                v-model="new_key" label="Resource Name" rows="1" reverse no-resize
+                                            ></v-textarea>
+                                            </v-col>
+                                            <v-col cols="12" md="4">
+                                                <v-autocomplete
+                                                    v-model="resourceChoice" :items="resources" hint="Resource Type" auto-select-first reverse persistent-hint
+                                                ></v-autocomplete>
+                                                </v-col>
+                                            <v-col cols="12" md="4">
+                                                <v-autocomplete :disabled="resourceChoice === null"
+                                                    v-model="providerChoice" :items="keys_show_" hint="Provider Type" reverse persistent-hint
+                                                ></v-autocomplete>
+                                            </v-col>
+                                        </v-row>
+                                    </v-card>
+                                </v-stepper-content>
+                            </v-stepper-step>
+                            <v-divider></v-divider>
+                            <v-stepper-step :complete="step > 2" step="2">
+                                Resource Metadata
+                                <v-stepper-content step="2">
+                                    <v-divider></v-divider>
+                                    <v-container justify-center>
+                                        <h5>Title</h5>
+                                        <gui-block :vals="new_val.title" label="title" :key="_key('title')"></gui-block>
+                                        <h5>Description</h5>
+                                        <gui-block :vals="new_val.description" label="sescription" :key="_key('description')"></gui-block>
+                                        <h5>Keywords</h5>
+                                        <gui-block :vals="new_val.keywords" label="keywords" :key="_key('keywords')"></gui-block>
+                                    </v-container>
+                                </v-stepper-content>     
+                            </v-stepper-step>
+                            <v-divider></v-divider>
+                            <v-stepper-step :complete="step > 3" step="3">
+                                JSON-LD Context
+                                <v-stepper-content step="3"> 
+                                    <v-divider></v-divider>
+                                    <v-container justify-center>
+                                        <gui-block :vals="new_val.context" label="context" :key="_key('context')"></gui-block>
+                                    </v-container>
+                                </v-stepper-content>    
+                            </v-stepper-step>
+                            <v-divider></v-divider>
+                            <v-stepper-step :complete="step > 4" step="4">
+                                Links
+                                <v-stepper-content step="4"> 
+                                    <v-divider></v-divider>
+                                    <v-container justify-center>
+                                        <gui-block :vals="new_val.links" label="Links" :key="_key('links')"></gui-block>
+                                    </v-container>
+                                </v-stepper-content>    
+                            </v-stepper-step>
+                            <v-divider></v-divider>
+                            <v-stepper-step :complete="step > 5" step="5">
+                                Extents
+                                <v-stepper-content step="5"> 
+                                    <v-divider></v-divider>
+                                    <v-container justify-center>
+                                        <gui-block :vals="new_val.extents" label="Extents" :key="_key('extents')"></gui-block>
+                                    </v-container>
+                                </v-stepper-content>    
+                            </v-stepper-step>
+                            <v-divider></v-divider>
+                            <v-stepper-step :complete="step > 6" step="6">
+                                Data Providers
+                                <v-stepper-content step="6"> 
+                                    <v-divider></v-divider>
+                                    <v-container justify-center>
+                                        <gui-block :vals="new_val.providers" label="pProviders" :key="_key('providers')"></gui-block>
+                                    </v-container>
+                                </v-stepper-content>    
+                            </v-stepper-step>
+                        </v-stepper>
+                    </v-container>
+                        <v-card-actions>
+                            <v-row>
+                            <v-col class="shrink">
+                                <v-btn @click="step -= 1" :disabled="step===1">
+                                    Previous
+                                </v-btn>
+                            </v-col>
+                            <v-col class="grow">
+                                <span></span>
+                            </v-col>
+                            <v-col class="shrink">
+                                <v-btn @click="step += 1" v-show="step <= 5">
+                                    Next
+                                </v-btn>
+                                <v-btn @click="saved" v-show="step === 6">
+                                    Save
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+                    </v-card-actions>
+                        </v-card>
                 </v-card>
             </v-dialog>
         </v-row>
