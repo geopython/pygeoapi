@@ -59,6 +59,8 @@ function error() {
 # Workdir
 cd ${PYGEOAPI_HOME}
 
+mkdir "${PYGEOAPI_HOME}/data"
+
 echo "Trying to generate openapi.yml"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
 

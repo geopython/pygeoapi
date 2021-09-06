@@ -8,6 +8,13 @@
           vals_: Object.values(this.vals),
           keys_: Object.keys(this.vals),
           dialog: false,
+          file: null,
+          alert: false,
+          al: {
+            msg: '',
+            path: '',
+            status: 'success'
+          },
         }
       },
       methods: {
@@ -51,6 +58,42 @@
             this.vals_.push('')
             this.keys_.push(' ')
             this.saved()
+        },
+        send: function(d, path){
+          var self = this;
+          var formData = new FormData();
+          formData.append('file', this.file);
+          formData.append('name', d);
+          return axios.post(path, 
+                           data=formData, 
+                           { 
+                             withCredentials: true,
+                             headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+            })
+            .then(function(response) {
+              var data = response.data
+              self.vals_[self.keys_.indexOf('data')] = data.path
+              self.al.msg = data.msg
+              self.al.path = 'File created at ' + data.path
+              self.al.status = 'success'
+              self.alert = true
+            })
+            .catch(function(error) {
+              console.log(error)
+              var err = error.response.data
+              self.al.msg = err.msg
+              self.al.path = 'Error ' + err.path
+              self.al.status = 'error'
+              self.alert = true
+              return Promise.reject(error);
+            })
+            .then(function () {
+                self.saved()
+            // always executed
+            })
+          ;
         },
       },
       watch: {
@@ -135,7 +178,9 @@
     <div class="editable-block">
         <v-row justify="center" >
             <v-dialog v-model="dialog" width="60%" height=70%>
-                
+
+
+
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn fab small absolute block bottom outlined raised rounded v-bind="attrs" v-on="on">  
                      <v-icon>mdi-pencil</v-icon> Edit
@@ -149,6 +194,18 @@
                     <v-spacer></v-spacer>
                     <v-toolbar-items> <v-btn @click="saved"><v-icon>mdi-content-save</v-icon> </v-btn> </v-toolbar-items>
                     </v-toolbar>
+
+                    <v-alert v-model="alert" prominent outlined close-text="Close Alert" :type="al.status" dismissable>
+                        <v-row align-center>
+                          <v-col class="grow">
+                            <strong><span v-html="al.path"></span></strong><br><strong><span v-html="al.msg"></span></strong>
+                          </v-col>
+                          <v-col class="shrink">
+                            <v-btn icon fab depressed right @click="alert = false"> <v-icon>mdi-close</v-icon> </v-btn>
+                          </v-col>
+                        </v-row>
+                      </v-alert>
+
                     <v-container>
                         <v-row> 
 <template v-for="(v,k,i) in vals">
@@ -225,6 +282,21 @@
     </template>
 
     
+    <v-card v-else-if="/(providers.[\d]*.data)/g.test(_key(k))" width=100%>
+        <v-row justify-center width="80%">
+        <v-col cols="10" md="6">
+            <v-textarea v-model="vals_[i]" reverse auto-grow rows="1" label="Data" hint="Path to data or URL"></v-textarea>
+        </v-col>
+        <v-col cols="10" md="6">
+            <v-file-input v-model="file" label="File"></v-file-input>
+        </v-col>
+        </v-row>
+        <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn @click="send(vals_[i],'/admin/datadump')">Upload</v-btn>
+            <v-spacer></v-spacer>
+        </v-card-actions>
+    </v-card>
 
     <v-col v-else cols="12" md="6">
         <v-textarea

@@ -32,11 +32,13 @@ import logging
 import hashlib
 import jsonschema
 import yaml
+import requests
 
 from flask import Blueprint, request, url_for, redirect
+from werkzeug.utils import secure_filename
 import flask_login
 
-from pygeoapi.util import yaml_load, render_j2_template
+from pygeoapi.util import is_url, yaml_load, render_j2_template, url_join
 from pygeoapi.config import validate_config
 
 
@@ -115,13 +117,45 @@ def logout():
     return redirect(url_for('pygeoapi.landing_page'))
 
 
+@ADMIN_BLUEPRINT.route('/admin/datadump', methods=['POST'])
+# @flask_login.login_required
+def datadump():
+    name = request.form.get('name')
+    if is_url(name) and name.startswith('http'):
+        try:
+            r = requests.get(name, allow_redirects=True, stream=True)
+        except requests.exceptions.ConnectionError:
+            return {'msg': 'Bad Data Connection', 'path': ''}, 400
+        filename = secure_filename(name.split('/')[-1])
+        filepath = url_join('data', filename)
+
+        if (r.headers.get('content-type') == 'text/plain; charset=utf-8' or
+           r.headers.get('content-type') == 'application/octet-stream'):
+
+            open(filepath, 'wb').write(r.content)
+            return {'msg': f'Uploaded {filename}', 'path': filepath}
+
+    if request.files:
+        f = request.files['file']
+        filename = secure_filename(f.filename)
+        filepath = url_join('data', filename)
+        f.save(filepath)
+        return {'msg': f'Uploaded {filename}', 'path': filepath}
+
+    return {'msg': 'Nothing uploaded', 'path': ''}, 400
+
+
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['POST'])
 # @flask_login.login_required
 def config():
 
     with open("temp.config.yml", "w") as file:
-        yaml.safe_dump(request.get_json(force=True), file,
-                       sort_keys=False, indent=4, default_flow_style=False)
+        try:
+            validate_config(request.get_json(force=True))
+            yaml.safe_dump(request.get_json(force=True), file,
+                           sort_keys=False, indent=4, default_flow_style=False)
+        except jsonschema.exceptions.ValidationError as err:
+            return {'msg': err.message, 'path': '.'.joisn(err.path)}, 422
 
     with open('temp.config.yml', encoding='utf8') as fh:
         temp_config = yaml_load(fh)

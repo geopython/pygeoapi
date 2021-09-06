@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 {% endblock %}
 
@@ -100,12 +102,19 @@
         copy: function(input){
           return JSON.parse(JSON.stringify(input))
         },
-        send: function(d, path){
+        send: function(d, path, update){
           var self = this;
-          return axios.post(path, data=d, { withCredentials: true })
+          return axios.post(path, 
+                           data=d, 
+                           { 
+                             withCredentials: true,
+                             headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+            })
             .then(function(response) {
               var data = response.data
-              self.al.msg = data
+              self.al = data
               self.al.status = 'success'
               self.alert = true
             })
@@ -118,9 +127,34 @@
               return Promise.reject(error);
             })
             .then(function () {
-                  // always executed
+             // always executed
             })
           ;
+        },
+        ajax: function(d, path){
+          var self = this;
+          return $.ajax({
+            type:"POST",
+            url: path,
+            data: d,
+            processData: false,
+            xhrFields: {
+              withCredentials: true
+            },
+            success: function(response) {
+              var data = response.data
+              self.al.msg = data
+              self.al.status = 'success'
+              self.alert = true
+            },
+            error: function(error) {
+              var err = error.response.data
+              self.al.msg = err.msg
+              self.al.path = 'Error at ' + err.path
+              self.al.status = 'error'
+              self.alert = true
+            },
+          });
         },
       },
       data: function () {
