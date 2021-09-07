@@ -98,11 +98,14 @@ metadata:
 resources:
     obs:
         type: collection
-        title: Observations
-        description: My cool observations
+        title: 
+            en: Observations
+        description: 
+            en: My cool observations
         keywords:
-            - observations
-            - monitoring
+            en:
+                - observations
+                - monitoring
         links:
             - type: text/csv
               rel: canonical
@@ -133,10 +136,13 @@ resources:
 
     lakes:
         type: collection
-        title: Large Lakes
-        description: lakes of the world, public domain
+        title: 
+            en: Large Lakes
+        description: 
+            en: lakes of the world, public domain
         keywords:
-            - lakes
+            en:
+                - lakes
         links:
             - type: text/html
               rel: canonical
@@ -159,11 +165,14 @@ resources:
 
     countries:
         type: collection
-        title: Countries in the world
-        description: Countries of the world
+        title: 
+            en: Countries in the world
+        description: 
+            en: Countries of the world
         keywords:
-            - countries
-            - natural eart
+            en:
+                - countries
+                - natural eart
         links:
             - type: text/html
               rel: canonical
