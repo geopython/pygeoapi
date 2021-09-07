@@ -6,7 +6,7 @@
         data: function () {
             return {
                 dialog: false,
-                step: 1,
+                step: 0,
                 vals_: Object.values(this.$root.copy(this.vals)),
                 keys_: Object.keys(this.$root.copy(this.vals)),
                 keys_show_: [],
@@ -46,6 +46,9 @@
                     this.closed()
                 }
             },
+            length: function(obj){
+                return Object.keys(obj).length
+            },
             closed: function() {
                 this.dialog = false
             },
@@ -78,22 +81,47 @@
                     </v-col>
                 </template>
 
-                <v-card>
+                <v-card max-height="600px">
                     <v-toolbar>
                         <v-toolbar-items>
                             <v-btn @click="dialog = false"><v-icon>mdi-close</v-icon></v-btn>
                         </v-toolbar-items>
                     </v-toolbar>
-                    <v-container>
-                        <v-stepper v-model="step" vertical width="100%">
-                            <v-stepper-step :complete="step > 1" step="1">
-                                Create Resource
-                                <v-stepper-content step="1">
+                    <v-card >
+                        <v-stepper v-model="step">
+                            <v-stepper-header color="#606060">
+                                <v-slide-group center-active>
+                                    <v-stepper-step
+                                        key="0-step"
+                                        :complete="step > 0"
+                                        step="0"
+                                    >
+                                        <h5>Resource Name</h5>
+                                    </v-stepper-step>
+                            
+                                    <v-divider></v-divider>
+                                    <template v-for="(v,k,i) in new_val">
+                                        <template v-if="i != 0">
+                                            <v-stepper-step
+                                                :key="`${k}-step`"
+                                                :complete="step > i"
+                                                :step="i"
+                                            >
+                                                <h5 v-html="$root.capitalize(k,1)"></h5>
+                                            </v-stepper-step>
+                                
+                                            <v-divider v-if="i !== length(new_val)" :key="i"></v-divider>
+                                        </template>
+                                    </template>
+                                </v-slide-group>
+                            </v-stepper-header>
+                            <v-stepper-items>
+                                <v-stepper-content step="0">
                                     <v-divider></v-divider>
                                     <v-row justify="center">
                                         <v-col cols="12" md="4">
                                         <v-textarea
-                                            v-model="new_key" label="Resource Name" rows="1" reverse no-resize
+                                            v-model.trim="new_key" label="Resource Name" rows="1" reverse no-resize
                                         ></v-textarea>
                                         </v-col>
                                         <v-col cols="12" md="4">
@@ -107,109 +135,35 @@
                                             ></v-autocomplete>
                                         </v-col>
                                     </v-row>
-                                    <v-row>
-                                        <v-spacer></v-spacer>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step += 1" :disabled="providerChoice === null"> Next</v-btn>
-                                        </v-col>
-                                    </v-row>
                                 </v-stepper-content>
-                            </v-stepper-step>
-                            <v-divider></v-divider>
-                            <v-stepper-step :complete="step > 2" step="2">
-                                Resource Metadata
-                                <v-stepper-content step="2">
-                                    <v-divider></v-divider>
-                                    <v-container fluid>
-                                        <h5>Title</h5>
-                                        <gui-block :vals="new_val['title']" label="title" :key="_key('title')"></gui-block>
-                                        <h5>Description</h5>
-                                        <gui-block :vals="new_val['description']" label="description" :key="_key('description')"></gui-block>
-                                        <h5>Keywords</h5>
-                                        <gui-block :vals="new_val['keywords']" label="keywords" :key="_key('keywords')"></gui-block>
-                                    </v-container>
-                                    <v-row>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step -= 1"> Previous </v-btn>
-                                        </v-col>
-                                        <v-spacer></v-spacer>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step += 1"> Next</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-stepper-content>     
-                            </v-stepper-step>
-                            <v-divider></v-divider>
-                            <v-stepper-step :complete="step > 3" step="3">
-                                JSON-LD Context
-                                <v-stepper-content step="3"> 
-                                    <v-divider></v-divider>
-                                    <gui-block :vals="new_val.context" label="context" :key="_key('context')"></gui-block>
-                                    <v-row>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step -= 1"> Previous </v-btn>
-                                        </v-col>
-                                        <v-col class="grow"> <span></span> </v-col>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step += 1"> Next</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-stepper-content>    
-                            </v-stepper-step>
-                            <v-divider></v-divider>
-                            <v-stepper-step :complete="step > 4" step="4">
-                                Links
-                                <v-stepper-content step="4"> 
-                                    <v-divider></v-divider>
-                                    <gui-block :vals="new_val.links" label="Links" :key="_key('links')"></gui-block>
-                                    <v-row>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step -= 1"> Previous </v-btn>
-                                        </v-col>
-                                        <v-col class="grow"> <span></span> </v-col>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step += 1"> Next</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-stepper-content>    
-                            </v-stepper-step>
-                            <v-divider></v-divider>
-                            <v-stepper-step :complete="step > 5" step="5">
-                                Extents
-                                <v-stepper-content step="5"> 
-                                    <v-divider></v-divider>
-                                    <gui-block :vals="new_val.extents" label="Extents" :key="_key('extents')"></gui-block>
-                                    <v-row>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step -= 1"> Previous </v-btn>
-                                        </v-col>
-                                        <v-col class="grow"> <span></span> </v-col>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step += 1"> Next</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-stepper-content>    
-                            </v-stepper-step>
-                            <v-divider></v-divider>
-                            <v-stepper-step :complete="step > 6" step="6">
-                                Data Providers
-                                <v-stepper-content step="6"> 
-                                    <gui-block :vals="new_val.providers" label="Providers" :key="_key('providers')"></gui-block>
-                                    <v-row>
-                                        <v-col class="shrink">
-                                            <v-btn @click="step -= 1"> Previous </v-btn>
-                                        </v-col>
-                                        <v-col class="grow"> <span></span> </v-col>
-                                        <v-col class="shrink">
-                                            <v-btn @click="saved"> Save </v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-stepper-content>    
-                            </v-stepper-step>
+                                <template v-for="(v,k,i) in new_val">
+                                    <v-stepper-content
+                                    v-if="i != 0"
+                                    :key="`${k}-content`"
+                                    :step="i"
+                                    >
+                                        <gui-block :vals="v" :label="k" :key="_key(k)"></gui-block>
+                                    </v-stepper-content>
+                                </template>
+                            </v-stepper-items>
                         </v-stepper>
-                    </v-container>
-
+                       
+                       
                         </v-card>
+                        <v-card-actions>
+                            <v-row>
+                                <v-col class="shrink">
+                                    <v-btn :disabled="step === 0" @click="step -= 1"> Previous </v-btn>
+                                </v-col>
+                                <v-col class="grow"> <span></span> </v-col>
+                                <v-col class="shrink">
+                                    <v-btn v-show="(step + 1) !== length(new_val)" :disabled="providerChoice === null" @click="step += 1"> Next </v-btn>
+                                </v-col>
+                                <v-col class="shrink">
+                                    <v-btn v-show="(step + 1) === length(new_val)" @click="saved"> Save </v-btn>
+                                </v-col>
+                            </v-row>
+                        </v-card-actions>
                 </v-card>
             </v-dialog>
         </v-row>

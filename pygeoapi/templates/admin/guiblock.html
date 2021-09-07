@@ -49,16 +49,12 @@
       <template v-if="typeof(vals_) === 'string' || typeof(vals_) === 'number' || typeof(vals_) === 'boolean' || vals === null">
         <span v-html="vals_"></span>
       </template>
-    
-      <template v-else-if="depth_ === 3">
-        <dialog-block :vals="vals_" :label="label" :key="key_"></dialog-block> 
-      </template>
 
       <template v-else>
         <v-hover>
           <template v-slot:default="{ hover }">
             <v-container>
-                <v-card class="mx-auto" width="100%">
+                <v-card class="mb-auto" width="100%">
                   <v-card-text>
                     <table class="striped">
                         <tr v-for="(v, k) in vals" :key="k">
@@ -81,8 +77,8 @@
                     </table>
                     
                   </v-card-text>
+                  <editable-block v-if="( !vals.length && editable) || label === 'keywords'" v-show="hover" :vals="vals" :label="label" :key="key_"></editable-block>
                     <v-card-actions>
-                      <editable-block v-if="( !vals.length && editable) || label === 'keywords'" v-show="hover" :vals="vals" :label="label" :key="key_"></editable-block>
                       <template v-if="!editable && $root.islist(vals)">
                         <v-btn v-show="hover" large depressed @click.stop="additem">
                           <v-icon>mdi-plus</v-icon> <span v-html="'Add '+label.slice(0,-1)"></span>
