@@ -61,12 +61,15 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi default instance
-        description: pygeoapi provides an API to geospatial data
+        title: 
+            en: pygeoapi default instance
+        description: 
+            en: pygeoapi provides an API to geospatial data
         keywords:
-            - geospatial
-            - data
-            - api
+            en:
+                - geospatial
+                - data
+                - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
         url: http://example.org
