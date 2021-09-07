@@ -24,10 +24,6 @@
 <script type="text/x-template" id="resource-block">
     <div class="resource-block">
       <v-card>
-          <v-col class="shrink">
-            <add-block :vals="templates()" :label="label" :config="vals_" :key="$vnode.key"></add-block>
-          </v-col>
-
           <v-slide-group
             v-model="window"
             show-arrows
@@ -50,6 +46,7 @@
               <strong class="text-h4" v-html="$root.capitalize(k,1)"></strong>
               </v-btn>
             </v-slide-item>
+            <add-block :vals="templates()" :label="label" :config="vals_" :key="$vnode.key"></add-block>
           </v-slide-group>
 
         <v-card-text>

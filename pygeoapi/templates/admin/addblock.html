@@ -19,7 +19,7 @@
         },
         watch: {
             providerChoice: function(c){
-                this.new_val = this.vals[c]
+                this.new_val = Object.keys(this.vals).includes(c) ? this.vals[c]: this.new_val
             },
             resourceChoice: function(re){
                 if (!this.resources.includes(re)){
@@ -38,10 +38,11 @@
         methods: {
             saved: function() {
                 if (this.new_key){
-                    this.config[this.new_key] = this.new_val
+                    this.config[this.new_key] = this.$root.copy(this.new_val)
                     this.new_key = ''
-                    this.resourceChoice = null,
-                    this.providerChoice = null,
+                    this.resourceChoice = null
+                    this.providerChoice = null
+                    this.step = 1
                     this.closed()
                 }
             },
@@ -72,7 +73,9 @@
             <v-dialog v-model="dialog" width="75%">
 
                 <template v-slot:activator="{ on, attrs }">
-                    <v-btn fab right fixed v-bind="attrs" v-on="on" > <v-icon>mdi-plus</v-icon> </v-btn>
+                    <v-col>
+                    <v-btn class="mx-2" depressed rounded v-bind="attrs" v-on="on" > <v-icon>mdi-plus</v-icon> Add Resource </v-btn>
+                    </v-col>
                 </template>
 
                 <v-card>
@@ -83,33 +86,33 @@
                     </v-toolbar>
                     <v-container>
                         <v-stepper v-model="step" vertical width="100%">
-
-
                             <v-stepper-step :complete="step > 1" step="1">
                                 Create Resource
                                 <v-stepper-content step="1">
                                     <v-divider></v-divider>
-                                    <v-card
-                                        width="100%"
-                                    >
-                                        <v-row>
-                                            <v-col cols="12" md="4">
-                                            <v-textarea
-                                                v-model="new_key" label="Resource Name" rows="1" reverse no-resize
-                                            ></v-textarea>
+                                    <v-row justify="center">
+                                        <v-col cols="12" md="4">
+                                        <v-textarea
+                                            v-model="new_key" label="Resource Name" rows="1" reverse no-resize
+                                        ></v-textarea>
+                                        </v-col>
+                                        <v-col cols="12" md="4">
+                                            <v-autocomplete
+                                                v-model="resourceChoice" :items="resources" hint="Resource Type" auto-select-first reverse persistent-hint
+                                            ></v-autocomplete>
                                             </v-col>
-                                            <v-col cols="12" md="4">
-                                                <v-autocomplete
-                                                    v-model="resourceChoice" :items="resources" hint="Resource Type" auto-select-first reverse persistent-hint
-                                                ></v-autocomplete>
-                                                </v-col>
-                                            <v-col cols="12" md="4">
-                                                <v-autocomplete :disabled="resourceChoice === null"
-                                                    v-model="providerChoice" :items="keys_show_" hint="Provider Type" reverse persistent-hint
-                                                ></v-autocomplete>
-                                            </v-col>
-                                        </v-row>
-                                    </v-card>
+                                        <v-col cols="12" md="4">
+                                            <v-autocomplete :disabled="resourceChoice === null"
+                                                v-model="providerChoice" :items="keys_show_" hint="Provider Type" reverse persistent-hint
+                                            ></v-autocomplete>
+                                        </v-col>
+                                    </v-row>
+                                    <v-row>
+                                        <v-spacer></v-spacer>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step += 1" :disabled="providerChoice === null"> Next</v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>
                             </v-stepper-step>
                             <v-divider></v-divider>
@@ -117,14 +120,23 @@
                                 Resource Metadata
                                 <v-stepper-content step="2">
                                     <v-divider></v-divider>
-                                    <v-container justify-center>
+                                    <v-container fluid>
                                         <h5>Title</h5>
-                                        <gui-block :vals="new_val.title" label="title" :key="_key('title')"></gui-block>
+                                        <gui-block :vals="new_val['title']" label="title" :key="_key('title')"></gui-block>
                                         <h5>Description</h5>
-                                        <gui-block :vals="new_val.description" label="sescription" :key="_key('description')"></gui-block>
+                                        <gui-block :vals="new_val['description']" label="description" :key="_key('description')"></gui-block>
                                         <h5>Keywords</h5>
-                                        <gui-block :vals="new_val.keywords" label="keywords" :key="_key('keywords')"></gui-block>
+                                        <gui-block :vals="new_val['keywords']" label="keywords" :key="_key('keywords')"></gui-block>
                                     </v-container>
+                                    <v-row>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step -= 1"> Previous </v-btn>
+                                        </v-col>
+                                        <v-spacer></v-spacer>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step += 1"> Next</v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>     
                             </v-stepper-step>
                             <v-divider></v-divider>
@@ -132,9 +144,16 @@
                                 JSON-LD Context
                                 <v-stepper-content step="3"> 
                                     <v-divider></v-divider>
-                                    <v-container justify-center>
-                                        <gui-block :vals="new_val.context" label="context" :key="_key('context')"></gui-block>
-                                    </v-container>
+                                    <gui-block :vals="new_val.context" label="context" :key="_key('context')"></gui-block>
+                                    <v-row>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step -= 1"> Previous </v-btn>
+                                        </v-col>
+                                        <v-col class="grow"> <span></span> </v-col>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step += 1"> Next</v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>    
                             </v-stepper-step>
                             <v-divider></v-divider>
@@ -142,9 +161,16 @@
                                 Links
                                 <v-stepper-content step="4"> 
                                     <v-divider></v-divider>
-                                    <v-container justify-center>
-                                        <gui-block :vals="new_val.links" label="Links" :key="_key('links')"></gui-block>
-                                    </v-container>
+                                    <gui-block :vals="new_val.links" label="Links" :key="_key('links')"></gui-block>
+                                    <v-row>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step -= 1"> Previous </v-btn>
+                                        </v-col>
+                                        <v-col class="grow"> <span></span> </v-col>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step += 1"> Next</v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>    
                             </v-stepper-step>
                             <v-divider></v-divider>
@@ -152,43 +178,37 @@
                                 Extents
                                 <v-stepper-content step="5"> 
                                     <v-divider></v-divider>
-                                    <v-container justify-center>
-                                        <gui-block :vals="new_val.extents" label="Extents" :key="_key('extents')"></gui-block>
-                                    </v-container>
+                                    <gui-block :vals="new_val.extents" label="Extents" :key="_key('extents')"></gui-block>
+                                    <v-row>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step -= 1"> Previous </v-btn>
+                                        </v-col>
+                                        <v-col class="grow"> <span></span> </v-col>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step += 1"> Next</v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>    
                             </v-stepper-step>
                             <v-divider></v-divider>
                             <v-stepper-step :complete="step > 6" step="6">
                                 Data Providers
                                 <v-stepper-content step="6"> 
-                                    <v-divider></v-divider>
-                                    <v-container justify-center>
-                                        <gui-block :vals="new_val.providers" label="pProviders" :key="_key('providers')"></gui-block>
-                                    </v-container>
+                                    <gui-block :vals="new_val.providers" label="Providers" :key="_key('providers')"></gui-block>
+                                    <v-row>
+                                        <v-col class="shrink">
+                                            <v-btn @click="step -= 1"> Previous </v-btn>
+                                        </v-col>
+                                        <v-col class="grow"> <span></span> </v-col>
+                                        <v-col class="shrink">
+                                            <v-btn @click="saved"> Save </v-btn>
+                                        </v-col>
+                                    </v-row>
                                 </v-stepper-content>    
                             </v-stepper-step>
                         </v-stepper>
                     </v-container>
-                        <v-card-actions>
-                            <v-row>
-                            <v-col class="shrink">
-                                <v-btn @click="step -= 1" :disabled="step===1">
-                                    Previous
-                                </v-btn>
-                            </v-col>
-                            <v-col class="grow">
-                                <span></span>
-                            </v-col>
-                            <v-col class="shrink">
-                                <v-btn @click="step += 1" v-show="step <= 5">
-                                    Next
-                                </v-btn>
-                                <v-btn @click="saved" v-show="step === 6">
-                                    Save
-                                </v-btn>
-                            </v-col>
-                        </v-row>
-                    </v-card-actions>
+
                         </v-card>
                 </v-card>
             </v-dialog>
