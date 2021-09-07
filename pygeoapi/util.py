@@ -81,8 +81,10 @@ def dategetter(date_property, collection):
 
     if value is None:
         return None
-
-    return value.isoformat()
+    elif isinstance(value, str):
+        return format_datetime(value)
+    else:
+        return value.isoformat()
 
 
 def get_typed_value(value):

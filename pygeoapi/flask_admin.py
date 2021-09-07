@@ -148,14 +148,9 @@ def datadump():
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['POST'])
 # @flask_login.login_required
 def config():
-
     with open("temp.config.yml", "w") as file:
-        try:
-            validate_config(request.get_json(force=True))
-            yaml.safe_dump(request.get_json(force=True), file,
-                           sort_keys=False, indent=4, default_flow_style=False)
-        except jsonschema.exceptions.ValidationError as err:
-            return {'msg': err.message, 'path': '.'.joisn(err.path)}, 422
+        yaml.safe_dump(request.get_json(force=True), file,
+                       sort_keys=False, indent=4, default_flow_style=False)
 
     with open('temp.config.yml', encoding='utf8') as fh:
         temp_config = yaml_load(fh)
@@ -164,15 +159,18 @@ def config():
             with open(os.environ.get('PYGEOAPI_CONFIG'), "r") as file:
                 meta = file.readlines()
 
-            with open('temp'+os.environ.get('PYGEOAPI_CONFIG'), "w") as file:
+            with open(os.environ.get('PYGEOAPI_CONFIG'), "w") as file:
                 for line in [*meta[:meta.index('\n')], '\n']:
                     file.write(line)
 
                 yaml.safe_dump(temp_config, file, sort_keys=False, indent=4,
                                default_flow_style=False)
-            return 'Configuration file valid and applied to server'
+            return {'msg': 'Configuration file valid and applied', 'path': ''}
         except jsonschema.exceptions.ValidationError as err:
-            return {'msg': err.message, 'path': '.'.join(err.path)}, 422
+            return {
+                'msg': err.message,
+                'path': '.'.join(f'{e}' for e in err.path)
+                }, 422
 
 
 @login_manager.user_loader
@@ -188,7 +186,7 @@ def user_loader(email):
 @login_manager.request_loader
 def request_loader(request):
     email = request.form.get(ADMIN)
-    LOGGER.error(email)
+    # LOGGER.error(email)
     if email not in users:
         return
 

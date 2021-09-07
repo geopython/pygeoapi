@@ -5,8 +5,7 @@
       template: '#resource-block',
       data: function () {
         return {
-          vals_: Object.values(this.vals),
-          keys_: Object.keys(this.vals),
+          vals_: this.vals,
           dialog: false,
           window: 0,
         }
@@ -15,9 +14,9 @@
         closed: function() {
             this.dialog = false
         },
-        i: function(){
+        templates: function(){
           return this.$root.copy(this.$root.template.resources)
-        }
+        },
       },
     })
 </script>  
@@ -26,7 +25,7 @@
     <div class="resource-block">
       <v-card>
           <v-col class="shrink">
-            <add-block :vals="i()" :label="label" :conf="vals" :key="$vnode.key"></add-block>
+            <add-block :vals="templates()" :label="label" :config="vals_" :key="$vnode.key"></add-block>
           </v-col>
 
           <v-slide-group
@@ -37,7 +36,7 @@
           >
 
             <v-slide-item
-              v-for="(v,k) in vals"
+              v-for="(v, k) in vals_"
               :key="k"
               v-slot="{ active, toggle }"
             >
@@ -57,7 +56,7 @@
           <v-row>
             <v-col>
               <v-window v-model="window">
-                <v-window-item v-for="(v, k) in vals" :key="k">
+                <v-window-item v-for="(v, k) in vals_" :key="k">
                   <gui-block :key="$vnode.key+'.'+k" :label="k" :vals="v" depth="-1"></gui-block>
                 </v-window-item>
               </v-window>

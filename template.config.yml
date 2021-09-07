@@ -368,7 +368,11 @@ resources:
             en:
                 - tree
         context:
-            - schema: https://schema.org/
+            - sosa: http://www.w3.org/ns/sosa/
+              ssn: http://www.w3.org/ns/ssn/
+              Observations: sosa:hasMember
+              Thing: sosa:hasFeatureOfInterest
+              name: schema:name
         links:
             - type: application/gzip
               rel: canonical
@@ -384,12 +388,12 @@ resources:
                 end: 2000-02-01T12:00:00Z
         providers:
             - type: feature
-              name: SQLiteGPKG
+              name: SensorThings
               data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
-              id_field: id
+              id_field: "@iot.id"
               uri_field: null
               title_field: null
-              time_field: null
+              time_field: phenomenonTime
               properties: []
               entity: Things
               intralink: true

@@ -376,10 +376,10 @@ properties:
                                               - x_field
                                               - y_field
                                       time_field:
-                                          type: string
+                                          type: [string, 'null']
                                           description: optional field corresponding to the temporal property of the dataset
                                       title_field:
-                                          type: string
+                                          type: [string, 'null']
                                           description: optional field of which property to display as title/label on HTML pages
                                       format:
                                           type: object
@@ -406,7 +406,7 @@ properties:
                                           description: only return the following properties, in order
                                           items:
                                               type: string
-                                          minItems: 1
+                                          minItems: 0
                                           uniqueItems: true
                                   required:
                                       - type

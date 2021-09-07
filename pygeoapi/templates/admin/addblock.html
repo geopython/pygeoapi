@@ -1,13 +1,12 @@
 <script>
     Vue.component('AddBlock', {
-        props: ['vals', 'label', 'conf'],
+        props: ['vals', 'label', 'config'],
         name: 'AddBlock',
         template: '#add-block-template',
         data: function () {
             return {
                 dialog: false,
                 step: 1,
-                conf_: this.conf,
                 vals_: Object.values(this.$root.copy(this.vals)),
                 keys_: Object.keys(this.$root.copy(this.vals)),
                 keys_show_: [],
@@ -39,10 +38,10 @@
         methods: {
             saved: function() {
                 if (this.new_key){
-                    this.conf_[this.new_key] = this.new_val
-                    console.log(this.conf_)
-                    console.log(this.new_val)
+                    this.config[this.new_key] = this.new_val
                     this.new_key = ''
+                    this.resourceChoice = null,
+                    this.providerChoice = null,
                     this.closed()
                 }
             },

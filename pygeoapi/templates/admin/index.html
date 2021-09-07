@@ -108,28 +108,26 @@
                            data=d, 
                            { 
                              withCredentials: true,
-                             headers: {
-                                'Content-Type': 'multipart/form-data'
-                            }
-            })
-            .then(function(response) {
-              var data = response.data
-              self.al = data
-              self.al.status = 'success'
-              self.alert = true
-            })
-            .catch(function(error) {
-              var err = error.response.data
-              self.al.msg = err.msg
-              self.al.path = 'Error at ' + err.path
-              self.al.status = 'error'
-              self.alert = true
-              return Promise.reject(error);
-            })
-            .then(function () {
-             // always executed
-            })
-          ;
+                })
+                .then(function(response) {
+                  console.log(response.data)
+                  var data = response.data
+                  self.al.msg = data.msg
+                  self.al.status = 'success'
+                  self.alert = true
+                })
+                .catch(function(error) {
+                  var err = error.response.data
+                  self.al.msg = err.msg
+                  self.al.path = 'Error at ' + err.path
+                  self.al.status = 'error'
+                  self.alert = true
+                  return Promise.reject(error);
+                })
+                .then(function () {
+                // always executed
+                })
+              ;
         },
         ajax: function(d, path){
           var self = this;
@@ -148,7 +146,7 @@
               self.alert = true
             },
             error: function(error) {
-              var err = error.response.data
+              var err = JSON.parse(error)
               self.al.msg = err.msg
               self.al.path = 'Error at ' + err.path
               self.al.status = 'error'

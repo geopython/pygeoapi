@@ -182,6 +182,10 @@ class SensorThingsProvider(BaseProvider):
 
             # Validate intra-links
             for (name, rs) in CONFIG['resources'].items():
+                if not rs.get('providers') or \
+                   rs['providers'][0]['name'] != 'SensorThings':
+                    continue
+
                 _entity = rs['providers'][0].get('entity')
                 uri = rs['providers'][0].get('uri_field', '')
 
