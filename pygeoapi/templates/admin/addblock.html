@@ -42,7 +42,7 @@
                     this.new_key = ''
                     this.resourceChoice = null
                     this.providerChoice = null
-                    this.step = 1
+                    this.step = 0
                     this.closed()
                 }
             },
@@ -51,9 +51,6 @@
             },
             closed: function() {
                 this.dialog = false
-            },
-            indexof: function(k){
-                return this.keys_.indexOf(k)
             },
             _key: function(k){
                 return this.$vnode.key + '.' + k
@@ -89,32 +86,34 @@
                     </v-toolbar>
                     <v-card >
                         <v-stepper v-model="step">
-                            <v-stepper-header color="#606060">
-                                <v-slide-group center-active>
-                                    <v-stepper-step
-                                        key="0-step"
-                                        :complete="step > 0"
-                                        step="0"
-                                    >
-                                        <h5>Resource Name</h5>
-                                    </v-stepper-step>
-                            
-                                    <v-divider></v-divider>
-                                    <template v-for="(v,k,i) in new_val">
-                                        <template v-if="i != 0">
-                                            <v-stepper-step
-                                                :key="`${k}-step`"
-                                                :complete="step > i"
-                                                :step="i"
-                                            >
-                                                <h5 v-html="$root.capitalize(k,1)"></h5>
-                                            </v-stepper-step>
+                            <v-sheet color="#959fb3">
+                                <v-stepper-header>
+                                    <v-slide-group center-active>
+                                        <v-stepper-step
+                                            key="0-step"
+                                            :complete="step > 0"
+                                            step="0"
+                                        >
+                                            <h5>Resource Name</h5>
+                                        </v-stepper-step>
                                 
-                                            <v-divider v-if="i !== length(new_val)" :key="i"></v-divider>
+                                        <v-divider></v-divider>
+                                        <template v-for="(v,k,i) in new_val">
+                                            <template v-if="i != 0">
+                                                <v-stepper-step
+                                                    :key="`${k}-step`"
+                                                    :complete="step > i"
+                                                    :step="i"
+                                                >
+                                                    <h5 v-html="$root.capitalize(k,1)"></h5>
+                                                </v-stepper-step>
+                                    
+                                                <v-divider v-if="i !== length(new_val)" :key="i"></v-divider>
+                                            </template>
                                         </template>
-                                    </template>
-                                </v-slide-group>
-                            </v-stepper-header>
+                                    </v-slide-group>
+                                </v-stepper-header>
+                            </v-sheet>
                             <v-stepper-items>
                                 <v-stepper-content step="0">
                                     <v-divider></v-divider>

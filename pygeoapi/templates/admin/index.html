@@ -80,10 +80,12 @@
           meta.description = Object.assign(this.copy(langs), meta.description)
           meta.keywords = Object.assign(this.copy(langs), meta.keywords)
           
-          for (const resource of Object.values(this.tree.resources)){
-            resource.title = Object.assign(this.copy(langs), resource.title)
-            resource.description = Object.assign(this.copy(langs), resource.description)
-            resource.keywords = Object.assign(this.copy(langs), resource.keywords)
+          for (const resources of [this.tree.resources, this.template.resources]){
+            for (const resource of Object.values(resources)){
+              resource.title = Object.assign(this.copy(langs), resource.title)
+              resource.description = Object.assign(this.copy(langs), resource.description)
+              resource.keywords = Object.assign(this.copy(langs), resource.keywords)
+            }
           }
         }
       },
@@ -128,31 +130,6 @@
                 // always executed
                 })
               ;
-        },
-        ajax: function(d, path){
-          var self = this;
-          return $.ajax({
-            type:"POST",
-            url: path,
-            data: d,
-            processData: false,
-            xhrFields: {
-              withCredentials: true
-            },
-            success: function(response) {
-              var data = response.data
-              self.al.msg = data
-              self.al.status = 'success'
-              self.alert = true
-            },
-            error: function(error) {
-              var err = JSON.parse(error)
-              self.al.msg = err.msg
-              self.al.path = 'Error at ' + err.path
-              self.al.status = 'error'
-              self.alert = true
-            },
-          });
         },
       },
       data: function () {

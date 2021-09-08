@@ -31,6 +31,7 @@ import os
 import logging
 import hashlib
 import jsonschema
+import cgi
 import yaml
 import requests
 
@@ -121,17 +122,22 @@ def logout():
 # @flask_login.login_required
 def datadump():
     name = request.form.get('name')
+    filename = ''
     if is_url(name) and name.startswith('http'):
         try:
             r = requests.get(name, allow_redirects=True, stream=True)
         except requests.exceptions.ConnectionError:
             return {'msg': 'Bad Data Connection', 'path': ''}, 400
-        filename = secure_filename(name.split('/')[-1])
-        filepath = url_join('data', filename)
 
-        if (r.headers.get('content-type') == 'text/plain; charset=utf-8' or
-           r.headers.get('content-type') == 'application/octet-stream'):
+        if 'attachment' in r.headers.get('content-disposition'):
+            _, params = cgi.parse_header(r.headers.get('content-disposition'))
+            filename = secure_filename(params['filename'])
+        elif (r.headers.get('content-type') == 'text/plain; charset=utf-8' or
+              r.headers.get('content-type') == 'application/octet-stream'):
+            filename = secure_filename(os.path.basename(name))
 
+        if filename:
+            filepath = url_join('data', filename)
             open(filepath, 'wb').write(r.content)
             return {'msg': f'Uploaded {filename}', 'path': filepath}
 
