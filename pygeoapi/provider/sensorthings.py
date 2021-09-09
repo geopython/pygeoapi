@@ -182,6 +182,10 @@ class SensorThingsProvider(BaseProvider):
 
             # Validate intra-links
             for (name, rs) in CONFIG['resources'].items():
+                if not rs.get('providers') or \
+                   rs['providers'][0]['name'] != 'SensorThings':
+                    continue
+
                 _entity = rs['providers'][0].get('entity')
                 uri = rs['providers'][0].get('uri_field', '')
 
@@ -226,16 +230,16 @@ class SensorThingsProvider(BaseProvider):
         params = {
             '$expand': EXPAND[self.entity],
             '$skip': str(startindex),
-            '$top': str(limit)
+            '$top': str(limit),
+            '$count': 'true'
         }
         if properties or bbox or datetime_:
             params['$filter'] = self._make_filter(properties, bbox, datetime_)
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
-        if resulttype == 'hits':
-            params['$count'] = 'true'
 
         # Form URL for GET request
+        LOGGER.debug('Sending query')
         if identifier:
             r = get(f'{self._url}({identifier})', params=params)
         else:
@@ -245,13 +249,23 @@ class SensorThingsProvider(BaseProvider):
             LOGGER.error('Bad http response code')
             raise ProviderConnectionError('Bad http response code')
 
+        response = r.json()
+        v = [response, ] if identifier else response.get('value')
+
+        hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
-            feature_collection['numberMatched'] = r.json().get('@iot.count')
+            matched = len(v) if len(v) >= limit else hits_
+            feature_collection['numberMatched'] = matched
             return feature_collection
 
-        v = [r.json(), ] if identifier else r.json().get('value')
+        # if # of values less than expected, query for more
+        while len(v) < hits_:
+            LOGGER.debug('Fetching next set of values')
+            r = get(response.get('@iot.nextLink'), params={'$skip': len(v)})
+            response = r.json()
+            v.extend(response.get('value'))
 
         # properties filter & display
         keys = (() if not self.properties and not select_properties else
