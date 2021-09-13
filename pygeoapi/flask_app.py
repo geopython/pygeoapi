@@ -134,8 +134,8 @@ def openapi():
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
         if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
             openapi_ = yaml_load(ff)
-        else:  # JSON file, do not transform
-            openapi_ = ff
+        else:  # JSON string, do not transform
+            openapi_ = ff.read()
 
     return get_response(api_.openapi(request, openapi_))
 
