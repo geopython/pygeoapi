@@ -215,7 +215,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         LOGGER.debug('Fetching identifier {}'.format(identifier))
 
-        record = self.db.get(Query().properties[self.id_field] == identifier)
+        record = self.db.get(Query().id == identifier)
 
         if record is None:
             raise ProviderItemNotFoundError('record does not exist')
