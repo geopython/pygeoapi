@@ -3,7 +3,7 @@
 {% block crumbs %}{{ super() }}
 / <a href="../../">{% trans %}Processes{% endtrans %}</a>
 / <a href="../">{{ data['process']['title'] }}</a>
-/ <a href="./">{% trans %}Jobs{% endtrans %}</a>
+/ <a href="../jobs">{% trans %}Jobs{% endtrans %}</a>
 / <a href="./{{ data['jobs']['jobID'] }}">{{ data['jobs']['jobID'] }}</a>
 {% endblock %}
 {% block body %}
