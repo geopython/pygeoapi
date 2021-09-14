@@ -242,6 +242,8 @@ class SensorThingsProvider(BaseProvider):
         LOGGER.debug('Sending query')
         if identifier:
             r = get(f'{self._url}({identifier})', params=params)
+        elif resulttype == 'hits':
+            r = get(self._url, params={'$count': 'true'})
         else:
             r = get(self._url, params=params)
 
@@ -252,15 +254,14 @@ class SensorThingsProvider(BaseProvider):
         response = r.json()
         v = [response, ] if identifier else response.get('value')
 
-        hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
-            matched = len(v) if len(v) >= limit else hits_
-            feature_collection['numberMatched'] = matched
+            feature_collection['numberMatched'] = response.get('@iot.count')
             return feature_collection
 
-        # if # of values less than expected, query for more
+        # if values are less than expected, query for more
+        hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         while len(v) < hits_:
             LOGGER.debug('Fetching next set of values')
             r = get(response.get('@iot.nextLink'), params={'$skip': len(v)})
@@ -271,7 +272,7 @@ class SensorThingsProvider(BaseProvider):
         keys = (() if not self.properties and not select_properties else
                 set(self.properties) | set(select_properties))
 
-        for entity in v:
+        for entity in v[:hits_]:
             # Make feature
             f = {
                 'type': 'Feature', 'properties': {},

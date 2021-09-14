@@ -93,12 +93,6 @@ def test_query_observations(config):
     p = SensorThingsProvider(config)
 
     results = p.query(resulttype='hits')
-    assert results['numberMatched'] == 10
-
-    results = p.query(resulttype='hits', limit=1000)
-    assert results['numberMatched'] == 1000
-
-    results = p.query(resulttype='hits', limit=3000)
     assert results['numberMatched'] == 2752
 
     results = p.query(properties=[('result', 7475), ])
