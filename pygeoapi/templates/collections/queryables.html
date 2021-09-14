@@ -17,6 +17,9 @@
       <h3>{% trans %}Queryables{% endtrans %}</h3>
       <ul>
       {% for qname, qinfo in data['properties'].items() %}
+        {% if qname == 'geometry' %}
+        <li><a href="{{ qinfo['$ref'] }}">{{ qname }} </a></li>
+        {% else %}
         <li>{{ qname }} (<code>{{ qinfo['type'] }}</code>)
         {% if 'enum' in qinfo %}
           <ul>
@@ -26,6 +29,7 @@
           </ul>
         {% endif %}
         </li>
+        {% endif %}
       {% endfor %}
       </ul>
     </section>

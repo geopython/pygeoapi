@@ -690,7 +690,7 @@ class API:
         if isinstance(openapi, dict):
             return headers, 200, to_json(openapi, self.pretty_print)
         else:
-            return headers, 200, openapi.read()
+            return headers, 200, openapi
 
     @pre_process
     def conformance(self,
