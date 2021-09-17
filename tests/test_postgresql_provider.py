@@ -117,10 +117,13 @@ def test_query_bbox(config):
 def test_query_sortby(config):
     """Test query with sorting"""
     psp = PostgreSQLProvider(config)
-    last = psp.query(sortby=[{'property': 'name', 'order': '+'}])
-    first = psp.query(sortby=[{'property': 'name', 'order': '-'}])
-    assert last['features'][0]['properties'] == \
-           first['features'][0]['properties']
+    up = psp.query(sortby=[{'property': 'osm_id', 'order': '+'}])
+    down = psp.query(sortby=[{'property': 'osm_id', 'order': '-'}])
+    assert up['features'][0]['properties'] == \
+           down['features'][0]['properties']
+
+    name = psp.query(sortby=[{'property': 'name', 'order': '+'}])
+    assert name['features'][0]['properties']['name'] == 'Agasasa'
 
 
 def test_query_skip_geometry(config):
@@ -134,7 +137,7 @@ def test_query_select_properties(config):
     """Test query with selected properties"""
     psp = PostgreSQLProvider(config)
     props = psp.query(select_properties=['name'])
-    assert len(props['features'][0]['properties']) == 0
+    assert len(props['features'][0]['properties']) == 1
     assert props['features'][0]['properties'].get('name', False)
 
 

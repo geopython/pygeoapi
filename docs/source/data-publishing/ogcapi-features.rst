@@ -23,7 +23,7 @@ parameters.
    GeoJSON,❌,results/hits,❌,❌,❌,❌,❌
    MongoDB,✅,results,✅,✅,✅,❌,❌
    OGR,✅,results/hits,✅,❌,❌,❌,❌
-   PostgreSQL,✅,results/hits,✅,❌,❌,❌,❌
+   PostgreSQL,✅,results/hits,✅,❌,✅,✅,❌
    SQLiteGPKG,✅,results/hits,✅,❌,❌,❌,❌
    SensorThingsAPI,✅,results/hits,✅,✅,✅,✅,❌
 
