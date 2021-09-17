@@ -270,20 +270,19 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
+            props = db.columns if select_properties == [] else \
+                SQL(', ').join([Identifier(p) for p in select_properties])
+
+            geom = SQL('') if skip_geometry else \
+                SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
+
             where_clause = self.__get_where_clauses(
                 properties=properties, bbox=bbox, **kwargs)
 
-            props = db.columns if select_properties == [] else \
-                SQL("{}").format(','.join(select_properties))
-
             orderby = self._make_orderby(sortby) if sortby else SQL('')
 
-            geom = SQL("") if skip_geometry else \
-                SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
-
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT DISTINCT {} {} \
-             FROM {}{}{}").\
+             SELECT DISTINCT {} {} FROM {} {} {}").\
                 format(props,
                        geom,
                        Identifier(self.table),
