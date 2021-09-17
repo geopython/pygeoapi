@@ -79,7 +79,7 @@ def test_query_with_property_filter(config):
                features))
     assert (len(features) == len(stream_features))
 
-    feature_collection = p.query()
+    feature_collection = p.query(limit=50)
     features = feature_collection.get('features', None)
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',

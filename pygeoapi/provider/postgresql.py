@@ -273,7 +273,9 @@ class PostgreSQLProvider(BaseProvider):
             where_clause = self.__get_where_clauses(
                 properties=properties, bbox=bbox, **kwargs)
 
-            props = select_properties or db.columns
+            props = db.columns if select_properties == [] else \
+                SQL("{}").format(','.join(select_properties))
+
             orderby = self._make_orderby(sortby) if sortby else SQL('')
 
             geom = SQL("") if skip_geometry else \
