@@ -413,7 +413,7 @@ class PostgreSQLProvider(BaseProvider):
                 'type': 'Feature'
             }
 
-            geom = rd.pop('st_asgeojson')
+            geom = rd.pop('st_asgeojson') if rd.get('st_asgeojson') else None
 
             feature['geometry'] = json.loads(geom) if geom is not None else None  # noqa
 
