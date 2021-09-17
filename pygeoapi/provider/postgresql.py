@@ -177,7 +177,8 @@ class PostgreSQLProvider(BaseProvider):
                 self.fields = db.fields
         return self.fields
 
-    def __get_where_clauses(self, properties=[], bbox=[]):
+    def __get_where_clauses(self, properties=[], bbox=[], 
+                            comp='AND', **kwargs):
         """
         Generarates WHERE conditions to be implemented in query.
         Private method mainly associated with query method
@@ -200,11 +201,25 @@ class PostgreSQLProvider(BaseProvider):
 
         if where_conditions:
             where_clause = SQL(' WHERE {}').format(
-                SQL(' AND ').join(where_conditions))
+                SQL(f' {comp} ').join(where_conditions))
         else:
             where_clause = SQL('')
 
         return where_clause
+
+    def _make_orderby(self, sortby):
+        """
+        Private function: Make STA filter from query properties
+
+        :param sortby: list of dicts (property, order)
+
+        :returns: STA $orderby string
+        """
+        ret = []
+        _map = {'+': 'ASC', '-': 'DESC'}
+        for _ in sortby:
+            ret.append(f"{_['property']} {_map[_['order']]}")
+        return SQL(f"ORDER BY {','.join(ret)}")
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -236,7 +251,7 @@ class PostgreSQLProvider(BaseProvider):
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
                 where_clause = self.__get_where_clauses(
-                    properties=properties, bbox=bbox)
+                    properties=properties, bbox=bbox, comp=kwargs.comp)
                 sql_query = SQL("SELECT COUNT(*) as hits from {} {}").\
                     format(Identifier(self.table), where_clause)
                 try:
@@ -256,14 +271,21 @@ class PostgreSQLProvider(BaseProvider):
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             where_clause = self.__get_where_clauses(
-                properties=properties, bbox=bbox)
+                properties=properties, bbox=bbox, **kwargs)
+
+            props = select_properties or db.columns
+            orderby = self._make_orderby(sortby) if sortby else SQL('')
+            geom = SQL("") if skip_geometry else \
+                   SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
 
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
-                format(db.columns,
-                       Identifier(self.geom),
+             SELECT DISTINCT {} {} \
+             FROM {}{}{}").\
+                format(props,
+                       geom,
                        Identifier(self.table),
-                       where_clause)
+                       where_clause,
+                       orderby)
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))

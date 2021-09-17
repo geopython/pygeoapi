@@ -58,9 +58,9 @@ jobs:
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
-        python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        python3 tests/load_es_data.py tests/cite/ogcapi-fseatures/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
-        #gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
+        gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql -U postgres test
         python3 tests/load_sta_data.py tests/data/sta_iow_datastreams.json
     - name: run unit tests ⚙️
       run: |
@@ -79,7 +79,7 @@ jobs:
         #pytest tests/test_ogr_sqlite_provider.py
         #pytest tests/test_ogr_wfs_provider.py
         pytest tests/test_openapi.py
-        #pytest tests/test_postgresql_provider.py
+        pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
         pytest tests/test_sensorthings_provider.py 
         #pytest tests/test_sqlite_geopackage_provider.py

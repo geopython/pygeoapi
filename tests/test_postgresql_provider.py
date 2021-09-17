@@ -113,6 +113,23 @@ def test_query_bbox(config):
     )
     assert len(boxed_feature_collection['features']) == 5
 
+def test_query_sortby(config):
+    """Test query with sorting"""
+    psp = PostgreSQLProvider(config)
+    result = psp.get(29701937)
+    print(result)
+
+def test_query_skip_geometry(config):
+    """Test query without geometry"""
+    psp = PostgreSQLProvider(config)
+    skiped_geom = psp.query(skip_geometry=True)
+    print(skiped_geom['features'][:10])
+
+def test_query_select_properties(config):
+    """Test query with selected properties"""
+    psp = PostgreSQLProvider(config)
+    skiped_geom = psp.query(select_properties=['name'])
+    print(skiped_geom['features'][:10])
 
 def test_get(config):
     """Testing query for a specific object"""
