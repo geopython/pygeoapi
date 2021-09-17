@@ -118,9 +118,9 @@ def test_query_sortby(config):
     """Test query with sorting"""
     psp = PostgreSQLProvider(config)
     up = psp.query(sortby=[{'property': 'osm_id', 'order': '+'}])
-    assert up['features'][0]['properties'] == 13990765
+    assert up['features'][0]['id'] == 13990765
     down = psp.query(sortby=[{'property': 'osm_id', 'order': '-'}])
-    assert down['features'][0]['properties'] == 620735702
+    assert down['features'][0]['id'] == 620735702
 
     name = psp.query(sortby=[{'property': 'name', 'order': '+'}])
     assert name['features'][0]['properties']['name'] == 'Agasasa'
