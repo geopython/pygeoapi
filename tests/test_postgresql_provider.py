@@ -138,7 +138,6 @@ def test_query_select_properties(config):
     psp = PostgreSQLProvider(config)
     props = psp.query(select_properties=['name'])
     assert len(props['features'][0]['properties']) == 1
-    assert props['features'][0]['properties'].get('name', False)
 
 
 def test_get(config):
