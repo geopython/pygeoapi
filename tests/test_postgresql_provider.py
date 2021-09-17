@@ -114,25 +114,28 @@ def test_query_bbox(config):
     assert len(boxed_feature_collection['features']) == 5
 
 
-# def test_query_sortby(config):
-#     """Test query with sorting"""
-#     psp = PostgreSQLProvider(config)
-#     result = psp.query(sortby=[{'property': 'population', 'order': '+'}])
-#     assert result['features'][0]['population']
+def test_query_sortby(config):
+    """Test query with sorting"""
+    psp = PostgreSQLProvider(config)
+    last = psp.query(sortby=[{'property': 'name', 'order': '+'}])
+    first = psp.query(sortby=[{'property': 'name', 'order': '-'}])
+    assert last['features'][0]['properties'] == \
+           first['features'][0]['properties']
 
 
 def test_query_skip_geometry(config):
     """Test query without geometry"""
     psp = PostgreSQLProvider(config)
     skipped = psp.query(skip_geometry=True)
-    assert skipped['features'][0] is None
+    assert skipped['features'][0]['geometry'] is None
 
 
 def test_query_select_properties(config):
     """Test query with selected properties"""
     psp = PostgreSQLProvider(config)
     props = psp.query(select_properties=['name'])
-    assert props['features'][0] is None
+    assert len(props['features'][0]['properties']) == 0
+    assert props['features'][0]['properties'].get('name', False)
 
 
 def test_get(config):
