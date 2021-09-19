@@ -67,7 +67,7 @@ serverless plugin install -n serverless-wsgi
 To test the application as a lambda locally:
 
 ```bash
-serverless wsgi server
+serverless wsgi serve
 ```
 
 To deploy to AWS Lambda:
@@ -79,7 +79,7 @@ serverless deploy
 Once deployed, if you only need to update the code and not anything in the serverless configuration, you can update the function using:
 
 ```bash
-serverless deploy --function app
+serverless deploy function -f app
 ```
 
 When deployed, the output will show the URL the app has been deployed to.

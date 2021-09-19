@@ -1,1 +1,10 @@
-{"app":"pygeoapi/flask_app.APP","text_mime_types":["application/ld+json"]}
+{
+    "app": "pygeoapi/flask_app.APP",
+    "text_mime_types": [
+        "application/ld+json",
+        "text/html",
+        "application/geo+json",
+        "application/prs.coverage+json",
+        "application/xml"
+    ]
+}
