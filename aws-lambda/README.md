@@ -46,7 +46,7 @@ Move serverless configs to root directory:
 
 ```bash
 mv serverless.yml ..
-mv pygeoapi-server-config.yml ..
+mv pygeoapi-config.yml ..
 cd ..
 ```
 
@@ -83,3 +83,49 @@ serverless deploy --function app
 ```
 
 When deployed, the output will show the URL the app has been deployed to.
+
+## node/serverless lambda container
+
+In the case where your pygeoapi instance is too large to deploy as a lambda function (250MB) you can build and deploy
+a docker image of pygeoapi with the lamda runtime interface installed. 
+
+Move serverless configs to root directory:
+
+```bash
+mv container/serverless.yml ../..
+mv container/DockerFile ../..
+```
+
+*note the files below come from the serverless-wsgi node plugin, and ideally this should be part of a build process
+```bash
+cd container/
+npm install serverless
+serverless plugin install -n serverless-wsgi
+mv node_modules/serverless-wsgi/serverless-wsgi.py ../..
+mv node_modules/serverless-wsgi/wsgi_handler.py ../..
+mv container/wsgi.py ../..
+mv container/.serverless-wsgi ../..
+rm -rf container/node_modules
+cd ../..
+```
+
+# to build docker container
+```bash
+docker build -t pygeo-lambda-container .
+```
+
+Once built, you need to deploy to ECR. This can also be accomplished with a change to the serverless configuration.
+Depending on environment permissions, you may need to create a ECR repo with appropriate policies first.
+
+```bash
+AWS_PROFILE=<profile name> aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <ECR repo url>
+docker tag pygeo-lambda-container:latest <ECR repo url>:latest
+docker push <ECR repo url>:latest
+```
+
+
+Deploy stack using serverless. 
+
+```
+AWS_PROFILE=<profile name> sls deploy -s <stage name>
+```
