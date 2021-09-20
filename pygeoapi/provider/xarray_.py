@@ -231,8 +231,8 @@ class XarrayProvider(BaseProvider):
                     LOGGER.warning(msg)
                     raise ProviderQueryError(msg)
                 else:
-                    query_params['x_axis_label'] = slice(bbox[0], bbox[2])
-                    query_params['y_axis_label'] = slice(bbox[1], bbox[3])
+                    query_params[self._coverage_properties['x_axis_label']] = slice(bbox[0], bbox[2])
+                    query_params[self._coverage_properties['y_axis_label']] = slice(bbox[1], bbox[3])
 
             if datetime_ is not None:
                 if self._coverage_properties['time_axis_label'] in subsets:
