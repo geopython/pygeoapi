@@ -152,6 +152,8 @@ Note that the example above uses generic language tags, but you can also supply 
 pygeoapi should always be able find the best match to the requested language, i.e. if the user wants Swiss-French (`fr-CH`) but pygeoapi can only find `fr` tags,
 those values will be returned. However, if a `fr-CH` tag can also be found, that value will be returned and not the `fr` value.
 
+.. warning::    A language struct is only translated if all language tags (keys) in the struct are valid locales.
+
 .. todo::   Add docs on HTML templating.
 
 Translator guide

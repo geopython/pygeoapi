@@ -275,18 +275,13 @@ def translate(value, language: Union[Locale, str]):
 
     # Find valid locale keys in language struct
     # Also maps Locale instances to actual key names
-    loc_items = OrderedDict()
-    for k in value.keys():
-        loc = str2locale(k, True)
-        if loc:
-            loc_items[loc] = k
-
-    if not loc_items:
-        # No valid locale keys found: return as-is
+    loc_items = OrderedDict((str2locale(k, True), k) for k in value.keys())
+    if not loc_items or None in loc_items:
+        # Return as-is if not ALL keys in the struct are locales
         return value
 
     # Find best language match and return value by its key
-    out_locale = best_match(language, loc_items)
+    out_locale = best_match(language, loc_items.keys())
     return value[loc_items[out_locale]]
 
 
