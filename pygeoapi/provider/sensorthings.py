@@ -242,8 +242,6 @@ class SensorThingsProvider(BaseProvider):
         LOGGER.debug('Sending query')
         if identifier:
             r = get(f'{self._url}({identifier})', params=params)
-        elif resulttype == 'hits':
-            r = get(self._url, params={'$count': 'true'})
         else:
             r = get(self._url, params=params)
 
@@ -252,14 +250,13 @@ class SensorThingsProvider(BaseProvider):
             raise ProviderConnectionError('Bad http response code')
 
         response = r.json()
-        v = [response, ] if identifier else response.get('value')
-
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
             feature_collection['numberMatched'] = response.get('@iot.count')
             return feature_collection
 
+        v = [response, ] if identifier else response.get('value')
         # if values are less than expected, query for more
         hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         while len(v) < hits_:
@@ -373,7 +370,7 @@ class SensorThingsProvider(BaseProvider):
         """
         try:
             if self.entity == 'Things':
-                return entity.pop('Locations')[0]['location']
+                return entity.get('Locations')[0]['location']
             elif self.entity == 'Datastreams':
                 try:
                     geo = entity['Observations'][0][
@@ -398,6 +395,10 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: dict of SensorThings feature properties
         """
+        if self.entity == 'Things':
+            extra_props = entity['Locations'][0].get('properties', {})
+            entity['properties'].update(extra_props)
+
         for k, v in entity.items():
             # Create intra links
             path_ = 'collections/{}/items/{}'
@@ -430,6 +431,7 @@ class SensorThingsProvider(BaseProvider):
                 )
 
         # Make properties block
+        entity.update(entity.pop('properties'))
         if keys:
             ret = {}
             for k in keys:

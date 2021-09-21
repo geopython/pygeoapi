@@ -95,6 +95,12 @@ def test_query_observations(config):
     results = p.query(resulttype='hits')
     assert results['numberMatched'] == 2752
 
+    r = p.query(bbox=[-109, 36, -106, 37], resulttype='hits')
+    # assert r['numberMatched'] == 2
+
+    results = p.query(limit=1000, resulttype='hits')
+    assert results['numberMatched'] == (r['numberMatched'] + 2)
+
     results = p.query(properties=[('result', 7475), ])
     assert results['features'][0]['properties']['result'] == 7475
 
