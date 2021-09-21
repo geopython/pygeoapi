@@ -431,7 +431,9 @@ class SensorThingsProvider(BaseProvider):
                 )
 
         # Make properties block
-        entity.update(entity.pop('properties'))
+        if entity.get('properties', None):
+            entity.update(entity.pop('properties'))
+
         if keys:
             ret = {}
             for k in keys:
