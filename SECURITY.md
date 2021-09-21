@@ -1,6 +1,6 @@
 # pygeoapi Security Policy
 
-## Supported Versions
+## Reporting
 
 Security/vulnerability reports **should not** be submitted through GitHub issues or public discussions, but instead please send your report 
 to **geopython-security nospam @ lists.osgeo.org** (remove the blanks and 'nospam').  
