@@ -100,6 +100,7 @@ def language_struct():
 @pytest.fixture()
 def nonlanguage_struct():
     return {
+        'id_field': 'id',  # Note: Babel parses this as "Indonesian"!
         None: 'empty key',
         42: 'numeric key',
         'fla': 'non-language key'

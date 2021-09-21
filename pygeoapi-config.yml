@@ -252,7 +252,7 @@ resources:
               href: https://open.canada.ca/en/open-data
               hreflang: en-CA
             - type: text/html
-              rel: canonical
+              rel: alternate
               title: informations
               href: https://ouvert.canada.ca/fr/donnees-ouvertes
               hreflang: fr-CA

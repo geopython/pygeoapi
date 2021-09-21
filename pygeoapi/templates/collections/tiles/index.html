@@ -73,7 +73,7 @@
     map.addLayer(new L.TileLayer(
         '{{ config["server"]["map"]["url"] }}', {
             maxZoom: {{ data['maxzoom'] }},
-            attribution: '{{ config["server"]["map"]["attribution"] }}'
+            attribution: '{{ config["server"]["map"]["attribution"] | safe }}'
         }
     ));
 
