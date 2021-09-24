@@ -177,8 +177,7 @@ class PostgreSQLProvider(BaseProvider):
                 self.fields = db.fields
         return self.fields
 
-    def __get_where_clauses(self, properties=[], bbox=[],
-                            comp='AND', **kwargs):
+    def __get_where_clauses(self, properties=[], bbox=[]):
         """
         Generarates WHERE conditions to be implemented in query.
         Private method mainly associated with query method
@@ -201,7 +200,7 @@ class PostgreSQLProvider(BaseProvider):
 
         if where_conditions:
             where_clause = SQL(' WHERE {}').format(
-                SQL(f' {comp} ').join(where_conditions))
+                SQL(' AND ').join(where_conditions))
         else:
             where_clause = SQL('')
 
@@ -251,7 +250,7 @@ class PostgreSQLProvider(BaseProvider):
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
                 where_clause = self.__get_where_clauses(
-                    properties=properties, bbox=bbox, **kwargs)
+                    properties=properties, bbox=bbox)
                 sql_query = SQL("SELECT COUNT(*) as hits from {} {}").\
                     format(Identifier(self.table), where_clause)
                 try:
@@ -277,7 +276,7 @@ class PostgreSQLProvider(BaseProvider):
                 SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
 
             where_clause = self.__get_where_clauses(
-                properties=properties, bbox=bbox, **kwargs)
+                properties=properties, bbox=bbox)
 
             orderby = self._make_orderby(sortby) if sortby else SQL('')
 
