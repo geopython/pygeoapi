@@ -36,6 +36,9 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
+import os
+PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
+
 
 @pytest.fixture()
 def config():
@@ -45,7 +48,7 @@ def config():
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',
-                 'password': 'postgres',
+                 'password': PASSWORD,
                  'search_path': ['osm', 'public']
                  },
         'id_field': 'osm_id',

@@ -28,7 +28,7 @@ jobs:
     - name: Install and run PostgreSQL/PostGIS 📦
       uses: huaxk/postgis-action@v1
       with:
-        postgresql password: postgres
+        postgresql password: ${{ secrets.DatabasePassword || 'postgres' }}
         postgresql db: 'test'
     - name: Install and run Elasticsearch 📦
       uses: getong/elasticsearch-action@v1.2
@@ -63,6 +63,8 @@ jobs:
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:postgres@localhost:5432/test
         python3 tests/load_sta_data.py tests/data/sta_iow_datastreams.json
     - name: run unit tests ⚙️
+      env:
+        POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: |
         pytest tests/test_api.py
         pytest tests/test_config.py
