@@ -3,7 +3,7 @@
 # Authors: Matthew Perry <perrygeo@gmail.com>
 #
 # Copyright (c) 2018 Matthew Perry
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -88,6 +88,11 @@ def test_query(fixture, config):
 
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
+
+    results = p.query(properties=[('foo', 'bar')])
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
 
 
 def test_get(fixture, config):
