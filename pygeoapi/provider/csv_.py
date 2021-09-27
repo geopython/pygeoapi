@@ -99,6 +99,11 @@ class CSVProvider(BaseProvider):
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
+            if properties:
+                data_ = filter(
+                    lambda p: all(
+                        [p[prop[0]] == prop[1] for prop in properties]), data_)
+
             if resulttype == 'hits':
                 LOGGER.debug('Returning hits only')
                 feature_collection['numberMatched'] = len(list(data_))
@@ -166,6 +171,7 @@ class CSVProvider(BaseProvider):
         """
 
         return self._load(startindex, limit, resulttype,
+                          properties=properties,
                           select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
