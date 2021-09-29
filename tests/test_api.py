@@ -501,6 +501,20 @@ def test_get_collection_items(config, api_):
 
     assert code == 400
 
+    req = mock_request({'stn_id': '35'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 2
+    assert features['numberMatched'] == 2
+
+    req = mock_request({'stn_id': '35', 'value': '93.9'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    features = json.loads(response)
+
+    assert len(features['features']) == 1
+    assert features['numberMatched'] == 1
+
     req = mock_request({'limit': 2})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
@@ -652,6 +666,14 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == 200
+
+    req = mock_request({'scalerank': 1})
+    rsp_headers, code, response = api_.get_collection_items(req, 'lakes')
+    features = json.loads(response)
+
+    assert len(features['features']) == 10
+    assert features['numberMatched'] == 11
+    assert features['numberReturned'] == 10
 
     req = mock_request({'datetime': '2005-04-22'})
     rsp_headers, code, response = api_.get_collection_items(req, 'lakes')

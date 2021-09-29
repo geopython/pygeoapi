@@ -36,6 +36,9 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
+import os
+PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
+
 
 @pytest.fixture()
 def config():
@@ -45,7 +48,7 @@ def config():
         'data': {'host': '127.0.0.1',
                  'dbname': 'test',
                  'user': 'postgres',
-                 'password': 'postgres',
+                 'password': PASSWORD,
                  'search_path': ['osm', 'public']
                  },
         'id_field': 'osm_id',
@@ -79,7 +82,7 @@ def test_query_with_property_filter(config):
                features))
     assert (len(features) == len(stream_features))
 
-    feature_collection = p.query()
+    feature_collection = p.query(limit=50)
     features = feature_collection.get('features', None)
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',
@@ -112,6 +115,32 @@ def test_query_bbox(config):
         bbox=[29.3373, -3.4099, 29.3761, -3.3924]
     )
     assert len(boxed_feature_collection['features']) == 5
+
+
+def test_query_sortby(config):
+    """Test query with sorting"""
+    psp = PostgreSQLProvider(config)
+    up = psp.query(sortby=[{'property': 'osm_id', 'order': '+'}])
+    assert up['features'][0]['id'] == 13990765
+    down = psp.query(sortby=[{'property': 'osm_id', 'order': '-'}])
+    assert down['features'][0]['id'] == 620735702
+
+    name = psp.query(sortby=[{'property': 'name', 'order': '+'}])
+    assert name['features'][0]['properties']['name'] == 'Agasasa'
+
+
+def test_query_skip_geometry(config):
+    """Test query without geometry"""
+    psp = PostgreSQLProvider(config)
+    skipped = psp.query(skip_geometry=True)
+    assert skipped['features'][0]['geometry'] is None
+
+
+def test_query_select_properties(config):
+    """Test query with selected properties"""
+    psp = PostgreSQLProvider(config)
+    props = psp.query(select_properties=['name'])
+    assert len(props['features'][0]['properties']) == 1
 
 
 def test_get(config):
