@@ -1109,15 +1109,16 @@ class API:
             'type': 'object',
             'title': l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale),
-            'properties': {
-                'geometry': {
-                    '$ref': 'https://geojson.org/schema/Geometry.json'
-                }
-            },
+            'properties': {},
             '$schema': 'http://json-schema.org/draft/2019-09/schema',
             '$id': '{}/collections/{}/queryables'.format(
                 self.config['server']['url'], dataset)
         }
+
+        if p.fields:
+            queryables['properties']['geometry'] = {
+                '$ref': 'https://geojson.org/schema/Geometry.json'
+            }
 
         for k, v in p.fields.items():
             show_field = False
@@ -1272,7 +1273,7 @@ class API:
                 msg = 'unknown query parameter: {}'.format(k)
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
-            elif k not in reserved_fieldnames and k in p.fields.keys():
+            elif k not in reserved_fieldnames and k in list(p.fields.keys()):
                 LOGGER.debug('Add property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
@@ -1331,7 +1332,8 @@ class API:
         LOGGER.debug('sortby: {}'.format(sortby))
         LOGGER.debug('bbox: {}'.format(bbox))
         LOGGER.debug('datetime: {}'.format(datetime_))
-        LOGGER.debug('properties: {}'.format(select_properties))
+        LOGGER.debug('properties: {}'.format(properties))
+        LOGGER.debug('select properties: {}'.format(select_properties))
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
         LOGGER.debug('language: {}'.format(prv_locale))
         LOGGER.debug('q: {}'.format(q))
