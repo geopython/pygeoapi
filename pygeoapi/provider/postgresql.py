@@ -280,15 +280,13 @@ class PostgreSQLProvider(BaseProvider):
 
             orderby = self._make_orderby(sortby) if sortby else SQL('')
 
-            statement = SQL(q) if q is not None else \
-                SQL("SELECT DISTINCT {} {} FROM {} {} {}").\
+            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
+             SELECT DISTINCT {} {} FROM {} {} {}").\
                 format(props,
                        geom,
                        Identifier(self.table),
                        where_clause,
                        orderby)
-
-            sql_query = SQL(f"DECLARE \"geo_cursor\" CURSOR FOR {statement}")
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
