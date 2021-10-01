@@ -271,9 +271,11 @@ class SensorThingsProvider(BaseProvider):
 
         for entity in v[:hits_]:
             # Make feature
+            id = entity.pop(self.id_field)
+            id = f"'{id}'" if isinstance(id, str) else str(id)
             f = {
                 'type': 'Feature', 'properties': {},
-                'geometry': None, 'id': str(entity.pop(self.id_field))
+                'geometry': None, 'id': id
             }
 
             # Make geometry
@@ -412,10 +414,12 @@ class SensorThingsProvider(BaseProvider):
                         v[i] = _v['properties'][self._linkables[k]['u']]
                     continue
                 for i, _v in enumerate(v):
+                    id = _v[self.id_field]
+                    id = f"'{id}'" if isinstance(id, str) else str(id)
                     v[i] = urljoin(
                         self._rel_link,
                         path_.format(
-                            self._linkables[k]['n'], _v[self.id_field]
+                            self._linkables[k]['n'], id
                         )
                     )
 
@@ -423,10 +427,12 @@ class SensorThingsProvider(BaseProvider):
                 if self._linkables[ks]['u'] != '':
                     entity[k] = v['properties'][self._linkables[ks]['u']]
                     continue
+                id = v[self.id_field]
+                id = f"'{id}'" if isinstance(id, str) else str(id)
                 entity[k] = urljoin(
                     self._rel_link,
                     path_.format(
-                        self._linkables[ks]['n'], v[self.id_field]
+                        self._linkables[ks]['n'], id
                     )
                 )
 
