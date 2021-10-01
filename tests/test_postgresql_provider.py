@@ -143,14 +143,6 @@ def test_query_select_properties(config):
     assert len(props['features'][0]['properties']) == 1
 
 
-def test_query_q(config):
-    """Test query with q statement"""
-    psp = PostgreSQLProvider(config)
-    q = 'SELECT * FROM `hotosm_bdi_waterways` WHERE `name` == "Agasasa"'
-    query = psp.query(q=q)
-    assert query['features'][0]['properties']['name'] == 'Agasasa'
-
-
 def test_get(config):
     """Testing query for a specific object"""
     p = PostgreSQLProvider(config)
