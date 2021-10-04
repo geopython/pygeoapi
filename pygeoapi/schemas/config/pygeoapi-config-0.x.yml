@@ -362,9 +362,6 @@ properties:
                                       id_field:
                                           type: string
                                           description: required for vector data, the field corresponding to the ID
-                                      uri_field:
-                                          type: string
-                                          description: the field corresponding to the feature's Uniform Resource Identifier
                                       geometry:
                                           type: object
                                           description: the field corresponding to the geometry
