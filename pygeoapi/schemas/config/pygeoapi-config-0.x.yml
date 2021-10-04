@@ -258,12 +258,12 @@ properties:
                               type: array
                               description: linked data configuration
                               items:
-                                  - type: object
-                                    patternProperties:
-                                        "^.*$":
-                                            anyOf:
-                                                - type: string
-                                                - type: object
+                                  type: object
+                                  patternProperties:
+                                      "^.*$":
+                                          anyOf:
+                                              - type: string
+                                              - type: object
                           links:
                               type: array
                               description: list of related links
