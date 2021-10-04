@@ -15,17 +15,17 @@ pygeoapi itself implements numerous formats, data providers and the process func
 
 The pygeoapi architecture supports the following subsystems:
 
-- data providers
-- output formats
-- processes
+* data providers
+* output formats
+* processes
 
 The core pygeoapi plugin registry can be found in ``pygeoapi.plugin.PLUGINS``.
 
 Each plugin type implements its relevant base class as the API contract:
 
-- data providers: ``pygeoapi.provider.base``
-- output formats: ``pygeoapi.formatter.base``
-- processes: ``pygeoapi.process.base``
+* data providers: ``pygeoapi.provider.base``
+* output formats: ``pygeoapi.formatter.base``
+* processes: ``pygeoapi.process.base``
 
 .. todo:: link PLUGINS to API doc
 
@@ -98,7 +98,7 @@ its base provider, all other functionality is left to the provider implementatio
 
 Each base class documents the functions, arguments and return types required for implementation.
 
-.. note::   You can add language support to your plugin using :ref:`these guides<language>`.
+.. note::  You can add language support to your plugin using :ref:`these guides<language>`.
 
 
 Connecting to pygeoapi
@@ -108,10 +108,10 @@ The following methods are options to connect the plugin to pygeoapi:
 
 **Option 1**: Update in core pygeoapi:
 
-- copy ``mycoolvectordata.py`` into ``pygeoapi/provider``
-- update the plugin registry in ``pygeoapi/plugin.py:PLUGINS['provider']`` with the plugin's
+* copy ``mycoolvectordata.py`` into ``pygeoapi/provider``
+* update the plugin registry in ``pygeoapi/plugin.py:PLUGINS['provider']`` with the plugin's
   shortname (say ``MyCoolVectorData``) and dotted path to the class (i.e. ``pygeoapi.provider.mycoolvectordata.MyCoolVectorDataProvider``)
-- specify in your dataset provider configuration as follows:
+* specify in your dataset provider configuration as follows:
 
 .. code-block:: yaml
 
@@ -124,10 +124,10 @@ The following methods are options to connect the plugin to pygeoapi:
 
 **Option 2**: implement outside of pygeoapi and add to configuration (recommended)
 
-- create a Python package of the ``mycoolvectordata.py`` module (see `Cookiecutter`_ as an example)
-- install your Python package onto your system (``python setup.py install``).  At this point your new package
+* create a Python package of the ``mycoolvectordata.py`` module (see `Cookiecutter`_ as an example)
+* install your Python package onto your system (``python setup.py install``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
-- specify in your dataset provider configuration as follows:
+* specify in your dataset provider configuration as follows:
 
 .. code-block:: yaml
 
@@ -137,7 +137,9 @@ The following methods are options to connect the plugin to pygeoapi:
          data: /path/to/file
          id_field: stn_id
 
-BEGIN
+
+.. note::  The United States Geological Survey has created a Cookiecutter project for creating pygeoapi plugins. See the `pygeoapi-plugin-cookiecutter`_ project to get started.
+
 
 Example: custom pygeoapi raster data provider
 ---------------------------------------------
@@ -186,7 +188,6 @@ implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
 
-END
 
 Example: custom pygeoapi formatter
 ----------------------------------
@@ -243,6 +244,7 @@ by downstream applications.
    `pygeoapi-kubernetes-papermill`_,Euro Data Cube,processes for executing Jupyter notebooks via Kubernetes
    `local-outlier-factor-plugin`_,Manaaki Whenua – Landcare Research,processes for local outlier detection
    `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
+   `nldi_xstool`_,United States Geological Survey,Water data processing
 
 
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter-pypackage
@@ -250,3 +252,5 @@ by downstream applications.
 .. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill
 .. _`local-outlier-factor-plugin`: https://github.com/manaakiwhenua/local-outlier-factor-plugin
 .. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi
+.. _`nldi_xstool`: https://github.com/ACWI-SSWD/nldi_xstool
+.. _`pygeoapi-plugin-cookiecutter`: https://code.usgs.gov/wma/nhgf/pygeoapi-plugin-cookiecutter

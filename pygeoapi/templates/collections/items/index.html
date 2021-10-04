@@ -1,14 +1,14 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}?lang={{locale}}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %} /
-    <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
+    <a href="{{ data['dataset_path'] }}?lang={{locale}}">{{ link['title'] | truncate( 25 ) }}</a>
     {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
-/ <a href="{{ data['items_path']}}">{% trans %}Items{% endtrans %}</a>
+/ <a href="{{ data['items_path']}}?lang={{locale}}">{% trans %}Items{% endtrans %}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
@@ -41,8 +41,8 @@
                   <select id="limits">
                     <option value="10">10 ({% trans %}default{% endtrans %})</option>
                     <option value="100">100</option>
-                    <option value="1000">1,000</option>
-                    <option value="2000">2,000</option>
+                    <!-- <option value="1000">1,000</option>
+                    <option value="2000">2,000</option> -->
                   </select>
                   <script>
                     var select = document.getElementById('limits');
@@ -92,11 +92,11 @@
             {% for ft in data['features'] %}
               <tr>
                 {% if data.get('uri_field') %}
-                <td data-label="{{ data.get('uri_field') }}"><a href="{{ ft['properties'].get(data['uri_field'])}}" title="{{ ft['properties'][data['uri_field']] }}">{{ft['properties'][data.get('uri_field')]}}</a></td>
+                <td data-label="{{ data.get('uri_field') }}"><a href="{{ ft['properties'].get(data['uri_field'])}}?lang={{locale}}" title="{{ ft['properties'][data['uri_field']] }}">{{ft['properties'][data.get('uri_field')]}}</a></td>
                 {% endif %}
-                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
+                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}?lang={{locale}}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
                 {% if data['title_field'] %}
-                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
+                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}?lang={{locale}}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
                 {% endif %}
                 {% for k, v in ft['properties'].items() %}
                   {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
@@ -124,7 +124,7 @@
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
+            attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
     var geojson_data = {{ data['features'] | to_json | safe }};

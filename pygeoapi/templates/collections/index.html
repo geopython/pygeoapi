@@ -1,17 +1,17 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Collections {% endblock %}
+{% block title %}{{ super() }} {% trans %}Collections{% endtrans %}{% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="./collections">Collections</a>
+/ <a href="./collections?lang={{locale}}">{% trans %}Collections{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collections">
-      <h1>Collections in this service</h1>
+      <h1>{% trans %}Collections in this service{% endtrans %}</h1>
             <table class="striped">
               <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Description</th>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Type{% endtrans %}</th>
+                <th>{% trans %}Description{% endtrans %}</th>
               </tr>
               </thead>
               <tbody>
@@ -19,7 +19,7 @@
                 <tr>
                   <td data-label="name">
                     <a  title="{{ col['title'] | striptags | truncate }}"
-                      href="{{ config['server']['url'] }}/collections/{{ col.id }}">
+                      href="{{ config['server']['url'] }}/collections/{{ col.id }}?lang={{locale}}">
                       <span>{{ col['title'] | striptags | truncate }}</span></a>
                   </td>
                   <td data-label="type">{{ col["itemType"] }}</td>

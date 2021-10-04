@@ -363,7 +363,7 @@ def render_j2_template(config, template, data, locale_=None):
             raise
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
-                           data=data, version=__version__)
+                           data=data, version=__version__, locale=locale_)
 
 
 def get_mimetype(filename):
@@ -393,13 +393,14 @@ def get_breadcrumbs(urlpath):
 
     s = ''
     for t in tokens:
+
         if s:
             s += '/' + t
         else:
             s = t
         links.append({
             'href': s,
-            'title': t,
+            'title': "Fubar",
         })
 
     return links

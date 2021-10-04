@@ -159,7 +159,10 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             'description': description,
             'contactPoint': contact,
             'associations': links,
-            'externalId': identifier,
+            'externalId': [{
+                'scheme': 'default',
+                'value': identifier
+            }],
             'themes': themes,
             'extent': {
                 'spatial': {
@@ -177,7 +180,7 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
 
     try:
         res = db.insert(json_record)
-        print('Metadata record {} loader with internal id {}'.format(
+        print('Metadata record {} loaded with internal id {}'.format(
             xml_file, res))
     except Exception as err:
         print(err)

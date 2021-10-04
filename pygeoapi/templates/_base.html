@@ -31,13 +31,21 @@
           Add additional menu items here
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
         -->
-        <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
+        <div style="float: right;">
+          <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button">Contact</a>
+          {% if config['server']['languages'] %}
+          <span style="border-left:solid 1px #000">&nbsp;</span>
+          {% for lang in config['server']['languages'] %}
+          <a href="?lang={{lang}}" role="button" class="button" style="float:right;text-transform: uppercase;">{{lang.split('-')[0]}}</a>
+          {% endfor %}
+          {% endif %}
+        </div>
       </div>
     </header>
     <div class="sticky row crumbs">
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         {% block crumbs %}
-        <a href="{{ config['server']['url'] }}">{% trans %}Home{% endtrans %}</a>
+        <a href="{{ config['server']['url'] }}?lang={{locale}}">{% trans %}Home{% endtrans %}</a>
         {% endblock %}
         <span style="float:right">
           {% set links_found = namespace(json=0, jsonld=0) %}
@@ -73,7 +81,7 @@
       </div>
     </div>
     </main>
-    <footer class="sticky">{% trans %}prePoweredBy{% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }} {% trans %}postPoweredBy{% endtrans %}</footer>
+    <footer class="sticky">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
     {% block extrafoot %}
     {% endblock %}
     <script>

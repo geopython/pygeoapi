@@ -27,31 +27,12 @@
 
 {% block extrafoot %}
 {% if data %}
-<!--
     <script>
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
-        }
-    ));
-
-var cov = CovJSON.read(JSON.parse('{{ data |to_json }}'), parameters: ['SST']);
-
-//var cov = CovJSON.load('https://raw.githubusercontent.com/covjson/cookbook/master/examples/coverages/grid.covjson');
-
-var layer = new C.dataLayer(cov, {parameter: 'SST'});
-
-    </script>
--->
-
-    <script>
-    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
-    map.addLayer(new L.TileLayer(
-        '{{ config['server']['map']['url'] }}', {
-            maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
+            attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
 

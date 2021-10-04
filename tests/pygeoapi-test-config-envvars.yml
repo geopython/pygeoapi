@@ -47,6 +47,35 @@ logging:
     level: ERROR
     #logfile: /tmp/pygeoapi.log
 
+links:
+    JSON:
+        en: This document as JSON
+        fr: Ce document en JSON
+    RDF:
+        en: This document as RDF (JSON-LD)
+        fr: Ce document en RDF (JSON-LD) 
+    HTML:
+        en: This document as HTML
+        fr: Ce document en HTML
+    OPENAPI:
+        en: The OpenAPI definition as JSON
+        fr: La définition OpenAPI en JSON
+    QJSON:
+        en: Queryables for this collection as JSON
+        fr: Les éléments à interroger pour cette collection en JSON
+    QHTML: 
+        en: Queryables for this collection as HTML
+        fr: Les éléments à interroger pour cette collection en HTML
+    IGEOJSON:
+        en: Items as GeoJSON
+        fr: Items en GeoJSON
+    IRDF:
+        en: Items as RDF (GeoJSON-LD)
+        fr: Items en RDF (GeoJSON-LD)
+    IHTML:
+        en: Items as HTML
+        fr: Items en HTML
+        
 metadata:
     identification:
         title: pygeoapi default instance ${PYGEOAPI_TITLE}

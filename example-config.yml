@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2020 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,57 +31,31 @@ server:
     bind:
         host: 0.0.0.0
         port: 5000
-    url: http://localhost:5000/
+    url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     languages:
         # First language is the default language
         - en-US
         - fr-CA
-    cors: true
+    # cors: true
     pretty_print: true
     limit: 10
-    # templates: /path/to/templates
+    # templates:
+      # path: /path/to/Jinja2/templates
+      # static: /path/to/static/folder # css/js/img
     map:
-        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    manager:
-        name: TinyDB
-        connection: /tmp/pygeoapi-test-process-manager.db
-        output_dir: /tmp
-        
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+#    manager:
+#        name: TinyDB
+#        connection: /tmp/pygeoapi-process-manager.db
+#        output_dir: /tmp/
+    # ogc_schemas_location: /opt/schemas.opengis.net
+
 logging:
     level: ERROR
     #logfile: /tmp/pygeoapi.log
-
-links:
-    JSON:
-        en: This document as JSON
-        fr: Ce document en JSON
-    RDF:
-        en: This document as RDF (JSON-LD)
-        fr: Ce document en RDF (JSON-LD) 
-    HTML:
-        en: This document as HTML
-        fr: Ce document en HTML
-    OPENAPI:
-        en: The OpenAPI definition as JSON
-        fr: La définition OpenAPI en JSON
-    QJSON:
-        en: Queryables for this collection as JSON
-        fr: Les éléments à interroger pour cette collection en JSON
-    QHTML: 
-        en: Queryables for this collection as HTML
-        fr: Les éléments à interroger pour cette collection en HTML
-    IGEOJSON:
-        en: Items as GeoJSON
-        fr: Items en GeoJSON
-    IRDF:
-        en: Items as RDF (GeoJSON-LD)
-        fr: Items en RDF (GeoJSON-LD)
-    IHTML:
-        en: Items as HTML
-        fr: Items en HTML
 
 metadata:
     identification:
@@ -121,22 +95,23 @@ metadata:
         fax: +xx-xxx-xxx-xxxx
         email: you@example.org
         url: Contact URL
-        hours: Hours of Service
-        instructions: During hours of service.  Off on weekends.
+        hours: Mo-Fr 08:00-17:00
+        instructions: During hours of service. Off on weekends.
         role: pointOfContact
 
 resources:
     obs:
         type: collection
-        title:
-            en: Observations
-            fr: Observations
-        description:
-            en: My cool observations
-            fr: Mes belles observations
+        title: Observations
+        description: My cool observations
         keywords:
             - observations
             - monitoring
+        context:
+            - datetime: https://schema.org/DateTime
+            - vocab: https://example.com/vocab#
+              stn_id: "vocab:stn_id"
+              value: "vocab:value"
         links:
             - type: text/csv
               rel: canonical
@@ -148,17 +123,6 @@ resources:
               title: data
               href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
               hreflang: en-US
-        context:
-            - schema: https://schema.org/
-              stn_id:
-                "@id": schema:identifier
-                "@type": schema:Text
-              datetime:
-                "@type": schema:DateTime
-                "@id": schema:observationDate
-              value:
-                "@type": schema:Number
-                "@id": schema:QuantitativeValue
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -166,7 +130,6 @@ resources:
             temporal:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
-                trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
         providers:
             - type: feature
               name: CSV
@@ -175,34 +138,6 @@ resources:
               geometry:
                   x_field: long
                   y_field: lat
-
-    cmip5:
-        type: collection
-        title: CMIP5 sample
-        description: CMIP5 sample
-        keywords:
-            - cmip5
-            - climate
-        extents:
-            spatial:
-                bbox: [-150,40,-45,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://open.canada.ca/data/en/dataset/eddd6eaf-34d7-4452-a994-3d928115a68b
-              hreflang: en-CA
-        providers:
-            - type: coverage
-              name: xarray
-              data: tests/data/CMIP5_rcp8.5_annual_abs_latlon1x1_PCP_pctl25_P1Y.nc
-              x_field: lon
-              y_field: lat
-              time_field: time
-              format:
-                  name: NetCDF
-                  mimetype: application/x-netcdf
 
     lakes:
         type: collection
@@ -213,7 +148,12 @@ resources:
             en: lakes of the world, public domain
             fr: lacs du monde, domaine public
         keywords:
-            - lakes
+            en:
+                - lakes
+                - water bodies
+            fr:
+                - lacs
+                - plans d'eau
         links:
             - type: text/html
               rel: canonical
@@ -232,21 +172,7 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
-            - type: tile
-              name: MVT
-              # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
-              data: tests/data/tiles/ne_110m_lakes
-              options:
-                metadata_format: raw # default | tilejson
-                bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
-                zoom:
-                    min: 0
-                    max: 11
-                schemes:
-                    - WorldCRS84Quad
-              format: 
-                    name: pbf
-                    mimetype: application/vnd.mapbox-vector-tile
+              title_field: name
 
     gdps-temperature:
         type: collection
@@ -275,57 +201,72 @@ resources:
                   name: GRIB
                   mimetype: application/x-grib2
 
-    icoads-sst:
-        type: collection
-        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
+    test-data:
+        type: stac-collection
+        title: pygeoapi test data
+        description: pygeoapi test data
         keywords:
-            - icoads
-            - sst
-            - air temperature
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            - poi
+            - portugal
         links:
             - type: text/html
               rel: canonical
               title: information
-              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
-              hreflang: en-US
-        providers:
-            - type: edr
-              name: xarray-edr
-              data: tests/data/coads_sst.nc
-              format:
-                  name: NetCDF
-                  mimetype: application/x-netcdf
-
-    objects:
-        type: collection
-        title: GeoJSON objects
-        description: GeoJSON geometry types for GeoSparql and Schema Geometry conversion.
-        keywords:
-            - shapes
-        links:
-            - type: text/html
-              rel: canonical
-              title: data source
-              href: https://en.wikipedia.org/wiki/GeoJSON
+              href: https://github.com/geopython/pygeoapi/tree/master/tests/data
               hreflang: en-US
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            temporal:
-                begin: null
-                end: null  # or empty (either means open ended)
         providers:
-            - type: feature
-              name: GeoJSON
-              data: tests/data/items.geojson
-              id_field: fid
-              uri_field: uri
+            - type: stac
+              name: FileSystem
+              data: tests/data
+              file_types:
+                  - .gpkg
+                  - .sqlite
+                  - .csv
+                  - .grib2
+                  - .tif
+                  - .shp
+
+    canada-metadata:
+        type: collection
+        title:
+            en: Open Canada sample data
+            fr: Exemple de donn\u00e9es Canada Ouvert
+        description:
+            en: Sample metadata records from open.canada.ca
+            fr: Exemples d'enregistrements de m\u00e9tadonn\u00e9es sur ouvert.canada.ca
+        keywords:
+            en:
+                - canada
+                - open data
+            fr:
+                - canada
+                - donn\u00e9es ouvertes
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://open.canada.ca/en/open-data
+              hreflang: en-CA
+            - type: text/html
+              rel: canonical
+              title: informations
+              href: https://ouvert.canada.ca/fr/donnees-ouvertes
+              hreflang: fr-CA
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        providers:
+            - type: record
+              name: TinyDBCatalogue
+              data: tests/data/open.canada.ca/sample-records.tinydb
+              id_field: externalId
+              time_field: recordCreated
+              title_field: title
 
     hello-world:
         type: process
