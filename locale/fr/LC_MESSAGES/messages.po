@@ -93,11 +93,6 @@ msgstr "Licence"
 msgid "Collections"
 msgstr "Collections"
 
-#: build/lib/pygeoapi/templates/collections/index.html:49
-#: pygeoapi/templates/landing_page.html:49
-msgid "Collections in this service"
-msgstr "Collections de ce service"
-
 #: build/lib/pygeoapi/templates/landing_page.html:49
 #: pygeoapi/templates/landing_page.html:49
 msgid "View the collections in this service"

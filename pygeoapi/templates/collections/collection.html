@@ -42,7 +42,7 @@
       <ul>
         <li>
           <div>
-            <a title="Display Queryables" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables?lang={{locale}}">
+            <a title="{% trans %}Display Queryables{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables?lang={{locale}}">
               {% trans %}Display Queryables of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
