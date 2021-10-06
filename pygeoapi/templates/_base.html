@@ -81,7 +81,8 @@
       </div>
     </div>
     </main>
-    <footer class="sticky">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
+    <footer class="sticky">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io">
+      <img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" title="pygeoapi logo" style="height:24px;vertical-align: middle;"/></a> {{ version }}</footer>
     {% block extrafoot %}
     {% endblock %}
     <script>

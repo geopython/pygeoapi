@@ -50,7 +50,7 @@
                     select.value = params.get('limit') || 10;
                     select.addEventListener('change', ev => {
                       var limit = ev.target.value;
-                      document.location.search = `limit=${limit}`;
+                      document.location.search = `limit=${limit}&lang={{locale}}`;
                     });
                   </script>
                 </div>

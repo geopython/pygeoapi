@@ -250,7 +250,7 @@ msgstr ""
 #: pygeoapi/templates/collections/items/index.html:64
 #: pygeoapi/templates/collections/items/item.html:62
 msgid "Next"
-msgstr ""
+msgstr "Suivant"
 
 #: build/lib/pygeoapi/templates/collections/items/index.html:114
 #: pygeoapi/templates/collections/items/index.html:114
@@ -326,7 +326,7 @@ msgstr ""
 #: build/lib/pygeoapi/templates/processes/process.html:25
 #: pygeoapi/templates/processes/process.html:25
 msgid "Data Type"
-msgstr ""
+msgstr "Type de données"
 
 #: build/lib/pygeoapi/templates/processes/process.html:26
 #: build/lib/pygeoapi/templates/processes/process.html:56
