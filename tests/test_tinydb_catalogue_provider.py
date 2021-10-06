@@ -69,6 +69,21 @@ def test_query(config):
     assert results['numberMatched'] == 6
     assert results['numberReturned'] == 6
 
+    results = p.query(q='Crops')
+    assert len(results['features']) == 6
+    assert results['numberMatched'] == 6
+    assert results['numberReturned'] == 6
+
+    results = p.query(q='CROPS')
+    assert len(results['features']) == 6
+    assert results['numberMatched'] == 6
+    assert results['numberReturned'] == 6
+
+    results = p.query(q='CrOps')
+    assert len(results['features']) == 6
+    assert results['numberMatched'] == 6
+    assert results['numberReturned'] == 6
+
     results = p.query(q='crops barley')
     assert len(results['features']) == 2
     assert results['numberMatched'] == 2
