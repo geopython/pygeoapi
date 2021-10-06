@@ -768,8 +768,8 @@ resources:
     opendrr_psra_indicators_b:
         type: collection
         title: 
-            en: The National Seismic Risk model for Canada (Polygon)
-            fr: Le modèle national de risque sismique pour le Canada (Polygon)
+            en: The National Seismic Risk model for Canada (Point)
+            fr: Le modèle national de risque sismique pour le Canada (Point)
         description: 
             en: The National Seismic Risk model for Canada introduces a structured framework of indicators that profile the physical, social and economic dimensions of earthquake risk at the neighborhood scale.
             fr: Le modèle national de risque sismique pour le Canada présente un cadre structuré d'indicateurs qui profilent les dimensions physiques, sociales et économiques du risque sismique à l'échelle du quartier.
@@ -800,8 +800,8 @@ resources:
     opendrr_psra_indicators_s:
         type: collection
         title: 
-            en: The National Seismic Risk model for Canada (Point)
-            fr: Le modèle national de risque sismique pour le Canada (Point)
+            en: The National Seismic Risk model for Canada (Polygon)
+            fr: Le modèle national de risque sismique pour le Canada (Polygon)
         description: 
             en: The National Seismic Risk model for Canada introduces a structured framework of indicators that profile the physical, social and economic dimensions of earthquake risk at the neighborhood scale.
             fr: Le modèle national de risque sismique pour le Canada présente un cadre structuré d'indicateurs qui profilent les dimensions physiques, sociales et économiques du risque sismique à l'échelle du quartier.
