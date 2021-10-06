@@ -29,7 +29,7 @@
 
 import logging
 import os
-import re
+import re  # noqa
 
 from tinydb import TinyDB, Query
 
