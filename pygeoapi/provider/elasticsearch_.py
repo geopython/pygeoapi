@@ -239,7 +239,9 @@ class ElasticsearchProvider(BaseProvider):
                 prop_name = self.mask_prop(prop[0])
                 pf = {
                     'match': {
-                        prop_name: prop[1]
+                        prop_name: {
+                            'query': prop[1]
+                        }
                     }
                 }
                 query['query']['bool']['filter'].append(pf)
