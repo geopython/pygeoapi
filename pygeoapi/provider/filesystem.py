@@ -240,7 +240,7 @@ def _describe_file(filepath):
     content = {
         'bbox': None,
         'geometry': None,
-        'properties': {'datetime': None}
+        'properties': {}
     }
 
     mcf_file = '{}.yml'.format(os.path.splitext(filepath)[0])
@@ -298,7 +298,7 @@ def _describe_file(filepath):
                     [d.bounds.left, d.bounds.bottom]
                 ]]
             }
-            for k, v in d.tags(1).items():
+            for k, v in d.tags(d.count).items():
                 content['properties'][k] = v
                 if k in ['GRIB_REF_TIME']:
                     value = int(v.split()[0])

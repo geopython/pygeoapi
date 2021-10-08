@@ -1,24 +1,24 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Jobs {% endblock %}
+{% block title %}{{ super() }} {% trans %}Jobs{% endtrans %} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../processes">Processes</a>
+/ <a href="../../processes">{% trans %}Processes{% endtrans %}</a>
 / <a href="../{{ data.process.id }}">{{ data.process.title }}</a>
-/ <a href="./jobs">Jobs</a>
+/ <a href="./jobs">{% trans %}Jobs{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="jobs">
       <div class="row">
         <div class="col-md-12">
           <table class="job-list striped">
-            <caption>Jobs</caption>
+            <caption>{% trans %}Jobs{% endtrans %}</caption>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Start</th>
-                <th>Duration</th>
-                <th>Progress</th>
-                <th>Status</th>
-                <th>Message</th>
+                <th>{% trans %}ID{% endtrans %}</th>
+                <th>{% trans %}Start{% endtrans %}</th>
+                <th>{% trans %}Duration{% endtrans %}</th>
+                <th>{% trans %}Progress{% endtrans %}</th>
+                <th>{% trans %}Status{% endtrans %}</th>
+                <th>{% trans %}Message{% endtrans %}</th>
               </tr>
             </thead>
             <tbody>

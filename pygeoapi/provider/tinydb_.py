@@ -29,6 +29,7 @@
 
 import logging
 import os
+import re  # noqa
 
 from tinydb import TinyDB, Query
 
@@ -93,7 +94,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query TinyDB document store
 
@@ -155,7 +156,8 @@ class TinyDBCatalogueProvider(BaseProvider):
                 QUERY.append("(Q.properties['{}']=='{}')".format(*prop))
 
         if q is not None:
-            QUERY.append("(Q.properties['_metadata-anytext'].search('{}'))".format(q))  # noqa
+            for t in q.split():
+                QUERY.append("(Q.properties['_metadata-anytext'].search('{}', flags=re.IGNORECASE))".format(t))  # noqa
 
         QUERY_STRING = '&'.join(QUERY)
         LOGGER.debug('QUERY_STRING: {}'.format(QUERY_STRING))
@@ -203,7 +205,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get TinyDB document by id
 
@@ -214,7 +216,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         LOGGER.debug('Fetching identifier {}'.format(identifier))
 
-        record = self.db.get(Query().properties[self.id_field] == identifier)
+        record = self.db.get(Query().id == identifier)
 
         if record is None:
             raise ProviderItemNotFoundError('record does not exist')
@@ -250,7 +252,7 @@ def bbox_intersects(record_bbox, input_bbox):
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = record_bbox[0][0]
+    bbox1 = record_bbox[0]
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
     LOGGER.debug('Record bbox: {}'.format(bbox1))

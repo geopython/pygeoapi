@@ -74,7 +74,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
-    def get_coverage_domainset(self):
+    def get_coverage_domainset(self, *args, **kwargs):
         """
         Provide coverage domainset
 
@@ -140,7 +140,7 @@ class XarrayProvider(BaseProvider):
 
         return domainset
 
-    def get_coverage_rangetype(self):
+    def get_coverage_rangetype(self, *args, **kwargs):
         """
         Provide coverage rangetype
 
@@ -182,7 +182,7 @@ class XarrayProvider(BaseProvider):
         return rangetype
 
     def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
-              format_='json'):
+              format_='json', **kwargs):
         """
          Extract data from collection collection
 
@@ -231,8 +231,10 @@ class XarrayProvider(BaseProvider):
                     LOGGER.warning(msg)
                     raise ProviderQueryError(msg)
                 else:
-                    query_params['x_axis_label'] = slice(bbox[0], bbox[2])
-                    query_params['y_axis_label'] = slice(bbox[1], bbox[3])
+                    query_params[self._coverage_properties['x_axis_label']] = \
+                        slice(bbox[0], bbox[2])
+                    query_params[self._coverage_properties['y_axis_label']] = \
+                        slice(bbox[1], bbox[3])
 
             if datetime_ is not None:
                 if self._coverage_properties['time_axis_label'] in subsets:

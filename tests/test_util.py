@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,21 +29,13 @@
 
 from datetime import datetime, date, time
 from decimal import Decimal
-import os
 
 import pytest
 
 from pygeoapi import util
 from pygeoapi.provider.base import ProviderTypeError
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
+from .util import get_test_file_path
 
 
 def test_get_typed_value():
@@ -67,19 +59,19 @@ def test_yaml_load():
 
 
 def test_str2bool():
-    assert util.str2bool(False) is False
-    assert util.str2bool('0') is False
-    assert util.str2bool('no') is False
-    assert util.str2bool('yes') is True
-    assert util.str2bool('1') is True
-    assert util.str2bool(True) is True
-    assert util.str2bool('true') is True
-    assert util.str2bool('True') is True
-    assert util.str2bool('TRUE') is True
-    assert util.str2bool('tRuE') is True
-    assert util.str2bool('on') is True
-    assert util.str2bool('On') is True
-    assert util.str2bool('off') is False
+    assert not util.str2bool(False)
+    assert not util.str2bool('0')
+    assert not util.str2bool('no')
+    assert util.str2bool('yes')
+    assert util.str2bool('1')
+    assert util.str2bool(True)
+    assert util.str2bool('true')
+    assert util.str2bool('True')
+    assert util.str2bool('TRUE')
+    assert util.str2bool('tRuE')
+    assert util.str2bool('on')
+    assert util.str2bool('On')
+    assert not util.str2bool('off')
 
 
 def test_json_serial():
@@ -124,7 +116,7 @@ def test_filter_dict_by_key_value():
 
     collections = util.filter_dict_by_key_value(d['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 5
+    assert len(collections) == 6
 
     notfound = util.filter_dict_by_key_value(d['resources'],
                                              'type', 'foo')

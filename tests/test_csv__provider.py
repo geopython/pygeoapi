@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,22 +27,12 @@
 #
 # =================================================================
 
-import os
-
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csv_ import CSVProvider
 
-
-def get_test_file_path(filename):
-    """helper function to open test file safely"""
-
-    if os.path.isfile(filename):
-        return filename
-    else:
-        return 'tests/{}'.format(filename)
-
+from .util import get_test_file_path
 
 path = get_test_file_path('data/obs.csv')
 
@@ -97,6 +87,14 @@ def test_query(config):
 
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
+
+    results = p.query(properties=[('stn_id', '35')])
+    assert len(results['features']) == 2
+    assert results['numberMatched'] == 2
+    assert results['numberReturned'] == 2
+
+    results = p.query(properties=[('stn_id', '35'), ('value', '93.9')])
+    assert len(results['features']) == 1
 
     config['properties'] = ['value', 'stn_id']
     p = CSVProvider(config)

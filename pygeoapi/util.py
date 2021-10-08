@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 import base64
+from typing import List
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
@@ -41,13 +42,16 @@ import os
 import re
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from shapely.geometry import Polygon
 
 import dateutil.parser
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from babel.support import Translations
 from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
+from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -277,6 +281,8 @@ def json_serial(obj):
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
+    elif isinstance(obj, l10n.Locale):
+        return l10n.locale2str(obj)
 
     msg = '{} type {} not serializable'.format(obj, type(obj))
     LOGGER.error(msg)
@@ -298,13 +304,14 @@ def is_url(urlstring):
         return False
 
 
-def render_j2_template(config, template, data):
+def render_j2_template(config, template, data, locale_=None):
     """
     render Jinja2 template
 
     :param config: dict of configuration
     :param template: template (relative path)
     :param data: dict of data
+    :param locale_: the requested output Locale
 
     :returns: string of rendered template
     """
@@ -312,11 +319,17 @@ def render_j2_template(config, template, data):
     custom_templates = False
     try:
         templates_path = config['server']['templates']['path']
-        env = Environment(loader=FileSystemLoader(templates_path))
+        env = Environment(loader=FileSystemLoader(templates_path),
+                          extensions=['jinja2.ext.i18n',
+                                      'jinja2.ext.autoescape'],
+                          autoescape=select_autoescape(['html', 'xml']))
         custom_templates = True
         LOGGER.debug('using custom templates: {}'.format(templates_path))
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        env = Environment(loader=FileSystemLoader(TEMPLATES),
+                          extensions=['jinja2.ext.i18n',
+                                      'jinja2.ext.autoescape'],
+                          autoescape=select_autoescape(['html', 'xml']))
         LOGGER.debug('using default templates: {}'.format(TEMPLATES))
 
     env.filters['to_json'] = to_json
@@ -334,18 +347,23 @@ def render_j2_template(config, template, data):
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
+    translations = Translations.load('locale', [locale_])
+    env.install_gettext_translations(translations)
+
     try:
         template = env.get_template(template)
     except TemplateNotFound as err:
         if custom_templates:
             LOGGER.debug(err)
             LOGGER.debug('Custom template not found; using default')
-            env = Environment(loader=FileSystemLoader(TEMPLATES))
+            env = Environment(loader=FileSystemLoader(TEMPLATES),
+                              extensions=['jinja2.ext.i18n'])
             template = env.get_template(template)
         else:
             raise
 
-    return template.render(config=config, data=data, version=__version__)
+    return template.render(config=l10n.translate_struct(config, locale_, True),
+                           data=data, version=__version__)
 
 
 def get_mimetype(filename):
@@ -446,7 +464,7 @@ def get_provider_default(providers):
 
     try:
         default = (next(d for i, d in enumerate(providers) if 'default' in d
-                   and d['default'] is True))
+                   and d['default']))
         LOGGER.debug('found default provider type')
     except StopIteration:
         LOGGER.debug('no default provider type.  Returning first provider')
@@ -485,3 +503,36 @@ def read_data(path):
         LOGGER.debug('network file')
         with urlopen(path) as r:
             return r.read()
+
+
+def url_join(*parts):
+    """
+    helper function to join a URL from a number of parts/fragments.
+    Implemented because urllib.parse.urljoin strips subpaths from
+    host urls if they are specified
+
+    Per https://github.com/geopython/pygeoapi/issues/695
+
+    :param parts: list of parts to join
+
+    :returns: str of resulting URL
+    """
+
+    return '/'.join([p.strip().strip('/') for p in parts])
+
+
+def get_envelope(coords_list: List[List[float]]):
+    """
+    helper function to get the envelope for a given coordinates
+    list through the Shapely API.
+
+    :param coords_list: list of coordinates
+
+    :returns: list of the envelope's coordinates
+    """
+
+    coords = [tuple(item) for item in coords_list]
+    polygon = Polygon(coords)
+    bounds = polygon.bounds
+    return [[bounds[0], bounds[3]],
+            [bounds[2], bounds[1]]]

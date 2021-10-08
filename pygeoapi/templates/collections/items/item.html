@@ -22,13 +22,13 @@
 {%- endmacro %}
 {% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../../collections">Collections</a>
+/ <a href="../../../collections">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
 /  <a href="{{ link['href'] }}">{{ link['title'] | truncate( 25 ) }}</a>
   {% endif %}
 {% endfor %}
-/ <a href="../items">Items</a>
+/ <a href="../items">{% trans %}Items{% endtrans %}</a>
 / <a href="./{{ data['id'] }}">{{ ptitle | truncate( 25 ) }}</a>
 {% endblock %}
 {% block extrahead %}
@@ -57,9 +57,9 @@
                 <div class="col-sm-12">
                   {% for link in data['links'] %}
                   {% if link['rel'] == 'prev' %}
-                  <a role="button" href="./{{ data['prev'] }}">Previous</a>
+                  <a role="button" href="./{{ data['prev'] }}">{% trans %}Prev{% endtrans %}</a>
                   {% elif link['rel'] == 'next' %}
-                  <a role="button" href="./{{ data['next'] }}">Next</a>
+                  <a role="button" href="./{{ data['next'] }}">{% trans %}Next{% endtrans %}</a>
                   {% endif %}
                   {% endfor %}
                 </div>
@@ -72,8 +72,8 @@
             <table class="striped">
               <thead>
               <tr>
-                <th>Property</th>
-                <th>Value</th>
+                <th>{% trans %}Property{% endtrans %}</th>
+                <th>{% trans %}Value{% endtrans %}</th>
               </tr>
             </thead>
             <tbody>
@@ -124,10 +124,10 @@
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
-            attribution: '{{ config['server']['map']['attribution'] }}'
+            attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
-    var geojson_data = {{ data |to_json }};
+    var geojson_data = {{ data | to_json | safe }};
     var items = new L.GeoJSON(geojson_data);
 
     map.addLayer(items);

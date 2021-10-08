@@ -38,10 +38,18 @@ LOGGER = logging.getLogger(__name__)
 PROCESS_METADATA = {
     'version': '0.2.0',
     'id': 'hello-world',
-    'title': 'Hello World',
-    'description': 'An example process that takes a name as input, and echoes'
-                   'it back as output. Intended to demonstrate a simple'
-                   'process with a single literal input.',
+    'title': {
+        'en': 'Hello World',
+        'fr': 'Bonjour le Monde'
+    },
+    'description': {
+        'en': 'An example process that takes a name as input, and echoes '
+              'it back as output. Intended to demonstrate a simple '
+              'process with a single literal input.',
+        'fr': 'Un exemple de processus qui prend un nom en entrée et le '
+              'renvoie en sortie. Destiné à démontrer un processus '
+              'simple avec une seule entrée littérale.',
+    },
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
@@ -50,61 +58,47 @@ PROCESS_METADATA = {
         'href': 'https://example.org/process',
         'hreflang': 'en-US'
     }],
-    'inputs': [{
-        'id': 'name',
-        'title': 'Name',
-        'abstract': 'The name of the person or entity that you wish to be'
-                    'echoed back as an output',
-        'input': {
-            'literalDataDomain': {
-                'dataType': 'string',
-                'valueDefinition': {
-                    'anyValue': True
-                }
-            }
+    'inputs': {
+        'name': {
+            'title': 'Name',
+            'description': 'The name of the person or entity that you wish to'
+                           'be echoed back as an output',
+            'schema': {
+                'type': 'string'
+            },
+            'minOccurs': 1,
+            'maxOccurs': 1,
+            'metadata': None,  # TODO how to use?
+            'keywords': ['full name', 'personal']
         },
-        'minOccurs': 1,
-        'maxOccurs': 1,
-        'metadata': None,  # TODO how to use?
-        'keywords': ['full name', 'personal']
-    }, {
-        'id': 'message',
-        'title': 'Message',
-        'abstract': 'An optional message to echo as well',
-        'input': {
-            'literalDataDomain': {
-                'dataType': 'string',
-                'valueDefinition': {
-                    'anyValue': True
-                }
-            }
-        },
-        'minOccurs': 0,
-        'maxOccurs': 1,
-        'metadata': None,
-        'keywords': ['message']
-    }],
-    'outputs': [{
-        'id': 'echo',
-        'title': 'Hello, world',
-        'description': 'A "hello world" echo with the name and (optional)'
-                       'message submitted for processing',
-        'output': {
-            'formats': [{
-                'mimeType': 'application/json'
-            }]
+        'message': {
+            'title': 'Message',
+            'description': 'An optional message to echo as well',
+            'schema': {
+                'type': 'string'
+            },
+            'minOccurs': 0,
+            'maxOccurs': 1,
+            'metadata': None,
+            'keywords': ['message']
         }
-    }],
+    },
+    'outputs': {
+        'echo': {
+            'title': 'Hello, world',
+            'description': 'A "hello world" echo with the name and (optional)'
+                           ' message submitted for processing',
+            'schema': {
+                'type': 'object',
+                'contentMediaType': 'application/json'
+            }
+        }
+    },
     'example': {
-        'inputs': [{
-            'id': 'name',
-            'value': 'World',
-            'type': 'text/plain'
-        }, {
-            'id': 'message',
-            'value': 'An optional message.',
-            'type': 'text/plain'
-        }]
+        'inputs': {
+            'name': 'World',
+            'message': 'An optional message.',
+        }
     }
 }
 
@@ -133,10 +127,10 @@ class HelloWorldProcessor(BaseProcessor):
 
         value = 'Hello {}! {}'.format(name, data.get('message', '')).strip()
 
-        outputs = [{
+        outputs = {
             'id': 'echo',
             'value': value
-        }]
+        }
 
         return mimetype, outputs
 

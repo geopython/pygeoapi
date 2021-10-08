@@ -152,18 +152,21 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             ]]
         },
         'properties': {
-            'record-created': issued,
-            'record-updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'recordCreated': issued,
+            'recordUpdated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'type': type_,
             'title': title,
             'description': description,
             'contactPoint': contact,
             'associations': links,
-            'externalId': identifier,
+            'externalId': [{
+                'scheme': 'default',
+                'value': identifier
+            }],
             'themes': themes,
             'extent': {
                 'spatial': {
-                    'bbox': [[bbox]],
+                    'bbox': [bbox],
                     'crs': bbox_crs
                 },
                 'temporal': {
@@ -177,7 +180,7 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
 
     try:
         res = db.insert(json_record)
-        print('Metadata record {} loader with internal id {}'.format(
+        print('Metadata record {} loaded with internal id {}'.format(
             xml_file, res))
     except Exception as err:
         print(err)

@@ -65,7 +65,7 @@ class RasterioProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
-    def get_coverage_domainset(self):
+    def get_coverage_domainset(self, *args, **kwargs):
         """
         Provide coverage domainset
         :returns: CIS JSON object of domainset metadata
@@ -119,7 +119,7 @@ class RasterioProvider(BaseProvider):
 
         return domainset
 
-    def get_coverage_rangetype(self):
+    def get_coverage_rangetype(self, *args, **kwargs):
         """
         Provide coverage rangetype
         :returns: CIS JSON object of rangetype metadata
@@ -161,7 +161,7 @@ class RasterioProvider(BaseProvider):
         return rangetype
 
     def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
-              format_='json'):
+              format_='json', **kwargs):
         """
         Extract data from collection collection
         :param range_subset: list of bands

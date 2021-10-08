@@ -212,11 +212,11 @@ class SQLiteGPKGProvider(BaseProvider):
         if self.application_id:
             cursor.execute("SELECT AutoGPKGStart()")
             result = cursor.fetchall()
-            if result[0][0] == 1:
+            if result[0][0] >= 1:
                 LOGGER.info("Loaded Geopackage support")
             else:
                 LOGGER.info("SELECT AutoGPKGStart() returned 0." +
-                            "Detected GPKG but couldnt load support")
+                            "Detected GPKG but couldn't load support")
                 raise InvalidPluginError
 
         if self.application_id:
@@ -251,7 +251,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
@@ -310,7 +310,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/countries/items/1

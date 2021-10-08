@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../collections">Collections</a>
+/ <a href="../collections">{% trans %}Collections{% endtrans %}</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
 {% endblock %}
 
@@ -29,36 +29,36 @@
         </div>
       </div>
       {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
-      <h3>Browse</h3>
+      <h3>{% trans %}Browse{% endtrans %}</h3>
       <ul>
         <li>
           <div>
-            <a title="Browse Items" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
-              Browse through the items of "{{ data['title'] }}"</a></div>
+            <a title="{% trans %}Browse Items{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
+              {% trans %}Browse through the items of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
-      <h3>Queryables</h3>
+      <h3>{% trans %}Queryables{% endtrans %}</h3>
       <ul>
         <li>
           <div>
-            <a title="Display Queryables" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
-              Display Queryables of "{{ data['title'] }}"</a></div>
+            <a title="{% trans %}Display Queryables{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
+              {% trans %}Display Queryables of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
       {% for provider in config['resources'][data['id']]['providers'] %}
         {% if 'tile' in provider['type'] %}
-      <h3>Tiles</h3>
+      <h3>{% trans %}Tiles{% endtrans %}</h3>
       <ul>
         <li>
           <div>
-            <a title="Display Tiles" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">Display Tiles of "{{ data['title'] }}"</a>
+            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
           </div>
         </li>
       </ul>
         {% endif %}
       {% endfor %}
       {% endif  %}
-      <h3>Links</h3>
+      <h3>{% trans %}Links{% endtrans %}</h3>
       <ul>
       {% for link in data['links'] %}
           <li>
@@ -76,7 +76,7 @@
     map.addLayer(new L.TileLayer(
       '{{ config['server']['map']['url'] }}', {
         maxZoom: 18,
-        attribution: '{{ config['server']['map']['attribution'] }}'
+        attribution: '{{ config['server']['map']['attribution'] | safe }}'
       }
     ));
 

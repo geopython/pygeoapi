@@ -1,5 +1,7 @@
+Babel
 click<8
 Flask
+jsonschema
 pyproj
 python-dateutil
 pytz
@@ -8,3 +10,5 @@ rasterio
 shapely
 tinydb
 unicodecsv
+future-annotations
+pydantic
