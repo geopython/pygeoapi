@@ -50,6 +50,7 @@ RUN wget https://raw.githubusercontent.com/geopython/pygeoapi/master/tests/load_
 
 RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml
 RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
+RUN echo "discovery.type: single-node" >> config/elasticsearch.yml
 
 RUN yum --enablerepo=extras -y install epel-release \
         && yum install -y python3 python3-pip python3-setuptools python-typing \
