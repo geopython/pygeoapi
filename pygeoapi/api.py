@@ -38,6 +38,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime, timezone
 from functools import partial
+from gzip import compress
 import json
 import logging
 import os
@@ -84,12 +85,14 @@ HEADERS = {
 F_JSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
+F_GZIP = 'gzip'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
+    (F_GZIP, 'application/gzip')
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -140,6 +143,29 @@ def pre_process(func):
             return func(cls, req_out, *args[2:])
         else:
             return func(cls, req_out)
+
+    return inner
+
+
+def gzip(func):
+    """
+    Decorator that compresses an outgoing Request instance.
+
+    :param func: decorated function
+
+    :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        headers, status, content = func(*args, **kwargs)
+        if F_GZIP in headers.get('Content-Encoding', []):
+            try:
+                content = compress(content.encode('utf-8'))
+            except TypeError as err:
+                headers.pop('Content-Encoding')
+                LOGGER.error('Error in compression: {}'.format(err))
+
+        return headers, status, content
 
     return inner
 
@@ -469,7 +495,8 @@ class APIRequest:
         return False
 
     def get_response_headers(self, force_lang: l10n.Locale = None,
-                             force_type: str = None) -> dict:
+                             force_type: str = None,
+                             force_encoding: str = None) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
 
@@ -492,6 +519,7 @@ class APIRequest:
 
         :param force_lang: An optional Content-Language header override.
         :param force_type: An optional Content-Type header override.
+        :param force_encoding: An optional Content-Encoding header override.
         :returns: A header dict
         """
 
@@ -503,6 +531,12 @@ class APIRequest:
         elif self.is_valid() and self._format:
             # Set MIME type for valid formats
             headers['Content-Type'] = FORMAT_TYPES[self._format]
+
+        if force_encoding:
+            headers['Content-Encoding'] = force_encoding
+        elif F_GZIP in self._headers.get('Accept-Encoding', []):
+            headers['Content-Encoding'] = F_GZIP
+
         return headers
 
     def get_request_headers(self, headers) -> dict:
@@ -563,6 +597,7 @@ class API:
         self.manager = load_plugin('process_manager', manager_def)
         LOGGER.info('Process manager plugin loaded')
 
+    @gzip
     @pre_process
     @jsonldify
     def landing_page(self,
@@ -654,6 +689,7 @@ class API:
 
         return headers, 200, to_json(fcm, self.pretty_print)
 
+    @gzip
     @pre_process
     def openapi(self, request: Union[APIRequest, Any],
                 openapi) -> Tuple[dict, int, str]:
@@ -692,6 +728,7 @@ class API:
         else:
             return headers, 200, openapi
 
+    @gzip
     @pre_process
     def conformance(self,
                     request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
@@ -718,6 +755,7 @@ class API:
 
         return headers, 200, to_json(conformance, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def describe_collections(self, request: Union[APIRequest, Any],
@@ -1063,6 +1101,7 @@ class API:
 
         return headers, 200, to_json(fcm, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_queryables(self, request: Union[APIRequest, Any],
@@ -1147,6 +1186,7 @@ class API:
 
         return headers, 200, to_json(queryables, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_collection_items(
             self, request: Union[APIRequest, Any],
@@ -1493,6 +1533,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     def post_collection_items(
             self, request: Union[APIRequest, Any],
@@ -1732,6 +1773,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_collection_item(self, request: Union[APIRequest, Any],
                             dataset, identifier) -> Tuple[dict, int, str]:
@@ -2020,6 +2062,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_coverage_domainset(
@@ -2073,6 +2116,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_coverage_rangetype(
@@ -2125,6 +2169,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles(self, request: Union[APIRequest, Any],
@@ -2229,6 +2274,7 @@ class API:
 
         return headers, 200, to_json(tiles, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles_data(
@@ -2313,6 +2359,7 @@ class API:
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles_metadata(
@@ -2395,6 +2442,7 @@ class API:
 
         return headers, 200, to_json(tiles_metadata, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def describe_processes(self, request: Union[APIRequest, Any],
@@ -2494,6 +2542,7 @@ class API:
 
         return headers, 200, to_json(response, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_process_jobs(self, request: Union[APIRequest, Any],
                          process_id, job_id=None) -> Tuple[dict, int, str]:
@@ -2598,6 +2647,7 @@ class API:
 
         return headers, 200, to_json(serialized_jobs, self.pretty_print)
 
+    @gzip
     @pre_process
     def execute_process(self, request: Union[APIRequest, Any],
                         process_id) -> Tuple[dict, int, str]:
@@ -2701,6 +2751,7 @@ class API:
 
         return headers, http_status, to_json(response, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_process_job_result(self, request: Union[APIRequest, Any],
                                process_id, job_id) -> Tuple[dict, int, str]:
@@ -2825,6 +2876,7 @@ class API:
         # TODO: this response does not have any headers
         return {}, http_status, response
 
+    @gzip
     @pre_process
     def get_collection_edr_query(
             self, request: Union[APIRequest, Any],
@@ -2950,6 +3002,7 @@ class API:
 
         return headers, 200, content
 
+    @gzip
     @pre_process
     @jsonldify
     def get_stac_root(
@@ -3005,6 +3058,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_stac_path(self, request: Union[APIRequest, Any],
