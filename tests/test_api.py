@@ -250,8 +250,8 @@ def test_gzip(config, api_):
     assert isinstance(parsed_json, dict)
     req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON])
     rsp_headers, code, response = api_.landing_page(req)
-    response = json.loads(response)
-    assert response == parsed_json
+    r = json.loads(response)
+    assert r == parsed_json
     assert gzip_response == gzip.compress(response.encode('utf-8'))
 
     req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_GZIP],
@@ -260,6 +260,14 @@ def test_gzip(config, api_):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_GZIP]
     assert rsp_headers['Content-Encoding'] == F_GZIP
     assert gzip_response == gzip_response_gzip
+
+    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_HTML],
+                       HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_headers, code, gzip_response_html = api_.landing_page(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    assert rsp_headers['Content-Encoding'] == F_GZIP
+    parsed_gzip = gzip.decompress(gzip_response_html).decode('utf-8')
+    assert isinstance(parsed_gzip, str)
 
 
 def test_root(config, api_):
