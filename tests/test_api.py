@@ -30,12 +30,13 @@
 import json
 import logging
 import time
+import gzip
 
 from pyld import jsonld
 import pytest
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
-    F_HTML, F_JSON, F_JSONLD
+    F_HTML, F_JSON, F_JSONLD, F_GZIP
 )
 from pygeoapi.util import yaml_load
 
@@ -235,6 +236,30 @@ def test_api_exception(config, api_):
     rsp_headers, code, response = api_.landing_page(req)
     assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
+
+
+def test_gzip(config, api_):
+    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON],
+                       HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_headers, code, gzip_response = api_.landing_page(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+    assert rsp_headers['Content-Encoding'] == F_GZIP
+    parsed_gzip = gzip.decompress(gzip_response).decode('utf-8')
+    assert isinstance(parsed_gzip, str)
+    parsed_json = json.loads(parsed_gzip)
+    assert isinstance(parsed_json, dict)
+    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON])
+    rsp_headers, code, response = api_.landing_page(req)
+    response = json.loads(response)
+    assert response == parsed_json
+    assert gzip_response == gzip.compress(response.encode('utf-8'))
+
+    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_GZIP],
+                       HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_headers, code, gzip_response_gzip = api_.landing_page(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_GZIP]
+    assert rsp_headers['Content-Encoding'] == F_GZIP
+    assert gzip_response == gzip_response_gzip
 
 
 def test_root(config, api_):
