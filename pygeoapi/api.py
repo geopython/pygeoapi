@@ -535,8 +535,6 @@ class APIRequest:
             # Set MIME type for valid formats
             headers['Content-Type'] = FORMAT_TYPES[self._format]
 
-        if force_encoding:
-            headers['Content-Encoding'] = force_encoding
         if F_GZIP in FORMAT_TYPES:
             if force_encoding:
                 headers['Content-Encoding'] = force_encoding

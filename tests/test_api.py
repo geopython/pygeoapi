@@ -239,38 +239,88 @@ def test_api_exception(config, api_):
 
 
 def test_gzip(config, api_):
-    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON],
-                       HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_headers, code, gzip_response = api_.landing_page(req)
+    req_gzip_json = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON],
+                                 HTTP_ACCEPT_ENCODING=F_GZIP)
+    req_gzip_jsonld = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSONLD],
+                                   HTTP_ACCEPT_ENCODING=F_GZIP)
+    req_gzip_html = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_HTML],
+                                 HTTP_ACCEPT_ENCODING=F_GZIP)
+    req_gzip_gzip = mock_request(HTTP_ACCEPT='application/gzip',
+                                 HTTP_ACCEPT_ENCODING=F_GZIP)
+
+    rsp_headers, _, rsp_json = api_.landing_page(req_gzip_json)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
-    assert rsp_headers['Content-Encoding'] == F_GZIP
-    parsed_gzip = gzip.decompress(gzip_response).decode('utf-8')
-    assert isinstance(parsed_gzip, str)
-    parsed_json = json.loads(parsed_gzip)
-    assert isinstance(parsed_json, dict)
-    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON])
-    rsp_headers, code, response = api_.landing_page(req)
-    r = json.loads(response)
-    assert r == parsed_json
-    assert gzip_response == gzip.compress(response.encode('utf-8'))
-
-    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_GZIP],
-                       HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_headers, code, gzip_response_gzip = api_.landing_page(req)
-    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_GZIP]
-    assert rsp_headers['Content-Encoding'] == F_GZIP
-    parsed_gzip = gzip.decompress(gzip_response_gzip).decode('utf-8')
-    assert isinstance(parsed_gzip, str)
-    parsed_json = json.loads(parsed_gzip)
-    assert isinstance(parsed_json, dict)
-
-    req = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_HTML],
-                       HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_headers, code, gzip_response_html = api_.landing_page(req)
+    rsp_headers, _, rsp_jsonld = api_.landing_page(req_gzip_jsonld)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
+    rsp_headers, _, rsp_html = api_.landing_page(req_gzip_html)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
-    assert rsp_headers['Content-Encoding'] == F_GZIP
-    parsed_gzip = gzip.decompress(gzip_response_html).decode('utf-8')
-    assert isinstance(parsed_gzip, str)
+    rsp_headers, _, _ = api_.landing_page(req_gzip_gzip)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+
+    config['server']['gzip'] = True
+    api_ = API(config)
+
+    rsp_json_headers, _, rsp_gzip_json = api_.landing_page(req_gzip_json)
+    rsp_jsonld_headers, _, rsp_gzip_jsonld = api_.landing_page(req_gzip_jsonld)
+    rsp_html_headers, _, rsp_gzip_html = api_.landing_page(req_gzip_html)
+    rsp_gzip_headers, _, rsp_gzip_gzip = api_.landing_page(req_gzip_gzip)
+
+    assert rsp_json_headers['Content-Type'] == \
+        f'{FORMAT_TYPES[F_JSON]}; charset=utf-8'
+    assert rsp_json_headers['Content-Encoding'] == F_GZIP
+
+    parsed_gzip_json = gzip.decompress(rsp_gzip_json).decode('utf-8')
+    assert isinstance(parsed_gzip_json, str)
+    parsed_gzip_json = json.loads(parsed_gzip_json)
+    assert isinstance(parsed_gzip_json, dict)
+    assert parsed_gzip_json == json.loads(rsp_json)
+
+    assert rsp_jsonld_headers['Content-Type'] == \
+        f'{FORMAT_TYPES[F_JSONLD]}; charset=utf-8'
+    assert rsp_jsonld_headers['Content-Encoding'] == F_GZIP
+
+    parsed_gzip_jsonld = gzip.decompress(rsp_gzip_jsonld).decode('utf-8')
+    assert isinstance(parsed_gzip_jsonld, str)
+    parsed_gzip_jsonld = json.loads(parsed_gzip_jsonld)
+    assert isinstance(parsed_gzip_jsonld, dict)
+    assert parsed_gzip_jsonld == json.loads(rsp_jsonld)
+
+    assert rsp_html_headers['Content-Type'] == \
+        f'{FORMAT_TYPES[F_HTML]}; charset=utf-8'
+    assert rsp_html_headers['Content-Encoding'] == F_GZIP
+
+    parsed_gzip_html = gzip.decompress(rsp_gzip_html).decode('utf-8')
+    assert isinstance(parsed_gzip_html, str)
+    assert parsed_gzip_html == rsp_html
+
+    assert rsp_gzip_headers['Content-Type'] == \
+        f'{FORMAT_TYPES[F_GZIP]}; charset=utf-8'
+    assert rsp_gzip_headers['Content-Encoding'] == F_GZIP
+
+    parsed_gzip_gzip = gzip.decompress(rsp_gzip_gzip).decode('utf-8')
+    assert isinstance(parsed_gzip_gzip, str)
+    parsed_gzip_gzip = json.loads(parsed_gzip_gzip)
+    assert isinstance(parsed_gzip_gzip, dict)
+
+    req_json = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON])
+    req_jsonld = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSONLD])
+    req_html = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_HTML])
+
+    _, _, rsp_json_ = api_.landing_page(req_json)
+    _, _, rsp_jsonld_ = api_.landing_page(req_jsonld)
+    _, _, rsp_html_ = api_.landing_page(req_html)
+
+    assert rsp_json_ == rsp_json == \
+        gzip.decompress(rsp_gzip_json).decode('utf-8')
+    assert gzip.compress(rsp_json_.encode('utf-8')) == rsp_gzip_json
+
+    assert rsp_jsonld_ == rsp_jsonld == \
+        gzip.decompress(rsp_gzip_jsonld).decode('utf-8')
+    assert gzip.compress(rsp_jsonld_.encode('utf-8')) == rsp_gzip_jsonld
+
+    assert rsp_html_ == rsp_html == \
+        gzip.decompress(rsp_gzip_html).decode('utf-8')
+    assert gzip.compress(rsp_html_.encode('utf-8')) == rsp_gzip_html
 
 
 def test_root(config, api_):
