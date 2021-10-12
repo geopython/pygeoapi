@@ -82,6 +82,7 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+CHARSET = ['utf-8']
 F_JSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
@@ -91,8 +92,7 @@ F_GZIP = 'gzip'
 FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
-    (F_JSON, 'application/json'),
-    (F_GZIP, 'application/gzip')
+    (F_JSON, 'application/json')
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -160,7 +160,10 @@ def gzip(func):
         headers, status, content = func(*args, **kwargs)
         if F_GZIP in headers.get('Content-Encoding', []):
             try:
-                content = compress(content.encode('utf-8'))
+                charset = CHARSET[0]
+                headers['Content-Type'] = \
+                    f"{headers['Content-Type']}; charset={charset}"
+                content = compress(content.encode(charset))
             except TypeError as err:
                 headers.pop('Content-Encoding')
                 LOGGER.error('Error in compression: {}'.format(err))
@@ -534,8 +537,11 @@ class APIRequest:
 
         if force_encoding:
             headers['Content-Encoding'] = force_encoding
-        elif F_GZIP in self._headers.get('Accept-Encoding', []):
-            headers['Content-Encoding'] = F_GZIP
+        if F_GZIP in FORMAT_TYPES:
+            if force_encoding:
+                headers['Content-Encoding'] = force_encoding
+            elif F_GZIP in self._headers.get('Accept-Encoding', ''):
+                headers['Content-Encoding'] = F_GZIP
 
         return headers
 
@@ -567,6 +573,10 @@ class API:
 
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+
+        CHARSET[0] = config['server'].get('encoding', 'utf-8')
+        if config['server'].get('gzip') is True:
+            FORMAT_TYPES[F_GZIP] = 'application/gzip'
 
         # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)
