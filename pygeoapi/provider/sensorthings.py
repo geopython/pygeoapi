@@ -250,17 +250,15 @@ class SensorThingsProvider(BaseProvider):
             raise ProviderConnectionError('Bad http response code')
 
         response = r.json()
-        v = [response, ] if identifier else response.get('value')
-
-        hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
-            matched = len(v) if len(v) >= limit else hits_
-            feature_collection['numberMatched'] = matched
+            feature_collection['numberMatched'] = response.get('@iot.count')
             return feature_collection
 
-        # if # of values less than expected, query for more
+        v = [response, ] if identifier else response.get('value')
+        # if values are less than expected, query for more
+        hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         while len(v) < hits_:
             LOGGER.debug('Fetching next set of values')
             r = get(response.get('@iot.nextLink'), params={'$skip': len(v)})
@@ -271,11 +269,13 @@ class SensorThingsProvider(BaseProvider):
         keys = (() if not self.properties and not select_properties else
                 set(self.properties) | set(select_properties))
 
-        for entity in v:
+        for entity in v[:hits_]:
             # Make feature
+            id = entity.pop(self.id_field)
+            id = f"'{id}'" if isinstance(id, str) else str(id)
             f = {
                 'type': 'Feature', 'properties': {},
-                'geometry': None, 'id': str(entity.pop(self.id_field))
+                'geometry': None, 'id': id
             }
 
             # Make geometry
@@ -372,7 +372,7 @@ class SensorThingsProvider(BaseProvider):
         """
         try:
             if self.entity == 'Things':
-                return entity.pop('Locations')[0]['location']
+                return entity.get('Locations')[0]['location']
             elif self.entity == 'Datastreams':
                 try:
                     geo = entity['Observations'][0][
@@ -397,6 +397,10 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: dict of SensorThings feature properties
         """
+        if self.entity == 'Things':
+            extra_props = entity['Locations'][0].get('properties', {})
+            entity['properties'].update(extra_props)
+
         for k, v in entity.items():
             # Create intra links
             path_ = 'collections/{}/items/{}'
@@ -410,10 +414,12 @@ class SensorThingsProvider(BaseProvider):
                         v[i] = _v['properties'][self._linkables[k]['u']]
                     continue
                 for i, _v in enumerate(v):
+                    id = _v[self.id_field]
+                    id = f"'{id}'" if isinstance(id, str) else str(id)
                     v[i] = urljoin(
                         self._rel_link,
                         path_.format(
-                            self._linkables[k]['n'], _v[self.id_field]
+                            self._linkables[k]['n'], id
                         )
                     )
 
@@ -421,14 +427,19 @@ class SensorThingsProvider(BaseProvider):
                 if self._linkables[ks]['u'] != '':
                     entity[k] = v['properties'][self._linkables[ks]['u']]
                     continue
+                id = v[self.id_field]
+                id = f"'{id}'" if isinstance(id, str) else str(id)
                 entity[k] = urljoin(
                     self._rel_link,
                     path_.format(
-                        self._linkables[ks]['n'], v[self.id_field]
+                        self._linkables[ks]['n'], id
                     )
                 )
 
         # Make properties block
+        if entity.get('properties', None):
+            entity.update(entity.pop('properties'))
+
         if keys:
             ret = {}
             for k in keys:

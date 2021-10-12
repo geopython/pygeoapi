@@ -92,13 +92,13 @@ def test_query_observations(config):
     config['entity'] = 'Observations'
     p = SensorThingsProvider(config)
 
-    results = p.query(resulttype='hits')
-    assert results['numberMatched'] == 10
+    results = p.query(limit=10, resulttype='hits')
+    assert results['numberMatched'] == 2752
 
-    results = p.query(resulttype='hits', limit=1000)
-    assert results['numberMatched'] == 1000
+    r = p.query(bbox=[-109, 36, -106, 37], resulttype='hits')
+    assert r['numberMatched'] == 44
 
-    results = p.query(resulttype='hits', limit=3000)
+    results = p.query(limit=10001, resulttype='hits')
     assert results['numberMatched'] == 2752
 
     results = p.query(properties=[('result', 7475), ])
