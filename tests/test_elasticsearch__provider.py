@@ -161,9 +161,9 @@ def test_query(config):
     assert results['features'][0]['properties']['nameascii'] == 'Vatican City'
 
     results = p.query(properties=[('nameascii', 'Vatican City')])
-    assert len(results['features']) == 4
-    assert results['numberMatched'] == 4
-    assert results['numberReturned'] == 4
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
