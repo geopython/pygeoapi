@@ -6,10 +6,15 @@ name: Build and push container to GHCR
 
 # For all pushes to the master branch, push the image to the
 # GitHub registry under an edge tag so we can use it for the nightly
-# integration tests
+# integration tests.
+# For tagged releases, push the image to the GitHub registry
+# an addtional "latest" tag too.
 on:
   push:
     branches: master
+    tags:
+      - "v*.*.*"
+      - "*.*.*"
 
 jobs:
   docker:
