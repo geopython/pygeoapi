@@ -247,7 +247,7 @@ resources:
             - type: feature
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_indicators_s
-              id_field: AssetID
+              id_field: Sauid
 
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_b:
         type: collection
