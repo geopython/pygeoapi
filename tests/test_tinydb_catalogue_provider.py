@@ -64,10 +64,11 @@ def test_query(config):
     assert results['features'][0]['id'] == 'e5a71860-827c-453f-990e-0e0ba0ee67bb'  # noqa
     assert results['features'][0]['properties']['type'] == 'RI_622'
 
-    results = p.query(q='crops')
-    assert len(results['features']) == 6
-    assert results['numberMatched'] == 6
-    assert results['numberReturned'] == 6
+    for term in ['crops', 'Crops', 'CROPS', 'CrOpS', 'CROps', 'CRops']:
+        results = p.query(q=term)
+        assert len(results['features']) == 6
+        assert results['numberMatched'] == 6
+        assert results['numberReturned'] == 6
 
     results = p.query(q='crops barley')
     assert len(results['features']) == 2
