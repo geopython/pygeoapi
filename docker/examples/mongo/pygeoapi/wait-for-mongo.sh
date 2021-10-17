@@ -1,11 +1,9 @@
 #!/bin/sh
 # =================================================================
 #
-# Authors: Just van den Broecke <justb4@gmail.com>>
-#          Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+# Authors: Joana Simoes <jo@doublebyte.net>
 #
-# Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2019 Jorge Samuel Mendes de Jesus
+# Copyright (c) 2021 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation

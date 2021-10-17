@@ -36,14 +36,14 @@ services:
     container_name: pygeoapi_mongo
 
     entrypoint:
-      - /es-entrypoint.sh
+      - /mongo-entrypoint.sh
 
     ports:
       - 5000:80
 
     volumes:
       - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
-      - ./pygeoapi/es-entrypoint.sh:/es-entrypoint.sh
+      - ./pygeoapi/mongo-entrypoint.sh:/mongo-entrypoint.sh
       - ./pygeoapi/wait-for-mongo.sh:/wait-for-mongo.sh
 
     links:
