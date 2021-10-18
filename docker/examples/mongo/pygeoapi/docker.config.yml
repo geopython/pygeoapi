@@ -85,12 +85,12 @@ metadata:
         role: pointOfContact
 
 resources:
-    demo:
+    ne_110m_populated_places_simple:
         type: collection
-        title: MongoDB 
-        description: Demo data from MongoDB
+        title: ne_110m_populated_places_simple
+        description: Populated places of the world
         keywords:
-            - cases
+            - Population, places
         links:
             - type: text/html
               rel: canonical
@@ -99,17 +99,17 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [-180, -90, 180, 90]
+                bbox: [-180,-90,180,90]
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: null  # or empty
+                end: null  # or empty (either means open ended)
         providers:
             - type: feature
               name: MongoDB
-              data: mongodb://mongo:27017/demo
-              collection: collection
-              id_field: fid
+              data: mongodb://mongo:27017/pop_places
+              collection: places
+              id_field: id
 
 
     hello-world:

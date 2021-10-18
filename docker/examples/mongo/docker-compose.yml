@@ -45,7 +45,7 @@ services:
       - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
       - ./pygeoapi/mongo-entrypoint.sh:/mongo-entrypoint.sh
       - ./pygeoapi/wait-for-mongo.sh:/wait-for-mongo.sh
-
+      - datavolume:/pygeoapi/tests/data
     links:
       - mongo
 
@@ -54,18 +54,14 @@ services:
 
   mongo:
     image: mongo
-    #restart: always
     container_name: mongo
     ports:
       - 27017:27017
     volumes:
-      #- ./data:/data/db
       - ./docker-entrypoint-initdb.d/add_data.sh:/docker-entrypoint-initdb.d/add_data.sh:ro
-      - ./mongo_data/:/mongo_data
+      - datavolume:/pygeoapi/tests/data
     environment:
-        MONGO_INITDB_DATABASE: demo
-    #   MONGO_INITDB_ROOT_USERNAME: root
-    #   MONGO_INITDB_ROOT_PASSWORD: example
+        MONGO_INITDB_DATABASE: pop_places
 
   mongo-express:
     image: mongo-express
@@ -77,13 +73,8 @@ services:
       - mongo
     ports:
       - 8081:8081
-    # environment:
-    #   ME_CONFIG_MONGODB_ADMINUSERNAME: root
-    #   ME_CONFIG_MONGODB_ADMINPASSWORD: example
-    #   ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
-
 
 
 volumes:
-  mongo_data: {}
+  datavolume: {}
 
