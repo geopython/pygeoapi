@@ -116,7 +116,7 @@ def test_apirequest(api_):
     assert apireq.get_linkrel(F_HTML) == 'self'
     assert apireq.get_linkrel(F_JSON) == 'alternate'
 
-    # Test conflixting format string
+    # Test accept header with multiple valid formats
     hh = 'plain/text,application/ld+json,application/json;q=0.9,'
     req = mock_request(HTTP_ACCEPT=hh)
     apireq = APIRequest(req, api_.locales)
@@ -250,6 +250,7 @@ def test_api_exception(config, api_):
 
 
 def test_gzip(config, api_):
+    # Requests for each response type and gzip encoding
     req_gzip_json = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON],
                                  HTTP_ACCEPT_ENCODING=F_GZIP)
     req_gzip_jsonld = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSONLD],
@@ -259,6 +260,7 @@ def test_gzip(config, api_):
     req_gzip_gzip = mock_request(HTTP_ACCEPT='application/gzip',
                                  HTTP_ACCEPT_ENCODING=F_GZIP)
 
+    # Responses from server config without gzip compression
     rsp_headers, _, rsp_json = api_.landing_page(req_gzip_json)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     rsp_headers, _, rsp_jsonld = api_.landing_page(req_gzip_jsonld)
@@ -268,16 +270,19 @@ def test_gzip(config, api_):
     rsp_headers, _, _ = api_.landing_page(req_gzip_gzip)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
+    # Add gzip to server and use utf-16 encoding
     config['server']['gzip'] = True
     enc_16 = 'utf-16'
     config['server']['encoding'] = enc_16
     api_ = API(config)
 
+    # Responses from server with gzip compression
     rsp_json_headers, _, rsp_gzip_json = api_.landing_page(req_gzip_json)
     rsp_jsonld_headers, _, rsp_gzip_jsonld = api_.landing_page(req_gzip_jsonld)
     rsp_html_headers, _, rsp_gzip_html = api_.landing_page(req_gzip_html)
     rsp_gzip_headers, _, rsp_gzip_gzip = api_.landing_page(req_gzip_gzip)
-
+    
+    # Validate compressed json response
     assert rsp_json_headers['Content-Type'] == \
         f'{FORMAT_TYPES[F_JSON]}; charset={enc_16}'
     assert rsp_json_headers['Content-Encoding'] == F_GZIP
@@ -288,6 +293,7 @@ def test_gzip(config, api_):
     assert isinstance(parsed_gzip_json, dict)
     assert parsed_gzip_json == json.loads(rsp_json)
 
+    # Validate compressed jsonld response
     assert rsp_jsonld_headers['Content-Type'] == \
         f'{FORMAT_TYPES[F_JSONLD]}; charset={enc_16}'
     assert rsp_jsonld_headers['Content-Encoding'] == F_GZIP
@@ -298,6 +304,7 @@ def test_gzip(config, api_):
     assert isinstance(parsed_gzip_jsonld, dict)
     assert parsed_gzip_jsonld == json.loads(rsp_jsonld)
 
+    # Validate compressed html response
     assert rsp_html_headers['Content-Type'] == \
         f'{FORMAT_TYPES[F_HTML]}; charset={enc_16}'
     assert rsp_html_headers['Content-Encoding'] == F_GZIP
@@ -306,6 +313,7 @@ def test_gzip(config, api_):
     assert isinstance(parsed_gzip_html, str)
     assert parsed_gzip_html == rsp_html
 
+    # Validate compressed gzip response
     assert rsp_gzip_headers['Content-Type'] == \
         f'{FORMAT_TYPES[F_GZIP]}; charset={enc_16}'
     assert rsp_gzip_headers['Content-Encoding'] == F_GZIP
@@ -315,14 +323,17 @@ def test_gzip(config, api_):
     parsed_gzip_gzip = json.loads(parsed_gzip_gzip)
     assert isinstance(parsed_gzip_gzip, dict)
 
+    # Requests without content encoding header
     req_json = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON])
     req_jsonld = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSONLD])
     req_html = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_HTML])
 
+    # Responses without content encoding
     _, _, rsp_json_ = api_.landing_page(req_json)
     _, _, rsp_jsonld_ = api_.landing_page(req_jsonld)
     _, _, rsp_html_ = api_.landing_page(req_html)
 
+    # Confirm each request is the same when decompressed
     assert rsp_json_ == rsp_json == \
         gzip.decompress(rsp_gzip_json).decode(enc_16)
 

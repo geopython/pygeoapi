@@ -92,7 +92,7 @@ F_GZIP = 'gzip'
 FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
-    (F_JSON, 'application/json')
+    (F_JSON, 'application/json'),
 ))
 
 #: Locale used for system responses (e.g. exceptions)
