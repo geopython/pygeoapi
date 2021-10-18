@@ -281,7 +281,7 @@ def test_gzip(config, api_):
     rsp_jsonld_headers, _, rsp_gzip_jsonld = api_.landing_page(req_gzip_jsonld)
     rsp_html_headers, _, rsp_gzip_html = api_.landing_page(req_gzip_html)
     rsp_gzip_headers, _, rsp_gzip_gzip = api_.landing_page(req_gzip_gzip)
-    
+
     # Validate compressed json response
     assert rsp_json_headers['Content-Type'] == \
         f'{FORMAT_TYPES[F_JSON]}; charset={enc_16}'
