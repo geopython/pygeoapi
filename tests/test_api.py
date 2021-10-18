@@ -116,6 +116,17 @@ def test_apirequest(api_):
     assert apireq.get_linkrel(F_HTML) == 'self'
     assert apireq.get_linkrel(F_JSON) == 'alternate'
 
+    # Test conflixting format string
+    hh = 'plain/text,application/ld+json,application/json;q=0.9,'
+    req = mock_request(HTTP_ACCEPT=hh)
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format == F_JSONLD
+    assert apireq.get_response_headers()['Content-Type'] == \
+           FORMAT_TYPES[F_JSONLD]
+    assert apireq.get_linkrel(F_JSONLD) == 'self'
+    assert apireq.get_linkrel(F_HTML) == 'alternate'
+
     # Overrule HTTP content negotiation
     req = mock_request({'f': 'html'}, HTTP_ACCEPT='application/json')  # noqa
     apireq = APIRequest(req, api_.locales)
@@ -258,6 +269,8 @@ def test_gzip(config, api_):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
     config['server']['gzip'] = True
+    enc_16 = 'utf-16'
+    config['server']['encoding'] = enc_16
     api_ = API(config)
 
     rsp_json_headers, _, rsp_gzip_json = api_.landing_page(req_gzip_json)
@@ -266,38 +279,38 @@ def test_gzip(config, api_):
     rsp_gzip_headers, _, rsp_gzip_gzip = api_.landing_page(req_gzip_gzip)
 
     assert rsp_json_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_JSON]}; charset=utf-8'
+        f'{FORMAT_TYPES[F_JSON]}; charset={enc_16}'
     assert rsp_json_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_json = gzip.decompress(rsp_gzip_json).decode('utf-8')
+    parsed_gzip_json = gzip.decompress(rsp_gzip_json).decode(enc_16)
     assert isinstance(parsed_gzip_json, str)
     parsed_gzip_json = json.loads(parsed_gzip_json)
     assert isinstance(parsed_gzip_json, dict)
     assert parsed_gzip_json == json.loads(rsp_json)
 
     assert rsp_jsonld_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_JSONLD]}; charset=utf-8'
+        f'{FORMAT_TYPES[F_JSONLD]}; charset={enc_16}'
     assert rsp_jsonld_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_jsonld = gzip.decompress(rsp_gzip_jsonld).decode('utf-8')
+    parsed_gzip_jsonld = gzip.decompress(rsp_gzip_jsonld).decode(enc_16)
     assert isinstance(parsed_gzip_jsonld, str)
     parsed_gzip_jsonld = json.loads(parsed_gzip_jsonld)
     assert isinstance(parsed_gzip_jsonld, dict)
     assert parsed_gzip_jsonld == json.loads(rsp_jsonld)
 
     assert rsp_html_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_HTML]}; charset=utf-8'
+        f'{FORMAT_TYPES[F_HTML]}; charset={enc_16}'
     assert rsp_html_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_html = gzip.decompress(rsp_gzip_html).decode('utf-8')
+    parsed_gzip_html = gzip.decompress(rsp_gzip_html).decode(enc_16)
     assert isinstance(parsed_gzip_html, str)
     assert parsed_gzip_html == rsp_html
 
     assert rsp_gzip_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_GZIP]}; charset=utf-8'
+        f'{FORMAT_TYPES[F_GZIP]}; charset={enc_16}'
     assert rsp_gzip_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_gzip = gzip.decompress(rsp_gzip_gzip).decode('utf-8')
+    parsed_gzip_gzip = gzip.decompress(rsp_gzip_gzip).decode(enc_16)
     assert isinstance(parsed_gzip_gzip, str)
     parsed_gzip_gzip = json.loads(parsed_gzip_gzip)
     assert isinstance(parsed_gzip_gzip, dict)
@@ -311,16 +324,13 @@ def test_gzip(config, api_):
     _, _, rsp_html_ = api_.landing_page(req_html)
 
     assert rsp_json_ == rsp_json == \
-        gzip.decompress(rsp_gzip_json).decode('utf-8')
-    assert gzip.compress(rsp_json_.encode('utf-8')) == rsp_gzip_json
+        gzip.decompress(rsp_gzip_json).decode(enc_16)
 
     assert rsp_jsonld_ == rsp_jsonld == \
-        gzip.decompress(rsp_gzip_jsonld).decode('utf-8')
-    assert gzip.compress(rsp_jsonld_.encode('utf-8')) == rsp_gzip_jsonld
+        gzip.decompress(rsp_gzip_jsonld).decode(enc_16)
 
     assert rsp_html_ == rsp_html == \
-        gzip.decompress(rsp_gzip_html).decode('utf-8')
-    assert gzip.compress(rsp_html_.encode('utf-8')) == rsp_gzip_html
+        gzip.decompress(rsp_gzip_html).decode(enc_16)
 
 
 def test_root(config, api_):

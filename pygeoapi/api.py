@@ -374,13 +374,14 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        for h in (v.strip() for k, v in headers.items() if k.lower() == 'accept'):  # noqa
-            for fmt, mime in FORMAT_TYPES.items():
-                # basic support for complex types (i.e. with "q=0.x")
-                types_ = (t.split(';')[0].strip() for t in h.split(',') if t)
-                if mime.strip() in types_:
-                    format_ = fmt
-                    break
+        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        (fmts, mimes) = zip(*FORMAT_TYPES.items())
+        # basic support for complex types (i.e. with "q=0.x")
+        for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
+            if type_ in mimes:
+                idx_ = mimes.index(type_)
+                format_ = fmts[idx_]
+                break
 
         return format_ or None
 
@@ -575,6 +576,7 @@ class API:
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip') is True:
             FORMAT_TYPES[F_GZIP] = 'application/gzip'
+            FORMAT_TYPES.move_to_end(F_JSON)
 
         # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)
