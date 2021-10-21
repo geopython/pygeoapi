@@ -5,6 +5,7 @@
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -265,12 +266,14 @@ class OGRProvider(BaseProvider):
                 fieldTypeCode = field_defn.GetType()
                 fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
 
-                fields[fieldName] = fieldType.lower()
+                fieldName2 = fieldType.lower()
 
-                if fields[fieldName] == 'integer64':
-                    fields[fieldName] = 'integer'
-                elif fields[fieldName] == 'real':
-                    fields[fieldName] = 'number'
+                if fieldName2 == 'integer64':
+                    fieldName2 = 'integer'
+                elif fieldName2 == 'real':
+                    fieldName2 = 'number'
+
+                fields[fieldName] = {'type': fieldName2}
 
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
@@ -288,7 +291,7 @@ class OGRProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query OGR source
 
@@ -301,6 +304,7 @@ class OGRProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -368,7 +372,7 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get Feature by id
 

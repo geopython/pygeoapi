@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -68,12 +68,12 @@ class CSVProvider(BaseProvider):
             data_ = csv.DictReader(ff)
             fields = {}
             for f in data_.fieldnames:
-                fields[f] = 'string'
+                fields[f] = {'type': 'string'}
             return fields
 
     def _load(self, startindex=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None):
         """
         Load CSV data
 
@@ -84,6 +84,7 @@ class CSVProvider(BaseProvider):
         :param properties: list of tuples (name, value)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of GeoJSON FeatureCollection
         """
@@ -98,6 +99,11 @@ class CSVProvider(BaseProvider):
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
+            if properties:
+                data_ = filter(
+                    lambda p: all(
+                        [p[prop[0]] == prop[1] for prop in properties]), data_)
+
             if resulttype == 'hits':
                 LOGGER.debug('Returning hits only')
                 feature_collection['numberMatched'] = len(list(data_))
@@ -146,7 +152,7 @@ class CSVProvider(BaseProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         CSV query
 
@@ -159,15 +165,17 @@ class CSVProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: dict of GeoJSON FeatureCollection
         """
 
         return self._load(startindex, limit, resulttype,
+                          properties=properties,
                           select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query CSV id
 

@@ -139,8 +139,8 @@ def test_get_fields_4326(config_gpkg_4326):
     """Testing field types"""
     p = OGRProvider(config_gpkg_4326)
     results = p.get_fields()
-    assert results['straatnaam'] == 'string'
-    assert results['huisnummer'] == 'string'
+    assert results['straatnaam']['type'] == 'string'
+    assert results['huisnummer']['type'] == 'string'
 
 
 def test_get_28992(config_gpkg_28992):

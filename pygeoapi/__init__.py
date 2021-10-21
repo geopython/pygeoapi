@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,10 +27,11 @@
 #
 # =================================================================
 
-__version__ = '0.10.dev0'
+__version__ = '0.11.dev0'
 
 import click
-from pygeoapi.openapi import generate_openapi_document
+from pygeoapi.config import config
+from pygeoapi.openapi import openapi
 
 
 @click.group()
@@ -58,4 +59,5 @@ def serve(ctx, server):
         raise click.ClickException('--flask/--starlette is required')
 
 
-cli.add_command(generate_openapi_document)
+cli.add_command(config)
+cli.add_command(openapi)

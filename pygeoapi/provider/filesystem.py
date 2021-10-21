@@ -27,13 +27,16 @@
 #
 # =================================================================
 
+from datetime import datetime
 import io
+from json import loads
 import logging
 import os
 from urllib.parse import urljoin
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
+from pygeoapi.util import file_modified_iso8601, get_path_basename
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +72,7 @@ class FileSystemProvider(BaseProvider):
         """
 
         thispath = os.path.join(baseurl, urlpath)
+
         resource_type = None
         root_link = None
         child_links = []
@@ -140,39 +144,52 @@ class FileSystemProvider(BaseProvider):
                 return fh.read()
 
         elif resource_type == 'directory':
+            content['type'] = 'Catalog'
             dirpath2 = os.listdir(data_path)
             dirpath2.sort()
             for dc in dirpath2:
-                # @TODO: handle a generic directory for tiles
+                # TODO: handle a generic directory for tiles
                 if dc == "tiles":
                     continue
+
                 fullpath = os.path.join(data_path, dc)
+                filectime = file_modified_iso8601(fullpath)
+                filesize = os.path.getsize(fullpath)
+
                 if os.path.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)
-                    child_links.append({
-                        'rel': 'child',
-                        'href': '{}?f=json'.format(newpath),
-                        'type': 'application/json'
-                    })
+#                    child_links.append({
+#                        'rel': 'child',
+#                        'href': '{}?f=json'.format(newpath),
+#                        'type': 'application/json'
+#                    })
                     child_links.append({
                         'rel': 'child',
                         'href': newpath,
-                        'type': 'text/html'
+                        'type': 'text/html',
+                        'created': filectime,
                     })
                 elif os.path.isfile(fullpath):
                     basename, extension = os.path.splitext(dc)
                     newpath = os.path.join(baseurl, urlpath, basename)
+                    newpath2 = '{}{}'.format(newpath, extension)
                     if extension in self.file_types:
-                        child_links.append({
-                            'rel': 'item',
-                            'href': '{}?f=json'.format(newpath),
-                            'type': 'application/json'
-                        })
+                        fullpath = os.path.join(data_path, dc)
                         child_links.append({
                             'rel': 'item',
                             'href': newpath,
-                            'type': 'text/html'
+                            'title': get_path_basename(newpath2),
+                            'created': filectime,
+                            'file:size': filesize
                         })
+#                        child_links.append({
+#                            'rel': 'item',
+#                            'title': get_path_basename(newpath2),
+#                            'href': newpath,
+#                            'type': 'text/html',
+#                            'created': filectime,
+#                            'file:size': filesize
+#                        })
 
         elif resource_type == 'file':
             filename = os.path.basename(data_path)
@@ -181,6 +198,9 @@ class FileSystemProvider(BaseProvider):
             if urlpath:
                 filename = filename.replace(id_, '')
             url = '{}/{}{}'.format(baseurl, urlpath, filename)
+
+            filectime = file_modified_iso8601(data_path)
+            filesize = os.path.getsize(data_path)
 
             content = {
                 'id': id_,
@@ -193,7 +213,9 @@ class FileSystemProvider(BaseProvider):
             content.update(_describe_file(data_path))
 
             content['assets']['default'] = {
-                'href': url
+                'href': url,
+                'created': filectime,
+                'file:size': filesize
             }
 
         content['links'].extend(child_links)
@@ -207,6 +229,8 @@ class FileSystemProvider(BaseProvider):
 def _describe_file(filepath):
     """
     Helper function to describe a geospatial data
+    First checks if a sidecar mcf file is available, if so uses that
+    if not, script will parse the file to retrieve some info from the file
 
     :param filepath: path to file
 
@@ -219,82 +243,125 @@ def _describe_file(filepath):
         'properties': {}
     }
 
-    try:
-        import rasterio
-        from rasterio.crs import CRS
-        from rasterio.warp import transform_bounds
-        LOGGER.warning('rasterio not found. Cannot derive geospatial properties')  # noqa
-    except ImportError as err:
-        LOGGER.warning(err)
-        return content
+    mcf_file = '{}.yml'.format(os.path.splitext(filepath)[0])
 
-    try:
-        import fiona
-    except ImportError as err:
-        LOGGER.warning('fiona not found. Cannot derive geospatial properties')
-        LOGGER.warning(err)
-        return content
+    if os.path.isfile(mcf_file):
+        try:
+            from pygeometa.core import read_mcf, MCFReadError
+            from pygeometa.schemas.stac import STACItemOutputSchema
 
-    try:  # raster
-        LOGGER.debug('Testing raster data detection')
-        d = rasterio.open(filepath)
-        content['bbox'] = [
-            d.bounds.left,
-            d.bounds.bottom,
-            d.bounds.right,
-            d.bounds.top
-        ]
-        content['geometry'] = {
-            'type': 'Polygon',
-            'coordinates': [[
-                [d.bounds.left, d.bounds.bottom],
-                [d.bounds.left, d.bounds.top],
-                [d.bounds.right, d.bounds.top],
-                [d.bounds.right, d.bounds.bottom],
-                [d.bounds.left, d.bounds.bottom]
-            ]]
-        }
-        for k, v in d.tags(1).items():
-            content['properties'][k] = v
-    except rasterio.errors.RasterioIOError:
-        LOGGER.debug('Testing vector data detection')
-        d = fiona.open(filepath)
-        scrs = CRS(d.crs)
-        if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
-            tcrs = CRS.from_epsg(4326)
-            bnds = transform_bounds(scrs, tcrs,
-                                    d.bounds[0], d.bounds[1],
-                                    d.bounds[2], d.bounds[3])
-            content['properties']['projection'] = scrs.to_epsg()
-        else:
-            bnds = d.bounds
+            md = read_mcf(mcf_file)
+            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md)
+            stacdata = loads(stacjson)
+            for k, v in stacdata.items():
+                content[k] = v
+        except ImportError:
+            LOGGER.debug('pygeometa not found')
+        except MCFReadError as err:
+            LOGGER.warning('MCF error: {}'.format(err))
+    else:
+        LOGGER.debug('No mcf found at: {}'.format(mcf_file))
 
-        if d.schema['geometry'] not in [None, 'None']:
-            content['bbox'] = [
-                bnds[0],
-                bnds[1],
-                bnds[2],
-                bnds[3]
-            ]
+    if content['geometry'] is None and content['bbox'] is None:
+        try:
+            import rasterio
+            from rasterio.crs import CRS
+            from rasterio.warp import transform_bounds
+        except ImportError as err:
+            LOGGER.warning('rasterio not found')
+            LOGGER.warning(err)
+            return content
+
+        try:
+            import fiona
+        except ImportError as err:
+            LOGGER.warning('fiona not found')
+            LOGGER.warning(err)
+            return content
+
+        try:  # raster
+            LOGGER.debug('Testing raster data detection')
+            d = rasterio.open(filepath)
+            scrs = CRS(d.crs)
+            if scrs.to_epsg() not in [None, 4326]:
+                tcrs = CRS.from_epsg(4326)
+                bnds = transform_bounds(scrs, tcrs,
+                                        d.bounds[0], d.bounds[1],
+                                        d.bounds[2], d.bounds[3])
+                content['properties']['projection'] = scrs.to_epsg()
+            else:
+                bnds = [d.bounds.left, d.bounds.bottom,
+                        d.bounds.right, d.bounds.top]
+            content['bbox'] = bnds
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [bnds[0], bnds[1]],
-                    [bnds[0], bnds[3]],
+                    [bnds[0],  bnds[1]],
+                    [bnds[0],  bnds[3]],
                     [bnds[2], bnds[3]],
                     [bnds[2], bnds[1]],
-                    [bnds[0], bnds[1]]
+                    [bnds[0],  bnds[1]]
                 ]]
             }
+            for k, v in d.tags(d.count).items():
+                content['properties'][k] = v
+                if k in ['GRIB_REF_TIME']:
+                    value = int(v.split()[0])
+                    datetime_ = datetime.fromtimestamp(value)
+                    content['properties']['datetime'] = datetime_.isoformat() + 'Z'  # noqa
+        except rasterio.errors.RasterioIOError:
+            try:
+                LOGGER.debug('Testing vector data detection')
+                d = fiona.open(filepath)
+                scrs = CRS(d.crs)
+                if scrs.to_epsg() not in [None, 4326]:
+                    tcrs = CRS.from_epsg(4326)
+                    bnds = transform_bounds(scrs, tcrs,
+                                            d.bounds[0], d.bounds[1],
+                                            d.bounds[2], d.bounds[3])
+                    content['properties']['projection'] = scrs.to_epsg()
+                else:
+                    bnds = d.bounds
 
-        for k, v in d.schema['properties'].items():
-            content['properties'][k] = v
+                if d.schema['geometry'] not in [None, 'None']:
+                    content['bbox'] = [
+                        bnds[0],
+                        bnds[1],
+                        bnds[2],
+                        bnds[3]
+                    ]
+                    content['geometry'] = {
+                        'type': 'Polygon',
+                        'coordinates': [[
+                            [bnds[0], bnds[1]],
+                            [bnds[0], bnds[3]],
+                            [bnds[2], bnds[3]],
+                            [bnds[2], bnds[1]],
+                            [bnds[0], bnds[1]]
+                        ]]
+                    }
 
-        if d.driver == 'ESRI Shapefile':
-            id_ = os.path.splitext(os.path.basename(filepath))[0]
-            content['assets'] = {}
-            for suffix in ['shx', 'dbf', 'prj', 'shp.xml']:
-                content['assets'][suffix] = {
-                    'href': './{}.{}'.format(id_, suffix)
-                }
+                for k, v in d.schema['properties'].items():
+                    content['properties'][k] = v
+
+                if d.driver == 'ESRI Shapefile':
+                    id_ = os.path.splitext(os.path.basename(filepath))[0]
+                    content['assets'] = {}
+                    for suffix in ['shx', 'dbf', 'prj']:
+                        fullpath = '{}.{}'.format(
+                            os.path.splitext(filepath)[0], suffix)
+
+                        if os.path.exists(fullpath):
+                            filectime = file_modified_iso8601(fullpath)
+                            filesize = os.path.getsize(fullpath)
+
+                            content['assets'][suffix] = {
+                                'href': './{}.{}'.format(id_, suffix),
+                                'created': filectime,
+                                'file:size': filesize
+                            }
+
+            except fiona.errors.DriverError:
+                LOGGER.debug('Could not detect raster or vector data')
+
     return content

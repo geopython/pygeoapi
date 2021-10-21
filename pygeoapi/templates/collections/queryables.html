@@ -1,9 +1,9 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../collections">Collections</a>
-/ <a href="./{{ data['id'] }}">{{ data['title'] }}</a>
-/ <a href="./{{ data['id'] }}queryables">Queryables</a>
+/ <a href="../../collections">{% trans %}Collections{% endtrans %}</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
+/ <a href="./{{ data['id'] }}queryables">{% trans %}Queryables{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collection">
@@ -14,10 +14,22 @@
           <mark class="tag">{{ kw }}</mark>
         {% endfor %}
       </p>
-      <h3>Queryables</h3>
+      <h3>{% trans %}Queryables{% endtrans %}</h3>
       <ul>
-      {% for queryable in data['queryables'] %}
-        <li>{{ queryable['queryable'] }} (<code>{{ queryable['type'] }}</code>)</li>
+      {% for qname, qinfo in data['properties'].items() %}
+        {% if qname == 'geometry' %}
+        <li><a href="{{ qinfo['$ref'] }}">{{ qname }} </a></li>
+        {% else %}
+        <li>{{ qname }} (<code>{{ qinfo['type'] }}</code>)
+        {% if 'enum' in qinfo %}
+          <ul>
+          {% for value in qinfo['enum'] %}
+            <li><i>{{ value }}</i></li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+        </li>
+        {% endif %}
       {% endfor %}
       </ul>
     </section>

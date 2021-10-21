@@ -89,8 +89,8 @@ def test_get_fields_agol(config_ArcGIS_ESRIJSON):
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     results = p.get_fields()
-    assert results['fulladdr'] == 'string'
-    assert results['municipality'] == 'string'
+    assert results['fulladdr']['type'] == 'string'
+    assert results['municipality']['type'] == 'string'
 
 
 def test_get_agol(config_ArcGIS_ESRIJSON, config_random_id):

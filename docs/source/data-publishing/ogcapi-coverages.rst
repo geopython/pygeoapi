@@ -79,7 +79,7 @@ The `xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
 
 .. note::
    `Zarr`_ files are directories with files and subdirectories.  Therefore
-    a zip file is returned upon request for said format.
+   a zip file is returned upon request for said format.
 
 Data access examples
 --------------------
@@ -101,7 +101,7 @@ Data access examples
 - coverage access with subsetting
   - http://localhost:5000/collections/foo/coverage?subset=lat(10,20)&subset=long(10,20)
 
-.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogc_api_coverages
+.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
 .. _`xarray`: https://xarray.pydata.org
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF

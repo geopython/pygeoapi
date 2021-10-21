@@ -76,7 +76,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
     if not os.path.exists(OGC_SCHEMAS_LOCATION):
         raise RuntimeError('OGC schemas misconfigured')
 
-    @APP.route('/schemas/<path:path>', methods=['GET'])
+    @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
     def schemas(path):
         """
         Serve OGC schemas locally
@@ -96,6 +96,24 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
+def get_response(result: tuple):
+    """
+    Creates a Flask Response object and updates matching headers.
+
+    :param result: The result of the API call.
+                   This should be a tuple of (headers, status, content).
+
+    :returns: A Response instance.
+    """
+
+    headers, status, content = result
+    response = make_response(content, status)
+
+    if headers:
+        response.headers = headers
+    return response
+
+
 @BLUEPRINT.route('/')
 def landing_page():
     """
@@ -103,15 +121,7 @@ def landing_page():
 
     :returns: HTTP response
     """
-    headers, status_code, content = api_.landing_page(
-        request.headers, request.args)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.landing_page(request))
 
 
 @BLUEPRINT.route('/openapi')
@@ -122,17 +132,12 @@ def openapi():
     :returns: HTTP response
     """
     with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        openapi = yaml_load(ff)
+        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
+            openapi_ = yaml_load(ff)
+        else:  # JSON string, do not transform
+            openapi_ = ff.read()
 
-    headers, status_code, content = api_.openapi(request.headers, request.args,
-                                                 openapi)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.openapi(request, openapi_))
 
 
 @BLUEPRINT.route('/conformance')
@@ -142,16 +147,7 @@ def conformance():
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.conformance(request.headers,
-                                                     request.args)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.conformance(request))
 
 
 @BLUEPRINT.route('/collections')
@@ -164,16 +160,7 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.describe_collections(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.describe_collections(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/queryables')
@@ -185,19 +172,10 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_queryables(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/items')
+@BLUEPRINT.route('/collections/<collection_id>/items', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
@@ -208,20 +186,17 @@ def collection_items(collection_id, item_id=None):
 
     :returns: HTTP response
     """
-
     if item_id is None:
-        headers, status_code, content = api_.get_collection_items(
-            request.headers, request.args, collection_id)
+        if request.method == 'GET':  # list items
+            return get_response(
+                api_.get_collection_items(request, collection_id))
+        elif request.method == 'POST':  # filter items
+            return get_response(
+                api_.post_collection_items(request, collection_id))
+
     else:
-        headers, status_code, content = api_.get_collection_item(
-            request.headers, request.args, collection_id, item_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+        return get_response(
+            api_.get_collection_item(request, collection_id, item_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/coverage')
@@ -233,16 +208,7 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_coverage(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_coverage(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/coverage/domainset')
@@ -254,16 +220,8 @@ def collection_coverage_domainset(collection_id):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_coverage_domainset(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_coverage_domainset(
+        request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/coverage/rangetype')
@@ -275,16 +233,8 @@ def collection_coverage_rangetype(collection_id):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_coverage_rangetype(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_coverage_rangetype(
+        request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/tiles')
@@ -296,16 +246,8 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_tiles(
-        request.headers, request.args, collection_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_tiles(
+        request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
@@ -318,16 +260,8 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_tiles_metadata(
-        request.headers, request.args, collection_id, tileMatrixSetId)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_tiles_metadata(
+        request, collection_id, tileMatrixSetId))
 
 
 @BLUEPRINT.route('/collections/<collection_id>/tiles/\
@@ -345,17 +279,8 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_collection_tiles_data(
-        request.headers, request.args, collection_id,
-        tileMatrixSetId, tileMatrix, tileRow, tileCol)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_collection_tiles_data(
+        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
 
 
 @BLUEPRINT.route('/processes')
@@ -368,18 +293,10 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    headers, status_code, content = api_.describe_processes(
-        request.headers, request.args, process_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.describe_processes(request, process_id))
 
 
-@BLUEPRINT.route('/processes/<process_id>/jobs', methods=['GET', 'POST'])
+@BLUEPRINT.route('/processes/<process_id>/jobs')
 @BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>',
                  methods=['GET', 'DELETE'])
 def get_process_jobs(process_id=None, job_id=None):
@@ -393,29 +310,30 @@ def get_process_jobs(process_id=None, job_id=None):
     """
 
     if job_id is None:
-        if request.method == 'GET':  # list jobs
-            headers, status_code, content = api_.get_process_jobs(
-                request.headers, request.args, process_id)
-        elif request.method == 'POST':  # submit job
-            headers, status_code, content = api_.execute_process(
-                request.headers, request.args, request.data, process_id)
+        return get_response(api_.get_process_jobs(request, process_id))
     else:
         if request.method == 'DELETE':  # dismiss job
-            headers, status_code, content = api_.delete_process_job(
-                process_id, job_id)
+            return get_response(api_.delete_process_job(process_id, job_id))
         else:  # Return status of a specific job
-            headers, status_code, content = api_.get_process_jobs(
-                request.headers, request.args, process_id, job_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+            return get_response(api_.get_process_jobs(
+                request, process_id, job_id))
 
 
-@APP.route('/processes/<process_id>/jobs/<job_id>/results', methods=['GET'])
+@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
+def execute_process_jobs(process_id):
+    """
+    OGC API - Processes execution endpoint
+
+    :param process_id: process identifier
+
+    :returns: HTTP response
+    """
+
+    return get_response(api_.execute_process(request, process_id))
+
+
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>/results',
+                 methods=['GET'])
 def get_process_job_result(process_id=None, job_id=None):
     """
     OGC API - Processes job result endpoint
@@ -425,20 +343,12 @@ def get_process_job_result(process_id=None, job_id=None):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_process_job_result(
-        request.headers, request.args, process_id, job_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_process_job_result(
+        request, process_id, job_id))
 
 
-@APP.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
-           methods=['GET'])
+@BLUEPRINT.route('/processes/<process_id>/jobs/<job_id>/results/<resource>',
+                 methods=['GET'])
 def get_process_job_result_resource(process_id, job_id, resource):
     """
     OGC API - Processes job result resource endpoint
@@ -449,16 +359,32 @@ def get_process_job_result_resource(process_id, job_id, resource):
 
     :returns: HTTP response
     """
+    return get_response(api_.get_process_job_result_resource(
+        request, process_id, job_id, resource))
 
-    headers, status_code, content = api_.get_process_job_result_resource(
-        request.headers, request.args, process_id, job_id, resource)
 
-    response = make_response(content, status_code)
+@BLUEPRINT.route('/collections/<collection_id>/position')
+@BLUEPRINT.route('/collections/<collection_id>/area')
+@BLUEPRINT.route('/collections/<collection_id>/cube')
+@BLUEPRINT.route('/collections/<collection_id>/trajectory')
+@BLUEPRINT.route('/collections/<collection_id>/corridor')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/position')  # noqa
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/area')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/cube')
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/trajectory')  # noqa
+@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/corridor')  # noqa
+def get_collection_edr_query(collection_id, instance_id=None):
+    """
+    OGC EDR API endpoints
 
-    if headers:
-        response.headers = headers
+    :param collection_id: collection identifier
+    :param instance_id: instance identifier
 
-    return response
+    :returns: HTTP response
+    """
+    query_type = request.path.split('/')[-1]
+    return get_response(api_.get_collection_edr_query(request, collection_id,
+                                                      instance_id, query_type))
 
 
 @BLUEPRINT.route('/stac')
@@ -468,16 +394,7 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_stac_root(
-        request.headers, request.args)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_stac_root(request))
 
 
 @BLUEPRINT.route('/stac/<path:path>')
@@ -489,16 +406,7 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-
-    headers, status_code, content = api_.get_stac_path(
-        request.headers, request.args, path)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return get_response(api_.get_stac_path(request, path))
 
 
 APP.register_blueprint(BLUEPRINT)

@@ -51,7 +51,7 @@ class BaseProcessor:
         """
         execute the process
 
-        :returns: dict of process response
+        :returns: tuple of MIME type and process response
         """
 
         raise NotImplementedError()

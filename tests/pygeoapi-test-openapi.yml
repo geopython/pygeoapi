@@ -45,17 +45,16 @@ components:
         type: string
       style: form
     sortby:
-      description: The optional sortby parameter indicates the sort property and order
-        on which the server shall present results in the response document using the
-        convention `sortby=PROPERTY:X`, where `PROPERTY` is the sort property and
-        `X` is the sort order (`A` is ascending, `D` is descending). Sorting by multiple
-        properties is supported by providing a comma-separated list.
-      explode: false
-      in: query
       name: sortby
+      in: query
       required: false
       schema:
-        type: string
+        type: array
+        minItems: 1
+        items:
+          type: string
+          pattern: "[+|-][A-Za-z_][A-Za-z_0-9]*"
+      explode: false
       style: form
     startindex:
       description: The optional startindex parameter indicates the index within the
@@ -77,7 +76,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/exception.yaml
+            $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/exception.yaml
       description: Unexpected error
 info:
   contact:
@@ -103,11 +102,11 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Landing page
       tags:
@@ -118,9 +117,9 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
         default:
           $ref: '#/components/responses/default'
@@ -133,11 +132,11 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collections
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Feature Collections
       tags:
@@ -148,13 +147,13 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get feature collection metadata
       tags:
@@ -183,13 +182,13 @@ paths:
       - $ref: '#/components/parameters/sortby'
       - $ref: '#/components/parameters/startindex'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get Observations features
       tags:
@@ -201,13 +200,13 @@ paths:
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        404:
+        '404':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: Get Observations feature by id
       tags:
@@ -218,11 +217,11 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ConformanceDeclaration
-        400:
+        '400':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
-        500:
+        '500':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
       summary: API conformance definition
       tags:
@@ -233,7 +232,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/default'
@@ -246,7 +245,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/f'
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/default'
@@ -257,7 +256,7 @@ paths:
     get:
       description: Hello World process
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/default'
@@ -276,11 +275,11 @@ paths:
                 type: text/plain
                 value: hi there
             schema:
-              $ref: https://raw.githubusercontent.com/opengeospatial/wps-rest-binding/master/core/openapi/schemas/execute.yaml
+              $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-processes/master/core/openapi/schemas/execute.yaml
         description: Mandatory execute request JSON
         required: true
       responses:
-        200:
+        '200':
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/default'

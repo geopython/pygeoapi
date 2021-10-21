@@ -1,18 +1,18 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Processes {% endblock %}
+{% block title %}{{ super() }} {% trans %}Processes{% endtrans %} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="./processes">Processes</a>
+/ <a href="./processes">{% trans %}Processes{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="processes">
-      <h2>Processes in this service</h2>
+      <h2>{% trans %}Processes in this service{% endtrans %}</h2>
       <div class="row">
         <div class="col-sm-12 col-md-6">
           <table class="striped">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Description{% endtrans %}</th>
               </tr>
             </thead>
             <tbody>

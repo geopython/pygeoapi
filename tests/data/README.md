@@ -69,3 +69,11 @@ This directory provides test data to demonstrate functionality.
 - source: [NASA Physical Oceanography Distributed Active Archive Center](https://podaac.jpl.nasa.gov)
 - URL: https://registry.opendata.aws/mur
 - License: https://registry.opendata.aws/mur/#License
+
+### `open.canada.ca/sample-records.tinydb`
+
+- source: Open Data Canada
+- URL: https://csw.open.canada.ca/geonetwork/srv/csw?service=CSW&version=2.0.2&request=GetRecords&outputschema=http://www.isotc211.org/2005/gmd&resulttype=results (2021-02-18)
+- License: https://www.canada.ca/en/transparency/terms.html
+- Notes
+  - ISO records transformed to OGC API - Records GeoJSONs with `tests/load_tinydb_records.py`

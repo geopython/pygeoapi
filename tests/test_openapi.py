@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,7 +27,27 @@
 #
 # =================================================================
 
-from pygeoapi.openapi import get_ogc_schemas_location
+import pytest
+
+from jsonschema.exceptions import ValidationError
+
+from pygeoapi.openapi import (get_oas, get_ogc_schemas_location,
+                              validate_openapi_document)
+from pygeoapi.util import yaml_load
+
+from .util import get_test_file_path
+
+
+@pytest.fixture()
+def config():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
+def openapi():
+    with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
+        return yaml_load(fh)
 
 
 def test_str2bool():
@@ -45,3 +65,21 @@ def test_str2bool():
 
     default['ogc_schemas_location'] = '/opt/schemas.opengis.net'
     osl = get_ogc_schemas_location(default)
+
+
+def test_get_oas(config, openapi):
+    openapi_doc = get_oas(config)
+
+    assert isinstance(openapi_doc, dict)
+
+    is_valid = validate_openapi_document(openapi_doc)
+
+    assert is_valid
+
+
+def test_validate_openapi_document(openapi):
+    is_valid = validate_openapi_document(openapi)
+    assert is_valid
+
+    with pytest.raises(ValidationError):
+        is_valid = validate_openapi_document({'foo': 'bar'})

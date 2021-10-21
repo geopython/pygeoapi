@@ -1,8 +1,9 @@
+#!/bin/sh
 # =================================================================
 #
-# Authors: David Bitner <bitner@dbspatial.com>>
+# Authors: Joana Simoes <jo@doublebyte.net>
 #
-# Copyright (c) 2019 David Bitner
+# Copyright (c) 2021 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,30 +28,19 @@
 #
 # =================================================================
 
-service: pygeoapi
+set -e
+cmd="$@"
 
-provider:
-  name: aws
-  runtime: python3.6
+: ${MONGO_HOST:=mongo}
+: ${MONGO_PORT:=27017}
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+until nc -z $MONGO_HOST $MONGO_PORT
+do
+    echo "Waiting for Mongo ($MONGO_HOST:$MONGO_PORT) to start..."
+    sleep 0.5
+done
 
-plugins:
-  - serverless-python-requirements
-  - serverless-wsgi
-custom:
-  wsgi:
-    app: pygeoapi.flask_app.APP
-    packRequirements: true
-    textMimeTypes:
-      - application/ld+json
-functions:
-  app:
-    handler: wsgi_handler.handler
-    events:
-      - http: ANY /
-      - http: 'ANY {proxy+}'
-    environment:
-      PYGEOAPI_CONFIG: pygeoapi-config.yml
+echo "Mongo has started!"
+
+exec $cmd
+

@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} Collections {% endblock %}
+{% block title %}{{ super() }} {% trans %}Collections{% endtrans %}{% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="./collections">Collections</a>
+/ <a href="./collections">{% trans %}Collections{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collections">
@@ -9,9 +9,9 @@
             <table class="striped">
               <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Description</th>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Type{% endtrans %}</th>
+                <th>{% trans %}Description{% endtrans %}</th>
               </tr>
               </thead>
               <tbody>

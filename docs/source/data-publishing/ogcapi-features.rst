@@ -15,16 +15,17 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties (filters), resulttype, bbox, datetime, sortby, properties (display)
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, CQL
    :align: left
 
-   CSV,❌,results/hits,❌,❌,❌,✅
-   Elasticsearch,✅,results/hits,✅,✅,✅,✅
-   GeoJSON,❌,results/hits,❌,❌,❌,❌
-   MongoDB,✅,results,✅,✅,✅,❌
-   OGR,✅,results/hits,✅,❌,❌,❌
-   PostgreSQL,✅,results/hits,✅,❌,❌,❌
-   SQLiteGPKG,✅,results/hits,✅,❌,❌,❌
+   CSV,✅/✅,results/hits,❌,❌,❌,❌
+   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅
+   GeoJSON,✅/✅,results/hits,❌,❌,❌,❌
+   MongoDB,✅/❌,results,✅,✅,✅,❌
+   OGR,✅/❌,results/hits,✅,❌,❌,❌
+   PostgreSQL,✅/✅,results/hits,✅,❌,✅,❌
+   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,❌
+   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -64,6 +65,7 @@ To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
          data: tests/data/file.json
          id_field: id
 
+.. _Elasticsearch:
 
 Elasticsearch
 ^^^^^^^^^^^^^
@@ -86,10 +88,57 @@ To publish an Elasticsearch index, the following are required in your index:
          id_field: geonameid
          time_field: datetimefield
 
+This provider has the support for the CQL queries as indicated in the table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
+
 OGR
 ^^^
 
-.. todo:: add overview and requirements
+`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,  
+but also services such as WFS. Read the full list and configuration options at https://gdal.org/drivers/vector.
+Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_, 
+use this driver for example for flat database files (CSV).
+
+The OGR provider requires a recent (3+) version of GDAL to be installed.
+
+.. code-block:: yaml
+
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: ESRI Shapefile
+            source: tests/data/dutch_addresses_shape_4326/inspireadressen.shp
+            source_options:
+              ADJUST_GEOM_TYPE: FIRST_SHAPE
+            gdal_ogr_options:
+              SHPT: POINT
+          id_field: fid
+          layer: inspireadressen
+
+
+.. code-block:: yaml
+
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: WFS
+            source: WFS:https://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+            source_options:
+                VERSION: 2.0.0
+                OGR_WFS_PAGING_ALLOWED: YES
+                OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+             gdal_ogr_options:
+                GDAL_CACHEMAX: 64
+                GDAL_HTTP_PROXY: (optional proxy)
+                GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                CPL_DEBUG: NO
+          id_field: gml_id
+          layer: rdinfo:stations
+
 
 MongoDB
 ^^^^^^^
@@ -155,6 +204,44 @@ GeoPackage file:
          table: poi_portugal
 
 
+SensorThings API
+^^^^^^^^^^^^^^^^
+
+The STA provider is capable of creating feature collections from OGC SensorThings 
+API endpoints. Three of the STA entities are configurable: Things, Datastreams, and 
+Observations. For a full description of the SensorThings entity model, see 
+`here <http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#figure_2>`_. 
+For each entity of ``Things``, pygeoapi will expand all entities directly related to
+the ``Thing``, including its associated ``Location``, from which the 
+geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to 
+include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``. 
+
+The default id_field is ``@iot.id``. The STA provider adds one required field, 
+``entity``, and an optional field, ``intralink``. The ``entity`` field refers to 
+which STA entity to use for the feature collection. The ``intralink`` field controls 
+how the provider is acted upon by other STA providers and is by default, False.
+If ``intralink`` is true for an adjacent STA provider collection within a 
+pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi 
+link to the other entity or it's ``uri_field`` if declared. 
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: SensorThings
+         data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
+         uri_field: uri
+         entity: Datastreams 
+         time_field: phenomenonTime
+         intralink: true
+
+If all three entities are configured, the STA provider will represent a complete STA 
+endpoint as OGC-API feature collections. The ``Things`` features will include links 
+to the associated features in the ``Datastreams`` feature collection, and the 
+``Observations`` features will include links to the associated features in the 
+``Datastreams`` feature collection. Examples with three entities configured
+are included in the docker examples for SensorThings.
+
 Data access examples
 --------------------
 
@@ -176,6 +263,10 @@ Data access examples
   - http://localhost:5000/collections/foo/items?propertyname=foo
 - query features (temporal)
   - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
+- query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
+  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
+- query features (temporal) and sort descending by a property
+  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
 - fetch a specific feature
   - http://localhost:5000/collections/foo/items/123
 

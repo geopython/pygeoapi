@@ -2,7 +2,8 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2021 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,16 +28,22 @@
 #
 # =================================================================
 
+from typing import Dict
 from collections import OrderedDict
 import json
 import logging
+from urllib.parse import urlparse
 
 from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch.client.indices import IndicesClient
+from elasticsearch_dsl import Search, Q
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
+from pygeoapi.models.cql import CQLModel, get_next_node
+from pygeoapi.util import get_envelope
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,18 +62,39 @@ class ElasticsearchProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        url_tokens = self.data.split('/')
+        self.es_host, self.index_name = self.data.rsplit('/', 1)
 
         LOGGER.debug('Setting Elasticsearch properties')
-        self.es_host = url_tokens[2]
-        self.index_name = url_tokens[-1]
         self.is_gdal = False
 
         LOGGER.debug('host: {}'.format(self.es_host))
         LOGGER.debug('index: {}'.format(self.index_name))
 
+        self.type_name = 'FeatureCollection'
+        self.url_parsed = urlparse(self.es_host)
+
         LOGGER.debug('Connecting to Elasticsearch')
-        self.es = Elasticsearch(self.es_host)
+
+        if self.url_parsed.port is None:  # proxy to default HTTP(S) port
+            if self.url_parsed.scheme == 'https':
+                port = 443
+            else:
+                port = 80
+        else:  # was set explictly
+            port = self.url_parsed.port
+
+        url_settings = {
+            'scheme': self.url_parsed.scheme,
+            'host': self.url_parsed.hostname,
+            'port': port
+        }
+
+        if self.url_parsed.path:
+            url_settings['url_prefix'] = self.url_parsed.path
+
+        LOGGER.debug('URL settings: {}'.format(url_settings))
+        LOGGER.debug('Connecting to Elasticsearch')
+        self.es = Elasticsearch([url_settings])
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
@@ -112,16 +140,18 @@ class ElasticsearchProvider(BaseProvider):
         for k, v in p['properties'].items():
             if 'type' in v:
                 if v['type'] == 'text':
-                    type_ = 'string'
+                    fields_[k] = {'type': 'string'}
+                elif v['type'] == 'date':
+                    fields_[k] = {'type': 'string', 'format': 'date'}
                 else:
-                    type_ = v['type']
-                fields_[k] = type_
+                    fields_[k] = {'type': v['type']}
 
         return fields_
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None,
+              filterq=None, **kwargs):
         """
         query Elasticsearch index
 
@@ -134,6 +164,8 @@ class ElasticsearchProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
+        :param filterq: filter object
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -204,12 +236,18 @@ class ElasticsearchProvider(BaseProvider):
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
+                prop_name = self.mask_prop(prop[0])
                 pf = {
                     'match': {
-                        self.mask_prop(prop[0]): prop[1]
+                        prop_name: {
+                            'query': prop[1]
+                        }
                     }
                 }
                 query['query']['bool']['filter'].append(pf)
+
+            if '|' not in prop[1]:
+                pf['match'][prop_name]['minimum_should_match'] = '100%'
 
         if sortby:
             LOGGER.debug('processing sortby')
@@ -219,14 +257,14 @@ class ElasticsearchProvider(BaseProvider):
 
                 sp = sort['property']
 
-                if self.fields[sp] == 'string':
+                if self.fields[sp]['type'] == 'string':
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:
                     sort_property = self.mask_prop(sp)
 
                 sort_order = 'asc'
-                if sort['order'] == 'D':
+                if sort['order'] == '-':
                     sort_order = 'desc'
 
                 sort_ = {
@@ -235,6 +273,18 @@ class ElasticsearchProvider(BaseProvider):
                     }
                 }
                 query['sort'].append(sort_)
+
+        if q is not None:
+            LOGGER.debug('Adding free-text search')
+            query['query']['bool']['must'] = {'query_string': {'query': q}}
+
+            query['_source'] = {
+                'excludes': [
+                    'properties._metadata-payload',
+                    'properties._metadata-schema',
+                    'properties._metadata-format'
+                ]
+            }
 
         if self.properties or select_properties:
             LOGGER.debug('including specified fields: {}'.format(
@@ -255,6 +305,9 @@ class ElasticsearchProvider(BaseProvider):
                 query['_source'] = {'excludes': ['geometry']}
         try:
             LOGGER.debug('querying Elasticsearch')
+            if filterq:
+                LOGGER.debug('adding cql object: {}'.format(filterq.json()))
+                query = update_query(input_query=query, cql=filterq)
             LOGGER.debug(json.dumps(query, indent=4))
 
             LOGGER.debug('Setting ES paging zero-based')
@@ -308,7 +361,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Get ES document by id
 
@@ -330,7 +383,7 @@ class ElasticsearchProvider(BaseProvider):
                 'query': {
                     'bool': {
                         'filter': [{
-                            'match': {
+                            'match_phrase': {
                                 self.mask_prop(self.id_field): identifier
                             }
                         }]
@@ -338,12 +391,16 @@ class ElasticsearchProvider(BaseProvider):
                 }
             }
 
-            result = self.es.search(index=self.index_name, body=query)
-            if len(result['hits']['hits']) == 0:
-                LOGGER.error(err)
-                raise ProviderItemNotFoundError(err)
-            LOGGER.debug('Serializing feature')
-            feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            try:
+                result = self.es.search(index=self.index_name, body=query)
+                if len(result['hits']['hits']) == 0:
+                    LOGGER.error(err)
+                    raise ProviderItemNotFoundError(err)
+                LOGGER.debug('Serializing feature')
+                feature_ = self.esdoc2geojson(result['hits']['hits'][0])
+            except exceptions.RequestError as err2:
+                LOGGER.error(err2)
+                raise ProviderItemNotFoundError(err2)
         except Exception as err:
             LOGGER.error(err)
             return None
@@ -416,3 +473,226 @@ class ElasticsearchProvider(BaseProvider):
 
     def __repr__(self):
         return '<ElasticsearchProvider> {}'.format(self.data)
+
+
+class ElasticsearchCatalogueProvider(ElasticsearchProvider):
+    """Elasticsearch Provider"""
+
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
+
+    def _excludes(self):
+        return [
+            'properties._metadata-anytext'
+        ]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for i in self._excludes():
+            del fields[i]
+
+        fields['q'] = {'type': 'string'}
+
+        return fields
+
+    def query(self, startindex=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None):
+
+        records = super().query(
+            startindex=startindex, limit=limit,
+            resulttype=resulttype, bbox=bbox,
+            datetime_=datetime_, properties=properties,
+            sortby=sortby,
+            select_properties=select_properties,
+            skip_geometry=skip_geometry,
+            q=q)
+
+        return records
+
+    def __repr__(self):
+        return '<ElasticsearchCatalogueProvider> {}'.format(self.data)
+
+
+class ESQueryBuilder:
+    def __init__(self):
+        self._operation = None
+        self.must_value = {}
+        self.should_value = {}
+        self.mustnot_value = {}
+        self.filter_value = {}
+
+    def must(self, must_value):
+        self.must_value = must_value
+        return self
+
+    def should(self, should_value):
+        self.should_value = should_value
+        return self
+
+    def must_not(self, mustnot_value):
+        self.mustnot_value = mustnot_value
+        return self
+
+    def filter(self, filter_value):
+        self.filter_value = filter_value
+        return self
+
+    @property
+    def operation(self):
+        return self._operation
+
+    @operation.setter
+    def operation(self, value):
+        self._operation = value
+
+    def build(self):
+        if self.must_value:
+            must_clause = self.must_value or {}
+        if self.should_value:
+            should_clause = self.should_value or {}
+        if self.mustnot_value:
+            mustnot_clause = self.mustnot_value or {}
+        if self.filter_value:
+            filter_clause = self.filter_value or {}
+        else:
+            filter_clause = {}
+
+        # to figure out how to deal with logical operations
+        # return match_clause & range_clause
+        clauses = must_clause or should_clause or mustnot_clause
+        filters = filter_clause
+        if self.operation == 'and':
+            res = Q(
+                'bool',
+                must=[clause for clause in clauses],
+                filter=[filter for filter in filters])
+        elif self.operation == 'or':
+            res = Q(
+                'bool',
+                should=[clause for clause in clauses],
+                filter=[filter for filter in filters])
+        elif self.operation == 'not':
+            res = Q(
+                'bool',
+                must_not=[clause for clause in clauses],
+                filter=[filter for filter in filters])
+        else:
+            if filters:
+                res = Q(
+                    'bool',
+                    must=[clauses],
+                    filter=[filters])
+            else:
+                res = Q(
+                    'bool',
+                    must=[clauses])
+
+        return res
+
+
+def _build_query(q, cql):
+
+    # this would be handled by the AST with the traverse of CQL model
+    op, node = get_next_node(cql.__root__)
+    q.operation = op
+    if isinstance(node, list):
+        query_list = []
+        for elem in node:
+            op, next_node = get_next_node(elem)
+            if not getattr(next_node, 'between', 0) == 0:
+                property = next_node.between.value.__root__.__root__.property
+                lower = next_node.between.lower.__root__.__root__
+                upper = next_node.between.upper.__root__.__root__
+                query_list.append(Q(
+                    {
+                        'range':
+                            {
+                                f'{property}': {
+                                    'gte': lower, 'lte': upper
+                                }
+                            }
+                    }
+                ))
+            if not getattr(next_node, '__root__', 0) == 0:
+                scalars = tuple(next_node.__root__.eq.__root__)
+                property = scalars[0].__root__.property
+                value = scalars[1].__root__.__root__
+                query_list.append(Q(
+                    {'match': {f'{property}': f'{value}'}}
+                ))
+        q.must(query_list)
+    elif not getattr(node, 'between', 0) == 0:
+        property = node.between.value.__root__.__root__.property
+        lower = None
+        if not getattr(node.between.lower,
+                       '__root__', 0) == 0:
+            lower = node.between.lower.__root__.__root__
+        upper = None
+        if not getattr(node.between.upper,
+                       '__root__', 0) == 0:
+            upper = node.between.upper.__root__.__root__
+        query = Q(
+            {
+                'range':
+                    {
+                        f'{property}': {
+                            'gte': lower, 'lte': upper
+                        }
+                    }
+            }
+        )
+        q.must(query)
+    elif not getattr(node, '__root__', 0) == 0:
+        next_op, next_node = get_next_node(node)
+        if not getattr(next_node, 'eq', 0) == 0:
+            scalars = tuple(next_node.eq.__root__)
+            property = scalars[0].__root__.property
+            value = scalars[1].__root__.__root__
+            query = Q(
+                {'match': {f'{property}': f'{value}'}}
+            )
+            q.must(query)
+    elif not getattr(node, 'intersects', 0) == 0:
+        property = node.intersects.__root__[0].__root__.property
+        if property == 'geometry':
+            geom_type = node.intersects.__root__[
+                1].__root__.__root__.__root__.type
+            if geom_type.value == 'Polygon':
+                coordinates = node.intersects.__root__[
+                    1].__root__.__root__.__root__.coordinates
+                coords_list = [
+                    poly_coords.__root__ for poly_coords in coordinates[0]
+                ]
+                filter_ = Q(
+                    {
+                        'geo_shape': {
+                            'geometry': {
+                                'shape': {
+                                    'type': 'envelope',
+                                    'coordinates': get_envelope(
+                                        coords_list)
+                                },
+                                'relation': 'intersects'
+                            }
+                        }
+                    }
+                )
+                query_all = Q(
+                    {'match_all': {}}
+                )
+                q.must(query_all)
+                q.filter(filter_)
+    return q.build()
+
+
+def update_query(input_query: Dict, cql: CQLModel):
+    s = Search.from_dict(input_query)
+    query = ESQueryBuilder()
+    output_query = _build_query(query, cql)
+    s = s.query(output_query)
+
+    LOGGER.debug('Enhanced query: {}'.format(
+        json.dumps(s.to_dict())
+    ))
+    return s.to_dict()

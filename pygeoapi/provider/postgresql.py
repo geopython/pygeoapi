@@ -5,7 +5,7 @@
 #          Mary Bucknell <mbucknell@usgs.gov>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2021 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -120,7 +120,9 @@ class DatabaseConnection:
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
-            self.fields = dict(result)
+
+            for k, v in dict(result).items():
+                self.fields[k] = {'type': v}
 
         return self
 
@@ -204,9 +206,23 @@ class PostgreSQLProvider(BaseProvider):
 
         return where_clause
 
+    def _make_orderby(self, sortby):
+        """
+        Private function: Make STA filter from query properties
+
+        :param sortby: list of dicts (property, order)
+
+        :returns: STA $orderby string
+        """
+        ret = []
+        _map = {'+': 'ASC', '-': 'DESC'}
+        for _ in sortby:
+            ret.append(f"{_['property']} {_map[_['order']]}")
+        return SQL(f"ORDER BY {','.join(ret)}")
+
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False):
+              select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -221,6 +237,7 @@ class PostgreSQLProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
 
         :returns: GeoJSON FeaturesCollection
         """
@@ -252,15 +269,24 @@ class PostgreSQLProvider(BaseProvider):
         with DatabaseConnection(self.conn_dic, self.table) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
+            props = db.columns if select_properties == [] else \
+                SQL(', ').join([Identifier(p) for p in select_properties])
+
+            geom = SQL('') if skip_geometry else \
+                SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
+
             where_clause = self.__get_where_clauses(
                 properties=properties, bbox=bbox)
 
+            orderby = self._make_orderby(sortby) if sortby else SQL('')
+
             sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT DISTINCT {},ST_AsGeoJSON({}) FROM {}{}").\
-                format(db.columns,
-                       Identifier(self.geom),
+             SELECT DISTINCT {} {} FROM {} {} {}").\
+                format(props,
+                       geom,
                        Identifier(self.table),
-                       where_clause)
+                       where_clause,
+                       orderby)
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
             LOGGER.debug('Start Index: {}'.format(startindex))
@@ -327,7 +353,7 @@ class PostgreSQLProvider(BaseProvider):
         id_ = item[0]['id'] if item else identifier
         return id_
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
@@ -386,8 +412,10 @@ class PostgreSQLProvider(BaseProvider):
             feature = {
                 'type': 'Feature'
             }
-            feature["geometry"] = json.loads(
-                rd.pop('st_asgeojson'))
+
+            geom = rd.pop('st_asgeojson') if rd.get('st_asgeojson') else None
+
+            feature['geometry'] = json.loads(geom) if geom is not None else None  # noqa
 
             feature['properties'] = rd
             feature['id'] = feature['properties'].get(self.id_field)
