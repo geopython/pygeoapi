@@ -149,7 +149,8 @@ def pre_process(func):
 
 def gzip(func):
     """
-    Decorator that compresses an outgoing Request instance.
+    Decorator that compresses the content of an outgoing API result
+    instance if the Content-Encoding response header was set to gzip.
 
     :param func: decorated function
 
