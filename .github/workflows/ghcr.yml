@@ -3,6 +3,11 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
+# Triggers a Docker workflow on completion of the "build" workflow but
+# pushes to GitHub Container Registry 
+#
+# Author: Just van den Broecke & Edward Lewis - 2021
+
 name: GHCR
 
 on:
