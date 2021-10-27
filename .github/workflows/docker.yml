@@ -13,12 +13,11 @@ on:
 
 jobs:
   # Single job now to build Docker Image, run GHC unit tests, and push to DockerHub
-  build_test_push:
-
+  on-success:
     name: Build, Test and Push Docker Image to DockerHub
-
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
     # v2 https://github.com/docker/build-push-action/blob/master/UPGRADE.md
     steps:
       - name: Checkout ✅
@@ -74,15 +73,4 @@ jobs:
       - name: Push to Docker repo (on GH Push only) ☁️
         if: ${{ github.event_name == 'push' }}
         run: docker push ${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.version }}
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
+
