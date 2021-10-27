@@ -6,12 +6,9 @@
 name: Create and publish a Docker image to GitHub Container Registry
 
 on:
-  push:
-    branches:
-      - master
-  release:
-    types:
-      - released
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
 
 env:
   REGISTRY: ghcr.io
@@ -20,12 +17,12 @@ env:
 jobs:
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
-  push:
+  on-success:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       packages: write
       contents: read
-
     steps:
       - uses: actions/checkout@v2
 
@@ -59,3 +56,10 @@ jobs:
 
       - name: Push to CR
         run: docker push ${{ env.FULLCONTAINERNAME }}
+
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Print Test Fail
+      run: echo Tests Failed
