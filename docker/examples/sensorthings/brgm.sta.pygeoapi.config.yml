@@ -34,6 +34,7 @@ server:
     url: http://localhost:5000 #change to host URL  if running your own instance
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
+    gzip: false
     languages:
         # First language is the default language
         - en-US
