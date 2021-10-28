@@ -56,7 +56,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             '_metadata-anytext',
         ]
 
-        BaseProvider.__init__(self, provider_def)
+        super().__init__(provider_def)
 
         LOGGER.debug('Connecting to TinyDB db at {}'.format(self.data))
 
