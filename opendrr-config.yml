@@ -247,6 +247,7 @@ resources:
             - type: feature
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_idm7p1_sidney_indicators_csd
+              id_field: csduid
     
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_s:
         type: collection
@@ -342,7 +343,7 @@ resources:
             - type: feature
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_indicators_csd
-              id_field: AssetID
+              id_field: csduid
 
     opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_b:
         type: collection
@@ -432,7 +433,7 @@ resources:
             - type: feature
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_csd
-              id_field: Sauid
+              id_field: csduid
 
     opendrr_hexgrid_100km:
         type: collection
