@@ -156,8 +156,8 @@ resources:
     opendrr_dsra_idm7p1_sidney_indicators_s:
         type: collection
         title: 
-            en: Sidney Scenario (Polygon)
-            fr: Scénario de Sidney (Polygon)
+            en: Sidney Scenario (Settlement Area)
+            fr: Scénario de Sidney (Zone de peuplement)
         description: 
             en: Evaluating impact of increasing magnitude using the 2015 Mw 4.7 Sidney, BC, Earthquake hypocentre. More info at https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - Strike selected to approximately parallel the strike of the subducting slab for this deep intraslab extensional event.
             fr: Évaluation de l'impact de l'augmentation de la magnitude à l'aide de l'hypocentre du tremblement de terre de Sidney (Colombie-Britannique) de 2015 (Mw 4,7). Plus d'informations sur https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - La direction choisie est approximativement parallèle à celle de la dalle subductrice pour ce profond événement d'extension intraslabique.
@@ -216,12 +216,43 @@ resources:
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_idm7p1_sidney_indicators_b
               id_field: AssetID
+
+    opendrr_dsra_idm7p1_sidney_indicators_csd:
+        type: collection
+        title: 
+            en: Sidney Scenario (Census Subdivision)
+            fr: Scénario de Sidney (Subdivision du recensement)
+        description: 
+            en: Evaluating impact of increasing magnitude using the 2015 Mw 4.7 Sidney, BC, Earthquake hypocentre. More info at https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - Strike selected to approximately parallel the strike of the subducting slab for this deep intraslab extensional event.
+            fr: Évaluation de l'impact de l'augmentation de la magnitude à l'aide de l'hypocentre du tremblement de terre de Sidney (Colombie-Britannique) de 2015 (Mw 4,7). Plus d'informations sur https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - La direction choisie est approximativement parallèle à celle de la dalle subductrice pour ce profond événement d'extension intraslabique.
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-126.6567, 48.3089, -119.4321, 51.3518]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_idm7p1_sidney_indicators_csd
     
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_s:
         type: collection
         title: 
-            en: Leach River Fault Scenario (Polygon)
-            fr: Scénario de faille de la rivière Leach (Polygon)
+            en: Leach River Fault Scenario (Settlement Area)
+            fr: Scénario de faille de la rivière Leach (Zone de peuplement)
         description: 
             en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
             fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
@@ -281,6 +312,38 @@ resources:
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_indicators_b
               id_field: AssetID
 
+    opendrr_dsra_acm7p3_leechriverfullfault_indicators_csd:
+        type: collection
+        title: 
+            en: Leach River Fault Scenario (Census Subdivision)
+            fr: Scénario de faille de la rivière Leach (Subdivision du recensement)
+        description: 
+            en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
+            fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-126.6567, 48.3089, -119.5390, 51.0802]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_indicators_csd
+              id_field: AssetID
+
     opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_b:
         type: collection
         title: 
@@ -314,8 +377,8 @@ resources:
     opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s:
         type: collection
         title: 
-            en: Cascadia Fault Scenario (Polygon)
-            fr: Scénario de la faille Cascadia (Polygon)
+            en: Cascadia Fault Scenario (Settlement Area)
+            fr: Scénario de la faille Cascadia (Zone de peuplement)
         description: opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s
         keywords:
             en:
@@ -339,6 +402,36 @@ resources:
             - type: feature
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s
+              id_field: Sauid
+
+    opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_csd:
+        type: collection
+        title: 
+            en: Cascadia Fault Scenario (Census Subdivision)
+            fr: Scénario de la faille Cascadia (Subdivision du recensement)
+        description: opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-123.7527, 48.3089, -118.1974, 52.4875]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_csd
               id_field: Sauid
 
     opendrr_hexgrid_100km:
@@ -537,8 +630,8 @@ resources:
     opendrr_nhsl_physical_exposure_indicators_s:
         type: collection
         title: 
-            en: Physical Exposure (Polygon)
-            fr: Exposition physique (Polygon)
+            en: Physical Exposure (Settlement Area)
+            fr: Exposition physique (Zone de peuplement)
         description: 
             en: 'This model represents an inventory of more than 9.1 million buildings in Canada; population dynamics at different times of day for 35.1 million people, and; the capital value of building assets totalling more than 8.3 trillion CAD$. Buildings are classified according to their construction type, occupancy, and age. These classes are derived from the standard North American HAZUS building taxonomy and include 38 construction classes representing different types of wood, concrete, masonry, steel and prefabricated structures; 33 occupancy classes representing a mix of residential, civic, commercial and industrial land uses; and 4 age classes representing the assumed level of building design. The distribution of resulting ‘building archetypes’ are assigned to settled areas based on associated land-use and census characteristics.  Building populations at different times of day are estimated for standard daytime hours (9am-5pm); for morning and evening commute hours when people are in transit (7am-9am; 5pm-7pm), and; for nighttime hours when the majority of people are at home (7pm-7am). The capital value of buildings assets is provided for structural and non-structural components of the building, as well as the potential building contents. Asset values are estimated based on industry replacement costs for representative regions across Canada.'
             fr: 'Ce modèle comprend un inventaire de plus de 9,1 millions de bâtiments au Canada, la dynamique de la population à divers moments de la journée pour 35,1 millions de personnes et la valeur en capital de biens immobiliers totalisant plus de 8,3 billions de dollars canadiens. Les bâtiments sont classés en fonction du type de construction, de l’occupation et de l’âge. Ces classes sont basées sur la taxonomie normalisée HAZUS des bâtiments de l’Amérique du Nord. On compte 38 classes de construction représentant différents types de bois, de béton, de maçonnerie, d’acier et de structures préfabriquées; 33 classes d’occupation représentant une variété d’utilisations résidentielles, civiques, commerciales et industrielles; et 4 classes d’âge représentant le niveau présumé de conception du bâtiment. La distribution des « archétypes de bâtiments » obtenus est attribuée à des régions habitées en fonction de l’utilisation du sol et des caractéristiques du recensement. Le nombre d’occupants des bâtiments à différents moments de la journée est estimé pour les trois périodes suivantes : le jour (de 9 h à 17 h), pendant les déplacements domicile-travail du matin et du soir (de 7 h à 9 h et de 17 h à 19 h) et la nuit, lorsque la majorité des gens sont à la maison (de 19 h à 7 h). La valeur en capital des biens immobiliers est fournie pour les éléments structurels et non structurels des bâtiments, ainsi que pour le contenu potentiel du bâtiment. La valeur des biens est estimée en fonction des coûts de remplacement de l’industrie pour des régions représentatives du Canada.'
@@ -800,8 +893,8 @@ resources:
     opendrr_psra_indicators_s:
         type: collection
         title: 
-            en: The National Seismic Risk model for Canada (Polygon)
-            fr: Le modèle national de risque sismique pour le Canada (Polygon)
+            en: The National Seismic Risk model for Canada (Settlement Area)
+            fr: Le modèle national de risque sismique pour le Canada (Zone de peuplement)
         description: 
             en: The National Seismic Risk model for Canada introduces a structured framework of indicators that profile the physical, social and economic dimensions of earthquake risk at the neighborhood scale.
             fr: Le modèle national de risque sismique pour le Canada présente un cadre structuré d'indicateurs qui profilent les dimensions physiques, sociales et économiques du risque sismique à l'échelle du quartier.
