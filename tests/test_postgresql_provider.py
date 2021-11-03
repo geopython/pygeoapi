@@ -73,6 +73,7 @@ def config_materialised_view(config):
 
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
+
     p = PostgreSQLProvider(config)
     feature_collection = p.query()
     assert feature_collection.get('type', None) == 'FeatureCollection'
@@ -121,6 +122,17 @@ def test_query_with_property_filter(config):
                features))
     assert (len(features) != len(stream_features))
     assert (len(other_features) != 0)
+
+
+def test_query_partial_match(config):
+    """Test query with a partial matching string"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=[("waterway", "strea")])
+    features = feature_collection.get('features', None)
+    stream_features = list(
+        filter(lambda feature: feature['properties']['waterway'] == 'stream',
+               features))
+    assert (len(features) == len(stream_features))
 
 
 def test_query_with_config_properties(config_with_properties):

@@ -206,8 +206,8 @@ class PostgreSQLProvider(BaseProvider):
 
         where_conditions = []
         if properties:
-            property_clauses = [SQL('{} = {}').format(
-                Identifier(k), Literal(v)) for k, v in properties]
+            property_clauses = [SQL('{} LIKE {}').format(
+                Identifier(k), Literal(f"%{v}%")) for k, v in properties]
             where_conditions += property_clauses
         if bbox:
             bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
