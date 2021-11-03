@@ -161,6 +161,14 @@ def test_query_with_config_properties(config_with_properties):
         assert property_name in config_with_properties["properties"]
 
 
+def test_query_match_integer(config):
+    """Test query with a matching integer"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=[("osm_id", 30152037)])
+    features = feature_collection.get('features', None)
+    assert len(features) == 1
+
+
 def test_query_hits(config):
     """Test query resulttype=hits with properties"""
     psp = PostgreSQLProvider(config)
