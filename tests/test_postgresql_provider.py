@@ -124,15 +124,27 @@ def test_query_with_property_filter(config):
     assert (len(other_features) != 0)
 
 
-def test_query_partial_match(config):
+@pytest.mark.parametrize("properties, expected_count", [
+    ([("waterway", "stream")], 10),  # Simple match
+    ([("waterway", "strea")], 10),  # Partial match
+    ([("waterway", "tream")], 10),  # Partial match
+    ([("waterway", "st%m")], 10),  # Partial match with wildcard in middle
+    ([("waterway", "STREAM")], 10),  # Case insensitive match
+    ([("width", "30")], 10),  # Number in text field
+    ([("width", "30 cm")], 6),  # Number and text in text field
+    ([("osm_id", "620120062")], 1),  # Integer field as text
+    ([("osm_id", 620120062)], 1),  # Integer field as integer
+    ([("waterway", "drain"),
+      ("width", "30 cm")], 6),  # Multiple columns
+    ([("waterway", "stream"),
+      ("osm_id", 620120062)], 1),  # Multi-columns, mixed type
+])
+def test_query_partial_match(config, properties, expected_count):
     """Test query with a partial matching string"""
     p = PostgreSQLProvider(config)
-    feature_collection = p.query(properties=[("waterway", "strea")])
+    feature_collection = p.query(properties=properties)
     features = feature_collection.get('features', None)
-    stream_features = list(
-        filter(lambda feature: feature['properties']['waterway'] == 'stream',
-               features))
-    assert (len(features) == len(stream_features))
+    assert (len(features) == expected_count)
 
 
 def test_query_with_config_properties(config_with_properties):
