@@ -29,7 +29,7 @@
                 } else if (k === 'bbox' && typeof v === 'string'){
                     this.vals[k] = [...v.match(/(-?[\d]+)/g)]
                 } else if ((this._key(k).includes('.keywords.') || k === 'properties') && typeof v === 'string'){
-                    this.vals[k] = [...v.match(/([-a-zA-Z0-9\u00C0-\u00ff])+/g)] 
+                    this.vals[k] = [...v.match(/[^, ]+/g)] 
                 } else {
                     this.vals[k] = v
                 }

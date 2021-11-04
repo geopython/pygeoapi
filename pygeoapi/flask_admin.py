@@ -107,7 +107,7 @@ def login():
 
 
 @ADMIN_BLUEPRINT.route('/admin')
-# @flask_login.login_required
+@flask_login.login_required
 def admin():
     return render_j2_template(CONFIG, 'admin/index.html', TEMPLATE_CONFIG)
 
@@ -119,7 +119,7 @@ def logout():
 
 
 @ADMIN_BLUEPRINT.route('/admin/datadump', methods=['POST'])
-# @flask_login.login_required
+@flask_login.login_required
 def datadump():
     name = request.form.get('name')
     filename = ''
@@ -152,7 +152,7 @@ def datadump():
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['POST'])
-# @flask_login.login_required
+@flask_login.login_required
 def config():
     with open("temp.config.yml", "w") as file:
         yaml.safe_dump(request.get_json(force=True), file,

@@ -31,15 +31,18 @@
           Add additional menu items here
           <a href="https://pygeoapi.io" role="button" class="button">About</a>
         -->
-        {%- if not current_user.is_authenticated -%}
-        <a href="{{ config['server']['url']+'/login' }}" role="button" class="button" style="float:right">Login</a>
-        {%- else -%}
-        <a href="{{ config['server']['url']+'/logout' }}" role="button" class="button" style="float:right">Logout</a>
-        <a href="{{ config['server']['url']+'/admin' }}" role="button" class="button" style="float:right">Admin</a>
+        {%- if config['server'].get('admin', False) -%}
+          {%- if not current_user.is_authenticated -%}
+          <a href="{{ config['server']['url']+'/login' }}" role="button" class="button" style="float:right">Login</a>
+          {%- else -%}
+          <a href="{{ config['server']['url']+'/logout' }}" role="button" class="button" style="float:right">Logout</a>
+          <a href="{{ config['server']['url']+'/admin' }}" role="button" class="button" style="float:right">Admin</a>
+          {%- endif -%}
         {%- endif -%}
         <a href="mailto:{{ config['metadata']['contact']['email'] }}" role="button" class="button" style="float:right">Contact</a>
       </div>
     </header>
+
     <div class="sticky row crumbs">
       <div class="col-sm-12 col-md-10 col-md-offset-1">
         {% block crumbs %}

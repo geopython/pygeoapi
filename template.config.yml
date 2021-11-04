@@ -32,6 +32,7 @@ server:
         host: ${CONTAINER_HOST}
         port: ${FORWARDING_PORT}
     url: http://localhost:5000
+    admin: true
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     languages:

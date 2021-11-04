@@ -411,7 +411,8 @@ def stac_catalog_path(path):
 
 
 APP.register_blueprint(BLUEPRINT)
-APP.register_blueprint(ADMIN_BLUEPRINT)
+if CONFIG['server'].get('admin'):
+    APP.register_blueprint(ADMIN_BLUEPRINT)
 
 
 @click.command()

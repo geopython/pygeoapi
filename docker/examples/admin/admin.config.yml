@@ -31,9 +31,10 @@
 
 server:
     bind:
-        host: ${CONTAINER_HOST}
-        port: ${FORWARDING_PORT}
+        host: ${CONTAINER_HOST:-0.0.0.0}
+        port: ${FORWARDING_PORT:-5000}
     url: http://localhost:5000
+    admin: true
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     languages: 
