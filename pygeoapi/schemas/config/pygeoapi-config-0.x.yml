@@ -31,6 +31,9 @@ properties:
             encoding:
                 type: string
                 description: default server encoding
+            gzip:
+                type: boolean
+                description: default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
             language:
                 type: string
                 description: default server language

@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Joana Simoes <jo@doublebyte.net>>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2021 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,37 +27,54 @@
 #
 # =================================================================
 
-__version__ = '0.12.dev0'
+version: '3.3'
 
-import click
-from pygeoapi.config import config
-from pygeoapi.openapi import openapi
+services:
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+
+    container_name: pygeoapi_mongo
+
+    entrypoint:
+      - /mongo-entrypoint.sh
+
+    ports:
+      - 5000:80
+
+    volumes:
+      - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
+      - ./pygeoapi/mongo-entrypoint.sh:/mongo-entrypoint.sh
+      - ./pygeoapi/wait-for-mongo.sh:/wait-for-mongo.sh
+      - datavolume:/pygeoapi/tests/data
+    links:
+      - mongo
+
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5.0.3
+    container_name: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - ./docker-entrypoint-initdb.d/add_data.sh:/docker-entrypoint-initdb.d/add_data.sh:ro
+      - datavolume:/pygeoapi/tests/data
+    environment:
+        MONGO_INITDB_DATABASE: pop_places
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    container_name: mongo_express
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    ports:
+      - 8081:8081
 
 
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+volumes:
+  datavolume: {}
 
-
-@cli.command()
-@click.option('--flask', 'server', flag_value="flask", default=True)
-@click.option('--starlette', 'server', flag_value="starlette")
-@click.pass_context
-def serve(ctx, server):
-    """Run the server with different daemon type (--flask is the default)"""
-
-    if server == "flask":
-        from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
-    elif server == "starlette":
-        from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
-    else:
-        raise click.ClickException('--flask/--starlette is required')
-
-
-cli.add_command(config)
-cli.add_command(openapi)

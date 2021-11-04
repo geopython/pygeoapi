@@ -1,8 +1,9 @@
+#!/bin/sh
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Joana Simoes <jo@doublebyte.net>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2021 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,37 +28,19 @@
 #
 # =================================================================
 
-__version__ = '0.12.dev0'
+set -e
+cmd="$@"
 
-import click
-from pygeoapi.config import config
-from pygeoapi.openapi import openapi
+: ${MONGO_HOST:=mongo}
+: ${MONGO_PORT:=27017}
 
+until nc -z $MONGO_HOST $MONGO_PORT
+do
+    echo "Waiting for Mongo ($MONGO_HOST:$MONGO_PORT) to start..."
+    sleep 0.5
+done
 
-@click.group()
-@click.version_option(version=__version__)
-def cli():
-    pass
+echo "Mongo has started!"
 
+exec $cmd
 
-@cli.command()
-@click.option('--flask', 'server', flag_value="flask", default=True)
-@click.option('--starlette', 'server', flag_value="starlette")
-@click.pass_context
-def serve(ctx, server):
-    """Run the server with different daemon type (--flask is the default)"""
-
-    if server == "flask":
-        from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
-    elif server == "starlette":
-        from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
-    else:
-        raise click.ClickException('--flask/--starlette is required')
-
-
-cli.add_command(config)
-cli.add_command(openapi)
