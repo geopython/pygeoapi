@@ -27,12 +27,13 @@
 #
 # =================================================================
 
-from requests import get, codes
+from requests import Session, get, codes
 from requests.compat import urljoin
 import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from json.decoder import JSONDecodeError
 from pygeoapi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
@@ -46,26 +47,18 @@ ENTITY = {
     }
 _EXPAND = {
     'Things': """
-        Locations,
-        Datastreams(
-            $select=@iot.id,properties
-            )
+        Locations
+        ,Datastreams
     """,
     'Observations': """
-        Datastream(
-            $select=@iot.id,properties
-            ),
-        FeatureOfInterest
+        Datastream
+        ,FeatureOfInterest
     """,
     'Datastreams': """
         Sensor
         ,ObservedProperty
-        ,Thing(
-            $select=@iot.id,properties
-            )
-        ,Thing/Locations(
-            $select=location
-            )
+        ,Thing
+        ,Thing/Locations
         ,Observations(
             $select=@iot.id;
             $orderby=phenomenonTime_desc
@@ -124,7 +117,12 @@ class SensorThingsProvider(BaseProvider):
         if not self.fields:
             p = {'$expand': EXPAND[self.entity], '$top': 1}
             r = get(self._url, params=p)
-            results = r.json()['value'][0]
+            try:
+                results = r.json()['value'][0]
+            except JSONDecodeError as err:
+                LOGGER.error('Entity {} error: {}'.format(self.entity, err))
+                LOGGER.error('Bad url response at {}'.format(r.url))
+                raise ProviderQueryError(err)
 
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
@@ -192,7 +190,8 @@ class SensorThingsProvider(BaseProvider):
                 for p in rs['providers']:
                     # Validate linkable provider
                     if (p['name'] != 'SensorThings'
-                            or not p.get('intralink', False)):
+                            or not p.get('intralink', False)
+                            or p['data'] != self.data):
                         continue
 
                     if p.get('default', False) is True:
@@ -238,34 +237,44 @@ class SensorThingsProvider(BaseProvider):
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
 
+        # Start session
+        s = Session()
+
         # Form URL for GET request
         LOGGER.debug('Sending query')
         if identifier:
-            r = get(f'{self._url}({identifier})', params=params)
+            r = s.get(f'{self._url}({identifier})', params=params)
         else:
-            r = get(self._url, params=params)
+            r = s.get(self._url, params=params)
 
         if r.status_code == codes.bad:
             LOGGER.error('Bad http response code')
             raise ProviderConnectionError('Bad http response code')
-
         response = r.json()
+
         # if hits, return count
         if resulttype == 'hits':
             LOGGER.debug('Returning hits')
             feature_collection['numberMatched'] = response.get('@iot.count')
             return feature_collection
 
+        # Query if values are less than expected
         v = [response, ] if identifier else response.get('value')
-        # if values are less than expected, query for more
         hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         while len(v) < hits_:
             LOGGER.debug('Fetching next set of values')
-            r = get(response.get('@iot.nextLink'), params={'$skip': len(v)})
-            response = r.json()
-            v.extend(response.get('value'))
+            next_ = response.get('@iot.nextLink', None)
+            if next_ is None:
+                break
+            else:
+                with s.get(next_) as r:
+                    response = r.json()
+                    v.extend(response.get('value'))
 
-        # properties filter & display
+        # End session
+        s.close()
+
+        # Properties filter & display
         keys = (() if not self.properties and not select_properties else
                 set(self.properties) | set(select_properties))
 
@@ -400,6 +409,10 @@ class SensorThingsProvider(BaseProvider):
         if self.entity == 'Things':
             extra_props = entity['Locations'][0].get('properties', {})
             entity['properties'].update(extra_props)
+        elif 'Thing' in entity.keys():
+            t = entity.get('Thing')
+            extra_props = t['Locations'][0].get('properties', {})
+            t['properties'].update(extra_props)
 
         for k, v in entity.items():
             # Create intra links
