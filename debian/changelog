@@ -1,3 +1,9 @@
+pygeoapi (0.11.0-1~focal0) focal; urgency=medium
+
+  * New upstream release
+
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Sun, 24 Oct 2021 18:00:00 +0300
+
 pygeoapi (0.10.1-1~focal0) focal; urgency=medium
 
   * New upstream release

@@ -52,7 +52,7 @@ OPENAPI_YAML = {
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
-    'oaedr': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-environmental-data-retrieval/master/candidate-standard/openapi', # noqa
+    'oaedr': 'http://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
 
