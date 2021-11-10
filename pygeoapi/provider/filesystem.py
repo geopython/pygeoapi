@@ -282,20 +282,25 @@ def _describe_file(filepath):
         try:  # raster
             LOGGER.debug('Testing raster data detection')
             d = rasterio.open(filepath)
-            content['bbox'] = [
-                d.bounds.left,
-                d.bounds.bottom,
-                d.bounds.right,
-                d.bounds.top
-            ]
+            scrs = CRS(d.crs)
+            if scrs.to_epsg() not in [None, 4326]:
+                tcrs = CRS.from_epsg(4326)
+                bnds = transform_bounds(scrs, tcrs,
+                                        d.bounds[0], d.bounds[1],
+                                        d.bounds[2], d.bounds[3])
+                content['properties']['projection'] = scrs.to_epsg()
+            else:
+                bnds = [d.bounds.left, d.bounds.bottom,
+                        d.bounds.right, d.bounds.top]
+            content['bbox'] = bnds
             content['geometry'] = {
                 'type': 'Polygon',
                 'coordinates': [[
-                    [d.bounds.left, d.bounds.bottom],
-                    [d.bounds.left, d.bounds.top],
-                    [d.bounds.right, d.bounds.top],
-                    [d.bounds.right, d.bounds.bottom],
-                    [d.bounds.left, d.bounds.bottom]
+                    [bnds[0],  bnds[1]],
+                    [bnds[0],  bnds[3]],
+                    [bnds[2], bnds[3]],
+                    [bnds[2], bnds[1]],
+                    [bnds[0],  bnds[1]]
                 ]]
             }
             for k, v in d.tags(d.count).items():
@@ -309,7 +314,7 @@ def _describe_file(filepath):
                 LOGGER.debug('Testing vector data detection')
                 d = fiona.open(filepath)
                 scrs = CRS(d.crs)
-                if scrs.to_epsg() is not None and scrs.to_epsg() != 4326:
+                if scrs.to_epsg() not in [None, 4326]:
                     tcrs = CRS.from_epsg(4326)
                     bnds = transform_bounds(scrs, tcrs,
                                             d.bounds[0], d.bounds[1],
