@@ -957,7 +957,7 @@ def test_get_coverage_domainset(config, api_):
 
     domainset = json.loads(response)
 
-    assert domainset['type'] == 'DomainSetType'
+    assert domainset['type'] == 'DomainSet'
     assert domainset['generalGrid']['axisLabels'] == ['Long', 'Lat']
     assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
     assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 2400  # noqa
@@ -976,7 +976,7 @@ def test_get_collection_coverage_rangetype(config, api_):
 
     rangetype = json.loads(response)
 
-    assert rangetype['type'] == 'DataRecordType'
+    assert rangetype['type'] == 'DataRecord'
     assert len(rangetype['field']) == 1
     assert rangetype['field'][0]['id'] == 1
     assert rangetype['field'][0]['name'] == 'Temperature [C]'
