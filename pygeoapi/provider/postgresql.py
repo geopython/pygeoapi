@@ -214,7 +214,7 @@ class PostgreSQLProvider(BaseProvider):
             property_clauses = []
             for k, v in properties:
                 if self.fields[properties[0][0]]['type'] in fuzzy_matchable:
-                    property_clause = SQL('{} LIKE {}').format(
+                    property_clause = SQL('lower({}) LIKE lower({})').format(
                         Identifier(k), Literal(f"%{v}%"))  # this is where it goes wrong
                     property_clauses.append(property_clause)
                     #  need some extra logic within the list comprehension if we hit a numeric type
