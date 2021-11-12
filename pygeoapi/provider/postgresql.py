@@ -216,7 +216,6 @@ class PostgreSQLProvider(BaseProvider):
                 else:   
                     property_clause = SQL('{} = {}').format(
                         Identifier(k), Literal(v))
-                    where_conditions += property_clauses
                     property_clauses.append(property_clause)
             where_conditions += property_clauses
         if bbox:
