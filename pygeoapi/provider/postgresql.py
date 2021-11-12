@@ -203,25 +203,16 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: psycopg2.sql.Composed or psycopg2.sql.SQL
         """
-
-        # New req: only do this for if the target db column is text
-        fuzzy_matchable = ['varchar', 'text']   # List of types we can match with LIKE
-
-        #breakpoint()
-
+        # List of types we can match with LIKE
+        fuzzy_matchable = ['varchar', 'text', 'character varying']   
         where_conditions = []
         if properties:
             property_clauses = []
             for k, v in properties:
                 if self.fields[properties[0][0]]['type'] in fuzzy_matchable:
                     property_clause = SQL('lower({}) LIKE lower({})').format(
-                        Identifier(k), Literal(f"%{v}%"))  # this is where it goes wrong
-                    property_clauses.append(property_clause)
-                    #  need some extra logic within the list comprehension if we hit a numeric type
-                    # don't think you can cleanly do this in a list comp without becoming ugly
-                    # maybe try a for loop with conditions - test for fuzz matching
-                    #breakpoint()
-            
+                        Identifier(k), Literal(f"%{v}%"))
+                    property_clauses.append(property_clause)           
                 else:   
                     property_clause = SQL('{} = {}').format(
                         Identifier(k), Literal(v))
