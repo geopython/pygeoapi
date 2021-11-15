@@ -173,14 +173,14 @@ def test_query_hits(config):
     """Test query resulttype=hits with properties"""
     psp = PostgreSQLProvider(config)
     results = psp.query(resulttype="hits")
-    assert results["numberMatched"] == 59104  #  13930 - was previously this value, have more been added? 
+    assert results["numberMatched"] == 14776
 
     results = psp.query(
         bbox=[29.3373, -3.4099, 29.3761, -3.3924], resulttype="hits")
-    assert results["numberMatched"] == 20  # This was 5? Hmmm...
+    assert results["numberMatched"] == 5
 
     results = psp.query(properties=[("waterway", "stream")], resulttype="hits")
-    assert results["numberMatched"] == 55720  # 13930 - was previously this value, have more been added? 
+    assert results["numberMatched"] == 13930
 
 
 def test_query_bbox(config):
