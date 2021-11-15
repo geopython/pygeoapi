@@ -204,19 +204,26 @@ class PostgreSQLProvider(BaseProvider):
         :returns: psycopg2.sql.Composed or psycopg2.sql.SQL
         """
         # List of types we can match with LIKE
-        fuzzy_matchable = ['varchar', 'text', 'character varying']   
+        fuzzy_matchable = ['varchar', 'text', 'character varying']
         where_conditions = []
         if properties:
             property_clauses = []
-            for k, v in properties:
-                if self.fields[properties[0][0]]['type'] in fuzzy_matchable:
-                    property_clause = SQL('lower({}) LIKE lower({})').format(
-                        Identifier(k), Literal(f"%{v}%"))
-                    property_clauses.append(property_clause)           
-                else:   
+            if len(properties) == 1:
+                for k, v in properties:
+                    if self.fields[properties[0][0]]['type'] in fuzzy_matchable:
+                        property_clause = SQL('lower({}) LIKE lower({})').format(
+                            Identifier(k), Literal(f"%{v}%"))
+                        property_clauses.append(property_clause)
+                    else:
+                        property_clause = SQL('{} = {}').format(
+                            Identifier(k), Literal(v))
+                        property_clauses.append(property_clause)
+            else:
+                for k, v in properties:
                     property_clause = SQL('{} = {}').format(
                         Identifier(k), Literal(v))
                     property_clauses.append(property_clause)
+
             where_conditions += property_clauses
         if bbox:
             bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
