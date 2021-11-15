@@ -130,14 +130,20 @@ def test_query_with_property_filter(config):
     ([("waterway", "tream")], 10),  # Partial match
     ([("waterway", "st%m")], 10),  # Partial match with wildcard in middle
     ([("waterway", "STREAM")], 10),  # Case insensitive match
+    ([("waterway", "STREA")], 10),  # Case insensitive partial match
+    ([("waterway", "ST%EA")], 10),  # Case insensitive partial wildcard match
     ([("width", "30")], 10),  # Number in text field
     ([("width", "30 cm")], 6),  # Number and text in text field
-    ([("osm_id", "620120062")], 1),  # Integer field as text
-    ([("osm_id", 620120062)], 1),  # Integer field as integer
+    ([("osm_id", "620120062")], 1),  # Integer fields are provided as text
+    ([("osm_id", "62012006")], 0),  # Integer fields, partial-match not allowed
     ([("waterway", "drain"),
       ("width", "30 cm")], 6),  # Multiple columns
+    ([("waterway", "dRaIn"),
+      ("width", "30 cm")], 6),  # Multiple columns, case insensitive
     ([("waterway", "stream"),
-      ("osm_id", 620120062)], 1),  # Multi-columns, mixed type
+      ("osm_id", "620120062")], 1),  # Multi-columns, mixed type
+    ([("waterway", "strea"),
+      ("osm_id", "620120062")], 1),  # Multi-columns, mixed type, partial match
 ])
 def test_query_partial_match(config, properties, expected_count):
     """Test query with a partial matching string"""
