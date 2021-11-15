@@ -273,3 +273,38 @@ resources:
         type: process
         processor:
             name: HelloWorld
+
+            # Uncomment this section to add the test data for PostgreSQL
+            # provider
+            #    hot_osm_waterways:
+            #        type: collection
+            #        title: OSM waterways
+            #        description: Waterways demo data
+            #        keywords:
+            #            - OSM
+            #            - waterways
+            #        links:
+            #            - type: text/html
+            #              rel: canonical
+            #              title: Source instructions for loading data
+            #              href: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/provider/postgresql.py
+            #              hreflang: en-UK
+            #        extents:
+            #            spatial:
+            #                bbox: [-180, -90, 180, 90]
+            #                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            #            temporal:
+            #                begin: null
+            #                end: null  # or empty (either means open ended)
+            #        providers:
+            #          - type: feature
+            #            name: PostgreSQL
+            #            data:
+            #                host: localhost
+            #                dbname: test
+            #                user: postgres
+            #                password: postgres
+            #                search_path: [osm, public]
+            #            id_field: osm_id
+            #            table: hotosm_bdi_waterways
+            #            geom_field: foo_geom
