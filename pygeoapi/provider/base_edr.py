@@ -37,6 +37,8 @@ LOGGER = logging.getLogger(__name__)
 class BaseEDRProvider(BaseProvider):
     """Base EDR Provider"""
 
+    query_types = []
+
     def __init__(self, provider_def):
         """
         Initialize object
@@ -49,7 +51,6 @@ class BaseEDRProvider(BaseProvider):
         super().__init__(provider_def)
 
         self.instances = []
-        self.query_types = []
 
     @classmethod
     def register(cls):
