@@ -49,6 +49,14 @@ class BaseEDRProvider(BaseProvider):
         super().__init__(provider_def)
 
         self.instances = []
+        self.query_types = []
+
+    @classmethod
+    def register(cls):
+        def inner(fn):
+            cls.query_types.append(fn.__name__)
+            return fn
+        return inner
 
     def get_instance(self, instance):
         """
@@ -66,7 +74,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: `list` of EDR query types
         """
 
-        return NotImplementedError()
+        return self.query_types
 
     def query(self, **kwargs):
         """
@@ -82,4 +90,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: coverage data as `dict` of CoverageJSON or native format
         """
 
-        return NotImplementedError()
+        try:
+            return getattr(self, kwargs.get('query_type'))(**kwargs)
+        except AttributeError:
+            raise NotImplementedError('Query not implemented!')

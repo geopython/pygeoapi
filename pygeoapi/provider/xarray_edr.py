@@ -60,16 +60,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         return self.get_coverage_rangetype()
 
-    def get_query_types(self):
-        """
-        Provide supported query types
-
-        :returns: list of EDR query types
-        """
-
-        return ['position']
-
-    def query(self, **kwargs):
+    @BaseEDRProvider.register()
+    def position(self, **kwargs):
         """
         Extract data from collection collection
 
