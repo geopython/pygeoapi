@@ -2006,9 +2006,9 @@ class API:
             # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
-        range_subset = request.params.get('rangeSubset')
+        range_subset = request.params.get('range-subset')
         if range_subset:
-            LOGGER.debug('Processing rangeSubset parameter')
+            LOGGER.debug('Processing range-subset parameter')
             query_args['range_subset'] = [rs for
                                           rs in range_subset.split(',') if rs]
             LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
