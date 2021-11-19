@@ -2760,7 +2760,12 @@ class API:
         else:
             http_status = 200
 
-        return headers, http_status, to_json(response, self.pretty_print)
+        if mime_type == 'application/json':
+            response2 = to_json(response, self.pretty_print)
+        else:
+            response2 = response
+
+        return headers, http_status, response2
 
     @gzip
     @pre_process
