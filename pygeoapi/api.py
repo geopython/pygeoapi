@@ -2020,29 +2020,20 @@ class API:
                         400, headers, format_, 'InvalidParameterValue', msg)
 
         if 'subset' in request.params:
-            subsets = {}
             LOGGER.debug('Processing subset parameter')
-            for s in (request.params['subset'] or '').split(','):
-                try:
-                    if '"' not in s:
-                        m = re.search(r'(.*)\((.*):(.*)\)', s)
-                    else:
-                        m = re.search(r'(.*)\(\"(\S+)\":\"(\S+.*)\"\)', s)
-
-                    subset_name = m.group(1)
-
-                    if subset_name not in p.axes:
-                        msg = 'Invalid axis name'
-                        return self.get_exception(
-                            400, headers, format_,
-                            'InvalidParameterValue', msg)
-
-                    subsets[subset_name] = list(map(
-                        get_typed_value, m.group(2, 3)))
-                except AttributeError:
-                    msg = 'subset should be like "axis(min:max)"'
-                    return self.get_exception(
+            try:
+                subsets = validate_subset(request.params['subset'] or '')
+            except (AttributeError, ValueError) as err:
+                msg = 'Invalid subset: {}'.format(err)
+                LOGGER.error(msg)
+                return self.get_exception(
                         400, headers, format_, 'InvalidParameterValue', msg)
+
+            if not set(subsets.keys()).issubset(p.axes):
+                msg = 'Invalid axis name'
+                LOGGER.error(msg)
+                return self.get_exception(
+                    400, headers, format_, 'InvalidParameterValue', msg)
 
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
@@ -3331,3 +3322,48 @@ def validate_datetime(resource_def, datetime_=None) -> str:
         raise ValueError(msg)
 
     return datetime_
+
+
+def validate_subset(value: str) -> dict:
+    """
+    Helper function to validate subset parameter
+
+    :param value: `subset` parameter
+
+    :returns: dict of axis/values
+    """
+
+    subsets = {}
+
+    for s in value.split(','):
+        LOGGER.debug('Processing subset {}'.format(s))
+        m = re.search(r'(.*)\((.*)\)', s)
+        subset_name, values = m.group(1, 2)
+
+        if '"' in values:
+            LOGGER.debug('Values are strings')
+            if values.count('"') % 2 != 0:
+                msg = 'Invalid format: subset should be like axis("min"[:"max"])'  # noqa
+                LOGGER.error(msg)
+                raise ValueError(msg)
+            try:
+                LOGGER.debug('Value is an interval')
+                m = re.search(r'"(\S+)":"(\S+)"', values)
+                values = list(m.group(1, 2))
+            except AttributeError:
+                LOGGER.debug('Value is point')
+                m = re.search(r'"(.*)"', values)
+                values = [m.group(1)]
+        else:
+            LOGGER.debug('Values are numbers')
+            try:
+                LOGGER.debug('Value is an interval')
+                m = re.search(r'(\S+):(\S+)', values)
+                values = list(m.group(1, 2))
+            except AttributeError:
+                LOGGER.debug('Value is point')
+                values = [values]
+
+        subsets[subset_name] = list(map(get_typed_value, values))
+
+    return subsets

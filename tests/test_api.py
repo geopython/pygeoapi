@@ -36,7 +36,7 @@ from pyld import jsonld
 import pytest
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
-    F_HTML, F_JSON, F_JSONLD, F_GZIP
+    validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP
 )
 from pygeoapi.util import yaml_load
 
@@ -1553,6 +1553,23 @@ def test_validate_datetime():
         _ = validate_datetime(config, '../2000-09')
     with pytest.raises(ValueError):
         _ = validate_datetime(config, '../1999')
+
+
+@pytest.mark.parametrize("value, expected", [
+    ('time(2000-11-11)', {'time': ['2000-11-11']}),
+    ('time("2000-11-11")', {'time': ['2000-11-11']}),
+    ('time("2000-11-11T00:11:11")', {'time': ['2000-11-11T00:11:11']}),
+    ('time("2000-11-11T11:12:13":"2021-12-22T:13:33:33")', {'time': ['2000-11-11T11:12:13', '2021-12-22T:13:33:33']}),  # noqa
+    ('lat(40)', {'lat': [40]}),
+    ('lat(0:40)', {'lat': [0, 40]}),
+    ('foo("bar")', {'foo': ['bar']}),
+    ('foo("bar":"baz")', {'foo': ['bar', 'baz']})
+])
+def test_validate_subset(value, expected):
+    assert validate_subset(value) == expected
+
+    with pytest.raises(ValueError):
+        validate_subset('foo("bar)')
 
 
 def test_get_exception(config, api_):
