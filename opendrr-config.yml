@@ -249,11 +249,43 @@ resources:
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_idm7p1_sidney_indicators_csd
               id_field: csduid
     
+    opendrr_dsra_idm7p1_sidney_shakemap:
+        type: collection
+        title: 
+            en: Sidney Scenario Shake Map
+            fr: Carte des secousses du scénario de Sidney
+        description: 
+            en: Evaluating impact of increasing magnitude using the 2015 Mw 4.7 Sidney, BC, Earthquake hypocentre. More info at https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - Strike selected to approximately parallel the strike of the subducting slab for this deep intraslab extensional event.
+            fr: Évaluation de l'impact de l'augmentation de la magnitude à l'aide de l'hypocentre du tremblement de terre de Sidney (Colombie-Britannique) de 2015 (Mw 4,7). Plus d'informations sur https://earthquakescanada.nrcan.gc.ca/recent/2015/20151230.0739/index-en.php - La direction choisie est approximativement parallèle à celle de la dalle subductrice pour ce profond événement d'extension intraslabique.
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-126.6567, 48.3089, -119.4321, 51.3518]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_idm7p1_sidney_shakemap
+              id_field: SiteID
+    
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_s:
         type: collection
         title: 
-            en: Leach River Fault Scenario (Settlement Area)
-            fr: Scénario de faille de la rivière Leach (Zone de peuplement)
+            en: Leech River Fault Scenario (Settlement Area)
+            fr: Scénario de faille de la rivière Leech (Zone de peuplement)
         description: 
             en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
             fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
@@ -284,8 +316,8 @@ resources:
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_b:
         type: collection
         title: 
-            en: Leach River Fault Scenario (Point)
-            fr: Scénario de faille de la rivière Leach (Point)
+            en: Leech River Fault Scenario (Point)
+            fr: Scénario de faille de la rivière Leech (Point)
         description: 
             en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
             fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
@@ -316,8 +348,8 @@ resources:
     opendrr_dsra_acm7p3_leechriverfullfault_indicators_csd:
         type: collection
         title: 
-            en: Leach River Fault Scenario (Census Subdivision)
-            fr: Scénario de faille de la rivière Leach (Subdivision du recensement)
+            en: Leech River Fault Scenario (Census Subdivision)
+            fr: Scénario de faille de la rivière Leech (Subdivision du recensement)
         description: 
             en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
             fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
@@ -344,6 +376,38 @@ resources:
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_indicators_csd
               id_field: csduid
+
+    opendrr_dsra_acm7p3_leechriverfullfault_shakemap:
+        type: collection
+        title: 
+            en: Leech River Fault Scenario Shake Map
+            fr: Carte des secousses du scénario de faille de la rivière Leech
+        description: 
+            en: Magnitude 7.3 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Leech River Full Fault. Aggregated at the building level.
+            fr: Scénario de magnitude 7,3 basé sur une rupture complète de la mise en œuvre du modèle de risque CanSHM6 de la faille complète de Leech River. Agrégé au niveau de l'immeuble habité.
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-126.6567, 48.3089, -119.5390, 51.0802]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_acm7p3_leechriverfullfault_shakemap
+              id_field: SiteID
 
     opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_b:
         type: collection
