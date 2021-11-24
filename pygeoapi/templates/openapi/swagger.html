@@ -36,7 +36,7 @@
     window.onload = function() {
       // Begin Swagger UI call region
       ui = SwaggerUIBundle({
-        url: '{{ data['openapi-document-path'] }}',
+        url: '{{ data['openapi-document-path'] }}?f=json',
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
