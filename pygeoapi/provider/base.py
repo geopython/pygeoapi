@@ -51,6 +51,7 @@ class BaseProvider:
         except KeyError:
             raise RuntimeError('name/type/data are required')
 
+        self.metadata = provider_def.get('metadata')
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
         self.uri_field = provider_def.get('uri_field', None)
@@ -89,9 +90,13 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get_metadata(self):
+    def get_metadata(self, baseurl, urlpath, dirpath):
         """
         Provide data/file metadata
+        
+        :param baseurl: base URL of endpoint
+        :param urlpath: base path of URL
+        :param dirpath: directory basepath (equivalent of URL)
 
         :returns: `dict` of metadata construct (format
                   determined by provider/standard)
