@@ -43,17 +43,19 @@ The MVT provider plugin provides access to `Mapbox Vector Tiles`_.
          name: MVT 
          data: tests/data/tiles/ne_110m_lakes  # local directory tree
          # data: https://example.org/ne_110m_lakes/{z}/{x}/{y}.pbf
+         metadata: https://example.org/ne_110m_lakes/metadata.json # https://example.org/ne_110m_lakes.json
          options:
              metadata_format: raw # default | tilejson
+             bounds: [-7.733181,49.863063,1.763249,60.860926]
              zoom:
                  min: 0
                  max: 5
              schemes:
+                 - WebMercatorQuad
                  - WorldCRS84Quad
          format:
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
-
 
 Data access examples
 --------------------
