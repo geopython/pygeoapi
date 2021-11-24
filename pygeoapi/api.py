@@ -797,8 +797,15 @@ class API:
             return self.get_exception(
                 404, headers, request.format, 'NotFound', msg)
 
+        if dataset is not None:
+            collections_dict = {
+                k: v for k, v in collections.items() if k == dataset
+            }
+        else:
+            collections_dict = collections
+
         LOGGER.debug('Creating collections')
-        for k, v in collections.items():
+        for k, v in collections_dict.items():
             collection_data = get_provider_default(v['providers'])
             collection_data_type = collection_data['type']
 
