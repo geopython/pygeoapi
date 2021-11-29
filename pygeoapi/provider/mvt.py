@@ -229,8 +229,8 @@ class MVTProvider(BaseTileProvider):
         :returns: `dict` of JSON metadata
         """
 
-        if is_url(self.data):
-            url = urlparse(self.data)
+        if is_url(self.metadata):
+            url = urlparse(self.metadata)
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
                 session.get(base_url)

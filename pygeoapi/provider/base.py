@@ -104,6 +104,20 @@ class BaseProvider:
 
         raise NotImplementedError()
 
+    def get_metadata_path(self, baseurl, urlpath, dirpath):
+        """
+        Provide data/file metadata path
+        
+        :param baseurl: base URL of endpoint
+        :param urlpath: base path of URL
+        :param dirpath: directory basepath (equivalent of URL)
+
+        :returns: `dict` of metadata construct (format
+                  determined by provider/standard)
+        """
+
+        raise NotImplementedError()        
+
     def query(self):
         """
         query the provider
