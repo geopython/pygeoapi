@@ -112,16 +112,20 @@ class DatabaseConnection:
 
         self.cur = self.conn.cursor()
         if self.context == 'query':
-            # Get table column names and types, excluding geometry and transaction ID columns
-            query_cols = "SELECT pg_attribute.attname AS column_name, udt_name \
-            FROM pg_catalog.pg_class \
-	        INNER JOIN pg_catalog.pg_attribute \
-                ON pg_class.oid = pg_attribute.attrelid \
-            INNER join information_schema.columns \
-                ON pg_attribute.attname = information_schema.columns.column_name \
-            WHERE pg_class.relname = '{}' \
-                AND udt_name != 'geometry' \
-                AND udt_name != 'xid';".format(
+            # Get table column names and types, excluding geometry and
+            # transaction ID columns
+            query_cols = "SELECT attr.attname, tp.typname \
+            FROM pg_catalog.pg_class as cls \
+            INNER JOIN pg_catalog.pg_attribute as attr \
+                ON cls.oid = attr.attrelid \
+            INNER JOIN pg_catalog.pg_type as tp \
+                ON tp.oid = attr.atttypid \
+            WHERE cls.relname = '{}' \
+                AND tp.typname != 'geometry' \
+                AND tp.typname != 'cid' \
+                AND tp.typname != 'oid' \
+                AND tp.typname != 'tid' \
+                AND tp.typname != 'xid';".format(
                 self.table)
 
             self.cur.execute(query_cols)
