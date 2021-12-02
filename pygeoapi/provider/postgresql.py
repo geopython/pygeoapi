@@ -60,7 +60,7 @@ class DatabaseConnection:
      The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, columns=[], context="query"):
+    def __init__(self, conn_dic, table, properties=[], context="query"):
         """
         PostgreSQLProvider Class constructor returning
 
@@ -81,7 +81,7 @@ class DatabaseConnection:
 
         :param table: table name containing the data. This variable is used to
                 assemble column information
-        :param columns: subset of column names to expose
+        :param properties: User-specified subset of column names to expose
         :param context: query or hits, if query then it will determine
                 table column otherwise will not do it
         :returns: DatabaseConnection
@@ -91,7 +91,7 @@ class DatabaseConnection:
         self.table = table
         self.context = context
         self.columns = None
-        self.user_columns = columns
+        self.properties = properties
         self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
@@ -119,8 +119,8 @@ class DatabaseConnection:
 
             self.cur.execute(query_cols)
             result = self.cur.fetchall()
-            if self.user_columns:
-                result = [item for item in result if item[0] in self.user_columns]
+            if self.properties:
+                result = [res for res in result if res[0] in self.properties]
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
@@ -179,7 +179,7 @@ class PostgreSQLProvider(BaseProvider):
         if not self.fields:
             with DatabaseConnection(self.conn_dic,
                                     self.table,
-                                    columns=self.properties) as db:
+                                    properties=self.properties) as db:
                 self.fields = db.fields
         return self.fields
 
@@ -253,7 +253,7 @@ class PostgreSQLProvider(BaseProvider):
 
             with DatabaseConnection(self.conn_dic,
                                     self.table,
-                                    columns=self.properties,
+                                    properties=self.properties,
                                     context="hits") as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
@@ -276,7 +276,7 @@ class PostgreSQLProvider(BaseProvider):
 
         with DatabaseConnection(self.conn_dic,
                                 self.table,
-                                columns=self.properties) as db:
+                                properties=self.properties) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             props = db.columns if select_properties == [] else \
@@ -376,7 +376,7 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Get item from Postgis')
         with DatabaseConnection(self.conn_dic,
                                 self.table,
-                                columns=self.properties) as db:
+                                properties=self.properties) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \
