@@ -28,12 +28,11 @@
 # =================================================================
 
 from requests import get, codes
-from requests.compat import urljoin
 import logging
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import yaml_load
+from pygeoapi.util import yaml_load, url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -416,7 +415,7 @@ class SensorThingsProvider(BaseProvider):
                 for i, _v in enumerate(v):
                     id = _v[self.id_field]
                     id = f"'{id}'" if isinstance(id, str) else str(id)
-                    v[i] = urljoin(
+                    v[i] = url_join(
                         self._rel_link,
                         path_.format(
                             self._linkables[k]['n'], id
@@ -429,7 +428,7 @@ class SensorThingsProvider(BaseProvider):
                     continue
                 id = v[self.id_field]
                 id = f"'{id}'" if isinstance(id, str) else str(id)
-                entity[k] = urljoin(
+                entity[k] = url_join(
                     self._rel_link,
                     path_.format(
                         self._linkables[ks]['n'], id
