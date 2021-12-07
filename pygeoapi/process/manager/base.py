@@ -201,8 +201,16 @@ class BaseManager:
 
             if self.output_dir is not None:
                 LOGGER.debug('writing output to {}'.format(job_filename))
-                with io.open(job_filename, 'w', encoding='utf-8') as fh:
-                    fh.write(json.dumps(outputs, sort_keys=True, indent=4))
+                if isinstance(outputs, dict):
+                    mode = 'w'
+                    data = json.dumps(outputs, sort_keys=True, indent=4)
+                    encoding = 'utf-8'
+                elif isinstance(outputs, bytes):
+                    mode = 'wb'
+                    data = outputs
+                    encoding = None
+                with io.open(job_filename, mode, encoding=encoding) as fh:
+                    fh.write(data)
 
             current_status = JobStatus.successful
 
