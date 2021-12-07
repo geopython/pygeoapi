@@ -414,7 +414,9 @@ resources:
         title: 
             en: Cascadia Fault Scenario (Point)
             fr: Scénario de la faille Cascadia (Point)
-        description: opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_b
+        description: 
+            en: Magnitude 9.0 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Cascadia Interface Best Fault.
+            fr: Scénario de magnitude 9.0 basé sur la rupture complète de l'implémentation du modèle de risque CanSHM6 de la meilleure faille d'interface de Cascadia.
         keywords:
             en:
             - earthquake
@@ -444,7 +446,9 @@ resources:
         title: 
             en: Cascadia Fault Scenario (Settlement Area)
             fr: Scénario de la faille Cascadia (Zone de peuplement)
-        description: opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s
+        description: 
+            en: Magnitude 9.0 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Cascadia Interface Best Fault.
+            fr: Scénario de magnitude 9.0 basé sur la rupture complète de l'implémentation du modèle de risque CanSHM6 de la meilleure faille d'interface de Cascadia.
         keywords:
             en:
             - earthquake
@@ -474,7 +478,9 @@ resources:
         title: 
             en: Cascadia Fault Scenario (Census Subdivision)
             fr: Scénario de la faille Cascadia (Subdivision du recensement)
-        description: opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_s
+        description: 
+            en: Magnitude 9.0 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Cascadia Interface Best Fault.
+            fr: Scénario de magnitude 9.0 basé sur la rupture complète de l'implémentation du modèle de risque CanSHM6 de la meilleure faille d'interface de Cascadia.
         keywords:
             en:
             - earthquake
@@ -498,6 +504,38 @@ resources:
               name: Elasticsearch
               data: https://api.stage.riskprofiler.ca/opendrr_dsra_sim9p0_cascadiainterfacebestfault_indicators_csd
               id_field: csduid
+
+    opendrr_dsra_sim9p0_cascadiainterfacebestfault_shakemap:
+        type: collection
+        title: 
+            en: Cascadia Fault Scenario Shake Map
+            fr: Carte des secousses du scénario de la faille Cascadia
+        description: 
+            en: Magnitude 9.0 scenario based on complete rupture of the CanSHM6 Hazard Model implementation of the Cascadia Interface Best Fault.
+            fr: Scénario de magnitude 9.0 basé sur la rupture complète de l'implémentation du modèle de risque CanSHM6 de la meilleure faille d'interface de Cascadia.
+        keywords:
+            en:
+            - earthquake
+            fr: 
+            - tremblement de terre
+        links:
+            - type: text/html
+              rel: canonical
+              title: Information
+              href: http://www.riskprofiler.ca/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [-123.7527, 48.3089, -118.1974, 52.4875]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2021-06-06
+                end: null # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: Elasticsearch
+              data: https://api.stage.riskprofiler.ca/opendrr_dsra_sim9p0_cascadiainterfacebestfault_shakemap
+              id_field: SiteID
 
     opendrr_hexgrid_100km:
         type: collection
