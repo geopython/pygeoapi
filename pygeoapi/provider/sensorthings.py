@@ -46,26 +46,18 @@ ENTITY = {
     }
 _EXPAND = {
     'Things': """
-        Locations,
-        Datastreams(
-            $select=@iot.id,properties
-            )
+        Locations
+        ,Datastreams
     """,
     'Observations': """
-        Datastream(
-            $select=@iot.id,properties
-            ),
-        FeatureOfInterest
+        Datastream
+        ,FeatureOfInterest
     """,
     'Datastreams': """
         Sensor
         ,ObservedProperty
-        ,Thing(
-            $select=@iot.id,properties
-            )
-        ,Thing/Locations(
-            $select=location
-            )
+        ,Thing
+        ,Thing/Locations
         ,Observations(
             $select=@iot.id;
             $orderby=phenomenonTime_desc
@@ -124,7 +116,12 @@ class SensorThingsProvider(BaseProvider):
         if not self.fields:
             p = {'$expand': EXPAND[self.entity], '$top': 1}
             r = get(self._url, params=p)
-            results = r.json()['value'][0]
+            try:
+                results = r.json()['value'][0]
+            except JSONDecodeError as err:
+                LOGGER.error('Entity {} error: {}'.format(self.entity, err))
+                LOGGER.error('Bad url response at {}'.format(r.url))
+                raise ProviderQueryError(err)
 
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
@@ -192,7 +189,8 @@ class SensorThingsProvider(BaseProvider):
                 for p in rs['providers']:
                     # Validate linkable provider
                     if (p['name'] != 'SensorThings'
-                            or not p.get('intralink', False)):
+                            or not p.get('intralink', False)
+                            or p['data'] != self.data):
                         continue
 
                     if p.get('default', False) is True:
@@ -410,6 +408,10 @@ class SensorThingsProvider(BaseProvider):
         if self.entity == 'Things':
             extra_props = entity['Locations'][0].get('properties', {})
             entity['properties'].update(extra_props)
+        elif 'Thing' in entity.keys():
+            t = entity.get('Thing')
+            extra_props = t['Locations'][0].get('properties', {})
+            t['properties'].update(extra_props)
 
         for k, v in entity.items():
             # Create intra links
