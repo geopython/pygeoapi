@@ -263,6 +263,7 @@ For collections, at the level of items, the default JSON-LD representation adds:
 The optional configuration options for collections, at the level of an item of items, are:
 
 - If ``uri_field`` is specified, JSON-LD will be updated such that the ``@id`` has the value of ``uri_field`` for each item in a collection
+
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.

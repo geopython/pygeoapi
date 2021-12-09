@@ -76,8 +76,8 @@ Elasticsearch
 
 To publish an Elasticsearch index, the following are required in your index:
 
-- indexes must be documents of valid GeoJSON Features
-- index mappings must define the GeoJSON ``geometry`` as a ``geo_shape``
+* indexes must be documents of valid GeoJSON Features
+* index mappings must define the GeoJSON ``geometry`` as a ``geo_shape``
 
 .. code-block:: yaml
 
@@ -245,29 +245,29 @@ are included in the docker examples for SensorThings.
 Data access examples
 --------------------
 
-- list all collections
-  - http://localhost:5000/collections
-- overview of dataset
-  - http://localhost:5000/collections/foo
-- queryables
-  - http://localhost:5000/collections/foo/queryables
-- browse features
-  - http://localhost:5000/collections/foo/items
-- paging
-  - http://localhost:5000/collections/foo/items?startIndex=10&limit=10
-- CSV outputs
-  - http://localhost:5000/collections/foo/items?f=csv
-- query features (spatial)
-  - http://localhost:5000/collections/foo/items?bbox=-180,-90,180,90
-- query features (attribute)
-  - http://localhost:5000/collections/foo/items?propertyname=foo
-- query features (temporal)
-  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
-- query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
-  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
-- query features (temporal) and sort descending by a property
-  - http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
-- fetch a specific feature
-  - http://localhost:5000/collections/foo/items/123
+* list all collections
+  * http://localhost:5000/collections
+* overview of dataset
+  * http://localhost:5000/collections/foo
+* queryables
+  * http://localhost:5000/collections/foo/queryables
+* browse features
+  * http://localhost:5000/collections/foo/items
+* paging
+  * http://localhost:5000/collections/foo/items?startIndex=10&limit=10
+* CSV outputs
+  * http://localhost:5000/collections/foo/items?f=csv
+* query features (spatial)
+  * http://localhost:5000/collections/foo/items?bbox=-180,-90,180,90
+* query features (attribute)
+  * http://localhost:5000/collections/foo/items?propertyname=foo
+* query features (temporal)
+  * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
+* query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
+  * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
+* query features (temporal) and sort descending by a property
+  * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
+* fetch a specific feature
+  * http://localhost:5000/collections/foo/items/123
 
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features

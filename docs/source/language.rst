@@ -36,27 +36,27 @@ There are 2 ways to affect the language of the results returned by pygeoapi, bot
 Notes
 ^^^^^
 
-- If pygeoapi cannot find a good match to the requested language, the response is returned in the default language (US English mostly).
+* If pygeoapi cannot find a good match to the requested language, the response is returned in the default language (US English mostly).
   The default language is the *first* language defined in pygeoapi's server configuration YAML (see `maintainer guide`_).
 
-- Even if pygeoapi *itself* supports the requested language, provider plugins may not support that particular language or perhaps don't even
+* Even if pygeoapi *itself* supports the requested language, provider plugins may not support that particular language or perhaps don't even
   support any language at all. In that case the provider will reply in its own "unknown" language, which may not be the same language
   as the default pygeoapi server language set in the ``Content-Language`` HTTP response header.
 
-- It is up to the creator of the provider to properly define at least 1 supported language in the provider configuration, as described
+* It is up to the creator of the provider to properly define at least 1 supported language in the provider configuration, as described
   in the `developer guide`_. This will ensure that the ``Content-Language`` HTTP response header is always set properly.
 
-- If pygeoapi found a match to the requested language, the response will include a ``Content-Language`` HTTP header,
+* If pygeoapi found a match to the requested language, the response will include a ``Content-Language`` HTTP header,
   set to the best-matching server language code. This is the default behavior for most pygeoapi requests. However, note that some responses
   (e.g. exceptions) always have a ``Content-Language: en-US`` header, regardless of the requested language.
 
-- For results returned by a **provider**, the ``Content-Language`` HTTP header will be set to the best-matching
+* For results returned by a **provider**, the ``Content-Language`` HTTP header will be set to the best-matching
   provider language or the best-matching pygeoapi server language if the provider is not language-aware.
 
-- If the provider supports a requested language, but pygeoapi does *not* support that same language, the ``Content-Language``
+* If the provider supports a requested language, but pygeoapi does *not* support that same language, the ``Content-Language``
   header will contain both the provider language *and* the best-matching pygeoapi server language.
 
-- Please note that the ``Content-Language`` HTTP response header only *indicates the language of the intended audience*.
+* Please note that the ``Content-Language`` HTTP response header only *indicates the language of the intended audience*.
   It does not necessarily mean that the content is actually written in that particular language.
 
 
@@ -94,14 +94,14 @@ Next, you will have to provide translations for the configured languages. This i
 Notes
 ^^^^^
 
-- The **first** language you define in the configuration determines the default language, i.e. the language that pygeoapi will
+* The **first** language you define in the configuration determines the default language, i.e. the language that pygeoapi will
   use if no other language was requested or no best match for the requested language could be found.
 
-- It is not possible to **disable** language support in pygeoapi. The functionality is always on and a ``Content-Language``
+* It is not possible to **disable** language support in pygeoapi. The functionality is always on and a ``Content-Language``
   HTTP response header is always set. If results should be available in a single language, you'd have to set that language only
   in the pygeoapi configuration.
 
-- Results returned from a provider may be in a different language than pygeoapi's own server language. The "raw" requested language
+* Results returned from a provider may be in a different language than pygeoapi's own server language. The "raw" requested language
   is always passed on to the provider, even if pygeoapi itself does not support it. For more information, see the `end user guide`_
   and the `developer guide`_.
 
@@ -248,20 +248,20 @@ This is all that is required. The pygeoapi API class will make sure that the cor
 Notes
 ^^^^^
 
-- If your provider implements any of the aforementioned ``query``, ``get`` and ``get_metadata`` methods,
+* If your provider implements any of the aforementioned ``query``, ``get`` and ``get_metadata`` methods,
   it **must** add a ``**kwargs`` or ``language=None`` parameter, even if it does not need to use the language parameter.
 
-- Contrary to the pygeoapi server configuration, adding a ``language`` or ``languages`` (both are supported) property to the
+* Contrary to the pygeoapi server configuration, adding a ``language`` or ``languages`` (both are supported) property to the
   provider definition is **not** required and may be omitted. In that case, the passed-in ``language`` parameter language-aware provider methods
   (``query``, ``get``, etc.) will be set to ``None``. This results in the following behavior:
 
-  - HTML responses returned from the providers will have the ``Content-Language`` header set to the best-matching pygeoapi server language.
-  - JSON(-LD) responses returned from providers will **not** have a ``Content-Language`` header if ``language`` is ``None``.
+  * HTML responses returned from the providers will have the ``Content-Language`` header set to the best-matching pygeoapi server language.
+  * JSON(-LD) responses returned from providers will **not** have a ``Content-Language`` header if ``language`` is ``None``.
 
-- If the provider supports a requested language, the passed-in ``language`` will be set to the best matching
+* If the provider supports a requested language, the passed-in ``language`` will be set to the best matching
   `Babel Locale instance <http://babel.pocoo.org/en/latest/api/core.html#babel.core.Locale>`_.
   Note that this may be the provider default language if no proper match was found.
   No matter the output format, API responses returned from providers will always contain a best-matching ``Content-Language``
   header if one ore more supported provider languages were defined.
 
-- For general information about building plugins, please visit the :ref:`plugins` page.
+* For general information about building plugins, please visit the :ref:`plugins` page.

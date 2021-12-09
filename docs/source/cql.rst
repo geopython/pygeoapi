@@ -9,9 +9,9 @@ Limitations
 The support to CQL is limited to `Simple CQL filter <https://portal.ogc.org/files/96288#cql-core>`_ and thus it allows to query with the
 following predicates:
 
-- comparison predicates
-- spatial predicates
-- temporal predicates
+* comparison predicates
+* spatial predicates
+* temporal predicates
 
 Formats
 -------
@@ -28,9 +28,9 @@ Queries
 
 The following type of queries are supported right now:
 
-- ``between`` predicate query
-- Logical ``and`` query with ``between`` and ``eq`` expression
-- Spatial query with ``bbox``
+* ``between`` predicate query
+* Logical ``and`` query with ``between`` and ``eq`` expression
+* Spatial query with ``bbox``
 
 Examples
 ^^^^^^^^
