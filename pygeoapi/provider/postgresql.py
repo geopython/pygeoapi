@@ -196,23 +196,27 @@ class PostgreSQLProvider(BaseProvider):
 
     def __get_where_clauses(self, properties=[], bbox=[]):
         """
-        Generarates WHERE conditions to be implemented in query.
+        Generates WHERE conditions to be implemented in query.
         Private method mainly associated with query method
         :param properties: list of tuples (name, value)
         :param bbox: bounding box [minx,miny,maxx,maxy]
 
         :returns: psycopg2.sql.Composed or psycopg2.sql.SQL
         """
-        # List of types we can match with LIKE
-        string_types = ['varchar', 'text', 'character varying', 'char', 'character']
         where_conditions = []
+
         if properties:
+            string_types = ['varchar', 'text', 'character varying', 'char',
+                            'character']
             property_clauses = []
             for field_name, field_value in properties:
                 if self.fields[field_name]['type'] in string_types:
+                    # String columns can be made lower case and matched with
+                    # LIKE to allow case-insensitive partial matches
                     property_clause = SQL('lower({}) LIKE lower({})').format(
                         Identifier(field_name), Literal(f"%{field_value}%"))
                 else:
+                    # Use simple equality for other column types
                     property_clause = SQL('{} = {}').format(
                         Identifier(field_name), Literal(field_value))
                 property_clauses.append(property_clause)
