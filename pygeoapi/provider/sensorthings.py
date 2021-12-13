@@ -89,7 +89,7 @@ class SensorThingsProvider(BaseProvider):
         super().__init__(provider_def)
         try:
             self.entity = provider_def['entity']
-            self._url = ''.join((self.data, self.entity))
+            self._url = url_join(self.data, self.entity)
         except KeyError:
             raise RuntimeError('name/type/data are required')
 
