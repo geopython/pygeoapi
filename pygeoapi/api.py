@@ -882,7 +882,7 @@ class API:
                     self.config['server']['url'], k, F_HTML)
             })
 
-            if collection_data_type in ['feature', 'record', 'tile', 'coverage']:
+            if collection_data_type in ['feature', 'record', 'tile']:
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
