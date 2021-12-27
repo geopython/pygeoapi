@@ -150,7 +150,8 @@ def test_query(config):
     fields = p.get_fields()
     assert len(fields) == 37
     assert fields['scalerank']['type'] == 'long'
-    assert fields['changed']['type'] == 'float'
+    assert fields['changed']['type'] == 'number'
+    assert fields['changed']['format'] == 'float'
     assert fields['ls_name']['type'] == 'string'
 
     results = p.query()
