@@ -315,30 +315,25 @@ class ElasticsearchProvider(BaseProvider):
                 query = update_query(input_query=query, cql=filterq)
             LOGGER.debug(json.dumps(query, indent=4))
 
-            LOGGER.debug('Setting ES paging zero-based')
-            if startindex > 0:
-                startindex2 = startindex - 1
-            else:
-                startindex2 = startindex
-
-            if startindex2 + limit > 10000:
+            LOGGER.debug('Testing for ES scrolling')
+            if startindex + limit > 10000:
                 gen = helpers.scan(client=self.es, query=query,
                                    preserve_order=True,
                                    index=self.index_name)
                 results = {'hits': {'total': limit, 'hits': []}}
-                for i in range(startindex2 + limit):
+                for i in range(startindex + limit):
                     try:
-                        if i >= startindex2:
+                        if i >= startindex:
                             results['hits']['hits'].append(next(gen))
                         else:
                             next(gen)
                     except StopIteration:
                         break
                 results['hits']['total'] = \
-                    len(results['hits']['hits']) + startindex2
+                    len(results['hits']['hits']) + startindex
             else:
                 results = self.es.search(index=self.index_name,
-                                         from_=startindex2, size=limit,
+                                         from_=startindex, size=limit,
                                          body=query)
                 results['hits']['total'] = results['hits']['total']['value']
 
