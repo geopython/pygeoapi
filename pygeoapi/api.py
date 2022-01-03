@@ -3237,10 +3237,14 @@ def validate_bbox(value=None) -> list:
         LOGGER.debug(msg)
         raise
 
-    if bbox[0] > bbox[2] or bbox[1] > bbox[3]:
-        msg = 'min values should be less than max values'
+    if bbox[1] > bbox[3]:
+        msg = 'miny should be less than maxy'
         LOGGER.debug(msg)
         raise ValueError(msg)
+
+    if bbox[0] > bbox[2]:
+        msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+        LOGGER.debug(msg)
 
     return bbox
 
