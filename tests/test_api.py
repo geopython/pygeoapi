@@ -1504,6 +1504,9 @@ def test_validate_bbox():
     assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
             [-142.1, 42.12, -52.22, 84.4])
 
+    assert (validate_bbox('177.0,65.0,-177.0,70.0') ==
+            [177.0, 65.0, -177.0, 70.0])
+
     with pytest.raises(ValueError):
         validate_bbox('1,2,4')
 
