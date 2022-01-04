@@ -4,7 +4,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -675,6 +675,16 @@ class API:
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Collections',
             'href': '{}/collections'.format(self.config['server']['url'])
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'Processes',
+            'href': '{}/processes'.format(self.config['server']['url'])
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'Jobs',
+            'href': '{}/jobs'.format(self.config['server']['url'])
         }]
 
         headers = request.get_response_headers()
@@ -2506,8 +2516,7 @@ class API:
                 p2['outputTransmission'] = ['value']
                 p2['links'] = p2.get('links', [])
 
-                jobs_url = '{}/processes/{}/jobs'.format(
-                    self.config['server']['url'], key)
+                jobs_url = '{}/jobs'.format(self.config['server']['url'])
 
                 # TODO translation support
                 link = {
@@ -2553,13 +2562,12 @@ class API:
 
     @gzip
     @pre_process
-    def get_process_jobs(self, request: Union[APIRequest, Any],
-                         process_id, job_id=None) -> Tuple[dict, int, str]:
+    def get_jobs(self, request: Union[APIRequest, Any],
+                 job_id=None) -> Tuple[dict, int, str]:
         """
         Get process jobs
 
         :param request: A request object
-        :param process_id: id of process
         :param job_id: id of job
 
         :returns: tuple of headers, status code, content
@@ -2569,30 +2577,35 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
-        processes = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process')
-
-        if process_id not in processes:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        p = load_plugin('process', processes[process_id]['processor'])
-
         if self.manager:
             if job_id is None:
-                jobs = sorted(self.manager.get_jobs(process_id),
+                print(self.manager.get_jobs())
+                jobs = sorted(self.manager.get_jobs(),
                               key=lambda k: k['job_start_datetime'],
                               reverse=True)
             else:
-                jobs = [self.manager.get_job(process_id, job_id)]
+                jobs = [self.manager.get_job(job_id)]
         else:
             LOGGER.debug('Process management not configured')
             jobs = []
 
-        serialized_jobs = []
+        serialized_jobs = {
+            'jobs': [],
+            'links': [{
+                'href': '{}/jobs?f={}'.format(self.config['server']['url'], F_HTML),  # noqa
+                'rel': request.get_linkrel(F_HTML),
+                'type': FORMAT_TYPES[F_HTML],
+                'title': 'Jobs list as HTML'
+            }, {
+                'href': '{}/jobs?f={}'.format(self.config['server']['url'], F_JSON),  # noqa
+                'rel': request.get_linkrel(F_JSON),
+                'type': FORMAT_TYPES[F_JSON],
+                'title': 'Jobs list as JSON'
+            }]
+        }
         for job_ in jobs:
             job2 = {
+                'processID': job_['process_id'],
                 'jobID': job_['identifier'],
                 'status': job_['status'],
                 'message': job_['message'],
@@ -2606,9 +2619,8 @@ class API:
             if JobStatus[job_['status']] in (
                JobStatus.successful, JobStatus.running, JobStatus.accepted):
 
-                job_result_url = '{}/processes/{}/jobs/{}/results'.format(
-                    self.config['server']['url'],
-                    process_id, job_['identifier'])
+                job_result_url = '{}/jobs/{}/results'.format(
+                    self.config['server']['url'], job_['identifier'])
 
                 job2['links'] = [{
                     'href': '{}?f={}'.format(job_result_url, F_HTML),
@@ -2632,21 +2644,16 @@ class API:
                             job_id, job_['mimetype'])
                     })
 
-            serialized_jobs.append(job2)
+            serialized_jobs['jobs'].append(job2)
 
         if job_id is None:
-            j2_template = 'processes/jobs/index.html'
+            j2_template = 'jobs/index.html'
         else:
-            serialized_jobs = serialized_jobs[0]
-            j2_template = 'processes/jobs/job.html'
+            serialized_jobs = serialized_jobs['jobs'][0]
+            j2_template = 'jobs/job.html'
 
         if request.format == F_HTML:
             data = {
-                'process': {
-                    'id': process_id,
-                    'title': l10n.translate(p.metadata['title'],
-                                            SYSTEM_LOCALE)
-                },
                 'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
@@ -2719,8 +2726,8 @@ class API:
         LOGGER.debug(data_dict)
 
         job_id = data.get("job_id", str(uuid.uuid1()))
-        url = '{}/processes/{}/jobs/{}'.format(
-            self.config['server']['url'], process_id, job_id)
+        url = '{}/jobs/{}'.format(
+            self.config['server']['url'], job_id)
 
         headers['Location'] = url
 
@@ -2767,13 +2774,12 @@ class API:
 
     @gzip
     @pre_process
-    def get_process_job_result(self, request: Union[APIRequest, Any],
-                               process_id, job_id) -> Tuple[dict, int, str]:
+    def get_job_result(self, request: Union[APIRequest, Any],
+                       job_id) -> Tuple[dict, int, str]:
         """
         Get result of job (instance of a process)
 
         :param request: A request object
-        :param process_id: name of process
         :param job_id: ID of job
 
         :returns: tuple of headers, status code, content
@@ -2783,23 +2789,7 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
-
-        if process_id not in processes_config:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        process = load_plugin('process',
-                              processes_config[process_id]['processor'])
-
-        if not process:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        job = self.manager.get_job(process_id, job_id)
+        job = self.manager.get_job(job_id)
 
         if not job:
             msg = 'job not found'
@@ -2824,7 +2814,7 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
-        mimetype, job_output = self.manager.get_job_result(process_id, job_id)
+        mimetype, job_output = self.manager.get_job_result(job_id)
 
         if mimetype not in (None, FORMAT_TYPES[F_JSON]):
             headers['Content-Type'] = mimetype
@@ -2836,31 +2826,25 @@ class API:
             else:
                 # HTML
                 data = {
-                    'process': {
-                        'id': process_id,
-                        'title': l10n.translate(process.metadata['title'],
-                                                SYSTEM_LOCALE)
-                    },
                     'job': {'id': job_id},
                     'result': job_output
                 }
                 content = render_j2_template(
-                    self.config, 'processes/jobs/results/index.html',
+                    self.config, 'jobs/results/index.html',
                     data, SYSTEM_LOCALE)
 
         return headers, 200, content
 
-    def delete_process_job(self, process_id, job_id) -> Tuple[dict, int, str]:
+    def delete_job(self, job_id) -> Tuple[dict, int, str]:
         """
         Delete a process job
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        success = self.manager.delete_job(process_id, job_id)
+        success = self.manager.delete_job(job_id)
 
         if not success:
             http_status = 404
@@ -2870,8 +2854,7 @@ class API:
             }
         else:
             http_status = 200
-            jobs_url = '{}/processes/{}/jobs'.format(
-                self.config['server']['url'], process_id)
+            jobs_url = '{}/jobs'.format(self.config['server']['url'])
 
             response = {
                 'jobID': job_id,

@@ -74,7 +74,7 @@
             {% if 'async-execute' in data.jobControlOptions %}<li>{% trans %}Asynchronous{% endtrans %}</li>{% endif %}
           </ul>
           <h2>{% trans %}Jobs{% endtrans %}</h2>
-          <a title="Browse jobs" href="{{config.server.url}}/processes/{{data.id}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
+          <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
           <h2>{% trans %}Links{% endtrans %}</h2>
           <ul>
             {% for link in data['links'] %}

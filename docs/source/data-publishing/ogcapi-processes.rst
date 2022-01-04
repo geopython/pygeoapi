@@ -62,8 +62,8 @@ Processing examples
   * http://localhost:5000/processes
 * describe the ``hello-world`` process
   * http://localhost:5000/processes/hello-world
-* show all jobs for the ``hello-world`` process
-  * http://localhost:5000/processes/hello-world/jobs
+* show all jobs
+  * http://localhost:5000/jobs
 * execute a job for the ``hello-world`` process
   * ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
 * execute a job for the ``hello-world`` process with a raw response (default)
