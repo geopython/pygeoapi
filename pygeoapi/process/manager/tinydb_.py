@@ -77,11 +77,10 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return True
 
-    def get_jobs(self, process_id=None, status=None):
+    def get_jobs(self, status=None):
         """
         Get jobs
 
-        :param process_id: process identifier
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
 
@@ -89,12 +88,7 @@ class TinyDBManager(BaseManager):
         """
 
         self._connect()
-        if process_id is None:
-            jobs_list = [doc.doc_id for doc in self.db.all()]
-        else:
-            query = tinydb.Query()
-            jobs_list = self.db.search(query.process_id == process_id)
-
+        jobs_list = self.db.all()
         self.db.close()
 
         return jobs_list
@@ -114,11 +108,10 @@ class TinyDBManager(BaseManager):
 
         return doc_id
 
-    def update_job(self, process_id, job_id, update_dict):
+    def update_job(self, job_id, update_dict):
         """
         Updates a job
 
-        :param process_id: process identifier
         :param job_id: job identifier
         :param update_dict: `dict` of property updates
 
@@ -131,17 +124,16 @@ class TinyDBManager(BaseManager):
 
         return True
 
-    def delete_job(self, process_id, job_id):
+    def delete_job(self, job_id):
         """
         Deletes a job
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :return `bool` of status result
         """
         # delete result file if present
-        job_result = self.get_job(process_id, job_id)
+        job_result = self.get_job(job_id)
         if job_result:
             location = job_result.get('location', None)
             if location and self.output_dir is not None:
@@ -153,38 +145,35 @@ class TinyDBManager(BaseManager):
 
         return removed
 
-    def get_job(self, process_id, job_id):
+    def get_job(self, job_id):
         """
         Get a single job
 
-        :param process_id: process identifier
-        :param jobid: job identifier
+        :param job_id: job identifier
 
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
         self._connect()
         query = tinydb.Query()
-        result = self.db.search((
-            query.process_id == process_id) & (query.identifier == job_id))
+        result = self.db.search(query.identifier == job_id)
 
         result = result[0] if result else None
         self.db.close()
         return result
 
-    def get_job_result(self, process_id, job_id):
+    def get_job_result(self, job_id):
         """
         Get a job's status, and actual output of executing the process
 
-        :param process_id: process identifier
         :param jobid: job identifier
 
         :returns: `tuple` of mimetype and raw output
         """
 
-        job_result = self.get_job(process_id, job_id)
+        job_result = self.get_job(job_id)
         if not job_result:
-            # processs/job does not exist
+            # job does not exist
             return None
 
         location = job_result.get('location', None)

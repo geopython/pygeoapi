@@ -56,11 +56,10 @@ class BaseManager:
         self.connection = manager_def.get('connection', None)
         self.output_dir = manager_def.get('output_dir', None)
 
-    def get_jobs(self, process_id=None, status=None):
+    def get_jobs(self, status=None):
         """
         Get process jobs, optionally filtered by status
 
-        :param process_id: process identifier
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
 
@@ -80,11 +79,10 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def update_job(self, process_id, job_id, update_dict):
+    def update_job(self, job_id, update_dict):
         """
         Updates a job
 
-        :param process_id: process identifier
         :param job_id: job identifier
         :param update_dict: `dict` of property updates
 
@@ -93,11 +91,10 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job(self, process_id, job_id):
+    def get_job(self, job_id):
         """
         Get a job (!)
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :returns: `dict` of job result
@@ -105,11 +102,10 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job_result(self, process_id, job_id):
+    def get_job_result(self, job_id):
         """
         Returns the actual output from a completed process
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :returns: `tuple` of mimetype and raw output
@@ -117,11 +113,10 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def delete_job(self, process_id, job_id):
+    def delete_job(self, job_id):
         """
         Deletes a job and associated results/outputs
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :returns: `bool` of status result
@@ -193,7 +188,7 @@ class BaseManager:
             current_status = JobStatus.running
             jfmt, outputs = p.execute(data_dict)
 
-            self.update_job(process_id, job_id, {
+            self.update_job(job_id, {
                 'status': current_status.value,
                 'message': 'Writing job output',
                 'progress': 95
@@ -224,7 +219,7 @@ class BaseManager:
                 'progress': 100
             }
 
-            self.update_job(process_id, job_id, job_update_metadata)
+            self.update_job(job_id, job_update_metadata)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -253,7 +248,7 @@ class BaseManager:
 
             jfmt = 'application/json'
 
-            self.update_job(process_id, job_id, job_metadata)
+            self.update_job(job_id, job_metadata)
 
         return jfmt, outputs, current_status
 

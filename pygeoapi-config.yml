@@ -48,10 +48,10 @@ server:
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-#    manager:
-#        name: TinyDB
-#        connection: /tmp/pygeoapi-process-manager.db
-#        output_dir: /tmp/
+    manager:
+        name: TinyDB
+        connection: /tmp/pygeoapi-process-manager.db
+        output_dir: /tmp/
     # ogc_schemas_location: /opt/schemas.opengis.net
 
 logging:
@@ -77,7 +77,7 @@ metadata:
                 - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
-        url: http://example.org
+        url: https://example.org
     license:
         name: CC-BY 4.0 license
         url: https://creativecommons.org/licenses/by/4.0/

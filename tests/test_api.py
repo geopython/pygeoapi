@@ -363,7 +363,7 @@ def test_root(config, api_):
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 7
+    assert len(root['links']) == 9
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
@@ -1348,15 +1348,13 @@ def test_execute_process(config, api_):
 
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
-    for process_id, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_process_job(
-            process_id, job_id)
+    for _, job_id in cleanup_jobs:
+        rsp_headers, code, response = api_.delete_job(job_id)
         assert code == 200
 
 
-def test_delete_process_job(api_):
-    rsp_headers, code, response = api_.delete_process_job(
-        'does-not-exist', 'does-not-exist')
+def test_delete_job(api_):
+    rsp_headers, code, response = api_.delete_job('does-not-exist')
 
     assert code == 404
 
@@ -1383,13 +1381,11 @@ def test_delete_process_job(api_):
     assert data['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
 
     assert code == 200
 
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 404
 
     req = mock_request(data=req_body_async)
@@ -1401,12 +1397,10 @@ def test_delete_process_job(api_):
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 200
 
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 404
 
 
