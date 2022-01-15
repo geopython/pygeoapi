@@ -270,4 +270,8 @@ Data access examples
 * fetch a specific feature
   * http://localhost:5000/collections/foo/items/123
 
+.. note::
+   ``.../items`` queries which return an alternative representation to GeoJSON (which prompt a download)
+   will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.csv``)
+
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features

@@ -101,6 +101,10 @@ Data access examples
 * coverage access with subsetting
   * http://localhost:5000/collections/foo/coverage?subset=lat(10,20)&subset=long(10,20)
 
+.. note::
+   ``.../coverage`` queries which return an alternative representation to CoverageJSON (which prompt a download)
+   will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.nc``)
+
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
 .. _`rasterio`: https://rasterio.readthedocs.io
 .. _`xarray`: https://xarray.pydata.org

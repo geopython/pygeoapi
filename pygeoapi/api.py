@@ -1549,7 +1549,12 @@ class API:
             headers['Content-Type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
 
-            cd = 'attachment; filename="{}.csv"'.format(dataset)
+            if p.filename is None:
+                filename = '{}.csv'.format(dataset)
+            else:
+                filename = '{}'.format(p.filename)
+
+            cd = 'attachment; filename="{}"'.format(filename)
             headers['Content-Disposition'] = cd
 
             return headers, 200, content
@@ -2073,6 +2078,10 @@ class API:
 
         mt = collection_def['format']['name']
         if format_ == mt:  # native format
+            if p.filename is not None:
+                cd = 'attachment; filename="{}"'.format(p.filename)
+                headers['Content-Disposition'] = cd
+
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
         elif format_ == F_JSON:
