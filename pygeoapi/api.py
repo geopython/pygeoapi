@@ -2526,11 +2526,31 @@ class API:
                 p2['links'] = p2.get('links', [])
 
                 jobs_url = '{}/jobs'.format(self.config['server']['url'])
+                process_url = '{}/processes/{}'.format(
+                    self.config['server']['url'], key)
 
                 # TODO translation support
                 link = {
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': request.get_linkrel(F_JSON),
+                    'href': '{}?f={}'.format(process_url, F_JSON),
+                    'title': 'Process description as JSON',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'collection',
+                    'rel': request.get_linkrel(F_HTML),
+                    'href': '{}?f={}'.format(process_url, F_HTML),
+                    'title': 'Process description as HTML',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                     'href': '{}?f={}'.format(jobs_url, F_HTML),
                     'title': 'jobs for this process as HTML',
                     'hreflang': self.default_locale
@@ -2539,9 +2559,18 @@ class API:
 
                 link = {
                     'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'collection',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                     'href': '{}?f={}'.format(jobs_url, F_JSON),
                     'title': 'jobs for this process as JSON',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/execute',
+                    'href': '{}/execution?f={}'.format(process_url, F_JSON),
+                    'title': 'Execution for this process as JSON',
                     'hreflang': self.default_locale
                 }
                 p2['links'].append(link)
