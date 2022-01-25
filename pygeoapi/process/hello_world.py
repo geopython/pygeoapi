@@ -53,7 +53,7 @@ PROCESS_METADATA = {
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
-        'rel': 'canonical',
+        'rel': 'about',
         'title': 'information',
         'href': 'https://example.org/process',
         'hreflang': 'en-US'
