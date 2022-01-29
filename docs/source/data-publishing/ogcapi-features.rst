@@ -138,6 +138,30 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
                 CPL_DEBUG: NO
           id_field: gml_id
           layer: rdinfo:stations
+          
+.. code-block:: yaml
+
+    providers:
+         - type: feature
+           name: OGR
+           data:
+             source_type: ESRIJSON
+             source: https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/boreholes/MapServer/0/query?where=BGS_ID+%3D+BGS_ID&outfields=*&orderByFields=BGS_ID+ASC&f=json
+             source_srs: EPSG:27700
+             target_srs: EPSG:4326
+             source_capabilities:
+                 paging: True
+             open_options:
+                 FEATURE_SERVER_PAGING: YES
+             gdal_ogr_options:
+                 EMPTY_AS_NULL: NO
+                 GDAL_CACHEMAX: 64
+                 # GDAL_HTTP_PROXY: (optional proxy)
+                 # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                 CPL_DEBUG: NO
+           id_field: BGS_ID
+           layer: ESRIJSON
+
 
 
 MongoDB
@@ -157,6 +181,8 @@ MongoDB
 PostgreSQL
 ^^^^^^^^^^
 
+Must have PostGIS installed. 
+
 .. todo:: add overview and requirements
 
 .. code-block:: yaml
@@ -166,6 +192,7 @@ PostgreSQL
          name: PostgreSQL
          data:
              host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided 
              dbname: test
              user: postgres
              password: postgres
