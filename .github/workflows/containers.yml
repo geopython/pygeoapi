@@ -42,8 +42,9 @@ jobs:
           images: |
             ${{ secrets.DOCKER_REPOSITORY }}
             ghcr.io/${{ github.repository }} 
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}   
           tags: |
-            type=raw,value=latest
             type=ref,event=tag
       
       - name: Build and push Docker images
