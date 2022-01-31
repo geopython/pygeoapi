@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {% trans %}Job result{% endtrans %} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../jobs">{% trans %}Jobs{% endtrans %}</a>
+/ <a href="../{{ data.job.id }}">{{ data.job.id }}</a>
+/ <a href="./results">{% trans %}Results{% endtrans %}</a>
+{% endblock %}
+{% block body %}
+  <section id="jobs">
+    <h2>{% trans %}Results of job{% endtrans %} {{data.job.id}}</h2>
+    <pre id="results"></pre>
+  </section>
+  <script>
+    document.getElementById('results').innerHTML = JSON.stringify({{ data.result }}, undefined, 2);
+  </script>
+{% endblock %}

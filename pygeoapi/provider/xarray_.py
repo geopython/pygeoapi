@@ -83,9 +83,9 @@ class XarrayProvider(BaseProvider):
 
         c_props = self._coverage_properties
         domainset = {
-            'type': 'DomainSetType',
+            'type': 'DomainSet',
             'generalGrid': {
-                'type': 'GeneralGridCoverageType',
+                'type': 'GeneralGridCoverage',
                 'srsName': c_props['bbox_crs'],
                 'axisLabels': [
                     c_props['x_axis_label'],
@@ -93,14 +93,14 @@ class XarrayProvider(BaseProvider):
                     c_props['time_axis_label']
                 ],
                 'axis': [{
-                    'type': 'RegularAxisType',
+                    'type': 'RegularAxis',
                     'axisLabel': c_props['x_axis_label'],
                     'lowerBound': c_props['bbox'][0],
                     'upperBound': c_props['bbox'][2],
                     'uomLabel': c_props['bbox_units'],
                     'resolution': c_props['resx']
                 }, {
-                    'type': 'RegularAxisType',
+                    'type': 'RegularAxis',
                     'axisLabel': c_props['y_axis_label'],
                     'lowerBound': c_props['bbox'][1],
                     'upperBound': c_props['bbox'][3],
@@ -108,7 +108,7 @@ class XarrayProvider(BaseProvider):
                     'resolution': c_props['resy']
                 },
                     {
-                        'type': 'RegularAxisType',
+                        'type': 'RegularAxis',
                         'axisLabel': c_props['time_axis_label'],
                         'lowerBound': c_props['time_range'][0],
                         'upperBound': c_props['time_range'][1],
@@ -117,16 +117,16 @@ class XarrayProvider(BaseProvider):
                     }
                 ],
                 'gridLimits': {
-                    'type': 'GridLimitsType',
+                    'type': 'GridLimits',
                     'srsName': 'http://www.opengis.net/def/crs/OGC/0/Index2D',
                     'axisLabels': ['i', 'j'],
                     'axis': [{
-                        'type': 'IndexAxisType',
+                        'type': 'IndexAxis',
                         'axisLabel': 'i',
                         'lowerBound': 0,
                         'upperBound': c_props['width']
                     }, {
-                        'type': 'IndexAxisType',
+                        'type': 'IndexAxis',
                         'axisLabel': 'j',
                         'lowerBound': 0,
                         'upperBound': c_props['height']
@@ -148,7 +148,7 @@ class XarrayProvider(BaseProvider):
         """
 
         rangetype = {
-            'type': 'DataRecordType',
+            'type': 'DataRecord',
             'field': []
         }
 
@@ -164,9 +164,11 @@ class XarrayProvider(BaseProvider):
 
                 rangetype['field'].append({
                     'id': name,
-                    'type': 'QuantityType',
+                    'type': 'Quantity',
                     'name': var.attrs.get('long_name') or desc,
-                    'definition': str(var.dtype),
+                    'encodingInfo': {
+                        'dataType': 'http://www.opengis.net/def/dataType/OGC/0/{}'.format(str(var.dtype))  # noqa
+                    },
                     'nodata': 'null',
                     'uom': {
                         'id': 'http://www.opengis.net/def/uom/UCUM/{}'.format(

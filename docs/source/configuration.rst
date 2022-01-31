@@ -41,6 +41,7 @@ The ``server`` section provides directives on binding and high level tuning.
     mimetype: application/json; charset=UTF-8  # default MIME type
     encoding: utf-8  # default server encoding
     language: en-US  # default server language
+    gzip: false # default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of items to return
@@ -262,6 +263,7 @@ For collections, at the level of items, the default JSON-LD representation adds:
 The optional configuration options for collections, at the level of an item of items, are:
 
 - If ``uri_field`` is specified, JSON-LD will be updated such that the ``@id`` has the value of ``uri_field`` for each item in a collection
+
 .. note::
    While this is enough to provide valid RDF (as GeoJSON-LD), it does not allow the *properties* of your items to be
    unambiguously interpretable.

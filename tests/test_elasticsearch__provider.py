@@ -150,7 +150,8 @@ def test_query(config):
     fields = p.get_fields()
     assert len(fields) == 37
     assert fields['scalerank']['type'] == 'long'
-    assert fields['changed']['type'] == 'float'
+    assert fields['changed']['type'] == 'number'
+    assert fields['changed']['format'] == 'float'
     assert fields['ls_name']['type'] == 'string'
 
     results = p.query()
@@ -171,7 +172,7 @@ def test_query(config):
 
     results = p.query(startindex=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == 3168070
+    assert results['features'][0]['id'] == 3042030
 
     results = p.query(sortby=[{'property': 'nameascii', 'order': '+'}])
     assert results['features'][0]['properties']['nameascii'] == 'Abidjan'
