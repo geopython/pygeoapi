@@ -45,7 +45,7 @@ jobs:
           flavor: |
             latest=${{ github.ref == 'refs/heads/master' }}   
           tags: |
-            type=ref,event=tag
+            type=semver,pattern={{version}}
       
       - name: Build and push Docker images
         uses: docker/build-push-action@v2
