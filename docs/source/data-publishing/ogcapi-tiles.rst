@@ -11,8 +11,8 @@ object storage).  To integrate tiles from a local data source, it is assumed
 that a directory tree of static tiles has been created on disk.  Examples of
 tile generation software include (but are not limited to):
 
-- `MapProxy`_
-- `tippecanoe`_
+* `MapProxy`_
+* `tippecanoe`_
 
 Providers
 ---------
@@ -60,16 +60,16 @@ The MVT provider plugin provides access to `Mapbox Vector Tiles`_.
 Data access examples
 --------------------
 
-- list all collections
-  - http://localhost:5000/collections
-- overview of dataset
-  - http://localhost:5000/collections/foo
-- overview of dataset tiles
-  - http://localhost:5000/collections/foo/tiles
-- tile matrix metadata
-  - http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
-- tiles URI template
-  - `http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt <http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt>`_
+* list all collections
+  * http://localhost:5000/collections
+* overview of dataset
+  * http://localhost:5000/collections/foo
+* overview of dataset tiles
+  * http://localhost:5000/collections/foo/tiles
+* tile matrix metadata
+  * http://localhost:5000/collections/lakes/tiles/WorldCRS84Quad/metadata
+* tiles URI template
+  * `http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt <http://localhost:5000/collections/lakes/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}?f=mvt>`_
 
 
 .. _`OGC API - Tiles`: https://github.com/opengeospatial/ogcapi-tiles

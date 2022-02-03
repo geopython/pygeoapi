@@ -57,9 +57,22 @@ def config():
     }
 
 
+@pytest.fixture()
+def config_with_properties(config):
+    config_ = {'properties': ['name', 'waterway', 'width', 'does_not_exist']}
+    config_.update(config)
+    return config_
+
+
+@pytest.fixture()
+def config_materialised_view(config):
+    config_ = config.copy()
+    config_['table'] = 'hotosm_bdi_drains'
+    return config_
+
+
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
-
     p = PostgreSQLProvider(config)
     feature_collection = p.query()
     assert feature_collection.get('type', None) == 'FeatureCollection'
@@ -72,8 +85,24 @@ def test_query(config):
     assert geometry is not None
 
 
+def test_query_materialised_view(config, config_materialised_view):
+    """Testing query using a materialised view"""
+    p = PostgreSQLProvider(config_materialised_view)
+    features = p.query(limit=14776).get("features", None)
+    properties = features[0].get("properties", None)
+    # Only width and depth properties should be available
+    assert list(properties.keys()) == ["osm_id", "width", "depth"]
+    p_full = PostgreSQLProvider(config)
+    full_features = p_full.query(limit=14776).get("features", None)
+    drain_features = [
+        f for f in full_features if f["properties"]["waterway"] == "drain"
+    ]
+    # All drains from the original dataset should be in the view
+    assert len(features) == len(drain_features)
+
+
 def test_query_with_property_filter(config):
-    """Test query  valid features when filtering by property"""
+    """Test query valid features when filtering by property"""
     p = PostgreSQLProvider(config)
     feature_collection = p.query(properties=[("waterway", "stream")])
     features = feature_collection.get('features', None)
@@ -92,6 +121,20 @@ def test_query_with_property_filter(config):
                features))
     assert (len(features) != len(stream_features))
     assert (len(other_features) != 0)
+
+
+def test_query_with_config_properties(config_with_properties):
+    """
+    Test that query is restricted by properties in the config.
+    No properties should be returned that are not requested.
+    Note that not all requested properties have to exist in the query result.
+    """
+    p = PostgreSQLProvider(config_with_properties)
+    feature_collection = p.query()
+    feature = feature_collection.get('features', None)[0]
+    properties = feature.get('properties', None)
+    for property_name in properties.keys():
+        assert property_name in config_with_properties["properties"]
 
 
 def test_query_hits(config):

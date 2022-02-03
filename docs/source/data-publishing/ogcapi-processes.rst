@@ -52,26 +52,26 @@ Putting it all together
 
 To summarize how pygeoapi processes and managers work together::
 
-- process plugins implement the core processing / workflow functionality
-- manager plugins control and manage how processes are executed
+* process plugins implement the core processing / workflow functionality
+* manager plugins control and manage how processes are executed
 
 Processing examples
 -------------------
 
-- list all processes
-  - http://localhost:5000/processes
-- describe the ``hello-world`` process
-  - http://localhost:5000/processes/hello-world
-- show all jobs for the ``hello-world`` process
-  - http://localhost:5000/processes/hello-world/jobs
-- execute a job for the ``hello-world`` process
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
-- execute a job for the ``hello-world`` process with a raw response (default)
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
-- execute a job for the ``hello-world`` process with a response document
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"},\"response\":\"document\"}"``
-- execute a job for the ``hello-world`` process in asynchronous mode
-  - ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":{\"name\": \"hi there2\"}}"``
+* list all processes
+  * http://localhost:5000/processes
+* describe the ``hello-world`` process
+  * http://localhost:5000/processes/hello-world
+* show all jobs
+  * http://localhost:5000/jobs
+* execute a job for the ``hello-world`` process
+  * ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
+* execute a job for the ``hello-world`` process with a raw response (default)
+  * ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"}}"``
+* execute a job for the ``hello-world`` process with a response document
+  * ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"inputs\":{\"name\": \"hi there2\"},\"response\":\"document\"}"``
+* execute a job for the ``hello-world`` process in asynchronous mode
+  * ``curl -X POST "http://localhost:5000/processes/hello-world/execution" -H "Content-Type: application/json" -d "{\"mode\": \"async\", \"inputs\":{\"name\": \"hi there2\"}}"``
 
 .. todo:: add more examples once OAProc implementation is complete
 

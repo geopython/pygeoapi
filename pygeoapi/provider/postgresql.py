@@ -60,7 +60,7 @@ class DatabaseConnection:
      The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, context="query"):
+    def __init__(self, conn_dic, table, properties=[], context="query"):
         """
         PostgreSQLProvider Class constructor returning
 
@@ -81,15 +81,17 @@ class DatabaseConnection:
 
         :param table: table name containing the data. This variable is used to
                 assemble column information
+        :param properties: User-specified subset of column names to expose
         :param context: query or hits, if query then it will determine
                 table column otherwise will not do it
-        :returns: psycopg2.extensions.connection
+        :returns: DatabaseConnection
         """
 
         self.conn_dic = conn_dic
         self.table = table
         self.context = context
         self.columns = None
+        self.properties = properties
         self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
@@ -110,13 +112,26 @@ class DatabaseConnection:
 
         self.cur = self.conn.cursor()
         if self.context == 'query':
-            # Getting columns
-            query_cols = "SELECT column_name, udt_name FROM information_schema.columns \
-            WHERE table_name = '{}' and udt_name != 'geometry';".format(
+            # Get table column names and types, excluding geometry and
+            # transaction ID columns
+            query_cols = "SELECT attr.attname, tp.typname \
+            FROM pg_catalog.pg_class as cls \
+            INNER JOIN pg_catalog.pg_attribute as attr \
+                ON cls.oid = attr.attrelid \
+            INNER JOIN pg_catalog.pg_type as tp \
+                ON tp.oid = attr.atttypid \
+            WHERE cls.relname = '{}' \
+                AND tp.typname != 'geometry' \
+                AND tp.typname != 'cid' \
+                AND tp.typname != 'oid' \
+                AND tp.typname != 'tid' \
+                AND tp.typname != 'xid';".format(
                 self.table)
 
             self.cur.execute(query_cols)
             result = self.cur.fetchall()
+            if self.properties:
+                result = [res for res in result if res[0] in self.properties]
             self.columns = SQL(', ').join(
                 [Identifier(item[0]) for item in result]
                 )
@@ -173,7 +188,9 @@ class PostgreSQLProvider(BaseProvider):
         :returns: dict of fields
         """
         if not self.fields:
-            with DatabaseConnection(self.conn_dic, self.table) as db:
+            with DatabaseConnection(self.conn_dic,
+                                    self.table,
+                                    properties=self.properties) as db:
                 self.fields = db.fields
         return self.fields
 
@@ -246,7 +263,9 @@ class PostgreSQLProvider(BaseProvider):
         if resulttype == 'hits':
 
             with DatabaseConnection(self.conn_dic,
-                                    self.table, context="hits") as db:
+                                    self.table,
+                                    properties=self.properties,
+                                    context="hits") as db:
                 cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
                 where_clause = self.__get_where_clauses(
@@ -266,7 +285,9 @@ class PostgreSQLProvider(BaseProvider):
 
         end_index = startindex + limit
 
-        with DatabaseConnection(self.conn_dic, self.table) as db:
+        with DatabaseConnection(self.conn_dic,
+                                self.table,
+                                properties=self.properties) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             props = db.columns if select_properties == [] else \
@@ -364,7 +385,9 @@ class PostgreSQLProvider(BaseProvider):
         """
 
         LOGGER.debug('Get item from Postgis')
-        with DatabaseConnection(self.conn_dic, self.table) as db:
+        with DatabaseConnection(self.conn_dic,
+                                self.table,
+                                properties=self.properties) as db:
             cursor = db.conn.cursor(cursor_factory=RealDictCursor)
 
             sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \

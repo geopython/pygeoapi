@@ -8,7 +8,7 @@ server:
     language: en-US
     cors: true
     pretty_print: true
-    limit: 10
+    limit: 100
     # templates: /path/to/templates
     map:
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png

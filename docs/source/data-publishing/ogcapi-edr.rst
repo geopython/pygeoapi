@@ -64,16 +64,16 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
 Data access examples
 --------------------
 
-- list all collections
-  - http://localhost:5000/collections
-- overview of dataset
-  - http://localhost:5000/collections/foo
-- dataset position query
-  - http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)
-- dataset position query for a specific parameter
-  - http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)&parameter-name=SST
-- dataset position query for a specific parameter and time step
-  - http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)&parameter-name=SST&datetime=2000-01-16
+* list all collections
+  * http://localhost:5000/collections
+* overview of dataset
+  * http://localhost:5000/collections/foo
+* dataset position query
+  * http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)
+* dataset position query for a specific parameter
+  * http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)&parameter-name=SST
+* dataset position query for a specific parameter and time step
+  * http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)&parameter-name=SST&datetime=2000-01-16
 
 
 .. _`xarray`: https://xarray.pydata.org

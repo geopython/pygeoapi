@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -363,7 +363,7 @@ def test_root(config, api_):
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 7
+    assert len(root['links']) == 9
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
@@ -1116,7 +1116,7 @@ def test_describe_processes(config, api_):
     assert process['version'] == '0.2.0'
     assert process['title'] == 'Hello World'
     assert len(process['keywords']) == 3
-    assert len(process['links']) == 3
+    assert len(process['links']) == 6
     assert len(process['inputs']) == 2
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
@@ -1348,15 +1348,13 @@ def test_execute_process(config, api_):
 
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
-    for process_id, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_process_job(
-            process_id, job_id)
+    for _, job_id in cleanup_jobs:
+        rsp_headers, code, response = api_.delete_job(job_id)
         assert code == 200
 
 
-def test_delete_process_job(api_):
-    rsp_headers, code, response = api_.delete_process_job(
-        'does-not-exist', 'does-not-exist')
+def test_delete_job(api_):
+    rsp_headers, code, response = api_.delete_job('does-not-exist')
 
     assert code == 404
 
@@ -1383,13 +1381,11 @@ def test_delete_process_job(api_):
     assert data['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
 
     assert code == 200
 
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 404
 
     req = mock_request(data=req_body_async)
@@ -1401,12 +1397,10 @@ def test_delete_process_job(api_):
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 200
 
-    rsp_headers, code, response = api_.delete_process_job(
-        'hello-world', job_id)
+    rsp_headers, code, response = api_.delete_job(job_id)
     assert code == 404
 
 
@@ -1503,6 +1497,9 @@ def test_validate_bbox():
     assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]
     assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
             [-142.1, 42.12, -52.22, 84.4])
+
+    assert (validate_bbox('177.0,65.0,-177.0,70.0') ==
+            [177.0, 65.0, -177.0, 70.0])
 
     with pytest.raises(ValueError):
         validate_bbox('1,2,4')
