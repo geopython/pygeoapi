@@ -41,21 +41,21 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
    :align: left
    :widths: 20, 20
 
-   `OGC API * Features`_,Reference Implementation
-   `OGC API * Coverages`_,Implementing
-   `OGC API * Tiles`_,Implementing
-   `OGC API * Processes`_,Implementing
-   `OGC API * Records`_,Implementing
-   `OGC API * Environmental Data Retrieval`_,Implementing
+   `OGC API - Features`_,Reference Implementation
+   `OGC API - Coverages`_,Implementing
+   `OGC API - Tiles`_,Implementing
+   `OGC API - Processes`_,Implementing
+   `OGC API - Records`_,Implementing
+   `OGC API - Environmental Data Retrieval`_,Implementing
    `SpatioTemporal Asset Catalog`_,Implementing
 
 
 .. _`pygeoapi`: https://pygeoapi.io
 .. _`OGC API`: https://ogcapi.ogc.org
-.. _`OGC API * Features`: https://www.ogc.org/standards/ogcapi-features
-.. _`OGC API * Coverages`: https://github.com/opengeospatial/ogcapi-coverages
-.. _`OGC API * Tiles`: https://github.com/opengeospatial/ogcapi-tiles
-.. _`OGC API * Processes`: https://github.com/opengeospatial/ogcapi-processes
-.. _`OGC API * Records`: https://github.com/opengeospatial/ogcapi-records
-.. _`OGC API * Environmental Data Retrieval`: https://github.com/opengeospatial/ogcapi-environmental-data-retrieval
+.. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
+.. _`OGC API - Tiles`: https://github.com/opengeospatial/ogcapi-tiles
+.. _`OGC API - Processes`: https://github.com/opengeospatial/ogcapi-processes
+.. _`OGC API - Records`: https://github.com/opengeospatial/ogcapi-records
+.. _`OGC API - Environmental Data Retrieval`: https://github.com/opengeospatial/ogcapi-environmental-data-retrieval
 .. _`SpatioTemporal Asset Catalog`: https://stacspec.org
