@@ -483,8 +483,7 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
 
     def _excludes(self):
         return [
-            'properties._metadata-anytext',
-            '_metadata-anytext'
+            'properties._metadata-anytext'
         ]
 
     def get_fields(self):
