@@ -483,13 +483,15 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
 
     def _excludes(self):
         return [
-            'properties._metadata-anytext'
+            'properties._metadata-anytext',
+            '_metadata-anytext'
         ]
 
     def get_fields(self):
         fields = super().get_fields()
         for i in self._excludes():
-            del fields[i]
+            if i in fields.keys():
+                del fields[i] 
 
         fields['q'] = {'type': 'string'}
 
@@ -497,7 +499,8 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
 
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              select_properties=[], skip_geometry=False, q=None,
+              filterq=None, **kwargs):
 
         records = super().query(
             startindex=startindex, limit=limit,
