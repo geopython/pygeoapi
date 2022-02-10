@@ -491,7 +491,7 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
         fields = super().get_fields()
         for i in self._excludes():
             if i in fields.keys():
-                del fields[i] 
+                del fields[i]
 
         fields['q'] = {'type': 'string'}
 
