@@ -1010,6 +1010,10 @@ class API:
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
+                        try:
+                            collection['metadata'] = p.get_metadata()
+                        except NotImplementedError:
+                            pass
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
@@ -2184,6 +2188,66 @@ class API:
             content = render_j2_template(self.config,
                                          'collections/coverage/rangetype.html',
                                          data, self.default_locale)
+            return headers, 200, content
+        else:
+            return self.get_format_exception(request)
+
+    @gzip
+    @pre_process
+    @jsonldify
+    def get_collection_coverage_metadata(
+            self, request: Union[APIRequest, Any],
+            dataset) -> Tuple[dict, int, str]:
+        """
+        Returns the collection coverage metadata
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, metadata content
+        """
+        format_ = request.format or F_JSON
+        headers = request.get_response_headers(self.default_locale)
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'coverage')
+
+            p = load_plugin('provider', collection_def)
+
+            try:
+                data = p.get_metadata()
+            except NotImplementedError:
+                return {}
+
+        except KeyError:
+            msg = 'collection does not exist'
+            return self.get_exception(
+                404, headers, format_, 'InvalidParameterValue', msg)
+        except ProviderTypeError:
+            msg = 'invalid provider type'
+            return self.get_exception(
+                500, headers, format_, 'NoApplicableCode', msg)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers, format_, 'NoApplicableCode', msg)
+
+        if format_ == F_JSON:
+            return headers, 200, to_json(data, self.pretty_print)
+
+        elif format_ == F_HTML:
+            html_data = {
+                'id': dataset,
+                'title': l10n.translate(
+                    self.config['resources'][dataset]['title'],
+                    self.default_locale),
+                'metadata': data
+            }
+            content = render_j2_template(self.config,
+                                         'collections/coverage/metadata.html',
+                                         html_data, self.default_locale)
             return headers, 200, content
         else:
             return self.get_format_exception(request)

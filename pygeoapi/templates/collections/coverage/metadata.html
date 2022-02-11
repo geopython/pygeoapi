@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../">{% trans %}Collections{% endtrans %}</a>
+/ <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <h3>{% trans %}Coverage metadata{% endtrans %}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th colspan="2">{% trans %}Items{% endtrans %}</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for (key, value) in data['metadata'].items() %}
+          <tr>
+            <td>{{ key }}</td><td>{{ value }}</td>
+          </tr>
+	      {% endfor %}
+        </tbody>
+      </table>
+    </section>
+{% endblock %}

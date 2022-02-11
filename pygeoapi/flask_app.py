@@ -237,6 +237,19 @@ def collection_coverage_rangetype(collection_id):
         request, collection_id))
 
 
+@BLUEPRINT.route('/collections/<collection_id>/coverage/metadata')
+def collection_coverage_metadata(collection_id):
+    """
+    OGC API - Coverages coverage metadata endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+    return get_response(api_.get_collection_coverage_metadata(
+        request, collection_id))
+
+
 @BLUEPRINT.route('/collections/<collection_id>/tiles')
 def get_collection_tiles(collection_id=None):
     """
