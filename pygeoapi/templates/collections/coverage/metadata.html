@@ -15,11 +15,28 @@
           </tr>
         </thead>
         <tbody>
-            {% for (key, value) in data['metadata'].items() %}
+          {% for (key, value) in data['metadata'].items() %}
           <tr>
-            <td>{{ key }}</td><td>{{ value }}</td>
+            <td>{{ key }}</td>
+            <td>
+              {% if value is string or value is not iterable %}
+                {{ value|string }}
+              {% else %}
+                <ul>
+                  {% if value is mapping %}
+                    {% for (key1, value1) in value.items() %}
+                      <li>{{ key1 }}: {{ value1|tojson }}</li>
+                    {% endfor %}
+                  {% elif value is sequence %}
+                    {% for value1 in value %}
+                      <li>{{ loop.index0 }}: {{ value1|tojson }}</li>
+                    {% endfor %}
+                  {% endif %}
+                </ul>
+              {% endif %}
+            </td>
           </tr>
-	      {% endfor %}
+          {% endfor %}
         </tbody>
       </table>
     </section>
