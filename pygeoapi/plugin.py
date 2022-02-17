@@ -46,6 +46,7 @@ PLUGINS = {
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
+        'Hateoas': 'pygeoapi.provider.hateoas.HateoasProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
