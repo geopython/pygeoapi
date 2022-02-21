@@ -36,6 +36,7 @@ server:
     encoding: utf-8
     language: en-US
     cors: true
+    gzip: false
     pretty_print: true
     limit: 10
     # templates: /path/to/templates

@@ -6,9 +6,9 @@ Administration
 Now that you have pygeoapi installed and a basic configuration setup, it's time to complete
 the administrative steps required before starting up the server.  The remaining steps are:
 
-- create OpenAPI document
-- validate OpenAPI document
-- set system environment variables
+* create OpenAPI document
+* validate OpenAPI document
+* set system environment variables
 
 Creating the OpenAPI document
 -----------------------------

@@ -30,12 +30,13 @@
 import logging
 
 from pygeoapi.provider.base import ProviderNoDataError
+from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.xarray_ import _to_datetime_string, XarrayProvider
 
 LOGGER = logging.getLogger(__name__)
 
 
-class XarrayEDRProvider(XarrayProvider):
+class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
     """EDR Provider"""
 
     def __init__(self, provider_def):
@@ -47,8 +48,8 @@ class XarrayEDRProvider(XarrayProvider):
         :returns: pygeoapi.provider.rasterio_.RasterioProvider
         """
 
+        BaseEDRProvider.__init__(self, provider_def)
         XarrayProvider.__init__(self, provider_def)
-        self.instances = []
 
     def get_fields(self):
         """
@@ -59,25 +60,8 @@ class XarrayEDRProvider(XarrayProvider):
 
         return self.get_coverage_rangetype()
 
-    def get_instance(self, instance):
-        """
-        Validate instance identifier
-
-        :returns: `bool` of whether instance is valid
-        """
-
-        return NotImplementedError()
-
-    def get_query_types(self):
-        """
-        Provide supported query types
-
-        :returns: list of EDR query types
-        """
-
-        return ['position']
-
-    def query(self, **kwargs):
+    @BaseEDRProvider.register()
+    def position(self, **kwargs):
         """
         Extract data from collection collection
 

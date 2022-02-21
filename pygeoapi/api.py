@@ -4,7 +4,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -38,6 +38,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime, timezone
 from functools import partial
+from gzip import compress
 import json
 import logging
 import os
@@ -81,9 +82,11 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+CHARSET = ['utf-8']
 F_JSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
+F_GZIP = 'gzip'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
@@ -140,6 +143,33 @@ def pre_process(func):
             return func(cls, req_out, *args[2:])
         else:
             return func(cls, req_out)
+
+    return inner
+
+
+def gzip(func):
+    """
+    Decorator that compresses the content of an outgoing API result
+    instance if the Content-Encoding response header was set to gzip.
+
+    :param func: decorated function
+
+    :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        headers, status, content = func(*args, **kwargs)
+        if F_GZIP in headers.get('Content-Encoding', []):
+            try:
+                charset = CHARSET[0]
+                headers['Content-Type'] = \
+                    f"{headers['Content-Type']}; charset={charset}"
+                content = compress(content.encode(charset))
+            except TypeError as err:
+                headers.pop('Content-Encoding')
+                LOGGER.error('Error in compression: {}'.format(err))
+
+        return headers, status, content
 
     return inner
 
@@ -346,13 +376,14 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        for h in (v.strip() for k, v in headers.items() if k.lower() == 'accept'):  # noqa
-            for fmt, mime in FORMAT_TYPES.items():
-                # basic support for complex types (i.e. with "q=0.x")
-                types_ = (t.split(';')[0].strip() for t in h.split(',') if t)
-                if mime.strip() in types_:
-                    format_ = fmt
-                    break
+        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        (fmts, mimes) = zip(*FORMAT_TYPES.items())
+        # basic support for complex types (i.e. with "q=0.x")
+        for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
+            if type_ in mimes:
+                idx_ = mimes.index(type_)
+                format_ = fmts[idx_]
+                break
 
         return format_ or None
 
@@ -470,7 +501,8 @@ class APIRequest:
         return False
 
     def get_response_headers(self, force_lang: l10n.Locale = None,
-                             force_type: str = None) -> dict:
+                             force_type: str = None,
+                             force_encoding: str = None) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
 
@@ -493,6 +525,7 @@ class APIRequest:
 
         :param force_lang: An optional Content-Language header override.
         :param force_type: An optional Content-Type header override.
+        :param force_encoding: An optional Content-Encoding header override.
         :returns: A header dict
         """
 
@@ -504,6 +537,13 @@ class APIRequest:
         elif self.is_valid() and self._format:
             # Set MIME type for valid formats
             headers['Content-Type'] = FORMAT_TYPES[self._format]
+
+        if F_GZIP in FORMAT_TYPES:
+            if force_encoding:
+                headers['Content-Encoding'] = force_encoding
+            elif F_GZIP in self._headers.get('Accept-Encoding', ''):
+                headers['Content-Encoding'] = F_GZIP
+
         return headers
 
     def get_request_headers(self, headers) -> dict:
@@ -535,6 +575,11 @@ class API:
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
+        CHARSET[0] = config['server'].get('encoding', 'utf-8')
+        if config['server'].get('gzip') is True:
+            FORMAT_TYPES[F_GZIP] = 'application/gzip'
+            FORMAT_TYPES.move_to_end(F_JSON)
+
         # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)
         self.default_locale = self.locales[0]
@@ -564,6 +609,7 @@ class API:
         self.manager = load_plugin('process_manager', manager_def)
         LOGGER.info('Process manager plugin loaded')
 
+    @gzip
     @pre_process
     @jsonldify
     def landing_page(self,
@@ -639,6 +685,16 @@ class API:
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Collections',
             'href': '{}/collections'.format(self.config['server']['url'])
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'Processes',
+            'href': '{}/processes'.format(self.config['server']['url'])
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'Jobs',
+            'href': '{}/jobs'.format(self.config['server']['url'])
         }]
 
         headers = request.get_response_headers()
@@ -664,6 +720,7 @@ class API:
 
         return headers, 200, to_json(fcm, self.pretty_print)
 
+    @gzip
     @pre_process
     def openapi(self, request: Union[APIRequest, Any],
                 openapi) -> Tuple[dict, int, str]:
@@ -702,6 +759,7 @@ class API:
         else:
             return headers, 200, openapi
 
+    @gzip
     @pre_process
     def conformance(self,
                     request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
@@ -728,6 +786,7 @@ class API:
 
         return headers, 200, to_json(conformance, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def describe_collections(self, request: Union[APIRequest, Any],
@@ -758,8 +817,15 @@ class API:
             return self.get_exception(
                 404, headers, request.format, 'NotFound', msg)
 
+        if dataset is not None:
+            collections_dict = {
+                k: v for k, v in collections.items() if k == dataset
+            }
+        else:
+            collections_dict = collections
+
         LOGGER.debug('Creating collections')
-        for k, v in collections.items():
+        for k, v in collections_dict.items():
             collection_data = get_provider_default(v['providers'])
             collection_data_type = collection_data['type']
 
@@ -841,7 +907,7 @@ class API:
                     self.config['server']['url'], k, lang, F_HTML)
             })
 
-            if collection_data_type in ['feature', 'record']:
+            if collection_data_type in ['feature', 'record', 'tile']:
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
@@ -1090,6 +1156,7 @@ class API:
 
         return headers, 200, to_json(fcm, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_queryables(self, request: Union[APIRequest, Any],
@@ -1174,6 +1241,7 @@ class API:
 
         return headers, 200, to_json(queryables, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_collection_items(
             self, request: Union[APIRequest, Any],
@@ -1510,7 +1578,12 @@ class API:
             headers['Content-Type'] = '{}; charset={}'.format(
                 formatter.mimetype, self.config['server']['encoding'])
 
-            cd = 'attachment; filename="{}.csv"'.format(dataset)
+            if p.filename is None:
+                filename = '{}.csv'.format(dataset)
+            else:
+                filename = '{}'.format(p.filename)
+
+            cd = 'attachment; filename="{}"'.format(filename)
             headers['Content-Disposition'] = cd
 
             return headers, 200, content
@@ -1522,6 +1595,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     def post_collection_items(
             self, request: Union[APIRequest, Any],
@@ -1761,6 +1835,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     def get_collection_item(self, request: Union[APIRequest, Any],
                             dataset, identifier) -> Tuple[dict, int, str]:
@@ -1986,9 +2061,9 @@ class API:
             # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
-        range_subset = request.params.get('rangeSubset')
+        range_subset = request.params.get('range-subset')
         if range_subset:
-            LOGGER.debug('Processing rangeSubset parameter')
+            LOGGER.debug('Processing range-subset parameter')
             query_args['range_subset'] = [rs for
                                           rs in range_subset.split(',') if rs]
             LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
@@ -2000,29 +2075,20 @@ class API:
                         400, headers, format_, 'InvalidParameterValue', msg)
 
         if 'subset' in request.params:
-            subsets = {}
             LOGGER.debug('Processing subset parameter')
-            for s in (request.params['subset'] or '').split(','):
-                try:
-                    if '"' not in s:
-                        m = re.search(r'(.*)\((.*):(.*)\)', s)
-                    else:
-                        m = re.search(r'(.*)\(\"(\S+)\":\"(\S+.*)\"\)', s)
-
-                    subset_name = m.group(1)
-
-                    if subset_name not in p.axes:
-                        msg = 'Invalid axis name'
-                        return self.get_exception(
-                            400, headers, format_,
-                            'InvalidParameterValue', msg)
-
-                    subsets[subset_name] = list(map(
-                        get_typed_value, m.group(2, 3)))
-                except AttributeError:
-                    msg = 'subset should be like "axis(min:max)"'
-                    return self.get_exception(
+            try:
+                subsets = validate_subset(request.params['subset'] or '')
+            except (AttributeError, ValueError) as err:
+                msg = 'Invalid subset: {}'.format(err)
+                LOGGER.error(msg)
+                return self.get_exception(
                         400, headers, format_, 'InvalidParameterValue', msg)
+
+            if not set(subsets.keys()).issubset(p.axes):
+                msg = 'Invalid axis name'
+                LOGGER.error(msg)
+                return self.get_exception(
+                    400, headers, format_, 'InvalidParameterValue', msg)
 
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
@@ -2045,6 +2111,10 @@ class API:
 
         mt = collection_def['format']['name']
         if format_ == mt:  # native format
+            if p.filename is not None:
+                cd = 'attachment; filename="{}"'.format(p.filename)
+                headers['Content-Disposition'] = cd
+
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
         elif format_ == F_JSON:
@@ -2053,6 +2123,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_coverage_domainset(
@@ -2106,6 +2177,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_coverage_rangetype(
@@ -2158,6 +2230,7 @@ class API:
         else:
             return self.get_format_exception(request)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles(self, request: Union[APIRequest, Any],
@@ -2265,6 +2338,7 @@ class API:
 
         return headers, 200, to_json(tiles, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles_data(
@@ -2349,6 +2423,7 @@ class API:
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_collection_tiles_metadata(
@@ -2431,6 +2506,7 @@ class API:
 
         return headers, 200, to_json(tiles_metadata, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def describe_processes(self, request: Union[APIRequest, Any],
@@ -2485,13 +2561,32 @@ class API:
                 p2['outputTransmission'] = ['value']
                 p2['links'] = p2.get('links', [])
 
-                jobs_url = '{}/processes/{}/jobs'.format(
+                jobs_url = '{}/jobs'.format(self.config['server']['url'])
+                process_url = '{}/processes/{}'.format(
                     self.config['server']['url'], key)
 
                 # TODO translation support
                 link = {
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': request.get_linkrel(F_JSON),
+                    'href': '{}?f={}'.format(process_url, F_JSON),
+                    'title': 'Process description as JSON',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'collection',
+                    'rel': request.get_linkrel(F_HTML),
+                    'href': '{}?f={}'.format(process_url, F_HTML),
+                    'title': 'Process description as HTML',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                     'href': '{}?f={}'.format(jobs_url, F_HTML),
                     'title': 'jobs for this process as HTML',
                     'hreflang': self.default_locale
@@ -2500,9 +2595,18 @@ class API:
 
                 link = {
                     'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'collection',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                     'href': '{}?f={}'.format(jobs_url, F_JSON),
                     'title': 'jobs for this process as JSON',
+                    'hreflang': self.default_locale
+                }
+                p2['links'].append(link)
+
+                link = {
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/execute',
+                    'href': '{}/execution?f={}'.format(process_url, F_JSON),
+                    'title': 'Execution for this process as JSON',
                     'hreflang': self.default_locale
                 }
                 p2['links'].append(link)
@@ -2530,14 +2634,14 @@ class API:
 
         return headers, 200, to_json(response, self.pretty_print)
 
+    @gzip
     @pre_process
-    def get_process_jobs(self, request: Union[APIRequest, Any],
-                         process_id, job_id=None) -> Tuple[dict, int, str]:
+    def get_jobs(self, request: Union[APIRequest, Any],
+                 job_id=None) -> Tuple[dict, int, str]:
         """
         Get process jobs
 
         :param request: A request object
-        :param process_id: id of process
         :param job_id: id of job
 
         :returns: tuple of headers, status code, content
@@ -2547,30 +2651,35 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
-        processes = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process')
-
-        if process_id not in processes:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        p = load_plugin('process', processes[process_id]['processor'])
-
         if self.manager:
             if job_id is None:
-                jobs = sorted(self.manager.get_jobs(process_id),
+                print(self.manager.get_jobs())
+                jobs = sorted(self.manager.get_jobs(),
                               key=lambda k: k['job_start_datetime'],
                               reverse=True)
             else:
-                jobs = [self.manager.get_job(process_id, job_id)]
+                jobs = [self.manager.get_job(job_id)]
         else:
             LOGGER.debug('Process management not configured')
             jobs = []
 
-        serialized_jobs = []
+        serialized_jobs = {
+            'jobs': [],
+            'links': [{
+                'href': '{}/jobs?f={}'.format(self.config['server']['url'], F_HTML),  # noqa
+                'rel': request.get_linkrel(F_HTML),
+                'type': FORMAT_TYPES[F_HTML],
+                'title': 'Jobs list as HTML'
+            }, {
+                'href': '{}/jobs?f={}'.format(self.config['server']['url'], F_JSON),  # noqa
+                'rel': request.get_linkrel(F_JSON),
+                'type': FORMAT_TYPES[F_JSON],
+                'title': 'Jobs list as JSON'
+            }]
+        }
         for job_ in jobs:
             job2 = {
+                'processID': job_['process_id'],
                 'jobID': job_['identifier'],
                 'status': job_['status'],
                 'message': job_['message'],
@@ -2584,9 +2693,8 @@ class API:
             if JobStatus[job_['status']] in (
                JobStatus.successful, JobStatus.running, JobStatus.accepted):
 
-                job_result_url = '{}/processes/{}/jobs/{}/results'.format(
-                    self.config['server']['url'],
-                    process_id, job_['identifier'])
+                job_result_url = '{}/jobs/{}/results'.format(
+                    self.config['server']['url'], job_['identifier'])
 
                 job2['links'] = [{
                     'href': '{}?f={}'.format(job_result_url, F_HTML),
@@ -2610,21 +2718,16 @@ class API:
                             job_id, job_['mimetype'])
                     })
 
-            serialized_jobs.append(job2)
+            serialized_jobs['jobs'].append(job2)
 
         if job_id is None:
-            j2_template = 'processes/jobs/index.html'
+            j2_template = 'jobs/index.html'
         else:
-            serialized_jobs = serialized_jobs[0]
-            j2_template = 'processes/jobs/job.html'
+            serialized_jobs = serialized_jobs['jobs'][0]
+            j2_template = 'jobs/job.html'
 
         if request.format == F_HTML:
             data = {
-                'process': {
-                    'id': process_id,
-                    'title': l10n.translate(p.metadata['title'],
-                                            SYSTEM_LOCALE)
-                },
                 'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
@@ -2634,6 +2737,7 @@ class API:
 
         return headers, 200, to_json(serialized_jobs, self.pretty_print)
 
+    @gzip
     @pre_process
     def execute_process(self, request: Union[APIRequest, Any],
                         process_id) -> Tuple[dict, int, str]:
@@ -2696,8 +2800,8 @@ class API:
         LOGGER.debug(data_dict)
 
         job_id = data.get("job_id", str(uuid.uuid1()))
-        url = '{}/processes/{}/jobs/{}'.format(
-            self.config['server']['url'], process_id, job_id)
+        url = '{}/jobs/{}'.format(
+            self.config['server']['url'], job_id)
 
         headers['Location'] = url
 
@@ -2735,16 +2839,21 @@ class API:
         else:
             http_status = 200
 
-        return headers, http_status, to_json(response, self.pretty_print)
+        if mime_type == 'application/json':
+            response2 = to_json(response, self.pretty_print)
+        else:
+            response2 = response
 
+        return headers, http_status, response2
+
+    @gzip
     @pre_process
-    def get_process_job_result(self, request: Union[APIRequest, Any],
-                               process_id, job_id) -> Tuple[dict, int, str]:
+    def get_job_result(self, request: Union[APIRequest, Any],
+                       job_id) -> Tuple[dict, int, str]:
         """
         Get result of job (instance of a process)
 
         :param request: A request object
-        :param process_id: name of process
         :param job_id: ID of job
 
         :returns: tuple of headers, status code, content
@@ -2754,23 +2863,7 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
-
-        if process_id not in processes_config:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        process = load_plugin('process',
-                              processes_config[process_id]['processor'])
-
-        if not process:
-            msg = 'identifier not found'
-            return self.get_exception(
-                404, headers, request.format, 'NoSuchProcess', msg)
-
-        job = self.manager.get_job(process_id, job_id)
+        job = self.manager.get_job(job_id)
 
         if not job:
             msg = 'job not found'
@@ -2795,7 +2888,7 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
-        mimetype, job_output = self.manager.get_job_result(process_id, job_id)
+        mimetype, job_output = self.manager.get_job_result(job_id)
 
         if mimetype not in (None, FORMAT_TYPES[F_JSON]):
             headers['Content-Type'] = mimetype
@@ -2807,31 +2900,25 @@ class API:
             else:
                 # HTML
                 data = {
-                    'process': {
-                        'id': process_id,
-                        'title': l10n.translate(process.metadata['title'],
-                                                SYSTEM_LOCALE)
-                    },
                     'job': {'id': job_id},
                     'result': job_output
                 }
                 content = render_j2_template(
-                    self.config, 'processes/jobs/results/index.html',
+                    self.config, 'jobs/results/index.html',
                     data, SYSTEM_LOCALE)
 
         return headers, 200, content
 
-    def delete_process_job(self, process_id, job_id) -> Tuple[dict, int, str]:
+    def delete_job(self, job_id) -> Tuple[dict, int, str]:
         """
         Delete a process job
 
-        :param process_id: process identifier
         :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        success = self.manager.delete_job(process_id, job_id)
+        success = self.manager.delete_job(job_id)
 
         if not success:
             http_status = 404
@@ -2841,8 +2928,7 @@ class API:
             }
         else:
             http_status = 200
-            jobs_url = '{}/processes/{}/jobs'.format(
-                self.config['server']['url'], process_id)
+            jobs_url = '{}/jobs'.format(self.config['server']['url'])
 
             response = {
                 'jobID': job_id,
@@ -2861,6 +2947,7 @@ class API:
         # TODO: this response does not have any headers
         return {}, http_status, response
 
+    @gzip
     @pre_process
     def get_collection_edr_query(
             self, request: Union[APIRequest, Any],
@@ -2986,6 +3073,7 @@ class API:
 
         return headers, 200, content
 
+    @gzip
     @pre_process
     @jsonldify
     def get_stac_root(
@@ -3041,6 +3129,7 @@ class API:
 
         return headers, 200, to_json(content, self.pretty_print)
 
+    @gzip
     @pre_process
     @jsonldify
     def get_stac_path(self, request: Union[APIRequest, Any],
@@ -3205,10 +3294,14 @@ def validate_bbox(value=None) -> list:
         LOGGER.debug(msg)
         raise
 
-    if bbox[0] > bbox[2] or bbox[1] > bbox[3]:
-        msg = 'min values should be less than max values'
+    if bbox[1] > bbox[3]:
+        msg = 'miny should be less than maxy'
         LOGGER.debug(msg)
         raise ValueError(msg)
+
+    if bbox[0] > bbox[2]:
+        msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+        LOGGER.debug(msg)
 
     return bbox
 
@@ -3297,3 +3390,48 @@ def validate_datetime(resource_def, datetime_=None) -> str:
         raise ValueError(msg)
 
     return datetime_
+
+
+def validate_subset(value: str) -> dict:
+    """
+    Helper function to validate subset parameter
+
+    :param value: `subset` parameter
+
+    :returns: dict of axis/values
+    """
+
+    subsets = {}
+
+    for s in value.split(','):
+        LOGGER.debug('Processing subset {}'.format(s))
+        m = re.search(r'(.*)\((.*)\)', s)
+        subset_name, values = m.group(1, 2)
+
+        if '"' in values:
+            LOGGER.debug('Values are strings')
+            if values.count('"') % 2 != 0:
+                msg = 'Invalid format: subset should be like axis("min"[:"max"])'  # noqa
+                LOGGER.error(msg)
+                raise ValueError(msg)
+            try:
+                LOGGER.debug('Value is an interval')
+                m = re.search(r'"(\S+)":"(\S+)"', values)
+                values = list(m.group(1, 2))
+            except AttributeError:
+                LOGGER.debug('Value is point')
+                m = re.search(r'"(.*)"', values)
+                values = [m.group(1)]
+        else:
+            LOGGER.debug('Values are numbers')
+            try:
+                LOGGER.debug('Value is an interval')
+                m = re.search(r'(\S+):(\S+)', values)
+                values = list(m.group(1, 2))
+            except AttributeError:
+                LOGGER.debug('Value is point')
+                values = [values]
+
+        subsets[subset_name] = list(map(get_typed_value, values))
+
+    return subsets

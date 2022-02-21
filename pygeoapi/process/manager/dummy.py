@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -49,11 +49,10 @@ class DummyManager(BaseManager):
 
         super().__init__(manager_def)
 
-    def get_jobs(self, process_id=None, status=None):
+    def get_jobs(self, status=None):
         """
         Get process jobs, optionally filtered by status
 
-        :param process_id: process identifier
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
 

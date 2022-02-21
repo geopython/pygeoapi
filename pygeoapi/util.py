@@ -122,7 +122,8 @@ def yaml_load(fh):
     def path_constructor(loader, node):
         env_var = path_matcher.match(node.value).group(1)
         if env_var not in os.environ:
-            raise EnvironmentError('Undefined environment variable in config')
+            msg = 'Undefined environment variable {} in config'.format(env_var)
+            raise EnvironmentError(msg)
         return get_typed_value(os.path.expandvars(node.value))
 
     class EnvVarLoader(yaml.SafeLoader):

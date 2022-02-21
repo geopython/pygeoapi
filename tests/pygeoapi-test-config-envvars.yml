@@ -35,6 +35,7 @@ server:
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
+    gzip: false
     cors: true
     pretty_print: true
     limit: 10

@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -321,33 +321,29 @@ async def get_processes(request: Request, process_id=None):
     return get_response(api_.describe_processes(request, process_id))
 
 
-@app.route('/processes/{process_id}/jobs')
-@app.route('/processes/{process_id}/jobs/{job_id}', methods=['GET', 'DELETE'])
-@app.route('/processes/{process_id}/jobs/{job_id}/', methods=['GET', 'DELETE'])
-async def get_process_jobs(request: Request, process_id=None, job_id=None):
+@app.route('/jobs')
+@app.route('/jobs/{job_id}', methods=['GET', 'DELETE'])
+@app.route('/jobs/{job_id}/', methods=['GET', 'DELETE'])
+async def get_jobs(request: Request, job_id=None):
     """
     OGC API - Processes jobs endpoint
 
     :param request: Starlette Request instance
-    :param process_id: process identifier
     :param job_id: job identifier
 
     :returns: Starlette HTTP Response
     """
 
-    if 'process_id' in request.path_params:
-        process_id = request.path_params['process_id']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
     if job_id is None:  # list of submit job
-        return get_response(api_.get_process_jobs(request, process_id))
+        return get_response(api_.get_jobs(request))
     else:  # get or delete job
         if request.method == 'DELETE':
-            return get_response(api_.delete_process_job(process_id, job_id))
+            return get_response(api_.delete_job(job_id))
         else:  # Return status of a specific job
-            return get_response(api_.get_process_jobs(
-                request, process_id, job_id))
+            return get_response(api_.get_jobs(request, job_id))
 
 
 @app.route('/processes/{process_id}/execution', methods=['POST'])
@@ -368,55 +364,47 @@ async def execute_process_jobs(request: Request, process_id):
     return get_response(api_.execute_process(request, process_id))
 
 
-@app.route('/processes/{process_id}/jobs/{job_id}/results', methods=['GET'])
-@app.route('/processes/{process_id}/jobs/{job_id}/results/', methods=['GET'])
-async def get_process_job_result(request: Request, process_id=None,
-                                 job_id=None):
+@app.route('/jobs/{job_id}/results', methods=['GET'])
+@app.route('/jobs/{job_id}/results/', methods=['GET'])
+async def get_job_result(request: Request, job_id=None):
     """
     OGC API - Processes job result endpoint
 
     :param request: Starlette Request instance
-    :param process_id: process identifier
     :param job_id: job identifier
 
     :returns: HTTP response
     """
 
-    if 'process_id' in request.path_params:
-        process_id = request.path_params['process_id']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
-    return get_response(api_.get_process_job_result(
-        request, process_id, job_id))
+    return get_response(api_.get_job_result(request, job_id))
 
 
-@app.route('/processes/{process_id}/jobs/{job_id}/results/{resource}',
+@app.route('/jobs/{job_id}/results/{resource}',
            methods=['GET'])
-@app.route('/processes/{process_id}/jobs/{job_id}/results/{resource}/',
+@app.route('/jobs/{job_id}/results/{resource}/',
            methods=['GET'])
-async def get_process_job_result_resource(request: Request, process_id=None,
-                                          job_id=None, resource=None):
+async def get_job_result_resource(request: Request,
+                                  job_id=None, resource=None):
     """
     OGC API - Processes job result resource endpoint
 
     :param request: Starlette Request instance
-    :param process_id: process identifier
     :param job_id: job identifier
     :param resource: job resource
 
     :returns: HTTP response
     """
 
-    if 'process_id' in request.path_params:
-        process_id = request.path_params['process_id']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
     if 'resource' in request.path_params:
         resource = request.path_params['resource']
 
-    return get_response(api_.get_process_job_result_resource(
-        request, process_id, job_id, resource))
+    return get_response(api_.get_job_result_resource(
+        request, job_id, resource))
 
 
 @app.route('/collections/{collection_id}/position')

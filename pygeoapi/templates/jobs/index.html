@@ -1,0 +1,52 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {% trans %}Jobs{% endtrans %} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="./jobs">{% trans %}Jobs{% endtrans %}</a>
+{% endblock %}
+{% block body %}
+    <section id="jobs">
+      <div class="row">
+        <div class="col-md-12">
+          <table class="job-list striped">
+            <caption>{% trans %}Jobs{% endtrans %}</caption>
+            <thead>
+              <tr>
+                <th>{% trans %}Job ID{% endtrans %}</th>
+                <th>{% trans %}Process ID{% endtrans %}</th>
+                <th>{% trans %}Start{% endtrans %}</th>
+                <th>{% trans %}Duration{% endtrans %}</th>
+                <th>{% trans %}Progress{% endtrans %}</th>
+                <th>{% trans %}Status{% endtrans %}</th>
+                <th>{% trans %}Message{% endtrans %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in data.jobs.jobs %}
+              <tr>
+                <td class="small"><a href="{{ config['server']['url'] }}/jobs/{{ job.jobID}}">{{ job.jobID }}</a></td>
+                <td class="small"><a href="{{ config['server']['url'] }}/processes/{{ job.processID}}">{{ job.processID }}</a></td>
+                <td><abbr title="{{ job.job_start_datetime|format_datetime }}">{{ job.job_start_datetime|format_datetime }}</abbr></td>
+                <td>
+                  {% if job.status == 'running' %}
+                    {{ job.job_start_datetime|format_duration(data.now) }}
+                  {% else %}
+                    {{ job.job_start_datetime|format_duration(job.job_end_datetime) }}
+                  {% endif %}
+                </td>
+                <td>
+                  <progress class="inline" value="{{job.progress|int*10}}" max="1000"></progress>
+                </td>
+                <td>
+                  <mark class="{{job.status}}">{{ job.status }}</mark>
+                </td>
+                <td>
+                  {{ job.message }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+{% endblock %}
