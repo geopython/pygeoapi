@@ -128,7 +128,7 @@ The ``resource.type`` property is required.  Allowed types are:
 - ``process``
 - ``stac-collection``
 
-The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each 
+The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each
 provider requires a ``type`` property.  Allowed types are:
 
 - ``feature``
@@ -351,7 +351,7 @@ For collections, at the level of item, the default JSON-LD representation adds:
 
 - An ``@id`` for the item, which is the URL for that item. If uri_field is specified,
   it is used, otherwise the URL is to its HTML representation in pygeoapi.
-- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo` 
+- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo`
   only supports point, line, and polygon geometries. Multipart lines are merged into a single line.
   The rest of the multipart geometries are transformed reduced and into a polygon via unary union
   or convex hull transform.
@@ -411,9 +411,9 @@ by the dataset provider, not pygeoapi.
 
 An example of a data provider that includes relationships between items is the SensorThings API provider.
 SensorThings API, by default, has relationships between entities within its data model.
-Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi 
-to represent the relationship between configured entities as intra-pygeoapi links or URIs. 
-This relationship can further be maintained in the JSON-LD structured data using the appropiate 
+Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi
+to represent the relationship between configured entities as intra-pygeoapi links or URIs.
+This relationship can further be maintained in the JSON-LD structured data using the appropiate
 ``@context`` with the sosa/ssn ontology. For example:
 
 .. code-block:: yaml
@@ -437,6 +437,19 @@ This relationship can further be maintained in the JSON-LD structured data using
             ssn: "http://www.w3.org/ns/ssn/"
             Datastream: sosa:isMemberOf
 
+Sometimes, the JSON-LD desired is more complicated than can be achieved by simply aliasing properties using a
+context. In thise case, it is possible to specify a jinja2 template. When ``template`` is defined for a feature
+collection, the json-ld prepared by pygeoapi will be used to render a jinja2 template. pygeoapi provides a default
+template, which will render the unmodified json-ld document.
+
+.. code-block:: yaml
+
+    template: jsonld/base.jsonld
+    context:
+        - datetime: https://schema.org/DateTime
+
+.. note::
+   For more information on the capacities of jinja2 templates, see :ref:`html-templating`.
 
 Summary
 -------
