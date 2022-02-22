@@ -34,7 +34,7 @@ import logging
 
 from pygeoapi.util import is_url
 from pygeoapi import l10n
-from shapely.geometry import asShape
+from shapely.geometry import shape
 from shapely.ops import unary_union
 
 LOGGER = logging.getLogger(__name__)
@@ -256,7 +256,7 @@ def jsonldify_geometry(feature):
     """
 
     geo = feature.get('geometry')
-    geom = asShape(geo)
+    geom = shape(geo)
 
     # GeoJSON geometry
     feature['geometry'] = feature.pop('geometry')
