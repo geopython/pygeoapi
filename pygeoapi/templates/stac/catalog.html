@@ -10,10 +10,11 @@
 {% block body %}
 
   <section id="links">
-    <h2>Links</h2>
+    <h2>{{ data['type'] }}: {{ data['path'] }}</h2>
     <table class="striped">
       <thead>
         <tr>
+          <th>{% trans %}Type{% endtrans %}</th>
           <th>{% trans %}Name{% endtrans %}</th>
           <th>{% trans %}Last modified{% endtrans %}</th>
           <th>{% trans %}Size{% endtrans %}</th>
@@ -23,16 +24,17 @@
         {% for link in data['links'] %}
         {% if link['rel'] in ['child', 'item'] %}
         <tr>
-          <td data-label="name">
+          <td data-label="Type">{{ link['entry:type'] }}</td>
+          <td data-label="Name">
             {% if link['title'] %}
             <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['title'] | get_path_basename }}</span></a>
             {% else %}
             <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['href'] | get_path_basename }}</span></a>
             {% endif %}
           </td>
-          <td data-label="created">{{ link['created'] }}</td>
+          <td data-label="Created">{{ link['created'] }}</td>
           {% if link['file:size'] %}
-          <td data-label="size">{{ link['file:size'] | human_size }}</td>
+          <td data-label="Size">{{ link['file:size'] | human_size }}</td>
           {% else %}
           <td data-label="size">-</td>
           {% endif %}
