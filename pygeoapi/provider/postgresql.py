@@ -237,7 +237,7 @@ class PostgreSQLProvider(BaseProvider):
             ret.append(f"{_['property']} {_map[_['order']]}")
         return SQL(f"ORDER BY {','.join(ret)}")
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
@@ -245,7 +245,7 @@ class PostgreSQLProvider(BaseProvider):
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
         limit=1&resulttype=results
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -283,7 +283,7 @@ class PostgreSQLProvider(BaseProvider):
 
             return self.__response_feature_hits(hits)
 
-        end_index = startindex + limit
+        end_index = offset + limit
 
         with DatabaseConnection(self.conn_dic,
                                 self.table,
@@ -310,11 +310,11 @@ class PostgreSQLProvider(BaseProvider):
                        orderby)
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
-            LOGGER.debug('Start Index: {}'.format(startindex))
+            LOGGER.debug('Start Index: {}'.format(offset))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
                 cursor.execute(sql_query)
-                for index in [startindex, limit]:
+                for index in [offset, limit]:
                     cursor.execute("fetch forward {} from geo_cursor"
                                    .format(index))
             except Exception as err:

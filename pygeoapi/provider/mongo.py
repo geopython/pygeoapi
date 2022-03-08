@@ -96,7 +96,7 @@ class MongoProvider(BaseProvider):
 
         return featurelist, matchCount
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
@@ -128,7 +128,7 @@ class MongoProvider(BaseProvider):
 
         featurelist, matchcount = self._get_feature_list(filterobj,
                                                          sortList=sort_list,
-                                                         skip=startindex,
+                                                         skip=offset,
                                                          maxitems=limit)
 
         if resulttype == 'hits':

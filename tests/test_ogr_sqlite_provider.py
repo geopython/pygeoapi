@@ -154,11 +154,11 @@ def test_query_with_limit_4326(config_sqlite_4326):
     assert geometry is not None
 
 
-def test_query_with_startindex_4326(config_sqlite_4326):
+def test_query_with_offset_4326(config_sqlite_4326):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_sqlite_4326)
-    feature_collection = p.query(startindex=20, limit=5, resulttype='results')
+    feature_collection = p.query(offset=20, limit=5, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 5
@@ -173,12 +173,12 @@ def test_query_with_startindex_4326(config_sqlite_4326):
     assert geometry is not None
 
 
-def test_query_bbox_with_startindex_4326(config_sqlite_4326):
+def test_query_bbox_with_offset_4326(config_sqlite_4326):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_sqlite_4326)
     feature_collection = p.query(
-        startindex=1, limit=50,
+        offset=1, limit=50,
         bbox=(5.742, 52.053, 5.773, 52.098),
         resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'

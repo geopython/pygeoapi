@@ -418,11 +418,11 @@ def test_query_with_limit_ms(config_MapServer_WFS_cities):
     assert geometry is not None
 
 
-def test_query_with_startindex(config_MapServer_WFS_cities):
+def test_query_with_offset(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_MapServer_WFS_cities)
-    feature_collection = p.query(startindex=20, limit=5, resulttype='results')
+    feature_collection = p.query(offset=20, limit=5, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 5

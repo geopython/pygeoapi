@@ -153,14 +153,14 @@ class ElasticsearchProvider(BaseProvider):
 
         return fields_
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               filterq=None, **kwargs):
         """
         query Elasticsearch index
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -316,24 +316,24 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.debug(json.dumps(query, indent=4))
 
             LOGGER.debug('Testing for ES scrolling')
-            if startindex + limit > 10000:
+            if offset + limit > 10000:
                 gen = helpers.scan(client=self.es, query=query,
                                    preserve_order=True,
                                    index=self.index_name)
                 results = {'hits': {'total': limit, 'hits': []}}
-                for i in range(startindex + limit):
+                for i in range(offset + limit):
                     try:
-                        if i >= startindex:
+                        if i >= offset:
                             results['hits']['hits'].append(next(gen))
                         else:
                             next(gen)
                     except StopIteration:
                         break
                 results['hits']['total'] = \
-                    len(results['hits']['hits']) + startindex
+                    len(results['hits']['hits']) + offset
             else:
                 results = self.es.search(index=self.index_name,
-                                         from_=startindex, size=limit,
+                                         from_=offset, size=limit,
                                          body=query)
                 results['hits']['total'] = results['hits']['total']['value']
 
@@ -496,13 +496,13 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
 
         return fields
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               filterq=None, **kwargs):
 
         records = super().query(
-            startindex=startindex, limit=limit,
+            offset=offset, limit=limit,
             resulttype=resulttype, bbox=bbox,
             datetime_=datetime_, properties=properties,
             sortby=sortby,

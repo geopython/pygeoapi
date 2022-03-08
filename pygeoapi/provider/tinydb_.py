@@ -92,13 +92,13 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return fields
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         query TinyDB document store
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -201,7 +201,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             results.sort(key=lambda k: k['properties'][sortby[0]['property']],
                          reverse=sort_reverse)
 
-        feature_collection['features'] = results[startindex:startindex + limit]
+        feature_collection['features'] = results[offset:offset + limit]
 
         return feature_collection
 

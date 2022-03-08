@@ -56,13 +56,13 @@ components:
           pattern: "[+|-][A-Za-z_][A-Za-z_0-9]*"
       explode: false
       style: form
-    startindex:
-      description: The optional startindex parameter indicates the index within the
+    offset:
+      description: The optional offset parameter indicates the index within the
         result set from which the server shall begin presenting results in the response
         document.  The first element has an index of 0 (default).
       explode: false
       in: query
-      name: startindex
+      name: offset
       required: false
       schema:
         default: 0
@@ -180,7 +180,7 @@ paths:
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox
       - $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
       - $ref: '#/components/parameters/sortby'
-      - $ref: '#/components/parameters/startindex'
+      - $ref: '#/components/parameters/offset'
       responses:
         '200':
           $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features

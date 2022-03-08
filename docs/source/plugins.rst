@@ -68,7 +68,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                'field2': 'string'
            }
 
-       def query(self,startindex=0, limit=10, resulttype='results',
+       def query(self, offset=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
                  select_properties=[], skip_geometry=False, **kwargs):
 
