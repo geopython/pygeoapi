@@ -363,6 +363,31 @@ def process_job_results_resource(
 
     return response
 
+def get_collection_edr_query(
+    request: HttpRequest,
+    collection_id: str,
+    instance_id: str,
+) -> HttpResponse:
+    """
+    OGC API - EDR endpoint
+
+    :request Django HTTP Request
+    :param job_id: job identifier
+    :param resource: job resource
+
+    :returns: Django HTTP response
+    """
+    query_type = request.path.split('/')[-1]
+    response_ = _feed_response(
+        request,
+        "get_collection_edr_query",
+        collection_id,
+        instance_id,
+        query_type
+    )
+    response = _to_django_response(*response_)
+
+    return response
 
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     """

@@ -76,13 +76,63 @@ urlpatterns = [
         views.collection_item_tiles,
         name="collection-item-tiles",
     ),
+    path(
+        "collections/<str:collection_id>/position",
+        views.get_collection_edr_query,
+        name="collection-edr-position",
+    ),
+    path(
+        "collections/<str:collection_id>/area",
+        views.get_collection_edr_query,
+        name="collection-edr-area",
+    ),
+    path(
+        "collections/<str:collection_id>/cube",
+        views.get_collection_edr_query,
+        name="collection-edr-cube",
+    ),
+    path(
+        "collections/<str:collection_id>/trajectory",
+        views.get_collection_edr_query,
+        name="collection-edr-trajectory",
+    ),
+    path(
+        "collections/<str:collection_id>/corridor",
+        views.get_collection_edr_query,
+        name="collection-edr-corridor",
+    ),
+    path(
+        "collections/<str:collection_id>/instances/<str:instance_id>/position",
+        views.get_collection_edr_query,
+        name="collection-edr-instance-position",
+    ),
+    path(
+        "collections/<str:collection_id>/instances/<str:instance_id>/area",
+        views.get_collection_edr_query,
+        name="collection-edr-instance-area",
+    ),
+    path(
+        "collections/<str:collection_id>/instances/<str:instance_id>/cube",
+        views.get_collection_edr_query,
+        name="collection-edr-instance-cube",
+    ),
+    path(
+        "collections/<str:collection_id>/instances/<str:instance_id>/trajectory",
+        views.get_collection_edr_query,
+        name="collection-edr-instance-trajectory",
+    ),
+    path(
+        "collections/<str:collection_id>/instances/<str:instance_id>/corridor",
+        views.get_collection_edr_query,
+        name="collection-edr-instance-corridor",
+    ),
     path("processes/", views.processes, name="processes"),
     path("processes/<str:process_id>", views.processes, name="process-detail"),
     path("jobs/", views.process_jobs, name="process-jobs"),
     path("jobs/<str:job_id>", views.process_jobs, name="process-job"),
     path(
         "jobs/<str:job_id>/results/",
-        views.process_job_results,
+        views.job_results,
         name="process-job-results",
     ),
     path(
