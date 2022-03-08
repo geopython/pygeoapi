@@ -1236,7 +1236,7 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'startindex',
+        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q']
 
@@ -1250,18 +1250,18 @@ class API:
 
         LOGGER.debug('Processing query parameters')
 
-        LOGGER.debug('Processing startindex parameter')
+        LOGGER.debug('Processing offset parameter')
         try:
-            startindex = int(request.params.get('startindex'))
-            if startindex < 0:
-                msg = 'startindex value should be positive or zero'
+            offset = int(request.params.get('offset'))
+            if offset < 0:
+                msg = 'offset value should be positive or zero'
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
-            startindex = 0
+            offset = 0
         except ValueError:
-            msg = 'startindex value should be an integer'
+            msg = 'offset value should be an integer'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
@@ -1394,7 +1394,7 @@ class API:
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
         LOGGER.debug('Querying provider')
-        LOGGER.debug('startindex: {}'.format(startindex))
+        LOGGER.debug('offset: {}'.format(offset))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
@@ -1407,7 +1407,7 @@ class API:
         LOGGER.debug('q: {}'.format(q))
 
         try:
-            content = p.query(startindex=startindex, limit=limit,
+            content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
@@ -1432,7 +1432,7 @@ class API:
 
         serialized_query_params = ''
         for k, v in request.params.items():
-            if k not in ('f', 'startindex'):
+            if k not in ('f', 'offset'):
                 serialized_query_params += '&'
                 serialized_query_params += urllib.parse.quote(k, safe='')
                 serialized_query_params += '='
@@ -1462,26 +1462,26 @@ class API:
                 serialized_query_params)
         }]
 
-        if startindex > 0:
-            prev = max(0, startindex - limit)
+        if offset > 0:
+            prev = max(0, offset - limit)
             content['links'].append(
                 {
                     'type': 'application/geo+json',
                     'rel': 'prev',
                     'title': 'items (prev)',
-                    'href': '{}/collections/{}/items?startindex={}{}'
+                    'href': '{}/collections/{}/items?offset={}{}'
                     .format(self.config['server']['url'], dataset, prev,
                             serialized_query_params)
                 })
 
         if len(content['features']) == limit:
-            next_ = startindex + limit
+            next_ = offset + limit
             content['links'].append(
                 {
                     'type': 'application/geo+json',
                     'rel': 'next',
                     'title': 'items (next)',
-                    'href': '{}/collections/{}/items?startindex={}{}'
+                    'href': '{}/collections/{}/items?offset={}{}'
                     .format(
                         self.config['server']['url'], dataset, next_,
                         serialized_query_params)
@@ -1514,7 +1514,7 @@ class API:
             content['items_path'] = path_info
             content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
             content['collections_path'] = '/'.join(path_info.split('/')[:-2])
-            content['startindex'] = startindex
+            content['offset'] = offset
 
             content['id_field'] = p.id_field
             if p.uri_field is not None:
@@ -1590,7 +1590,7 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'limit', 'startindex',
+        reserved_fieldnames = ['bbox', 'f', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
                                'filter-lang']
@@ -1605,18 +1605,18 @@ class API:
 
         LOGGER.debug('Processing query parameters')
 
-        LOGGER.debug('Processing startindex parameter')
+        LOGGER.debug('Processing offset parameter')
         try:
-            startindex = int(request.params.get('startindex'))
-            if startindex < 0:
-                msg = 'startindex value should be positive or zero'
+            offset = int(request.params.get('offset'))
+            if offset < 0:
+                msg = 'offset value should be positive or zero'
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
         except TypeError as err:
             LOGGER.warning(err)
-            startindex = 0
+            offset = 0
         except ValueError:
-            msg = 'startindex value should be an integer'
+            msg = 'offset value should be an integer'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
@@ -1757,7 +1757,7 @@ class API:
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Querying provider')
-        LOGGER.debug('startindex: {}'.format(startindex))
+        LOGGER.debug('offset: {}'.format(offset))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
@@ -1793,7 +1793,7 @@ class API:
             filter_ = None
             if val:
                 filter_ = CQLModel.parse_raw(data)
-            content = p.query(startindex=startindex, limit=limit,
+            content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,

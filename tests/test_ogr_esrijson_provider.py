@@ -74,7 +74,7 @@ def config_ArcGIS_ESRIJSON():
 def config_random_id(config_ArcGIS_ESRIJSON):
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     # Get bunch of features to randomly have an id
-    feature_collection = p.query(startindex=0, limit=10, resulttype='results')
+    feature_collection = p.query(offset=0, limit=10, resulttype='results')
     features = feature_collection.get('features', None)
     features_list = []
     for feature in features:
@@ -158,11 +158,11 @@ def test_query_with_limit_agol(config_ArcGIS_ESRIJSON):
     assert geometry is not None
 
 
-def test_query_with_startindex(config_ArcGIS_ESRIJSON):
+def test_query_with_offset(config_ArcGIS_ESRIJSON):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
-    feature_collection = p.query(startindex=10, limit=10, resulttype='results')
+    feature_collection = p.query(offset=10, limit=10, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 10

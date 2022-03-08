@@ -58,7 +58,7 @@
             <div class="row">
               <div class="col-sm-12">
                 {% for link in data['links'] %}
-                {% if link['rel'] == 'prev' and data['startindex'] > 0 %}
+                {% if link['rel'] == 'prev' and data['offset'] > 0 %}
                 <a role="button" href="{{ link['href'] }}">{% trans %}Prev{% endtrans %}</a>
                 {% elif link['rel'] == 'next' and data['features'] %}
                 <a role="button" href="{{ link['href'] }}">{% trans %}Next{% endtrans %}</a>

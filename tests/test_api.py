@@ -637,19 +637,19 @@ def test_get_collection_items(config, api_):
     assert links[1]['rel'] == 'alternate'
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?startindex=2&limit=2' in links[3]['href']
+    assert '/collections/obs/items?offset=2&limit=2' in links[3]['href']
     assert links[3]['rel'] == 'next'
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
-    # Invalid startindex
-    req = mock_request({'startindex': -1})
+    # Invalid offset
+    req = mock_request({'offset': -1})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
     assert code == 400
 
-    req = mock_request({'startindex': 2})
+    req = mock_request({'offset': 2})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
 
@@ -664,13 +664,13 @@ def test_get_collection_items(config, api_):
     assert links[1]['rel'] == 'alternate'
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?startindex=0' in links[3]['href']
+    assert '/collections/obs/items?offset=0' in links[3]['href']
     assert links[3]['rel'] == 'prev'
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
     req = mock_request({
-        'startindex': 1,
+        'offset': 1,
         'limit': 1,
         'bbox': '-180,90,180,90'
     })
@@ -690,10 +690,10 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?f=html&limit=1&bbox=-180,90,180,90' in \
         links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?startindex=0&limit=1&bbox=-180,90,180,90' \
+    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,90,180,90' \
         in links[3]['href']
     assert links[3]['rel'] == 'prev'
-    assert '/collections/obs/items?startindex=2&limit=1&bbox=-180,90,180,90' \
+    assert '/collections/obs/items?offset=2&limit=1&bbox=-180,90,180,90' \
         in links[4]['href']
     assert links[4]['rel'] == 'next'
     assert '/collections/obs' in links[5]['href']

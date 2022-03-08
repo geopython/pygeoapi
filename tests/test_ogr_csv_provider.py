@@ -143,11 +143,11 @@ def test_query_with_limit_vsicurl(config_vsicurl_csv):
     assert geometry is not None
 
 
-def test_query_with_startindex_vsicurl(config_vsicurl_csv):
+def test_query_with_offset_vsicurl(config_vsicurl_csv):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_vsicurl_csv)
-    feature_collection = p.query(startindex=20, limit=10, resulttype='results')
+    feature_collection = p.query(offset=20, limit=10, resulttype='results')
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)
     assert len(features) == 10
@@ -167,7 +167,7 @@ def test_query_with_property_vsicurl(config_vsicurl_csv):
 
     p = OGRProvider(config_vsicurl_csv)
     feature_collection = p.query(
-        startindex=20, limit=10, resulttype='results',
+        offset=20, limit=10, resulttype='results',
         properties=[('denominazione_regione', 'Lazio')])
     assert feature_collection.get('type', None) == 'FeatureCollection'
     features = feature_collection.get('features', None)

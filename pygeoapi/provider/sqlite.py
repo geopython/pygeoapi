@@ -249,16 +249,16 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return cursor
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?
-        limit=5&startindex=2&resulttype=results&continent=Europe&admin=Albania&bbox=29.3373,-3.4099,29.3761,-3.3924
+        limit=5&offset=2&resulttype=results&continent=Europe&admin=Albania&bbox=29.3373,-3.4099,29.3761,-3.3924
         http://localhost:5000/collections/countries/items?continent=Africa&bbox=29.3373,-3.4099,29.3761,-3.3924
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -290,14 +290,14 @@ class SQLiteGPKGProvider(BaseProvider):
             {} {} limit ? offset ?".format(
                 self.columns, self.table, where_clause)
 
-        end_index = startindex + limit
+        end_index = offset + limit
 
         LOGGER.debug('SQL Query: {}'.format(sql_query))
-        LOGGER.debug('Start Index: {}'.format(startindex))
+        LOGGER.debug('Start Index: {}'.format(offset))
         LOGGER.debug('End Index: {}'.format(end_index))
 
         row_data = self.cursor.execute(
-            sql_query, where_values + (limit, startindex))
+            sql_query, where_values + (limit, offset))
 
         feature_collection = {
             'type': 'FeatureCollection',

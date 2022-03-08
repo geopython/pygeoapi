@@ -132,13 +132,13 @@ class SensorThingsProvider(BaseProvider):
 
         return self.fields
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         STA query
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -152,7 +152,7 @@ class SensorThingsProvider(BaseProvider):
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, limit, resulttype, bbox=bbox,
+        return self._load(offset, limit, resulttype, bbox=bbox,
                           datetime_=datetime_, properties=properties,
                           sortby=sortby, select_properties=select_properties,
                           skip_geometry=skip_geometry)
@@ -202,13 +202,13 @@ class SensorThingsProvider(BaseProvider):
                         'n': name, 'u': uri
                     })
 
-    def _load(self, startindex=0, limit=10, resulttype='results',
+    def _load(self, offset=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
               sortby=[], select_properties=[], skip_geometry=False, q=None):
         """
         Private function: Load STA data
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -227,7 +227,7 @@ class SensorThingsProvider(BaseProvider):
         # Make params
         params = {
             '$expand': EXPAND[self.entity],
-            '$skip': str(startindex),
+            '$skip': str(offset),
             '$top': str(limit),
             '$count': 'true'
         }
