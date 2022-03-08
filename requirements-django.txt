@@ -1,3 +1,2 @@
-# aiofiles
-Django < 3.0.0
+Django <= 4, > 3
 pydantic
