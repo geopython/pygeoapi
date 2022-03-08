@@ -363,6 +363,7 @@ def job_results_resource(
 
     return response
 
+
 def get_collection_edr_query(
     request: HttpRequest,
     collection_id: str,
@@ -388,6 +389,7 @@ def get_collection_edr_query(
     response = _to_django_response(*response_)
 
     return response
+
 
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     """

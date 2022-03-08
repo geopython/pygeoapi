@@ -117,7 +117,7 @@ urlpatterns = [
         name="collection-edr-instance-cube",
     ),
     path(
-        "collections/<str:collection_id>/instances/<str:instance_id>/trajectory",
+        "collections/<str:collection_id>/instances/<str:instance_id>/trajectory",  # noqa
         views.get_collection_edr_query,
         name="collection-edr-instance-trajectory",
     ),
