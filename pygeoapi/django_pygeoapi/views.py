@@ -306,7 +306,7 @@ def jobs(
     job_id: Optional[str] = None,
 ) -> HttpResponse:
     """
-    OGC API - Processes jobs endpoint
+    OGC API - Jobs endpoint
 
     :request Django HTTP Request
     :param process_id: process identifier
@@ -325,7 +325,7 @@ def job_results(
     job_id: Optional[str] = None,
 ) -> HttpResponse:
     """
-    OGC API - Processes job result endpoint
+    OGC API - Job result endpoint
 
     :request Django HTTP Request
     :param job_id: job identifier
@@ -338,14 +338,14 @@ def job_results(
     return response
 
 
-def process_job_results_resource(
+def job_results_resource(
     request: HttpRequest,
     process_id: str,
     job_id: str,
     resource: str,
 ) -> HttpResponse:
     """
-    OGC API - Processes job result resource endpoint
+    OGC API - Job result resource endpoint
 
     :request Django HTTP Request
     :param job_id: job identifier
