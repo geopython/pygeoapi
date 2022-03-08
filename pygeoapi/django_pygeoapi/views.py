@@ -1,11 +1,7 @@
 """Integration module for Django"""
 from typing import Tuple, Dict, Mapping, Optional
 from django.conf import settings
-from django.http import (
-    HttpRequest,
-    HttpResponse
-)
-from django.views import View
+from django.http import HttpRequest, HttpResponse
 from pygeoapi.api import API
 from pygeoapi.openapi import get_oas
 
@@ -19,10 +15,11 @@ def landing_page(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'landing_page')
+    response_ = _feed_response(request, "landing_page")
     response = _to_django_response(*response_)
 
     return response
+
 
 def openapi(request: HttpRequest) -> HttpResponse:
     """
@@ -32,12 +29,13 @@ def openapi(request: HttpRequest) -> HttpResponse:
 
     :returns: Django HTTP Response
     """
-    
+
     openapi_config = get_oas(settings.PYGEOAPI_CONFIG)
-    response_ = _feed_response(request, 'openapi', openapi_config)
+    response_ = _feed_response(request, "openapi", openapi_config)
     response = _to_django_response(*response_)
 
     return response
+
 
 def conformance(request: HttpRequest) -> HttpResponse:
     """
@@ -47,11 +45,12 @@ def conformance(request: HttpRequest) -> HttpResponse:
 
     :returns: Django HTTP Response
     """
-    
-    response_ = _feed_response(request, 'conformance')
+
+    response_ = _feed_response(request, "conformance")
     response = _to_django_response(*response_)
 
     return response
+
 
 def collections(
     request: HttpRequest,
@@ -66,11 +65,11 @@ def collections(
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(
-        request, 'describe_collections', collection_id)
+    response_ = _feed_response(request, "describe_collections", collection_id)
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_queryables(
     request: HttpRequest,
@@ -86,10 +85,12 @@ def collection_queryables(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_queryables', collection_id)
+        request, "get_collection_queryables", collection_id
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_items(
     request: HttpRequest,
@@ -105,11 +106,15 @@ def collection_items(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_items',
-        collection_id, pathinfo=request.path_info)
+        request,
+        "get_collection_items",
+        collection_id,
+        pathinfo=request.path_info,
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_item(
     request: HttpRequest,
@@ -127,11 +132,12 @@ def collection_item(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_item',
-        collection_id, item_id)
+        request, "get_collection_item", collection_id, item_id
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_coverage(
     request: HttpRequest,
@@ -147,11 +153,12 @@ def collection_coverage(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_coverage',
-        collection_id)
+        request, "get_collection_coverage", collection_id
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_coverage_domainset(
     request: HttpRequest,
@@ -167,11 +174,12 @@ def collection_coverage_domainset(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_coverage_domainset',
-        collection_id)
+        request, "get_collection_coverage_domainset", collection_id
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_coverage_rangetype(
     request: HttpRequest,
@@ -187,11 +195,12 @@ def collection_coverage_rangetype(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_coverage_rangetype',
-        collection_id)
+        request, "get_collection_coverage_rangetype", collection_id
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_tiles(
     request: HttpRequest,
@@ -206,12 +215,11 @@ def collection_tiles(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_tiles',
-        collection_id)
+    response_ = _feed_response(request, "get_collection_tiles", collection_id)
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_tiles_metadata(
     request: HttpRequest,
@@ -229,11 +237,15 @@ def collection_tiles_metadata(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_tiles_metadata',
-        collection_id, tileMatrixSetId)
+        request,
+        "get_collection_tiles_metadata",
+        collection_id,
+        tileMatrixSetId,
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def collection_item_tiles(
     request: HttpRequest,
@@ -257,12 +269,18 @@ def collection_item_tiles(
     """
 
     response_ = _feed_response(
-        request, 'get_collection_tiles_metadata',
-        collection_id, tileMatrixSetId, tileMatrix,
-        tileRow, tileCol)
+        request,
+        "get_collection_tiles_metadata",
+        collection_id,
+        tileMatrixSetId,
+        tileMatrix,
+        tileRow,
+        tileCol,
+    )
     response = _to_django_response(*response_)
 
     return response
+
 
 def processes(
     request: HttpRequest,
@@ -277,12 +295,11 @@ def processes(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'describe_processes',
-        process_id)
+    response_ = _feed_response(request, "describe_processes", process_id)
     response = _to_django_response(*response_)
 
     return response
+
 
 def process_jobs(
     request: HttpRequest,
@@ -300,6 +317,7 @@ def process_jobs(
     """
     pass
 
+
 def process_job_results(
     request: HttpRequest,
     process_id: str,
@@ -315,6 +333,7 @@ def process_job_results(
     :returns: Django HTTP response
     """
     pass
+
 
 def process_job_results_resource(
     request: HttpRequest,
@@ -334,6 +353,7 @@ def process_job_results_resource(
     """
     pass
 
+
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     """
     STAC root endpoint
@@ -343,11 +363,11 @@ def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'get_stac_root')
+    response_ = _feed_response(request, "get_stac_root")
     response = _to_django_response(*response_)
 
     return response
+
 
 def stac_catalog_path(
     request: HttpRequest,
@@ -362,20 +382,18 @@ def stac_catalog_path(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'get_stac_root', path)
+    response_ = _feed_response(request, "get_stac_root", path)
     response = _to_django_response(*response_)
 
     return response
 
+
 def stac_catalog_search(request: HttpRequest) -> HttpResponse:
     pass
 
+
 def _feed_response(
-        request: HttpRequest,
-        api_definition: str,
-        *args,
-        **kwargs
+    request: HttpRequest, api_definition: str, *args, **kwargs
 ) -> Tuple[Dict, int, str]:
     """Use pygeoapi api to process the input request"""
     api_ = API(settings.PYGEOAPI_CONFIG)
@@ -384,9 +402,9 @@ def _feed_response(
 
 
 def _to_django_response(
-        headers: Mapping,
-        status_code: int,
-        content: str,
+    headers: Mapping,
+    status_code: int,
+    content: str,
 ) -> HttpResponse:
     """Convert API payload to a django response"""
     response = HttpResponse(content, status=status_code)

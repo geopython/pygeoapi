@@ -21,119 +21,86 @@ from django.urls import (
 from . import views
 
 urlpatterns = [
+    path("", views.landing_page, name="landing-page"),
+    path("openapi/", views.openapi, name="openapi"),
+    path("conformance/", views.conformance, name="conformance"),
+    path("collections/", views.collections, name="collections"),
     path(
-        '',
-        views.landing_page,
-        name='landing-page'
-    ),
-    path(
-        'openapi/',
-        views.openapi,
-        name='openapi'
-    ),
-    path(
-        'conformance/',
-        views.conformance,
-        name='conformance'
-    ),
-    path(
-        'collections/',
+        "collections/<str:collection_id>",
         views.collections,
-        name='collections'
+        name="collection-detail",
     ),
     path(
-        'collections/<str:collection_id>',
-        views.collections,
-        name='collection-detail'
-    ),
-    path(
-        'collections/<str:collection_id>/queryables/',
+        "collections/<str:collection_id>/queryables/",
         views.collection_queryables,
-        name='collection-queryables'
+        name="collection-queryables",
     ),
     path(
-        'collections/<str:collection_id>/items/',
+        "collections/<str:collection_id>/items/",
         views.collection_items,
-        name='collection-items'
+        name="collection-items",
     ),
     path(
-        'collections/<str:collection_id>/items/<str:item_id>',
+        "collections/<str:collection_id>/items/<str:item_id>",
         views.collection_item,
-        name='collection-item'
+        name="collection-item",
     ),
     path(
-        'collections/<str:collection_id>/coverage/',
+        "collections/<str:collection_id>/coverage/",
         views.collection_coverage,
-        name='collection-coverage'
+        name="collection-coverage",
     ),
     path(
-        'collections/<str:collection_id>/coverage/domainset/',
+        "collections/<str:collection_id>/coverage/domainset/",
         views.collection_coverage_domainset,
-        name='collection-coverage-domainset'
+        name="collection-coverage-domainset",
     ),
     path(
-        'collections/<str:collection_id>/coverage/rangetype/',
+        "collections/<str:collection_id>/coverage/rangetype/",
         views.collection_coverage_rangetype,
-        name='collection-coverage-rangetype'
+        name="collection-coverage-rangetype",
     ),
     path(
-        'collections/<str:collection_id>/tiles/',
+        "collections/<str:collection_id>/tiles/",
         views.collection_tiles,
-        name='collection-tiles'
+        name="collection-tiles",
     ),
     path(
-        'collections/<str:collection_id>/tiles/<str:tileMatrixSetId>/metadata',
+        "collections/<str:collection_id>/tiles/<str:tileMatrixSetId>/metadata",
         views.collection_tiles_metadata,
-        name='collection-tiles-metadata'
+        name="collection-tiles-metadata",
     ),
-    path('collections/<str:collection_id>/tiles/\
-        <str:tileMatrixSetId>/<str:tile_matrix>/<str:tileRow>/<str:tileCol>',
+    path(
+        "collections/<str:collection_id>/tiles/\
+        <str:tileMatrixSetId>/<str:tile_matrix>/<str:tileRow>/<str:tileCol>",
         views.collection_item_tiles,
-        name='collection-item-tiles'
+        name="collection-item-tiles",
     ),
+    path("processes/", views.processes, name="processes"),
+    path("processes/<str:process_id>", views.processes, name="process-detail"),
     path(
-        'processes/',
-        views.processes,
-        name='processes'
-    ),
-    path(
-        'processes/<str:process_id>',
-        views.processes,
-        name='process-detail'
-    ),
-    path(
-        'processes/<str:process_id>/jobs/',
+        "processes/<str:process_id>/jobs/",
         views.process_jobs,
-        name='process-jobs'
+        name="process-jobs",
     ),
     path(
-        'processes/<str:process_id>/jobs/<str:job_id>',
+        "processes/<str:process_id>/jobs/<str:job_id>",
         views.process_jobs,
-        name='process-job'
+        name="process-job",
     ),
     path(
-        'processes/<str:process_id>/jobs/<str:job_id>/results',
+        "processes/<str:process_id>/jobs/<str:job_id>/results",
         views.process_job_results,
-        name='process-job-results'
+        name="process-job-results",
     ),
     path(
-        'processes/<str:process_id>/jobs/<str:job_id>/results/<str:resource>',
+        "processes/<str:process_id>/jobs/<str:job_id>/results/<str:resource>",
         views.process_job_results_resource,
-        name='process-job-results-resource'
+        name="process-job-results-resource",
     ),
+    path("stac/", views.stac_catalog_root, name="stac-catalog-root"),
+    path("stac/<str:path>", views.stac_catalog_path, name="stac-catalog-path"),
     path(
-        'stac/',
-        views.stac_catalog_root,
-        name='stac-catalog-root'
-    ),
-    path(
-        'stac/<str:path>',
-        views.stac_catalog_path,
-        name='stac-catalog-path'
-    ),
-    path(
-        'stac/search/',
-        views.stac_catalog_search,
-        name='stac-catalog-search'
+        "stac/search/", views.stac_catalog_search, name="stac-catalog-search"
     ),
 ]

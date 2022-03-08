@@ -35,7 +35,7 @@ def main():
                 f"{CONFIG['server']['bind'].get('host')}:"
                 f"{CONFIG['server']['bind'].get('port')}"]
     sys.path.append(str(django_app_path))
-    
+
     execute_from_command_line(sys.argv)
 
 
