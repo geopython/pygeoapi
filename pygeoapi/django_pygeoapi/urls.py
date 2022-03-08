@@ -78,23 +78,15 @@ urlpatterns = [
     ),
     path("processes/", views.processes, name="processes"),
     path("processes/<str:process_id>", views.processes, name="process-detail"),
+    path("jobs/", views.process_jobs, name="process-jobs"),
+    path("jobs/<str:job_id>", views.process_jobs, name="process-job"),
     path(
-        "processes/<str:process_id>/jobs/",
-        views.process_jobs,
-        name="process-jobs",
-    ),
-    path(
-        "processes/<str:process_id>/jobs/<str:job_id>",
-        views.process_jobs,
-        name="process-job",
-    ),
-    path(
-        "processes/<str:process_id>/jobs/<str:job_id>/results",
+        "jobs/<str:job_id>/results/",
         views.process_job_results,
         name="process-job-results",
     ),
     path(
-        "processes/<str:process_id>/jobs/<str:job_id>/results/<str:resource>",
+        "jobs/<str:job_id>/results/<str:resource>",
         views.process_job_results_resource,
         name="process-job-results-resource",
     ),

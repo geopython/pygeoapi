@@ -301,9 +301,8 @@ def processes(
     return response
 
 
-def process_jobs(
+def jobs(
     request: HttpRequest,
-    process_id: str,
     job_id: Optional[str] = None,
 ) -> HttpResponse:
     """
@@ -315,24 +314,28 @@ def process_jobs(
 
     :returns: Django HTTP response
     """
-    pass
+    response_ = _feed_response(request, "get_jobs", job_id)
+    response = _to_django_response(*response_)
+
+    return response
 
 
-def process_job_results(
+def job_results(
     request: HttpRequest,
-    process_id: str,
     job_id: Optional[str] = None,
 ) -> HttpResponse:
     """
     OGC API - Processes job result endpoint
 
     :request Django HTTP Request
-    :param process_id: process identifier
     :param job_id: job identifier
 
     :returns: Django HTTP response
     """
-    pass
+    response_ = _feed_response(request, "get_job_result", job_id)
+    response = _to_django_response(*response_)
+
+    return response
 
 
 def process_job_results_resource(
@@ -345,13 +348,20 @@ def process_job_results_resource(
     OGC API - Processes job result resource endpoint
 
     :request Django HTTP Request
-    :param process_id: process identifier
     :param job_id: job identifier
     :param resource: job resource
 
     :returns: Django HTTP response
     """
-    pass
+    response_ = _feed_response(
+        request,
+        "get_job_result_resource",
+        job_id,
+        resource
+    )
+    response = _to_django_response(*response_)
+
+    return response
 
 
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
