@@ -457,10 +457,16 @@ class OGRProvider(BaseProvider):
 
     def _ogr_feature_to_json(self, ogr_feature):
         geom = ogr_feature.GetGeometryRef()
+        
+        #convert curvepolygon to polygon as GeoJSON doesn't support curves
+        if geom.GetGeometryType() == osgeo_ogr.wkbCurvePolygon:
+            geom_polygon = osgeo_ogr.ForceToPolygon(geom)
+            ogr_feature.SetGeometry(geom_polygon)
+        
         if self.transform_out:
             # Optionally reproject the geometry
             geom.Transform(self.transform_out)
-
+        
         json_feature = ogr_feature.ExportToJson(as_object=True)
         try:
             json_feature['id'] = json_feature['properties'].pop(self.id_field)
