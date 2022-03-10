@@ -418,7 +418,7 @@ def stac_catalog_path(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, "get_stac_root", path)
+    response_ = _feed_response(request, "get_stac_path", path)
     response = _to_django_response(*response_)
 
     return response
