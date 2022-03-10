@@ -105,10 +105,14 @@ CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
-    'http://www.opengis.net/spec/ogcapi_coverages-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-rangesubset',  # noqa
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-bbox',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-datetime',  # noqa
     'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
@@ -2028,14 +2032,14 @@ class API:
             # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
-        range_subset = request.params.get('range-subset')
-        if range_subset:
-            LOGGER.debug('Processing range-subset parameter')
-            query_args['range_subset'] = [rs for
-                                          rs in range_subset.split(',') if rs]
-            LOGGER.debug('Fields: {}'.format(query_args['range_subset']))
+        properties = request.params.get('properties')
+        if properties:
+            LOGGER.debug('Processing properties parameter')
+            query_args['properties'] = [rs for
+                                        rs in properties.split(',') if rs]
+            LOGGER.debug('Fields: {}'.format(query_args['properties']))
 
-            for a in query_args['range_subset']:
+            for a in query_args['properties']:
                 if a not in p.fields:
                     msg = 'Invalid field specified'
                     return self.get_exception(
