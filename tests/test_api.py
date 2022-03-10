@@ -990,7 +990,7 @@ def test_get_collection_coverage(config, api_):
 
     assert code == 400
 
-    req = mock_request({'range-subset': '12'})
+    req = mock_request({'properties': '12'})
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
 
