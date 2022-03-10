@@ -109,7 +109,6 @@ def collection_items(
         request,
         "get_collection_items",
         collection_id,
-        pathinfo=request.path_info,
     )
     response = _to_django_response(*response_)
 
@@ -435,7 +434,7 @@ def _feed_response(
     """Use pygeoapi api to process the input request"""
     api_ = API(settings.PYGEOAPI_CONFIG)
     api = getattr(api_, api_definition)
-    return api(request.headers, request.GET, *args, **kwargs)
+    return api(request, *args, **kwargs)
 
 
 def _to_django_response(

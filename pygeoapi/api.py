@@ -276,6 +276,8 @@ class APIRequest:
             self._path_info = request.scope['path'].strip('/')
         elif hasattr(request.headers, 'environ'):
             self._path_info = request.headers.environ['PATH_INFO'].strip('/')
+        elif hasattr(request, 'path_info'):
+            self._path_info = request.path_info
 
         # Extract locale from params or headers
         self._raw_locale, self._locale = self._get_locale(request.headers,
@@ -309,17 +311,22 @@ class APIRequest:
             # Set data from Flask request
             api_req._data = request.data
         elif hasattr(request, 'body'):
-            try:
-                import nest_asyncio
-                nest_asyncio.apply()
-                # Set data from Starlette request after async
-                # coroutine completion
-                # TODO: this now blocks, but once Flask v2 with async support
-                # has been implemented, with_data() can become async too
-                loop = asyncio.get_event_loop()
-                api_req._data = loop.run_until_complete(request.body())
-            except ModuleNotFoundError:
-                LOGGER.error("Module nest-asyncio not found")
+            if "django" in str(request.__class__):
+                # Set data from Django request
+                api_req._data = request.body
+            else:
+                try:
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    # Set data from Starlette request after async
+                    # coroutine completion
+                    # TODO:
+                    # this now blocks, but once Flask v2 with async support
+                    # has been implemented, with_data() can become async too
+                    loop = asyncio.get_event_loop()
+                    api_req._data = loop.run_until_complete(request.body())
+                except ModuleNotFoundError:
+                    LOGGER.error("Module nest-asyncio not found")
         return api_req
 
     @staticmethod
