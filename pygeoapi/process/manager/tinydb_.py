@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+import fcntl
 import io
 import json
 import logging
@@ -55,8 +56,7 @@ class TinyDBManager(BaseManager):
         super().__init__(manager_def)
         self.is_async = True
 
-    def _connect(self):
-
+    def _connect(self, mode='r'):
         """
         connect to manager
 
@@ -64,6 +64,10 @@ class TinyDBManager(BaseManager):
         """
 
         self.db = tinydb.TinyDB(self.connection)
+
+        if mode == 'w':
+            fcntl.lockf(self.db.storage._handle, fcntl.LOCK_EX)
+
         return True
 
     def destroy(self):
@@ -102,7 +106,7 @@ class TinyDBManager(BaseManager):
         :returns: identifier of added job
         """
 
-        self._connect()
+        self._connect(mode='w')
         doc_id = self.db.insert(job_metadata)
         self.db.close()
 
@@ -118,7 +122,7 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of status result
         """
 
-        self._connect()
+        self._connect(mode='w')
         self.db.update(update_dict, tinydb.where('identifier') == job_id)
         self.db.close()
 
@@ -139,7 +143,7 @@ class TinyDBManager(BaseManager):
             if location and self.output_dir is not None:
                 os.remove(location)
 
-        self._connect()
+        self._connect(mode='w')
         removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
         self.db.close()
 
