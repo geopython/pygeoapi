@@ -138,6 +138,19 @@
 
     map.addLayer(items);
     map.fitBounds(items.getBounds());
+
+    const getBounds = function(map) {
+        return `${map.getBounds().getWest()},${map.getBounds().getSouth()},${map.getBounds().getEast()},${map.getBounds().getNorth()}`;
+    }
+    const setMapFilter = function(bounds) {
+        location.href = '?bbox=' + bounds;
+    };
+    map.on('zoomend', function() {
+        setMapFilter(getBounds(map))
+    });
+    map.on('dragend', function() {
+        setMapFilter(getBounds(map))
+    });
     </script>
 {% endif %}
 {% endblock %}
