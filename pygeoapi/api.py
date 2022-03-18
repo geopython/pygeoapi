@@ -344,6 +344,12 @@ class APIRequest:
         elif hasattr(request, 'query_params'):
             # Return ImmutableMultiDict from Starlette request
             return request.query_params
+        elif hasattr(request, 'GET'):
+            # Return QueryDict from Django GET request
+            return request.GET
+        elif hasattr(request, 'POST'):
+            # Return QueryDict from Django GET request
+            return request.POST
         LOGGER.debug('No query parameters found')
         return {}
 
