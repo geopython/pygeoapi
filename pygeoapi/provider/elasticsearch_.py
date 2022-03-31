@@ -73,6 +73,8 @@ class ElasticsearchProvider(BaseProvider):
         self.type_name = 'FeatureCollection'
         self.url_parsed = urlparse(self.es_host)
 
+        self.select_properties = []
+
         LOGGER.debug('Connecting to Elasticsearch')
 
         if self.url_parsed.port is None:  # proxy to default HTTP(S) port
@@ -294,10 +296,17 @@ class ElasticsearchProvider(BaseProvider):
         if self.properties or select_properties:
             LOGGER.debug('including specified fields: {}'.format(
                 self.properties))
-            query['_source'] = {
-                'includes': list(map(self.mask_prop,
-                                 set(self.properties) | set(select_properties)))  # noqa
-            }
+            if select_properties:
+                self.select_properties = select_properties
+                query['_source'] = {
+                    'includes': list(map(self.mask_prop,
+                                     set(self.properties) & set(select_properties)))  # noqa
+                }
+            else:
+                query['_source'] = {
+                    'includes': list(map(self.mask_prop, self.properties))
+                }
+            query['_source']['includes'].append(self.mask_prop(self.id_field))
             query['_source']['includes'].append(self.mask_prop(self.id_field))
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
@@ -438,14 +447,19 @@ class ElasticsearchProvider(BaseProvider):
             feature_['id'] = id_
             feature_['geometry'] = doc['_source'].get('geometry')
 
-        if self.properties:
+        if self.properties or self.select_properties:
+            if self.select_properties:
+                all_properties = set(self.properties) & set(self.select_properties)  # noqa
+            else:
+                all_properties = self.properties
+
             feature_thinned = {
                 'id': id_,
                 'type': feature_['type'],
                 'geometry': feature_.get('geometry'),
                 'properties': OrderedDict()
             }
-            for p in self.properties:
+            for p in all_properties:
                 try:
                     feature_thinned['properties'][p] = feature_['properties'][p]  # noqa
                 except KeyError as err:
