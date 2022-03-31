@@ -125,7 +125,7 @@ class ElasticsearchProvider(BaseProvider):
 
         fields_ = {}
         ic = IndicesClient(self.es)
-        ii = ic.get(self.index_name)
+        ii = ic.get(index=self.index_name)
 
         try:
             if '*' not in self.index_name:
@@ -381,7 +381,7 @@ class ElasticsearchProvider(BaseProvider):
 
         try:
             LOGGER.debug('Fetching identifier {}'.format(identifier))
-            result = self.es.get(self.index_name, id=identifier)
+            result = self.es.get(index=self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result)
         except exceptions.NotFoundError as err:
