@@ -196,7 +196,6 @@ def test_query(config):
     assert results['numberReturned'] == 242
 
     results = p.query(select_properties=['nameascii'])
-    print(results['features'])
     assert len(results['features'][0]['properties']) == 1
 
     results = p.query(select_properties=['nameascii', 'scalerank'])
