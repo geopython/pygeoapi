@@ -73,6 +73,8 @@ class ElasticsearchProvider(BaseProvider):
         self.type_name = 'FeatureCollection'
         self.url_parsed = urlparse(self.es_host)
 
+        self.select_properties = []
+
         LOGGER.debug('Connecting to Elasticsearch')
 
         if self.url_parsed.port is None:  # proxy to default HTTP(S) port
@@ -123,7 +125,7 @@ class ElasticsearchProvider(BaseProvider):
 
         fields_ = {}
         ic = IndicesClient(self.es)
-        ii = ic.get(self.index_name)
+        ii = ic.get(index=self.index_name)
 
         try:
             if '*' not in self.index_name:
@@ -174,6 +176,8 @@ class ElasticsearchProvider(BaseProvider):
 
         :returns: dict of 0..n GeoJSON features
         """
+
+        self.select_properties = select_properties
 
         query = {'track_total_hits': True, 'query': {'bool': {'filter': []}}}
         filter_ = []
@@ -291,19 +295,21 @@ class ElasticsearchProvider(BaseProvider):
                 ]
             }
 
-        if self.properties or select_properties:
-            LOGGER.debug('including specified fields: {}'.format(
-                self.properties))
+        if self.properties or self.select_properties:
+            LOGGER.debug('filtering properties')
+
+            all_properties = self.get_properties()
+
             query['_source'] = {
-                'includes': list(map(self.mask_prop,
-                                 set(self.properties) | set(select_properties)))  # noqa
+                'includes': list(map(self.mask_prop, all_properties))
             }
+
             query['_source']['includes'].append(self.mask_prop(self.id_field))
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
+
         if skip_geometry:
-            LOGGER.debug('limiting to specified fields: {}'.format(
-                select_properties))
+            LOGGER.debug('excluding geometry')
             try:
                 query['_source']['excludes'] = ['geometry']
             except KeyError:
@@ -372,7 +378,7 @@ class ElasticsearchProvider(BaseProvider):
 
         try:
             LOGGER.debug('Fetching identifier {}'.format(identifier))
-            result = self.es.get(self.index_name, id=identifier)
+            result = self.es.get(index=self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result)
         except exceptions.NotFoundError as err:
@@ -438,14 +444,17 @@ class ElasticsearchProvider(BaseProvider):
             feature_['id'] = id_
             feature_['geometry'] = doc['_source'].get('geometry')
 
-        if self.properties:
+        if self.properties or self.select_properties:
+            LOGGER.debug('Filtering properties')
+            all_properties = self.get_properties()
+
             feature_thinned = {
                 'id': id_,
                 'type': feature_['type'],
                 'geometry': feature_.get('geometry'),
                 'properties': OrderedDict()
             }
-            for p in self.properties:
+            for p in all_properties:
                 try:
                     feature_thinned['properties'][p] = feature_['properties'][p]  # noqa
                 except KeyError as err:
@@ -470,6 +479,22 @@ class ElasticsearchProvider(BaseProvider):
             return property_name
         else:
             return 'properties.{}'.format(property_name)
+
+    def get_properties(self):
+        all_properties = []
+
+        LOGGER.debug('configured properties: {}'.format(self.properties))
+        LOGGER.debug('selected properties: {}'.format(self.select_properties))
+
+        if not self.properties and not self.select_properties:
+            all_properties = self.get_fields()
+        if self.properties and self.select_properties:
+            all_properties = set(self.properties) & set(self.select_properties)
+        else:
+            all_properties = set(self.properties) | set(self.select_properties)
+
+        LOGGER.debug('resulting properties: {}'.format(all_properties))
+        return all_properties
 
     def __repr__(self):
         return '<ElasticsearchProvider> {}'.format(self.data)
