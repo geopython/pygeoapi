@@ -177,6 +177,8 @@ class ElasticsearchProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
 
+        self.select_properties = select_properties
+
         query = {'track_total_hits': True, 'query': {'bool': {'filter': []}}}
         filter_ = []
 
@@ -293,26 +295,21 @@ class ElasticsearchProvider(BaseProvider):
                 ]
             }
 
-        if self.properties or select_properties:
-            LOGGER.debug('including specified fields: {}'.format(
-                self.properties))
-            if select_properties:
-                self.select_properties = select_properties
-                query['_source'] = {
-                    'includes': list(map(self.mask_prop,
-                                     set(self.properties) & set(select_properties)))  # noqa
-                }
-            else:
-                query['_source'] = {
-                    'includes': list(map(self.mask_prop, self.properties))
-                }
-            query['_source']['includes'].append(self.mask_prop(self.id_field))
+        if self.properties or self.select_properties:
+            LOGGER.debug('filtering properties')
+
+            all_properties = self.get_properties()
+
+            query['_source'] = {
+                'includes': list(map(self.mask_prop, all_properties))
+            }
+
             query['_source']['includes'].append(self.mask_prop(self.id_field))
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
+
         if skip_geometry:
-            LOGGER.debug('limiting to specified fields: {}'.format(
-                select_properties))
+            LOGGER.debug('excluding geometry')
             try:
                 query['_source']['excludes'] = ['geometry']
             except KeyError:
@@ -448,10 +445,8 @@ class ElasticsearchProvider(BaseProvider):
             feature_['geometry'] = doc['_source'].get('geometry')
 
         if self.properties or self.select_properties:
-            if self.select_properties:
-                all_properties = set(self.properties) & set(self.select_properties)  # noqa
-            else:
-                all_properties = self.properties
+            LOGGER.debug('Filtering properties')
+            all_properties = self.get_properties()
 
             feature_thinned = {
                 'id': id_,
@@ -484,6 +479,22 @@ class ElasticsearchProvider(BaseProvider):
             return property_name
         else:
             return 'properties.{}'.format(property_name)
+
+    def get_properties(self):
+        all_properties = []
+
+        LOGGER.debug('configured properties: {}'.format(self.properties))
+        LOGGER.debug('selected properties: {}'.format(self.select_properties))
+
+        if self.properties and self.select_properties:
+            all_properties = set(self.properties) & set(self.select_properties)
+        elif not self.properties and not self.select_properties:
+            all_properties = self.get_fields()
+        else:
+            all_properties = set(self.properties) | set(self.select_properties)
+
+        LOGGER.debug('resulting properties: {}'.format(all_properties))
+        return all_properties
 
     def __repr__(self):
         return '<ElasticsearchProvider> {}'.format(self.data)
