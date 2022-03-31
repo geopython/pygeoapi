@@ -486,10 +486,10 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('configured properties: {}'.format(self.properties))
         LOGGER.debug('selected properties: {}'.format(self.select_properties))
 
+        if not self.properties and not self.select_properties:
+            all_properties = self.get_fields()
         if self.properties and self.select_properties:
             all_properties = set(self.properties) & set(self.select_properties)
-        elif not self.properties and not self.select_properties:
-            all_properties = self.get_fields()
         else:
             all_properties = set(self.properties) | set(self.select_properties)
 
