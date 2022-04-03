@@ -1,0 +1,43 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="../../">{% trans %}Collections{% endtrans %}</a>
+/ <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <h3>{% trans %}Coverage metadata{% endtrans %}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th colspan="2">{% trans %}Items{% endtrans %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for (key, value) in data['metadata'].items() %}
+          <tr>
+            <td>{{ key }}</td>
+            <td>
+              {% if value is string or value is not iterable %}
+                {{ value|string }}
+              {% else %}
+                <ul>
+                  {% if value is mapping %}
+                    {% for (key1, value1) in value.items() %}
+                      <li>{{ key1 }}: {{ value1|tojson }}</li>
+                    {% endfor %}
+                  {% elif value is sequence %}
+                    {% for value1 in value %}
+                      <li>{{ loop.index0 }}: {{ value1|tojson }}</li>
+                    {% endfor %}
+                  {% endif %}
+                </ul>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+{% endblock %}

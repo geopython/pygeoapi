@@ -302,6 +302,23 @@ async def collection_coverage_rangetype(request: Request, collection_id):
         request, collection_id))
 
 
+@app.route('/collections/{collection_id}/coverage/metadata')
+async def collection_coverage_metadata(request: Request, collection_id):
+    """
+    OGC API - Coverages coverage metadata endpoint
+
+    :param request: Starlette Request instance
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    return get_response(api_.get_collection_coverage_metadata(
+        request, collection_id))
+
+
 @app.route('/processes')
 @app.route('/processes/')
 @app.route('/processes/{process_id}')
