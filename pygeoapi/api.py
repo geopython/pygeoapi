@@ -1443,27 +1443,26 @@ class API:
                 serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
         # TODO: translate titles
+        uri = '{}/collections/{}/items'.format(
+            self.config['server']['url'], dataset)
         content['links'] = [{
             'type': 'application/geo+json',
             'rel': request.get_linkrel(F_JSON),
             'title': 'This document as GeoJSON',
-            'href': '{}/collections/{}/items?f={}{}'.format(
-                self.config['server']['url'], dataset, F_JSON,
-                serialized_query_params)
+            'href': '{}?f={}{}'.format(
+                uri, F_JSON, serialized_query_params)
         }, {
             'rel': request.get_linkrel(F_JSONLD),
             'type': FORMAT_TYPES[F_JSONLD],
             'title': 'This document as RDF (JSON-LD)',
-            'href': '{}/collections/{}/items?f={}{}'.format(
-                self.config['server']['url'], dataset, F_JSONLD,
-                serialized_query_params)
+            'href': '{}?f={}{}'.format(
+                uri, F_JSONLD, serialized_query_params)
         }, {
             'type': FORMAT_TYPES[F_HTML],
             'rel': request.get_linkrel(F_HTML),
             'title': 'This document as HTML',
-            'href': '{}/collections/{}/items?f={}{}'.format(
-                self.config['server']['url'], dataset, F_HTML,
-                serialized_query_params)
+            'href': '{}?f={}{}'.format(
+                uri, F_HTML, serialized_query_params)
         }]
 
         if offset > 0:
@@ -1473,9 +1472,9 @@ class API:
                     'type': 'application/geo+json',
                     'rel': 'prev',
                     'title': 'items (prev)',
-                    'href': '{}/collections/{}/items?offset={}{}'
-                    .format(self.config['server']['url'], dataset, prev,
-                            serialized_query_params)
+                    'href': '{}?offset={}{}'
+                    .format(
+                        uri, prev, serialized_query_params)
                 })
 
         if len(content['features']) == limit:
@@ -1485,10 +1484,9 @@ class API:
                     'type': 'application/geo+json',
                     'rel': 'next',
                     'title': 'items (next)',
-                    'href': '{}/collections/{}/items?offset={}{}'
+                    'href': '{}?offset={}{}'
                     .format(
-                        self.config['server']['url'], dataset, next_,
-                        serialized_query_params)
+                        uri, next_, serialized_query_params)
                 })
 
         content['links'].append(
@@ -1497,8 +1495,7 @@ class API:
                 'title': l10n.translate(
                     collections[dataset]['title'], request.locale),
                 'rel': 'collection',
-                'href': '{}/collections/{}'.format(
-                    self.config['server']['url'], dataset)
+                'href': uri
             })
 
         content['timeStamp'] = datetime.utcnow().strftime(
@@ -1511,13 +1508,10 @@ class API:
 
         if request.format == F_HTML:  # render
             # For constructing proper URIs to items
-            path_info = '/'.join([
-                self.config['server']['url'].rstrip('/'),
-                request.path_info])
 
-            content['items_path'] = path_info
-            content['dataset_path'] = '/'.join(path_info.split('/')[:-1])
-            content['collections_path'] = '/'.join(path_info.split('/')[:-2])
+            content['items_path'] = uri
+            content['dataset_path'] = '/'.join(uri.split('/')[:-1])
+            content['collections_path'] = '/'.join(uri.split('/')[:-2])
             content['offset'] = offset
 
             content['id_field'] = p.id_field
