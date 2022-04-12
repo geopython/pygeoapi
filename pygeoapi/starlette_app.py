@@ -253,7 +253,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
 
 
 @app.route('/collections/{collection_id}/coverage')
-async def collection_coverage(request: Request, collection_id):
+async def collection_coverage(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage endpoint
 
@@ -269,7 +269,7 @@ async def collection_coverage(request: Request, collection_id):
 
 
 @app.route('/collections/{collection_id}/coverage/domainset')
-async def collection_coverage_domainset(request: Request, collection_id):
+async def collection_coverage_domainset(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage domainset endpoint
 
@@ -286,7 +286,7 @@ async def collection_coverage_domainset(request: Request, collection_id):
 
 
 @app.route('/collections/{collection_id}/coverage/rangetype')
-async def collection_coverage_rangetype(request: Request, collection_id):
+async def collection_coverage_rangetype(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage rangetype endpoint
 
@@ -348,7 +348,7 @@ async def get_jobs(request: Request, job_id=None):
 
 @app.route('/processes/{process_id}/execution', methods=['POST'])
 @app.route('/processes/{process_id}/execution/', methods=['POST'])
-async def execute_process_jobs(request: Request, process_id):
+async def execute_process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
 
