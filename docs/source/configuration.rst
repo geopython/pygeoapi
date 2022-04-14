@@ -242,7 +242,7 @@ key of the resource name is the advertised collection identifier.  For example, 
       ...
 
 
-The resulting collection will be made available at http://localhost:5000/collections/obs
+The resulting collection will be made available at http://localhost:5000/collections/lakes
 
 All collections are published by default to http://localhost:5000/collections.  To enable
 hierarchical collections, provide the hierarchy in the resource key.  Given the following:
@@ -253,7 +253,7 @@ hierarchical collections, provide the hierarchy in the resource key.  Given the 
     naturalearth/lakes:
       ...
 
-The resulting collection will then be made available at http://localhost:5000/collections/naturalearth/obs
+The resulting collection will then be made available at http://localhost:5000/collections/naturalearth/lakes
 
 .. note::
 
@@ -262,7 +262,7 @@ The resulting collection will then be made available at http://localhost:5000/co
 
 .. note::
 
-  Collection grouping is not available.  This means that while URLs such as http://localhost:5000/collections/naturalearth/obs
+  Collection grouping is not available.  This means that while URLs such as http://localhost:5000/collections/naturalearth/lakes
   function as expected, URLs such as  http://localhost:5000/collections/naturalearth will not provide
   aggregate collection listing or querying.  This functionality is also to be determined based on
   the evolution of hierarchical collection extension specifications at OGC.
