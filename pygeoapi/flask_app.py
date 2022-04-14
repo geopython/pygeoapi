@@ -151,7 +151,7 @@ def conformance():
 
 
 @BLUEPRINT.route('/collections')
-@BLUEPRINT.route('/collections/<collection_id>')
+@BLUEPRINT.route('/collections/<path:collection_id>')
 def collections(collection_id=None):
     """
     OGC API collections endpoint
@@ -163,7 +163,7 @@ def collections(collection_id=None):
     return get_response(api_.describe_collections(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/queryables')
+@BLUEPRINT.route('/collections/<path:collection_id>/queryables')
 def collection_queryables(collection_id=None):
     """
     OGC API collections querybles endpoint
@@ -175,8 +175,8 @@ def collection_queryables(collection_id=None):
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/items', methods=['GET', 'POST'])
-@BLUEPRINT.route('/collections/<collection_id>/items/<item_id>')
+@BLUEPRINT.route('/collections/<path:collection_id>/items', methods=['GET', 'POST'])  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<item_id>')
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -199,7 +199,7 @@ def collection_items(collection_id, item_id=None):
             api_.get_collection_item(request, collection_id, item_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/coverage')
+@BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -211,7 +211,7 @@ def collection_coverage(collection_id):
     return get_response(api_.get_collection_coverage(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/coverage/domainset')
+@BLUEPRINT.route('/collections/<path:collection_id>/coverage/domainset')
 def collection_coverage_domainset(collection_id):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -224,7 +224,7 @@ def collection_coverage_domainset(collection_id):
         request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/coverage/rangetype')
+@BLUEPRINT.route('/collections/<path:collection_id>/coverage/rangetype')
 def collection_coverage_rangetype(collection_id):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -237,7 +237,7 @@ def collection_coverage_rangetype(collection_id):
         request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/tiles')
+@BLUEPRINT.route('/collections/<path:collection_id>/tiles')
 def get_collection_tiles(collection_id=None):
     """
     OGC open api collections tiles access point
@@ -250,7 +250,7 @@ def get_collection_tiles(collection_id=None):
         request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
 def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
     OGC open api collection tiles service metadata
@@ -264,7 +264,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
         request, collection_id, tileMatrixSetId))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/tiles/\
+@BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
                               tileMatrix=None, tileRow=None, tileCol=None):
@@ -284,7 +284,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
 
 @BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<process_id>')
+@BLUEPRINT.route('/processes/<path:process_id>')
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -317,7 +317,7 @@ def get_jobs(job_id=None):
             return get_response(api_.get_jobs(request, job_id))
 
 
-@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
+@BLUEPRINT.route('/processes/<path:process_id>/execution', methods=['POST'])
 def execute_process_jobs(process_id):
     """
     OGC API - Processes execution endpoint
@@ -358,16 +358,16 @@ def get_job_result_resource(job_id, resource):
         request, job_id, resource))
 
 
-@BLUEPRINT.route('/collections/<collection_id>/position')
-@BLUEPRINT.route('/collections/<collection_id>/area')
-@BLUEPRINT.route('/collections/<collection_id>/cube')
-@BLUEPRINT.route('/collections/<collection_id>/trajectory')
-@BLUEPRINT.route('/collections/<collection_id>/corridor')
-@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/position')  # noqa
-@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/area')
-@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/cube')
-@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/trajectory')  # noqa
-@BLUEPRINT.route('/collections/<collection_id>/instances/<instance_id>/corridor')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/position')
+@BLUEPRINT.route('/collections/<path:collection_id>/area')
+@BLUEPRINT.route('/collections/<path:collection_id>/cube')
+@BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
+@BLUEPRINT.route('/collections/<path:collection_id>/corridor')
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
 def get_collection_edr_query(collection_id, instance_id=None):
     """
     OGC EDR API endpoints

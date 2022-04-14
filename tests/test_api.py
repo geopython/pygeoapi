@@ -491,6 +491,11 @@ def test_describe_collections(config, api_):
     assert collection['id'] == 'gdps-temperature'
     assert len(collection['links']) == 12
 
+    # hiearchical collections
+    rsp_headers, code, response = api_.describe_collections(req, 'ne/lakes')
+    collection = json.loads(response)
+    assert collection['id'] == 'ne/lakes'
+
 
 def test_get_collection_queryables(config, api_):
     req = mock_request()

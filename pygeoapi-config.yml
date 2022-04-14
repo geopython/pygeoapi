@@ -140,7 +140,7 @@ resources:
                   x_field: long
                   y_field: lat
 
-    lakes:
+    ne/lakes:
         type: collection
         title:
             en: Large Lakes
