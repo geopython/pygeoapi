@@ -492,9 +492,10 @@ def test_describe_collections(config, api_):
     assert len(collection['links']) == 12
 
     # hiearchical collections
-    rsp_headers, code, response = api_.describe_collections(req, 'ne/lakes')
+    rsp_headers, code, response = api_.describe_collections(
+        req, 'naturalearth/lakes')
     collection = json.loads(response)
-    assert collection['id'] == 'ne/lakes'
+    assert collection['id'] == 'naturalearth/lakes'
 
 
 def test_get_collection_queryables(config, api_):
@@ -780,7 +781,8 @@ def test_get_collection_items(config, api_):
     assert code == 200
 
     req = mock_request({'scalerank': 1})
-    rsp_headers, code, response = api_.get_collection_items(req, 'lakes')
+    rsp_headers, code, response = api_.get_collection_items(
+        req, 'naturalearth/lakes')
     features = json.loads(response)
 
     assert len(features['features']) == 10
@@ -788,7 +790,8 @@ def test_get_collection_items(config, api_):
     assert features['numberReturned'] == 10
 
     req = mock_request({'datetime': '2005-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'lakes')
+    rsp_headers, code, response = api_.get_collection_items(
+        req, 'naturalearth/lakes')
 
     assert code == 400
 
@@ -1086,12 +1089,14 @@ def test_get_collection_tiles(config, api_):
     rsp_headers, code, response = api_.get_collection_tiles(req, 'obs')
     assert code == 400
 
-    rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req, 'naturalearth/lakes')
     assert code == 200
 
     # Language settings should be ignored (return system default)
     req = mock_request({'lang': 'fr'})
-    rsp_headers, code, response = api_.get_collection_tiles(req, 'lakes')
+    rsp_headers, code, response = api_.get_collection_tiles(
+        req, 'naturalearth/lakes')
     assert rsp_headers['Content-Language'] == 'en-US'
     content = json.loads(response)
     assert content['description'] == 'lakes of the world, public domain'
