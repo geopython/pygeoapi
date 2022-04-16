@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {% trans %}Collections{% endtrans %}{% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="./collections">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collections">
@@ -19,7 +19,7 @@
                 <tr>
                   <td data-label="name">
                     <a  title="{{ col['title'] | striptags | truncate }}"
-                      href="{{ config['server']['url'] }}/collections/{{ col.id }}">
+                      href="{{ data['collections_path']/{{ col.id }}">
                       <span>{{ col['title'] | striptags | truncate }}</span></a>
                   </td>
                   <td data-label="type">{{ col["itemType"] }}</td>
