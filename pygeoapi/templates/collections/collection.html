@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../collections">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
 {% endblock %}
 
@@ -33,7 +33,7 @@
       <ul>
         <li>
           <div>
-            <a title="{% trans %}Browse Items{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/items">
+            <a title="{% trans %}Browse Items{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/items">
               {% trans %}Browse through the items of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
@@ -41,7 +41,7 @@
       <ul>
         <li>
           <div>
-            <a title="{% trans %}Display Queryables{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/queryables">
+            <a title="{% trans %}Display Queryables{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/queryables">
               {% trans %}Display Queryables of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
@@ -51,7 +51,7 @@
       <ul>
         <li>
           <div>
-            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
+            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
           </div>
         </li>
       </ul>

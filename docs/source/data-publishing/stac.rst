@@ -84,7 +84,6 @@ File examples
               "href": "./eo4ce/catalog.json",
               "type": "application/json"
           },
-          ...
           {
               "rel": "child",
               "href": "./dem/catalog.json",
@@ -147,7 +146,6 @@ Collections are similar to Catalogs with extra fields.
               "href": "./arcticdem-frontiere-0/arcticdem-frontiere-0.json",
               "type": "application/json"
           },
-          ...
           {
               "rel": "item",
               "href": "./arcticdem-frontiere-9/arcticdem-frontiere-9.json",

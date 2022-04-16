@@ -22,7 +22,7 @@
 {%- endmacro %}
 {% block title %}{{ ptitle }} - {{ super() }}{% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../../collections">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %}
 /  <a href="{{ link['href'] }}">{{ link['title'] | truncate( 25 ) }}</a>
