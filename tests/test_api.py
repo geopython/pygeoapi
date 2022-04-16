@@ -235,6 +235,8 @@ def test_api(config, api_, openapi):
     assert rsp_headers['Content-Language'] == 'en-US'
     assert code == 400
 
+    assert api_.get_collections_url() == 'http://localhost:5000/collections'
+
 
 def test_api_exception(config, api_):
     req = mock_request({'f': 'foo'})
