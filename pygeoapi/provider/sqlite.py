@@ -143,10 +143,10 @@ class SQLiteGPKGProvider(BaseProvider):
             feature = {
                 'type': 'Feature'
             }
-            geom = json.loads(rd.pop('AsGeoJSON({})'.format(self.geom_col)))
-            if not skip_geometry:
-                feature["geometry"] = geom
-            else:
+            feature["geometry"] = json.loads(
+                rd.pop('AsGeoJSON({})'.format(self.geom_col))
+                )
+            if skip_geometry:
                 feature["geometry"] = None
 
             feature['properties'] = rd
