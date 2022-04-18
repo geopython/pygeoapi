@@ -81,7 +81,8 @@ class MongoProvider(BaseProvider):
             map, reduce, "myresults")
         return result.distinct('_id')
 
-    def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1):
+    def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
+                          skip_geometry=False):
         featurecursor = self.featuredb[self.collection].find(filterObj)
 
         if sortList:
@@ -93,6 +94,8 @@ class MongoProvider(BaseProvider):
         featurelist = list(featurecursor)
         for item in featurelist:
             item['id'] = str(item.pop('_id'))
+            if skip_geometry:
+                item['geometry'] = None
 
         return featurelist, matchCount
 
@@ -126,10 +129,9 @@ class MongoProvider(BaseProvider):
                       ASCENDING if (sort['order'] == '+') else DESCENDING)
                      for sort in sortby]
 
-        featurelist, matchcount = self._get_feature_list(filterobj,
-                                                         sortList=sort_list,
-                                                         skip=offset,
-                                                         maxitems=limit)
+        featurelist, matchcount = self._get_feature_list(
+            filterobj, sortList=sort_list, skip=offset, maxitems=limit,
+            skip_geometry=skip_geometry)
 
         if resulttype == 'hits':
             featurelist = []
