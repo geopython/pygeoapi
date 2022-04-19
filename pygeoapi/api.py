@@ -98,33 +98,47 @@ FORMAT_TYPES = OrderedDict((
 #: Locale used for system responses (e.g. exceptions)
 SYSTEM_LOCALE = l10n.Locale('en', 'US')
 
-CONFORMANCE = [
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-rangesubset',  # noqa
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-bbox',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-datetime',  # noqa
-    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
-]
+CONFORMANCE = {
+    'common': [
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections'
+    ],
+    'feature': [
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+    ],
+    'coverage': [
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',  # noqa
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',  # noqa
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-rangesubset',  # noqa
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-bbox',  # noqa
+        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-datetime'  # noqa
+    ],
+    'tile': [
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core'
+    ],
+    'record': [
+        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
+        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
+        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
+        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html'
+    ],
+    'process': [
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30'
+    ],
+    'edr': [
+        'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
+    ]
+}
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
@@ -768,8 +782,18 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
 
+        conformance_list = CONFORMANCE['common']
+
+        for key, value in self.config['resources'].items():
+            if value['type'] == 'process':
+                conformance_list.extend(CONFORMANCE[value['type']])
+            else:
+                for provider in value['providers']:
+                    if provider['type'] in CONFORMANCE:
+                        conformance_list.extend(CONFORMANCE[provider['type']])
+
         conformance = {
-            'conformsTo': CONFORMANCE
+            'conformsTo': list(set(conformance_list))
         }
 
         headers = request.get_response_headers()

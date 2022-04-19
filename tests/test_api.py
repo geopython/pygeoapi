@@ -415,7 +415,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 25
+    assert len(root['conformsTo']) == 20
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)
