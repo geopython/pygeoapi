@@ -128,11 +128,12 @@ class SQLiteGPKGProvider(BaseProvider):
         # WHERE continent=? <class 'tuple'>: ('Europe',)
         return where_clause, where_values
 
-    def __response_feature(self, row_data):
+    def __response_feature(self, row_data, skip_geometry=False):
         """
         Assembles GeoJSON output from DB query
 
         :param row_data: DB row result
+        :param skip_geometry: whether to skip geometry (default False)
 
         :returns: `dict` of GeoJSON Feature
         """
@@ -145,6 +146,9 @@ class SQLiteGPKGProvider(BaseProvider):
             feature["geometry"] = json.loads(
                 rd.pop('AsGeoJSON({})'.format(self.geom_col))
                 )
+            if skip_geometry:
+                feature["geometry"] = None
+
             feature['properties'] = rd
             feature['id'] = feature['properties'].pop(self.id_field)
 
@@ -306,7 +310,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         for rd in row_data:
             feature_collection['features'].append(
-                self.__response_feature(rd))
+                self.__response_feature(rd, skip_geometry=skip_geometry))
 
         return feature_collection
 

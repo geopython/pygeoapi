@@ -353,7 +353,8 @@ class OGRProvider(BaseProvider):
                 result = self._response_feature_hits(layer)
             elif resulttype == 'results':
                 LOGGER.debug('results specified')
-                result = self._response_feature_collection(layer, limit)
+                result = self._response_feature_collection(
+                    layer, limit, skip_geometry=skip_geometry)
             else:
                 LOGGER.error('Invalid resulttype: %s' % resulttype)
 
@@ -455,13 +456,15 @@ class OGRProvider(BaseProvider):
             LOGGER.error(self.gdal.GetLastErrorMsg())
             raise gdalerr
 
-    def _ogr_feature_to_json(self, ogr_feature):
+    def _ogr_feature_to_json(self, ogr_feature, skip_geometry=False):
         geom = ogr_feature.GetGeometryRef()
         if self.transform_out:
             # Optionally reproject the geometry
             geom.Transform(self.transform_out)
 
         json_feature = ogr_feature.ExportToJson(as_object=True)
+        if skip_geometry:
+            json_feature['geometry'] = None
         try:
             json_feature['id'] = json_feature['properties'].pop(self.id_field)
         except Exception as err:
@@ -470,7 +473,7 @@ class OGRProvider(BaseProvider):
 
         return json_feature
 
-    def _response_feature_collection(self, layer, limit):
+    def _response_feature_collection(self, layer, limit, skip_geometry=False):
         """
         Assembles output from Layer query as
         GeoJSON FeatureCollection structure.
@@ -492,7 +495,8 @@ class OGRProvider(BaseProvider):
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             count = 0
             while ogr_feature is not None:
-                json_feature = self._ogr_feature_to_json(ogr_feature)
+                json_feature = self._ogr_feature_to_json(
+                    ogr_feature, skip_geometry=skip_geometry)
 
                 feature_collection['features'].append(json_feature)
 

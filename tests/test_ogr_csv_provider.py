@@ -174,3 +174,12 @@ def test_query_with_property_vsicurl(config_vsicurl_csv):
     assert len(features) == 10
     for feature in features:
         assert 'Lazio' in feature['properties']['denominazione_regione']
+
+
+def test_query_with_skip_geometry_vsicurl(config_vsicurl_csv):
+    """Testing query for a valid JSON object with property filter"""
+
+    p = OGRProvider(config_vsicurl_csv)
+    feature_collection = p.query(skip_geometry=True)
+    for feature in feature_collection['features']:
+        assert feature['geometry'] is None
