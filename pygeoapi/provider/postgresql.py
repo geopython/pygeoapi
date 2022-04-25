@@ -122,7 +122,7 @@ class DatabaseConnection:
             INNER JOIN pg_catalog.pg_type as tp
                 ON tp.oid = attr.atttypid
             WHERE
-                attr.attrelid = '%s'::regclass::oid
+                attr.attrelid = %s::regclass::oid
                 AND tp.typname != 'geometry'
                 AND attnum > 0
             """
