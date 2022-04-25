@@ -114,21 +114,20 @@ class DatabaseConnection:
         if self.context == 'query':
             # Get table column names and types, excluding geometry and
             # transaction ID columns
-            query_cols = "SELECT attr.attname, tp.typname \
-            FROM pg_catalog.pg_class as cls \
-            INNER JOIN pg_catalog.pg_attribute as attr \
-                ON cls.oid = attr.attrelid \
-            INNER JOIN pg_catalog.pg_type as tp \
-                ON tp.oid = attr.atttypid \
-            WHERE cls.relname = '{}' \
-                AND tp.typname != 'geometry' \
-                AND tp.typname != 'cid' \
-                AND tp.typname != 'oid' \
-                AND tp.typname != 'tid' \
-                AND tp.typname != 'xid';".format(
-                self.table)
+            query_cols = """
+            SELECT
+                attr.attname,
+                tp.typname
+            FROM pg_catalog.pg_attribute as attr
+            INNER JOIN pg_catalog.pg_type as tp
+                ON tp.oid = attr.atttypid
+            WHERE
+                attr.attrelid = '%s'::regclass::oid
+                AND tp.typname != 'geometry'
+                AND attnum > 0
+            """
 
-            self.cur.execute(query_cols)
+            self.cur.execute(query_cols, (self.table,))
             result = self.cur.fetchall()
             if self.properties:
                 result = [res for res in result if res[0] in self.properties]
