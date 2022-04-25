@@ -91,7 +91,9 @@ def test_query_materialised_view(config, config_materialised_view):
     features = p.query(limit=14776).get("features", None)
     properties = features[0].get("properties", None)
     # Only width and depth properties should be available
-    assert sorted(list(properties.keys())) == sorted(["osm_id", "width", "depth"])
+    assert sorted(list(properties.keys())) == sorted(
+        ["osm_id", "width", "depth"]
+    )
     p_full = PostgreSQLProvider(config)
     full_features = p_full.query(limit=14776).get("features", None)
     drain_features = [
