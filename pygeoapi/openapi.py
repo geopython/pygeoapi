@@ -346,6 +346,16 @@ def get_oas_30(cfg):
                 },
                 'style': 'form',
                 'explode': False
+            },
+            'vendorSpecificParameters': {
+                'name': 'vendorSpecificParameters',
+                'in': 'query',
+                'description': 'Additional "free-form" parameters that are not explicitly defined',  # noqa
+                'schema': {
+                    'type': 'object',
+                    'additionalProperties': True
+                },
+                'style': 'form'
             }
         },
         'schemas': {
@@ -482,6 +492,7 @@ def get_oas_30(cfg):
                         {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                         coll_properties,
+                        {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
                         {'$ref': '#/components/parameters/skipGeometry'},
                         {'$ref': '{}/parameters/sortby.yaml'.format(OPENAPI_YAML['oapir'])},  # noqa
                         {'$ref': '#/components/parameters/offset'},
