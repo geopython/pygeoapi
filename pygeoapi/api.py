@@ -1366,12 +1366,8 @@ class API:
 
         LOGGER.debug('processing property parameters')
         for k, v in request.params.items():
-            if k not in reserved_fieldnames and k not in p.fields.keys():
-                msg = 'unknown query parameter: {}'.format(k)
-                return self.get_exception(
-                    400, headers, request.format, 'InvalidParameterValue', msg)
-            elif k not in reserved_fieldnames and k in list(p.fields.keys()):
-                LOGGER.debug('Add property filter {}={}'.format(k, v))
+            if k not in reserved_fieldnames and k in list(p.fields.keys()):
+                LOGGER.debug('Adding property filter {}={}'.format(k, v))
                 properties.append((k, v))
 
         LOGGER.debug('processing sort parameter')
