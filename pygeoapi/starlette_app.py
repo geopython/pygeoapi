@@ -139,8 +139,8 @@ async def conformance(request: Request):
 
 @app.route('/collections')
 @app.route('/collections/')
-@app.route('/collections/{path:collection_id}')
-@app.route('/collections/{path:collection_id}/')
+@app.route('/collections/{collection_id:path}')
+@app.route('/collections/{collection_id:path}/')
 async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
@@ -155,8 +155,8 @@ async def collections(request: Request, collection_id=None):
     return get_response(api_.describe_collections(request, collection_id))
 
 
-@app.route('/collections/{path:collection_id}/queryables')
-@app.route('/collections/{path:collection_id}/queryables/')
+@app.route('/collections/{collection_id:path}/queryables')
+@app.route('/collections/{collection_id:path}/queryables/')
 async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
@@ -220,10 +220,10 @@ async def get_collection_items_tiles(request: Request, name=None,
         request, name, tileMatrixSetId, tile_matrix, tileRow, tileCol))
 
 
-@app.route('/collections/{path:collection_id}/items', methods=['GET', 'POST'])
-@app.route('/collections/{path:collection_id}/items/', methods=['GET', 'POST'])
-@app.route('/collections/{path:collection_id}/items/{item_id}')
-@app.route('/collections/{path:collection_id}/items/{item_id}/')
+@app.route('/collections/{collection_id:path}/items', methods=['GET', 'POST'])
+@app.route('/collections/{collection_id:path}/items/', methods=['GET', 'POST'])
+@app.route('/collections/{collection_id:path}/items/{item_id}')
+@app.route('/collections/{collection_id:path}/items/{item_id}/')
 async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
@@ -252,7 +252,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
             request, collection_id, item_id))
 
 
-@app.route('/collections/{path:collection_id}/coverage')
+@app.route('/collections/{collection_id:path}/coverage')
 async def collection_coverage(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage endpoint
@@ -268,7 +268,7 @@ async def collection_coverage(request: Request, collection_id=None):
     return get_response(api_.get_collection_coverage(request, collection_id))
 
 
-@app.route('/collections/{path:collection_id}/coverage/domainset')
+@app.route('/collections/{collection_id:path}/coverage/domainset')
 async def collection_coverage_domainset(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -285,7 +285,7 @@ async def collection_coverage_domainset(request: Request, collection_id=None):
         request, collection_id))
 
 
-@app.route('/collections/{path:collection_id}/coverage/rangetype')
+@app.route('/collections/{collection_id:path}/coverage/rangetype')
 async def collection_coverage_rangetype(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -304,8 +304,8 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
 
 @app.route('/processes')
 @app.route('/processes/')
-@app.route('/processes/{path:process_id}')
-@app.route('/processes/{path:process_id}/')
+@app.route('/processes/{process_id:path}')
+@app.route('/processes/{process_id:path}/')
 async def get_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
@@ -346,8 +346,8 @@ async def get_jobs(request: Request, job_id=None):
             return get_response(api_.get_jobs(request, job_id))
 
 
-@app.route('/processes/{path:process_id}/execution', methods=['POST'])
-@app.route('/processes/{path:process_id}/execution/', methods=['POST'])
+@app.route('/processes/{process_id:path}/execution', methods=['POST'])
+@app.route('/processes/{process_id:path}/execution/', methods=['POST'])
 async def execute_process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -407,16 +407,16 @@ async def get_job_result_resource(request: Request,
         request, job_id, resource))
 
 
-@app.route('/collections/{path:collection_id}/position')
-@app.route('/collections/{path:collection_id}/area')
-@app.route('/collections/{path:collection_id}/cube')
-@app.route('/collections/{path:collection_id}/trajectory')
-@app.route('/collections/{path:collection_id}/corridor')
-@app.route('/collections/{path:collection_id}/instances/{instance_id}/position')  # noqa
-@app.route('/collections/{path:collection_id}/instances/{instance_id}/area')
-@app.route('/collections/{path:collection_id}/instances/{instance_id}/cube')
-@app.route('/collections/{path:collection_id}/instances/{instance_id}/trajectory')  # noqa
-@app.route('/collections/{path:collection_id}/instances/{instance_id}/corridor')  # noqa
+@app.route('/collections/{collection_id:path}/position')
+@app.route('/collections/{collection_id:path}/area')
+@app.route('/collections/{collection_id:path}/cube')
+@app.route('/collections/{collection_id:path}/trajectory')
+@app.route('/collections/{collection_id:path}/corridor')
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/position')  # noqa
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/area')
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/cube')
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/trajectory')  # noqa
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/corridor')  # noqa
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
     """
     OGC EDR API endpoints
