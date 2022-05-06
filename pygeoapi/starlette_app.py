@@ -2,9 +2,11 @@
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -418,6 +420,7 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     query_type = request["path"].split('/')[-1]  # noqa
     return get_response(api_.get_collection_edr_query(request, collection_id,
                                                       instance_id, query_type))
+
 
 @app.route('/collections')
 @app.route('/collections/')
