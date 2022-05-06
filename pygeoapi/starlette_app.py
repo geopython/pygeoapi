@@ -33,12 +33,11 @@
 import os
 
 import click
-
-from starlette.staticfiles import StaticFiles
+import uvicorn
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
-import uvicorn
+from starlette.staticfiles import StaticFiles
 
 from pygeoapi.api import API
 from pygeoapi.util import yaml_load
@@ -62,6 +61,7 @@ app.mount('/static', StaticFiles(directory=STATIC_DIR))
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
     from starlette.middleware.cors import CORSMiddleware
+
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
 OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
@@ -135,24 +135,6 @@ async def conformance(request: Request):
     :returns: Starlette HTTP Response
     """
     return get_response(api_.conformance(request))
-
-
-@app.route('/collections')
-@app.route('/collections/')
-@app.route('/collections/{collection_id:path}')
-@app.route('/collections/{collection_id:path}/')
-async def collections(request: Request, collection_id=None):
-    """
-    OGC API collections endpoint
-
-    :param request: Starlette Request instance
-    :param collection_id: collection identifier
-
-    :returns: Starlette HTTP Response
-    """
-    if 'collection_id' in request.path_params:
-        collection_id = request.path_params['collection_id']
-    return get_response(api_.describe_collections(request, collection_id))
 
 
 @app.route('/collections/{collection_id:path}/queryables')
@@ -438,6 +420,24 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
                                                       instance_id, query_type))
 
 
+@app.route('/collections')
+@app.route('/collections/')
+@app.route('/collections/{collection_id:path}')
+@app.route('/collections/{collection_id:path}/')
+async def collections(request: Request, collection_id=None):
+    """
+    OGC API collections endpoint
+
+    :param request: Starlette Request instance
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+    return get_response(api_.describe_collections(request, collection_id))
+
+
 @app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
@@ -477,7 +477,7 @@ def serve(ctx, server=None, debug=False):
     :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    #    setup_logger(CONFIG['logging'])
     uvicorn.run(
         app, debug=True,
         host=api_.config['server']['bind']['host'],
