@@ -33,11 +33,12 @@
 import os
 
 import click
-import uvicorn
+
+from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.staticfiles import StaticFiles
+import uvicorn
 
 from pygeoapi.api import API
 from pygeoapi.util import yaml_load
@@ -61,7 +62,6 @@ app.mount('/static', StaticFiles(directory=STATIC_DIR))
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
     from starlette.middleware.cors import CORSMiddleware
-
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
 OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
@@ -286,8 +286,8 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
 
 @app.route('/processes')
 @app.route('/processes/')
-@app.route('/processes/{process_id:path}')
-@app.route('/processes/{process_id:path}/')
+@app.route('/processes/{process_id}')
+@app.route('/processes/{process_id}/')
 async def get_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
@@ -328,8 +328,8 @@ async def get_jobs(request: Request, job_id=None):
             return get_response(api_.get_jobs(request, job_id))
 
 
-@app.route('/processes/{process_id:path}/execution', methods=['POST'])
-@app.route('/processes/{process_id:path}/execution/', methods=['POST'])
+@app.route('/processes/{process_id}/execution', methods=['POST'])
+@app.route('/processes/{process_id}/execution/', methods=['POST'])
 async def execute_process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -419,7 +419,6 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     return get_response(api_.get_collection_edr_query(request, collection_id,
                                                       instance_id, query_type))
 
-
 @app.route('/collections')
 @app.route('/collections/')
 @app.route('/collections/{collection_id:path}')
@@ -477,7 +476,7 @@ def serve(ctx, server=None, debug=False):
     :returns: void
     """
 
-    #    setup_logger(CONFIG['logging'])
+#    setup_logger(CONFIG['logging'])
     uvicorn.run(
         app, debug=True,
         host=api_.config['server']['bind']['host'],
