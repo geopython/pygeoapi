@@ -275,6 +275,12 @@ class OGRProvider(BaseProvider):
 
                 fields[fieldName] = {'type': fieldName2}
 
+                if fieldName2 == 'datetime':
+                    fields[fieldName] = {
+                        'type': 'string',
+                        'format': 'date-time'
+                    }
+
                 # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
                 # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
 
