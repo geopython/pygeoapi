@@ -1081,7 +1081,7 @@ class API:
 
                     for qt in p.get_query_types():
                         collection['links'].append({
-                            'type': 'text/json',
+                            'type': 'application/json',
                             'rel': 'data',
                             'title': '{} query for this collection as JSON'.format(qt),  # noqa
                             'href': '{}/{}/{}?f={}'.format(

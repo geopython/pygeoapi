@@ -218,7 +218,7 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
            """Inherit from parent class"""
 
            super().__init__({'name': 'cooljson', 'geom': None})
-           self.mimetype = 'text/json; subtype:mycooljson'
+           self.mimetype = 'application/json; subtype:mycooljson'
 
        def write(self, options={}, data=None):
            """custom writer"""
