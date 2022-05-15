@@ -1,5 +1,5 @@
 Babel
-click<8
+click>7,<=8
 Flask
 jsonschema
 pyproj
