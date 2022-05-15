@@ -402,7 +402,7 @@ class APIRequest:
                 format_ = fmts[idx_]
                 break
 
-        return format_ or None
+        return format_ or F_HTML
 
     @property
     def data(self) -> bytes:
