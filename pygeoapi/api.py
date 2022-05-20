@@ -82,6 +82,7 @@ HEADERS = {
     'X-Powered-By': 'pygeoapi {}'.format(__version__)
 }
 
+MIMETYPE = ['']
 CHARSET = ['utf-8']
 F_JSON = 'json'
 F_HTML = 'html'
@@ -402,7 +403,16 @@ class APIRequest:
                 format_ = fmts[idx_]
                 break
 
-        return format_ or F_HTML
+        # if no accept header on request, use mimetype from config
+        defmime = MIMETYPE[0].split(';')[0]
+        if defmime == "application/json":
+            defmime = F_JSON
+        elif defmime == "application/ld+json":
+            defmime = F_JSONLD
+        else:
+            defmime = F_HTML
+
+        return format_ or defmime
 
     @property
     def data(self) -> bytes:
@@ -596,6 +606,8 @@ class API:
         if config['server'].get('gzip') is True:
             FORMAT_TYPES[F_GZIP] = 'application/gzip'
             FORMAT_TYPES.move_to_end(F_JSON)
+
+        MIMETYPE[0] = config['server'].get('mimetype', '')
 
         # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)

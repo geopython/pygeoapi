@@ -99,7 +99,7 @@ def test_apirequest(api_):
     req = mock_request()
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
-    assert apireq.format is None
+    assert apireq.format is F_JSON
     assert apireq.get_response_headers()['Content-Type'] == \
            FORMAT_TYPES[F_JSON]
     assert apireq.get_linkrel(F_JSON) == 'self'

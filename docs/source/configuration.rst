@@ -38,7 +38,7 @@ The ``server`` section provides directives on binding and high level tuning.
         host: 0.0.0.0  # listening address for incoming connections
         port: 5000  # listening port for incoming connections
     url: http://localhost:5000/  # url of server
-    mimetype: application/json; charset=UTF-8  # default MIME type
+    mimetype: application/json; charset=UTF-8  # default MIME type (if no accept header is provided)
     encoding: utf-8  # default server encoding
     language: en-US  # default server language
     gzip: false # default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
