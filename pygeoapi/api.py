@@ -888,11 +888,11 @@ class API:
                 lnk = {
                     'type': link['type'],
                     'rel': link['rel'],
-                    'title': link['title'],
-                    'href': link['href']
+                    'title': l10n.translate(link['title'], request.locale),
+                    'href': l10n.translate(link['href'], request.locale),
                 }
                 if 'hreflang' in link:
-                    lnk['hreflang'] = link['hreflang']
+                    lnk['hreflang'] = l10n.translate(link['hreflang'], request.locale),
 
                 collection['links'].append(lnk)
 
