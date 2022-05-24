@@ -65,7 +65,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
-        self.db = TinyDB(self.data)
+        self.db = TinyDB(self.data, access_mode="r")
 
         self.fields = self.get_fields()
 
