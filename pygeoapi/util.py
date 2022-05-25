@@ -364,7 +364,7 @@ def render_j2_template(config, template, data, locale_=None):
             raise
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
-                           data=data, version=__version__)
+                           data=data, locale=locale_, version=__version__)
 
 
 def get_mimetype(filename):
