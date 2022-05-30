@@ -140,7 +140,7 @@ def jsonldify_collection(cls, collection, locale_):
         ),
         "name": l10n.translate(collection['title'], locale_),
         "description": l10n.translate(collection['description'], locale_),
-        "license": cls.fcmld['license'],
+        "license": cls.config['metadata'].get('license', {}).get('url', None),
         "keywords": l10n.translate(collection.get('keywords', None), locale_),
         "spatial": None if (not hascrs84 or not bbox) else [{
             "@type": "Place",

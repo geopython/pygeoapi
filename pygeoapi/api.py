@@ -42,6 +42,7 @@ from gzip import compress
 import json
 import logging
 import os
+import copy
 import re
 from typing import Any, Tuple, Union
 import urllib.parse
@@ -1135,6 +1136,9 @@ class API:
         if request.format == F_HTML:  # render
             fcm['collections_path'] = self.get_collections_url()
             if dataset is not None:
+                fcm['ld'] = jsonldify_collection(self, copy.deepcopy(fcm),
+                                                 request.locale)
+                fcm['ld']['@context'] = 'https://schema.org/'
                 content = render_j2_template(self.config,
                                              'collections/collection.html',
                                              fcm, request.locale)
@@ -1971,6 +1975,12 @@ class API:
                 content['title_field'] = l10n.translate(p.title_field,
                                                         request.locale)
             content['collections_path'] = self.get_collections_url()
+
+            # embed a json-ld snippet of the item in html
+            content['ld'] = geojson2jsonld(
+                self.config, copy.deepcopy(content),
+                dataset, uri, (p.uri_field or 'id')
+            )
 
             content = render_j2_template(self.config,
                                          'collections/items/item.html',
