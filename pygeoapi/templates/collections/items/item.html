@@ -91,26 +91,26 @@
                 {% if k != data['id_field'] %}
                 <tr>
                   <td>{{ k }}</td>
-                  {% if k in ['links', 'associations'] %}
-                  <td>
-                    <ul>
-                      {% for l in v %}
-                        {% if l['href'] %}
-                          <li><a href="{{ l['href'] }}" title="{{ l['title'] or l['href'].split('/') }}">{{ l['title'] or (l['href'].split('/') | last) | truncate( 25 ) }}</a>
-                          {% if l['type'] %}
-                            ({{ l['type'] }})
-                          {% endif %}
-                          </li>
-                        {% endif %}
-                      {% endfor %}
-                    </ul>
-                  </td>
-                  {% else %}
-                    <td>{{ render_item_value(v, 80) }}</td>
-                  {% endif %}
+                  <td>{{ render_item_value(v, 80) }}</td>
                 </tr>
                 {% endif %}
               {% endfor %}
+                <tr>
+                  <td>Links</td>
+                  <td>
+                    <ul>
+                      {% for l in data['links'] %}
+                      {% if l['href'] %}
+                        <li><a href="{{ l['href'] }}" title="{{ l['title'] or l['href'].split('/') }}">{{ l['title'] or (l['href'].split('/') | last) | truncate( 25 ) }}</a>
+                        {% if l['type'] %}
+                          ({{ l['type'] }})
+                        {% endif %}
+                        </li>
+                      {% endif %}
+                      {% endfor %}
+                    </ul>
+                  </td>
+                </tr>
             </tbody>
             </table>
         </div>
