@@ -14,8 +14,8 @@
     <table class="striped">
       <thead>
         <tr>
-          <th>{% trans %}Type{% endtrans %}</th>
           <th>{% trans %}Name{% endtrans %}</th>
+          <th>{% trans %}Type{% endtrans %}</th>
           <th>{% trans %}Last modified{% endtrans %}</th>
           <th>{% trans %}Size{% endtrans %}</th>
         </tr>
@@ -24,7 +24,6 @@
         {% for link in data['links'] %}
         {% if link['rel'] in ['child', 'item'] %}
         <tr>
-          <td data-label="Type">{{ link['entry:type'] }}</td>
           <td data-label="Name">
             {% if link['title'] %}
             <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['title'] | get_path_basename }}</span></a>
@@ -32,6 +31,7 @@
             <a title="{{ link['href'] }}" href="{{ link['href'] }}"><span>{{ link['href'] | get_path_basename }}</span></a>
             {% endif %}
           </td>
+          <td data-label="Type">{{ link['entry:type'] }}</td>
           <td data-label="Created">{{ link['created'] }}</td>
           {% if link['file:size'] %}
           <td data-label="Size">{{ link['file:size'] | human_size }}</td>
