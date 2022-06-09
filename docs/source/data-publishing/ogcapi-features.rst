@@ -15,17 +15,17 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, CQL
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL
    :align: left
 
-   CSV,✅/✅,results/hits,❌,❌,❌,❌
-   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅
-   GeoJSON,✅/✅,results/hits,❌,❌,❌,❌
-   MongoDB,✅/❌,results,✅,✅,✅,❌
-   OGR,✅/❌,results/hits,✅,❌,❌,❌
-   PostgreSQL,✅/✅,results/hits,✅,❌,✅,❌
-   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,❌
-   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,❌
+   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌
+   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅
+   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌
+   MongoDB,✅/❌,results,✅,✅,✅,✅,❌
+   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌
+   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌
+   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌
+   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -281,7 +281,7 @@ Data access examples
 * browse features
   * http://localhost:5000/collections/foo/items
 * paging
-  * http://localhost:5000/collections/foo/items?startIndex=10&limit=10
+  * http://localhost:5000/collections/foo/items?offset=10&limit=10
 * CSV outputs
   * http://localhost:5000/collections/foo/items?f=csv
 * query features (spatial)

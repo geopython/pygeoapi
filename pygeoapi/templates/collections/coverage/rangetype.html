@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 / <a href="../../../collections/{{ data['id'] }}">{{ data['title'] }}</a>
 {% endblock %}
 {% block body %}

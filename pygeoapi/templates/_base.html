@@ -14,9 +14,10 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
     {% for link in data['links'] %}
-      <link rel="{{ link['rel'] }}" type="{{ link['type'] }}" title="{{ link['title'] }}" href="{{ link['href'] }}"/>
       {% if (link['rel']=="self" and link['type']=="text/html") %}
-      <link rel="canonical" href="{{ link['href'].split('?')[0] }}" />
+      <link rel="canonical" href="{{ link['href'].split('?')[0] }}?f=html" />
+      {% elif (link['rel']!="canonical") %}
+      <link rel="{{ link['rel'] }}" type="{{ link['type'] }}" title="{{ link['title'] }}" href="{{ link['href'] }}"/>
       {% endif %}
     {% endfor %}
     {% block extrahead %}

@@ -107,7 +107,7 @@ today_fmt = '%Y-%m-%d'
 # built documents.
 #
 # The short X.Y version.
-version = '0.12.dev0'
+version = '0.13.dev0'
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -171,6 +171,7 @@ htmlhelp_basename = 'pygeoapidoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
+latex_engine = 'xelatex'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
@@ -188,6 +189,7 @@ latex_elements = {
     #
     # 'figure_align': 'htbp',
 }
+latex_show_urls = 'footnote'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

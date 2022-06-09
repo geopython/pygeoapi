@@ -119,7 +119,8 @@ The ``metadata`` section provides settings for overall service metadata and desc
 ``resources``
 ^^^^^^^^^^^^^
 
-The ``resources`` section lists 1 or more dataset collections to be published by the server.
+The ``resources`` section lists 1 or more dataset collections to be published by the server.  The
+key of the resource name is the advertised collection identifier.
 
 The ``resource.type`` property is required.  Allowed types are:
 
@@ -226,6 +227,45 @@ Below is an example of how to integrate system environment variables in pygeoapi
        bind:
            host: ${MY_HOST}
            port: ${MY_PORT}
+
+
+Hierarchical collections
+------------------------
+
+Collections defined in the the ``resources`` section are identified by the resource key.  The
+key of the resource name is the advertised collection identifier.  For example, given the following:
+
+.. code-block:: yaml
+
+  resources:
+    lakes:
+      ...
+
+
+The resulting collection will be made available at http://localhost:5000/collections/lakes
+
+All collections are published by default to http://localhost:5000/collections.  To enable
+hierarchical collections, provide the hierarchy in the resource key.  Given the following:
+
+.. code-block:: yaml
+
+  resources:
+    naturalearth/lakes:
+      ...
+
+The resulting collection will then be made available at http://localhost:5000/collections/naturalearth/lakes
+
+.. note::
+
+  This functionality may change in the future given how hierarchical collection extension specifications
+  evolve at OGC.
+
+.. note::
+
+  Collection grouping is not available.  This means that while URLs such as http://localhost:5000/collections/naturalearth/lakes
+  function as expected, URLs such as  http://localhost:5000/collections/naturalearth will not provide
+  aggregate collection listing or querying.  This functionality is also to be determined based on
+  the evolution of hierarchical collection extension specifications at OGC.
 
 
 Linked Data

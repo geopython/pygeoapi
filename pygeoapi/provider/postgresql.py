@@ -114,21 +114,20 @@ class DatabaseConnection:
         if self.context == 'query':
             # Get table column names and types, excluding geometry and
             # transaction ID columns
-            query_cols = "SELECT attr.attname, tp.typname \
-            FROM pg_catalog.pg_class as cls \
-            INNER JOIN pg_catalog.pg_attribute as attr \
-                ON cls.oid = attr.attrelid \
-            INNER JOIN pg_catalog.pg_type as tp \
-                ON tp.oid = attr.atttypid \
-            WHERE cls.relname = '{}' \
-                AND tp.typname != 'geometry' \
-                AND tp.typname != 'cid' \
-                AND tp.typname != 'oid' \
-                AND tp.typname != 'tid' \
-                AND tp.typname != 'xid';".format(
-                self.table)
+            query_cols = """
+            SELECT
+                attr.attname,
+                tp.typname
+            FROM pg_catalog.pg_attribute as attr
+            INNER JOIN pg_catalog.pg_type as tp
+                ON tp.oid = attr.atttypid
+            WHERE
+                attr.attrelid = %s::regclass::oid
+                AND tp.typname != 'geometry'
+                AND attnum > 0
+            """
 
-            self.cur.execute(query_cols)
+            self.cur.execute(query_cols, (self.table,))
             result = self.cur.fetchall()
             if self.properties:
                 result = [res for res in result if res[0] in self.properties]
@@ -237,7 +236,7 @@ class PostgreSQLProvider(BaseProvider):
             ret.append(f"{_['property']} {_map[_['order']]}")
         return SQL(f"ORDER BY {','.join(ret)}")
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
@@ -245,7 +244,7 @@ class PostgreSQLProvider(BaseProvider):
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
         limit=1&resulttype=results
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -283,7 +282,7 @@ class PostgreSQLProvider(BaseProvider):
 
             return self.__response_feature_hits(hits)
 
-        end_index = startindex + limit
+        end_index = offset + limit
 
         with DatabaseConnection(self.conn_dic,
                                 self.table,
@@ -310,11 +309,11 @@ class PostgreSQLProvider(BaseProvider):
                        orderby)
 
             LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
-            LOGGER.debug('Start Index: {}'.format(startindex))
+            LOGGER.debug('Start Index: {}'.format(offset))
             LOGGER.debug('End Index: {}'.format(end_index))
             try:
                 cursor.execute(sql_query)
-                for index in [startindex, limit]:
+                for index in [offset, limit]:
                     cursor.execute("fetch forward {} from geo_cursor"
                                    .format(index))
             except Exception as err:

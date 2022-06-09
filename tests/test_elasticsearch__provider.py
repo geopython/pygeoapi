@@ -170,7 +170,7 @@ def test_query(config):
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == 6691831
 
-    results = p.query(startindex=2, limit=1)
+    results = p.query(offset=2, limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == 3042030
 
@@ -196,10 +196,10 @@ def test_query(config):
     assert results['numberReturned'] == 242
 
     results = p.query(select_properties=['nameascii'])
-    assert len(results['features'][0]['properties']) == 2
+    assert len(results['features'][0]['properties']) == 1
 
     results = p.query(select_properties=['nameascii', 'scalerank'])
-    assert len(results['features'][0]['properties']) == 3
+    assert len(results['features'][0]['properties']) == 2
 
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None

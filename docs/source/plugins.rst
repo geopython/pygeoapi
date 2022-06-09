@@ -68,7 +68,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                'field2': 'string'
            }
 
-       def query(self,startindex=0, limit=10, resulttype='results',
+       def query(self, offset=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
                  select_properties=[], skip_geometry=False, **kwargs):
 
@@ -218,7 +218,7 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
            """Inherit from parent class"""
 
            super().__init__({'name': 'cooljson', 'geom': None})
-           self.mimetype = 'text/json; subtype:mycooljson'
+           self.mimetype = 'application/json; subtype:mycooljson'
 
        def write(self, options={}, data=None):
            """custom writer"""

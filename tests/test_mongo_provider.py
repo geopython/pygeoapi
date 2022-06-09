@@ -78,7 +78,7 @@ def test_query(config):
     assert len(results['features']) == 1
     assert results['features'][0]['properties']['nameascii'] == 'Vatican City'
 
-    results = p.query(startindex=2, limit=1)
+    results = p.query(offset=2, limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['properties']['nameascii'] == 'Vaduz'
 
@@ -95,6 +95,10 @@ def test_query(config):
     assert results['features'][0]['properties']['scalerank'] == 8
 
     assert len(results['features'][0]['properties']) == 37
+
+    results = p.query(skip_geometry=True)
+    for feature in results['features']:
+        assert feature['geometry'] is None
 
 
 def test_get(config):

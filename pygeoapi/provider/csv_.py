@@ -71,13 +71,13 @@ class CSVProvider(BaseProvider):
                 fields[f] = {'type': 'string'}
             return fields
 
-    def _load(self, startindex=0, limit=10, resulttype='results',
+    def _load(self, offset=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],
               select_properties=[], skip_geometry=False, q=None):
         """
         Load CSV data
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param datetime_: temporal (datestamp or extent)
         :param resulttype: return results or hit limit (default results)
@@ -109,7 +109,7 @@ class CSVProvider(BaseProvider):
                 feature_collection['numberMatched'] = len(list(data_))
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_, startindex, startindex+limit):
+            for row in itertools.islice(data_, offset, offset+limit):
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 if not skip_geometry:
@@ -150,13 +150,13 @@ class CSVProvider(BaseProvider):
 
         return feature_collection
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
         """
         CSV query
 
-        :param startindex: starting record to return (default 0)
+        :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
@@ -170,7 +170,7 @@ class CSVProvider(BaseProvider):
         :returns: dict of GeoJSON FeatureCollection
         """
 
-        return self._load(startindex, limit, resulttype,
+        return self._load(offset, limit, resulttype,
                           properties=properties,
                           select_properties=select_properties,
                           skip_geometry=skip_geometry)

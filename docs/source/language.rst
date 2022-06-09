@@ -229,7 +229,7 @@ An example Python code block for a custom provider with a language-aware ``query
    def __init__(self, provider_def):
        super().__init__(provider_def)
 
-   def query(self, startindex=0, limit=10, resulttype='results', bbox=[],
+   def query(self, offset=0, limit=10, resulttype='results', bbox=[],
              datetime_=None, properties=[], sortby=[], select_properties=[],
              skip_geometry=False, q=None, language=None):
        LOGGER.debug(f'Provider queried in {language.english_name} language')

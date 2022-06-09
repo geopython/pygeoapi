@@ -39,7 +39,7 @@
     var layers = L.control.layers(null, null, {collapsed: false}).addTo(map)
 
     var layer
-    CovJSON.read(JSON.parse('{{ data | to_json }}')).then(function (coverage) {
+    CovJSON.read(JSON.parse('{{ data | to_json | safe }}')).then(function (coverage) {
       layer = C.dataLayer(coverage, {parameter: 'SST'})
         .on('afterAdd', function () {
           C.legend(layer).addTo(map)

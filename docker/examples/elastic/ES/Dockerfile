@@ -54,7 +54,7 @@ RUN echo "discovery.type: single-node" >> config/elasticsearch.yml
 
 RUN yum --enablerepo=extras -y install epel-release \
         && yum install -y python3 python3-pip python3-setuptools python-typing \
-        && pip3 install --upgrade pip elasticsearch elasticsearch-dsl \
+        && pip3 install --upgrade pip elasticsearch==7.17.1 elasticsearch-dsl \
 	&& yum clean packages
 
 USER elasticsearch
