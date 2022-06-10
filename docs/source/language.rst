@@ -148,6 +148,20 @@ If you wish to make these text values available in English and French, you could
 In other words: each plain text value should be replaced by a dictionary, where the language code is the key and the translated text represents the matching value.
 For lists, this can be applied as well (see ``keywords`` example above), as long as you nest the entire list under a language key instead of each list item.
 
+A similar concept can be applied to the ``title-field`` property of the provider in a collection configuration. If a dataset contains multiple columns each representing the title 
+element in a specific language, you can configure the title-field accordingly.
+
+.. code-block:: yaml
+
+  providers:
+    - type: feature
+      name: GeoJSON
+      data: tests/data/ne_110m_lakes.geojson
+      title_field: 
+        en: name-en 
+        fr: name-fr
+        de: name-de
+
 Note that the example above uses generic language tags, but you can also supply more localized tags (with a country code) if required.
 pygeoapi should always be able find the best match to the requested language, i.e. if the user wants Swiss-French (`fr-CH`) but pygeoapi can only find `fr` tags,
 those values will be returned. However, if a `fr-CH` tag can also be found, that value will be returned and not the `fr` value.
