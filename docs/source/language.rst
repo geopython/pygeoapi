@@ -158,9 +158,9 @@ element in a specific language, you can configure the title-field accordingly.
       name: GeoJSON
       data: tests/data/ne_110m_lakes.geojson
       title_field: 
-        en: name-en 
-        fr: name-fr
-        de: name-de
+        en: name_eng 
+        fr: nom_fre
+        de: name_deu
 
 Note that the example above uses generic language tags, but you can also supply more localized tags (with a country code) if required.
 pygeoapi should always be able find the best match to the requested language, i.e. if the user wants Swiss-French (`fr-CH`) but pygeoapi can only find `fr` tags,
