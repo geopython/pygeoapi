@@ -1542,6 +1542,8 @@ class API:
             if p.title_field is not None:
                 content['title_field'] = l10n.translate(p.title_field,
                                                         request.locale)
+                # If title exists, use it as id in html templates
+                content['id_field'] = content['title_field']
             content = render_j2_template(self.config,
                                          'collections/items/index.html',
                                          content, request.locale)
