@@ -18,6 +18,7 @@ main {
 .crumbs a {
     padding: 0px 6px;
     color:black;
+    text-decoration: none;
 /*    text-transform: capitalize;*/
 }
 

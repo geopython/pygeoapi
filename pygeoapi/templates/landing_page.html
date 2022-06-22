@@ -13,12 +13,12 @@
 
     <p>
         {% for kw in config['metadata']['identification']['keywords'] %}
-          <mark class="tag">{{ kw }}</mark>
+          <span class="badge bg-primary text-bg-primary">{{ kw }}</span>
         {% endfor %}
     </p>
 
-    <div class="card large">
-      <div class="section">
+    <div class="card bg-light mb-3">
+      <div class="card-body">
         {% if config['metadata']['identification']['terms_of_service'] %}
           <div class="row">
               <div class="col-sm-4">
@@ -88,20 +88,20 @@
   </section>
   </div>
   <div class="col-md-4 col-sm-12">
-    <div class="card fluid">
-      <div class="section dark">
+    <div class="card mb-3">
+      <div class="card-header">
        <b>{% trans %}Provider{% endtrans %}</b>
       </div>
-      <div class="section">
+      <div class="card-body">
         <b>{{ config['metadata']['provider']['name'] }}</b><br/>
         <a href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['url'] }}</a><br/>
       </div>
     </div>
-    <div class="card fluid">
-      <div class="section dark">
+    <div class="card">
+      <div class="card-header">
           <b>{% trans %}Contact point{% endtrans %}</b>
       </div>
-      <div class="section">
+      <div class="card-body">
         <b>{% trans %}Address{% endtrans %}</b><br/>
         <div class="section">
           <span>{{ config['metadata']['contact']['address'] }}</span><br/>

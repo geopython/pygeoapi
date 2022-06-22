@@ -10,7 +10,7 @@
       <div itemprop="description">{{data.description}}</div>
       <p itemprop="keywords">
           {% for kw in data['keywords'] %}
-            <mark class="tag">{{ kw }}</mark>
+            <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
           {% endfor %}
       </p>
       <meta itemprop="url" content="{{config.server.url}}/processes/{{data.id}}" />
