@@ -1076,7 +1076,9 @@ def openapi():
 @click.argument('config_file', type=click.File())
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
-def generate(ctx, config_file, format_='yaml'):
+@click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
+              help='Name of output file')
+def generate(ctx, config_file, output_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
@@ -1084,10 +1086,16 @@ def generate(ctx, config_file, format_='yaml'):
 
     s = yaml_load(config_file)
     pretty_print = s['server'].get('pretty_print', False)
+
     if format_ == 'yaml':
-        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
     else:
-        click.echo(to_json(get_oas(s), pretty=pretty_print))
+        content = to_json(get_oas(s), pretty=pretty_print)
+
+    if output_file is None:
+        click.echo(content)
+    else:
+        output_file.write(content)
 
 
 @click.command()
