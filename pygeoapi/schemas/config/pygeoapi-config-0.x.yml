@@ -264,6 +264,9 @@ properties:
                           keywords:
                               $ref: '#/definitions/i18n_array'
                               description: list of keywords about the service
+                          item_template:
+                            ype: string
+                            description: path to JSON-LD jinja2 template
                           context:
                               type: array
                               description: linked data configuration

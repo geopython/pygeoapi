@@ -338,7 +338,7 @@ def render_j2_template(config: dict, template: Path,
         custom_templates = True
         LOGGER.debug(f'using custom templates: {templates_path}')
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES),
+        env = Environment(loader=FileSystemLoader([TEMPLATES, '/']),
                           extensions=['jinja2.ext.i18n',
                                       'jinja2.ext.autoescape'],
                           autoescape=select_autoescape(['html', 'xml']))
@@ -368,7 +368,7 @@ def render_j2_template(config: dict, template: Path,
         if custom_templates:
             LOGGER.debug(err)
             LOGGER.debug('Custom template not found; using default')
-            env = Environment(loader=FileSystemLoader(TEMPLATES),
+            env = Environment(loader=FileSystemLoader([TEMPLATES, '/']),
                               extensions=['jinja2.ext.i18n'])
             env.install_gettext_translations(translations)
             template = env.get_template(template)

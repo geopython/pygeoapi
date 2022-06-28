@@ -285,7 +285,7 @@ resources:
               title: data source
               href: https://en.wikipedia.org/wiki/GeoJSON
               hreflang: en-US
-        template: jsonld/base.jsonld
+        item_template: ${PWD}/tests/data/base.jsonld
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
