@@ -71,6 +71,14 @@
       </p>
   </section>
  {% endif %}
+  {% if data['routes'] %}
+  <section id="routes">
+      <h2>{% trans %}Routes{% endtrans %}</h2>
+      <p>
+        <a href="{{ config['server']['url'] }}/routes?f=html">{% trans %}View the routes in this service{% endtrans %}</a>
+      </p>
+  </section>
+ {% endif %}
   <section id="openapi">
       <h2>{% trans %}API Definition{% endtrans %}</h2>
       <p>

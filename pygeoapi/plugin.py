@@ -58,11 +58,15 @@ PLUGINS = {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
-        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
+        'Routes': 'pygeoapi.process.routes.RoutesProcessor'
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
+    },
+    'routes': {
+        'Routes': 'pygeoapi.process.routes.RoutesProcessor'
     }
 }
 

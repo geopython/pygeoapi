@@ -1,0 +1,19 @@
+{
+    "name": "Test route",
+    "waypoints": {
+        "value": {
+            "type": "MultiPoint",
+            "coordinates": [
+                [
+                    -3.702,
+                    40.4
+                ],
+                [
+                    -3.704,
+                    40.5
+                ]
+            ]
+        }
+    },
+    "preference": "fastest"
+}
