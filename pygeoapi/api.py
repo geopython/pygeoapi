@@ -807,7 +807,7 @@ class API:
             return self.get_format_exception(request)
 
         conformance_list = CONFORMANCE['common']
-        conf_properties = { }
+        conf_properties = {}
 
         for key, value in self.config['resources'].items():
             if value['type'] == 'process' or value['type'] == 'routes':
