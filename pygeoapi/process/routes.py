@@ -389,8 +389,11 @@ class RoutesProcessor(BaseProcessor):
 
         # Return the real coordinates used in route generation
         if len(route_seq) > 0:
-            return route_seq, [ float(orig_lon), float(orig_lat) ], \
-                [ float(dest_lon), float(dest_lat) ]
+            orig_lat = float(orig_lat)
+            orig_lon = float(orig_lon)
+            dest_lat = float(dest_lat)
+            dest_lon = float(dest_lon)
+            return route_seq, [orig_lon, orig_lat], [dest_lon, dest_lat]
         else:
             print("Nodes ok but no route found")
             return route_seq, way_coords[0], way_coords[-1]

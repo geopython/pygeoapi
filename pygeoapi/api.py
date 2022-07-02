@@ -810,7 +810,7 @@ class API:
         conf_properties = {}
 
         for key, value in self.config['resources'].items():
-            if value['type'] == 'process' or value['type'] == 'routes':
+            if value['type'] in ['process', 'routes']:
                 conformance_list.extend(CONFORMANCE[value['type']])
                 if value['type'] == 'routes':
                     if 'preferences' in value['processor']:
@@ -3004,9 +3004,9 @@ class API:
         routes_config = self.config['resources']['routes']
         
         if route_id is not None:
-            f = open(routes_config['processor']['path'] + '/' + route_id + '.json', "r+")
-            response = json.load(f)
-            f.close()
+            filename = '{}/{}.json'.format(routes_config['processor']['path'], route_id)
+            with open(filename, 'r+') as fh:
+                response = json.load(fh)
         else:
             response = {}
             response['links'] = []
@@ -3021,9 +3021,10 @@ class API:
                 if os.path.isfile(os.path.join(routes_config['processor']['path'],
                     item)) and item.endswith('.json'):
                     file_route_id = item.replace('.json', '')
-                    f = open(routes_config['processor']['path'] + '/' + item, "r+")
-                    route_content = json.load(f)
-                    f.close()
+                    filename = '{}/{}'.format(routes_config['processor']['path'], item)
+                    with open(filename, 'r+') as fh:
+                        route_content = json.load(fh)
+
                     response['links'].append({
                         'type': FORMAT_TYPES[F_JSON],
                         'rel': 'item',
@@ -3284,8 +3285,10 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
-        
+
+        route_f = '{}/{}.json'.format(routes_config['processor']['path'], route_id)
         os.remove(routes_config['processor']['path'] + '/' + route_id + '.json')
+        routedef_f = '{}/routedefs/{}.json'.format(routes_config['processor']['path'], route_id)
         os.remove(routes_config['processor']['path'] + '/routedefs/' + route_id + '.json')
         
         http_status = 200
