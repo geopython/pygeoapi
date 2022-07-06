@@ -31,7 +31,7 @@
 #
 # =================================================================
 
-FROM docker.elastic.co/elasticsearch/elasticsearch:8.3.1
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.5.1
 
 LABEL maintainer="jorge.dejesus@geocat.net justb4@gmail.com"
 ARG DATA_FOLDER=/usr/share/elasticsearch/data
@@ -41,7 +41,7 @@ USER root
 COPY docker-entrypoint.sh  /docker-entrypoint.sh
 COPY add_data.sh /add_data.sh
 
-RUN apt-get update && apt-get install -y wget
+RUN yum install -y wget
 
 RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O bin/wait-for-it.sh
 RUN chmod +x bin/wait-for-it.sh
@@ -52,10 +52,10 @@ RUN echo "xpack.security.enabled: false" >> config/elasticsearch.yml
 RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 RUN echo "discovery.type: single-node" >> config/elasticsearch.yml
 
-RUN apt-get -y install \
-        -y python3 python3-pip python3-setuptools python-typing \
+RUN yum --enablerepo=extras -y install epel-release \
+        && yum install -y python3 python3-pip python3-setuptools python-typing \
         && pip3 install --upgrade pip elasticsearch==7.17.1 elasticsearch-dsl \
-	&& apt-get clean 
+	&& yum clean packages
 
 USER elasticsearch
 
