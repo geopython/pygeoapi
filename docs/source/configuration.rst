@@ -202,6 +202,31 @@ default.
    :ref:`plugins` for more information on plugins
 
 
+Publishing non-advertised resources
+-----------------------------------
+
+pygeoapi allows for publishing resources without advertising them explicitly
+via its collections and OpenAPI endpoints.  The resource is available if the
+client knows the name of the resource apriori.
+
+To provide non-advertised resources, the resource name must start with ``_``.  For
+example, considering the following resource:
+
+.. code-block:: yaml
+
+   resources:
+        _foo:
+            title: my non-advertised resource
+
+Examples:
+
+.. code-block:: bash
+
+   curl https://example.org/collections  # resource _foo is not advertised
+   curl https://example.org/openapi  # resource _foo is not advertised
+   curl https://example.org/collections/_foo  # user can access resource normally
+
+
 Validating the configuration
 ----------------------------
 

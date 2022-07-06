@@ -52,6 +52,13 @@ def config():
 
 
 @pytest.fixture()
+def config_non_advertised_resources():
+    filename = 'pygeoapi-test-config-non-advertised-resources.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -60,6 +67,11 @@ def openapi():
 @pytest.fixture()
 def api_(config):
     return API(config)
+
+
+@pytest.fixture()
+def api_non_advertised_resources(config_non_advertised_resources):
+    return API(config_non_advertised_resources)
 
 
 def test_apirequest(api_):
@@ -498,6 +510,15 @@ def test_describe_collections(config, api_):
         req, 'naturalearth/lakes')
     collection = json.loads(response)
     assert collection['id'] == 'naturalearth/lakes'
+
+
+def test_describe_collections_non_advertised_resources(
+        config_non_advertised_resources, api_non_advertised_resources):
+    req = mock_request({})
+    rsp_headers, code, response = api_non_advertised_resources.describe_collections(req)  # noqa
+    assert code == 200
+
+    print(response)
 
 
 def test_get_collection_queryables(config, api_):

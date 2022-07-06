@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -45,6 +45,13 @@ def config():
 
 
 @pytest.fixture()
+def config_non_advertised_resources():
+    filename = 'pygeoapi-test-config-non-advertised-resources.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -83,3 +90,10 @@ def test_validate_openapi_document(openapi):
 
     with pytest.raises(ValidationError):
         is_valid = validate_openapi_document({'foo': 'bar'})
+
+
+def test_non_advertised_resources(config_non_advertised_resources):
+    openapi_doc = get_oas(config_non_advertised_resources)
+
+    assert '/collections/_obs' not in openapi_doc['paths']
+    assert '/collections/_obs/items' not in openapi_doc['paths']
