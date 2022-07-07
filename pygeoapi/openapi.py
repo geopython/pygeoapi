@@ -421,6 +421,9 @@ def get_oas_30(cfg):
                                            'type', 'collection')
 
     for k, v in collections.items():
+        if k.startswith('_'):
+            LOGGER.debug('Skipping hidden layer: {}'.format(k))
+            continue
         name = l10n.translate(k, locale_)
         title = l10n.translate(v['title'], locale_)
         desc = l10n.translate(v['description'], locale_)
@@ -884,6 +887,9 @@ def get_oas_30(cfg):
         LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
+            if k.startswith('_'):
+                LOGGER.debug('Skipping hidden layer: {}'.format(k))
+                continue
             name = l10n.translate(k, locale_)
             p = load_plugin('process', v['processor'])
 

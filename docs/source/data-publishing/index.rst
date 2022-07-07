@@ -25,3 +25,7 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    ogcapi-records
    ogcapi-edr
    stac
+
+
+.. seealso::
+   :ref:`configuration` for more information on publishing any resource as non-advertised.
