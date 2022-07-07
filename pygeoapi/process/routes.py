@@ -30,6 +30,9 @@
 import logging
 import time
 import json
+import os
+import uuid
+import threading
 
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 from pygeoapi.provider.postgresql import DatabaseConnection as pgRoutingConnection
@@ -172,6 +175,11 @@ class RoutesProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
+        
+        self.undefined_name = "Unnamed route"
+        self.path = processor_def['path']
+        self.url = ""
+        self.f_json = ""
 
         self.preferences = processor_def['preferences']
         PROCESS_METADATA['inputs']['preference']['schema']['enum'] = \
@@ -187,6 +195,19 @@ class RoutesProcessor(BaseProcessor):
             self.ways_id = processor_def['engine']['table']['ways_id']
             self.geom = processor_def['engine']['table'].get('geom_field', 'geom')
             self.search_buffer = processor_def['engine']['search_buffer']
+            
+    def get_metadata(self, server_url, f_json):
+        """
+        Gets metadata used in route generation and formatting
+
+        :param server_url: server URL
+        :param f_json: JSON content type, defined in api.py
+        """
+        
+        self.url = server_url
+        self.f_json = f_json
+
+        return
 
     def fetch_node_nearby(self, coordinates):
         """
@@ -411,7 +432,7 @@ class RoutesProcessor(BaseProcessor):
         else:
             return None, None, None
 
-    def format_route(self, route_seq, orig_coords, dest_coords, route_def):
+    def format_route(self, route_seq, orig_coords, dest_coords, route_def, route_id):
         """
         Format the resulting route output in Route Exchange Model format
 
@@ -450,7 +471,20 @@ class RoutesProcessor(BaseProcessor):
             'features': []
         }
 
-        speedLimitUnit = 'mph' # kmph or mph FIX THIS
+        route_output['links'].append({
+            'type': self.f_json,
+            'rel': 'self',
+            'title': 'this route',
+            'href': '{}/routes/{}'.format(self.url, route_id)
+        })
+        route_output['links'].append({
+            'type': self.f_json,
+            'rel': 'describedby',
+            'title': 'the definition for this route',
+            'href': '{}/routes/{}/definition'.format(self.url, route_id)
+        })
+
+        speedLimitUnit = 'kph' # kph or mph FIX THIS
         route_output['name'] = route_def.get('name', 'Unknown name')
 
         # Format route overview
@@ -570,8 +604,168 @@ class RoutesProcessor(BaseProcessor):
             round(route_output["features"][0]["properties"]["duration_s"], 2)
 
         return route_output
+        
+    def get_route_id(self, route_def):
+        """
+        Get a unique id for this route.
+        If the name of the route exists in the saved routes, then use the same
+        route id of the stored route. Otherwise, create a new one.
+
+        :param route_def: route definition as requested
+
+        :returns: route_id
+        """
+        
+        route_req_name = route_def.get('name', self.undefined_name)
+        # Use undefined_name if requested route name is empty
+        if route_req_name == '':
+            route_req_name = self.undefined_name
+        
+        route_id = None
+        for item in os.listdir(self.path):
+            # Item must be a file with .json extension
+            if os.path.isfile(os.path.join(self.path, item)) and \
+                item.endswith('.json'):
+                
+                filename = '{}/{}'.format(self.path, item)
+                with open(filename, 'r+') as f:
+                    route_content = json.load(f)
+                route_std_name = route_content.get('name', self.undefined_name)
+                # Use undefined_name if stored route name is empty
+                if route_std_name == '':
+                    route_std_name = self.undefined_name
+                # Stored route name is the same as requested route name
+                if route_std_name == route_req_name:
+                    route_id = item.replace('.json', '')
+                    break
+
+        # Route name not found amongst the saved routes. Create a random id
+        if route_id is None:
+            route_id = str(uuid.uuid1())
+        
+        return route_id
+
+    def get_routes(self, bbox, requested_html):
+        """
+        Get a list of stored routes.
+        If the requested format is HTML, provide extent information.
+
+        :param bbox: bbox extent set in routes configuration
+        :param requested_html: whether the requested format is HTML
+
+        :returns: route_list
+        """
+
+        routes_list = {}
+        routes_list['links'] = []
+        routes_list['links'].append({
+            'type': self.f_json,
+            'rel': 'self',
+            'title': 'this document',
+            'href': '{}/routes'.format(self.url)
+        })
+        
+        # If requested format is HTML add summary and extent information
+        if requested_html:
+            routes_list['routes'] = []
+            if not isinstance(bbox[0], list):
+                bbox = [bbox]
+            routes_list['extent'] = {
+                'spatial': {
+                    'bbox': bbox
+                }
+            }
+        
+        for item in os.listdir(self.path):
+            if os.path.isfile(os.path.join(self.path, item)) and \
+                item.endswith('.json'):
+                route_id = item.replace('.json', '')
+                filename = '{}/{}'.format(self.path, item)
+                with open(filename, 'r+') as f:
+                    route_content = json.load(f)
+
+                route_name = route_content.get('name', self.undefined_name)
+                routes_list['links'].append({
+                    'type': self.f_json,
+                    'rel': 'item',
+                    'title': route_name,
+                    'href': '{}/routes/{}'.format(self.url, route_id)
+                    })
+
+                if requested_html:
+                    routes_list['routes'].append({
+                        'title': route_name,
+                        'href': one_route['href'],
+                        'routeid': '{}/routes/{}'.format(self.url, route_id),
+                        'description': "Length: {} m. Duration: {} s.".format(
+                            round(str(route_content['features'][0]['properties']['length_m'])),
+                            round(str(route_content['features'][0]['properties']['duration_s'])))
+                        })
+
+        return routes_list
+
+    def get_route(self, route_id):
+        """
+        Get stored route.
+
+        :param route_id: route unique identifier
+
+        :returns: route
+        """
+        filename = '{}/{}.json'.format(self.path, route_id)
+        with open(filename, 'r+') as f:
+            route = json.load(f)
+        route['name'] = route.get('name', self.undefined_name)
+        return route
+
+    def get_route_def(self, route_id):
+        """
+        Get stored route defintion.
+
+        :param route_id: route unique identifier
+
+        :returns: route_def
+        """
+        filename = '{}/routedefs/{}.json'.format(self.path, route_id)
+        with open(filename, 'r+') as f:
+            route = json.load(f)
+
+        return route
+
+    def del_route(self, route_id):
+        """
+        Delete stored route.
+
+        :param route_id: route unique identifier
+        """
+        route_f = '{}/{}.json'.format(self.path, route_id)
+        os.remove(route_f)
+        routedef_f = '{}/routedefs/{}.json'.format(self.path, route_id)
+        os.remove(routedef_f)
+
+        return
+
+    def store_route(self, route_id, route_def, route):
+        """
+        Store a route and its definition.
+
+        :param route_id: the unique id of a route
+        :param route_def: the definition of a route
+        :param route: the generated route
+        """
+        
+        filename = '{}/{}.json'.format(self.path, route_id)
+        with open(filename, 'w+', encoding='utf8') as f:
+            json.dump(route, f, indent=4)
+        def_filename = '{}/routedefs/{}.json'.format(self.path, route_id)
+        with open(def_filename, 'w+', encoding='utf8') as df:
+            json.dump(route_def, df, indent=4)
+
+        return
 
     def execute(self, route_def):
+
+        route_id = self.get_route_id(route_def)
 
         mimetype = 'application/json'
         waypoints = route_def.get('waypoints', None)
@@ -593,9 +787,13 @@ class RoutesProcessor(BaseProcessor):
             raise ProcessorExecuteError('Route not able to compute')
 
         formatted_route = self.format_route(route_seq, orig_coords,
-                dest_coords, route_def)
+                dest_coords, route_def, route_id)
 
         print("ROUTE FORMATTED --- %s seconds ---" % (time.time() - start_time))
+        
+        saving_process = threading.Thread(target=self.store_route, \
+            args=(route_id, route_def, formatted_route))
+        saving_process.start()
         
         return mimetype, formatted_route
 

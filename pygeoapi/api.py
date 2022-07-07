@@ -46,7 +46,6 @@ import re
 from typing import Any, Tuple, Union
 import urllib.parse
 import uuid
-import threading
 
 from dateutil.parser import parse as dateparse
 import pytz
@@ -3000,82 +2999,37 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
+            
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+        # Inform routing process of the server url and json content type
+        routing_process.get_metadata(self.config['server']['url'],
+            FORMAT_TYPES[F_JSON])
         
+        # One specific route requested
         if route_id is not None:
-            filename = '{}/{}.json'.format(routes_config['processor']['path'], route_id)
-            with open(filename, 'r+') as fh:
-                response = json.load(fh)
-        else:
-            response = {}
-            response['links'] = []
-            response['links'].append({
-                'type': FORMAT_TYPES[F_JSON],
-                'rel': 'self',
-                'title': 'this document',
-                'href': '{}/routes'.format(
-                    self.config['server']['url'])
-                })
-            for item in os.listdir(routes_config['processor']['path']):
-                if os.path.isfile(os.path.join(routes_config['processor']['path'],
-                    item)) and item.endswith('.json'):
-                    file_route_id = item.replace('.json', '')
-                    filename = '{}/{}'.format(routes_config['processor']['path'], item)
-                    with open(filename, 'r+') as fh:
-                        route_content = json.load(fh)
-
-                    response['links'].append({
-                        'type': FORMAT_TYPES[F_JSON],
-                        'rel': 'item',
-                        'title': route_content.get('name', ''),
-                        'href': '{}/routes/{}'.format(
-                            self.config['server']['url'], file_route_id)
-                        })
-
-        if request.format == F_HTML:  # render
-            bbox = routes_config['extents']['spatial']['bbox']
-            # The output should be an array of bbox, so if the user only
-            # provided a single bbox, wrap it in a array.
-            if not isinstance(bbox[0], list):
-                bbox = [bbox]
-            response['extent'] = {
-                'spatial': {
-                    'bbox': bbox
-                }
-            }
-            response['title'] = l10n.translate(routes_config['title'],
-                request.locale)
-            response['description'] = l10n.translate(\
-                routes_config['description'], request.locale)
-            response['keywords'] = l10n.translate(routes_config['keywords'],
-                request.locale)
-
-            if route_id is not None:
-                response['title'] = response.get('name', 'Unnamed route')
+            response = routing_process.get_route(route_id)
+            if request.format == F_HTML:
                 content = render_j2_template(self.config,
-                                             'routes/route.html',
-                                             response, request.locale)
-            else:
-                response['routes'] = []
-                for one_route in response['links']:
-                    if one_route['rel'] != 'self':
-                        this_route_id = one_route['href'].split('/')[-1]
-                        f = open(routes_config['processor']['path'] + '/' + this_route_id + '.json', "r+")
-                        this_route = json.load(f)
-                        f.close()
-                        response['routes'].append({'title': one_route['title'],
-                            'href': one_route['href'],
-                            'routeid': this_route_id,
-                            'description': "Length: " + 
-                                str(this_route['features'][0]['properties']['length_m']) + 
-                                " m. Duration: " + 
-                                str(this_route['features'][0]['properties']['duration_s']) +
-                                " s." })
+                    'routes/route.html', response, request.locale)
+                return headers, 200, content
+        # No specific route. Return a list of stored routes
+        else:
+            bbox = routes_config['extents']['spatial']['bbox']
+            response = routing_process.get_routes(bbox,
+                request.format == F_HTML)
+            if request.format == F_HTML:  # render
+                response['title'] = l10n.translate(routes_config['title'],
+                    request.locale)
+                response['description'] = l10n.translate(\
+                    routes_config['description'], request.locale)
+                response['keywords'] = l10n.translate(routes_config['keywords'],
+                    request.locale)
                 content = render_j2_template(self.config,
                                              'routes/index.html',
                                              response, request.locale)
-            return headers, 200, content
+                return headers, 200, content
 
         headers['Content-Type'] = FORMAT_TYPES[F_JSON]
 
@@ -3093,15 +3047,15 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        DEFAULT_ROUTE_NAME = 'Unnamed route'
-
         if not request.is_valid():
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         routes_config = self.config['resources']['routes']
-        routing_process = load_plugin('routes',
-                              routes_config['processor'])
+        routing_process = load_plugin('routes', routes_config['processor'])
+        # Inform routing process of the server url and json content type
+        routing_process.get_metadata(self.config['server']['url'],
+            FORMAT_TYPES[F_JSON])
 
         data = request.data
         if not data:
@@ -3133,8 +3087,7 @@ class API:
             msg = 'route request not properly formed'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
-        route_req_name = route_req.get('name', DEFAULT_ROUTE_NAME)
-        if route_req_name == '': route_req_name = DEFAULT_ROUTE_NAME
+
         waypoints = route_req.get('waypoints', None)
         if waypoints is None:
             msg = 'cannot generate a route without waypoints'
@@ -3154,25 +3107,11 @@ class API:
 
         # Only sync mode supported at this moment
         is_async = False
-        # route_job_id used also as route_id
-        # if a route exists with the same name, reuse the route_id
-        route_job_id = None
-        for item in os.listdir(routes_config['processor']['path']):
-            if os.path.isfile(os.path.join(routes_config['processor']['path'],
-                item)) and item.endswith('.json'):
-                f = open(routes_config['processor']['path'] + '/' + item, "r+")
-                route_content = json.load(f)
-                f.close()
-                route_std_name = route_content.get('name', DEFAULT_ROUTE_NAME)
-                if route_std_name == '': route_std_name = DEFAULT_ROUTE_NAME
-                if route_std_name == route_req_name:
-                    route_job_id = item.replace('.json', '')
-                    break
-        if route_job_id is None: route_job_id = str(uuid.uuid1())
+        job_id = str(uuid.uuid1())
         try:
             LOGGER.debug('Executing routing process')
             mime_type, outputs, status = self.manager.execute_process(
-                routing_process, route_job_id, route_req, is_async)
+                routing_process, job_id, route_req, is_async)
         except ProcessorExecuteError as err:
             LOGGER.error(err)
             msg = 'Processing error'
@@ -3182,38 +3121,13 @@ class API:
         response = {}
         if status == JobStatus.failed:
             response = outputs
-        else:
-            # Add links to Route Exchange Model
-            outputs['links'] = []
-            outputs['links'].append({
-                'type': FORMAT_TYPES[F_JSON],
-                'rel': 'self',
-                'title': 'this route',
-                'href': '{}/routes/{}'.format(self.config['server']['url'],
-                    route_job_id)
-            })
-            outputs['links'].append({
-                'type': FORMAT_TYPES[F_JSON],
-                'rel': 'describedby',
-                'title': 'the definition for this route',
-                'href': '{}/routes/{}/definition'.format(
-                    self.config['server']['url'], route_job_id)
-            })
 
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             response = outputs
         elif status != JobStatus.failed and not is_async:
             response['outputs'] = [outputs]
-            url = '{}/routes/{}'.format(
-                self.config['server']['url'], route_job_id)
-            headers['Location'] = url
-
-        # Save route and its definition
-        if status != JobStatus.failed:
-            saving_process = threading.Thread(target=self.store_route, \
-                args=(route_job_id, route_req, response,))
-            saving_process.start()
+            headers['Location'] = outputs['links'][0]['href']
 
         if status == JobStatus.failed:
             http_status = 422
@@ -3229,17 +3143,6 @@ class API:
             response2 = response
 
         return headers, http_status, response2
-
-    def store_route(self, route_job_id, data, response):
-        routes_config = self.config['resources']['routes']
-        f = open(routes_config['processor']['path'] + '/' + route_job_id + '.json', 'w+', encoding='utf8')
-        json.dump(response, f, indent=4)
-        f.close()
-
-        f = open(routes_config['processor']['path'] + '/routedefs/' + route_job_id + '.json', 'w+', encoding='utf8')
-        json.dump(data, f, indent=4)
-        f.close()
-        return
 
     @gzip
     @pre_process
@@ -3258,11 +3161,12 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
-        
-        f = open(routes_config['processor']['path'] + '/routedefs/' + route_id + '.json', "r+")
-        response = json.load(f)
-        f.close()
-
+        routing_process = load_plugin('routes', routes_config['processor'])
+        # Inform routing process of the server url and json content type
+        routing_process.get_metadata(self.config['server']['url'],
+            FORMAT_TYPES[F_JSON])
+            
+        response = routing_process.get_route_def(route_id)
         headers['Content-Type'] = FORMAT_TYPES[F_JSON]
         response = to_json(response, self.pretty_print)
 
@@ -3285,17 +3189,16 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+        # Inform routing process of the server url and json content type
+        routing_process.get_metadata(self.config['server']['url'],
+            FORMAT_TYPES[F_JSON])
 
-        route_f = '{}/{}.json'.format(routes_config['processor']['path'], route_id)
-        os.remove(routes_config['processor']['path'] + '/' + route_id + '.json')
-        routedef_f = '{}/routedefs/{}.json'.format(routes_config['processor']['path'], route_id)
-        os.remove(routes_config['processor']['path'] + '/routedefs/' + route_id + '.json')
-        
+        response = routing_process.del_route(route_id)
         http_status = 200
 
         # TODO: this response does not have any headers
         return {}, http_status, {}
-
 
     @gzip
     @pre_process
