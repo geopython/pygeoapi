@@ -45,8 +45,8 @@ def config():
 
 
 @pytest.fixture()
-def config_non_advertised_resources():
-    filename = 'pygeoapi-test-config-non-advertised-resources.yml'
+def config_hidden_resources():
+    filename = 'pygeoapi-test-config-hidden-resources.yml'
     with open(get_test_file_path(filename)) as fh:
         return yaml_load(fh)
 
@@ -92,8 +92,8 @@ def test_validate_openapi_document(openapi):
         is_valid = validate_openapi_document({'foo': 'bar'})
 
 
-def test_non_advertised_resources(config_non_advertised_resources):
-    openapi_doc = get_oas(config_non_advertised_resources)
+def test_hidden_resources(config_hidden_resources):
+    openapi_doc = get_oas(config_hidden_resources)
 
-    assert '/collections/_obs' not in openapi_doc['paths']
-    assert '/collections/_obs/items' not in openapi_doc['paths']
+    assert '/collections/obs' not in openapi_doc['paths']
+    assert '/collections/obs/items' not in openapi_doc['paths']
