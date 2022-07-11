@@ -28,4 +28,4 @@ return back data to the pygeoapi API framework in a plug and play fashion.
 
 
 .. seealso::
-   :ref:`configuration` for more information on publishing any resource as non-advertised.
+   :ref:`configuration` for more information on publishing hidden resources.

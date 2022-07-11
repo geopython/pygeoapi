@@ -421,7 +421,7 @@ def get_oas_30(cfg):
                                            'type', 'collection')
 
     for k, v in collections.items():
-        if k.startswith('_'):
+        if v.get('visibility', 'default') == 'hidden':
             LOGGER.debug('Skipping hidden layer: {}'.format(k))
             continue
         name = l10n.translate(k, locale_)

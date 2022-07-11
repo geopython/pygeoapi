@@ -844,7 +844,7 @@ class API:
 
         LOGGER.debug('Creating collections')
         for k, v in collections_dict.items():
-            if k.startswith('_'):
+            if v.get('visibility', 'default') == 'hidden':
                 LOGGER.debug('Skipping hidden layer: {}'.format(k))
                 continue
             collection_data = get_provider_default(v['providers'])

@@ -98,8 +98,9 @@ metadata:
         role: pointOfContact
 
 resources:
-    _obs:
+    obs:
         type: collection
+        visibility: hidden
         title:
             en: Observations
             fr: Observations
