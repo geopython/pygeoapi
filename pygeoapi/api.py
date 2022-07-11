@@ -57,7 +57,8 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.base import (ProcessorExecuteError,
+    ProcessorCannotComputeError, ProcessorItemNotFoundError)
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -3009,7 +3010,12 @@ class API:
         
         # One specific route requested
         if route_id is not None:
-            response = routing_process.get_route(route_id)
+            try:
+                response = routing_process.get_route(route_id)
+            except ProcessorItemNotFoundError as err:
+                msg = "Route not found."
+                return self.get_exception(
+                    404, headers, request.format, 'NotFound', msg)
             if request.format == F_HTML:
                 content = render_j2_template(self.config,
                     'routes/route.html', response, request.locale)
@@ -3062,7 +3068,6 @@ class API:
             msg = 'missing request data'
             return self.get_exception(
                 400, headers, request.format, 'MissingParameterValue', msg)
-
         try:
             # Parse bytes data, if applicable
             data = data.decode()
@@ -3079,35 +3084,16 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
-        LOGGER.debug(data)
-
-        # Check required attributes are all there
-        route_req = data.get('inputs', None)
-        if route_req is None:
-            msg = 'route request not properly formed'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
-
-        waypoints = route_req.get('waypoints', None)
-        if waypoints is None:
-            msg = 'cannot generate a route without waypoints'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
-        elif 'value' not in waypoints or 'coordinates' \
-            not in waypoints['value']:
-            msg = 'waypoints not properly formed'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
-        way_coords = waypoints['value']['coordinates']
-        if not isinstance(way_coords, list) or len(way_coords) < 2:
-            # Need at least two waypoints to generate a route
-            msg = 'need at least two waypoints to generate a route'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
-
         # Only sync mode supported at this moment
         is_async = False
         job_id = str(uuid.uuid1())
+
+        LOGGER.debug(data)
+        route_req = data.get('inputs')
+        if route_req is None:
+            msg = 'route request not properly formed'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue1', msg)        
         try:
             LOGGER.debug('Executing routing process')
             mime_type, outputs, status = self.manager.execute_process(
@@ -3117,6 +3103,11 @@ class API:
             msg = 'Processing error'
             return self.get_exception(
                 500, headers, request.format, 'NoApplicableCode', msg)
+        except ProcessorCannotComputeError as err:
+            LOGGER.error(err)
+            msg = 'Not able to compute route'
+            return self.get_exception(
+                422, headers, request.format, 'NotAbleToCompute', msg)
 
         response = {}
         if status == JobStatus.failed:
@@ -3130,7 +3121,7 @@ class API:
             headers['Location'] = outputs['links'][0]['href']
 
         if status == JobStatus.failed:
-            http_status = 422
+            http_status = 422 # TODO: could be 500
         else:
             if is_async:
                 http_status = 201
@@ -3165,8 +3156,14 @@ class API:
         # Inform routing process of the server url and json content type
         routing_process.get_metadata(self.config['server']['url'],
             FORMAT_TYPES[F_JSON])
-            
-        response = routing_process.get_route_def(route_id)
+
+        try:
+            response = routing_process.get_route_def(route_id)
+        except ProcessorItemNotFoundError as err:
+            msg = "Route definition not found."
+            return self.get_exception(
+                404, headers, request.format, 'NotFound', msg)
+        
         headers['Content-Type'] = FORMAT_TYPES[F_JSON]
         response = to_json(response, self.pretty_print)
 
