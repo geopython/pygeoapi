@@ -30,6 +30,9 @@ metadata = MetaData(engine)
 metadata.reflect(schema='published', views=True)
 
 # Create SQLAlchemy model from reflected table
+# It is necessary to add the primary key constraint because SQLAlchemy
+# requires it to reflect the table, but a view in a PostgreSQL database does
+# not have a primary key defined.
 sensor_location = metadata.tables[TABLE]
 sensor_location.append_constraint(PrimaryKeyConstraint(ID_COLUMN))
 Base = automap_base(metadata=metadata)
