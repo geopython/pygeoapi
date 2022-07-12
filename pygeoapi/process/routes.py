@@ -415,7 +415,6 @@ class RoutesProcessor(BaseProcessor):
                     sql_query = SQL("""SELECT * FROM pgr_bdDijkstra({}, {}, {},
                         directed := true);""").format(edges_sql,
                         Literal(orig_node_id), Literal(dest_node_id))
-
                     cursor.execute(sql_query)
                     route_segment_sql = cursor.fetchall()
 
@@ -467,8 +466,8 @@ class RoutesProcessor(BaseProcessor):
         with pgRoutingConnection(self.engine_conn, "", context='routes') as db:
             cursor = db.conn.cursor()
             # Fetch edge's info and last point coordinate
-            sql_query = SQL("""SELECT gid, length_m, name, source, target,
-                               x1, y1, x2, y2 FROM ways
+            sql_query = SQL("""SELECT gid, length_m, cost_s, reverse_cost_s,
+                               name, source, target, x1, y1, x2, y2 FROM ways
                                WHERE gid IN ({});""").format(SQL(', ').join(
                                [Literal(edge_id) for edge_id in list_of_edges]))
             cursor.execute(sql_query)
@@ -563,28 +562,29 @@ class RoutesProcessor(BaseProcessor):
             else:
                 edge_id = route_step[3]
                 edge_length = edge_info_dict[edge_id][0]
-                edge_name = edge_info_dict[edge_id][1]
-                edge_source = edge_info_dict[edge_id][2]
-                edge_target = edge_info_dict[edge_id][3]
-                edge_duration = route_step[4]
+                edge_name = edge_info_dict[edge_id][3]
+                edge_source = edge_info_dict[edge_id][4]
+                edge_target = edge_info_dict[edge_id][5]
                 
+                if route_step[2] == edge_source:
+                    # Proper direction
+                    edge_duration = edge_info_dict[edge_id][1]
+                    segment_coordinates = [
+                        round(edge_info_dict[edge_id][8], 6),
+                        round(edge_info_dict[edge_id][9], 6) ]
+                else:
+                    # Reverse direction
+                    edge_duration = edge_info_dict[edge_id][2]
+                    segment_coordinates = [
+                        round(edge_info_dict[edge_id][6], 6),
+                        round(edge_info_dict[edge_id][7], 6) ]
+                    edge_points_dict[edge_id].reverse()
+
                 # Update route total length and duration
                 route_output["features"][0]["properties"]["length_m"] += \
                     edge_length
                 route_output["features"][0]["properties"]["duration_s"] += \
                     edge_duration
-
-                if route_step[2] == edge_source:
-                    # Proper direction
-                    segment_coordinates = [
-                        round(edge_info_dict[edge_id][6], 6),
-                        round(edge_info_dict[edge_id][7], 6) ]
-                else:
-                    # Reverse direction
-                    segment_coordinates = [
-                        round(edge_info_dict[edge_id][4], 6),
-                        round(edge_info_dict[edge_id][5], 6) ]
-                    edge_points_dict[edge_id].reverse()
 
                 # Avoid last point duplication
                 edge_points_dict[edge_id].pop(-1)
