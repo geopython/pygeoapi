@@ -20,6 +20,8 @@ gunzip < tests/data/hotosm_bdi_waterways.sql.gz | \
 Run with: python pygeofilter_sqlalchemy_demo.py
 """
 # coding: utf-8
+from pprint import pprint
+
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
@@ -58,22 +60,21 @@ sqlalchemy_table_def = metadata.tables[f'{SCHEMAS[0]}.{TABLE}']
 sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(ID_COLUMN))
 Base = automap_base(metadata=metadata)
 Base.prepare()
-
-# TODO: make this generic
 TableModel = getattr(Base.classes, TABLE)
-
-# Create session to run a query
-Session = sessionmaker(bind=engine)
-session = Session()
 
 # Prepare CQL requirements
 field_mapping = {column_name: getattr(TableModel, column_name)
                  for column_name in TableModel.__table__.columns.keys()}
 filters = to_filter(ast, field_mapping)
 
-# Run the query
+# Create session to run a query
+Session = sessionmaker(bind=engine)
+session = Session()
+
 print(f"Querying {TABLE}: {CQL_QUERY}")
 q = session.query(TableModel).filter(filters)
 for row in q:
-    print(','.join(str(item) 
-                   for item in (row.osm_id, row.name)))
+    row_dict = row.__dict__
+    row_dict.pop('_sa_instance_state')
+    geom = row_dict.pop('foo_geom')
+    pprint(row_dict)
