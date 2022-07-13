@@ -22,7 +22,7 @@ Run with: python pygeofilter_sqlalchemy_demo.py
 # coding: utf-8
 from pprint import pprint
 
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint
+from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
@@ -33,10 +33,12 @@ SCHEMAS = ['osm', 'public']
 TABLE = 'hotosm_bdi_waterways'
 ID_FIELD = 'osm_id'
 GEOM_FIELD = 'foo_geom'
-CQL_QUERY = "osm_id BETWEEN 3e6 AND 3e7" # Add to query method
+CQL_QUERY = "osm_id BETWEEN 80000000 AND 90000000" # Add to query method
 # Later
-OFFSET = 0
-LIMIT = 10
+OFFSET = 20
+LIMIT = 20
+SORTBY = [{'property': 'waterway', 'order': '-'},
+          {'property': 'osm_id', 'order': '+'}]
 # Very later
 RESULTTYPE = 'results' # or 'hits' for count only
 SELECT_PROPERTIES = [] # Subset of columns
@@ -72,10 +74,21 @@ filters = to_filter(ast, field_mapping)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+# Create a list of order_by clauses
+def get_order_by_clauses(sort_by, table_model):
+    clauses = []
+    for sort_by_dict in sort_by:
+        model_column = getattr(table_model, sort_by_dict['property'])
+        order_function = asc if sort_by_dict['order'] == '+' else desc
+        clauses.append(order_function(model_column))
+    return clauses
+
+order_by_clauses = get_order_by_clauses(SORTBY, TableModel)
+
 print(f"Querying {TABLE}: {CQL_QUERY}")
-q = session.query(TableModel).filter(filters).offset(OFFSET).limit(LIMIT)
+q = session.query(TableModel).filter(filters).order_by(*order_by_clauses).offset(OFFSET).limit(LIMIT)
 for row in q:
     row_dict = row.__dict__
     row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
     geom = row_dict.pop(GEOM_FIELD)
-    pprint(row_dict)
+    print(row_dict['osm_id'], row_dict['waterway'])
