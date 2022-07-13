@@ -19,9 +19,22 @@ from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is nee
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
+
 TABLE ='published.ql_sen_sensor_location'
 ID_COLUMN = 'sensor_loc_id'
-CQL_QUERY = "sensor_loc_id BETWEEN 52970 AND 100000"
+CQL_QUERY = "sensor_loc_id BETWEEN 52970 AND 100000" # Add to query method
+# Later
+OFFSET = 0
+LIMIT = 10
+# Very later
+RESULTTYPE = 'results' # or 'hits' for count only
+SELECT_PROPERTIES = [] # Subset of columns
+SKIP_GEOMETRY = False
+
+# Done in the API
+ast = parse(CQL_QUERY)
+
+# Done in the provider
 
 # Connect to database and read tables
 connection_string = os.environ['CONN_STR']
@@ -46,7 +59,6 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # Prepare CQL requirements
-ast = parse(CQL_QUERY)
 field_mapping = {column_name: getattr(SensorLocation, column_name)
                  for column_name in SensorLocation.__table__.columns.keys()}
 filters = to_filter(ast, field_mapping)
