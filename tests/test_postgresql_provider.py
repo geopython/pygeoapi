@@ -30,6 +30,8 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
+# See pygeoapi/provider/postgresql.py for instructions on setting up
+# test database in Docker
 
 import pytest
 
