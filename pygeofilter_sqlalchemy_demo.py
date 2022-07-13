@@ -2,27 +2,35 @@
 Proof-of-concept script demonstrating pygeofilter and sqlalchemy
 to run a CQL query.
 
-Requires environment variable with connection details:
-export CONN_STR="postgresql://username:xxxxx@hostname:5432/dbname
+Set up test database with:
 
-Run with: python pygeofiler_sqlalchemy_demo.py
+```
+docker run --name "postgis" \
+ -v postgres_data:/var/lib/postgresql -p 5432:5432 \
+ -e ALLOW_IP_RANGE=0.0.0.0/0 \
+ -e POSTGRES_USER=postgres \
+ -e POSTGRES_PASS=postgres \
+ -e POSTGRES_DBNAME=test \
+ -d -t kartoza/postgis
+
+gunzip < tests/data/hotosm_bdi_waterways.sql.gz | \
+    PGPASSWORD=postgres psql -U postgres -h 127.0.0.1 -p 5432 test
+```
+
+Run with: python pygeofilter_sqlalchemy_demo.py
 """
 # coding: utf-8
-import os
-
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData
+from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import PrimaryKeyConstraint
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
-SCHEMAS = ['published', 'public']
-TABLE = 'ql_sen_sensor_location'
-ID_COLUMN = 'sensor_loc_id'
-CQL_QUERY = "sensor_loc_id BETWEEN 52970 AND 100000" # Add to query method
+SCHEMAS = ['osm', 'public']
+TABLE = 'hotosm_bdi_waterways'
+ID_COLUMN = 'osm_id'
+CQL_QUERY = "osm_id BETWEEN 3e6 AND 3e7" # Add to query method
 # Later
 OFFSET = 0
 LIMIT = 10
@@ -37,7 +45,7 @@ ast = parse(CQL_QUERY)
 # Done in the provider
 
 # Connect to database and read tables
-connection_string = os.environ['CONN_STR']
+connection_string = 'postgresql://postgres:postgres@localhost:5432/test'
 engine = create_engine(connection_string)
 metadata = MetaData(engine)
 metadata.reflect(schema=SCHEMAS[0], views=True)
@@ -68,4 +76,4 @@ print(f"Querying {TABLE}: {CQL_QUERY}")
 q = session.query(TableModel).filter(filters)
 for row in q:
     print(','.join(str(item) 
-                   for item in (row.sensor_loc_id, row.x, row.y, row.site_trans)))
+                   for item in (row.osm_id, row.name)))
