@@ -31,7 +31,8 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
 SCHEMAS = ['osm', 'public']
 TABLE = 'hotosm_bdi_waterways'
-ID_COLUMN = 'osm_id'
+ID_FIELD = 'osm_id'
+GEOM_FIELD = 'geom'
 CQL_QUERY = "osm_id BETWEEN 3e6 AND 3e7" # Add to query method
 # Later
 OFFSET = 0
@@ -75,6 +76,6 @@ print(f"Querying {TABLE}: {CQL_QUERY}")
 q = session.query(TableModel).filter(filters)
 for row in q:
     row_dict = row.__dict__
-    row_dict.pop('_sa_instance_state')
-    geom = row_dict.pop('foo_geom')
+    row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
+    geom = row_dict.pop(GEOM_FIELD)
     pprint(row_dict)
