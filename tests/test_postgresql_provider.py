@@ -35,6 +35,8 @@
 
 import pytest
 
+from pygeofilter.parsers.ecql import parse
+
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
@@ -206,3 +208,19 @@ def test_get_not_existing_item_raise_exception(config):
     p = PostgreSQLProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
+def test_query_cql(config):
+    """Testing query for a valid JSON object with geometry"""
+    CQL_QUERY = "osm_id BETWEEN 80000000 AND 90000000"
+    ast = parse(CQL_QUERY)
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(cql_ast=ast)
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+    features = feature_collection.get('features', None)
+    assert features is not None
+    feature = features[0]
+    properties = feature.get('properties', None)
+    assert properties is not None
+    assert properties == {'hello': 'world'}
+    geometry = feature.get('geometry', None)
+    assert geometry is None

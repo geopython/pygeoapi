@@ -238,7 +238,8 @@ class PostgreSQLProvider(BaseProvider):
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False, q=None,
+              cql_ast=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -258,6 +259,24 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug('Querying PostGIS')
+
+        if cql_ast:
+            with DatabaseConnection(self.conn_dic,
+                                    self.table,
+                                    properties=self.properties) as db:
+
+                row_data = [{'hello': 'world'}]
+                feature_collection = {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+
+                for rd in row_data:
+                    feature_collection['features'].append(
+                        self.__response_feature(rd))
+
+                return feature_collection
+
 
         if resulttype == 'hits':
 
@@ -459,3 +478,51 @@ class PostgreSQLProvider(BaseProvider):
         feature_collection['numberMatched'] = hits
 
         return feature_collection
+
+    def _get_order_by_clauses(self, sort_by, table_model):
+        clauses = []
+        for sort_by_dict in sort_by:
+            model_column = getattr(table_model, sort_by_dict['property'])
+            order_function = asc if sort_by_dict['order'] == '+' else desc
+            clauses.append(order_function(model_column))
+        return clauses
+
+    def query_cql(self, offset=0, limit=10, resulttype='results',
+                  bbox=[], sortby=[], select_properties=[], skip_geometry=False,
+                  cql_ast=None, **kwargs):
+
+        metadata = MetaData(engine)
+        metadata.reflect(schema=SCHEMAS[0], views=True)
+
+        # Create SQLAlchemy model from reflected table
+        # It is necessary to add the primary key constraint because SQLAlchemy
+        # requires it to reflect the table, but a view in a PostgreSQL database does
+        # not have a primary key defined.
+        sqlalchemy_table_def = metadata.tables[f'{SCHEMAS[0]}.{TABLE}']
+        sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(ID_FIELD))
+        Base = automap_base(metadata=metadata)
+        Base.prepare()
+        TableModel = getattr(Base.classes, TABLE)
+
+        # Prepare CQL requirements
+        field_mapping = {column_name: getattr(TableModel, column_name)
+                         for column_name in TableModel.__table__.columns.keys()}
+        filters = to_filter(ast, field_mapping)
+
+        # Create session to run a query
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+
+        order_by_clauses = get_order_by_clauses(sortby, TableModel)
+
+        print(f"Querying {TABLE}: {CQL_QUERY}")
+        q = session.query(TableModel).filter(filters).order_by(*order_by_clauses).offset(offset).limit(limit)
+
+        result = []
+        for row in q:
+            row_dict = row.__dict__
+            row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
+            result.append(row_dict)
+
+        return result
