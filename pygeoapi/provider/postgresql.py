@@ -56,6 +56,8 @@ from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
+import shapely
+from geoalchemy2.shape import to_shape
 from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
@@ -534,8 +536,9 @@ class PostgreSQLProvider(BaseProvider):
         for row in q:
             row_dict = row.__dict__
             wkb_geom = row_dict.pop(self.geom)
-            # geom = ...
-            # row_dict['st_asgeojson'] = geom
+            shapely_geom = to_shape(wkb_geom)
+            geojson_geom = shapely.geometry.mapping(shapely_geom)
+            row_dict['st_asgeojson'] = json.dumps(geojson_geom)  # Use st_asgeojson to match normal query output
             row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
             result.append(row_dict)
 
