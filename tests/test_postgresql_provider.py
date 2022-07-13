@@ -221,6 +221,5 @@ def test_query_cql(config):
     feature = features[0]
     properties = feature.get('properties', None)
     assert properties is not None
-    assert properties == {'hello': 'world'}
     geometry = feature.get('geometry', None)
-    assert geometry is None
+    assert geometry is not None
