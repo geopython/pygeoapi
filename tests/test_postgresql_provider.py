@@ -73,6 +73,7 @@ def config_materialised_view(config):
 
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
+
     p = PostgreSQLProvider(config)
     feature_collection = p.query()
     assert feature_collection.get('type', None) == 'FeatureCollection'
@@ -125,6 +126,35 @@ def test_query_with_property_filter(config):
     assert (len(other_features) != 0)
 
 
+@pytest.mark.parametrize("properties, expected_count", [
+    ([("waterway", "stream")], 10),  # Simple match
+    ([("waterway", "strea")], 10),  # Partial match
+    ([("waterway", "tream")], 10),  # Partial match
+    ([("waterway", "st%m")], 10),  # Partial match with wildcard in middle
+    ([("waterway", "STREAM")], 10),  # Case insensitive match
+    ([("waterway", "STREA")], 10),  # Case insensitive partial match
+    ([("waterway", "ST%EA")], 10),  # Case insensitive partial wildcard match
+    ([("width", "30")], 10),  # Number in text field
+    ([("width", "30 cm")], 6),  # Number and text in text field
+    ([("osm_id", "620120062")], 1),  # Integer fields are provided as text
+    ([("osm_id", "62012006")], 0),  # Integer fields, partial-match not allowed
+    ([("waterway", "drain"),
+      ("width", "30 cm")], 6),  # Multiple columns
+    ([("waterway", "dRaIn"),
+      ("width", "30 cm")], 6),  # Multiple columns, case insensitive
+    ([("waterway", "stream"),
+      ("osm_id", "620120062")], 1),  # Multi-columns, mixed type
+    ([("waterway", "strea"),
+      ("osm_id", "620120062")], 1),  # Multi-columns, mixed type, partial match
+])
+def test_query_partial_match(config, properties, expected_count):
+    """Test query with a partial matching string"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=properties)
+    features = feature_collection.get('features', None)
+    assert (len(features) == expected_count)
+
+
 def test_query_with_config_properties(config_with_properties):
     """
     Test that query is restricted by properties in the config.
@@ -137,6 +167,14 @@ def test_query_with_config_properties(config_with_properties):
     properties = feature.get('properties', None)
     for property_name in properties.keys():
         assert property_name in config_with_properties["properties"]
+
+
+def test_query_match_integer(config):
+    """Test query with a matching integer"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(properties=[("osm_id", 30152037)])
+    features = feature_collection.get('features', None)
+    assert len(features) == 1
 
 
 def test_query_hits(config):
