@@ -32,7 +32,7 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 SCHEMAS = ['osm', 'public']
 TABLE = 'hotosm_bdi_waterways'
 ID_FIELD = 'osm_id'
-GEOM_FIELD = 'geom'
+GEOM_FIELD = 'foo_geom'
 CQL_QUERY = "osm_id BETWEEN 3e6 AND 3e7" # Add to query method
 # Later
 OFFSET = 0
@@ -58,7 +58,7 @@ metadata.reflect(schema=SCHEMAS[0], views=True)
 # requires it to reflect the table, but a view in a PostgreSQL database does
 # not have a primary key defined.
 sqlalchemy_table_def = metadata.tables[f'{SCHEMAS[0]}.{TABLE}']
-sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(ID_COLUMN))
+sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(ID_FIELD))
 Base = automap_base(metadata=metadata)
 Base.prepare()
 TableModel = getattr(Base.classes, TABLE)
@@ -73,7 +73,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 print(f"Querying {TABLE}: {CQL_QUERY}")
-q = session.query(TableModel).filter(filters)
+q = session.query(TableModel).filter(filters).offset(OFFSET).limit(LIMIT)
 for row in q:
     row_dict = row.__dict__
     row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
