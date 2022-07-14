@@ -291,6 +291,8 @@ resources:
                     ways_id: gid
                     geom_field: the_geom
                 search_buffer: 0.01
+            units:
+                speed: kmph
             preferences: [fastest, shortest]
             modes: [vehicle]
 
@@ -328,5 +330,8 @@ resources:
                     ways_id: gid
                     geom_field: the_geom
                 search_buffer: 0.01
+            units:
+                speed: kmph
             preferences: [fastest, shortest]
             modes: [vehicle]
+

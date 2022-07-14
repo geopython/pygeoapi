@@ -3004,9 +3004,6 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
-        # Inform routing process of the server url and json content type
-        routing_process.get_metadata(self.config['server']['url'],
-            FORMAT_TYPES[F_JSON])
         
         # One specific route requested
         if route_id is not None:
@@ -3059,9 +3056,6 @@ class API:
 
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
-        # Inform routing process of the server url and json content type
-        routing_process.get_metadata(self.config['server']['url'],
-            FORMAT_TYPES[F_JSON])
 
         data = request.data
         if not data:
@@ -3153,9 +3147,6 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
-        # Inform routing process of the server url and json content type
-        routing_process.get_metadata(self.config['server']['url'],
-            FORMAT_TYPES[F_JSON])
 
         try:
             response = routing_process.get_route_def(route_id)
@@ -3187,9 +3178,6 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
-        # Inform routing process of the server url and json content type
-        routing_process.get_metadata(self.config['server']['url'],
-            FORMAT_TYPES[F_JSON])
 
         response = routing_process.del_route(route_id)
         http_status = 200

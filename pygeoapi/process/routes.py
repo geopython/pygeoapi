@@ -36,6 +36,7 @@ import threading
 
 from psycopg2.sql import SQL, Identifier, Literal
 
+from pygeoapi.util import yaml_load
 from pygeoapi.process.base import (BaseProcessor, ProcessorExecuteError,
     ProcessorCannotComputeError, ProcessorItemNotFoundError)
 from pygeoapi.provider.postgresql import DatabaseConnection as pgRoutingConnection
@@ -180,8 +181,11 @@ class RoutesProcessor(BaseProcessor):
         
         self.undefined_name = "Unnamed route"
         self.path = processor_def['path']
-        self.url = ""
-        self.f_json = ""
+
+        # Open config file to extract server url to build links
+        with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+            CONFIG = yaml_load(fh)
+            self._rel_link = CONFIG['server']['url']
 
         self.preferences = processor_def['preferences']
         PROCESS_METADATA['inputs']['preference']['schema']['enum'] = \
@@ -190,6 +194,8 @@ class RoutesProcessor(BaseProcessor):
         self.modes = processor_def['modes']
         PROCESS_METADATA['inputs']['mode']['schema']['enum'] = \
             processor_def['modes']
+            
+        self.units = processor_def['units']
 
         self.engine_type = processor_def['engine']['type']
         if self.engine_type == 'pgRouting':
@@ -197,19 +203,6 @@ class RoutesProcessor(BaseProcessor):
             self.ways_id = processor_def['engine']['table']['ways_id']
             self.geom = processor_def['engine']['table'].get('geom_field', 'geom')
             self.search_buffer = processor_def['engine']['search_buffer']
-
-        return
-            
-    def get_metadata(self, server_url, f_json):
-        """
-        Gets metadata used in route generation and formatting
-
-        :param server_url: server URL
-        :param f_json: JSON content type, defined in api.py
-        """
-        
-        self.url = server_url
-        self.f_json = f_json
 
         return
 
@@ -466,13 +459,24 @@ class RoutesProcessor(BaseProcessor):
         with pgRoutingConnection(self.engine_conn, "", context='routes') as db:
             cursor = db.conn.cursor()
             # Fetch edge's info and last point coordinate
-            sql_query = SQL("""SELECT gid, length_m, cost_s, reverse_cost_s,
+            sql_query = SQL("""SELECT gid, osm_id, length_m, cost_s, reverse_cost_s,
                                name, source, target, x1, y1, x2, y2 FROM ways
                                WHERE gid IN ({});""").format(SQL(', ').join(
                                [Literal(edge_id) for edge_id in list_of_edges]))
             cursor.execute(sql_query)
             edge_info = cursor.fetchall()
             edge_info_dict = { i[0] : i[1:] for i in edge_info }
+
+            # Fetch edge's tags
+            sql_query = SQL("""SELECT osm_id, tags->'maxspeed',
+                               tags->'maxweight', tags->'maxheight'
+                               FROM osm_ways
+                               WHERE osm_id IN ({});""").format(SQL(', ').join(
+                               [Literal(edge_info_dict[edge_id][0]) \
+                               for edge_id in edge_info_dict]))
+            cursor.execute(sql_query)
+            edge_tags = cursor.fetchall()
+            edge_tags_dict = { i[0] : i[1:] for i in edge_tags }
 
             # Fetch segment's full coordinate list
             sql_query = SQL("""SELECT gid,
@@ -493,20 +497,18 @@ class RoutesProcessor(BaseProcessor):
         }
 
         route_output['links'].append({
-            'type': self.f_json,
+            'type': 'application/json',
             'rel': 'self',
             'title': 'this route',
-            'href': '{}/routes/{}'.format(self.url, route_id)
+            'href': '{}/routes/{}'.format(self._rel_link, route_id)
         })
         route_output['links'].append({
-            'type': self.f_json,
+            'type': 'application/json',
             'rel': 'describedby',
             'title': 'the definition for this route',
-            'href': '{}/routes/{}/definition'.format(self.url, route_id)
+            'href': '{}/routes/{}/definition'.format(self._rel_link, route_id)
         })
 
-        # TODO: get the units from configuration
-        speedLimitUnit = 'kph'  # kph or mph
         route_output['name'] = route_def.get('name', self.undefined_name)
 
         # Format route overview
@@ -535,6 +537,7 @@ class RoutesProcessor(BaseProcessor):
         prev_node = route_seq[0][1] # Source node of the first segment
         segment = None
         prev_edge_name = None
+        prev_maxspeed = None
 
         for route_step in route_seq:
             # End point has no edge (value == -1)
@@ -561,23 +564,25 @@ class RoutesProcessor(BaseProcessor):
                 route_output['features'].append(end_point)
             else:
                 edge_id = route_step[3]
-                edge_length = edge_info_dict[edge_id][0]
-                edge_name = edge_info_dict[edge_id][3]
-                edge_source = edge_info_dict[edge_id][4]
-                edge_target = edge_info_dict[edge_id][5]
+                edge_osm_id = edge_info_dict[edge_id][0]
+                maxspeed = edge_tags_dict[edge_osm_id][0]
+                edge_length = edge_info_dict[edge_id][1]
+                edge_name = edge_info_dict[edge_id][4]
+                edge_source = edge_info_dict[edge_id][5]
+                edge_target = edge_info_dict[edge_id][6]
                 
                 if route_step[2] == edge_source:
                     # Proper direction
-                    edge_duration = edge_info_dict[edge_id][1]
-                    segment_coordinates = [
-                        round(edge_info_dict[edge_id][8], 6),
-                        round(edge_info_dict[edge_id][9], 6) ]
-                else:
-                    # Reverse direction
                     edge_duration = edge_info_dict[edge_id][2]
                     segment_coordinates = [
-                        round(edge_info_dict[edge_id][6], 6),
-                        round(edge_info_dict[edge_id][7], 6) ]
+                        round(edge_info_dict[edge_id][9], 6),
+                        round(edge_info_dict[edge_id][10], 6) ]
+                else:
+                    # Reverse direction
+                    edge_duration = edge_info_dict[edge_id][3]
+                    segment_coordinates = [
+                        round(edge_info_dict[edge_id][7], 6),
+                        round(edge_info_dict[edge_id][8], 6) ]
                     edge_points_dict[edge_id].reverse()
 
                 # Update route total length and duration
@@ -594,11 +599,15 @@ class RoutesProcessor(BaseProcessor):
                         round(edge_point[0], 6),
                         round(edge_point[1], 6) ])
 
-                # Group all edges with the same name
-                if edge_name is not None and edge_name == prev_edge_name:
+                # Group all edges with the same name and speedlimit
+                if edge_name is not None and edge_name == prev_edge_name and \
+                    (maxspeed is None or prev_maxspeed is None or \
+                    maxspeed == prev_maxspeed):
                     segment['geometry']['coordinates'] = segment_coordinates
                     segment['properties']['length_m'] += edge_length
                     segment['properties']['duration_s'] += edge_duration
+                    if maxspeed is not None:
+                        prev_maxspeed = maxspeed
                 # Append segment and create new one, if diff name
                 else:
                     if segment is not None:
@@ -608,6 +617,7 @@ class RoutesProcessor(BaseProcessor):
                             round(segment['properties']['duration_s'], 2)
                         route_output["features"].append(segment)
                     prev_edge_name = edge_name
+                    prev_maxspeed = maxspeed
                     # Format route segment
                     segment = {}
                     segment['type'] = 'Feature'
@@ -621,6 +631,11 @@ class RoutesProcessor(BaseProcessor):
                         segment['properties']['roadName'] = edge_name
                     segment['properties']['length_m'] = edge_length
                     segment['properties']['duration_s'] = edge_duration
+
+                # Add maxspeed if defined for this segment
+                if edge_tags_dict[edge_osm_id][0] is not None:
+                    segment['properties']['speedLimit'] = edge_tags_dict[edge_osm_id][0]
+                    segment['properties']['speedLimitUnit'] = self.units['speed']
 
         route_output["features"][0]["properties"]["length_m"] = \
             round(route_output["features"][0]["properties"]["length_m"], 2)
@@ -683,10 +698,10 @@ class RoutesProcessor(BaseProcessor):
         routes_list = {}
         routes_list['links'] = []
         routes_list['links'].append({
-            'type': self.f_json,
+            'type': 'application/json',
             'rel': 'self',
             'title': 'this document',
-            'href': '{}/routes'.format(self.url)
+            'href': '{}/routes'.format(self._rel_link)
         })
         
         # If requested format is HTML add summary and extent information
@@ -710,16 +725,16 @@ class RoutesProcessor(BaseProcessor):
 
                 route_name = route_content.get('name', self.undefined_name)
                 routes_list['links'].append({
-                    'type': self.f_json,
+                    'type': 'application/json',
                     'rel': 'item',
                     'title': route_name,
-                    'href': '{}/routes/{}'.format(self.url, route_id)
+                    'href': '{}/routes/{}'.format(self._rel_link, route_id)
                     })
 
                 if requested_html:
                     routes_list['routes'].append({
                         'title': route_name,
-                        'href': '{}/routes/{}'.format(self.url, route_id),
+                        'href': '{}/routes/{}'.format(self._rel_link, route_id),
                         'routeid': route_id,
                         'description': "Length: {} m. Duration: {} s.".format(
                             str(round(route_content['features'][0]['properties']['length_m'])),
