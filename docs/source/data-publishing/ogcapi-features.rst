@@ -167,7 +167,10 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
 MongoDB
 ^^^^^^^
 
-.. todo:: add overview and requirements
+.. note::
+   Mongo 5 or greater is supported.
+
+* each document must be a GeoJSON Feature, with a valid geometry.
 
 .. code-block:: yaml
 
