@@ -84,8 +84,8 @@ class MongoProvider(BaseProvider):
 
         # prepare a dictionary with fields
         # set the field type to 'string'.
-        # by operating without a schema, mongo can query any data type.        
-        fields={}
+        # by operating without a schema, mongo can query any data type.
+        fields = {}
         for i in result.distinct('_id'):
             fields[i] = {'type': 'string'}
 
