@@ -206,7 +206,7 @@ class RoutesProcessor(BaseProcessor):
 
         return
 
-    def fetch_node_nearby(self, coordinates):
+    def fetch_pg_node_nearby(self, coordinates):
         """
         Search for the closest node, within self.search_buffer (in degrees)
 
@@ -236,7 +236,7 @@ class RoutesProcessor(BaseProcessor):
             
         return node
 
-    def create_join_query(self, route_def):
+    def create_pg_join_query(self, route_def):
         """
         Create the SQL part for the table join query
         This affects performance; it should be done only if needed
@@ -254,7 +254,7 @@ class RoutesProcessor(BaseProcessor):
         else:
             return SQL('INNER JOIN osm_ways ON (osm_ways.osm_id = w.osm_id)')
 
-    def create_cost_query(self, route_def):
+    def create_pg_cost_query(self, route_def):
         """
         Create the SQL part for the cost query
 
@@ -281,7 +281,7 @@ class RoutesProcessor(BaseProcessor):
 
         return cost_query
 
-    def create_height_query(self, route_def):
+    def create_pg_height_query(self, route_def):
         """
         Create the SQL part for the height query
 
@@ -298,7 +298,7 @@ class RoutesProcessor(BaseProcessor):
                 (CAST(osm_ways.tags->''maxheight'' AS DECIMAL) > {}))
                 AND""").format(Literal(height_limit))
 
-    def create_weight_query(self, route_def):
+    def create_pg_weight_query(self, route_def):
         """
         Create the SQL part for the weight query
 
@@ -315,7 +315,7 @@ class RoutesProcessor(BaseProcessor):
                 (CAST(osm_ways.tags->''maxweight'' AS DECIMAL) > {}))
                 AND""").format(Literal(weight_limit))
 
-    def create_obstacles_query(self, route_def):
+    def create_pg_obstacles_query(self, route_def):
         """
         Create the SQL part for the obstacles query
 
@@ -332,7 +332,7 @@ class RoutesProcessor(BaseProcessor):
                 ST_GeomFromGeoJSON(''{}'')) AND""").format( \
                 SQL(json.dumps(obstacles["value"]).replace("'", '"')))
 
-    def create_optimization_query(self, orig_coords, dest_coords):
+    def create_pg_optimization_query(self, orig_coords, dest_coords):
         """
         Create the SQL part to minimize graph size and optimize performance
 
@@ -351,7 +351,7 @@ class RoutesProcessor(BaseProcessor):
 
         return opt_query
 
-    def calculate_route_pgrouting(self, route_def):
+    def calculate_pg_route(self, route_def):
         """
         Calculate the route using pgRouting engine
 
@@ -371,27 +371,27 @@ class RoutesProcessor(BaseProcessor):
                 dest_coordinates = waypoint
 
                 if orig_node_id is None:
-                    orig_node = self.fetch_node_nearby(orig_coordinates)
+                    orig_node = self.fetch_pg_node_nearby(orig_coordinates)
                     if orig_node is None:
                         LOGGER.debug("Origin node not found")
-                        raise ProcessorCannotComputeError('Origin node not found')
+                        raise ProcessorCannotComputeError('origin node not found')
                     else:
                         LOGGER.debug("Orig node:", orig_node)
                         [ orig_node_id, orig_lon, orig_lat, d ] = orig_node
-                dest_node = self.fetch_node_nearby(dest_coordinates)
+                dest_node = self.fetch_pg_node_nearby(dest_coordinates)
                 if dest_node is None:
                     LOGGER.debug("Destination node not found")
-                    raise ProcessorCannotComputeError('Destination node not found')
+                    raise ProcessorCannotComputeError('destination node not found')
                 else:
                     LOGGER.debug("Dest node:", dest_node)
                     [ dest_node_id, dest_lon, dest_lat, d ] = dest_node
 
-                join_query = self.create_join_query(route_def)
-                cost_query = self.create_cost_query(route_def)
-                height_query = self.create_height_query(route_def)
-                weight_query = self.create_weight_query(route_def)
-                obstacles_query = self.create_obstacles_query(route_def)
-                optimization_query = self.create_optimization_query( \
+                join_query = self.create_pg_join_query(route_def)
+                cost_query = self.create_pg_cost_query(route_def)
+                height_query = self.create_pg_height_query(route_def)
+                weight_query = self.create_pg_weight_query(route_def)
+                obstacles_query = self.create_pg_obstacles_query(route_def)
+                optimization_query = self.create_pg_optimization_query( \
                     orig_coordinates, dest_coordinates)
 
                 with pgRoutingConnection(self.engine_conn, "",
@@ -427,22 +427,9 @@ class RoutesProcessor(BaseProcessor):
             return route_seq, [orig_lon, orig_lat], [dest_lon, dest_lat]
         else:
             LOGGER.debug("Nodes ok but no route found")
-            raise ProcessorCannotComputeError('A route was not found from origin to destination')
+            raise ProcessorCannotComputeError('a route was not found from origin to destination')
 
-    def calculate_route(self, route_def):
-        """
-        Calculate the route calling the appropriate engine
-
-        :param route_def: route definition
-
-        :returns: route sequence, orig node coords, dest node coords
-        """
-        if self.engine_type == 'pgRouting':
-            return self.calculate_route_pgrouting(route_def)
-        else:
-            return None, None, None
-
-    def format_route(self, route_seq, orig_coords, dest_coords, route_def, route_id):
+    def format_pg_route(self, route_seq, orig_coords, dest_coords, route_def, route_id):
         """
         Format the resulting route output in Route Exchange Model format
 
@@ -643,7 +630,23 @@ class RoutesProcessor(BaseProcessor):
             round(route_output["features"][0]["properties"]["duration_s"], 2)
 
         return route_output
-        
+
+    def calculate_route(self, route_def, route_id):
+        """
+        Calculate the route calling the appropriate engine
+
+        :param route_def: route definition
+
+        :returns: formatted_route
+        """
+        if self.engine_type == 'pgRouting':
+            route_seq, orig_coords, dest_coords = \
+                self.calculate_pg_route(route_def)
+            return self.format_pg_route(route_seq,
+                orig_coords, dest_coords, route_def, route_id)
+        else:
+            return None
+
     def get_route_id(self, route_def):
         """
         Get a unique id for this route.
@@ -756,7 +759,7 @@ class RoutesProcessor(BaseProcessor):
             with open(filename, 'r+') as f:
                 route = json.load(f)
         else:
-            raise ProcessorItemNotFoundError('Route not found.')
+            raise ProcessorItemNotFoundError('route not found.')
         route['name'] = route.get('name', self.undefined_name)
 
         return route
@@ -774,7 +777,7 @@ class RoutesProcessor(BaseProcessor):
             with open(filename, 'r+') as f:
                 routedef = json.load(f)
         else:
-            raise ProcessorItemNotFoundError('Route definition not found.')
+            raise ProcessorItemNotFoundError('route definition not found.')
             
         return routedef
 
@@ -817,26 +820,18 @@ class RoutesProcessor(BaseProcessor):
 
         mimetype = 'application/json'
         waypoints = route_def.get('waypoints')
+        # Check waypoints data
         if waypoints is None:
-            raise ProcessorExecuteError('Cannot generate a route without waypoints')
+            raise ProcessorExecuteError('cannot generate a route without waypoints')
         if 'value' not in waypoints or 'coordinates' \
             not in waypoints['value']:
-            raise ProcessorExecuteError('Waypoints not properly formed')
+            raise ProcessorExecuteError('waypoints not properly formed')
         way_coords = waypoints['value']['coordinates']
         if not isinstance(way_coords, list) or len(way_coords) < 2:
-            raise ProcessorExecuteError('Need at least two waypoints to generate a route')
+            raise ProcessorExecuteError('need at least two waypoints to generate a route')
 
         start_time = time.time()
-        route_seq, orig_coords, dest_coords = self.calculate_route(route_def)
-        LOGGER.debug("ROUTE CALCULATED --- %s seconds ---" % (time.time() - start_time))
-        LOGGER.debug("TOTAL EDGE SEQUENCE: ", len(route_seq))
-
-        if len(route_seq) == 0:
-            raise ProcessorExecuteError('Route not able to compute')
-
-        formatted_route = self.format_route(route_seq, orig_coords,
-                dest_coords, route_def, route_id)
-
+        formatted_route = self.calculate_route(route_def, route_id)
         LOGGER.debug("ROUTE FORMATTED --- %s seconds ---" % (time.time() - start_time))
         
         saving_process = threading.Thread(target=self.store_route, \

@@ -2851,31 +2851,33 @@ class API:
             LOGGER.debug('async manager not configured/enabled')
             is_async = False
 
-        try:
-            LOGGER.debug('Executing process')
-            mime_type, outputs, status = self.manager.execute_process(
-                process, job_id, data_dict, is_async)
-        except ProcessorExecuteError as err:
-            LOGGER.error(err)
-            msg = 'Processing error'
-            return self.get_exception(
-                500, headers, request.format, 'NoApplicableCode', msg)
+        LOGGER.debug('Executing process')
+        mime_type, outputs, status = self.manager.execute_process(
+            process, job_id, data_dict, is_async)
 
         response = {}
+        # Select the HTTP status code
         if status == JobStatus.failed:
             response = outputs
+            if response['code'] == 'NotAbleToCompute':
+                http_status = 422
+            elif response['code'] == 'NotFound':
+                http_status = 404
+            elif response['code'] == 'ExecuteError':
+                http_status = 500
+            else:
+                http_status = 500
+        else:
+            if is_async:
+                http_status = 201
+            else:
+                http_status = 200
 
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             response = outputs
-
         elif status != JobStatus.failed and not is_async:
             response['outputs'] = [outputs]
-
-        if is_async:
-            http_status = 201
-        else:
-            http_status = 200
 
         if mime_type == 'application/json':
             response2 = to_json(response, self.pretty_print)
@@ -3058,6 +3060,7 @@ class API:
         routing_process = load_plugin('routes', routes_config['processor'])
 
         data = request.data
+        # Check input data and its format
         if not data:
             msg = 'missing request data'
             return self.get_exception(
@@ -3088,24 +3091,28 @@ class API:
             msg = 'route request not properly formed'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue1', msg)        
-        try:
-            LOGGER.debug('Executing routing process')
-            mime_type, outputs, status = self.manager.execute_process(
-                routing_process, job_id, route_req, is_async)
-        except ProcessorExecuteError as err:
-            LOGGER.error(err)
-            msg = 'Processing error'
-            return self.get_exception(
-                500, headers, request.format, 'NoApplicableCode', msg)
-        except ProcessorCannotComputeError as err:
-            LOGGER.error(err)
-            msg = 'Not able to compute route'
-            return self.get_exception(
-                422, headers, request.format, 'NotAbleToCompute', msg)
+
+        LOGGER.debug('Executing routing process')
+        mime_type, outputs, status = self.manager.execute_process(
+            routing_process, job_id, route_req, is_async)
 
         response = {}
+        # Select the HTTP status code
         if status == JobStatus.failed:
             response = outputs
+            if response['code'] == 'NotAbleToCompute':
+                http_status = 422
+            elif response['code'] == 'NotFound':
+                http_status = 404
+            elif response['code'] == 'ExecuteError':
+                http_status = 500
+            else:
+                http_status = 500
+        else:
+            if is_async:
+                http_status = 201
+            else:
+                http_status = 200
 
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
@@ -3113,14 +3120,6 @@ class API:
         elif status != JobStatus.failed and not is_async:
             response['outputs'] = [outputs]
             headers['Location'] = outputs['links'][0]['href']
-
-        if status == JobStatus.failed:
-            http_status = 422 # TODO: could be 500
-        else:
-            if is_async:
-                http_status = 201
-            else:
-                http_status = 200
 
         if mime_type == 'application/json':
             response2 = to_json(response, self.pretty_print)
@@ -3151,7 +3150,7 @@ class API:
         try:
             response = routing_process.get_route_def(route_id)
         except ProcessorItemNotFoundError as err:
-            msg = "Route definition not found."
+            msg = "route definition not found."
             return self.get_exception(
                 404, headers, request.format, 'NotFound', msg)
         

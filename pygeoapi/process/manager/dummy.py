@@ -29,6 +29,9 @@
 
 import logging
 
+from pygeoapi.process.base import (BaseProcessor, ProcessorExecuteError,
+    ProcessorCannotComputeError, ProcessorItemNotFoundError)
+
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -82,6 +85,27 @@ class DummyManager(BaseManager):
         try:
             jfmt, outputs = p.execute(data_dict)
             current_status = JobStatus.successful
+        except ProcessorItemNotFoundError as err:
+            outputs = {
+                'code': 'NotFound',
+                'description': str(err)
+            }
+            current_status = JobStatus.failed
+            LOGGER.error(err)
+        except ProcessorExecuteError as err:
+            outputs = {
+                'code': 'ExecuteError',
+                'description': str(err)
+            }
+            current_status = JobStatus.failed
+            LOGGER.error(err)
+        except ProcessorCannotComputeError as err:
+            outputs = {
+                'code': 'NotAbleToCompute',
+                'description': str(err)
+            }
+            current_status = JobStatus.failed
+            LOGGER.error(err)
         except Exception as err:
             outputs = {
                 'code': 'InvalidParameterValue',
