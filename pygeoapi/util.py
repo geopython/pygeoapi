@@ -43,7 +43,6 @@ import re
 from urllib.request import urlopen
 from urllib.parse import urlparse
 
-import numpy
 from shapely.geometry import Polygon
 
 import dateutil.parser
@@ -284,9 +283,9 @@ def json_serial(obj):
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
-    elif isinstance(obj, numpy.int64):
+    elif type(obj).__name__ == 'int64':
         return int(obj)
-    elif isinstance(obj, numpy.float64):
+    elif type(obj).__name__ == 'float64':
         return float(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
