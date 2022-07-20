@@ -1912,7 +1912,10 @@ class API:
             '{}/{}/items/{}'.format(
                 self.get_collections_url(), dataset, identifier)
 
-        content['links'] = [{
+        if 'links' not in content:
+            content['links'] = []
+
+        content['links'].extend([{
             'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
@@ -1934,7 +1937,7 @@ class API:
                                     request.locale),
             'href': '{}/{}'.format(
                 self.get_collections_url(), dataset)
-        }]
+        }])
 
         if 'prev' in content:
             content['links'].append({
