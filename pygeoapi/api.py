@@ -1912,6 +1912,9 @@ class API:
             '{}/{}/items/{}'.format(
                 self.get_collections_url(), dataset, identifier)
 
+        if 'links' not in content:
+            content['links'] = []
+
         content['links'].extend([{
             'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
