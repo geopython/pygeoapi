@@ -602,7 +602,7 @@ class API:
         self.default_locale = self.locales[0]
 
         if 'templates' not in self.config['server']:
-            self.config['server']['templates'] = TEMPLATES
+            self.config['server']['templates'] = {'path': TEMPLATES}
 
         if 'pretty_print' not in self.config['server']:
             self.config['server']['pretty_print'] = False
