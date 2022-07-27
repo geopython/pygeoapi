@@ -4,7 +4,7 @@ This directory provides test data to demonstrate functionality.
 
 ## Sources
 
-### `ne_110m_lakes.geojson / tiles/ne_110m_lakes`
+### `ne_110m_lakes.geojson and tiles/ne_110m_lakes`
 
 - source: Natural Earth Lakes + Reservoirs
 - URL: [https:/naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/](https://naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/)
