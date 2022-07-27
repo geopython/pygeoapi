@@ -77,3 +77,13 @@ This directory provides test data to demonstrate functionality.
 - License: https://www.canada.ca/en/transparency/terms.html
 - Notes
   - ISO records transformed to OGC API - Records GeoJSONs with `tests/load_tinydb_records.py`
+  
+### `dutch_addresses_*`
+- source: Dutch Kadaster
+- URL: https://geodata.nationaalgeoregister.nl/inspireadressen/wfs?request=GetCapabilities&service=wfs (discontinued, see below)
+- License: CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/deed.nl
+- Notes
+  - above WFS [was switched off in June 2022](https://www.pdok.nl/-/oude-url-s-inspire-adressen-uitgefaseerd)
+  - address-records derived by Kadaster from the Dutch "Buildings and Addresses" key registry (BAG)
+  - WMS is still available: https://service.pdok.nl/kadaster/adressen/wms/v1_0?request=GetCapabilities&service=WMS
+  - raw dataset BAG (GML, about 2GB) can always be downloaded via the [Atom Feed](https://service.pdok.nl/kadaster/adressen/atom/v1_0/index.xml)
