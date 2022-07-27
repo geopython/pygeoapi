@@ -4,11 +4,11 @@ This directory provides test data to demonstrate functionality.
 
 ## Sources
 
-### `ne_110m_lakes.geojson`
+### `ne_110m_lakes.geojson and tiles/ne_110m_lakes`
 
 - source: Natural Earth Lakes + Reservoirs
 - URL: [https:/naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/](https://naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/)
-- Shapefile converted to GeoJSON
+- Shapefile converted to GeoJSON.  Tiles created with tippecanoe
 - Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](https://naturalearthdata.com)
 
 ### `ne_110m_admin_0_countries.sqlite`
