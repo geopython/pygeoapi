@@ -1,6 +1,7 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Chris Barrett
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Chris Barrett
 # Copyright (c) 2022 Tom Kralidis
