@@ -93,5 +93,5 @@ This directory provides test data to demonstrate functionality.
 - URL: https://en.wikipedia.org/wiki/GeoJSON#Geometries
 - License: CC0 3.0 https://creativecommons.org/licenses/by-sa/3.0/
 - Notes
-  - `items.geojson` tests pygeoapi's capability to serialize all geometry types for individual collection items in [JSON-LD formats](https://docs.pygeoapi.io/en/latest/configuration.html#linked-data), including GeoSPARQL WKT and schema.org/geo.
-  - The features represent the range of geoJSON geometry types, instead of real locations. Additionally, each feature has a uri defined in the properties block.
+  - `items.geojson` tests pygeoapi's capability to serialize all geometry types for individual collection items in [JSON-LD formats](https://docs.pygeoapi.io/en/latest/configuration.html#linked-data), including GeoSPARQL WKT and schema.org/geo
+  - The features represent the range of GeoJSON geometry types, instead of real locations. Additionally, each feature has a uri defined in the properties block
