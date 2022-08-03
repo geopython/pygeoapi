@@ -95,3 +95,8 @@ This directory provides test data to demonstrate functionality.
 - Notes
   - `items.geojson` tests pygeoapi's capability to serialize all geometry types for individual collection items in [JSON-LD formats](https://docs.pygeoapi.io/en/latest/configuration.html#linked-data), including GeoSPARQL WKT and schema.org/geo
   - The features represent the range of GeoJSON geometry types, instead of real locations. Additionally, each feature has a uri defined in the properties block
+
+### `WATERS Mapping Services`
+- source: EPA Water Mapping Services
+- URL: https://www.epa.gov/waterdata/waters-mapping-services
+- License: https://edg.epa.gov/EPA_Data_License.html
