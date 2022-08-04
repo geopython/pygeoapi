@@ -9,5 +9,6 @@ psycopg2
 pygeometa
 pymongo==3.10.1
 scipy
+sodapy
 xarray
 zarr
