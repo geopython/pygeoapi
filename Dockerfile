@@ -90,8 +90,9 @@ RUN \
     && cd /pygeoapi \
     # Optionally add development/test/doc packages
     && if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
-    # Temporary fix for elasticsearch-dsl module not available as deb package in bionic
-    && pip3 install elasticsearch-dsl \
+    # Install pygeoapi providers
+    && pip3 install -r requirements-provider.txt \
+    # Intall pygeopi
     && pip3 install -e . \
     # OGC schemas local setup
     && mkdir /schemas.opengis.net \
