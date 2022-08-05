@@ -89,7 +89,7 @@ class MongoProvider(BaseProvider):
         for i in result.distinct('_id'):
             fields[i] = {'type': 'string'}
 
-        return(fields)
+        return (fields)
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):
