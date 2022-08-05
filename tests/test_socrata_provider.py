@@ -31,6 +31,7 @@ import pytest
 
 from pygeoapi.provider.socrata import SODAServiceProvider
 
+
 @pytest.fixture()
 def config():
     return {
