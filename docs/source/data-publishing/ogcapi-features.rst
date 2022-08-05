@@ -26,6 +26,7 @@ parameters.
    PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌
    SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌
    SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌
+   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -271,6 +272,32 @@ to the associated features in the ``Datastreams`` feature collection, and the
 ``Observations`` features will include links to the associated features in the 
 ``Datastreams`` feature collection. Examples with three entities configured
 are included in the docker examples for SensorThings.
+
+Socrata
+^^^^^^^
+
+To publish a `Socrata Open Data API (SODA) <https://dev.socrata.com/>` endpoint, pygeoapi heavily
+relies on `sodapy <https://github.com/xmunoz/sodapy>`.
+
+
+* ``data`` is the domain of the SODA endpoint.
+* ``resource_id`` is the 4x4 resource id pattern.
+* ``geom_field`` is required for bbox queries to work.
+* ``token`` is optional and can be included in the configuration to pass
+an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
+
+
+.. code-block:: yaml
+
+   providers:
+      - type: feature
+        name: Socrata
+        data: https://soda.demo.socrata.com/
+        resource_id: emdb-u46w
+        id_field: earthquake_id
+        geom_field: location
+        time_field: datetime # Optional time_field for datetime queries
+        token: my_token # Optional app token
 
 Data access examples
 --------------------
