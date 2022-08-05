@@ -84,6 +84,7 @@ jobs:
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
         pytest tests/test_sensorthings_provider.py 
+        pytest tests/test_socrata_provider.py
         #pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
         pytest tests/test_util.py
