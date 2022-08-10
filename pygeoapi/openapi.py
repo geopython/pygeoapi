@@ -46,13 +46,13 @@ from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
-    'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
+    'oapif': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
-    'oaedr': 'http://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
+    'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
 
@@ -63,7 +63,7 @@ def get_ogc_schemas_location(server_config):
 
     osl = server_config.get('ogc_schemas_location', None)
 
-    value = 'http://schemas.opengis.net'
+    value = 'https://schemas.opengis.net'
 
     if osl is not None:
         if osl.startswith('http'):

@@ -64,7 +64,7 @@ def test_str2bool():
     }
 
     osl = get_ogc_schemas_location(default)
-    assert osl == 'http://schemas.opengis.net'
+    assert osl == 'https://schemas.opengis.net'
 
     default['ogc_schemas_location'] = 'http://example.org/schemas'
     osl = get_ogc_schemas_location(default)
