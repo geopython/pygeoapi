@@ -38,6 +38,10 @@ TIME_FIELD = 'START_DATE'
 
 @pytest.fixture()
 def config():
+    # WATERS Mapping Services
+    # source: EPA Water Mapping Services
+    # URL: https://www.epa.gov/waterdata/waters-mapping-services
+    # License: https://edg.epa.gov/EPA_Data_License.html
     return {
         'name': 'ESRI',
         'type': 'feature',
