@@ -34,6 +34,10 @@ from pygeoapi.provider.socrata import SODAServiceProvider
 
 @pytest.fixture()
 def config():
+    # USGS Earthquakes
+    # source: [USGS](http://usgs.gov)
+    # URL: https://soda.demo.socrata.com/dataset/emdb-u46w
+    # License: CC0 3.0 https://creativecommons.org/licenses/by-sa/3.0/
     return {
         'name': 'SODAServiceProvider',
         'type': 'feature',
