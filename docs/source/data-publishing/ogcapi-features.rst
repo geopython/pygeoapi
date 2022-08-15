@@ -20,6 +20,7 @@ parameters.
 
    CSV,✅/✅,results/hits,❌,❌,❌,✅,❌
    Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅
+   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌
    GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌
    MongoDB,✅/❌,results,✅,✅,✅,✅,❌
    OGR,✅/❌,results/hits,✅,❌,❌,✅,❌
@@ -92,6 +93,31 @@ This provider has the support for the CQL queries as indicated in the table abov
 
 .. seealso::
   :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
+
+
+ESRI Feature Service
+^^^^^^^^^^^^^^^^^^^^
+
+To publish an ESRI `Feature Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm>`
+or `Map Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm>`
+specify the URL for the service layer in the ``data`` field.
+
+* ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
+* If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
+configuration to authenticate into the service.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: ESRI
+         data: https://sampleserver5.arcgisonline.com/arcgis/rest/services/NYTimes_Covid19Cases_USCounties/MapServer/0
+         id_field: objectid
+         time_field: date_in_your_device_time_zone # Optional time field
+         crs: 4326 # Optional crs (default is ESPG:4326)
+         username: username # Optional ArcGIS username
+         password: password # Optional ArcGIS password
+
 
 OGR
 ^^^
