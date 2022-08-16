@@ -182,10 +182,14 @@ class RoutesProcessor(BaseProcessor):
         self.undefined_name = "Unnamed route"
         self.path = processor_def['path']
 
-        # Open config file to extract server url to build links
-        with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-            CONFIG = yaml_load(fh)
-            self._rel_link = CONFIG['server']['url']
+        self.intralink = processor_def.get('intralink', False)
+        if processor_def.get('rel_link') and self.intralink:   # For pytest
+            self._rel_link = processor_def['rel_link']
+        else:
+            # Open config file to extract server url to build links
+            with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+                CONFIG = yaml_load(fh)
+                self._rel_link = CONFIG['server']['url']
 
         self.preferences = processor_def['preferences']
         PROCESS_METADATA['inputs']['preference']['schema']['enum'] = \
@@ -808,6 +812,8 @@ class RoutesProcessor(BaseProcessor):
         filename = '{}/{}.json'.format(self.path, route_id)
         with open(filename, 'w+', encoding='utf8') as f:
             json.dump(route, f, indent=4)
+        if not os.path.exists('{}/{}'.format(self.path, 'routedefs')):
+            os.makedirs('{}/{}'.format(self.path, 'routedefs'))
         def_filename = '{}/routedefs/{}.json'.format(self.path, route_id)
         with open(def_filename, 'w+', encoding='utf8') as df:
             json.dump(route_def, df, indent=4)
