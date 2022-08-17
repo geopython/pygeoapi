@@ -1422,6 +1422,7 @@ class API:
 
         LOGGER.debug('processing cql parameter')
         cql = request.params.get('cql')
+        LOGGER.debug(cql)
         # TODO: wrap in try/except
         if cql:
             cql_ast = parse(cql)
