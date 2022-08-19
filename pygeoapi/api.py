@@ -1422,9 +1422,8 @@ class API:
 
         LOGGER.debug('processing cql parameter')
         cql = request.params.get('cql')
-        LOGGER.debug(cql)
-        # TODO: wrap in try/except
-        if cql:
+        if cql is not None:
+            # TODO: wrap in try/except
             cql_ast = parse(cql)
         else:
             cql_ast = None
