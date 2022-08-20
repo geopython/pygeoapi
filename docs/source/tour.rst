@@ -113,7 +113,7 @@ This page provides a coverage in CoverageJSON format.
 http://localhost:5000/collections/gdps-temperature/coverage
 
 .. seealso::
-   :ref:`ogcapi-coverages` for more OGC API - Coverages request exampless.
+   :ref:`ogcapi-coverages` for more OGC API - Coverages request examples.
 
 Tiles
 -----
@@ -160,6 +160,16 @@ The processes page provides a list of process integrated onto the server, along 
 .. seealso::
    :ref:`ogcapi-processes` for more OGC API - Processes request examples.
 
+
+Routes
+------
+
+This page provides an overview of the available preprocessed routes stored in the server.
+
+http://localhost:5000/routes
+
+.. seealso::
+   :ref:`ogcapi-routes` for more OGC API - Routes request examples.
 
 Environmental data retrieval
 ----------------------------

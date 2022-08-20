@@ -191,10 +191,42 @@ default.
                     - value
 
       hello-world:  # name of process
-          type: collection  # REQUIRED (collection, process, or stac-collection)
+          type: process  # REQUIRED (collection, process, or stac-collection)
           processor:
               name: HelloWorld  # Python path of process defition
 
+      routes:
+          # The processor will use OGC API Routes if set as type: routes.
+          # Alternatively, the same processor can use OGC API Processes if set as type: process
+          type: routes
+          title: District of Columbia 
+          description: Routing engine for DC area created with OpenStreetMap data
+          keywords:
+              - DC
+              - OSM
+          extents:
+              spatial:
+                  bbox: [-77.1, 38.83, -76.9, 38.99]
+                  crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+          processor:
+              name: Routes
+              path: /tmp  # directory to store generated routes and their definitions
+              engine:
+                  type: pgRouting  # type of routing engine
+                  connection:  # postgreSQL config for pgRouting
+                      host: localhost
+                      dbname: district-of-columbia
+                      user: postgres
+                      password: postgres
+                      search_path: [public]
+                  table:  # specific column names in pgRouting
+                      ways_id: gid
+                      geom_field: the_geom
+                  search_buffer: 0.01  # range in degrees to search for origin and destination nodes
+              preferences: [fastest, shortest]  # available preferences in the routing engine
+              modes: [vehicle]  # available modes in the routing engine
+              units:  # units used in this dataset
+                  speed: mph
 
 .. seealso::
    `Linked Data`_ for optionally configuring linked data datasets

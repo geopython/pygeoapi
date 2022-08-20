@@ -11,5 +11,41 @@
           <li><a title="{{ link }}" href="{{ link }}">{{ link }}</a></li>
       {% endfor %}
       </ul>
+      {% if data['properties'] %}
+        <h2>{% trans %}Properties{% endtrans %}</h2>
+        <div class="row">
+          <div class="col-sm-12 col-md-6">
+            <table class="striped">
+              <thead>
+              <tr>
+                <th>{% trans %}Property{% endtrans %}</th>
+                <th>{% trans %}Conformance{% endtrans %}</th>
+                <th>{% trans %}Values{% endtrans %}</th>
+              </tr>
+              </thead>
+              <tbody>
+                {% for key, prop in data['properties'].items() %}
+                <tr itemprop="property" itemscope>
+                  <td itemprop="property" data-label="Property">
+                    {% for property in prop %}
+                    {{ property }}
+                  </td>
+                  <td itemprop="conformance" data-label="Conformance">
+                    <a title="{{ key }}" href="{{ key }}">{{ key }}</a>
+                  </td>
+                  <td itemprop="values" data-label="Values">
+                    <ul>
+                      {% for value in prop[property] %}
+                      <li>{{ value }}</li>
+                      {% endfor %}
+                    </ul>
+                    {% endfor %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
     </section>
 {% endblock %}

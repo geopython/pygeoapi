@@ -1,0 +1,78 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {% trans %}Routes{% endtrans %}{% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="./routes">{% trans %}Routes{% endtrans %}</a>
+{% endblock %}
+{% block extrahead %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+{% endblock %}
+{% block body %}
+    <section id="description">
+      <div class="row">
+        <div class="col-sm">
+          <h1>{{ data['title'] }}</h1>
+          <p>{{ data['description'] }}</p>
+          <p>
+            {% for kw in data['keywords'] %}
+              <mark class="tag">{{ kw }}</mark>
+            {% endfor %}
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <div id="collection-map"></div>
+        </div>
+      </div>
+    <section id="routes">
+      <h1>Routes in this service</h1>
+            <table class="striped">
+              <thead>
+              <tr>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Route ID{% endtrans %}</th>
+                <th>{% trans %}Description{% endtrans %}</th>
+              </tr>
+              </thead>
+              <tbody>
+                {% for col in data['routes']  %}
+                <tr>
+                  <td data-label="name">
+                    <a  title="{{ col['title'] | striptags | truncate }}"
+                      href="{{ col['href'] }}">
+                      <span>{{ col['title'] | striptags | truncate }}</span></a>
+                  </td>
+                  <td data-label="type">{{ col["routeid"] }}</td>
+                  <td data-label="description">
+                    {{ col['description'] | striptags | truncate }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+    </section>
+{% endblock %}
+
+{% block extrafoot %}
+    <script>
+    var map = L.map('collection-map').setView([{{ 0 }}, {{ 0 }}], 1);
+    map.addLayer(new L.TileLayer(
+      '{{ config['server']['map']['url'] }}', {
+        maxZoom: 18,
+        attribution: '{{ config['server']['map']['attribution'] | safe }}'
+      }
+    ));
+
+    var bbox_layer = L.polygon([
+      ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][3] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][3] }}', '{{ data['extent']['spatial']['bbox'][0][2] }}'],
+      ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][2] }}']
+    ]);
+
+    map.addLayer(bbox_layer);
+    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
+    </script>
+{% endblock %}
+

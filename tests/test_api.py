@@ -1325,7 +1325,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
-    assert code == 200
+    assert code == 500
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     cleanup_jobs.add(tuple(['hello-world',
@@ -1334,7 +1334,7 @@ def test_execute_process(config, api_):
     req = mock_request(data=req_body_5)
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
     data = json.loads(response)
-    assert code == 200
+    assert code == 500
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'Error updating job'
@@ -1346,7 +1346,7 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     data = json.loads(response)
-    assert code == 200
+    assert code == 500
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
     assert data['description'] == 'Error updating job'

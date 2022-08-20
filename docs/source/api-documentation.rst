@@ -127,6 +127,15 @@ Hello world example process
    :members:
    :private-members:
    :special-members:
+   
+Routes processor
+^^^^^^^^^^^^^^^^
+
+.. automodule:: pygeoapi.process.routes
+   :show-inheritance:
+   :members:
+   :private-members:
+   :special-members:
 
 .. _data Provider:
 

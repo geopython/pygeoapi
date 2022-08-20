@@ -57,7 +57,8 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.base import (ProcessorExecuteError,
+    ProcessorCannotComputeError, ProcessorItemNotFoundError)
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -137,6 +138,15 @@ CONFORMANCE = {
     ],
     'edr': [
         'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
+    ],
+    'routes': [
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/intermediate-waypoints',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/height',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/weight',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/obstacles',
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/delete-route'
     ]
 }
 
@@ -704,12 +714,22 @@ class API:
             'title': 'Jobs',
             'href': '{}/jobs'.format(self.config['server']['url'])
         }]
+        
+        # If routes resource, add a link to /routes
+        if filter_dict_by_key_value(self.config['resources'],'type','routes'):
+            fcm['links'].append({
+                'rel': 'http://www.opengis.net/def/rel/OGC/1.0/routes',
+                'type': FORMAT_TYPES[F_JSON],
+                'title': 'Routes',
+                'href': '{}/routes'.format(self.config['server']['url'])
+                })
 
         headers = request.get_response_headers()
         if request.format == F_HTML:  # render
 
             fcm['processes'] = False
             fcm['stac'] = False
+            fcm['routes'] = False
 
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'process'):
@@ -718,6 +738,10 @@ class API:
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
+
+            if filter_dict_by_key_value(self.config['resources'],
+                                        'type', 'routes'):
+                fcm['routes'] = True
 
             content = render_j2_template(self.config, 'landing_page.html', fcm,
                                          request.locale)
@@ -783,10 +807,17 @@ class API:
             return self.get_format_exception(request)
 
         conformance_list = CONFORMANCE['common']
+        conf_properties = {}
 
         for key, value in self.config['resources'].items():
-            if value['type'] == 'process':
+            if value['type'] in ['process', 'routes']:
                 conformance_list.extend(CONFORMANCE[value['type']])
+                if value['type'] == 'routes':
+                    if 'preferences' in value['processor']:
+                        conf_properties['preferences'] = \
+                            value['processor']['preferences']
+                    if 'modes' in value['processor']:
+                        conf_properties['modes'] = value['processor']['modes']
             else:
                 for provider in value['providers']:
                     if provider['type'] in CONFORMANCE:
@@ -795,6 +826,20 @@ class API:
         conformance = {
             'conformsTo': list(set(conformance_list))
         }
+        if 'preferences' in conf_properties or 'modes' in conf_properties:
+            conformance['properties'] = {}
+            if 'preferences' in conf_properties:
+                conformance['properties'].update({
+                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core':{
+                        'preferences': conf_properties['preferences']
+                    }
+                })
+            if 'modes' in conf_properties:
+                conformance['properties'].update({
+                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode':{
+                        'modes': conf_properties['modes']
+                    }
+                })
 
         headers = request.get_response_headers()
         if request.format == F_HTML:  # render
@@ -2812,31 +2857,33 @@ class API:
             LOGGER.debug('async manager not configured/enabled')
             is_async = False
 
-        try:
-            LOGGER.debug('Executing process')
-            mime_type, outputs, status = self.manager.execute_process(
-                process, job_id, data_dict, is_async)
-        except ProcessorExecuteError as err:
-            LOGGER.error(err)
-            msg = 'Processing error'
-            return self.get_exception(
-                500, headers, request.format, 'NoApplicableCode', msg)
+        LOGGER.debug('Executing process')
+        mime_type, outputs, status = self.manager.execute_process(
+            process, job_id, data_dict, is_async)
 
         response = {}
+        # Select the HTTP status code
         if status == JobStatus.failed:
             response = outputs
+            if response['code'] == 'NotAbleToCompute':
+                http_status = 422
+            elif response['code'] == 'NotFound':
+                http_status = 404
+            elif response['code'] == 'ExecuteError':
+                http_status = 500
+            else:
+                http_status = 500
+        else:
+            if is_async:
+                http_status = 201
+            else:
+                http_status = 200
 
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             response = outputs
-
         elif status != JobStatus.failed and not is_async:
             response['outputs'] = [outputs]
-
-        if is_async:
-            http_status = 201
-        else:
-            http_status = 200
 
         if mime_type == 'application/json':
             response2 = to_json(response, self.pretty_print)
@@ -2945,6 +2992,203 @@ class API:
         LOGGER.info(response)
         # TODO: this response does not have any headers
         return {}, http_status, response
+
+    @gzip
+    @pre_process
+    def get_routes(self, request: Union[APIRequest, Any],
+                               route_id) -> Tuple[dict, int, str]:
+        """
+        Get routes description
+
+        :param request: A request object
+        :param route_id: route identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+            
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+        routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+        
+        # One specific route requested
+        if route_id is not None:
+            try:
+                response = routing_process.get_route(route_id)
+            except ProcessorItemNotFoundError as err:
+                msg = "Route not found."
+                return self.get_exception(
+                    404, headers, request.format, 'NotFound', msg)
+            if request.format == F_HTML:
+                content = render_j2_template(self.config,
+                    'routes/route.html', response, request.locale)
+                return headers, 200, content
+        # No specific route. Return a list of stored routes
+        else:
+            bbox = routes_config['extents']['spatial']['bbox']
+            response = routing_process.get_routes(bbox,
+                request.format == F_HTML)
+            if request.format == F_HTML:  # render
+                response['title'] = l10n.translate(routes_config['title'],
+                    request.locale)
+                response['description'] = l10n.translate(\
+                    routes_config['description'], request.locale)
+                response['keywords'] = l10n.translate(routes_config['keywords'],
+                    request.locale)
+                content = render_j2_template(self.config,
+                                             'routes/index.html',
+                                             response, request.locale)
+                return headers, 200, content
+
+        headers['Content-Type'] = FORMAT_TYPES[F_JSON]
+
+        return headers, 200, to_json(response, self.pretty_print)
+
+    @gzip
+    @pre_process
+    def generate_route(self, request: Union[APIRequest, Any]
+                               ) -> Tuple[dict, int, str]:
+        """
+        Generate route
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+
+        routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+
+        data = request.data
+        # Check input data and its format
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg)
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+            LOGGER.debug(data)
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        # Only sync mode supported at this moment
+        is_async = False
+        job_id = str(uuid.uuid1())
+
+        LOGGER.debug(data)
+        route_req = data.get('inputs')
+        if route_req is None:
+            msg = 'route request not properly formed'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue1', msg)        
+
+        LOGGER.debug('Executing routing process')
+        mime_type, outputs, status = self.manager.execute_process(
+            routing_process, job_id, route_req, is_async)
+
+        response = {}
+        # Select the HTTP status code
+        if status == JobStatus.failed:
+            response = outputs
+            if response['code'] == 'NotAbleToCompute':
+                http_status = 422
+            elif response['code'] == 'NotFound':
+                http_status = 404
+            elif response['code'] == 'ExecuteError':
+                http_status = 500
+            else:
+                http_status = 500
+        else:
+            if is_async:
+                http_status = 201
+            else:
+                http_status = 200
+
+        if data.get('response', 'raw') == 'raw':
+            headers['Content-Type'] = mime_type
+            response = outputs
+        elif status != JobStatus.failed and not is_async:
+            response['outputs'] = [outputs]
+            headers['Location'] = outputs['links'][0]['href']
+
+        if mime_type == 'application/json':
+            response2 = to_json(response, self.pretty_print)
+        else:
+            response2 = response
+
+        return headers, http_status, response2
+
+    @gzip
+    @pre_process
+    def get_route_definition(self, request: Union[APIRequest, Any],
+                               route_id) -> Tuple[dict, int, str]:
+        """
+        Get route definition
+
+        :param request: A request object
+        :param route_id: route identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+        routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+
+        try:
+            response = routing_process.get_route_def(route_id)
+        except ProcessorItemNotFoundError as err:
+            msg = "route definition not found."
+            return self.get_exception(
+                404, headers, request.format, 'NotFound', msg)
+        
+        headers['Content-Type'] = FORMAT_TYPES[F_JSON]
+        response = to_json(response, self.pretty_print)
+
+        return headers, 200, response
+
+    @gzip
+    @pre_process
+    def delete_route(self, request: Union[APIRequest, Any],
+                               route_id) -> Tuple[dict, int, str]:
+        """
+        Delete route
+
+        :param request: A request object
+        :param route_id: route identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+        routes_config = self.config['resources']['routes']
+        routing_process = load_plugin('routes', routes_config['processor'])
+
+        response = routing_process.del_route(route_id)
+        http_status = 200
+
+        # TODO: this response does not have any headers
+        return {}, http_status, {}
 
     @gzip
     @pre_process

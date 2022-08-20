@@ -391,6 +391,76 @@ async def get_job_result_resource(request: Request,
         request, job_id, resource))
 
 
+@app.route('/routes', methods=['GET'])
+@app.route('/routes/', methods=['GET'])
+@app.route('/routes/{route_id}', methods=['GET'])
+@app.route('/routes/{route_id}/', methods=['GET'])
+async def get_routes(request: Request, route_id=None):
+    """
+    OGC API - Routes description endpoint
+
+    :param request: Starlette Request instance
+    :param route_id: route identifier
+
+    :returns: HTTP response
+    """
+
+    if 'route_id' in request.path_params:
+        route_id = request.path_params['route_id']
+
+    return get_response(api_.get_routes(request, route_id))
+
+
+@app.route('/routes', methods=['POST'])
+@app.route('/routes/', methods=['POST'])
+async def generate_route(request: Request):
+    """
+    OGC API - Routes generation endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: HTTP response
+    """
+
+    return get_response(api_.generate_route(request))
+
+
+@app.route('/routes/{route_id}/definition', methods=['GET'])
+@app.route('/routes/{route_id}/definition/', methods=['GET'])
+async def get_route_definition(request: Request, route_id=None):
+    """
+    OGC API - Routes definition endpoint
+
+    :param request: Starlette Request instance
+    :param route_id: route identifier
+
+    :returns: HTTP response
+    """
+
+    if 'route_id' in request.path_params:
+        route_id = request.path_params['route_id']
+
+    return get_response(api_.get_route_definition(request, route_id))
+
+
+@app.route('/routes/{route_id}', methods=['DELETE'])
+@app.route('/routes/{route_id}/', methods=['DELETE'])
+async def delete_route(request: Request, route_id=None):
+    """
+    OGC API - Routes deletion endpoint
+
+    :param request: Starlette Request instance
+    :param route_id: route identifier
+
+    :returns: HTTP response
+    """
+
+    if 'route_id' in request.path_params:
+        route_id = request.path_params['route_id']
+
+    return get_response(api_.delete_route(request, route_id))
+
+
 @app.route('/collections/{collection_id:path}/position')
 @app.route('/collections/{collection_id:path}/area')
 @app.route('/collections/{collection_id:path}/cube')
