@@ -38,8 +38,9 @@ from psycopg2.sql import SQL, Identifier, Literal
 
 from pygeoapi.util import yaml_load
 from pygeoapi.process.base import (BaseProcessor, ProcessorExecuteError,
-    ProcessorCannotComputeError, ProcessorItemNotFoundError)
-from pygeoapi.provider.postgresql import DatabaseConnection as pgRoutingConnection
+                                   ProcessorCannotComputeError,
+                                   ProcessorItemNotFoundError)
+from pygeoapi.provider.postgresql import DatabaseConnection as pgRoutingConnection  # noqa
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,8 +49,8 @@ PROCESS_METADATA = {
     'version': '0.1.0',
     'id': 'routes-processor',
     'title': 'Routes',
-    'description': 'A routing processor to test OGC API - Routes and the Route '
-              'Exchange Model draft specs, using pgRouting as routing engine. ',
+    'description': 'A routing processor to test OGC API - Routes and the Route'
+                   'Exchange Model draft specs, using pgRouting as a routing engine',  # noqa
     'keywords': ['routes', 'REM', 'OGC', 'API'],
     'links': [{
         'type': 'text/html',
@@ -71,20 +72,20 @@ PROCESS_METADATA = {
         'waypoints': {
             'title': 'Waypoints',
             'description': 'The start and end point of the route, as well as '
-                'any other intermediate point.',
+                     'any other intermediate point.',
             'minOccurs': 1,
             'maxOccurs': 1,
             'schema': {
                 'allOf': [
-                    { 'format': 'geojson-geometry' },
+                    {'format': 'geojson-geometry'},
                     {
                         'type': 'object',
                         'title': 'GeoJSON MultiPoint',
-                        'required': [ 'type', 'coordinates' ],
+                        'required': ['type', 'coordinates'],
                         'properties': {
                             'type': {
                                 'type': 'string',
-                                'enum': [ 'MultiPoint' ]
+                                'enum': ['MultiPoint']
                             },
                             'coordinates': {
                                 'type': 'array',
@@ -108,7 +109,7 @@ PROCESS_METADATA = {
             'description': 'Preference or cost function.',
             'schema': {
                 'type': 'string',
-                'enum': [  ]
+                'enum': []
             },
             'minOccurs': 0,
             'maxOccurs': 1
@@ -118,18 +119,18 @@ PROCESS_METADATA = {
             'description': 'Type of transport desired.',
             'schema': {
                 'type': 'string',
-                'enum': [  ]
+                'enum': []
             },
             'minOccurs': 0,
             'maxOccurs': 1
         },
         'obstacles': {
             'title': 'Obstacles',
-            'description': 'Multiple obstacles that block roads and prevent routing.',
+            'description': 'Multiple obstacles that block roads and prevent routing.',  # noqa
             'schema': {
                 'allOf': [
-                    { 'format': 'geojson-geometry' },
-                    { '$ref': 'https://geojson.org/schema/MultiPolygon.json' }
+                    {'format': 'geojson-geometry'},
+                    {'$ref': 'https://geojson.org/schema/MultiPolygon.json'}
                 ]
             },
             'minOccurs': 0,
@@ -143,8 +144,8 @@ PROCESS_METADATA = {
                            'model format.',
             'schema': {
                 'allOf': [
-                    { 'format': 'geojson-feature-collection' },
-                    { '$ref': 'https://geojson.org/schema/FeatureCollection.json' }
+                    {'format': 'geojson-feature-collection'},
+                    {'$ref': 'https://geojson.org/schema/FeatureCollection.json'}  # noqa
                 ]
             }
         }
@@ -152,19 +153,20 @@ PROCESS_METADATA = {
     'example': {
         'inputs': {
             'name': 'San Diego sample route',
-            'waypoints' : {
-                'value' : {
-                    'type' : 'MultiPoint',
-                    'coordinates' : [
-                       [ -117.157431, 32.714538 ],
-                       [ -117.157440, 32.717815 ]
+            'waypoints': {
+                'value': {
+                    'type': 'MultiPoint',
+                    'coordinates': [
+                        [-117.157431, 32.714538],
+                        [-117.157440, 32.717815]
                     ]
-               }
+                }
             },
-            'preference' : 'fastest'
+            'preference': 'fastest'
         }
     }
 }
+
 
 class RoutesProcessor(BaseProcessor):
 
@@ -178,7 +180,7 @@ class RoutesProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
-        
+
         self.undefined_name = "Unnamed route"
         self.path = processor_def['path']
 
@@ -194,18 +196,18 @@ class RoutesProcessor(BaseProcessor):
         self.preferences = processor_def['preferences']
         PROCESS_METADATA['inputs']['preference']['schema']['enum'] = \
             processor_def['preferences']
-        
+
         self.modes = processor_def['modes']
         PROCESS_METADATA['inputs']['mode']['schema']['enum'] = \
             processor_def['modes']
-            
+
         self.units = processor_def['units']
 
         self.engine_type = processor_def['engine']['type']
         if self.engine_type == 'pgRouting':
             self.engine_conn = processor_def['engine']['connection']
             self.ways_id = processor_def['engine']['table']['ways_id']
-            self.geom = processor_def['engine']['table'].get('geom_field', 'geom')
+            self.geom = processor_def['engine']['table'].get('geom_field', 'geom')  # noqa
             self.search_buffer = processor_def['engine']['search_buffer']
 
         return
@@ -218,26 +220,27 @@ class RoutesProcessor(BaseProcessor):
 
         :returns: [ node ID, longitude, latitude, distance ]
         """
-        
+
         with pgRoutingConnection(self.engine_conn, "", context="routes") as db:
             cursor = db.conn.cursor()
 
-            node_buffer_clause = SQL("""{} && 
+            node_buffer_clause = SQL("""{} &&
                 ST_Buffer('POINT({})', {})""").format(
                 Identifier(self.geom), SQL(' ').join(
-                [Literal(coordinate) for coordinate in coordinates]),
+                    [Literal(coordinate) for coordinate in coordinates]),
                 Literal(self.search_buffer))
             distance_var = SQL("""ST_Distance({},
                 'SRID=4326;POINT({})') AS dist""").format(
                 Identifier(self.geom), SQL(' ').join(
-                [Literal(coordinate) for coordinate in coordinates]))
+                    [Literal(coordinate) for coordinate in coordinates]))
             sql_query = SQL("""SELECT id, lon, lat, {}
                 FROM ways_vertices_pgr WHERE {}
-                ORDER BY dist LIMIT 1;""").format(distance_var, node_buffer_clause)
+                ORDER BY dist LIMIT 1;""").format(
+                    distance_var, node_buffer_clause)
 
-            cursor.execute(sql_query)                              
+            cursor.execute(sql_query)
             node = cursor.fetchone()
-            
+
         return node
 
     def create_pg_join_query(self, route_def):
@@ -249,7 +252,7 @@ class RoutesProcessor(BaseProcessor):
 
         :returns: join_query
         """
-        
+
         # Need to join osm_ways table if height or weight limits requested
         height_limit = route_def.get('height')
         weight_limit = route_def.get('weight')
@@ -279,7 +282,7 @@ class RoutesProcessor(BaseProcessor):
         if preference == 'shortest':
             cost_query = SQL('w.cost AS cost, w.reverse_cost AS reverse_cost')
         elif preference == 'fastest':
-            cost_query = SQL('w.cost_s AS cost, w.reverse_cost_s AS reverse_cost')
+            cost_query = SQL('w.cost_s AS cost, w.reverse_cost_s AS reverse_cost')  # noqa
         else:
             cost_query = SQL('')
 
@@ -298,7 +301,7 @@ class RoutesProcessor(BaseProcessor):
         if height_limit is None:
             return SQL('')
         else:
-            return SQL("""((osm_ways.tags->''maxheight'' is NULL) OR 
+            return SQL("""((osm_ways.tags->''maxheight'' is NULL) OR
                 (CAST(osm_ways.tags->''maxheight'' AS DECIMAL) > {}))
                 AND""").format(Literal(height_limit))
 
@@ -315,7 +318,7 @@ class RoutesProcessor(BaseProcessor):
         if weight_limit is None:
             return SQL('')
         else:
-            return SQL("""((osm_ways.tags->''maxweight'' is NULL) OR 
+            return SQL("""((osm_ways.tags->''maxweight'' is NULL) OR
                 (CAST(osm_ways.tags->''maxweight'' AS DECIMAL) > {}))
                 AND""").format(Literal(weight_limit))
 
@@ -332,8 +335,8 @@ class RoutesProcessor(BaseProcessor):
         if obstacles is None or 'value' not in obstacles:
             return SQL('')
         else:
-            return SQL("""NOT(w.the_geom && 
-                ST_GeomFromGeoJSON(''{}'')) AND""").format( \
+            return SQL("""NOT(w.the_geom &&
+                ST_GeomFromGeoJSON(''{}'')) AND""").format(
                 SQL(json.dumps(obstacles["value"]).replace("'", '"')))
 
     def create_pg_optimization_query(self, orig_coords, dest_coords):
@@ -346,7 +349,7 @@ class RoutesProcessor(BaseProcessor):
         :returns: optimization_query
         """
 
-        opt_query = SQL("""(w.the_geom && ST_Buffer(''LINESTRING({}, 
+        opt_query = SQL("""(w.the_geom && ST_Buffer(''LINESTRING({},
                     {})'', {}))""").format(SQL(' ').join(
                     [Literal(orig_coord) for orig_coord in orig_coords]),
                     SQL(' ').join(
@@ -370,53 +373,60 @@ class RoutesProcessor(BaseProcessor):
         for waypoint in way_coords:
             waypoint_sequence += 1
             if orig_coordinates is None:
-                orig_coordinates, orig_node_id, dest_node_id = waypoint, None, None
+                orig_coordinates = waypoint
+                orig_node_id = dest_node_id = None
             else:
                 dest_coordinates = waypoint
 
                 if orig_node_id is None:
                     orig_node = self.fetch_pg_node_nearby(orig_coordinates)
                     if orig_node is None:
-                        LOGGER.debug("Origin node not found")
-                        raise ProcessorCannotComputeError('origin node not found')
+                        msg = 'origin node not found'
+                        LOGGER.error(msg)
+                        raise ProcessorCannotComputeError(msg)
                     else:
                         LOGGER.debug("Orig node:", orig_node)
-                        [ orig_node_id, orig_lon, orig_lat, d ] = orig_node
+                        [orig_node_id, orig_lon, orig_lat, d] = orig_node
                 dest_node = self.fetch_pg_node_nearby(dest_coordinates)
                 if dest_node is None:
-                    LOGGER.debug("Destination node not found")
-                    raise ProcessorCannotComputeError('destination node not found')
+                    msg = 'destination node not found'
+                    LOGGER.error(msg)
+                    raise ProcessorCannotComputeError(msg)
                 else:
                     LOGGER.debug("Dest node:", dest_node)
-                    [ dest_node_id, dest_lon, dest_lat, d ] = dest_node
+                    [dest_node_id, dest_lon, dest_lat, d] = dest_node
 
                 join_query = self.create_pg_join_query(route_def)
                 cost_query = self.create_pg_cost_query(route_def)
                 height_query = self.create_pg_height_query(route_def)
                 weight_query = self.create_pg_weight_query(route_def)
                 obstacles_query = self.create_pg_obstacles_query(route_def)
-                optimization_query = self.create_pg_optimization_query( \
+                optimization_query = self.create_pg_optimization_query(
                     orig_coordinates, dest_coordinates)
 
                 with pgRoutingConnection(self.engine_conn, "",
                      context="routes") as db:
                     cursor = db.conn.cursor()
-                    
+
                     # Using bidirectional Dijkstra as the routing algorithm
                     # pgr_bdDijkstra(edges_sql, start_id, end_id  [, directed])
+                    # FIXME: check SQL variable binding
                     edges_sql = SQL("""'SELECT w.{} AS id, w.source, w.target,
                         {} FROM ways AS w {} WHERE {} {} {} {}'""").format(
                         Identifier(self.ways_id), cost_query,
                         join_query, height_query, weight_query,
                         obstacles_query, optimization_query)
+                    # FIXME: check SQL variable binding
                     sql_query = SQL("""SELECT * FROM pgr_bdDijkstra({}, {}, {},
-                        directed := true);""").format(edges_sql,
-                        Literal(orig_node_id), Literal(dest_node_id))
+                                       directed := true);""").format(
+                                       edges_sql, Literal(orig_node_id),
+                                       Literal(dest_node_id))
                     cursor.execute(sql_query)
                     route_segment_sql = cursor.fetchall()
 
                 # Avoid duplicating intermediate waypoints in sequence
-                if waypoint_sequence < len(way_coords): route_segment_sql.pop()
+                if waypoint_sequence < len(way_coords):
+                    route_segment_sql.pop()
                 route_seq += route_segment_sql
 
                 orig_coordinates = dest_coordinates
@@ -431,9 +441,12 @@ class RoutesProcessor(BaseProcessor):
             return route_seq, [orig_lon, orig_lat], [dest_lon, dest_lat]
         else:
             LOGGER.debug("Nodes ok but no route found")
-            raise ProcessorCannotComputeError('a route was not found from origin to destination')
+            msg = 'a route was not found from origin to destination'
+            LOGGER.error(msg)
+            raise ProcessorCannotComputeError(msg)
 
-    def format_pg_route(self, route_seq, orig_coords, dest_coords, route_def, route_id):
+    def format_pg_route(self, route_seq, orig_coords, dest_coords, route_def,
+                        route_id):
         """
         Format the resulting route output in Route Exchange Model format
 
@@ -446,30 +459,33 @@ class RoutesProcessor(BaseProcessor):
         """
 
         # Fetch all data from database at once
-        list_of_edges = tuple([ route_step[3] for route_step in route_seq ])
+        list_of_edges = tuple([route_step[3] for route_step in route_seq])
         with pgRoutingConnection(self.engine_conn, "", context='routes') as db:
             cursor = db.conn.cursor()
             # Fetch edge's info and last point coordinate
-            sql_query = SQL("""SELECT gid, osm_id, length_m, cost_s, reverse_cost_s,
-                               name, source, target, x1, y1, x2, y2 FROM ways
+            # FIXME: check SQL variable binding
+            sql_query = SQL("""SELECT gid, osm_id, length_m, cost_s,
+                               reverse_cost_s, name, source, target, x1, y1,
+                               x2, y2 FROM ways
                                WHERE gid IN ({});""").format(SQL(', ').join(
-                               [Literal(edge_id) for edge_id in list_of_edges]))
+                               [Literal(edge_id) for edge_id in list_of_edges]))  # noqa
             cursor.execute(sql_query)
             edge_info = cursor.fetchall()
-            edge_info_dict = { i[0] : i[1:] for i in edge_info }
+            edge_info_dict = {i[0]: i[1:] for i in edge_info}
 
             # Fetch edge's tags
             sql_query = SQL("""SELECT osm_id, tags->'maxspeed',
                                tags->'maxweight', tags->'maxheight'
                                FROM osm_ways
                                WHERE osm_id IN ({});""").format(SQL(', ').join(
-                               [Literal(edge_info_dict[edge_id][0]) \
-                               for edge_id in edge_info_dict]))
+                                   [Literal(edge_info_dict[edge_id][0])
+                                    for edge_id in edge_info_dict]))
             cursor.execute(sql_query)
             edge_tags = cursor.fetchall()
-            edge_tags_dict = { i[0] : i[1:] for i in edge_tags }
+            edge_tags_dict = {i[0]: i[1:] for i in edge_tags}
 
             # Fetch segment's full coordinate list
+            # FIXME: check SQL variable binding
             sql_query = SQL("""SELECT gid,
                 array_agg(ARRAY[ST_X((dp).geom), ST_Y((dp).geom)])
                 FROM (SELECT gid, ST_DumpPoints(the_geom) AS dp FROM ways
@@ -478,7 +494,7 @@ class RoutesProcessor(BaseProcessor):
                 [Literal(edge_id) for edge_id in list_of_edges]))
             cursor.execute(sql_query)
             edge_points = cursor.fetchall()
-            edge_points_dict = { i[0] : i[1:][0] for i in edge_points }
+            edge_points_dict = {i[0]: i[1:][0] for i in edge_points}
 
         route_output = {
             'type': 'FeatureCollection',
@@ -525,7 +541,7 @@ class RoutesProcessor(BaseProcessor):
         start_point['properties'] = {}
         start_point['properties']['type'] = 'start'
         route_output['features'].append(start_point)
-        prev_node = route_seq[0][1] # Source node of the first segment
+
         segment = None
         prev_edge_name = None
         prev_maxspeed = None
@@ -560,20 +576,19 @@ class RoutesProcessor(BaseProcessor):
                 edge_length = edge_info_dict[edge_id][1]
                 edge_name = edge_info_dict[edge_id][4]
                 edge_source = edge_info_dict[edge_id][5]
-                edge_target = edge_info_dict[edge_id][6]
-                
+
                 if route_step[2] == edge_source:
                     # Proper direction
                     edge_duration = edge_info_dict[edge_id][2]
                     segment_coordinates = [
                         round(edge_info_dict[edge_id][9], 6),
-                        round(edge_info_dict[edge_id][10], 6) ]
+                        round(edge_info_dict[edge_id][10], 6)]
                 else:
                     # Reverse direction
                     edge_duration = edge_info_dict[edge_id][3]
                     segment_coordinates = [
                         round(edge_info_dict[edge_id][7], 6),
-                        round(edge_info_dict[edge_id][8], 6) ]
+                        round(edge_info_dict[edge_id][8], 6)]
                     edge_points_dict[edge_id].reverse()
 
                 # Update route total length and duration
@@ -586,14 +601,14 @@ class RoutesProcessor(BaseProcessor):
                 edge_points_dict[edge_id].pop(-1)
 
                 for edge_point in edge_points_dict[edge_id]:
-                    route_output['features'][0]['geometry']['coordinates'].append([
+                    route_output['features'][0]['geometry']['coordinates'].append([  # noqa
                         round(edge_point[0], 6),
-                        round(edge_point[1], 6) ])
+                        round(edge_point[1], 6)])
 
                 # Group all edges with the same name and speedlimit
-                if edge_name is not None and edge_name == prev_edge_name and \
-                    (maxspeed is None or prev_maxspeed is None or \
-                    maxspeed == prev_maxspeed):
+                if (edge_name is not None and edge_name == prev_edge_name and
+                        (maxspeed is None or prev_maxspeed is None or
+                         maxspeed == prev_maxspeed)):
                     segment['geometry']['coordinates'] = segment_coordinates
                     segment['properties']['length_m'] += edge_length
                     segment['properties']['duration_s'] += edge_duration
@@ -625,8 +640,8 @@ class RoutesProcessor(BaseProcessor):
 
                 # Add maxspeed if defined for this segment
                 if edge_tags_dict[edge_osm_id][0] is not None:
-                    segment['properties']['speedLimit'] = edge_tags_dict[edge_osm_id][0]
-                    segment['properties']['speedLimitUnit'] = self.units['speed']
+                    segment['properties']['speedLimit'] = edge_tags_dict[edge_osm_id][0]  # noqa
+                    segment['properties']['speedLimitUnit'] = self.units['speed']  # noqa
 
         route_output["features"][0]["properties"]["length_m"] = \
             round(route_output["features"][0]["properties"]["length_m"], 2)
@@ -646,8 +661,8 @@ class RoutesProcessor(BaseProcessor):
         if self.engine_type == 'pgRouting':
             route_seq, orig_coords, dest_coords = \
                 self.calculate_pg_route(route_def)
-            return self.format_pg_route(route_seq,
-                orig_coords, dest_coords, route_def, route_id)
+            return self.format_pg_route(
+                route_seq, orig_coords, dest_coords, route_def, route_id)
         else:
             return None
 
@@ -661,18 +676,18 @@ class RoutesProcessor(BaseProcessor):
 
         :returns: route_id
         """
-        
+
         route_req_name = route_def.get('name', self.undefined_name)
         # Use undefined_name if requested route name is empty
         if route_req_name == '':
             route_req_name = self.undefined_name
-        
+
         route_id = None
         for item in os.listdir(self.path):
             # Item must be a file with .json extension
-            if os.path.isfile(os.path.join(self.path, item)) and \
-                item.endswith('.json'):
-                
+            if (os.path.isfile(os.path.join(self.path, item)) and
+                    item.endswith('.json')):
+
                 filename = '{}/{}'.format(self.path, item)
                 with open(filename, 'r+') as f:
                     route_content = json.load(f)
@@ -688,7 +703,7 @@ class RoutesProcessor(BaseProcessor):
         # Route name not found amongst the saved routes. Create a random id
         if route_id is None:
             route_id = str(uuid.uuid1())
-        
+
         return route_id
 
     def get_routes(self, bbox, requested_html):
@@ -710,7 +725,7 @@ class RoutesProcessor(BaseProcessor):
             'title': 'this document',
             'href': '{}/routes'.format(self._rel_link)
         })
-        
+
         # If requested format is HTML add summary and extent information
         if requested_html:
             routes_list['routes'] = []
@@ -721,10 +736,10 @@ class RoutesProcessor(BaseProcessor):
                     'bbox': bbox
                 }
             }
-        
+
         for item in os.listdir(self.path):
-            if os.path.isfile(os.path.join(self.path, item)) and \
-                item.endswith('.json'):
+            if (os.path.isfile(os.path.join(self.path, item)) and
+                    item.endswith('.json')):
                 route_id = item.replace('.json', '')
                 filename = '{}/{}'.format(self.path, item)
                 with open(filename, 'r+') as f:
@@ -741,11 +756,11 @@ class RoutesProcessor(BaseProcessor):
                 if requested_html:
                     routes_list['routes'].append({
                         'title': route_name,
-                        'href': '{}/routes/{}'.format(self._rel_link, route_id),
+                        'href': '{}/routes/{}'.format(self._rel_link, route_id),  # noqa
                         'routeid': route_id,
                         'description': "Length: {} m. Duration: {} s.".format(
-                            str(round(route_content['features'][0]['properties']['length_m'])),
-                            str(round(route_content['features'][0]['properties']['duration_s'])))
+                            str(round(route_content['features'][0]['properties']['length_m'])),  # noqa
+                            str(round(route_content['features'][0]['properties']['duration_s'])))  # noqa
                         })
 
         return routes_list
@@ -758,6 +773,7 @@ class RoutesProcessor(BaseProcessor):
 
         :returns: route
         """
+
         filename = '{}/{}.json'.format(self.path, route_id)
         if os.path.isfile(filename):
             with open(filename, 'r+') as f:
@@ -776,13 +792,14 @@ class RoutesProcessor(BaseProcessor):
 
         :returns: route_def
         """
+
         filename = '{}/routedefs/{}.json'.format(self.path, route_id)
         if os.path.isfile(filename):
             with open(filename, 'r+') as f:
                 routedef = json.load(f)
         else:
             raise ProcessorItemNotFoundError('route definition not found.')
-            
+
         return routedef
 
     def del_route(self, route_id):
@@ -791,6 +808,7 @@ class RoutesProcessor(BaseProcessor):
 
         :param route_id: route unique identifier
         """
+
         route_f = '{}/{}.json'.format(self.path, route_id)
         if os.path.isfile(route_f):
             os.remove(route_f)
@@ -808,7 +826,7 @@ class RoutesProcessor(BaseProcessor):
         :param route_def: the definition of a route
         :param route: the generated route
         """
-        
+
         filename = '{}/{}.json'.format(self.path, route_id)
         with open(filename, 'w+', encoding='utf8') as f:
             json.dump(route, f, indent=4)
@@ -828,24 +846,31 @@ class RoutesProcessor(BaseProcessor):
         waypoints = route_def.get('waypoints')
         # Check waypoints data
         if waypoints is None:
-            raise ProcessorExecuteError('cannot generate a route without waypoints')
-        if 'value' not in waypoints or 'coordinates' \
-            not in waypoints['value']:
-            raise ProcessorExecuteError('waypoints not properly formed')
+            msg = 'cannot generate a route without waypoints'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+        if 'value' not in waypoints or 'coordinates' not in waypoints['value']:
+            msg = 'waypoints not properly formed'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
         way_coords = waypoints['value']['coordinates']
         if not isinstance(way_coords, list) or len(way_coords) < 2:
-            raise ProcessorExecuteError('need at least two waypoints to generate a route')
+            msg = 'need at least two waypoints to generate a route'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
 
         start_time = time.time()
         formatted_route = self.calculate_route(route_def, route_id)
-        LOGGER.debug("ROUTE FORMATTED --- %s seconds ---" % (time.time() - start_time))
-        
-        saving_process = threading.Thread(target=self.store_route, \
+        formatted_route_time = time.time() - start_time
+        LOGGER.debug('Route formatted {} seconds'.format(formatted_route_time))
+
+        saving_process = threading.Thread(
+            target=self.store_route,
             args=(route_id, route_def, formatted_route))
+
         saving_process.start()
-        
+
         return mimetype, formatted_route
 
     def __repr__(self):
         return '<RoutesProcessor> {}'.format(self.name)
-

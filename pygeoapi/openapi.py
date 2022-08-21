@@ -54,7 +54,7 @@ OPENAPI_YAML = {
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
-    'oar': 'https://app.swaggerhub.com/apis/cportele/wps-routing-api/1.0.0' # NOT YAML, placeholder
+    'oar': 'https://app.swaggerhub.com/apis/cportele/wps-routing-api/1.0.0'
 }
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -1033,7 +1033,7 @@ def get_oas_30(cfg):
             }
 
     routes = filter_dict_by_key_value(cfg['resources'], 'type', 'routes')
-    
+
     if routes:
         oas['tags'].append({
                 'name': 'routes',
@@ -1043,7 +1043,7 @@ def get_oas_30(cfg):
         paths['/routes'] = {
             'get': {
                 'summary': 'Get routes',
-                'description': 'The list of all routes currently available on this server.',
+                'description': 'The list of all routes currently available on this server.',  # noqa
                 'tags': ['routes'],
                 'operationId': 'getRoutes',
                 'parameters': [],
@@ -1087,8 +1087,8 @@ def get_oas_30(cfg):
                     name_in_path
                 ],
                 'responses': {
-                    '200': {'$ref': '{}/responses/GetRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '200': {'$ref': '{}/responses/GetRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
             },
@@ -1104,7 +1104,7 @@ def get_oas_30(cfg):
                     '200': {'$ref': '{}/responses/DeleteRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '202': {'$ref': '{}/responses/DeleteRouteQueued.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '204': {'$ref': '{}/responses/DeleteRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '500': {'$ref': '{}/responses/ServerError.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
@@ -1120,8 +1120,8 @@ def get_oas_30(cfg):
                     name_in_path
                 ],
                 'responses': {
-                    '200': {'$ref': '{}/responses/GetRouteDefinitionSuccess.yaml'.format(OPENAPI_YAML['oar'])},
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '200': {'$ref': '{}/responses/GetRouteDefinitionSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
             }

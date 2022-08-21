@@ -57,8 +57,7 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import (ProcessorExecuteError,
-    ProcessorCannotComputeError, ProcessorItemNotFoundError)
+from pygeoapi.process.base import ProcessorItemNotFoundError
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -142,11 +141,11 @@ CONFORMANCE = {
     'routes': [
         'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core',
         'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode',
-        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/intermediate-waypoints',
-        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/height',
-        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/weight',
-        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/obstacles',
-        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/delete-route'
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/intermediate-waypoints',  # noqa
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/height',  # noqa
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/weight',  # noqa
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/obstacles',  # noqa
+        'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/delete-route'  # noqa
     ]
 }
 
@@ -714,9 +713,10 @@ class API:
             'title': 'Jobs',
             'href': '{}/jobs'.format(self.config['server']['url'])
         }]
-        
-        # If routes resource, add a link to /routes
-        if filter_dict_by_key_value(self.config['resources'],'type','routes'):
+
+        # if routes resource, add a link to /routes
+        if filter_dict_by_key_value(self.config['resources'],
+                                    'type', 'routes'):
             fcm['links'].append({
                 'rel': 'http://www.opengis.net/def/rel/OGC/1.0/routes',
                 'type': FORMAT_TYPES[F_JSON],
@@ -830,13 +830,13 @@ class API:
             conformance['properties'] = {}
             if 'preferences' in conf_properties:
                 conformance['properties'].update({
-                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core':{
+                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core': {  # noqa
                         'preferences': conf_properties['preferences']
                     }
                 })
             if 'modes' in conf_properties:
                 conformance['properties'].update({
-                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode':{
+                    'http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode': {  # noqa
                         'modes': conf_properties['modes']
                     }
                 })
@@ -2996,7 +2996,7 @@ class API:
     @gzip
     @pre_process
     def get_routes(self, request: Union[APIRequest, Any],
-                               route_id) -> Tuple[dict, int, str]:
+                   route_id) -> Tuple[dict, int, str]:
         """
         Get routes description
 
@@ -3008,35 +3008,37 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-            
+
         headers = request.get_response_headers(SYSTEM_LOCALE)
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
-        
+
         # One specific route requested
         if route_id is not None:
             try:
                 response = routing_process.get_route(route_id)
             except ProcessorItemNotFoundError as err:
+                LOGGER.error(err)
                 msg = "Route not found."
                 return self.get_exception(
                     404, headers, request.format, 'NotFound', msg)
             if request.format == F_HTML:
-                content = render_j2_template(self.config,
-                    'routes/route.html', response, request.locale)
+                content = render_j2_template(
+                     self.config, 'routes/route.html', response,
+                     request.locale)
                 return headers, 200, content
         # No specific route. Return a list of stored routes
         else:
             bbox = routes_config['extents']['spatial']['bbox']
-            response = routing_process.get_routes(bbox,
-                request.format == F_HTML)
+            response = routing_process.get_routes(
+                bbox, request.format == F_HTML)
             if request.format == F_HTML:  # render
-                response['title'] = l10n.translate(routes_config['title'],
-                    request.locale)
-                response['description'] = l10n.translate(\
+                response['title'] = l10n.translate(
+                    routes_config['title'], request.locale)
+                response['description'] = l10n.translate(
                     routes_config['description'], request.locale)
-                response['keywords'] = l10n.translate(routes_config['keywords'],
-                    request.locale)
+                response['keywords'] = l10n.translate(
+                    routes_config['keywords'], request.locale)
                 content = render_j2_template(self.config,
                                              'routes/index.html',
                                              response, request.locale)
@@ -3048,8 +3050,7 @@ class API:
 
     @gzip
     @pre_process
-    def generate_route(self, request: Union[APIRequest, Any]
-                               ) -> Tuple[dict, int, str]:
+    def generate_route(self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:  # noqa
         """
         Generate route
 
@@ -3096,7 +3097,7 @@ class API:
         if route_req is None:
             msg = 'route request not properly formed'
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue1', msg)        
+                400, headers, request.format, 'InvalidParameterValue1', msg)
 
         LOGGER.debug('Executing routing process')
         mime_type, outputs, status = self.manager.execute_process(
@@ -3137,7 +3138,7 @@ class API:
     @gzip
     @pre_process
     def get_route_definition(self, request: Union[APIRequest, Any],
-                               route_id) -> Tuple[dict, int, str]:
+                             route_id) -> Tuple[dict, int, str]:
         """
         Get route definition
 
@@ -3156,10 +3157,11 @@ class API:
         try:
             response = routing_process.get_route_def(route_id)
         except ProcessorItemNotFoundError as err:
+            LOGGER.error(err)
             msg = "route definition not found."
             return self.get_exception(
                 404, headers, request.format, 'NotFound', msg)
-        
+
         headers['Content-Type'] = FORMAT_TYPES[F_JSON]
         response = to_json(response, self.pretty_print)
 
@@ -3168,7 +3170,7 @@ class API:
     @gzip
     @pre_process
     def delete_route(self, request: Union[APIRequest, Any],
-                               route_id) -> Tuple[dict, int, str]:
+                     route_id) -> Tuple[dict, int, str]:
         """
         Delete route
 
@@ -3180,11 +3182,12 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers(SYSTEM_LOCALE)
+
         routes_config = self.config['resources']['routes']
         routing_process = load_plugin('routes', routes_config['processor'])
 
         response = routing_process.del_route(route_id)
+        LOGGER.debug('Response: {}'.format(response))
         http_status = 200
 
         # TODO: this response does not have any headers
