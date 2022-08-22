@@ -1,11 +1,8 @@
-#!/bin/sh
 # =================================================================
 #
-# Authors: Just van den Broecke <justb4@gmail.com>>
-#          Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+# Authors: Benjamin Webb <bwebb@lincolninst.edu>
 #
-# Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2019 Jorge Samuel Mendes de Jesus
+# Copyright (c) 2022 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,14 +27,16 @@
 #
 # =================================================================
 
-set +e
+services:
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+    # build:
+    #   context: ../../..
 
-echo  "Install Curl"
+    container_name: pygeoapi_esri
 
-apt-get update -y &&
-apt-get install curl -y &&
+    ports:
+      - 5000:80
 
-echo  "Waiting for ElasticSearch container..."
-
-# First wait for ES to be up and then execute the original pygeoapi entrypoint.
-/wait-for-elasticsearch.sh http://elastic_search:9200 /entrypoint.sh || echo "ES failed: $?, exit" && exit 1
+    volumes:
+      - ./esri.config.yml:/pygeoapi/local.config.yml

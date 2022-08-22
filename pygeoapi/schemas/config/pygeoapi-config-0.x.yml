@@ -248,6 +248,13 @@ properties:
                               enum:
                                   - collection
                                   - stac-collection
+                          visibility:
+                              type: string
+                              description: visibility state of the resource
+                              enum:
+                                  - default
+                                  - hidden
+                              default: default
                           title:
                               $ref: '#/definitions/i18n_string'
                               description: the title of the service

@@ -66,6 +66,7 @@ class MongoProvider(BaseProvider):
         self.featuredb = dbclient.get_default_database()
         self.collection = provider_def['collection']
         self.featuredb[self.collection].create_index([("geometry", GEOSPHERE)])
+        self.fields = self.get_fields()
 
     def get_fields(self):
         """
@@ -73,13 +74,22 @@ class MongoProvider(BaseProvider):
 
         :returns: dict of fields
         """
+
         map = Code(
             "function() { for (var key in this.properties) "
             "{ emit(key, null); } }")
         reduce = Code("function(key, stuff) { return null; }")
         result = self.featuredb[self.collection].map_reduce(
             map, reduce, "myresults")
-        return result.distinct('_id')
+
+        # prepare a dictionary with fields
+        # set the field type to 'string'.
+        # by operating without a schema, mongo can query any data type.
+        fields = {}
+        for i in result.distinct('_id'):
+            fields[i] = {'type': 'string'}
+
+        return (fields)
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):

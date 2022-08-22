@@ -357,6 +357,7 @@ def get_job_result_resource(job_id, resource):
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
 
+
 @BLUEPRINT.route('/routes', methods=['GET'])
 @BLUEPRINT.route('/routes/<route_id>', methods=['GET'])
 def get_routes(route_id=None):
@@ -369,6 +370,7 @@ def get_routes(route_id=None):
     """
     return get_response(api_.get_routes(request, route_id))
 
+
 @BLUEPRINT.route('/routes', methods=['POST'])
 def generate_route():
     """
@@ -377,6 +379,7 @@ def generate_route():
     :returns: HTTP response
     """
     return get_response(api_.generate_route(request))
+
 
 @BLUEPRINT.route('/routes/<route_id>/definition', methods=['GET'])
 def get_route_definition(route_id):
@@ -389,6 +392,7 @@ def get_route_definition(route_id):
     """
     return get_response(api_.get_route_definition(request, route_id))
 
+
 @BLUEPRINT.route('/routes/<route_id>', methods=['DELETE'])
 def delete_route(route_id):
     """
@@ -399,6 +403,7 @@ def delete_route(route_id):
     :returns: HTTP response
     """
     return get_response(api_.delete_route(request, route_id))
+
 
 @BLUEPRINT.route('/collections/<path:collection_id>/position')
 @BLUEPRINT.route('/collections/<path:collection_id>/area')

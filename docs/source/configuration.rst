@@ -144,6 +144,7 @@ default.
   resources:
       obs:
           type: collection  # REQUIRED (collection, process, or stac-collection)
+          visibility: default  # OPTIONAL
           title: Observations  # title of dataset
           description: My cool observations  # abstract of dataset
           keywords:  # list of related keywords
@@ -234,6 +235,32 @@ default.
    :ref:`plugins` for more information on plugins
 
 
+Publishing hidden resources
+---------------------------
+
+pygeoapi allows for publishing resources without advertising them explicitly
+via its collections and OpenAPI endpoints.  The resource is available if the
+client knows the name of the resource apriori.
+
+To provide hidden resources, the resource must provide a ``visibility: hidden``
+property.  For example, considering the following resource:
+
+.. code-block:: yaml
+
+   resources:
+        foo:
+            title: my hidden resource
+            visibility: hidden
+
+Examples:
+
+.. code-block:: bash
+
+   curl https://example.org/collections  # resource foo is not advertised
+   curl https://example.org/openapi  # resource foo is not advertised
+   curl https://example.org/collections/foo  # user can access resource normally
+
+
 Validating the configuration
 ----------------------------
 
@@ -242,7 +269,7 @@ utility that can be run as follows:
 
 .. code-block:: bash
 
-   pygeoapi config validate /path/to/my-pygeoapi-config.yml
+   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
 
 
 Using environment variables

@@ -46,15 +46,15 @@ from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
-    'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
+    'oapif': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
-    'oaedr': 'http://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
+    'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
-    'oar': 'https://app.swaggerhub.com/apis/cportele/wps-routing-api/1.0.0' # NOT YAML, placeholder
+    'oar': 'https://app.swaggerhub.com/apis/cportele/wps-routing-api/1.0.0'
 }
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -64,7 +64,7 @@ def get_ogc_schemas_location(server_config):
 
     osl = server_config.get('ogc_schemas_location', None)
 
-    value = 'http://schemas.opengis.net'
+    value = 'https://schemas.opengis.net'
 
     if osl is not None:
         if osl.startswith('http'):
@@ -422,6 +422,9 @@ def get_oas_30(cfg):
                                            'type', 'collection')
 
     for k, v in collections.items():
+        if v.get('visibility', 'default') == 'hidden':
+            LOGGER.debug('Skipping hidden layer: {}'.format(k))
+            continue
         name = l10n.translate(k, locale_)
         title = l10n.translate(v['title'], locale_)
         desc = l10n.translate(v['description'], locale_)
@@ -885,6 +888,9 @@ def get_oas_30(cfg):
         LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
+            if k.startswith('_'):
+                LOGGER.debug('Skipping hidden layer: {}'.format(k))
+                continue
             name = l10n.translate(k, locale_)
             p = load_plugin('process', v['processor'])
 
@@ -1027,7 +1033,7 @@ def get_oas_30(cfg):
             }
 
     routes = filter_dict_by_key_value(cfg['resources'], 'type', 'routes')
-    
+
     if routes:
         oas['tags'].append({
                 'name': 'routes',
@@ -1037,7 +1043,7 @@ def get_oas_30(cfg):
         paths['/routes'] = {
             'get': {
                 'summary': 'Get routes',
-                'description': 'The list of all routes currently available on this server.',
+                'description': 'The list of all routes currently available on this server.',  # noqa
                 'tags': ['routes'],
                 'operationId': 'getRoutes',
                 'parameters': [],
@@ -1081,8 +1087,8 @@ def get_oas_30(cfg):
                     name_in_path
                 ],
                 'responses': {
-                    '200': {'$ref': '{}/responses/GetRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '200': {'$ref': '{}/responses/GetRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
             },
@@ -1098,7 +1104,7 @@ def get_oas_30(cfg):
                     '200': {'$ref': '{}/responses/DeleteRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '202': {'$ref': '{}/responses/DeleteRouteQueued.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '204': {'$ref': '{}/responses/DeleteRouteSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     '500': {'$ref': '{}/responses/ServerError.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
@@ -1114,8 +1120,8 @@ def get_oas_30(cfg):
                     name_in_path
                 ],
                 'responses': {
-                    '200': {'$ref': '{}/responses/GetRouteDefinitionSuccess.yaml'.format(OPENAPI_YAML['oar'])},
-                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},
+                    '200': {'$ref': '{}/responses/GetRouteDefinitionSuccess.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
+                    '404': {'$ref': '{}/responses/RouteNotFound.yaml'.format(OPENAPI_YAML['oar'])},  # noqa
                     'default': {'$ref': '#/components/responses/default'}
                 }
             }

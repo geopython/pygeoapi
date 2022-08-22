@@ -29,8 +29,9 @@
 
 import logging
 
-from pygeoapi.process.base import (BaseProcessor, ProcessorExecuteError,
-    ProcessorCannotComputeError, ProcessorItemNotFoundError)
+from pygeoapi.process.base import (ProcessorExecuteError,
+                                   ProcessorCannotComputeError,
+                                   ProcessorItemNotFoundError)
 
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus

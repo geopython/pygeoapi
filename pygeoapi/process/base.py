@@ -69,10 +69,12 @@ class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
     pass
 
+
 class ProcessorCannotComputeError(ProcessorGenericError):
     """query cannot be computed"""
     pass
-    
+
+
 class ProcessorItemNotFoundError(ProcessorGenericError):
     """item not found"""
     pass

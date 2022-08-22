@@ -52,6 +52,13 @@ def config():
 
 
 @pytest.fixture()
+def config_hidden_resources():
+    filename = 'pygeoapi-test-config-hidden-resources.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -60,6 +67,11 @@ def openapi():
 @pytest.fixture()
 def api_(config):
     return API(config)
+
+
+@pytest.fixture()
+def api_hidden_resources(config_hidden_resources):
+    return API(config_hidden_resources)
 
 
 def test_apirequest(api_):
@@ -498,6 +510,18 @@ def test_describe_collections(config, api_):
         req, 'naturalearth/lakes')
     collection = json.loads(response)
     assert collection['id'] == 'naturalearth/lakes'
+
+
+def test_describe_collections_hidden_resources(
+        config_hidden_resources, api_hidden_resources):
+    req = mock_request({})
+    rsp_headers, code, response = api_hidden_resources.describe_collections(req)  # noqa
+    assert code == 200
+
+    assert len(config_hidden_resources['resources']) == 3
+
+    collections = json.loads(response)
+    assert len(collections['collections']) == 1
 
 
 def test_get_collection_queryables(config, api_):
