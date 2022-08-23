@@ -179,7 +179,7 @@ is simple to run from the command, e.g:
    gunicorn pygeoapi.starlette_app:app -w 4 -k uvicorn.workers.UvicornWorker
 
 .. note::
-   Uvicorn is as easy to install as ``pip install guvicorn``
+   Uvicorn is as easy to install as ``pip install uvicorn``
 
 Summary
 -------
