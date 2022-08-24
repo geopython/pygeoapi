@@ -491,20 +491,6 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature_collection
 
-    def _get_order_by_clauses(self, sort_by, table_model):
-        # Build sort_by clauses if provided
-        clauses = []
-        for sort_by_dict in sort_by:
-            model_column = getattr(table_model, sort_by_dict['property'])
-            order_function = asc if sort_by_dict['order'] == '+' else desc
-            clauses.append(order_function(model_column))
-
-        # Otherwise sort by primary key (to ensure reproducible output)
-        if not clauses:
-            clauses.append(asc(getattr(table_model, self.id_field)))
-
-        return clauses
-
     def query_cql(self, db, offset=0, limit=10, resulttype='results',
                   bbox=[], sortby=[], select_properties=[], skip_geometry=False,
                   cql_ast=None, **kwargs):
@@ -549,3 +535,18 @@ class PostgreSQLProvider(BaseProvider):
             result.append(row_dict)
 
         return result
+
+
+    def _get_order_by_clauses(self, sort_by, table_model):
+        # Build sort_by clauses if provided
+        clauses = []
+        for sort_by_dict in sort_by:
+            model_column = getattr(table_model, sort_by_dict['property'])
+            order_function = asc if sort_by_dict['order'] == '+' else desc
+            clauses.append(order_function(model_column))
+
+        # Otherwise sort by primary key (to ensure reproducible output)
+        if not clauses:
+            clauses.append(asc(getattr(table_model, self.id_field)))
+
+        return clauses
