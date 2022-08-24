@@ -498,7 +498,7 @@ class PostgreSQLProvider(BaseProvider):
         schema = db.conn_dic['options'].split('=')[-1].split(',')[0]
         engine = create_engine('postgresql+psycopg2://', creator=lambda: db.conn)
         metadata = MetaData(engine)
-        metadata.reflect(schema=schema, views=True)
+        metadata.reflect(schema=schema, only=[self.table], views=True)
 
         # Create SQLAlchemy model from reflected table
         # It is necessary to add the primary key constraint because SQLAlchemy
