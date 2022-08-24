@@ -48,6 +48,8 @@ import urllib.parse
 import uuid
 
 from dateutil.parser import parse as dateparse
+from lark.exceptions import UnexpectedInput
+from pygeofilter.parsers.ecql import parse
 import pytz
 from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
@@ -1271,7 +1273,7 @@ class API:
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
-                               'properties', 'skipGeometry', 'q']
+                               'properties', 'skipGeometry', 'q', 'cql']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1419,6 +1421,18 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('processing cql parameter')
+        cql = request.params.get('cql')
+        if cql is not None:
+            try:
+                cql_ast = parse(cql)
+            except UnexpectedInput as exc:
+                msg = f'Bad CQL string: {cql}'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+        else:
+            cql_ast = None
+
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
@@ -1434,6 +1448,7 @@ class API:
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
         LOGGER.debug('language: {}'.format(prv_locale))
         LOGGER.debug('q: {}'.format(q))
+        LOGGER.debug('cql_ast: {}'.format(cql_ast))
 
         try:
             content = p.query(offset=offset, limit=limit,
@@ -1442,7 +1457,7 @@ class API:
                               sortby=sortby,
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
-                              q=q, language=prv_locale)
+                              q=q, language=prv_locale, cql_ast=cql_ast)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'

@@ -114,3 +114,4 @@ ENV/
 *.code-workspace
 
 .DS_Store
+setup_env.sh

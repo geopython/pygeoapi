@@ -30,8 +30,12 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
+# See pygeoapi/provider/postgresql.py for instructions on setting up
+# test database in Docker
 
 import pytest
+
+from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.postgresql import PostgreSQLProvider
@@ -204,3 +208,35 @@ def test_get_not_existing_item_raise_exception(config):
     p = PostgreSQLProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
+@pytest.mark.parametrize('cql, expected_ids', [
+  ("osm_id BETWEEN 80800000 AND 80900000",
+   [80827787, 80827793, 80835468, 80835470, 80835472, 80835474,
+    80835475, 80835478, 80835483, 80835486]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND waterway = 'stream'",
+   [80835470]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND waterway ILIKE 'sTrEam'",
+   [80835470]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND waterway LIKE 's%'",
+   [80835470]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND name IN ('Muhira', 'Mpanda')",
+   [80835468, 80835472, 80835475, 80835478]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND name IS NULL",
+   [80835474, 80835483]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",
+   [80827793, 80835470, 80835472, 80835483, 80835489]),
+  ("osm_id BETWEEN 80800000 AND 80900000 AND "
+   "CROSSES(foo_geom,  LINESTRING(29.091 -2.731, 29.253 -2.845))",
+   [80835470, 80835472, 80835489])
+])
+def test_query_cql(config, cql, expected_ids):
+    """Test a variety of CQL queries"""
+    ast = parse(cql)
+    p = PostgreSQLProvider(config)
+
+    feature_collection = p.query(cql_ast=ast)
+    assert feature_collection.get('type', None) == 'FeatureCollection'
+
+    features = feature_collection.get('features', None)
+    ids = [feature["id"] for feature in features]
+    assert ids == expected_ids

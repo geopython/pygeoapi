@@ -50,6 +50,14 @@ from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
+from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import sessionmaker
+from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
+from pygeofilter.backends.sqlalchemy.evaluate import to_filter
+
+import shapely
+from geoalchemy2.shape import to_shape
 from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
@@ -238,7 +246,8 @@ class PostgreSQLProvider(BaseProvider):
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False, q=None,
+              cql_ast=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -258,6 +267,28 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug('Querying PostGIS')
+
+        if cql_ast:
+            with DatabaseConnection(self.conn_dic,
+                                    self.table,
+                                    properties=self.properties) as db:
+
+                row_data = self.query_cql(
+                    db, offset=offset, limit=limit, resulttype=resulttype,
+                    bbox=bbox, sortby=sortby, select_properties=select_properties,
+                    skip_geometry=skip_geometry, cql_ast=cql_ast)
+
+                feature_collection = {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+
+                for rd in row_data:
+                    feature_collection['features'].append(
+                        self.__response_feature(rd))
+
+                return feature_collection
+
 
         if resulttype == 'hits':
 
@@ -459,3 +490,62 @@ class PostgreSQLProvider(BaseProvider):
         feature_collection['numberMatched'] = hits
 
         return feature_collection
+
+    def _get_order_by_clauses(self, sort_by, table_model):
+        # Build sort_by clauses if provided
+        clauses = []
+        for sort_by_dict in sort_by:
+            model_column = getattr(table_model, sort_by_dict['property'])
+            order_function = asc if sort_by_dict['order'] == '+' else desc
+            clauses.append(order_function(model_column))
+
+        # Otherwise sort by primary key (to ensure reproducible output)
+        if not clauses:
+            clauses.append(asc(getattr(table_model, self.id_field)))
+
+        return clauses
+
+    def query_cql(self, db, offset=0, limit=10, resulttype='results',
+                  bbox=[], sortby=[], select_properties=[], skip_geometry=False,
+                  cql_ast=None, **kwargs):
+
+        schema = db.conn_dic['options'].split('=')[-1].split(',')[0]
+        engine = create_engine('postgresql+psycopg2://', creator=lambda: db.conn)
+        metadata = MetaData(engine)
+        metadata.reflect(schema=schema, views=True)
+
+        # Create SQLAlchemy model from reflected table
+        # It is necessary to add the primary key constraint because SQLAlchemy
+        # requires it to reflect the table, but a view in a PostgreSQL database does
+        # not have a primary key defined.
+        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
+        sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(self.id_field))
+        Base = automap_base(metadata=metadata)
+        Base.prepare()
+        TableModel = getattr(Base.classes, self.table)
+
+        # Prepare CQL requirements
+        field_mapping = {column_name: getattr(TableModel, column_name)
+                         for column_name in TableModel.__table__.columns.keys()}
+        filters = to_filter(cql_ast, field_mapping)
+
+        # Create session to run a query
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+
+        order_by_clauses = self._get_order_by_clauses(sortby, TableModel)
+
+        q = session.query(TableModel).filter(filters).order_by(*order_by_clauses).offset(offset).limit(limit)
+
+        result = []
+        for row in q:
+            row_dict = row.__dict__
+            wkb_geom = row_dict.pop(self.geom)
+            shapely_geom = to_shape(wkb_geom)
+            geojson_geom = shapely.geometry.mapping(shapely_geom)
+            row_dict['st_asgeojson'] = json.dumps(geojson_geom)  # Use st_asgeojson to match normal query output
+            row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
+            result.append(row_dict)
+
+        return result
