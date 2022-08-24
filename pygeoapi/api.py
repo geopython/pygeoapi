@@ -1427,7 +1427,8 @@ class API:
             try:
                 cql_ast = parse(cql)
             except UnexpectedInput as exc:
-                msg = f'Bad CQL string: {cql}'
+                lark_error_type = str(type(exc)).split("'")[1].split('.')[2]
+                msg = f'Bad CQL string ({lark_error_type}): {cql}'
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
         else:
