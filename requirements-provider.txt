@@ -11,8 +11,6 @@ pygeofilter[backend-sqlalchemy]
 pygeometa
 pymongo==3.10.1
 scipy
-shapely
 sodapy
 xarray
 zarr
-
