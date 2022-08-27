@@ -110,15 +110,20 @@ class CSVProvider(BaseProvider):
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
             for row in itertools.islice(data_, offset, offset+limit):
+                try:
+                    coordinates = [
+                        float(row.pop(self.geometry_x)),
+                        float(row.pop(self.geometry_y)),
+                    ]
+                except ValueError:
+                    LOGGER.error(f"Skipping row with invalid coordinates id = {row.get(self.id_field)}")
+                    continue
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 if not skip_geometry:
                     feature['geometry'] = {
                         'type': 'Point',
-                        'coordinates': [
-                            float(row.pop(self.geometry_x)),
-                            float(row.pop(self.geometry_y))
-                        ]
+                        'coordinates': coordinates
                     }
                 else:
                     feature['geometry'] = None
