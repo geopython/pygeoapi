@@ -359,6 +359,7 @@ def render_j2_template(config, template, data, locale_=None):
             LOGGER.debug('Custom template not found; using default')
             env = Environment(loader=FileSystemLoader(TEMPLATES),
                               extensions=['jinja2.ext.i18n'])
+            env.install_gettext_translations(translations)
             template = env.get_template(template)
         else:
             raise
