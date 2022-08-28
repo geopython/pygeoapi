@@ -181,6 +181,24 @@ is simple to run from the command, e.g:
 .. note::
    Uvicorn is as easy to install as ``pip install uvicorn``
 
+
+Django
+^^^^^^
+
+`Django`_ is a Python web framework that encourages rapid development and clean, pragmatic design.  Assuming
+a Django install/enabled application:
+
+.. code-block:: bash
+
+    python3 manage.py runserver
+
+In this section we create a sample Django project and use pygeoapi as an pluggable, embedded application.
+
+.. note::
+
+   For the truly impatient developers, see `examples/django/sample_project/README.md` for an example Django application.
+
+
 Summary
 -------
 
@@ -199,3 +217,4 @@ and modify accordingly.
 .. _`Gunicorn settings`: http://docs.gunicorn.org/en/stable/settings.html
 .. _`Uvicorn`: https://www.uvicorn.org
 .. _`mod_wsgi`: https://modwsgi.readthedocs.io
+.. _`Django`: https://djangoproject.com
