@@ -114,5 +114,4 @@ ENV/
 *.code-workspace
 
 .DS_Store
-
-pygeoapi/django_pygeoapi/sample_project/db.sqlite3
+examples/django/sample_project/db.sqlite3

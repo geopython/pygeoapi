@@ -1,3 +1,38 @@
+# =================================================================
+#
+# Authors: Francesco Bartoli <francesco.bartoli@geobeyond.it>
+#          Luca Delucchi <lucadeluge@gmail.com>
+#          Krishna Lodha <krishnaglodha@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
+#
+# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2022 Luca Delucchi
+# Copyright (c) 2022 Krishna Lodha
+# Copyright (c) 2022 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
 """Integration module for Django"""
 from typing import Tuple, Dict, Mapping, Optional
 from django.conf import settings
@@ -15,7 +50,7 @@ def landing_page(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, "landing_page")
+    response_ = _feed_response(request, 'landing_page')
     response = _to_django_response(*response_)
 
     return response
@@ -31,7 +66,7 @@ def openapi(request: HttpRequest) -> HttpResponse:
     """
 
     openapi_config = get_oas(settings.PYGEOAPI_CONFIG)
-    response_ = _feed_response(request, "openapi", openapi_config)
+    response_ = _feed_response(request, 'openapi', openapi_config)
     response = _to_django_response(*response_)
 
     return response
@@ -46,7 +81,7 @@ def conformance(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, "conformance")
+    response_ = _feed_response(request, 'conformance')
     response = _to_django_response(*response_)
 
     return response
@@ -65,7 +100,7 @@ def collections(
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, "describe_collections", collection_id)
+    response_ = _feed_response(request, 'describe_collections', collection_id)
     response = _to_django_response(*response_)
 
     return response
@@ -85,7 +120,7 @@ def collection_queryables(
     """
 
     response_ = _feed_response(
-        request, "get_collection_queryables", collection_id
+        request, 'get_collection_queryables', collection_id
     )
     response = _to_django_response(*response_)
 
@@ -107,7 +142,7 @@ def collection_items(
 
     response_ = _feed_response(
         request,
-        "get_collection_items",
+        'get_collection_items',
         collection_id,
     )
     response = _to_django_response(*response_)
@@ -131,7 +166,7 @@ def collection_item(
     """
 
     response_ = _feed_response(
-        request, "get_collection_item", collection_id, item_id
+        request, 'get_collection_item', collection_id, item_id
     )
     response = _to_django_response(*response_)
 
@@ -152,7 +187,7 @@ def collection_coverage(
     """
 
     response_ = _feed_response(
-        request, "get_collection_coverage", collection_id
+        request, 'get_collection_coverage', collection_id
     )
     response = _to_django_response(*response_)
 
@@ -173,7 +208,7 @@ def collection_coverage_domainset(
     """
 
     response_ = _feed_response(
-        request, "get_collection_coverage_domainset", collection_id
+        request, 'get_collection_coverage_domainset', collection_id
     )
     response = _to_django_response(*response_)
 
@@ -194,7 +229,7 @@ def collection_coverage_rangetype(
     """
 
     response_ = _feed_response(
-        request, "get_collection_coverage_rangetype", collection_id
+        request, 'get_collection_coverage_rangetype', collection_id
     )
     response = _to_django_response(*response_)
 
@@ -214,7 +249,7 @@ def collection_tiles(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, "get_collection_tiles", collection_id)
+    response_ = _feed_response(request, 'get_collection_tiles', collection_id)
     response = _to_django_response(*response_)
 
     return response
@@ -237,7 +272,7 @@ def collection_tiles_metadata(
 
     response_ = _feed_response(
         request,
-        "get_collection_tiles_metadata",
+        'get_collection_tiles_metadata',
         collection_id,
         tileMatrixSetId,
     )
@@ -269,7 +304,7 @@ def collection_item_tiles(
 
     response_ = _feed_response(
         request,
-        "get_collection_tiles_metadata",
+        'get_collection_tiles_metadata',
         collection_id,
         tileMatrixSetId,
         tileMatrix,
@@ -294,7 +329,7 @@ def processes(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, "describe_processes", process_id)
+    response_ = _feed_response(request, 'describe_processes', process_id)
     response = _to_django_response(*response_)
 
     return response
@@ -313,7 +348,7 @@ def jobs(
 
     :returns: Django HTTP response
     """
-    response_ = _feed_response(request, "get_jobs", job_id)
+    response_ = _feed_response(request, 'get_jobs', job_id)
     response = _to_django_response(*response_)
 
     return response
@@ -331,7 +366,7 @@ def job_results(
 
     :returns: Django HTTP response
     """
-    response_ = _feed_response(request, "get_job_result", job_id)
+    response_ = _feed_response(request, 'get_job_result', job_id)
     response = _to_django_response(*response_)
 
     return response
@@ -354,7 +389,7 @@ def job_results_resource(
     """
     response_ = _feed_response(
         request,
-        "get_job_result_resource",
+        'get_job_result_resource',
         job_id,
         resource
     )
@@ -380,7 +415,7 @@ def get_collection_edr_query(
     query_type = request.path.split('/')[-1]
     response_ = _feed_response(
         request,
-        "get_collection_edr_query",
+        'get_collection_edr_query',
         collection_id,
         instance_id,
         query_type
@@ -399,7 +434,7 @@ def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, "get_stac_root")
+    response_ = _feed_response(request, 'get_stac_root')
     response = _to_django_response(*response_)
 
     return response
@@ -418,7 +453,7 @@ def stac_catalog_path(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, "get_stac_path", path)
+    response_ = _feed_response(request, 'get_stac_path', path)
     response = _to_django_response(*response_)
 
     return response

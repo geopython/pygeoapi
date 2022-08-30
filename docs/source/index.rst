@@ -23,7 +23,6 @@ pygeoapi |release| documentation
    configuration
    administration
    running
-   downstream
    running-with-docker
    tour
    openapi

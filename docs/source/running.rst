@@ -181,6 +181,26 @@ is simple to run from the command, e.g:
 .. note::
    Uvicorn is as easy to install as ``pip install uvicorn``
 
+
+Django
+^^^^^^
+
+`Django`_ is a Python web framework that encourages rapid development and clean, pragmatic design.  Assuming
+a Django install/enabled application:
+
+
+.. code-block:: bash
+
+    pygeoapi serve --django
+
+
+To integrate pygeoapi as part of another Django project in a pluggable way the truly impatient developers can
+see `examples/django/sample_project/README.md` for a complete Django application.
+
+As a result, your Django application will be available at http://localhost:5000/ and pygeoapi will be available
+at http://localhost:5000/oapi
+
+
 Summary
 -------
 
@@ -199,3 +219,4 @@ and modify accordingly.
 .. _`Gunicorn settings`: http://docs.gunicorn.org/en/stable/settings.html
 .. _`Uvicorn`: https://www.uvicorn.org
 .. _`mod_wsgi`: https://modwsgi.readthedocs.io
+.. _`Django`: https://djangoproject.com

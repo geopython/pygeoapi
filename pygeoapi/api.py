@@ -311,7 +311,7 @@ class APIRequest:
             # Set data from Flask request
             api_req._data = request.data
         elif hasattr(request, 'body'):
-            if "django" in str(request.__class__):
+            if 'django' in str(request.__class__):
                 # Set data from Django request
                 api_req._data = request.body
             else:
@@ -326,7 +326,7 @@ class APIRequest:
                     loop = asyncio.get_event_loop()
                     api_req._data = loop.run_until_complete(request.body())
                 except ModuleNotFoundError:
-                    LOGGER.error("Module nest-asyncio not found")
+                    LOGGER.error('Module nest-asyncio not found')
         return api_req
 
     @staticmethod

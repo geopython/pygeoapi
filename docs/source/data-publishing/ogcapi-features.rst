@@ -105,7 +105,7 @@ specify the URL for the service layer in the ``data`` field.
 
 * ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
 * If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
-configuration to authenticate into the service.
+  configuration to authenticate into the service.
 
 .. code-block:: yaml
 
@@ -310,7 +310,7 @@ relies on `sodapy <https://github.com/xmunoz/sodapy>`.
 * ``resource_id`` is the 4x4 resource id pattern.
 * ``geom_field`` is required for bbox queries to work.
 * ``token`` is optional and can be included in the configuration to pass
-an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
+  an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
 
 
 .. code-block:: yaml

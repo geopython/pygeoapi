@@ -33,45 +33,19 @@
 #
 # =================================================================
 
+"""
+WSGI config for django_ project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/2.2/howto/deployment/wsgi/
+"""
+
 import os
-from pathlib import Path
-import sys
 
+from django.core.wsgi import get_wsgi_application
 
-def config():
-    from pygeoapi.util import yaml_load
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_.settings')
 
-    if not os.environ.get('PYGEOAPI_CONFIG'):
-        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-        CONFIG = yaml_load(fh)
-
-    return CONFIG
-
-
-def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_pygeoapi.settings')
-    django_app_path = Path(os.path.dirname(__file__))
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError as exc:
-        raise ImportError(
-            'Couldn\'t import Django. Are you sure it\'s installed and '
-            'available on your PYTHONPATH environment variable? Did you '
-            'forget to activate a virtual environment?'
-        ) from exc
-
-    CONFIG = config()
-
-    bind = f"{CONFIG['server']['bind']['host']}:{CONFIG['server']['bind']['port']}"  # noqa
-
-    sys.argv = [str(django_app_path / 'django_app.py'), 'runserver', bind]
-
-    sys.path.append(str(django_app_path))
-
-    execute_from_command_line(sys.argv)
-
-
-if __name__ == '__main__':
-    main()
+application = get_wsgi_application()
