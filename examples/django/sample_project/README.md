@@ -1,11 +1,19 @@
 # pygeoapi Django integration
 
-This directory contains a [sample Django project](https://djangoproject.com) demonstrating how to
-integrate pygeoapi into your Django application.
+## Overview
 
 Django is a Python web framework that encourages rapid development and clean, pragmatic design.
 
+The pygeoapi and Django integration can be visualized as follows:
+
+> HTTP request <--> Django (`pygeoapi/django_app.py`) <--> pygeoapi API (`pygeoapi/api.py`)
+
+This directory contains a [sample Django project](https://djangoproject.com) demonstrating how to
+integrate pygeoapi into your Django application.
+
 In this document we create a sample Django project and use pygeoapi as a pluggable, embedded application.
+
+## Integration pygeoapi with a Django project
 
 To create your Django application from scratch follow these steps: 
 
@@ -56,7 +64,7 @@ PYGEOAPI_CONFIG = config()
    ...
 ```
 
-Update `urls.py` to run pygeoapi at e.g. `pga` path
+Update `urls.py` to run pygeoapi at e.g. `oapi` path
 
 ```python
 
@@ -65,19 +73,19 @@ from django.urls import path, include
 from pygeoapi.django_pygeoapi import urls 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('pga/', include(urls)) # added here
+    path('oapi/', include(urls)) # added here
 ]
 ```
 
 Update `pygeoapi-config.yml` as follows:
 
-- set the `server.url` property according to your Django application URL (e.g. in this case the path set is `pga`)
+- set the `server.url` property according to your Django application URL (e.g. in this case the path set is `oapi`)
 - set all data paths (e.g. `tests/data/ne_110m_lakes.geojson`) to match with the absolute path of the project directory
 
 Finally, run your Django project:
 
 ```bash
-python3 manage.py runserver`. Once server starts, head over to `localhost:8000/pga` to see `pygeoapi` running.
+python3 manage.py runserver`. Once server starts, head over to `localhost:8000/oapi` to see `pygeoapi` running.
 ```
 
-At this point you can go your Django / pygeoapi project at `http://localhost:8000/pga` 
+At this point you can go your Django / pygeoapi project at `http://localhost:8000/oapi` 
