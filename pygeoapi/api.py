@@ -2272,13 +2272,11 @@ class API:
             return self.get_exception(
                 500, headers, request.format, 'NoApplicableCode', msg)
 
+        title = dataset
+
         tiles = {
-            'title': dataset,
-            'description': l10n.translate(
-                self.config['resources'][dataset]['description'],
-                SYSTEM_LOCALE),
             'links': [],
-            'tileMatrixSetLinks': []
+            'tilesets': []
         }
 
         tiles['links'].append({
@@ -2312,7 +2310,18 @@ class API:
         for service in tile_services['links']:
             tiles['links'].append(service)
 
-        tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
+        tiling_schemes = p.get_tiling_schemes()
+
+        for matrix in tiling_schemes:
+            tile_matrix = {
+                'title' : dataset,
+                'tileMatrixSetURI' : matrix['tileMatrixSetURI'],
+                'crs' : matrix['crs'],
+                'dataType' : 'vector',
+                'links': []
+            }
+            tiles['tilesets'].append(tile_matrix)
+
         metadata_format = p.options['metadata_format']
 
         if request.format == F_HTML:  # render
