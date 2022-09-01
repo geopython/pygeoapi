@@ -49,7 +49,7 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
             mimetype: application/x-netcdf
 
    providers:
-       - type: edr
+       - type: xarray-edr
          name: xarray-edr
          data: tests/data/analysed_sst.zarr
          format:
