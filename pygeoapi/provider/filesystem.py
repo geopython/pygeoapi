@@ -168,6 +168,7 @@ class FileSystemProvider(BaseProvider):
                         'href': newpath,
                         'type': 'text/html',
                         'created': filectime,
+                        'entry:type': 'Catalog'
                     })
                 elif os.path.isfile(fullpath):
                     basename, extension = os.path.splitext(dc)
@@ -180,7 +181,8 @@ class FileSystemProvider(BaseProvider):
                             'href': newpath,
                             'title': get_path_basename(newpath2),
                             'created': filectime,
-                            'file:size': filesize
+                            'file:size': filesize,
+                            'entry:type': 'Item'
                         })
 #                        child_links.append({
 #                            'rel': 'item',

@@ -34,7 +34,7 @@ import logging
 
 from pygeoapi.util import is_url
 from pygeoapi import l10n
-from shapely.geometry import asShape
+from shapely.geometry import shape
 from shapely.ops import unary_union
 
 LOGGER = logging.getLogger(__name__)
@@ -256,7 +256,7 @@ def jsonldify_geometry(feature):
     """
 
     geo = feature.get('geometry')
-    geom = asShape(geo)
+    geom = shape(geo)
 
     # GeoJSON geometry
     feature['geometry'] = feature.pop('geometry')
@@ -326,6 +326,11 @@ def geom2schemageo(geom):
             except NotImplementedError:
                 poly_geom.extend(p.exterior.coords[:])
 
-    _ = [f'{x},{y}' for (x, y) in poly_geom]
-    f['schema:polygon'] = ' '.join(_)
+    try:
+        schema_polygon = [f'{x},{y}' for (x, y) in poly_geom]
+    except ValueError:
+        schema_polygon = [f'{x},{y},{z}' for (x, y, z) in poly_geom]
+
+    f['schema:polygon'] = ' '.join(schema_polygon)
+
     return f

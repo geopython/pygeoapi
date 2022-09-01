@@ -4,11 +4,11 @@ This directory provides test data to demonstrate functionality.
 
 ## Sources
 
-### `ne_110m_lakes.geojson`
+### `ne_110m_lakes.geojson and tiles/ne_110m_lakes`
 
 - source: Natural Earth Lakes + Reservoirs
 - URL: [https:/naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/](https://naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/)
-- Shapefile converted to GeoJSON
+- Shapefile converted to GeoJSON.  Tiles created with tippecanoe
 - Made with Natural Earth. Free vector and raster map data @ [naturalearthdata.com](https://naturalearthdata.com)
 
 ### `ne_110m_admin_0_countries.sqlite`
@@ -77,3 +77,21 @@ This directory provides test data to demonstrate functionality.
 - License: https://www.canada.ca/en/transparency/terms.html
 - Notes
   - ISO records transformed to OGC API - Records GeoJSONs with `tests/load_tinydb_records.py`
+
+### `dutch_addresses_*`
+- source: Dutch Kadaster
+- URL: https://geodata.nationaalgeoregister.nl/inspireadressen/wfs?request=GetCapabilities&service=wfs (discontinued, see below)
+- License: CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/deed.nl
+- Notes
+  - above WFS [was switched off in June 2022](https://www.pdok.nl/-/oude-url-s-inspire-adressen-uitgefaseerd)
+  - address-records derived by Kadaster from the Dutch "Buildings and Addresses" key registry (BAG)
+  - WMS is still available: https://service.pdok.nl/kadaster/adressen/wms/v1_0?request=GetCapabilities&service=WMS
+  - raw dataset BAG (GML, about 2GB) can always be downloaded via the [Atom Feed](https://service.pdok.nl/kadaster/adressen/atom/v1_0/index.xml)
+
+### `items.geojson`
+- source: Wikipedia
+- URL: https://en.wikipedia.org/wiki/GeoJSON#Geometries
+- License: CC0 3.0 https://creativecommons.org/licenses/by-sa/3.0/
+- Notes
+  - `items.geojson` tests pygeoapi's capability to serialize all geometry types for individual collection items in [JSON-LD formats](https://docs.pygeoapi.io/en/latest/configuration.html#linked-data), including GeoSPARQL WKT and schema.org/geo
+  - The features represent the range of GeoJSON geometry types, instead of real locations. Additionally, each feature has a uri defined in the properties block

@@ -46,13 +46,13 @@ from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
-    'oapif': 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapip': 'http://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
+    'oapif': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
-    'oaedr': 'http://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
+    'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
 }
 
@@ -63,7 +63,7 @@ def get_ogc_schemas_location(server_config):
 
     osl = server_config.get('ogc_schemas_location', None)
 
-    value = 'http://schemas.opengis.net'
+    value = 'https://schemas.opengis.net'
 
     if osl is not None:
         if osl.startswith('http'):
@@ -334,10 +334,10 @@ def get_oas_30(cfg):
                     'default': False
                 }
             },
-            'startindex': {
-                'name': 'startindex',
+            'offset': {
+                'name': 'offset',
                 'in': 'query',
-                'description': 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
+                'description': 'The optional offset parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
                 'required': False,
                 'schema': {
                     'type': 'integer',
@@ -346,6 +346,16 @@ def get_oas_30(cfg):
                 },
                 'style': 'form',
                 'explode': False
+            },
+            'vendorSpecificParameters': {
+                'name': 'vendorSpecificParameters',
+                'in': 'query',
+                'description': 'Additional "free-form" parameters that are not explicitly defined',  # noqa
+                'schema': {
+                    'type': 'object',
+                    'additionalProperties': True
+                },
+                'style': 'form'
             }
         },
         'schemas': {
@@ -411,6 +421,9 @@ def get_oas_30(cfg):
                                            'type', 'collection')
 
     for k, v in collections.items():
+        if v.get('visibility', 'default') == 'hidden':
+            LOGGER.debug('Skipping hidden layer: {}'.format(k))
+            continue
         name = l10n.translate(k, locale_)
         title = l10n.translate(v['title'], locale_)
         desc = l10n.translate(v['description'], locale_)
@@ -482,9 +495,10 @@ def get_oas_30(cfg):
                         {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
                         {'$ref': '{}#/components/parameters/limit'.format(OPENAPI_YAML['oapif'])},  # noqa
                         coll_properties,
+                        {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
                         {'$ref': '#/components/parameters/skipGeometry'},
                         {'$ref': '{}/parameters/sortby.yaml'.format(OPENAPI_YAML['oapir'])},  # noqa
-                        {'$ref': '#/components/parameters/startindex'},
+                        {'$ref': '#/components/parameters/offset'},
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
@@ -873,6 +887,9 @@ def get_oas_30(cfg):
         LOGGER.debug('setting up processes')
 
         for k, v in processes.items():
+            if k.startswith('_'):
+                LOGGER.debug('Skipping hidden layer: {}'.format(k))
+                continue
             name = l10n.translate(k, locale_)
             p = load_plugin('process', v['processor'])
 
@@ -1065,7 +1082,9 @@ def openapi():
 @click.argument('config_file', type=click.File())
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
-def generate(ctx, config_file, format_='yaml'):
+@click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
+              help='Name of output file')
+def generate(ctx, config_file, output_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
     if config_file is None:
@@ -1073,10 +1092,16 @@ def generate(ctx, config_file, format_='yaml'):
 
     s = yaml_load(config_file)
     pretty_print = s['server'].get('pretty_print', False)
+
     if format_ == 'yaml':
-        click.echo(yaml.safe_dump(get_oas(s), default_flow_style=False))
+        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
     else:
-        click.echo(to_json(get_oas(s), pretty=pretty_print))
+        content = to_json(get_oas(s), pretty=pretty_print)
+
+    if output_file is None:
+        click.echo(content)
+    else:
+        output_file.write(content)
 
 
 @click.command()

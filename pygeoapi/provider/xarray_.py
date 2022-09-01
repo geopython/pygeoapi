@@ -183,12 +183,12 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
+    def query(self, properties=[], subsets={}, bbox=[], datetime_=None,
               format_='json', **kwargs):
         """
          Extract data from collection collection
 
-        :param range_subset: list of data variables to return (all if blank)
+        :param properties: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param datetime_: temporal (datestamp or extent)
@@ -197,17 +197,17 @@ class XarrayProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        if not range_subset and not subsets and format_ != 'json':
+        if not properties and not subsets and format_ != 'json':
             LOGGER.debug('No parameters specified, returning native data')
             if format_ == 'zarr':
                 return _get_zarr_data(self._data)
             else:
                 return read_data(self.data)
 
-        if len(range_subset) < 1:
-            range_subset = self.fields
+        if len(properties) < 1:
+            properties = self.fields
 
-        data = self._data[[*range_subset]]
+        data = self._data[[*properties]]
 
         if any([self._coverage_properties['x_axis_label'] in subsets,
                 self._coverage_properties['y_axis_label'] in subsets,
@@ -290,7 +290,7 @@ class XarrayProvider(BaseProvider):
         LOGGER.debug('Serializing data in memory')
         if format_ == 'json':
             LOGGER.debug('Creating output in CoverageJSON')
-            return self.gen_covjson(out_meta, data, range_subset)
+            return self.gen_covjson(out_meta, data, properties)
         elif format_ == 'zarr':
             LOGGER.debug('Returning data in native zarr format')
             return _get_zarr_data(data)

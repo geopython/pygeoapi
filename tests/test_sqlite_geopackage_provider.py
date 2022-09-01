@@ -167,3 +167,12 @@ def test_get_geopackage_not_existing_item_raise_exception(config_geopackage):
     p = SQLiteGPKGProvider(config_geopackage)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
+
+def test_get_geopackage_skip_geometry(config_geopackage):
+    """Testing query for skipped geometry"""
+    p = SQLiteGPKGProvider(config_geopackage)
+
+    feature_collection = p.query(skip_geometry=True)
+    for feature in feature_collection['features']:
+        assert feature['geomtry'] is None

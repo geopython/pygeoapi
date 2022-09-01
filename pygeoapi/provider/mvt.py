@@ -149,7 +149,10 @@ class MVTProvider(BaseTileProvider):
                 'tileCol',
                 tile_type)
 
-        self._service_url = url_join(baseurl, servicepath)
+        if servicepath.startswith(baseurl):
+            self._service_url = servicepath
+        else:
+            self._service_url = url_join(baseurl, servicepath)
         self._service_metadata_url = urljoin(
             self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')

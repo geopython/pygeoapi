@@ -15,7 +15,7 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, range-subset, subset, bbox, datetime
+   :header: Provider, properties, subset, bbox, datetime
    :align: left
 
    rasterio,✅,✅,✅,
@@ -96,10 +96,14 @@ Data access examples
   * http://localhost:5000/collections/foo/coverage?f=json
 * coverage access via native format (as defined in ``provider.format.name``)
   * http://localhost:5000/collections/foo/coverage?f=GRIB
-* coverage access with comma-separated range-subset
-  * http://localhost:5000/collections/foo/coverage?range-subset=1,3
+* coverage access with comma-separated properties
+  * http://localhost:5000/collections/foo/coverage?properties=1,3
 * coverage access with subsetting
   * http://localhost:5000/collections/foo/coverage?subset=lat(10,20)&subset=long(10,20)
+
+.. note::
+   ``.../coverage`` queries which return an alternative representation to CoverageJSON (which prompt a download)
+   will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.nc``)
 
 .. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
 .. _`rasterio`: https://rasterio.readthedocs.io

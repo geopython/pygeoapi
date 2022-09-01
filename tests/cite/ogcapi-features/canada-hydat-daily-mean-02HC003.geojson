@@ -1215,13 +1215,13 @@
             "type": "text/html"
         },
         {
-            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?startindex=0",
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?offset=0",
             "rel": "prev",
             "title": "items (prev)",
             "type": "application/geo+json"
         },
         {
-            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?startindex=500",
+            "href": "https://geo.weather.gc.ca/geomet/features/collections/hydrometric-daily-mean/items/?offset=500",
             "rel": "next",
             "title": "items (next)",
             "type": "application/geo+json"

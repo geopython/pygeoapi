@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,9 +31,10 @@ from datetime import datetime
 from glob import glob
 import os
 import sys
+from typing import Union
 
 from lxml import etree
-from owslib.iso import MD_Metadata
+from owslib.iso import CI_ResponsibleParty, MD_Metadata
 from tinydb import TinyDB
 
 
@@ -50,7 +51,54 @@ if os.path.exists(index_name):
 db = TinyDB(index_name)
 
 
-def get_anytext(bag):
+def contact2party(ci: CI_ResponsibleParty) -> dict:
+    """
+    Generates an OARec party object from an
+    OWSLib ISO CI_ResponsibleParty object
+
+    :param ci: OWSLib `CI_ResponsibleParty` object
+
+    :returns: `dict` of OARec party object
+    """
+
+    party = {
+        'contactInfo': {
+            'address': {
+                'main': {}
+            }
+        }
+    }
+
+    party['name'] = ci.name or ci.position
+    if ci.phone:
+        party['contactInfo']['phone'] = ci.phone
+    if ci.email:
+        party['contactInfo']['email'] = ci.email
+    if ci.address:
+        party['contactInfo']['address']['main']['deliveryPoint'] = ci.address
+    if ci.city:
+        party['contactInfo']['address']['main']['city'] = ci.city
+    if ci.region:
+        party['contactInfo']['address']['main']['administrativeArea'] = ci.region  # noqa
+    if ci.postcode:
+        party['contactInfo']['address']['main']['postalCode'] = ci.postcode
+    if ci.country:
+        party['contactInfo']['address']['main']['country'] = ci.country
+    if ci.onlineresource:
+        party['contactInfo']['url'] = {
+            'href': ci.onlineresource.url,
+            'rel': ci.onlineresource.protocol,
+            'title': ci.onlineresource.name,
+            'description': ci.onlineresource.description,
+        }
+
+    if ci.role:
+        party['roles'] = [{'name': ci.role}]
+
+    return party
+
+
+def get_anytext(bag: Union[list, str]) -> str:
     """
     generate bag of text for free text searches
     accepts list of words, string of XML, or etree.Element
@@ -84,10 +132,9 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
 
     identifier = m.identifier
     type_ = m.hierarchy
-    title = m.identification.title
-    description = m.identification.abstract
+    title = m.identificationinfo[0].title
+    description = m.identificationinfo[0].abstract
 
-    contact = m.identification.contact
     issued = m.datestamp
 
     links = []
@@ -104,7 +151,7 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             links.append(lnk)
 
     themes = []
-    for keyword_set in m.identification.keywords2:
+    for keyword_set in m.identificationinfo[0].keywords2:
         theme = {}
         theme['concepts'] = keyword_set.keywords
         try:
@@ -113,33 +160,37 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             pass
         themes.append(theme)
 
-    contact = ''
-    for c in m.contact:
-        contact = getattr(c, 'email', None)
-        if not contact:
-            continue
-        if hasattr(c, 'name') and c.name is not None:
-            contact = '{}, {}'.format(c.name, contact)
-        if hasattr(c, 'organization') and c.organization is not None:
-            contact = '{}, {}'.format(contact, c.organization)
-        break
+    providers = []
+    contacts = (m.contact + m.identificationinfo[0].creator +
+                m.identificationinfo[0].publisher +
+                m.identificationinfo[0].contributor)
+
+    if m.distribution:
+        contacts.extend(m.distribution.distributor)
+
+    if contacts:
+        for contact in contacts:
+            providers.append(contact2party(contact))
 
     bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-    minx = float(m.identification.bbox.minx)
-    miny = float(m.identification.bbox.miny)
-    maxx = float(m.identification.bbox.maxx)
-    maxy = float(m.identification.bbox.maxy)
+    minx = float(m.identificationinfo[0].bbox.minx)
+    miny = float(m.identificationinfo[0].bbox.miny)
+    maxx = float(m.identificationinfo[0].bbox.maxx)
+    maxy = float(m.identificationinfo[0].bbox.maxy)
 
     bbox = [minx, miny, maxx, maxy]
 
-    te_begin = m.identification.temporalextent_start
+    te_begin = m.identificationinfo[0].temporalextent_start
     if te_begin == 'missing':
         te_begin = None
-    te_end = m.identification.temporalextent_end
+    te_end = m.identificationinfo[0].temporalextent_end
 
     json_record = {
         'id': identifier,
+        'conformsTo': [
+            'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/record-core'
+        ],
         'type': 'Feature',
         'geometry': {
             'type': 'Polygon',
@@ -157,9 +208,8 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
             'type': type_,
             'title': title,
             'description': description,
-            'contactPoint': contact,
-            'associations': links,
-            'externalId': [{
+            'providers': providers,
+            'externalIds': [{
                 'scheme': 'default',
                 'value': identifier
             }],
@@ -175,7 +225,8 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
                 }
             },
             '_metadata-anytext': _anytext
-        }
+        },
+        'links': links
     }
 
     try:

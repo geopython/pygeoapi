@@ -1,5 +1,5 @@
 Babel
-click<8
+click>7,<=9
 Flask
 jsonschema
 pyproj
@@ -12,3 +12,4 @@ tinydb
 unicodecsv
 future-annotations
 pydantic
+jinja2==3.0.3

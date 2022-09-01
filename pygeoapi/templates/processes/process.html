@@ -10,13 +10,13 @@
       <div itemprop="description">{{data.description}}</div>
       <p itemprop="keywords">
           {% for kw in data['keywords'] %}
-            <mark class="tag">{{ kw }}</mark>
+            <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
           {% endfor %}
       </p>
       <meta itemprop="url" content="{{config.server.url}}/processes/{{data.id}}" />
       <div class="row">
         <div class="col-sm-12 col-md-12">
-          <table class="striped hoverable">
+          <table class="table table-striped table-bordered">
             <caption>{% trans %}Inputs{% endtrans %}</caption>
             <thead>
             <tr>
@@ -47,7 +47,7 @@
           </table>
         </div>
         <div class="col-sm-12 col-md-12">
-          <table class="striped hoverable">
+          <table class="table table-striped table-bordered">
             <caption>{% trans %}Outputs{% endtrans %}</caption>
             <thead>
             <tr>

@@ -176,7 +176,7 @@ resources:
                   name: NetCDF
                   mimetype: application/x-netcdf
 
-    lakes:
+    naturalearth/lakes:
         type: collection
         title:
             en: Large Lakes

@@ -162,11 +162,11 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, range_subset=[], subsets={}, bbox=[], datetime_=None,
+    def query(self, properties=[], subsets={}, bbox=[], datetime_=None,
               format_='json', **kwargs):
         """
         Extract data from collection collection
-        :param range_subset: list of bands
+        :param properties: list of bands
         :param subsets: dict of subset names with lists of ranges
         :param bbox: bounding box [minx,miny,maxx,maxy]
         :param datetime_: temporal (datestamp or extent)
@@ -175,7 +175,7 @@ class RasterioProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        bands = range_subset
+        bands = properties
         LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
 
         args = {

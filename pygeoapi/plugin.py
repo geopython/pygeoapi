@@ -40,17 +40,20 @@ PLUGINS = {
         'CSV': 'pygeoapi.provider.csv_.CSVProvider',
         'Elasticsearch': 'pygeoapi.provider.elasticsearch_.ElasticsearchProvider',  # noqa
         'ElasticsearchCatalogue': 'pygeoapi.provider.elasticsearch_.ElasticsearchCatalogueProvider',  # noqa
+        'ESRI': 'pygeoapi.provider.esri.ESRIServiceProvider',
         'GeoJSON': 'pygeoapi.provider.geojson.GeoJSONProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'FileSystem': 'pygeoapi.provider.filesystem.FileSystemProvider',
+        'Hateoas': 'pygeoapi.provider.hateoas.HateoasProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',
+        'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
         'xarray-edr': 'pygeoapi.provider.xarray_edr.XarrayEDRProvider'
     },
     'formatter': {

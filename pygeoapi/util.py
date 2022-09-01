@@ -359,12 +359,13 @@ def render_j2_template(config, template, data, locale_=None):
             LOGGER.debug('Custom template not found; using default')
             env = Environment(loader=FileSystemLoader(TEMPLATES),
                               extensions=['jinja2.ext.i18n'])
+            env.install_gettext_translations(translations)
             template = env.get_template(template)
         else:
             raise
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
-                           data=data, version=__version__)
+                           data=data, locale=locale_, version=__version__)
 
 
 def get_mimetype(filename):

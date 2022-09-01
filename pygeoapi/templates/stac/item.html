@@ -16,7 +16,7 @@
     <section id="item">
       <div class="row">
         <div class="col-sm">
-          <h2>{% trans %}Item{% endtrans %} {{ data['id'] }}</h2>
+          <h2>{% trans %}Item{% endtrans %}: {{ data['id'] }}</h2>
         </div>
       </div>
       <div class="row">
@@ -26,7 +26,7 @@
               <div id="items-map"></div>
               <div id="assets">
                 <h4>{% trans %}Assets{% endtrans %}</h4>
-                <table class="striped">
+                <table class="table table-striped table-bordered">
                   <thead>
                     <tr>
                       <th>{% trans %}URL{% endtrans %}</th>
@@ -52,7 +52,7 @@
           </div>
         </div>
         <div class="col-md-6 col-sm-12">
-            <table class="striped">
+            <table class="table table-striped table-bordered">
               <thead>
               <tr>
                 <th>{% trans %}Property{% endtrans %}</th>

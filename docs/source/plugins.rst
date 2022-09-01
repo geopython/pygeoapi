@@ -68,9 +68,13 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                'field2': 'string'
            }
 
-       def query(self,startindex=0, limit=10, resulttype='results',
+       def query(self, offset=0, limit=10, resulttype='results',
                  bbox=[], datetime_=None, properties=[], sortby=[],
                  select_properties=[], skip_geometry=False, **kwargs):
+
+           # optionally specify the output filename pygeoapi can use as part
+           of the response (HTTP Content-Disposition header)
+           self.filename = "my-cool-filename.dat"
 
            # open data file (self.data) and process, return
            return {
@@ -174,6 +178,11 @@ The below template provides a minimal example (let's call the file ``mycoolraste
        def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
            # query/extract coverage data
+
+           # optionally specify the output filename pygeoapi can use as part
+           of the response (HTTP Content-Disposition header)
+           self.filename = "my-cool-filename.dat"
+
            if format_ == 'json':
                # return a CoverageJSON representation
                return {'type': 'Coverage', ...}  # trimmed for brevity
@@ -209,7 +218,7 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
            """Inherit from parent class"""
 
            super().__init__({'name': 'cooljson', 'geom': None})
-           self.mimetype = 'text/json; subtype:mycooljson'
+           self.mimetype = 'application/json; subtype:mycooljson'
 
        def write(self, options={}, data=None):
            """custom writer"""

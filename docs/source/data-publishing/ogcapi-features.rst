@@ -15,17 +15,19 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, CQL
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL
    :align: left
 
-   CSV,✅/✅,results/hits,❌,❌,❌,❌
-   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅
-   GeoJSON,✅/✅,results/hits,❌,❌,❌,❌
-   MongoDB,✅/❌,results,✅,✅,✅,❌
-   OGR,✅/❌,results/hits,✅,❌,❌,❌
-   PostgreSQL,✅/✅,results/hits,✅,❌,✅,❌
-   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,❌
-   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,❌
+   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌
+   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅
+   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌
+   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌
+   MongoDB,✅/❌,results,✅,✅,✅,✅,❌
+   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌
+   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌
+   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌
+   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌
+   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -93,6 +95,31 @@ This provider has the support for the CQL queries as indicated in the table abov
 .. seealso::
   :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
 
+
+ESRI Feature Service
+^^^^^^^^^^^^^^^^^^^^
+
+To publish an ESRI `Feature Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm>`
+or `Map Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm>`
+specify the URL for the service layer in the ``data`` field.
+
+* ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
+* If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
+  configuration to authenticate into the service.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: ESRI
+         data: https://sampleserver5.arcgisonline.com/arcgis/rest/services/NYTimes_Covid19Cases_USCounties/MapServer/0
+         id_field: objectid
+         time_field: date_in_your_device_time_zone # Optional time field
+         crs: 4326 # Optional crs (default is ESPG:4326)
+         username: username # Optional ArcGIS username
+         password: password # Optional ArcGIS password
+
+
 OGR
 ^^^
 
@@ -138,12 +165,39 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
                 CPL_DEBUG: NO
           id_field: gml_id
           layer: rdinfo:stations
+          
+.. code-block:: yaml
+
+    providers:
+         - type: feature
+           name: OGR
+           data:
+             source_type: ESRIJSON
+             source: https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/boreholes/MapServer/0/query?where=BGS_ID+%3D+BGS_ID&outfields=*&orderByFields=BGS_ID+ASC&f=json
+             source_srs: EPSG:27700
+             target_srs: EPSG:4326
+             source_capabilities:
+                 paging: True
+             open_options:
+                 FEATURE_SERVER_PAGING: YES
+             gdal_ogr_options:
+                 EMPTY_AS_NULL: NO
+                 GDAL_CACHEMAX: 64
+                 # GDAL_HTTP_PROXY: (optional proxy)
+                 # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+                 CPL_DEBUG: NO
+           id_field: BGS_ID
+           layer: ESRIJSON
+
 
 
 MongoDB
 ^^^^^^^
 
-.. todo:: add overview and requirements
+.. note::
+   Mongo 5 or greater is supported.
+
+* each document must be a GeoJSON Feature, with a valid geometry.
 
 .. code-block:: yaml
 
@@ -157,6 +211,8 @@ MongoDB
 PostgreSQL
 ^^^^^^^^^^
 
+Must have PostGIS installed. 
+
 .. todo:: add overview and requirements
 
 .. code-block:: yaml
@@ -166,6 +222,7 @@ PostgreSQL
          name: PostgreSQL
          data:
              host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided 
              dbname: test
              user: postgres
              password: postgres
@@ -242,6 +299,32 @@ to the associated features in the ``Datastreams`` feature collection, and the
 ``Datastreams`` feature collection. Examples with three entities configured
 are included in the docker examples for SensorThings.
 
+Socrata
+^^^^^^^
+
+To publish a `Socrata Open Data API (SODA) <https://dev.socrata.com/>` endpoint, pygeoapi heavily
+relies on `sodapy <https://github.com/xmunoz/sodapy>`.
+
+
+* ``data`` is the domain of the SODA endpoint.
+* ``resource_id`` is the 4x4 resource id pattern.
+* ``geom_field`` is required for bbox queries to work.
+* ``token`` is optional and can be included in the configuration to pass
+  an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
+
+
+.. code-block:: yaml
+
+   providers:
+      - type: feature
+        name: Socrata
+        data: https://soda.demo.socrata.com/
+        resource_id: emdb-u46w
+        id_field: earthquake_id
+        geom_field: location
+        time_field: datetime # Optional time_field for datetime queries
+        token: my_token # Optional app token
+
 Data access examples
 --------------------
 
@@ -254,7 +337,7 @@ Data access examples
 * browse features
   * http://localhost:5000/collections/foo/items
 * paging
-  * http://localhost:5000/collections/foo/items?startIndex=10&limit=10
+  * http://localhost:5000/collections/foo/items?offset=10&limit=10
 * CSV outputs
   * http://localhost:5000/collections/foo/items?f=csv
 * query features (spatial)
@@ -269,5 +352,9 @@ Data access examples
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
 * fetch a specific feature
   * http://localhost:5000/collections/foo/items/123
+
+.. note::
+   ``.../items`` queries which return an alternative representation to GeoJSON (which prompt a download)
+   will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.csv``)
 
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features

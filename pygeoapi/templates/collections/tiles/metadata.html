@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
-/ <a href="../../../../collections">{% trans %}Collections{% endtrans %}</a>
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 / <a href="../../../{{ data['id'] }}">{{ data['title'] }}</a>
 / <a href="../../../{{ data['id'] }}/tiles">{% trans %}Tiles{% endtrans %}</a>
 / <a href="../../../{{ data['id'] }}/tiles/{{ data['tileset'] }}/metadata">Tile Metadata</a>
@@ -12,7 +12,7 @@
       <p>{{ data['description'] }}</p>
       <p>
         {% for kw in data['keywords'] %}
-          <mark class="tag">{{ kw }}</mark>
+          <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
         {% endfor %}
       </p>
       <h3>{% trans %}Tiles metadata{% endtrans %} - {{ data['format'] }} {% trans %}format{% endtrans %}</h3>

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -45,6 +45,13 @@ def config():
 
 
 @pytest.fixture()
+def config_hidden_resources():
+    filename = 'pygeoapi-test-config-hidden-resources.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -57,7 +64,7 @@ def test_str2bool():
     }
 
     osl = get_ogc_schemas_location(default)
-    assert osl == 'http://schemas.opengis.net'
+    assert osl == 'https://schemas.opengis.net'
 
     default['ogc_schemas_location'] = 'http://example.org/schemas'
     osl = get_ogc_schemas_location(default)
@@ -83,3 +90,10 @@ def test_validate_openapi_document(openapi):
 
     with pytest.raises(ValidationError):
         is_valid = validate_openapi_document({'foo': 'bar'})
+
+
+def test_hidden_resources(config_hidden_resources):
+    openapi_doc = get_oas(config_hidden_resources)
+
+    assert '/collections/obs' not in openapi_doc['paths']
+    assert '/collections/obs/items' not in openapi_doc['paths']

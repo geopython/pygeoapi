@@ -79,7 +79,7 @@ Metadata search examples
 * browse records
   * http://localhost:5000/collections/foo/items
 * paging
-  * http://localhost:5000/collections/foo/items?startIndex=10&limit=10
+  * http://localhost:5000/collections/foo/items?offset=10&limit=10
 * CSV outputs
   * http://localhost:5000/collections/foo/items?f=csv
 * query records (spatial)
