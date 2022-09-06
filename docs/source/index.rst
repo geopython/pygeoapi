@@ -12,6 +12,14 @@ pygeoapi |release| documentation
 :Release: |release|
 :Date: |today|
 
+
+Welcome to the official pygeoapi documentation!  Here you will find complete
+reference documentation on all aspects of the project.
+
+.. note::
+
+   Did you know about the `pygeoapi workshop`_?  Ready to get your hands dirty?  Dive in!
+
 .. toctree::
    :maxdepth: 4
    :caption: Table of Contents
@@ -46,3 +54,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. _`pygeoapi workshop`: https://dive.pygeoapi.io
