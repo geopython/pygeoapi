@@ -4,7 +4,7 @@
 / <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 {% for link in data['links'] %}
   {% if link.rel == 'collection' %} /
-    <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
+    <a href="{{ data['dataset_path'] }}">{{ link['title'] | string | truncate( 25 ) }}</a>
     {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
