@@ -20,8 +20,8 @@
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content="{{ self.title() }}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}" />
     <meta property="og:title"        content="{{ self.title() }}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}" />
-    <meta name="twitter:description" content="{{ config['metadata']['identification']['description']}}" />
-    <meta property="og:description"  content="{{ config['metadata']['identification']['description']}}" />
+    <meta name="twitter:description" content="{{ config['metadata']['identification']['description'] }}" />
+    <meta property="og:description"  content="{{ config['metadata']['identification']['description'] }}" />
 
     <meta property="og:type" content="website" />
     {% for link in data['links'] %}
