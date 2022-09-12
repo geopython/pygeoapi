@@ -1125,7 +1125,8 @@ def test_get_collection_tiles(config, api_):
         req, 'naturalearth/lakes')
     assert rsp_headers['Content-Language'] == 'en-US'
     content = json.loads(response)
-    assert content['description'] == 'lakes of the world, public domain'
+    assert len(content['links']) > 0
+    assert len(content['tilesets']) > 0
 
 
 def test_describe_processes(config, api_):
