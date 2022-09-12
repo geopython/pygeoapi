@@ -2320,6 +2320,20 @@ class API:
                 'dataType' : 'vector',
                 'links': []
             }
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': request.get_linkrel(F_JSON),
+                'title': '{} - {} - {}'.format(dataset,matrix['tileMatrixSet'],F_JSON),
+                'href': '{}/{}/tiles/{}?f={}'.format(
+                    self.get_collections_url(), dataset, matrix['tileMatrixSet'],F_JSON)
+            })
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': request.get_linkrel(F_HTML),
+                'title': '{} - {} - {}'.format(dataset,matrix['tileMatrixSet'],F_HTML),
+                'href': '{}/{}/tiles/{}?f={}'.format(
+                    self.get_collections_url(), dataset, matrix['tileMatrixSet'],F_HTML)
+            })
             tiles['tilesets'].append(tile_matrix)
 
         metadata_format = p.options['metadata_format']
