@@ -113,11 +113,11 @@ class MVTProvider(BaseTileProvider):
         tile_matrix_set_links_list = [{
                 'tileMatrixSet': 'WorldCRS84Quad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json',  # noqa
-                'crs' : 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
             }, {
                 'tileMatrixSet': 'WebMercatorQuad',
                 'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json',  # noqa
-                'crs' : 'http://www.opengis.net/def/crs/EPSG/0/3857'
+                'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
             }]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list if item[
@@ -175,7 +175,7 @@ class MVTProvider(BaseTileProvider):
                 }, {
                     'type': 'application/json',
                     'rel': 'describedby',
-                    'title': 'Metadata for this collection in the TileJSON format',
+                    'title': 'Collection metadata in TileJSON format',
                     'href': '{}?f=json'.format(self.service_metadata_url),
                 }
             ]

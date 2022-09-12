@@ -2272,8 +2272,6 @@ class API:
             return self.get_exception(
                 500, headers, request.format, 'NoApplicableCode', msg)
 
-        title = dataset
-
         tiles = {
             'links': [],
             'tilesets': []
@@ -2314,25 +2312,29 @@ class API:
 
         for matrix in tiling_schemes:
             tile_matrix = {
-                'title' : dataset,
-                'tileMatrixSetURI' : matrix['tileMatrixSetURI'],
-                'crs' : matrix['crs'],
-                'dataType' : 'vector',
+                'title': dataset,
+                'tileMatrixSetURI': matrix['tileMatrixSetURI'],
+                'crs': matrix['crs'],
+                'dataType': 'vector',
                 'links': []
             }
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
-                'title': '{} - {} - {}'.format(dataset,matrix['tileMatrixSet'],F_JSON),
+                'title': '{} - {} - {}'.format(
+                    dataset, matrix['tileMatrixSet'], F_JSON),
                 'href': '{}/{}/tiles/{}?f={}'.format(
-                    self.get_collections_url(), dataset, matrix['tileMatrixSet'],F_JSON)
+                    self.get_collections_url(), dataset,
+                    matrix['tileMatrixSet'], F_JSON)
             })
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
-                'title': '{} - {} - {}'.format(dataset,matrix['tileMatrixSet'],F_HTML),
+                'title': '{} - {} - {}'.format(
+                    dataset, matrix['tileMatrixSet'], F_HTML),
                 'href': '{}/{}/tiles/{}?f={}'.format(
-                    self.get_collections_url(), dataset, matrix['tileMatrixSet'],F_HTML)
+                    self.get_collections_url(), dataset,
+                    matrix['tileMatrixSet'], F_HTML)
             })
             tiles['tilesets'].append(tile_matrix)
 
