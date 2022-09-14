@@ -15,19 +15,19 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
    :align: left
 
-   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌
-   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅
-   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌
-   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌
-   MongoDB,✅/❌,results,✅,✅,✅,✅,❌
-   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌
-   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌
-   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌
-   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌
-   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌
+   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
+   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   MongoDB,✅/❌,results,✅,✅,✅,✅,❌,❌
+   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌,❌
+   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -86,6 +86,7 @@ To publish an Elasticsearch index, the following are required in your index:
    providers:
        - type: feature
          name: Elasticsearch
+         editable: true|false  # optional, default is false
          data: http://localhost:9200/ne_110m_populated_places_simple
          id_field: geonameid
          time_field: datetimefield

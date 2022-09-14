@@ -206,8 +206,10 @@ async def get_collection_items_tiles(request: Request, name=None,
 
 @app.route('/collections/{collection_id:path}/items', methods=['GET', 'POST'])
 @app.route('/collections/{collection_id:path}/items/', methods=['GET', 'POST'])
-@app.route('/collections/{collection_id:path}/items/{item_id}')
-@app.route('/collections/{collection_id:path}/items/{item_id}/')
+@app.route('/collections/{collection_id:path}/items/{item_id}',
+           methods=['GET', 'PUT', 'DELETE'])
+@app.route('/collections/{collection_id:path}/items/{item_id}/',
+           methods=['GET', 'PUT', 'DELETE'])
 async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
@@ -218,6 +220,9 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
 
     :returns: Starlette HTTP Response
     """
+
+    print(request.headers)
+#    print(request.headers['content-type'])
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'item_id' in request.path_params:
@@ -227,10 +232,23 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
             return get_response(
                 api_.get_collection_items(
                     request, collection_id))
-        elif request.method == 'POST':  # filter items
-            return get_response(
-                api_.post_collection_items(
-                    request, collection_id))
+        elif request.method == 'POST':  # filter or manage items
+            if request.get('content-type') is not None:
+                return get_response(
+                    api_.manage_collection_item(request, 'create',
+                                                collection_id))
+            else:
+                return get_response(
+                    api_.post_collection_items(request, collection_id))
+
+    elif request.method == 'DELETE':
+        return get_response(
+            api_.manage_collection_item(request, 'delete',
+                                        collection_id, item_id))
+    elif request.method == 'PUT':
+        return get_response(
+            api_.manage_collection_item(request, 'update',
+                                        collection_id, item_id))
     else:
         return get_response(api_.get_collection_item(
             request, collection_id, item_id))
