@@ -234,7 +234,6 @@ class TinyDBCatalogueProvider(BaseProvider):
             except KeyError:
                 LOGGER.debug('Missing excluded property {}'.format(e))
 
-
         return record
 
     def create(self, item):
