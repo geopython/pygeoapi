@@ -918,6 +918,18 @@ class API:
             LOGGER.debug('Adding JSON and HTML link relations')
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
+                'rel': 'root',
+                'title': 'The landing page of this server as JSON',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            })
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': 'root',
+                'title': 'The landing page of this server as HTML',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            })
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
                 'title': 'This document as JSON',
                 'href': '{}/{}?f={}'.format(
@@ -2024,6 +2036,16 @@ class API:
             content['links'] = []
 
         content['links'].extend([{
+            'type': FORMAT_TYPES[F_JSON],
+            'rel': 'root',
+            'title': 'The landing page of this server as JSON',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            }, {
+            'type': FORMAT_TYPES[F_HTML],
+            'rel': 'root',
+            'title': 'The landing page of this server as HTML',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            }, {
             'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
@@ -3398,7 +3420,7 @@ class API:
             400, headers, request.format, 'InvalidParameterValue', msg)
 
     def get_collections_url(self):
-        return '{}/collections'.format((self.config['server']['url']))
+        return '{}/collections'.format(self.config['server']['url'])
 
 
 def validate_bbox(value=None) -> list:
