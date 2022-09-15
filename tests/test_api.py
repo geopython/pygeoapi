@@ -503,7 +503,7 @@ def test_describe_collections(config, api_):
     collection = json.loads(response)
 
     assert collection['id'] == 'gdps-temperature'
-    assert len(collection['links']) == 12
+    assert len(collection['links']) == 14
 
     # hiearchical collections
     rsp_headers, code, response = api_.describe_collections(
