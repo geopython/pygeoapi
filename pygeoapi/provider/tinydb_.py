@@ -182,7 +182,10 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         for r in results:
             for e in self.excludes:
-                del r['properties'][e]
+                try:
+                    del r['properties'][e]
+                except KeyError:
+                    LOGGER.debug('Missing excluded property {}'.format(e))
 
         len_results = len(results)
 
@@ -226,7 +229,11 @@ class TinyDBCatalogueProvider(BaseProvider):
             raise ProviderItemNotFoundError('record does not exist')
 
         for e in self.excludes:
-            del record['properties'][e]
+            try:
+                del record['properties'][e]
+            except KeyError:
+                LOGGER.debug('Missing excluded property {}'.format(e))
+
 
         return record
 
@@ -240,6 +247,15 @@ class TinyDBCatalogueProvider(BaseProvider):
         """
 
         identifier, json_data = self._load_and_prepare_item(item)
+
+        try:
+            json_data['properties']['_metadata-anytext'] = ''.join([
+                json_data['properties']['title'],
+                json_data['properties']['description']
+            ])
+        except KeyError:
+            LOGGER.debug('Missing title and description')
+            json_data['properties']['_metadata_anytext'] = ''
 
         LOGGER.debug('Inserting data with identifier {}'.format(identifier))
         result = self.db.insert(json_data)

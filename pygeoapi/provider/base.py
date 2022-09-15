@@ -223,6 +223,11 @@ class BaseProvider:
             LOGGER.error(msg)
             raise ProviderInvalidDataError(msg)
 
+        if 'geometry' not in json_data or 'properties' not in json_data:
+            msg = 'Missing core GeoJSON geometry or properties'
+            LOGGER.error(msg)
+            raise ProviderInvalidDataError(msg)
+
         if raise_if_exists:
             LOGGER.debug('Querying database whether item exists')
             try:
@@ -233,11 +238,6 @@ class BaseProvider:
                 raise ProviderInvalidDataError(msg)
             except ProviderItemNotFoundError:
                 LOGGER.debug('record does not exist')
-
-        json_data['properties']['_metadata-anytext'] = ''.join([
-            json_data['properties']['title'],
-            json_data['properties']['description']
-        ])
 
         return identifier2, json_data
 

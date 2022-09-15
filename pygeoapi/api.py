@@ -1897,8 +1897,8 @@ class API:
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
         if action in ['create', 'update'] and not request.data:
-            LOGGER.error(msg)
             msg = 'No data found'
+            LOGGER.error(msg)
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
