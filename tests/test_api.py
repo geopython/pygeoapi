@@ -569,7 +569,7 @@ def test_describe_collections_json_ld(config, api_):
     assert len(expanded['http://schema.org/dataset']) == 1
     dataset = expanded['http://schema.org/dataset'][0]
     assert dataset['@type'][0] == 'http://schema.org/Dataset'
-    assert len(dataset['http://schema.org/distribution']) == 14
+    assert len(dataset['http://schema.org/distribution']) == 12
     assert all(dist['@type'][0] == 'http://schema.org/DataDownload'
                for dist in dataset['http://schema.org/distribution'])
 
