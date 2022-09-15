@@ -55,15 +55,14 @@ class MVTProvider(BaseTileProvider):
         """
 
         super().__init__(provider_def)
+
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
-            layer = url.path.split('/{z}/{x}/{y}')[0]
-            tilepath = '{}/tiles'.format(layer)
             servicepath = \
-                '{}/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                    tilepath,
+                '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                    url.path.split('/{z}/{x}/{y}')[0],
                     'tileMatrixSetId',
                     'tileMatrix',
                     'tileRow',
@@ -106,18 +105,16 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             return url.path.split("/{z}/{x}/{y}")[0][1:]
         else:
-            return Path(self.data).name
+            return None
 
     def get_tiling_schemes(self):
 
         tile_matrix_set_links_list = [{
                 'tileMatrixSet': 'WorldCRS84Quad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json',  # noqa
-                'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
             }, {
                 'tileMatrixSet': 'WebMercatorQuad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json',  # noqa
-                'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
             }]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list if item[
@@ -159,26 +156,21 @@ class MVTProvider(BaseTileProvider):
         self._service_metadata_url = urljoin(
             self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
+
         links = {
-            'links': [
-                {
-                    'type': 'application/json',
-                    'rel': 'self',
-                    'title': 'This collection as multi vector tilesets',
-                    'href': self.service_url,
-                },
-                {
-                    'type': self.mimetype,
-                    'rel': 'item',
-                    'title': 'This collection as multi vector tiles',
-                    'href': self.service_url,
-                }, {
-                    'type': 'application/json',
-                    'rel': 'describedby',
-                    'title': 'Collection metadata in TileJSON format',
-                    'href': '{}?f=json'.format(self.service_metadata_url),
-                }
-            ]
+            'links': [{
+                'type': self.mimetype,
+                'rel': 'item',
+                'title': 'This collection as Mapbox vector tiles',
+                'href': self.service_url,
+                'templated': True
+            }, {
+                'type': 'application/json',
+                'rel': 'describedby',
+                'title': 'Metadata for this collection in the TileJSON format',
+                'href': '{}?f=json'.format(self.service_metadata_url),
+                'templated': True
+            }]
         }
 
         return links
@@ -197,6 +189,7 @@ class MVTProvider(BaseTileProvider):
 
         :returns: an encoded mvt tile
         """
+
         if format_ == "mvt":
             format_ = self.format_type
         if is_url(self.data):
@@ -204,9 +197,9 @@ class MVTProvider(BaseTileProvider):
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
                 session.get(base_url)
-                resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
+                resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}{f}'.format(
                     base_url=base_url, lyr=layer,
-                    z=z, y=y, x=x, f=format_))
+                    z=z, y=y, x=x, f= '?grid_precision=0' if format_ == "elastic" else '.' + format_))
                 resp.raise_for_status()
                 return resp.content
         else:
@@ -239,6 +232,9 @@ class MVTProvider(BaseTileProvider):
 
         :returns: `dict` of JSON metadata
         """
+
+        if tilejson is False:
+             return
 
         if is_url(self.data):
             url = urlparse(self.data)
