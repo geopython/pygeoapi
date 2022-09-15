@@ -87,10 +87,8 @@ def conformance(request: HttpRequest) -> HttpResponse:
     return response
 
 
-def collections(
-    request: HttpRequest,
-    collection_id: Optional[str] = None,
-) -> HttpResponse:
+def collections(request: HttpRequest,
+                collection_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API collections endpoint
 
@@ -106,10 +104,8 @@ def collections(
     return response
 
 
-def collection_queryables(
-    request: HttpRequest,
-    collection_id: Optional[str] = None,
-) -> HttpResponse:
+def collection_queryables(request: HttpRequest,
+                          collection_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API collections queryables endpoint
 
@@ -127,10 +123,7 @@ def collection_queryables(
     return response
 
 
-def collection_items(
-    request: HttpRequest,
-    collection_id: str,
-) -> HttpResponse:
+def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
     """
     OGC API collections items endpoint
 
@@ -140,21 +133,24 @@ def collection_items(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request,
-        'get_collection_items',
-        collection_id,
-    )
+    if request.method == 'GET':
+        response_ = _feed_response(
+            request,
+            'get_collection_items',
+            collection_id,
+        )
+    elif request.method == 'POST':
+        response_ = _feed_response(
+            request, 'manage_collection_item', request, 'create', collection_id
+        )
+
     response = _to_django_response(*response_)
 
     return response
 
 
-def collection_item(
-    request: HttpRequest,
-    collection_id: str,
-    item_id: str,
-) -> HttpResponse:
+def collection_item(request: HttpRequest,
+                    collection_id: str, item_id: str) -> HttpResponse:
     """
     OGC API collections items endpoint
 
@@ -165,18 +161,28 @@ def collection_item(
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_item', collection_id, item_id
-    )
+    if request.method == 'GET':
+        response_ = _feed_response(
+            request, 'get_collection_item', collection_id, item_id
+        )
+    elif request.method == 'PUT':
+        response_ = _feed_response(
+            request, 'manage_collection_item', request, 'update',
+            collection_id, item_id
+        )
+    elif request.method == 'DELETE':
+        response_ = _feed_response(
+            request, 'manage_collection_item', request, 'delete',
+            collection_id, item_id
+        )
+
     response = _to_django_response(*response_)
 
     return response
 
 
-def collection_coverage(
-    request: HttpRequest,
-    collection_id: str,
-) -> HttpResponse:
+def collection_coverage(request: HttpRequest,
+                        collection_id: str) -> HttpResponse:
     """
     OGC API - Coverages coverage endpoint
 
@@ -194,10 +200,8 @@ def collection_coverage(
     return response
 
 
-def collection_coverage_domainset(
-    request: HttpRequest,
-    collection_id: str,
-) -> HttpResponse:
+def collection_coverage_domainset(request: HttpRequest,
+                                  collection_id: str) -> HttpResponse:
     """
     OGC API - Coverages coverage domainset endpoint
 
@@ -215,10 +219,8 @@ def collection_coverage_domainset(
     return response
 
 
-def collection_coverage_rangetype(
-    request: HttpRequest,
-    collection_id: str,
-) -> HttpResponse:
+def collection_coverage_rangetype(request: HttpRequest,
+                                  collection_id: str) -> HttpResponse:
     """
     OGC API - Coverages coverage rangetype endpoint
 
@@ -236,10 +238,7 @@ def collection_coverage_rangetype(
     return response
 
 
-def collection_tiles(
-    request: HttpRequest,
-    collection_id: str,
-) -> HttpResponse:
+def collection_tiles(request: HttpRequest, collection_id: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles endpoint
 
@@ -255,11 +254,8 @@ def collection_tiles(
     return response
 
 
-def collection_tiles_metadata(
-    request: HttpRequest,
-    collection_id: str,
-    tileMatrixSetId: str,
-) -> HttpResponse:
+def collection_tiles_metadata(request: HttpRequest, collection_id: str,
+                              tileMatrixSetId: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles metadata endpoint
 
@@ -281,14 +277,9 @@ def collection_tiles_metadata(
     return response
 
 
-def collection_item_tiles(
-    request: HttpRequest,
-    collection_id: str,
-    tileMatrixSetId: str,
-    tileMatrix: str,
-    tileRow: str,
-    tileCol: str,
-) -> HttpResponse:
+def collection_item_tiles(request: HttpRequest, collection_id: str,
+                          tileMatrixSetId: str, tileMatrix: str,
+                          tileRow: str, tileCol: str,) -> HttpResponse:
     """
     OGC API - Tiles collection tiles data endpoint
 
@@ -316,10 +307,8 @@ def collection_item_tiles(
     return response
 
 
-def processes(
-    request: HttpRequest,
-    process_id: Optional[str] = None,
-) -> HttpResponse:
+def processes(request: HttpRequest,
+              process_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API - Processes description endpoint
 
@@ -335,10 +324,7 @@ def processes(
     return response
 
 
-def jobs(
-    request: HttpRequest,
-    job_id: Optional[str] = None,
-) -> HttpResponse:
+def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API - Jobs endpoint
 
@@ -348,16 +334,15 @@ def jobs(
 
     :returns: Django HTTP response
     """
+
     response_ = _feed_response(request, 'get_jobs', job_id)
     response = _to_django_response(*response_)
 
     return response
 
 
-def job_results(
-    request: HttpRequest,
-    job_id: Optional[str] = None,
-) -> HttpResponse:
+def job_results(request: HttpRequest,
+                job_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API - Job result endpoint
 
@@ -366,18 +351,15 @@ def job_results(
 
     :returns: Django HTTP response
     """
+
     response_ = _feed_response(request, 'get_job_result', job_id)
     response = _to_django_response(*response_)
 
     return response
 
 
-def job_results_resource(
-    request: HttpRequest,
-    process_id: str,
-    job_id: str,
-    resource: str,
-) -> HttpResponse:
+def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
+                         resource: str) -> HttpResponse:
     """
     OGC API - Job result resource endpoint
 
@@ -387,6 +369,7 @@ def job_results_resource(
 
     :returns: Django HTTP response
     """
+
     response_ = _feed_response(
         request,
         'get_job_result_resource',
@@ -398,11 +381,8 @@ def job_results_resource(
     return response
 
 
-def get_collection_edr_query(
-    request: HttpRequest,
-    collection_id: str,
-    instance_id: str,
-) -> HttpResponse:
+def get_collection_edr_query(request: HttpRequest, collection_id: str,
+                             instance_id: str) -> HttpResponse:
     """
     OGC API - EDR endpoint
 
@@ -412,6 +392,7 @@ def get_collection_edr_query(
 
     :returns: Django HTTP response
     """
+
     query_type = request.path.split('/')[-1]
     response_ = _feed_response(
         request,
@@ -440,10 +421,7 @@ def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     return response
 
 
-def stac_catalog_path(
-    request: HttpRequest,
-    path: str,
-) -> HttpResponse:
+def stac_catalog_path(request: HttpRequest, path: str) -> HttpResponse:
     """
     STAC path endpoint
 
@@ -463,22 +441,21 @@ def stac_catalog_search(request: HttpRequest) -> HttpResponse:
     pass
 
 
-def _feed_response(
-    request: HttpRequest, api_definition: str, *args, **kwargs
-) -> Tuple[Dict, int, str]:
+def _feed_response(request: HttpRequest, api_definition: str,
+                   *args, **kwargs) -> Tuple[Dict, int, str]:
     """Use pygeoapi api to process the input request"""
+
     api_ = API(settings.PYGEOAPI_CONFIG)
     api = getattr(api_, api_definition)
     return api(request, *args, **kwargs)
 
 
-def _to_django_response(
-    headers: Mapping,
-    status_code: int,
-    content: str,
-) -> HttpResponse:
+def _to_django_response(headers: Mapping, status_code: int,
+                        content: str) -> HttpResponse:
     """Convert API payload to a django response"""
+
     response = HttpResponse(content, status=status_code)
+
     for key, value in headers.items():
         response[key] = value
     return response

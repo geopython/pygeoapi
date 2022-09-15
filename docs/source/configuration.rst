@@ -176,6 +176,8 @@ default.
               - type: feature # underlying data geospatial type: (allowed values are: feature, coverage, record, tile, edr)
                 default: true  # optional: if not specified, the first provider definition is considered the default
                 name: CSV
+                # transactions: DO NOT ACTIVATE unless you have setup access contol beyond pygeoapi
+                editable: true  # optional: if backend is writable, default is false
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
                 uri_field: uri # optional field corresponding to the Uniform Resource Identifier (see Linked Data section)

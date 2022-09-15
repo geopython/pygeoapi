@@ -15,11 +15,11 @@ pygeoapi core record providers are listed below, along with a matrix of supporte
 parameters.
 
 .. csv-table::
-   :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display)
+   :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), transactions
    :align: left
 
-   ElasticsearchCatalogue,✅,results/hits,✅,✅,✅,✅
-   TinyDBCatalogue,✅,results/hits,✅,✅,✅,✅
+   ElasticsearchCatalogue,✅,results/hits,✅,✅,✅,✅,❌
+   TinyDBCatalogue,✅,results/hits,✅,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -63,6 +63,7 @@ To publish a TinyDB index, the following are required in your index:
 
    providers:
        - type: record
+         editable: true|false  # optional, default is false
          name: TinyDBCatalogue
          data: /path/to/file.db
          id_field: identifier

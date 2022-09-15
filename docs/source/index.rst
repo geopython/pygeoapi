@@ -35,6 +35,7 @@ reference documentation on all aspects of the project.
    tour
    openapi
    data-publishing/index
+   transactions
    plugins
    html-templating
    cql

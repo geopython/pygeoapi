@@ -366,6 +366,9 @@ properties:
                                               - type: string
                                               - type: object
                                           description: the data filesystem path or URL, depending on plugin setup
+                                      editable:
+                                          type: boolean
+                                          description: whether the resource is editable
                                       table:
                                           type: string
                                           description: table name for RDBMS-based providers

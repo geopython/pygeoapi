@@ -61,8 +61,8 @@ from pygeoapi.process.base import ProcessorExecuteError
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderInvalidQueryError, ProviderNoDataError, ProviderQueryError,
-    ProviderItemNotFoundError, ProviderTypeError)
+    ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
+    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError)
 
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
@@ -107,7 +107,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+        'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
@@ -915,6 +916,18 @@ class API:
 
             # TODO: provide translations
             LOGGER.debug('Adding JSON and HTML link relations')
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'root',
+                'title': 'The landing page of this server as JSON',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            })
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': 'root',
+                'title': 'The landing page of this server as HTML',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
@@ -1845,6 +1858,100 @@ class API:
 
     @gzip
     @pre_process
+    def manage_collection_item(
+            self, request: Union[APIRequest, Any],
+            action, dataset, identifier=None) -> Tuple[dict, int, str]:
+        """
+        Adds an item to a collection
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid(PLUGINS['formatter'].keys()):
+            return self.get_format_exception(request)
+
+        # Set Content-Language to system locale until provider locale
+        # has been determined
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        if dataset not in collections.keys():
+            msg = 'Collection not found'
+            LOGGER.error(msg)
+            return self.get_exception(
+                404, headers, request.format, 'NotFound', msg)
+
+        LOGGER.debug('Loading provider')
+        try:
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
+            p = load_plugin('provider', provider_def)
+        except ProviderTypeError:
+            try:
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
+                p = load_plugin('provider', provider_def)
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                LOGGER.error(msg)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if not p.editable:
+            msg = 'Collection is not editable'
+            LOGGER.error(msg)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if action in ['create', 'update'] and not request.data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if action == 'create':
+            LOGGER.debug('Creating item')
+            try:
+                identifier = p.create(request.data)
+            except ProviderInvalidDataError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            headers['Location'] = '{}/{}/items/{}'.format(
+                self.get_collections_url(), dataset, identifier)
+
+            return headers, 201, ''
+
+        if action == 'update':
+            LOGGER.debug('Updating item')
+            try:
+                _ = p.update(identifier, request.data)
+            except ProviderGenericError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            return headers, 204, ''
+
+        if action == 'delete':
+            LOGGER.debug('Deleting item')
+            try:
+                _ = p.delete(identifier)
+            except ProviderGenericError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            return headers, 200, ''
+
+    @gzip
+    @pre_process
     def get_collection_item(self, request: Union[APIRequest, Any],
                             dataset, identifier) -> Tuple[dict, int, str]:
         """
@@ -1929,6 +2036,16 @@ class API:
             content['links'] = []
 
         content['links'].extend([{
+            'type': FORMAT_TYPES[F_JSON],
+            'rel': 'root',
+            'title': 'The landing page of this server as JSON',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            }, {
+            'type': FORMAT_TYPES[F_HTML],
+            'rel': 'root',
+            'title': 'The landing page of this server as HTML',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            }, {
             'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
@@ -3303,7 +3420,7 @@ class API:
             400, headers, request.format, 'InvalidParameterValue', msg)
 
     def get_collections_url(self):
-        return '{}/collections'.format((self.config['server']['url']))
+        return '{}/collections'.format(self.config['server']['url'])
 
 
 def validate_bbox(value=None) -> list:
