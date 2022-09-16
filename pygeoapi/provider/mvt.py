@@ -207,7 +207,8 @@ class MVTProvider(BaseTileProvider):
                 session.get(base_url)
                 resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}{f}'.format(
                     base_url=base_url, lyr=layer,
-                    z=z, y=y, x=x, f= '?grid_precision=0' if format_ == "elastic" else '.' + format_))
+                    z=z, y=y, x=x, f='?grid_precision=0'
+                    if format_ == "elastic" else '.' + format_))
                 resp.raise_for_status()
                 return resp.content
         else:
@@ -242,7 +243,7 @@ class MVTProvider(BaseTileProvider):
         """
 
         if tilejson is False:
-             return
+            return
 
         if is_url(self.data):
             url = urlparse(self.data)
