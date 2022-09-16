@@ -111,10 +111,12 @@ class MVTProvider(BaseTileProvider):
 
         tile_matrix_set_links_list = [{
                 'tileMatrixSet': 'WorldCRS84Quad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json',  # noqa
+                'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
             }, {
                 'tileMatrixSet': 'WebMercatorQuad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json',  # noqa
+                'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
             }]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list if item[
@@ -158,19 +160,25 @@ class MVTProvider(BaseTileProvider):
             'metadata')
 
         links = {
-            'links': [{
-                'type': self.mimetype,
-                'rel': 'item',
-                'title': 'This collection as Mapbox vector tiles',
-                'href': self.service_url,
-                'templated': True
-            }, {
-                'type': 'application/json',
-                'rel': 'describedby',
-                'title': 'Metadata for this collection in the TileJSON format',
-                'href': '{}?f=json'.format(self.service_metadata_url),
-                'templated': True
-            }]
+            'links': [
+                {
+                    'type': 'application/json',
+                    'rel': 'self',
+                    'title': 'This collection as multi vector tilesets',
+                    'href': self.service_url,
+                },
+                {
+                    'type': self.mimetype,
+                    'rel': 'item',
+                    'title': 'This collection as multi vector tiles',
+                    'href': self.service_url,
+                }, {
+                    'type': 'application/json',
+                    'rel': 'describedby',
+                    'title': 'Collection metadata in TileJSON format',
+                    'href': '{}?f=json'.format(self.service_metadata_url),
+                }
+            ]
         }
 
         return links
