@@ -835,7 +835,7 @@ def test_get_collection_items(config, api_):
 def test_get_collection_items_postgresql_cql():
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
-    data.  See providers/postgresql.py for details.
+    data.  See pygeoapi/provider/postgresql.py for details.
 
     First test good request, then error conditions.
     """
@@ -862,13 +862,13 @@ def test_get_collection_items_postgresql_cql():
 
     # Error conditions
     bad_cql_queries = [
-        ('UnexpectedCharacters', 'id IN (1, ~)'),
-        ('UnexpectedToken', 'id EATS (1, 2)'),  # Valid CQL relations only
-        ('UnexpectedToken', 'id IN (1, 2')  # At some point this may return UnexpectedEOF
+        'id IN (1, ~)',
+        'id EATS (1, 2)',  # Valid CQL relations only
+        'id IN (1, 2'  # At some point this may return UnexpectedEOF
     ]
 
     # Act
-    for lark_error_type, cql_query in bad_cql_queries:
+    for cql_query in bad_cql_queries:
         req = mock_request({
             'cql': cql_query
         })
@@ -878,7 +878,7 @@ def test_get_collection_items_postgresql_cql():
         assert code == 400
         error_response = json.loads(response)
         assert error_response['code'] == 'InvalidParameterValue'
-        assert error_response['description'].startswith(f'Bad CQL string ({lark_error_type}')
+        assert error_response['description'] == f'Bad CQL string : {cql_query}'
 
 
 def test_get_collection_items_json_ld(config, api_):
