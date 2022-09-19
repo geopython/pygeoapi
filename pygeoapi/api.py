@@ -1272,7 +1272,8 @@ class API:
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
-                               'properties', 'skipGeometry', 'q', 'filter']
+                               'properties', 'skipGeometry', 'q',
+                               'filter', 'filter-lang']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1433,6 +1434,14 @@ class API:
         else:
             cql_ast = None
 
+        LOGGER.debug('Processing filter-lang parameter')
+        filter_lang = request.params.get('filter-lang')
+        # Currently only cql-text is handled
+        if filter_lang is not None and filter_lang != 'cql-text':
+            msg = 'Invalid filter language'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
@@ -1449,6 +1458,7 @@ class API:
         LOGGER.debug('language: {}'.format(prv_locale))
         LOGGER.debug('q: {}'.format(q))
         LOGGER.debug('cql_ast: {}'.format(cql_ast))
+        LOGGER.debug('filter-lang: {}'.format(filter_lang))
 
         try:
             content = p.query(offset=offset, limit=limit,
