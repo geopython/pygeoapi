@@ -847,7 +847,7 @@ def test_get_collection_items_postgresql_cql():
 
     # Act
     req = mock_request({
-        'cql': cql_query
+        'filter': cql_query
     })
     rsp_headers, code, response = api_.get_collection_items(
         req, 'hot_osm_waterways')
@@ -877,7 +877,7 @@ def test_get_collection_items_postgresql_cql_error_conditions(bad_cql):
 
     # Act
     req = mock_request({
-        'cql': bad_cql
+        'filter': bad_cql
     })
     rsp_headers, code, response = api_.get_collection_items(
         req, 'hot_osm_waterways')

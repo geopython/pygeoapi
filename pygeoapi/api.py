@@ -1272,7 +1272,7 @@ class API:
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
-                               'properties', 'skipGeometry', 'q', 'cql']
+                               'properties', 'skipGeometry', 'q', 'filter']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1421,7 +1421,7 @@ class API:
             skip_geometry = False
 
         LOGGER.debug('processing cql parameter')
-        cql = request.params.get('cql')
+        cql = request.params.get('filter')
         if cql is not None:
             try:
                 cql_ast = parse(cql)
