@@ -836,10 +836,7 @@ def test_get_collection_items_postgresql_cql():
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
-
-    First test good request, then error conditions.
     """
-    # Happy path
     # Arrange
     # Prepare API configured to use PostgreSQL provider
     with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
@@ -852,7 +849,8 @@ def test_get_collection_items_postgresql_cql():
     req = mock_request({
         'cql': cql_query
     })
-    rsp_headers, code, response = api_.get_collection_items(req, 'hot_osm_waterways')
+    rsp_headers, code, response = api_.get_collection_items(
+        req, 'hot_osm_waterways')
 
     # Assert
     assert code == 200
@@ -860,25 +858,35 @@ def test_get_collection_items_postgresql_cql():
     ids = [item['id'] for item in features['features']]
     assert ids == expected_ids
 
-    # Error conditions
-    bad_cql_queries = [
-        'id IN (1, ~)',
-        'id EATS (1, 2)',  # Valid CQL relations only
-        'id IN (1, 2'  # At some point this may return UnexpectedEOF
-    ]
+
+@pytest.mark.parametrize("bad_cql", [
+    'id IN (1, ~)',
+    'id EATS (1, 2)',  # Valid CQL relations only
+    'id IN (1, 2'  # At some point this may return UnexpectedEOF
+])
+def test_get_collection_items_postgresql_cql_error_conditions(bad_cql):
+    """
+    Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
+    data.  See pygeoapi/provider/postgresql.py for details.
+    """
+    # Arrange
+    # Prepare API configured to use PostgreSQL provider
+    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
+        config = yaml_load(fh)
+    api_ = API(config)
 
     # Act
-    for cql_query in bad_cql_queries:
-        req = mock_request({
-            'cql': cql_query
-        })
-        rsp_headers, code, response = api_.get_collection_items(req, 'hot_osm_waterways')
+    req = mock_request({
+        'cql': bad_cql
+    })
+    rsp_headers, code, response = api_.get_collection_items(
+        req, 'hot_osm_waterways')
 
-        # Assert
-        assert code == 400
-        error_response = json.loads(response)
-        assert error_response['code'] == 'InvalidParameterValue'
-        assert error_response['description'] == f'Bad CQL string : {cql_query}'
+    # Assert
+    assert code == 400
+    error_response = json.loads(response)
+    assert error_response['code'] == 'InvalidParameterValue'
+    assert error_response['description'] == f'Bad CQL string : {bad_cql}'
 
 
 def test_get_collection_items_json_ld(config, api_):
