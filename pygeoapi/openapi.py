@@ -651,12 +651,6 @@ def get_oas_30(cfg):
                     'produces': ['application/json'],
                     'parameters': [
                         {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        {
-                            'in': 'body',
-                            'name': 'body',
-                            'description': 'Updates item in collection',
-                            'required': True,
-                        }
                     ],
                     'responses': {
                         '200': {'description': 'Successful delete'},
