@@ -48,7 +48,6 @@ import urllib.parse
 import uuid
 
 from dateutil.parser import parse as dateparse
-from lark.exceptions import UnexpectedInput
 from pygeofilter.parsers.ecql import parse
 import pytz
 from shapely.errors import WKTReadingError
@@ -1426,9 +1425,9 @@ class API:
         if cql is not None:
             try:
                 cql_ast = parse(cql)
-            except UnexpectedInput as exc:
-                lark_error_type = str(type(exc)).split("'")[1].split('.')[2]
-                msg = f'Bad CQL string ({lark_error_type}): {cql}'
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {cql}'
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
         else:
