@@ -175,8 +175,15 @@ class PostgreSQLProvider(BaseProvider):
 
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
-        self.conn_dic = provider_def['data']
         self.geom = provider_def.get('geom_field', 'geom')
+
+        # Store database parameters
+        self.conn_dic = provider_def['data']
+        self.db_user = provider_def['data'].get('user')
+        self.db_host = provider_def['data'].get('host')
+        self.db_port = provider_def['data'].get('port', 5432)
+        self.db_name = provider_def['data'].get('dbname')
+        self._db_password = provider_def['data'].get('password')
 
         LOGGER.debug('Setting Postgresql properties:')
         LOGGER.debug('Connection String:{}'.format(
@@ -187,6 +194,44 @@ class PostgreSQLProvider(BaseProvider):
 
         LOGGER.debug('Get available fields/properties')
         self.get_fields()
+        self.engine = self._create_engine()
+        self.table_model = self._reflect_table_model()
+
+    def _create_engine(self):
+        """
+        Create a SQL Alchemy engine connected to the database.
+        """
+        conn_str = (
+            'postgresql+psycopg2://'
+            f'{self.db_user}:{self._db_password}@'
+            f'{self.db_host}:{self.db_port}/'
+            f'{self.db_name}'
+        )
+        engine = create_engine(conn_str)
+        return engine
+
+    def _reflect_table_model(self):
+        """
+        Reflect database metadata to create a SQL Alchemy model corresponding
+        to target table.
+        """
+        schema = self.conn_dic['options'].split('=')[-1].split(',')[0]
+        metadata = MetaData(self.engine)
+        metadata.reflect(schema=schema, only=[self.table], views=True)
+
+        # Create SQLAlchemy model from reflected table
+        # It is necessary to add the primary key constraint because SQLAlchemy
+        # requires it to reflect the table, but a view in a PostgreSQL database
+        # does not have a primary key defined.
+        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
+        sqlalchemy_table_def.append_constraint(
+            PrimaryKeyConstraint(self.id_field)
+        )
+        Base = automap_base(metadata=metadata)
+        Base.prepare()
+        TableModel = getattr(Base.classes, self.table)
+
+        return TableModel
 
     def get_fields(self):
         """
@@ -274,8 +319,9 @@ class PostgreSQLProvider(BaseProvider):
                                     properties=self.properties) as db:
 
                 row_data = self.query_cql(
-                    db, offset=offset, limit=limit, resulttype=resulttype,
-                    bbox=bbox, sortby=sortby, select_properties=select_properties,
+                    offset=offset, limit=limit, resulttype=resulttype,
+                    bbox=bbox, sortby=sortby,
+                    select_properties=select_properties,
                     skip_geometry=skip_geometry, cql_ast=cql_ast)
 
                 feature_collection = {
@@ -288,7 +334,6 @@ class PostgreSQLProvider(BaseProvider):
                         self.__response_feature(rd))
 
                 return feature_collection
-
 
         if resulttype == 'hits':
 
@@ -491,38 +536,26 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature_collection
 
-    def query_cql(self, db, offset=0, limit=10, resulttype='results',
-                  bbox=[], sortby=[], select_properties=[], skip_geometry=False,
-                  cql_ast=None, **kwargs):
-
-        schema = db.conn_dic['options'].split('=')[-1].split(',')[0]
-        engine = create_engine('postgresql+psycopg2://', creator=lambda: db.conn)
-        metadata = MetaData(engine)
-        metadata.reflect(schema=schema, only=[self.table], views=True)
-
-        # Create SQLAlchemy model from reflected table
-        # It is necessary to add the primary key constraint because SQLAlchemy
-        # requires it to reflect the table, but a view in a PostgreSQL database does
-        # not have a primary key defined.
-        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
-        sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(self.id_field))
-        Base = automap_base(metadata=metadata)
-        Base.prepare()
-        TableModel = getattr(Base.classes, self.table)
-
+    def query_cql(self, offset=0, limit=10, resulttype='results',
+                  bbox=[], sortby=[], select_properties=[],
+                  skip_geometry=False, cql_ast=None, **kwargs):
         # Prepare CQL requirements
-        field_mapping = {column_name: getattr(TableModel, column_name)
-                         for column_name in TableModel.__table__.columns.keys()}
+        field_mapping = {column_name: getattr(self.table_model, column_name)
+                         for column_name
+                         in self.table_model.__table__.columns.keys()}
         filters = to_filter(cql_ast, field_mapping)
 
         # Create session to run a query
-        Session = sessionmaker(bind=engine)
+        Session = sessionmaker(bind=self.engine)
         session = Session()
 
+        order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
 
-        order_by_clauses = self._get_order_by_clauses(sortby, TableModel)
-
-        q = session.query(TableModel).filter(filters).order_by(*order_by_clauses).offset(offset).limit(limit)
+        q = (session.query(self.table_model)
+             .filter(filters)
+             .order_by(*order_by_clauses)
+             .offset(offset)
+             .limit(limit))
 
         result = []
         for row in q:
@@ -530,12 +563,12 @@ class PostgreSQLProvider(BaseProvider):
             wkb_geom = row_dict.pop(self.geom)
             shapely_geom = to_shape(wkb_geom)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
-            row_dict['st_asgeojson'] = json.dumps(geojson_geom)  # Use st_asgeojson to match normal query output
+            # Use st_asgeojson to match normal query output
+            row_dict['st_asgeojson'] = json.dumps(geojson_geom)
             row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
             result.append(row_dict)
 
         return result
-
 
     def _get_order_by_clauses(self, sort_by, table_model):
         # Build sort_by clauses if provided
