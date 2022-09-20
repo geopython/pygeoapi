@@ -472,10 +472,15 @@ class OGRProvider(BaseProvider):
         if skip_geometry:
             json_feature['geometry'] = None
         try:
-            json_feature['id'] = json_feature['properties'].pop(self.id_field)
-        except Exception as err:
-            LOGGER.error(err)
-            json_feature['id'] = ogr_feature.GetFID()
+            json_feature['id'] = json_feature['properties'].pop(
+                self.id_field, json_feature['id']
+            )
+        except KeyError as err:
+            LOGGER.error(
+                "Cannot use configured id_field nor fid as id, err={}".format(
+                    err
+                )
+            )
 
         return json_feature
 

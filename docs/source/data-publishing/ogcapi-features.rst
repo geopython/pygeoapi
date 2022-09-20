@@ -15,19 +15,19 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
    :align: left
 
-   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌
-   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅
-   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌
-   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌
-   MongoDB,✅/❌,results,✅,✅,✅,✅,❌
-   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌
-   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌
-   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌
-   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌
-   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌
+   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
+   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   MongoDB,✅/❌,results,✅,✅,✅,✅,❌,❌
+   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌,❌
+   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -86,6 +86,7 @@ To publish an Elasticsearch index, the following are required in your index:
    providers:
        - type: feature
          name: Elasticsearch
+         editable: true|false  # optional, default is false
          data: http://localhost:9200/ne_110m_populated_places_simple
          id_field: geonameid
          time_field: datetimefield
@@ -105,7 +106,7 @@ specify the URL for the service layer in the ``data`` field.
 
 * ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
 * If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
-configuration to authenticate into the service.
+  configuration to authenticate into the service.
 
 .. code-block:: yaml
 
@@ -310,7 +311,7 @@ relies on `sodapy <https://github.com/xmunoz/sodapy>`.
 * ``resource_id`` is the 4x4 resource id pattern.
 * ``geom_field`` is required for bbox queries to work.
 * ``token`` is optional and can be included in the configuration to pass
-an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
+  an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
 
 
 .. code-block:: yaml

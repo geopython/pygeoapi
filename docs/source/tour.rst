@@ -88,6 +88,32 @@ map.
 .. seealso::
    :ref:`ogcapi-features` for more OGC API - Features request examples.
 
+.. _transactions_examples:
+
+Transactions
+^^^^^^^^^^^^
+
+Add an item to a collection (using `curl`_):
+
+.. code-block:: bash
+
+   curl -XPOST -H "Content-Type: application/geo+json" http://localhost:5000/collections/canada-metadata/items -d @new-item.json
+
+
+Update an item in a collection (using `curl`_):
+
+.. code-block:: bash
+
+   curl -XPUT -H "Content-Type: application/geo+json" http://localhost:5000/collections/canada-metadata/items/item1 -d @updated-feature.json
+
+
+Delete an item from a collection:
+
+.. code-block:: bash
+
+   curl -XDELETE http://localhost:5000/collections/canada-metadata/items/item1
+
+
 Raster data
 -----------
 
@@ -147,6 +173,11 @@ This page provides metadata catalogue search capabilities
 
 .. seealso::
    :ref:`ogcapi-records` for more OGC API - Records request examples.
+
+Transactions
+^^^^^^^^^^^^
+
+See the :ref:`transactions_examples` section for examples.
 
 
 Processes
@@ -218,3 +249,4 @@ discover what is supported by the server.
 
 .. _`Toronto, Ontario, Canada`: https://en.wikipedia.org/wiki/Toronto
 .. _`Swagger`: https://en.wikipedia.org/wiki/Swagger_(software)
+.. _`curl`: https://curl.se

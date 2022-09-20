@@ -509,6 +509,28 @@ def get_oas_30(cfg):
                 }
             }
 
+            if p.editable:
+                LOGGER.debug('Provider is editable; adding post')
+                paths[items_path]['post'] = {
+                    'summary': 'Add {} items'.format(title),  # noqa
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'add{}Features'.format(name.capitalize()),
+                    'consumes': ['application/json'],
+                    'produces': ['application/json'],
+                    'parameters': [{
+                        'in': 'body',
+                        'name': 'body',
+                        'description': 'Adds item to collection',
+                        'required': True,
+                    }],
+                    'responses': {
+                        '201': {'description': 'Successful creation'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+
             if ptype == 'record':
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': '{}/parameters/q.yaml'.format(OPENAPI_YAML['oapir'])})  # noqa
@@ -596,6 +618,47 @@ def get_oas_30(cfg):
                     }
                 }
             }
+
+            if p.editable:
+                LOGGER.debug('Provider is editable; adding put/delete')
+                paths['{}/items/{{featureId}}'.format(collection_name_path)]['put'] = {  # noqa
+                    'summary': 'Update {} items'.format(title),
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'update{}Features'.format(name.capitalize()),  # noqa
+                    'consumes': ['application/json'],
+                    'produces': ['application/json'],
+                    'parameters': [
+                        {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        {
+                            'in': 'body',
+                            'name': 'body',
+                            'description': 'Updates item in collection',
+                            'required': True,
+                        }
+                    ],
+                    'responses': {
+                        '204': {'description': 'Successful update'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+                paths['{}/items/{{featureId}}'.format(collection_name_path)]['delete'] = {  # noqa
+                    'summary': 'Delete {} items'.format(title),
+                    'description': desc,
+                    'tags': [name],
+                    'operationId': 'delete{}Features'.format(name.capitalize()),  # noqa
+                    'produces': ['application/json'],
+                    'parameters': [
+                        {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
+                    ],
+                    'responses': {
+                        '200': {'description': 'Successful delete'},
+                        '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
+                    }
+                }
+
         except ProviderTypeError:
             LOGGER.debug('collection is not feature based')
 
