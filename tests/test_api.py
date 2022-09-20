@@ -889,7 +889,7 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language():
 
     # Act
     req = mock_request({
-        'filter-lang': 'cql-json',
+        'filter-lang': 'cql-json',  # Only cql-text is valid for GET
         'filter': cql_query
     })
     rsp_headers, code, response = api_.get_collection_items(
@@ -986,7 +986,7 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language():
 
     # Act
     req = mock_request({
-        'filter-lang': 'cql-text'
+        'filter-lang': 'cql-text'  # Only cql-json is valid for POST
     }, data=cql, **headers)
     rsp_headers, code, response = api_.post_collection_items(
         req, 'hot_osm_waterways')
