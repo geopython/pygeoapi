@@ -1835,37 +1835,36 @@ class API:
 
         filter_ = None
         cql_ast = None
-        if filter_lang:
-            try:
-                # Parse bytes data, if applicable
-                data = request.data.decode()
-                LOGGER.debug(data)
-            except UnicodeDecodeError as err:
-                LOGGER.error(err)
-                msg = 'Unicode error in data'
-                return self.get_exception(
-                    400, headers, request.format, 'InvalidParameterValue', msg)
+        try:
+            # Parse bytes data, if applicable
+            data = request.data.decode()
+            LOGGER.debug(data)
+        except UnicodeDecodeError as err:
+            LOGGER.error(err)
+            msg = 'Unicode error in data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
-            if p.name == 'PostgreSQL':
-                LOGGER.debug('processing PostgreSQL CQL_JSON data')
-                try:
-                    cql_ast = parse_cql_json(data)
-                except Exception as err:
-                    LOGGER.error(err)
-                    msg = f'Bad CQL string : {data}'
-                    return self.get_exception(
-                        400, headers, request.format,
-                        'InvalidParameterValue', msg)
-            else:
-                LOGGER.debug('processing ElasticSearch CQL_JSON data')
-                try:
-                    filter_ = CQLModel.parse_raw(data)
-                except Exception as err:
-                    LOGGER.error(err)
-                    msg = f'Bad CQL string : {data}'
-                    return self.get_exception(
-                        400, headers, request.format,
-                        'InvalidParameterValue', msg)
+        if p.name == 'PostgreSQL':
+            LOGGER.debug('processing PostgreSQL CQL_JSON data')
+            try:
+                cql_ast = parse_cql_json(data)
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {data}'
+                return self.get_exception(
+                    400, headers, request.format,
+                    'InvalidParameterValue', msg)
+        else:
+            LOGGER.debug('processing ElasticSearch CQL_JSON data')
+            try:
+                filter_ = CQLModel.parse_raw(data)
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {data}'
+                return self.get_exception(
+                    400, headers, request.format,
+                    'InvalidParameterValue', msg)
 
         try:
             content = p.query(offset=offset, limit=limit,
