@@ -1799,9 +1799,7 @@ class API:
 
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
-        if filter_lang == 'cql-json':  # @TODO add check from the configuration
-            val = filter_lang
-        else:
+        if filter_lang != 'cql-json':  # @TODO add check from the configuration
             msg = 'Invalid filter language'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
@@ -1835,18 +1833,41 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'MissingParameterValue', msg)
 
-        try:
-            # Parse bytes data, if applicable
-            data = request.data.decode()
-            LOGGER.debug(data)
-            # @TODO validation function
-            filter_ = None
-            cql_ast = None
-            if val:
-                if p.name == 'PostgreSQL':
+        filter_ = None
+        cql_ast = None
+        if filter_lang:
+            try:
+                # Parse bytes data, if applicable
+                data = request.data.decode()
+                LOGGER.debug(data)
+            except UnicodeDecodeError as err:
+                LOGGER.error(err)
+                msg = 'Unicode error in data'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            if p.name == 'PostgreSQL':
+                LOGGER.debug('processing PostgreSQL CQL_JSON data')
+                try:
                     cql_ast = parse_cql_json(data)
-                else:
+                except Exception as err:
+                    LOGGER.error(err)
+                    msg = f'Bad CQL string : {data}'
+                    return self.get_exception(
+                        400, headers, request.format,
+                        'InvalidParameterValue', msg)
+            else:
+                LOGGER.debug('processing ElasticSearch CQL_JSON data')
+                try:
                     filter_ = CQLModel.parse_raw(data)
+                except Exception as err:
+                    LOGGER.error(err)
+                    msg = f'Bad CQL string : {data}'
+                    return self.get_exception(
+                        400, headers, request.format,
+                        'InvalidParameterValue', msg)
+
+        try:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
@@ -1856,8 +1877,21 @@ class API:
                               q=q,
                               filterq=filter_,
                               cql_ast=cql_ast)
-        except (UnicodeDecodeError, AttributeError):
-            pass
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderQueryError as err:
+            LOGGER.error(err)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         return headers, 200, to_json(content, self.pretty_print)
 
