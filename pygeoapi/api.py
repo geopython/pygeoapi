@@ -49,6 +49,7 @@ import uuid
 
 from dateutil.parser import parse as dateparse
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
+from pygeofilter.parsers.cql_json import parse as parse_cql_json
 import pytz
 from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
@@ -1840,8 +1841,12 @@ class API:
             LOGGER.debug(data)
             # @TODO validation function
             filter_ = None
+            cql_ast = None
             if val:
-                filter_ = CQLModel.parse_raw(data)
+                if p.name == 'PostgreSQL':
+                    cql_ast = parse_cql_json(data)
+                else:
+                    filter_ = CQLModel.parse_raw(data)
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
@@ -1849,7 +1854,8 @@ class API:
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
                               q=q,
-                              filterq=filter_)
+                              filterq=filter_,
+                              cql_ast=cql_ast)
         except (UnicodeDecodeError, AttributeError):
             pass
 
