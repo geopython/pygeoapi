@@ -48,7 +48,7 @@ import urllib.parse
 import uuid
 
 from dateutil.parser import parse as dateparse
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.ecql import parse as parse_ecql_text
 import pytz
 from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
@@ -1425,7 +1425,7 @@ class API:
         cql = request.params.get('filter')
         if cql is not None:
             try:
-                cql_ast = parse(cql)
+                cql_ast = parse_ecql_text(cql)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {cql}'
