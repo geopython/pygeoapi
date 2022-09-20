@@ -427,7 +427,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 20
+    assert len(root['conformsTo']) == 21
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)
@@ -468,7 +468,7 @@ def test_describe_collections(config, api_):
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
-    assert len(collection['links']) == 10
+    assert len(collection['links']) == 12
     assert collection['extent'] == {
         'spatial': {
             'bbox': [[-180, -90, 180, 90]],
@@ -503,7 +503,7 @@ def test_describe_collections(config, api_):
     collection = json.loads(response)
 
     assert collection['id'] == 'gdps-temperature'
-    assert len(collection['links']) == 12
+    assert len(collection['links']) == 14
 
     # hiearchical collections
     rsp_headers, code, response = api_.describe_collections(
@@ -569,7 +569,7 @@ def test_describe_collections_json_ld(config, api_):
     assert len(expanded['http://schema.org/dataset']) == 1
     dataset = expanded['http://schema.org/dataset'][0]
     assert dataset['@type'][0] == 'http://schema.org/Dataset'
-    assert len(dataset['http://schema.org/distribution']) == 10
+    assert len(dataset['http://schema.org/distribution']) == 12
     assert all(dist['@type'][0] == 'http://schema.org/DataDownload'
                for dist in dataset['http://schema.org/distribution'])
 
@@ -1227,7 +1227,8 @@ def test_get_collection_tiles(config, api_):
         req, 'naturalearth/lakes')
     assert rsp_headers['Content-Language'] == 'en-US'
     content = json.loads(response)
-    assert content['description'] == 'lakes of the world, public domain'
+    assert len(content['links']) > 0
+    assert len(content['tilesets']) > 0
 
 
 def test_describe_processes(config, api_):

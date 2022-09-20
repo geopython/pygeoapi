@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -28,10 +28,10 @@
 # =================================================================
 
 import logging
-import os
 import re  # noqa
+import os
 
-from tinydb import TinyDB, Query
+from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
@@ -65,7 +65,11 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
-        self.db = TinyDB(self.data, access_mode="r")
+        LOGGER.debug('Checking TinyDB DB permissions')
+        if not os.access(self.data, os.W_OK):
+            self.db = TinyDB(self.data, access_mode='r')
+        else:
+            self.db = TinyDB(self.data)
 
         self.fields = self.get_fields()
 
@@ -178,7 +182,10 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         for r in results:
             for e in self.excludes:
-                del r['properties'][e]
+                try:
+                    del r['properties'][e]
+                except KeyError:
+                    LOGGER.debug('Missing excluded property {}'.format(e))
 
         len_results = len(results)
 
@@ -222,9 +229,70 @@ class TinyDBCatalogueProvider(BaseProvider):
             raise ProviderItemNotFoundError('record does not exist')
 
         for e in self.excludes:
-            del record['properties'][e]
+            try:
+                del record['properties'][e]
+            except KeyError:
+                LOGGER.debug('Missing excluded property {}'.format(e))
 
         return record
+
+    def create(self, item):
+        """
+        Adds an item to the TinyDB repository
+
+        :param item: item data
+
+        :returns: identifier of newly created item
+        """
+
+        identifier, json_data = self._load_and_prepare_item(item)
+
+        try:
+            json_data['properties']['_metadata-anytext'] = ''.join([
+                json_data['properties']['title'],
+                json_data['properties']['description']
+            ])
+        except KeyError:
+            LOGGER.debug('Missing title and description')
+            json_data['properties']['_metadata_anytext'] = ''
+
+        LOGGER.debug('Inserting data with identifier {}'.format(identifier))
+        result = self.db.insert(json_data)
+
+        LOGGER.debug('Item added with internal id {}'.format(result))
+
+        return identifier
+
+    def update(self, identifier, item):
+        """
+        Updates an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+
+        LOGGER.debug('Updating item {}'.format(identifier))
+        identifier, json_data = self._load_and_prepare_item(
+            item, identifier, raise_if_exists=False)
+        self.db.update(json_data, where('id') == identifier)
+
+        return True
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
+        """
+
+        LOGGER.debug('Deleting item {}'.format(identifier))
+        self.db.remove(where('id') == identifier)
+
+        return True
 
     def _bbox(input_bbox, record_bbox):
         """

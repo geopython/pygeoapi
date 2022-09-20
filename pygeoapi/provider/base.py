@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+import json
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class BaseProvider:
         except KeyError:
             raise RuntimeError('name/type/data are required')
 
+        self.editable = provider_def.get('editable', False)
         self.options = provider_def.get('options', None)
         self.id_field = provider_def.get('id_field', None)
         self.uri_field = provider_def.get('uri_field', None)
@@ -114,22 +116,42 @@ class BaseProvider:
         query the provider by id
 
         :param identifier: feature id
+
         :returns: dict of single GeoJSON feature
         """
 
         raise NotImplementedError()
 
-    def create(self, new_feature):
-        """Create a new feature
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
         """
 
         raise NotImplementedError()
 
-    def update(self, identifier, new_feature):
-        """Updates an existing feature id with new_feature
+    def update(self, identifier, item):
+        """
+        Updates an existing item
 
         :param identifier: feature id
-        :param new_feature: new GeoJSON feature dictionary
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+
+        raise NotImplementedError()
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
         """
 
         raise NotImplementedError()
@@ -152,13 +174,72 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def delete(self, identifier):
-        """Deletes an existing feature
+    def _load_and_prepare_item(self, item, identifier=None,
+                               raise_if_exists=True):
+        """
+        Helper function to load a record, detect its idenfier and prepare
+        a record item
 
-        :param identifier: feature id
+        :param item: `str` of incoming item data
+        :param identifier: `str` of item identifier (optional)
+        :param raise_if_exists: `bool` of whether to check if record
+                                 already exists
+
+        :returns: `tuple` of item identifier and item data/payload
         """
 
-        raise NotImplementedError()
+        identifier2 = None
+        msg = None
+
+        LOGGER.debug('Loading data')
+        LOGGER.debug('Data: {}'.format(item))
+        try:
+            json_data = json.loads(item)
+        except TypeError as err:
+            LOGGER.error(err)
+            msg = 'Invalid data'
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.error(err)
+            msg = 'Invalid JSON data'
+
+        if msg is not None:
+            raise ProviderInvalidDataError(msg)
+
+        LOGGER.debug('Detecting identifier')
+        if identifier is not None:
+            identifier2 = identifier
+        else:
+            try:
+                identifier2 = json_data['id']
+            except KeyError:
+                LOGGER.debug('Cannot find id; trying properties.identifier')
+                try:
+                    identifier2 = json_data['properties']['identifier']
+                except KeyError:
+                    LOGGER.debug('Cannot find properties.identifier')
+
+        if identifier2 is None:
+            msg = 'Missing identifier (id or properties.identifier)'
+            LOGGER.error(msg)
+            raise ProviderInvalidDataError(msg)
+
+        if 'geometry' not in json_data or 'properties' not in json_data:
+            msg = 'Missing core GeoJSON geometry or properties'
+            LOGGER.error(msg)
+            raise ProviderInvalidDataError(msg)
+
+        if raise_if_exists:
+            LOGGER.debug('Querying database whether item exists')
+            try:
+                _ = self.get(identifier2)
+
+                msg = 'record already exists'
+                LOGGER.error(msg)
+                raise ProviderInvalidDataError(msg)
+            except ProviderItemNotFoundError:
+                LOGGER.debug('record does not exist')
+
+        return identifier2, json_data
 
     def __repr__(self):
         return '<BaseProvider> {}'.format(self.type)
@@ -206,4 +287,9 @@ class ProviderNotFoundError(ProviderGenericError):
 
 class ProviderVersionError(ProviderGenericError):
     """provider incorrect version error"""
+    pass
+
+
+class ProviderInvalidDataError(ProviderGenericError):
+    """provider invalid data error"""
     pass

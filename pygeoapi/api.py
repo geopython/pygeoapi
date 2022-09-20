@@ -62,8 +62,8 @@ from pygeoapi.process.base import ProcessorExecuteError
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderInvalidQueryError, ProviderNoDataError, ProviderQueryError,
-    ProviderItemNotFoundError, ProviderTypeError)
+    ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
+    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError)
 
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
@@ -108,7 +108,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+        'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
@@ -277,6 +278,8 @@ class APIRequest:
             self._path_info = request.scope['path'].strip('/')
         elif hasattr(request.headers, 'environ'):
             self._path_info = request.headers.environ['PATH_INFO'].strip('/')
+        elif hasattr(request, 'path_info'):
+            self._path_info = request.path_info
 
         # Extract locale from params or headers
         self._raw_locale, self._locale = self._get_locale(request.headers,
@@ -310,17 +313,22 @@ class APIRequest:
             # Set data from Flask request
             api_req._data = request.data
         elif hasattr(request, 'body'):
-            try:
-                import nest_asyncio
-                nest_asyncio.apply()
-                # Set data from Starlette request after async
-                # coroutine completion
-                # TODO: this now blocks, but once Flask v2 with async support
-                # has been implemented, with_data() can become async too
-                loop = asyncio.get_event_loop()
-                api_req._data = loop.run_until_complete(request.body())
-            except ModuleNotFoundError:
-                LOGGER.error("Module nest-asyncio not found")
+            if 'django' in str(request.__class__):
+                # Set data from Django request
+                api_req._data = request.body
+            else:
+                try:
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    # Set data from Starlette request after async
+                    # coroutine completion
+                    # TODO:
+                    # this now blocks, but once Flask v2 with async support
+                    # has been implemented, with_data() can become async too
+                    loop = asyncio.get_event_loop()
+                    api_req._data = loop.run_until_complete(request.body())
+                except ModuleNotFoundError:
+                    LOGGER.error('Module nest-asyncio not found')
         return api_req
 
     @staticmethod
@@ -338,6 +346,12 @@ class APIRequest:
         elif hasattr(request, 'query_params'):
             # Return ImmutableMultiDict from Starlette request
             return request.query_params
+        elif hasattr(request, 'GET'):
+            # Return QueryDict from Django GET request
+            return request.GET
+        elif hasattr(request, 'POST'):
+            # Return QueryDict from Django GET request
+            return request.POST
         LOGGER.debug('No query parameters found')
         return {}
 
@@ -903,6 +917,18 @@ class API:
 
             # TODO: provide translations
             LOGGER.debug('Adding JSON and HTML link relations')
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'root',
+                'title': 'The landing page of this server as JSON',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            })
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': 'root',
+                'title': 'The landing page of this server as HTML',
+                'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
@@ -1857,6 +1883,100 @@ class API:
 
     @gzip
     @pre_process
+    def manage_collection_item(
+            self, request: Union[APIRequest, Any],
+            action, dataset, identifier=None) -> Tuple[dict, int, str]:
+        """
+        Adds an item to a collection
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid(PLUGINS['formatter'].keys()):
+            return self.get_format_exception(request)
+
+        # Set Content-Language to system locale until provider locale
+        # has been determined
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+
+        collections = filter_dict_by_key_value(self.config['resources'],
+                                               'type', 'collection')
+
+        if dataset not in collections.keys():
+            msg = 'Collection not found'
+            LOGGER.error(msg)
+            return self.get_exception(
+                404, headers, request.format, 'NotFound', msg)
+
+        LOGGER.debug('Loading provider')
+        try:
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
+            p = load_plugin('provider', provider_def)
+        except ProviderTypeError:
+            try:
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
+                p = load_plugin('provider', provider_def)
+            except ProviderTypeError:
+                msg = 'Invalid provider type'
+                LOGGER.error(msg)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if not p.editable:
+            msg = 'Collection is not editable'
+            LOGGER.error(msg)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if action in ['create', 'update'] and not request.data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if action == 'create':
+            LOGGER.debug('Creating item')
+            try:
+                identifier = p.create(request.data)
+            except ProviderInvalidDataError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            headers['Location'] = '{}/{}/items/{}'.format(
+                self.get_collections_url(), dataset, identifier)
+
+            return headers, 201, ''
+
+        if action == 'update':
+            LOGGER.debug('Updating item')
+            try:
+                _ = p.update(identifier, request.data)
+            except ProviderGenericError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            return headers, 204, ''
+
+        if action == 'delete':
+            LOGGER.debug('Deleting item')
+            try:
+                _ = p.delete(identifier)
+            except ProviderGenericError as err:
+                msg = str(err)
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+
+            return headers, 200, ''
+
+    @gzip
+    @pre_process
     def get_collection_item(self, request: Union[APIRequest, Any],
                             dataset, identifier) -> Tuple[dict, int, str]:
         """
@@ -1941,6 +2061,16 @@ class API:
             content['links'] = []
 
         content['links'].extend([{
+            'type': FORMAT_TYPES[F_JSON],
+            'rel': 'root',
+            'title': 'The landing page of this server as JSON',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_JSON)
+            }, {
+            'type': FORMAT_TYPES[F_HTML],
+            'rel': 'root',
+            'title': 'The landing page of this server as HTML',
+            'href': '{}?f={}'.format(self.config['server']['url'], F_HTML)
+            }, {
             'rel': request.get_linkrel(F_JSON),
             'type': 'application/geo+json',
             'title': 'This document as GeoJSON',
@@ -2298,12 +2428,8 @@ class API:
                 500, headers, request.format, 'NoApplicableCode', msg)
 
         tiles = {
-            'title': dataset,
-            'description': l10n.translate(
-                self.config['resources'][dataset]['description'],
-                SYSTEM_LOCALE),
             'links': [],
-            'tileMatrixSetLinks': []
+            'tilesets': []
         }
 
         tiles['links'].append({
@@ -2337,7 +2463,36 @@ class API:
         for service in tile_services['links']:
             tiles['links'].append(service)
 
-        tiles['tileMatrixSetLinks'] = p.get_tiling_schemes()
+        tiling_schemes = p.get_tiling_schemes()
+
+        for matrix in tiling_schemes:
+            tile_matrix = {
+                'title': dataset,
+                'tileMatrixSetURI': matrix['tileMatrixSetURI'],
+                'crs': matrix['crs'],
+                'dataType': 'vector',
+                'links': []
+            }
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': request.get_linkrel(F_JSON),
+                'title': '{} - {} - {}'.format(
+                    dataset, matrix['tileMatrixSet'], F_JSON),
+                'href': '{}/{}/tiles/{}?f={}'.format(
+                    self.get_collections_url(), dataset,
+                    matrix['tileMatrixSet'], F_JSON)
+            })
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': request.get_linkrel(F_HTML),
+                'title': '{} - {} - {}'.format(
+                    dataset, matrix['tileMatrixSet'], F_HTML),
+                'href': '{}/{}/tiles/{}?f={}'.format(
+                    self.get_collections_url(), dataset,
+                    matrix['tileMatrixSet'], F_HTML)
+            })
+            tiles['tilesets'].append(tile_matrix)
+
         metadata_format = p.options['metadata_format']
 
         if request.format == F_HTML:  # render
@@ -3290,7 +3445,7 @@ class API:
             400, headers, request.format, 'InvalidParameterValue', msg)
 
     def get_collections_url(self):
-        return '{}/collections'.format((self.config['server']['url']))
+        return '{}/collections'.format(self.config['server']['url'])
 
 
 def validate_bbox(value=None) -> list:
