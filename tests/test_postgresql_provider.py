@@ -192,15 +192,21 @@ def test_query_select_properties(config):
     assert len(props['features'][0]['properties']) == 1
 
 
-def test_get(config):
-    """Testing query for a specific object"""
+@pytest.mark.parametrize('id_, prev, next_', [
+    (29701937, 29698243, 29704504),
+    (13990765, 13990765, 25469515),  # First item, prev should be id_
+    (620735702, 620420337, 620735702),  # Last item, next should be id_
+])
+def test_get(config, id_, prev, next_):
+    """Testing query for a specific object and identifying prev/next"""
     p = PostgreSQLProvider(config)
-    result = p.get(29701937)
-    assert isinstance(result, dict)
+    result = p.get(id_)
+    assert result['id'] == id_
+    assert result['prev'] == prev
+    assert result['next'] == next_
     assert 'geometry' in result
     assert 'properties' in result
-    assert 'id' in result
-    assert 'Kanyosha' in result['properties']['name']
+    assert 'type' in result
 
 
 def test_get_not_existing_item_raise_exception(config):
@@ -240,3 +246,30 @@ def test_query_cql(config, cql, expected_ids):
     features = feature_collection.get('features', None)
     ids = [feature["id"] for feature in features]
     assert ids == expected_ids
+
+
+def test_provider_attributes(config):
+    """Test attributes are correctly set during instantiation."""
+    # Arrange
+    expected_fields = {
+        'blockage': {'type': 'varchar'},
+        'covered': {'type': 'varchar'},
+        'depth': {'type': 'varchar'},
+        'layer': {'type': 'varchar'},
+        'name': {'type': 'varchar'},
+        'natural': {'type': 'varchar'},
+        'osm_id': {'type': 'int4'},
+        'tunnel': {'type': 'varchar'},
+        'water': {'type': 'varchar'},
+        'waterway': {'type': 'varchar'},
+        'width': {'type': 'varchar'},
+        'z_index': {'type': 'varchar'}}
+
+    # Act
+    provider = PostgreSQLProvider(config)
+
+    # Assert
+    assert provider.name == "PostgreSQL"
+    assert provider.table == "hotosm_bdi_waterways"
+    assert provider.id_field == "osm_id"
+    assert provider.fields == expected_fields
