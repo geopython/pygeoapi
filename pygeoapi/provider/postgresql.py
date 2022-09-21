@@ -51,6 +51,7 @@ from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
@@ -183,6 +184,7 @@ class PostgreSQLProvider(BaseProvider):
         self.db_host = provider_def['data'].get('host')
         self.db_port = provider_def['data'].get('port', 5432)
         self.db_name = provider_def['data'].get('dbname')
+        self.db_search_path = provider_def['data'].get('search_path', ['public'])
         self._db_password = provider_def['data'].get('password')
 
         LOGGER.debug('Setting Postgresql properties:')
@@ -193,9 +195,17 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Table:{}'.format(self.table))
 
         LOGGER.debug('Get available fields/properties')
-        self.get_fields()
+        self.fields = self.get_fields()
         self.engine = self._create_engine()
         self.table_model = self._reflect_table_model()
+
+    def get_fields(self):
+        """
+        Return fields (columns) from PostgreSQL table
+
+        :returns: dict of fields
+        """
+        return
 
     def _create_engine(self):
         """
@@ -215,36 +225,39 @@ class PostgreSQLProvider(BaseProvider):
         Reflect database metadata to create a SQL Alchemy model corresponding
         to target table.
         """
-        schema = self.conn_dic['options'].split('=')[-1].split(',')[0]
         metadata = MetaData(self.engine)
-        metadata.reflect(schema=schema, only=[self.table], views=True)
+
+        # Look for table in the first schema in the search path
+        try:
+            schema = self.db_search_path[0]
+            metadata.reflect(schema=schema, only=[self.table], views=True)
+        except OperationalError:
+            msg = f"Could not connect to {repr(self.engine.url)} (password hidden)."
+            raise ProviderConnectionError(msg)
+        except InvalidRequestError:
+            msg = (f"Table '{self.table}' not found in schema '{schema}' "
+                   f"on {self.engine.url}.")
+            raise ProviderQueryError(msg)
 
         # Create SQLAlchemy model from reflected table
         # It is necessary to add the primary key constraint because SQLAlchemy
         # requires it to reflect the table, but a view in a PostgreSQL database
         # does not have a primary key defined.
         sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
-        sqlalchemy_table_def.append_constraint(
-            PrimaryKeyConstraint(self.id_field)
-        )
+        try:
+            sqlalchemy_table_def.append_constraint(
+                PrimaryKeyConstraint(self.id_field)
+            )
+        except KeyError:
+            msg = (f"No such id_field column ({self.id_field}) on "
+                   f"{schema}.{self.table}.")
+            raise ProviderQueryError(msg)
+
         Base = automap_base(metadata=metadata)
         Base.prepare()
         TableModel = getattr(Base.classes, self.table)
 
         return TableModel
-
-    def get_fields(self):
-        """
-        Get fields from PostgreSQL table (columns are field)
-
-        :returns: dict of fields
-        """
-        if not self.fields:
-            with DatabaseConnection(self.conn_dic,
-                                    self.table,
-                                    properties=self.properties) as db:
-                self.fields = db.fields
-        return self.fields
 
     def __get_where_clauses(self, properties=[], bbox=[]):
         """

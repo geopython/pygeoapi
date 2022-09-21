@@ -37,7 +37,11 @@ import pytest
 
 from pygeofilter.parsers.ecql import parse
 
-from pygeoapi.provider.base import ProviderItemNotFoundError
+from pygeoapi.provider.base import (
+    ProviderConnectionError,
+    ProviderItemNotFoundError,
+    ProviderQueryError
+)
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
 import os
@@ -248,7 +252,7 @@ def test_query_cql(config, cql, expected_ids):
     assert ids == expected_ids
 
 
-def test_provider_attributes(config):
+def test_instantiation(config):
     """Test attributes are correctly set during instantiation."""
     # Arrange
     expected_fields = {
@@ -272,4 +276,31 @@ def test_provider_attributes(config):
     assert provider.name == "PostgreSQL"
     assert provider.table == "hotosm_bdi_waterways"
     assert provider.id_field == "osm_id"
-    assert provider.fields == expected_fields
+    assert provider.get_fields() == expected_fields
+
+
+@pytest.mark.parametrize('bad_data, exception, match', [
+    ({'table': 'bad_table'}, ProviderQueryError,
+     'Table.*not found in schema.*'),
+    ({'data': {'bad': 'data'}}, ProviderConnectionError,
+     'Could not connect to .*None:\*\*\*@'),
+    ({'id_field': 'bad_id'}, ProviderQueryError,
+     'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
+])
+def test_instantiation_with_bad_config(config, bad_data, exception, match):
+    # Arrange
+    config.update(bad_data)
+
+    # Act and assert
+    with pytest.raises(exception, match=match):
+        PostgreSQLProvider(config)
+
+
+def test_instantiation_with_bad_credentials(config):
+    # Arrange
+    config['data'].update({'user': 'bad_user'})
+    match = 'Could not connect to .*bad_user:\*\*\*@'
+
+    # Act and assert
+    with pytest.raises(ProviderConnectionError, match=match):
+        PostgreSQLProvider(config)
