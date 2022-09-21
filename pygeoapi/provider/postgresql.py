@@ -171,7 +171,7 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: pygeoapi.provider.base.PostgreSQLProvider
         """
-
+        LOGGER.debug('Initialising PostgreSQL provider.')
         super().__init__(provider_def)
 
         self.table = provider_def['table']
@@ -184,18 +184,16 @@ class PostgreSQLProvider(BaseProvider):
         self.db_host = provider_def['data'].get('host')
         self.db_port = provider_def['data'].get('port', 5432)
         self.db_name = provider_def['data'].get('dbname')
-        self.db_search_path = provider_def['data'].get('search_path', ['public'])
+        self.db_search_path = provider_def['data'].get('search_path',
+                                                       ['public'])
         self._db_password = provider_def['data'].get('password')
 
-        LOGGER.debug('Setting Postgresql properties:')
-        LOGGER.debug('Connection String:{}'.format(
-            ",".join(("{}={}".format(*i) for i in self.conn_dic.items()))))
         LOGGER.debug('Name:{}'.format(self.name))
         LOGGER.debug('ID_field:{}'.format(self.id_field))
         LOGGER.debug('Table:{}'.format(self.table))
 
-        LOGGER.debug('Get available fields/properties')
         self.engine = self._create_engine()
+        LOGGER.debug('Get available fields/properties')
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
@@ -211,9 +209,48 @@ class PostgreSQLProvider(BaseProvider):
         fields.pop(self.geom)  # Exclude geometry column
         return fields
 
+    def get(self, identifier, **kwargs):
+        """
+        Query the provider for a specific
+        feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
+
+        :param identifier: feature id
+
+        :returns: GeoJSON FeaturesCollection
+        """
+        LOGGER.debug(f'Get item by ID: {identifier}')
+        Session = sessionmaker(bind=self.engine)
+        session = Session()
+
+        # Retrieve data from database as feature
+        query = session.query(self.table_model)
+        item = query.get(identifier)
+        if item is None:
+            msg = f"No such item: {self.id_field}={identifier}."
+            raise ProviderItemNotFoundError(msg)
+        feature = self._sqlalchemy_to_feature(item)
+
+        # Add fields for previous and next items
+        id_field = getattr(self.table_model, self.id_field)
+        prev_item = (session.query(self.table_model)
+                     .order_by(id_field.desc())
+                     .filter(id_field < identifier)
+                     .first())
+        next_item = (session.query(self.table_model)
+                     .order_by(id_field.asc())
+                     .filter(id_field > identifier)
+                     .first())
+        feature['prev'] = (getattr(prev_item, self.id_field)
+                           if prev_item is not None else identifier)
+        feature['next'] = (getattr(next_item, self.id_field)
+                           if next_item is not None else identifier)
+
+        return feature
+
     def _create_engine(self):
         """
-        Create a SQL Alchemy engine connected to the database.
+        Create a SQL Alchemy engine for the database. It doesn't connect at
+        this point.
         """
         conn_str = (
             'postgresql+psycopg2://'
@@ -227,7 +264,7 @@ class PostgreSQLProvider(BaseProvider):
     def _reflect_table_model(self):
         """
         Reflect database metadata to create a SQL Alchemy model corresponding
-        to target table.
+        to target table.  The database is first connected here.
         """
         metadata = MetaData(self.engine)
 
@@ -241,7 +278,7 @@ class PostgreSQLProvider(BaseProvider):
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
             msg = (f"Table '{self.table}' not found in schema '{schema}' "
-                   f"on {self.engine.url}.")
+                   f"on {repr(self.engine.url)}.")
             raise ProviderQueryError(msg)
 
         # Create SQLAlchemy model from reflected table
@@ -336,7 +373,7 @@ class PostgreSQLProvider(BaseProvider):
                                     self.table,
                                     properties=self.properties) as db:
 
-                row_data = self.query_cql(
+                query = self.query_cql(
                     offset=offset, limit=limit, resulttype=resulttype,
                     bbox=bbox, sortby=sortby,
                     select_properties=select_properties,
@@ -347,9 +384,10 @@ class PostgreSQLProvider(BaseProvider):
                     'features': []
                 }
 
-                for rd in row_data:
+                for item in query:
                     feature_collection['features'].append(
-                        self.__response_feature(rd))
+                        self._sqlalchemy_to_feature(item)
+                    )
 
                 return feature_collection
 
@@ -467,53 +505,6 @@ class PostgreSQLProvider(BaseProvider):
         id_ = item[0]['id'] if item else identifier
         return id_
 
-    def get(self, identifier, **kwargs):
-        """
-        Query the provider for a specific
-        feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
-
-        :param identifier: feature id
-
-        :returns: GeoJSON FeaturesCollection
-        """
-
-        LOGGER.debug('Get item from Postgis')
-        with DatabaseConnection(self.conn_dic,
-                                self.table,
-                                properties=self.properties) as db:
-            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-
-            sql_query = SQL("SELECT {},ST_AsGeoJSON({}) \
-            from {} WHERE {}=%s").format(db.columns,
-                                         Identifier(self.geom),
-                                         Identifier(self.table),
-                                         Identifier(self.id_field))
-
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(db.conn)))
-            LOGGER.debug('Identifier: {}'.format(identifier))
-            try:
-                cursor.execute(sql_query, (identifier, ))
-            except Exception as err:
-                LOGGER.error('Error executing sql_query: {}'.format(
-                    sql_query.as_string(cursor)))
-                LOGGER.error(err)
-                raise ProviderQueryError()
-
-            results = cursor.fetchall()
-            row_data = None
-            if results:
-                row_data = results[0]
-            feature = self.__response_feature(row_data)
-
-            if feature:
-                feature['prev'] = self.get_previous(cursor, identifier)
-                feature['next'] = self.get_next(cursor, identifier)
-                return feature
-            else:
-                err = 'item {} not found'.format(identifier)
-                LOGGER.error(err)
-                raise ProviderItemNotFoundError(err)
-
     def __response_feature(self, row_data):
         """
         Assembles GeoJSON output from DB query
@@ -569,24 +560,38 @@ class PostgreSQLProvider(BaseProvider):
 
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
 
-        q = (session.query(self.table_model)
-             .filter(filters)
-             .order_by(*order_by_clauses)
-             .offset(offset)
-             .limit(limit))
+        query = (session.query(self.table_model)
+                 .filter(filters)
+                 .order_by(*order_by_clauses)
+                 .offset(offset)
+                 .limit(limit))
 
-        result = []
-        for row in q:
-            row_dict = row.__dict__
-            wkb_geom = row_dict.pop(self.geom)
-            shapely_geom = to_shape(wkb_geom)
-            geojson_geom = shapely.geometry.mapping(shapely_geom)
-            # Use st_asgeojson to match normal query output
-            row_dict['st_asgeojson'] = json.dumps(geojson_geom)
-            row_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
-            result.append(row_dict)
+        return query
 
-        return result
+    def _sqlalchemy_to_feature(self, item):
+        # Convert SQLAlchemy to dictionary
+        item_dict = item.__dict__
+        wkb_geom = item_dict.pop(self.geom)
+        shapely_geom = to_shape(wkb_geom)
+        geojson_geom = shapely.geometry.mapping(shapely_geom)
+        # Use st_asgeojson to match normal query output
+        item_dict['st_asgeojson'] = json.dumps(geojson_geom)
+        item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
+
+        # Convert dictionary to feature
+        feature = {
+            'type': 'Feature'
+        }
+
+        if item_dict.get('st_asgeojson'):
+            feature['geometry'] = json.loads(item_dict.pop('st_asgeojson'))
+        else:
+            feature['geometry'] = None
+
+        feature['properties'] = item_dict
+        feature['id'] = item_dict.get(self.id_field)
+
+        return feature
 
     def _get_order_by_clauses(self, sort_by, table_model):
         # Build sort_by clauses if provided

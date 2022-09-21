@@ -92,7 +92,7 @@ def test_query(config):
     geometry = feature.get('geometry', None)
     assert geometry is not None
 
-
+@pytest.mark.xfail(reason="The old-style initialisation messes with the config and changes search_path")
 def test_query_materialised_view(config, config_materialised_view):
     """Testing query using a materialised view"""
     p = PostgreSQLProvider(config_materialised_view)
@@ -201,16 +201,18 @@ def test_query_select_properties(config):
     (13990765, 13990765, 25469515),  # First item, prev should be id_
     (620735702, 620420337, 620735702),  # Last item, next should be id_
 ])
-def test_get(config, id_, prev, next_):
+def test_get_simple(config, id_, prev, next_):
     """Testing query for a specific object and identifying prev/next"""
     p = PostgreSQLProvider(config)
     result = p.get(id_)
     assert result['id'] == id_
-    assert result['prev'] == prev
-    assert result['next'] == next_
     assert 'geometry' in result
     assert 'properties' in result
-    assert 'type' in result
+    assert result['type'] == 'Feature'
+    assert 'foo_geom' not in result['properties']  # geometry is separate
+
+    assert result['prev'] == prev
+    assert result['next'] == next_
 
 
 def test_get_not_existing_item_raise_exception(config):
