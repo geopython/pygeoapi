@@ -144,6 +144,7 @@ default.
   resources:
       obs:
           type: collection  # REQUIRED (collection, process, or stac-collection)
+          visibility: default  # OPTIONAL
           title: Observations  # title of dataset
           description: My cool observations  # abstract of dataset
           keywords:  # list of related keywords
@@ -175,6 +176,8 @@ default.
               - type: feature # underlying data geospatial type: (allowed values are: feature, coverage, record, tile, edr)
                 default: true  # optional: if not specified, the first provider definition is considered the default
                 name: CSV
+                # transactions: DO NOT ACTIVATE unless you have setup access contol beyond pygeoapi
+                editable: true  # optional: if backend is writable, default is false
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
                 uri_field: uri # optional field corresponding to the Uniform Resource Identifier (see Linked Data section)
@@ -202,6 +205,32 @@ default.
    :ref:`plugins` for more information on plugins
 
 
+Publishing hidden resources
+---------------------------
+
+pygeoapi allows for publishing resources without advertising them explicitly
+via its collections and OpenAPI endpoints.  The resource is available if the
+client knows the name of the resource apriori.
+
+To provide hidden resources, the resource must provide a ``visibility: hidden``
+property.  For example, considering the following resource:
+
+.. code-block:: yaml
+
+   resources:
+        foo:
+            title: my hidden resource
+            visibility: hidden
+
+Examples:
+
+.. code-block:: bash
+
+   curl https://example.org/collections  # resource foo is not advertised
+   curl https://example.org/openapi  # resource foo is not advertised
+   curl https://example.org/collections/foo  # user can access resource normally
+
+
 Validating the configuration
 ----------------------------
 
@@ -210,7 +239,7 @@ utility that can be run as follows:
 
 .. code-block:: bash
 
-   pygeoapi config validate /path/to/my-pygeoapi-config.yml
+   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
 
 
 Using environment variables

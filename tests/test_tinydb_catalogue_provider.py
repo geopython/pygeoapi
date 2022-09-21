@@ -27,6 +27,8 @@
 #
 # =================================================================
 
+import json
+
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
@@ -35,6 +37,25 @@ from pygeoapi.provider.tinydb_ import TinyDBCatalogueProvider
 from .util import get_test_file_path
 
 path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
+
+
+@pytest.fixture()
+def data():
+    return json.dumps({
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [100.0, 0.0], [101.0, 0.0], [101.0, 1.0],
+                [100.0, 1.0], [100.0, 0.0]
+                ]]
+        },
+        'properties': {
+            'identifier': 123,
+            'title': 'test item',
+            'description': 'test item'
+        }
+    })
 
 
 @pytest.fixture()
@@ -123,3 +144,16 @@ def test_get_not_existing_item_raise_exception(config):
     p = TinyDBCatalogueProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get('404')
+
+
+def test_transactions_create(config, data):
+    """Testing transactional capabilities"""
+
+    p = TinyDBCatalogueProvider(config)
+
+    new_id = p.create(data)
+    assert new_id == 123
+
+    assert p.update(123, data)
+
+    assert p.delete(123)

@@ -55,14 +55,15 @@ class MVTProvider(BaseTileProvider):
         """
 
         super().__init__(provider_def)
-
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
+            layer = url.path.split('/{z}/{x}/{y}')[0]
+            tilepath = '{}/tiles'.format(layer)
             servicepath = \
-                '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                    url.path.split('/{z}/{x}/{y}')[0],
+                '{}/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                    tilepath,
                     'tileMatrixSetId',
                     'tileMatrix',
                     'tileRow',
@@ -105,16 +106,18 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             return url.path.split("/{z}/{x}/{y}")[0][1:]
         else:
-            return None
+            return Path(self.data).name
 
     def get_tiling_schemes(self):
 
         tile_matrix_set_links_list = [{
                 'tileMatrixSet': 'WorldCRS84Quad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json'  # noqa
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json',  # noqa
+                'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
             }, {
                 'tileMatrixSet': 'WebMercatorQuad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json'  # noqa
+                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json',  # noqa
+                'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
             }]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list if item[
@@ -156,21 +159,26 @@ class MVTProvider(BaseTileProvider):
         self._service_metadata_url = urljoin(
             self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
             'metadata')
-
         links = {
-            'links': [{
-                'type': self.mimetype,
-                'rel': 'item',
-                'title': 'This collection as Mapbox vector tiles',
-                'href': self.service_url,
-                'templated': True
-            }, {
-                'type': 'application/json',
-                'rel': 'describedby',
-                'title': 'Metadata for this collection in the TileJSON format',
-                'href': '{}?f=json'.format(self.service_metadata_url),
-                'templated': True
-            }]
+            'links': [
+                {
+                    'type': 'application/json',
+                    'rel': 'self',
+                    'title': 'This collection as multi vector tilesets',
+                    'href': self.service_url,
+                },
+                {
+                    'type': self.mimetype,
+                    'rel': 'item',
+                    'title': 'This collection as multi vector tiles',
+                    'href': self.service_url,
+                }, {
+                    'type': 'application/json',
+                    'rel': 'describedby',
+                    'title': 'Collection metadata in TileJSON format',
+                    'href': '{}?f=json'.format(self.service_metadata_url),
+                }
+            ]
         }
 
         return links

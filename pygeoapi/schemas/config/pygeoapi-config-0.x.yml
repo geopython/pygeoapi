@@ -248,6 +248,13 @@ properties:
                               enum:
                                   - collection
                                   - stac-collection
+                          visibility:
+                              type: string
+                              description: visibility state of the resource
+                              enum:
+                                  - default
+                                  - hidden
+                              default: default
                           title:
                               $ref: '#/definitions/i18n_string'
                               description: the title of the service
@@ -359,6 +366,9 @@ properties:
                                               - type: string
                                               - type: object
                                           description: the data filesystem path or URL, depending on plugin setup
+                                      editable:
+                                          type: boolean
+                                          description: whether the resource is editable
                                       table:
                                           type: string
                                           description: table name for RDBMS-based providers

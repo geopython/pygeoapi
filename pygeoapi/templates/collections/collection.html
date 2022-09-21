@@ -1,5 +1,7 @@
 {% extends "_base.html" %}
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block desc %}{{ data.get('description','') | truncate(250) }}{% endblock %}
+{% block tags %}{{ data.get('keywords',[]) | join(',') }}{% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
 / <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
@@ -18,7 +20,7 @@
           <p>{{ data['description'] }}</p>
           <p>
             {% for kw in data['keywords'] %}
-              <mark class="tag">{{ kw }}</mark>
+              <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
             {% endfor %}
           </p>
         </div>

@@ -148,7 +148,7 @@ class ElasticsearchProvider(BaseProvider):
                     fields_[k] = {'type': 'string'}
                 elif v['type'] == 'date':
                     fields_[k] = {'type': 'string', 'format': 'date'}
-                elif v['type'] == 'float':
+                elif v['type'] in ('float', 'long'):
                     fields_[k] = {'type': 'number', 'format': v['type']}
                 else:
                     fields_[k] = {'type': v['type']}
@@ -412,6 +412,55 @@ class ElasticsearchProvider(BaseProvider):
             return None
 
         return feature_
+
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
+        """
+
+        identifier, json_data = self._load_and_prepare_item(item)
+
+        LOGGER.debug('Inserting data with identifier {}'.format(identifier))
+        _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
+        LOGGER.debug('Item added')
+
+        return identifier
+
+    def update(self, identifier, item):
+        """
+        Updates an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+
+        LOGGER.debug('Updating item {}'.format(identifier))
+        identifier, json_data = self._load_and_prepare_item(
+            item, identifier, raise_if_exists=False)
+
+        _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
+
+        return True
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
+        """
+
+        LOGGER.debug('Deleting item {}'.format(identifier))
+        _ = self.es.delete(index=self.index_name, id=identifier)
+
+        return True
 
     def esdoc2geojson(self, doc):
         """

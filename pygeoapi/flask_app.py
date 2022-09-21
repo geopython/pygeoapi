@@ -175,8 +175,10 @@ def collection_queryables(collection_id=None):
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items', methods=['GET', 'POST'])  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<item_id>')
+@BLUEPRINT.route('/collections/<path:collection_id>/items',
+                 methods=['GET', 'POST'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<item_id>',
+                 methods=['GET', 'PUT', 'DELETE'])
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -186,14 +188,28 @@ def collection_items(collection_id, item_id=None):
 
     :returns: HTTP response
     """
+
     if item_id is None:
         if request.method == 'GET':  # list items
             return get_response(
                 api_.get_collection_items(request, collection_id))
-        elif request.method == 'POST':  # filter items
-            return get_response(
-                api_.post_collection_items(request, collection_id))
+        elif request.method == 'POST':  # filter or manage items
+            if request.content_type is not None:
+                return get_response(
+                    api_.manage_collection_item(request, 'create',
+                                                collection_id))
+            else:
+                return get_response(
+                    api_.post_collection_items(request, collection_id))
 
+    elif request.method == 'DELETE':
+        return get_response(
+            api_.manage_collection_item(request, 'delete',
+                                        collection_id, item_id))
+    elif request.method == 'PUT':
+        return get_response(
+            api_.manage_collection_item(request, 'update',
+                                        collection_id, item_id))
     else:
         return get_response(
             api_.get_collection_item(request, collection_id, item_id))

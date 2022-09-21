@@ -114,3 +114,4 @@ ENV/
 *.code-workspace
 
 .DS_Store
+examples/django/sample_project/db.sqlite3
