@@ -65,7 +65,7 @@ Using GitHub Container Registry
 
 .. code-block:: bash
 
-   docker pull ghcr.io/geophython/pygeoapi:latest   
+   docker pull ghcr.io/geopython/pygeoapi:latest   
 
 Conda
 -----
