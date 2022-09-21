@@ -193,7 +193,6 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Table:{}'.format(self.table))
 
         self.engine = self._create_engine()
-        LOGGER.debug('Get available fields/properties')
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
@@ -203,10 +202,14 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: dict of fields
         """
+        LOGGER.debug('Get available fields/properties')
+
         fields = {}
         for column in self.table_model.__table__.columns:
             fields[column.name] = str(column.type)
+
         fields.pop(self.geom)  # Exclude geometry column
+
         return fields
 
     def get(self, identifier, **kwargs):
@@ -569,27 +572,24 @@ class PostgreSQLProvider(BaseProvider):
         return query
 
     def _sqlalchemy_to_feature(self, item):
-        # Convert SQLAlchemy to dictionary
-        item_dict = item.__dict__
-        wkb_geom = item_dict.pop(self.geom)
-        shapely_geom = to_shape(wkb_geom)
-        geojson_geom = shapely.geometry.mapping(shapely_geom)
-        # Use st_asgeojson to match normal query output
-        item_dict['st_asgeojson'] = json.dumps(geojson_geom)
-        item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
-
-        # Convert dictionary to feature
         feature = {
             'type': 'Feature'
         }
 
-        if item_dict.get('st_asgeojson'):
-            feature['geometry'] = json.loads(item_dict.pop('st_asgeojson'))
-        else:
-            feature['geometry'] = None
-
+        # Add properties from item
+        item_dict = item.__dict__
+        item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
         feature['properties'] = item_dict
         feature['id'] = item_dict.get(self.id_field)
+
+        # Convert geometry to GeoJSON style
+        if feature['properties'].get(self.geom):
+            wkb_geom = feature['properties'].pop(self.geom)
+            shapely_geom = to_shape(wkb_geom)
+            geojson_geom = shapely.geometry.mapping(shapely_geom)
+            feature['geometry'] = geojson_geom
+        else:
+            feature['geometry'] = None
 
         return feature
 
