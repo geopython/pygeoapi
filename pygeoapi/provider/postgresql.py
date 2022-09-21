@@ -195,9 +195,9 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Table:{}'.format(self.table))
 
         LOGGER.debug('Get available fields/properties')
-        self.fields = self.get_fields()
         self.engine = self._create_engine()
         self.table_model = self._reflect_table_model()
+        self.fields = self.get_fields()
 
     def get_fields(self):
         """
@@ -205,7 +205,11 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: dict of fields
         """
-        return
+        fields = {}
+        for column in self.table_model.__table__.columns:
+            fields[column.name] = str(column.type)
+        fields.pop(self.geom)  # Exclude geometry column
+        return fields
 
     def _create_engine(self):
         """
@@ -232,7 +236,8 @@ class PostgreSQLProvider(BaseProvider):
             schema = self.db_search_path[0]
             metadata.reflect(schema=schema, only=[self.table], views=True)
         except OperationalError:
-            msg = f"Could not connect to {repr(self.engine.url)} (password hidden)."
+            msg = (f"Could not connect to {repr(self.engine.url)} "
+                   "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
             msg = (f"Table '{self.table}' not found in schema '{schema}' "

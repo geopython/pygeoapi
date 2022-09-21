@@ -256,18 +256,19 @@ def test_instantiation(config):
     """Test attributes are correctly set during instantiation."""
     # Arrange
     expected_fields = {
-        'blockage': {'type': 'varchar'},
-        'covered': {'type': 'varchar'},
-        'depth': {'type': 'varchar'},
-        'layer': {'type': 'varchar'},
-        'name': {'type': 'varchar'},
-        'natural': {'type': 'varchar'},
-        'osm_id': {'type': 'int4'},
-        'tunnel': {'type': 'varchar'},
-        'water': {'type': 'varchar'},
-        'waterway': {'type': 'varchar'},
-        'width': {'type': 'varchar'},
-        'z_index': {'type': 'varchar'}}
+        'blockage': 'VARCHAR(80)',
+        'covered': 'VARCHAR(80)',
+        'depth': 'VARCHAR(80)',
+        'layer': 'VARCHAR(80)',
+        'name': 'VARCHAR(80)',
+        'natural': 'VARCHAR(80)',
+        'osm_id': 'INTEGER',
+        'tunnel': 'VARCHAR(80)',
+        'water': 'VARCHAR(80)',
+        'waterway': 'VARCHAR(80)',
+        'width': 'VARCHAR(80)',
+        'z_index': 'VARCHAR(80)'
+    }
 
     # Act
     provider = PostgreSQLProvider(config)
