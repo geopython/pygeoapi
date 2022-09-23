@@ -53,7 +53,7 @@ from pygeoapi.provider.base import BaseProvider, \
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import sessionmaker, load_only
+from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope
@@ -98,8 +98,8 @@ class PostgreSQLProvider(BaseProvider):
 
         # Read table information from database
         self._store_db_parameters(provider_def['data'])
-        self.engine = self._create_engine()
-        LOGGER.debug('DB connection: {}'.format(repr(self.engine)))
+        self._engine = self._create_engine()
+        LOGGER.debug('DB connection: {}'.format(repr(self._engine)))
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
@@ -127,8 +127,7 @@ class PostgreSQLProvider(BaseProvider):
         """
         LOGGER.debug('Querying PostGIS')
         # Create session to run a query
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
+        session = Session(self._engine)
 
         # Prepare filters
         property_filters = self._get_property_filters(properties)
@@ -195,8 +194,7 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug(f'Get item by ID: {identifier}')
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
+        session = Session(self._engine)
 
         # Retrieve data from database as feature
         query = session.query(self.table_model)
@@ -250,19 +248,19 @@ class PostgreSQLProvider(BaseProvider):
         Reflect database metadata to create a SQL Alchemy model corresponding
         to target table.  The database is first connected here.
         """
-        metadata = MetaData(self.engine)
+        metadata = MetaData(self._engine)
 
         # Look for table in the first schema in the search path
         try:
             schema = self.db_search_path[0]
             metadata.reflect(schema=schema, only=[self.table], views=True)
         except OperationalError:
-            msg = (f"Could not connect to {repr(self.engine.url)} "
+            msg = (f"Could not connect to {repr(self._engine.url)} "
                    "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
             msg = (f"Table '{self.table}' not found in schema '{schema}' "
-                   f"on {repr(self.engine.url)}.")
+                   f"on {repr(self._engine.url)}.")
             raise ProviderQueryError(msg)
 
         # Create SQLAlchemy model from reflected table
