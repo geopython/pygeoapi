@@ -234,7 +234,7 @@ def test_query_cql(config, cql, expected_ids):
     ast = parse(cql)
     p = PostgreSQLProvider(config)
 
-    feature_collection = p.query(cql_ast=ast)
+    feature_collection = p.query(filterq=ast)
     assert feature_collection.get('type', None) == 'FeatureCollection'
 
     features = feature_collection.get('features', None)

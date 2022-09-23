@@ -1448,22 +1448,22 @@ class API:
         else:
             skip_geometry = False
 
-        LOGGER.debug('processing cql parameter')
-        cql = request.params.get('filter')
-        if cql is not None:
+        LOGGER.debug('processing filter parameter')
+        cql_text = request.params.get('filter')
+        if cql_text is not None:
             try:
-                cql_ast = parse_ecql_text(cql)
+                filter_ = parse_ecql_text(cql_text)
             except Exception as err:
                 LOGGER.error(err)
-                msg = f'Bad CQL string : {cql}'
+                msg = f'Bad CQL string : {cql_text}'
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
         else:
-            cql_ast = None
+            filter_ = None
 
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
-        # Currently only cql-text is handled
+        # Currently only cql-text is handled, but it is optional
         if filter_lang is not None and filter_lang != 'cql-text':
             msg = 'Invalid filter language'
             return self.get_exception(
@@ -1484,7 +1484,7 @@ class API:
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
         LOGGER.debug('language: {}'.format(prv_locale))
         LOGGER.debug('q: {}'.format(q))
-        LOGGER.debug('cql_ast: {}'.format(cql_ast))
+        LOGGER.debug('cql_text: {}'.format(cql_text))
         LOGGER.debug('filter-lang: {}'.format(filter_lang))
 
         try:
@@ -1494,7 +1494,7 @@ class API:
                               sortby=sortby,
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
-                              q=q, language=prv_locale, cql_ast=cql_ast)
+                              q=q, language=prv_locale, filterq=filter_)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -1860,7 +1860,6 @@ class API:
                 400, headers, request.format, 'MissingParameterValue', msg)
 
         filter_ = None
-        cql_ast = None
         try:
             # Parse bytes data, if applicable
             data = request.data.decode()
@@ -1874,7 +1873,7 @@ class API:
         if p.name == 'PostgreSQL':
             LOGGER.debug('processing PostgreSQL CQL_JSON data')
             try:
-                cql_ast = parse_cql_json(data)
+                filter_ = parse_cql_json(data)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
@@ -1900,8 +1899,7 @@ class API:
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
                               q=q,
-                              filterq=filter_,
-                              cql_ast=cql_ast)
+                              filterq=filter_)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'

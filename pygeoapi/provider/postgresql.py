@@ -247,7 +247,7 @@ class PostgreSQLProvider(BaseProvider):
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
-              cql_ast=None, **kwargs):
+              filterq=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -263,12 +263,13 @@ class PostgreSQLProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
+        :param filterq: full text search term as a cql AST
 
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug('Querying PostGIS')
 
-        if cql_ast:
+        if filterq:
             with DatabaseConnection(self.conn_dic,
                                     self.table,
                                     properties=self.properties) as db:
@@ -276,7 +277,7 @@ class PostgreSQLProvider(BaseProvider):
                 row_data = self.query_cql(
                     db, offset=offset, limit=limit, resulttype=resulttype,
                     bbox=bbox, sortby=sortby, select_properties=select_properties,
-                    skip_geometry=skip_geometry, cql_ast=cql_ast)
+                    skip_geometry=skip_geometry, filterq=filterq)
 
                 feature_collection = {
                     'type': 'FeatureCollection',
@@ -493,7 +494,7 @@ class PostgreSQLProvider(BaseProvider):
 
     def query_cql(self, db, offset=0, limit=10, resulttype='results',
                   bbox=[], sortby=[], select_properties=[], skip_geometry=False,
-                  cql_ast=None, **kwargs):
+                  filterq=None, **kwargs):
 
         schema = db.conn_dic['options'].split('=')[-1].split(',')[0]
         engine = create_engine('postgresql+psycopg2://', creator=lambda: db.conn)
@@ -513,7 +514,7 @@ class PostgreSQLProvider(BaseProvider):
         # Prepare CQL requirements
         field_mapping = {column_name: getattr(TableModel, column_name)
                          for column_name in TableModel.__table__.columns.keys()}
-        filters = to_filter(cql_ast, field_mapping)
+        filters = to_filter(filterq, field_mapping)
 
         # Create session to run a query
         Session = sessionmaker(bind=engine)
