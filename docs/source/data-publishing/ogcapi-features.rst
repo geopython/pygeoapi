@@ -233,7 +233,7 @@ Must have PostGIS installed.
          table: hotosm_bdi_waterways
          geom_field: foo_geom
 
-This provider has the support for the CQL queries as indicated in the Provider table above.
+This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
   :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
