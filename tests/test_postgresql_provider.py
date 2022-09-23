@@ -148,18 +148,16 @@ def test_query_with_config_properties(config_with_properties):
         assert property_name in config_with_properties["properties"]
 
 
-def test_query_hits(config):
-    """Test query resulttype=hits with properties"""
-    psp = PostgreSQLProvider(config)
-    results = psp.query(resulttype="hits")
-    assert results["numberMatched"] == 14776
-
-    results = psp.query(
-        bbox=[29.3373, -3.4099, 29.3761, -3.3924], resulttype="hits")
-    assert results["numberMatched"] == 5
-
-    results = psp.query(properties=[("waterway", "stream")], resulttype="hits")
-    assert results["numberMatched"] == 13930
+@pytest.mark.parametrize("property_filter, expected", [
+    ([], 14776),
+    ([("waterway", "stream")], 13930),
+    ([("waterway", "this does not exist")], 0),
+])
+def test_query_hits_with_property_filter(config, property_filter, expected):
+    """Test query resulttype=hits"""
+    provider = PostgreSQLProvider(config)
+    results = provider.query(properties=property_filter, resulttype="hits")
+    assert results["numberMatched"] == expected
 
 
 def test_query_bbox(config):

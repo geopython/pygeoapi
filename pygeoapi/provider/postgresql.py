@@ -54,6 +54,7 @@ from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.expression import and_
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
@@ -129,36 +130,38 @@ class PostgreSQLProvider(BaseProvider):
         session = Session()
 
         # Prepare filters
-        if cql_ast:
-            field_mapping = {
-                column_name: getattr(self.table_model, column_name)
-                for column_name in self.table_model.__table__.columns.keys()}
-            cql_filters = to_filter(cql_ast, field_mapping)
-        else:
-            cql_filters = None
-
+        property_filters = self._get_property_filters(properties)
+        cql_filters = self._get_cql_filters(cql_ast)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
 
         # Execute the query
         results = (session.query(self.table_model)
+                   .filter(property_filters)
                    .filter(cql_filters)
                    .order_by(*order_by_clauses)
-                   .offset(offset)
-                   .limit(limit))
+                   .offset(offset))
 
         # Prepare and return feature collection response
-        feature_collection = {
+        response = {
             'type': 'FeatureCollection',
             'features': []
         }
 
-        if results:
-            for item in results:
-                feature_collection['features'].append(
-                    self._sqlalchemy_to_feature(item)
-                )
+        if resulttype == "hits":
+            # User requested hit count
+            response['numberMatched'] = results.count()
+            return response
 
-        return feature_collection
+        if not results:
+            # Empty response
+            return response
+
+        for item in results.limit(limit):
+            response['features'].append(
+                self._sqlalchemy_to_feature(item)
+            )
+
+        return response
 
     def get_fields(self):
         """
@@ -311,3 +314,29 @@ class PostgreSQLProvider(BaseProvider):
             clauses.append(asc(getattr(table_model, self.id_field)))
 
         return clauses
+
+    def _get_cql_filters(self, cql_ast):
+        if not cql_ast:
+            return True  # Let everything through
+
+        # Convert cql_ast into SQL Alchemy filters
+        field_mapping = {
+            column_name: getattr(self.table_model, column_name)
+            for column_name in self.table_model.__table__.columns.keys()}
+        cql_filters = to_filter(cql_ast, field_mapping)
+
+        return cql_filters
+
+    def _get_property_filters(self, properties):
+        if not properties:
+            return True  # Let everything through
+
+        # Convert property filters into SQL Alchemy filters
+        # Based on https://stackoverflow.com/a/14887813/3508733
+        filter_group = []
+        for column_name, value in properties:
+            column = self.table_model.__table__.columns.get(column_name)
+            filter_group.append(column == value)
+        property_filters = and_(*filter_group)
+
+        return property_filters
