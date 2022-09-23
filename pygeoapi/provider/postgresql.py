@@ -178,21 +178,18 @@ class PostgreSQLProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
 
+        LOGGER.debug('Name: {}'.format(self.name))
+        LOGGER.debug('Table: {}'.format(self.table))
+        LOGGER.debug('ID field: {}'.format(self.id_field))
+        LOGGER.debug('Geometry field: {}'.format(self.geom))
+
         # Store database parameters
         self.conn_dic = provider_def['data']
-        self.db_user = provider_def['data'].get('user')
-        self.db_host = provider_def['data'].get('host')
-        self.db_port = provider_def['data'].get('port', 5432)
-        self.db_name = provider_def['data'].get('dbname')
-        self.db_search_path = provider_def['data'].get('search_path',
-                                                       ['public'])
-        self._db_password = provider_def['data'].get('password')
 
-        LOGGER.debug('Name:{}'.format(self.name))
-        LOGGER.debug('ID_field:{}'.format(self.id_field))
-        LOGGER.debug('Table:{}'.format(self.table))
-
+        # Read table information from database
+        self._store_db_parameters(provider_def['data'])
         self.engine = self._create_engine()
+        LOGGER.debug('DB connection: {}'.format(repr(self.engine)))
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
@@ -249,6 +246,14 @@ class PostgreSQLProvider(BaseProvider):
                            if next_item is not None else identifier)
 
         return feature
+
+    def _store_db_parameters(self, parameters):
+        self.db_user = parameters.get('user')
+        self.db_host = parameters.get('host')
+        self.db_port = parameters.get('port', 5432)
+        self.db_name = parameters.get('dbname')
+        self.db_search_path = parameters.get('search_path', ['public'])
+        self._db_password = parameters.get('password')
 
     def _create_engine(self):
         """

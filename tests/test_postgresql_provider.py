@@ -92,6 +92,7 @@ def test_query(config):
     geometry = feature.get('geometry', None)
     assert geometry is not None
 
+
 @pytest.mark.xfail(reason="The old-style initialisation messes with the config and changes search_path")
 def test_query_materialised_view(config, config_materialised_view):
     """Testing query using a materialised view"""
@@ -220,6 +221,7 @@ def test_get_not_existing_item_raise_exception(config):
     p = PostgreSQLProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
 
 @pytest.mark.parametrize('cql, expected_ids', [
   ("osm_id BETWEEN 80800000 AND 80900000",
