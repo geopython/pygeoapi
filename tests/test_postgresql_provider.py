@@ -140,9 +140,9 @@ def test_query_with_config_properties(config_with_properties):
     No properties should be returned that are not requested.
     Note that not all requested properties have to exist in the query result.
     """
-    p = PostgreSQLProvider(config_with_properties)
-    feature_collection = p.query()
-    feature = feature_collection.get('features', None)[0]
+    provider = PostgreSQLProvider(config_with_properties)
+    result = provider.query()
+    feature = result.get('features')[0]
     properties = feature.get('properties', None)
     for property_name in properties.keys():
         assert property_name in config_with_properties["properties"]
@@ -191,14 +191,17 @@ def test_query_skip_geometry(config):
 
 @pytest.mark.parametrize('properties', [
     ['name'],
-    ['name', 'waterway']
+    ['name', 'waterway'],
+    ['name', 'waterway', 'this does not exist']
 ])
 def test_query_select_properties(config, properties):
     """Test query with selected properties"""
     provider = PostgreSQLProvider(config)
     result = provider.query(select_properties=properties)
     feature = result['features'][0]
-    assert set(feature['properties'].keys()) == set(properties)
+
+    expected = set(provider.get_fields().keys()).intersection(properties)
+    assert set(feature['properties'].keys()) == expected
 
 
 @pytest.mark.parametrize('id_, prev, next_', [

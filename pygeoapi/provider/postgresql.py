@@ -359,24 +359,28 @@ class PostgreSQLProvider(BaseProvider):
         return bbox_filter
 
     def _select_properties_clause(self, select_properties, skip_geometry):
-        # List the column names that we want
+        # List the column names that we want based on query
         if select_properties:
-            # if we don't create a fresh list here and modify select_properties
-            # instead, it breaks the tests which check for match between
-            # requested and returned
-            column_names = select_properties.copy()
+            column_names = set(select_properties)
         else:
             # get_fields() doesn't include geometry column
-            column_names = list(self.get_fields().keys())
+            column_names = set(self.get_fields().keys())
+
+        if self.properties:  # optional subset of properties defined in config
+            properties_from_config = set(self.properties)
+            column_names = column_names.intersection(properties_from_config)
 
         if not skip_geometry:
-            column_names.append(self.geom)
+            column_names.add(self.geom)
 
         # Convert names to SQL Alchemy clause
         selected_columns = []
         for column_name in column_names:
-            column = getattr(self.table_model, column_name)
-            selected_columns.append(column)
+            try:
+                column = getattr(self.table_model, column_name)
+                selected_columns.append(column)
+            except AttributeError:
+                pass  # Ignore non-existent columns
         selected_properties_clause = load_only(*selected_columns)
 
         return selected_properties_clause
