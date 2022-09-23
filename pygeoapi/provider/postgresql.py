@@ -56,6 +56,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker, load_only
 from sqlalchemy.sql.expression import and_
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
+from geoalchemy2.functions import ST_MakeEnvelope
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
 import shapely
@@ -132,6 +133,7 @@ class PostgreSQLProvider(BaseProvider):
         # Prepare filters
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(cql_ast)
+        bbox_filter = self._get_bbox_filter(bbox)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
                                                              skip_geometry)
@@ -140,6 +142,7 @@ class PostgreSQLProvider(BaseProvider):
         results = (session.query(self.table_model)
                    .filter(property_filters)
                    .filter(cql_filters)
+                   .filter(bbox_filter)
                    .order_by(*order_by_clauses)
                    .options(selected_properties)
                    .offset(offset))
@@ -343,6 +346,17 @@ class PostgreSQLProvider(BaseProvider):
         property_filters = and_(*filter_group)
 
         return property_filters
+
+    def _get_bbox_filter(self, bbox):
+        if not bbox:
+            return True  # Let everything through
+
+        # Convert bbx to SQL Alchemy clauses
+        envelope = ST_MakeEnvelope(*bbox)
+        geom_column = getattr(self.table_model, self.geom)
+        bbox_filter = geom_column.intersects(envelope)
+
+        return bbox_filter
 
     def _select_properties_clause(self, select_properties, skip_geometry):
         # List the column names that we want
