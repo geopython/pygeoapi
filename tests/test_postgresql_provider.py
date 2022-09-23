@@ -183,16 +183,22 @@ def test_query_sortby(config):
 
 def test_query_skip_geometry(config):
     """Test query without geometry"""
-    psp = PostgreSQLProvider(config)
-    skipped = psp.query(skip_geometry=True)
-    assert skipped['features'][0]['geometry'] is None
+    provider = PostgreSQLProvider(config)
+    result = provider.query(skip_geometry=True)
+    feature = result['features'][0]
+    assert feature['geometry'] is None
 
 
-def test_query_select_properties(config):
+@pytest.mark.parametrize('properties', [
+    ['name'],
+    ['name', 'waterway']
+])
+def test_query_select_properties(config, properties):
     """Test query with selected properties"""
-    psp = PostgreSQLProvider(config)
-    props = psp.query(select_properties=['name'])
-    assert len(props['features'][0]['properties']) == 1
+    provider = PostgreSQLProvider(config)
+    result = provider.query(select_properties=properties)
+    feature = result['features'][0]
+    assert set(feature['properties'].keys()) == set(properties)
 
 
 @pytest.mark.parametrize('id_, prev, next_', [

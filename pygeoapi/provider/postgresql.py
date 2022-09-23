@@ -53,7 +53,7 @@ from pygeoapi.provider.base import BaseProvider, \
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, load_only
 from sqlalchemy.sql.expression import and_
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
@@ -133,12 +133,15 @@ class PostgreSQLProvider(BaseProvider):
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(cql_ast)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
+        selected_properties = self._select_properties_clause(select_properties,
+                                                             skip_geometry)
 
         # Execute the query
         results = (session.query(self.table_model)
                    .filter(property_filters)
                    .filter(cql_filters)
                    .order_by(*order_by_clauses)
+                   .options(selected_properties)
                    .offset(offset))
 
         # Prepare and return feature collection response
@@ -288,7 +291,7 @@ class PostgreSQLProvider(BaseProvider):
         item_dict = item.__dict__
         item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
         feature['properties'] = item_dict
-        feature['id'] = item_dict.get(self.id_field)
+        feature['id'] = item_dict.pop(self.id_field)
 
         # Convert geometry to GeoJSON style
         if feature['properties'].get(self.geom):
@@ -335,8 +338,31 @@ class PostgreSQLProvider(BaseProvider):
         # Based on https://stackoverflow.com/a/14887813/3508733
         filter_group = []
         for column_name, value in properties:
-            column = self.table_model.__table__.columns.get(column_name)
+            column = getattr(self.table_model, column_name)
             filter_group.append(column == value)
         property_filters = and_(*filter_group)
 
         return property_filters
+
+    def _select_properties_clause(self, select_properties, skip_geometry):
+        # List the column names that we want
+        if select_properties:
+            # if we don't create a fresh list here and modify select_properties
+            # instead, it breaks the tests which check for match between
+            # requested and returned
+            column_names = select_properties.copy()
+        else:
+            # get_fields() doesn't include geometry column
+            column_names = list(self.get_fields().keys())
+
+        if not skip_geometry:
+            column_names.append(self.geom)
+
+        # Convert names to SQL Alchemy clause
+        selected_columns = []
+        for column_name in column_names:
+            column = getattr(self.table_model, column_name)
+            selected_columns.append(column)
+        selected_properties_clause = load_only(*selected_columns)
+
+        return selected_properties_clause
