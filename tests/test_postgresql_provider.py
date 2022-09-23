@@ -232,13 +232,32 @@ def test_get_not_existing_item_raise_exception(config):
 def test_query_cql(config, cql, expected_ids):
     """Test a variety of CQL queries"""
     ast = parse(cql)
-    p = PostgreSQLProvider(config)
+    provider = PostgreSQLProvider(config)
 
-    feature_collection = p.query(cql_ast=ast)
+    feature_collection = provider.query(cql_ast=ast)
     assert feature_collection.get('type', None) == 'FeatureCollection'
 
     features = feature_collection.get('features', None)
     ids = [feature["id"] for feature in features]
+    assert ids == expected_ids
+
+
+def test_query_cql_properties_bbox_filters(config):
+    """Test query with CQL, properties and bbox filters"""
+    # Arrange
+    properties = [('waterway', 'stream')]
+    bbox = [29, -2.8, 29.2, -2.9]
+    cql_ast = parse("osm_id BETWEEN 80800000 AND 80900000")
+    expected_ids = [80835470]
+
+    # Act
+    provider = PostgreSQLProvider(config)
+    feature_collection = provider.query(cql_ast=cql_ast,
+                                        properties=properties,
+                                        bbox=bbox)
+
+    # Assert
+    ids = [feature["id"] for feature in feature_collection.get('features')]
     assert ids == expected_ids
 
 
