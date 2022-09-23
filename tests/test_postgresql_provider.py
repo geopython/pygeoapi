@@ -234,7 +234,7 @@ def test_query_cql(config, cql, expected_ids):
     ast = parse(cql)
     provider = PostgreSQLProvider(config)
 
-    feature_collection = provider.query(cql_ast=ast)
+    feature_collection = provider.query(filterq=ast)
     assert feature_collection.get('type', None) == 'FeatureCollection'
 
     features = feature_collection.get('features', None)
@@ -247,12 +247,12 @@ def test_query_cql_properties_bbox_filters(config):
     # Arrange
     properties = [('waterway', 'stream')]
     bbox = [29, -2.8, 29.2, -2.9]
-    cql_ast = parse("osm_id BETWEEN 80800000 AND 80900000")
+    filterq = parse("osm_id BETWEEN 80800000 AND 80900000")
     expected_ids = [80835470]
 
     # Act
     provider = PostgreSQLProvider(config)
-    feature_collection = provider.query(cql_ast=cql_ast,
+    feature_collection = provider.query(filterq=filterq,
                                         properties=properties,
                                         bbox=bbox)
 

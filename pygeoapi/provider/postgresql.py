@@ -103,7 +103,7 @@ class PostgreSQLProvider(BaseProvider):
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
-              cql_ast=None, **kwargs):
+              filterq=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -119,6 +119,7 @@ class PostgreSQLProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
+        :param filterq: CQL query as text string
 
         :returns: GeoJSON FeaturesCollection
         """
@@ -128,7 +129,7 @@ class PostgreSQLProvider(BaseProvider):
 
         # Prepare filters
         property_filters = self._get_property_filters(properties)
-        cql_filters = self._get_cql_filters(cql_ast)
+        cql_filters = self._get_cql_filters(filterq)
         bbox_filter = self._get_bbox_filter(bbox)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
@@ -327,15 +328,15 @@ class PostgreSQLProvider(BaseProvider):
 
         return clauses
 
-    def _get_cql_filters(self, cql_ast):
-        if not cql_ast:
+    def _get_cql_filters(self, filterq):
+        if not filterq:
             return True  # Let everything through
 
-        # Convert cql_ast into SQL Alchemy filters
+        # Convert filterq into SQL Alchemy filters
         field_mapping = {
             column_name: getattr(self.table_model, column_name)
             for column_name in self.table_model.__table__.columns.keys()}
-        cql_filters = to_filter(cql_ast, field_mapping)
+        cql_filters = to_filter(filterq, field_mapping)
 
         return cql_filters
 
