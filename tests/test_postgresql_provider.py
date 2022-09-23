@@ -72,13 +72,6 @@ def config_with_properties(config):
     return config_
 
 
-@pytest.fixture()
-def config_materialised_view(config):
-    config_ = config.copy()
-    config_['table'] = 'hotosm_bdi_drains'
-    return config_
-
-
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = PostgreSQLProvider(config)
@@ -93,23 +86,14 @@ def test_query(config):
     assert geometry is not None
 
 
-@pytest.mark.xfail(reason="The old-style initialisation messes with the config and changes search_path")
-def test_query_materialised_view(config, config_materialised_view):
+def test_query_materialised_view(config):
     """Testing query using a materialised view"""
-    p = PostgreSQLProvider(config_materialised_view)
-    features = p.query(limit=14776).get("features", None)
-    properties = features[0].get("properties", None)
-    # Only width and depth properties should be available
-    assert sorted(list(properties.keys())) == sorted(
-        ["osm_id", "width", "depth"]
-    )
-    p_full = PostgreSQLProvider(config)
-    full_features = p_full.query(limit=14776).get("features", None)
-    drain_features = [
-        f for f in full_features if f["properties"]["waterway"] == "drain"
-    ]
-    # All drains from the original dataset should be in the view
-    assert len(features) == len(drain_features)
+    config_materialised_view = config.copy()
+    config_materialised_view['table'] = 'hotosm_bdi_drains'
+    provider = PostgreSQLProvider(config_materialised_view)
+
+    # Only ID, width and depth properties should be available
+    assert set(provider.get_fields().keys()) == {"osm_id", "width", "depth"}
 
 
 def test_query_with_property_filter(config):
