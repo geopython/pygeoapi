@@ -101,7 +101,7 @@ class PostgreSQLProvider(BaseProvider):
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
-    def query_old(self, offset=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               cql_ast=None, **kwargs):
@@ -124,23 +124,41 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug('Querying PostGIS')
-        # Prepare CQL requirements
-        field_mapping = {column_name: getattr(self.table_model, column_name)
-                         for column_name
-                         in self.table_model.__table__.columns.keys()}
-        filters = to_filter(cql_ast, field_mapping)
-
         # Create session to run a query
         Session = sessionmaker(bind=self.engine)
         session = Session()
 
+        # Prepare filters
+        if cql_ast:
+            field_mapping = {
+                column_name: getattr(self.table_model, column_name)
+                for column_name in self.table_model.__table__.columns.keys()}
+            cql_filters = to_filter(cql_ast, field_mapping)
+        else:
+            cql_filters = None
+
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
 
-        query = (session.query(self.table_model)
-                 .filter(filters)
-                 .order_by(*order_by_clauses)
-                 .offset(offset)
-                 .limit(limit))
+        # Execute the query
+        results = (session.query(self.table_model)
+                   .filter(cql_filters)
+                   .order_by(*order_by_clauses)
+                   .offset(offset)
+                   .limit(limit))
+
+        # Prepare and return feature collection response
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'features': []
+        }
+
+        if results:
+            for item in results:
+                feature_collection['features'].append(
+                    self._sqlalchemy_to_feature(item)
+                )
+
+        return feature_collection
 
     def get_fields(self):
         """
