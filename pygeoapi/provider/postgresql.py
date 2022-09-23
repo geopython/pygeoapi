@@ -359,7 +359,7 @@ class PostgreSQLProvider(BaseProvider):
         return bbox_filter
 
     def _select_properties_clause(self, select_properties, skip_geometry):
-        # List the column names that we want based on query
+        # List the column names that we want
         if select_properties:
             column_names = set(select_properties)
         else:

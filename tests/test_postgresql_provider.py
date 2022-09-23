@@ -65,13 +65,6 @@ def config():
     }
 
 
-@pytest.fixture()
-def config_with_properties(config):
-    config_ = {'properties': ['name', 'waterway', 'width', 'does_not_exist']}
-    config_.update(config)
-    return config_
-
-
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = PostgreSQLProvider(config)
@@ -118,18 +111,20 @@ def test_query_with_property_filter(config):
     assert (len(other_features) != 0)
 
 
-def test_query_with_config_properties(config_with_properties):
+def test_query_with_config_properties(config):
     """
     Test that query is restricted by properties in the config.
     No properties should be returned that are not requested.
     Note that not all requested properties have to exist in the query result.
     """
-    provider = PostgreSQLProvider(config_with_properties)
+    config.update(
+        {'properties': ['name', 'waterway', 'width', 'does_not_exist']})
+    provider = PostgreSQLProvider(config)
     result = provider.query()
     feature = result.get('features')[0]
     properties = feature.get('properties', None)
     for property_name in properties.keys():
-        assert property_name in config_with_properties["properties"]
+        assert property_name in config["properties"]
 
 
 @pytest.mark.parametrize("property_filter, expected", [
@@ -228,7 +223,7 @@ def test_get_not_existing_item_raise_exception(config):
    [80835468, 80835472, 80835475, 80835478]),
   ("osm_id BETWEEN 80800000 AND 80900000 AND name IS NULL",
    [80835474, 80835483]),
-  ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",
+  ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",  # noqa
    [80827793, 80835470, 80835472, 80835483, 80835489]),
   ("osm_id BETWEEN 80800000 AND 80900000 AND "
    "CROSSES(foo_geom,  LINESTRING(29.091 -2.731, 29.253 -2.845))",
@@ -279,9 +274,9 @@ def test_instantiation(config):
     ({'table': 'bad_table'}, ProviderQueryError,
      'Table.*not found in schema.*'),
     ({'data': {'bad': 'data'}}, ProviderConnectionError,
-     'Could not connect to .*None:\*\*\*@'),
+     r'Could not connect to .*None:\*\*\*@'),
     ({'id_field': 'bad_id'}, ProviderQueryError,
-     'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
+     r'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
 ])
 def test_instantiation_with_bad_config(config, bad_data, exception, match):
     # Arrange
@@ -295,7 +290,7 @@ def test_instantiation_with_bad_config(config, bad_data, exception, match):
 def test_instantiation_with_bad_credentials(config):
     # Arrange
     config['data'].update({'user': 'bad_user'})
-    match = 'Could not connect to .*bad_user:\*\*\*@'
+    match = r'Could not connect to .*bad_user:\*\*\*@'
 
     # Act and assert
     with pytest.raises(ProviderConnectionError, match=match):
