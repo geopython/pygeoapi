@@ -62,6 +62,7 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
 from geoalchemy2.shape import to_shape
 
+_ENGINE_STORE = {}
 LOGGER = logging.getLogger(__name__)
 
 
@@ -93,15 +94,11 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('ID field: {}'.format(self.id_field))
         LOGGER.debug('Geometry field: {}'.format(self.geom))
 
-        # Store database parameters
-        self.conn_dic = provider_def['data']
-
         # Read table information from database
         self._store_db_parameters(provider_def['data'])
         self._engine = self._create_engine()
-        LOGGER.debug('DB connection: {}'.format(repr(self._engine)))
+        LOGGER.debug('DB connection: {}'.format(repr(self._engine.url)))
         self.table_model = self._reflect_table_model()
-        self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -240,7 +237,18 @@ class PostgreSQLProvider(BaseProvider):
             f'{self.db_host}:{self.db_port}/'
             f'{self.db_name}'
         )
-        engine = create_engine(conn_str)
+        store_key = (self.db_user, self.db_host, self.db_port, self.db_name)
+
+        # Use existing engine from store if available
+        try:
+            engine = _ENGINE_STORE[store_key]
+        except KeyError:
+            engine = create_engine(
+                conn_str,
+                connect_args={'client_encoding': 'utf8',
+                              'application_name': 'pygeoapi'})
+            _ENGINE_STORE[store_key] = engine
+
         return engine
 
     def _reflect_table_model(self):

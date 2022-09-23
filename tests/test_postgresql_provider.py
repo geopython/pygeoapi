@@ -314,3 +314,20 @@ def test_instantiation_with_bad_credentials(config):
     # Act and assert
     with pytest.raises(ProviderConnectionError, match=match):
         PostgreSQLProvider(config)
+
+
+def test_engine_store(config):
+    provider1 = PostgreSQLProvider(config)
+
+    # Same database connection details
+    different_table = config.copy()
+    different_table.update(table="hotosm_bdi_drains")
+    provider2 = PostgreSQLProvider(different_table)
+    assert repr(provider2._engine) == repr(provider1._engine)
+    assert provider2._engine is provider1._engine
+
+    # Although localhost is 127.0.0.1, this should get different engine
+    different_host = config.copy()
+    different_host["data"]["host"] = "localhost"
+    provider3 = PostgreSQLProvider(different_host)
+    assert provider3._engine is not provider1._engine
