@@ -3,9 +3,12 @@
 # Authors: Jorge Samuel Mendes de Jesus <jorge.dejesus@protonmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
 #          Mary Bucknell <mbucknell@usgs.gov>
+#          John A Stevenson <jostev@bgs.ac.uk>
+#          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -44,9 +47,6 @@
 #  psql -U postgres -h 127.0.0.1 -p 5432 test
 
 import logging
-import json
-import psycopg2
-from psycopg2.sql import SQL, Identifier, Literal
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
@@ -59,99 +59,8 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
 import shapely
 from geoalchemy2.shape import to_shape
-from psycopg2.extras import RealDictCursor
 
 LOGGER = logging.getLogger(__name__)
-
-
-class DatabaseConnection:
-    """Database connection class to be used as 'with' statement.
-     The class returns a connection object.
-    """
-
-    def __init__(self, conn_dic, table, properties=[], context="query"):
-        """
-        PostgreSQLProvider Class constructor returning
-
-        :param conn: dictionary with connection parameters
-                    to be used by psycopg2
-            dbname – the database name (database is a deprecated alias)
-            user – user name used to authenticate
-            password – password used to authenticate
-            host – database host address
-             (defaults to UNIX socket if not provided)
-            port – connection port number
-             (defaults to 5432 if not provided)
-            search_path – search path to be used (by order) , normally
-             data is in the public schema, [public],
-             or in a specific schema ["osm", "public"].
-             Note: First we should have the schema
-             being used and then public
-
-        :param table: table name containing the data. This variable is used to
-                assemble column information
-        :param properties: User-specified subset of column names to expose
-        :param context: query or hits, if query then it will determine
-                table column otherwise will not do it
-        :returns: DatabaseConnection
-        """
-
-        self.conn_dic = conn_dic
-        self.table = table
-        self.context = context
-        self.columns = None
-        self.properties = properties
-        self.fields = {}  # Dict of columns. Key is col name, value is type
-        self.conn = None
-
-    def __enter__(self):
-        try:
-            search_path = self.conn_dic.pop('search_path', ['public'])
-            if search_path != ['public']:
-                self.conn_dic["options"] = '-c \
-                search_path={}'.format(",".join(search_path))
-                LOGGER.debug('Using search path: {} '.format(search_path))
-            self.conn = psycopg2.connect(**self.conn_dic)
-            self.conn.set_client_encoding('utf8')
-
-        except psycopg2.OperationalError:
-            LOGGER.error("Couldn't connect to Postgis using:{}".format(
-                str(self.conn_dic)))
-            raise ProviderConnectionError()
-
-        self.cur = self.conn.cursor()
-        if self.context == 'query':
-            # Get table column names and types, excluding geometry and
-            # transaction ID columns
-            query_cols = """
-            SELECT
-                attr.attname,
-                tp.typname
-            FROM pg_catalog.pg_attribute as attr
-            INNER JOIN pg_catalog.pg_type as tp
-                ON tp.oid = attr.atttypid
-            WHERE
-                attr.attrelid = %s::regclass::oid
-                AND tp.typname != 'geometry'
-                AND attnum > 0
-            """
-
-            self.cur.execute(query_cols, (self.table,))
-            result = self.cur.fetchall()
-            if self.properties:
-                result = [res for res in result if res[0] in self.properties]
-            self.columns = SQL(', ').join(
-                [Identifier(item[0]) for item in result]
-                )
-
-            for k, v in dict(result).items():
-                self.fields[k] = {'type': v}
-
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # some logic to commit/rollback
-        self.conn.close()
 
 
 class PostgreSQLProvider(BaseProvider):
@@ -159,7 +68,6 @@ class PostgreSQLProvider(BaseProvider):
     using sync approach and server side
     cursor (using support class DatabaseCursor)
     """
-
     def __init__(self, provider_def):
         """
         PostgreSQLProvider Class constructor
@@ -192,6 +100,47 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('DB connection: {}'.format(repr(self.engine)))
         self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
+
+    def query_old(self, offset=0, limit=10, resulttype='results',
+              bbox=[], datetime_=None, properties=[], sortby=[],
+              select_properties=[], skip_geometry=False, q=None,
+              cql_ast=None, **kwargs):
+        """
+        Query Postgis for all the content.
+        e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
+        limit=1&resulttype=results
+
+        :param offset: starting record to return (default 0)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime_: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
+
+        :returns: GeoJSON FeaturesCollection
+        """
+        LOGGER.debug('Querying PostGIS')
+        # Prepare CQL requirements
+        field_mapping = {column_name: getattr(self.table_model, column_name)
+                         for column_name
+                         in self.table_model.__table__.columns.keys()}
+        filters = to_filter(cql_ast, field_mapping)
+
+        # Create session to run a query
+        Session = sessionmaker(bind=self.engine)
+        session = Session()
+
+        order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
+
+        query = (session.query(self.table_model)
+                 .filter(filters)
+                 .order_by(*order_by_clauses)
+                 .offset(offset)
+                 .limit(limit))
 
     def get_fields(self):
         """
@@ -308,273 +257,6 @@ class PostgreSQLProvider(BaseProvider):
         TableModel = getattr(Base.classes, self.table)
 
         return TableModel
-
-    def __get_where_clauses(self, properties=[], bbox=[]):
-        """
-        Generarates WHERE conditions to be implemented in query.
-        Private method mainly associated with query method
-        :param properties: list of tuples (name, value)
-        :param bbox: bounding box [minx,miny,maxx,maxy]
-
-        :returns: psycopg2.sql.Composed or psycopg2.sql.SQL
-        """
-
-        where_conditions = []
-        if properties:
-            property_clauses = [SQL('{} = {}').format(
-                Identifier(k), Literal(v)) for k, v in properties]
-            where_conditions += property_clauses
-        if bbox:
-            bbox_clause = SQL('{} && ST_MakeEnvelope({})').format(
-                Identifier(self.geom), SQL(', ').join(
-                    [Literal(bbox_coord) for bbox_coord in bbox]))
-            where_conditions.append(bbox_clause)
-
-        if where_conditions:
-            where_clause = SQL(' WHERE {}').format(
-                SQL(' AND ').join(where_conditions))
-        else:
-            where_clause = SQL('')
-
-        return where_clause
-
-    def _make_orderby(self, sortby):
-        """
-        Private function: Make STA filter from query properties
-
-        :param sortby: list of dicts (property, order)
-
-        :returns: STA $orderby string
-        """
-        ret = []
-        _map = {'+': 'ASC', '-': 'DESC'}
-        for _ in sortby:
-            ret.append(f"{_['property']} {_map[_['order']]}")
-        return SQL(f"ORDER BY {','.join(ret)}")
-
-    def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None,
-              cql_ast=None, **kwargs):
-        """
-        Query Postgis for all the content.
-        e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
-        limit=1&resulttype=results
-
-        :param offset: starting record to return (default 0)
-        :param limit: number of records to return (default 10)
-        :param resulttype: return results or hit limit (default results)
-        :param bbox: bounding box [minx,miny,maxx,maxy]
-        :param datetime_: temporal (datestamp or extent)
-        :param properties: list of tuples (name, value)
-        :param sortby: list of dicts (property, order)
-        :param select_properties: list of property names
-        :param skip_geometry: bool of whether to skip geometry (default False)
-        :param q: full-text search term(s)
-
-        :returns: GeoJSON FeaturesCollection
-        """
-        LOGGER.debug('Querying PostGIS')
-
-        if cql_ast:
-            with DatabaseConnection(self.conn_dic,
-                                    self.table,
-                                    properties=self.properties) as db:
-
-                query = self.query_cql(
-                    offset=offset, limit=limit, resulttype=resulttype,
-                    bbox=bbox, sortby=sortby,
-                    select_properties=select_properties,
-                    skip_geometry=skip_geometry, cql_ast=cql_ast)
-
-                feature_collection = {
-                    'type': 'FeatureCollection',
-                    'features': []
-                }
-
-                for item in query:
-                    feature_collection['features'].append(
-                        self._sqlalchemy_to_feature(item)
-                    )
-
-                return feature_collection
-
-        if resulttype == 'hits':
-
-            with DatabaseConnection(self.conn_dic,
-                                    self.table,
-                                    properties=self.properties,
-                                    context="hits") as db:
-                cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-
-                where_clause = self.__get_where_clauses(
-                    properties=properties, bbox=bbox)
-                sql_query = SQL("SELECT COUNT(*) as hits from {} {}").\
-                    format(Identifier(self.table), where_clause)
-                try:
-                    cursor.execute(sql_query)
-                except Exception as err:
-                    LOGGER.error('Error executing sql_query: {}: {}'.format(
-                        sql_query.as_string(cursor), err))
-                    raise ProviderQueryError()
-
-                hits = cursor.fetchone()["hits"]
-
-            return self.__response_feature_hits(hits)
-
-        end_index = offset + limit
-
-        with DatabaseConnection(self.conn_dic,
-                                self.table,
-                                properties=self.properties) as db:
-            cursor = db.conn.cursor(cursor_factory=RealDictCursor)
-
-            props = db.columns if select_properties == [] else \
-                SQL(', ').join([Identifier(p) for p in select_properties])
-
-            geom = SQL('') if skip_geometry else \
-                SQL(",ST_AsGeoJSON({})").format(Identifier(self.geom))
-
-            where_clause = self.__get_where_clauses(
-                properties=properties, bbox=bbox)
-
-            orderby = self._make_orderby(sortby) if sortby else SQL('')
-
-            sql_query = SQL("DECLARE \"geo_cursor\" CURSOR FOR \
-             SELECT DISTINCT {} {} FROM {} {} {}").\
-                format(props,
-                       geom,
-                       Identifier(self.table),
-                       where_clause,
-                       orderby)
-
-            LOGGER.debug('SQL Query: {}'.format(sql_query.as_string(cursor)))
-            LOGGER.debug('Start Index: {}'.format(offset))
-            LOGGER.debug('End Index: {}'.format(end_index))
-            try:
-                cursor.execute(sql_query)
-                for index in [offset, limit]:
-                    cursor.execute("fetch forward {} from geo_cursor"
-                                   .format(index))
-            except Exception as err:
-                LOGGER.error('Error executing sql_query: {}'.format(
-                    sql_query.as_string(cursor)))
-                LOGGER.error(err)
-                raise ProviderQueryError()
-
-            row_data = cursor.fetchall()
-
-            feature_collection = {
-                'type': 'FeatureCollection',
-                'features': []
-            }
-
-            for rd in row_data:
-                feature_collection['features'].append(
-                    self.__response_feature(rd))
-
-            return feature_collection
-
-    def get_previous(self, cursor, identifier):
-        """
-        Query previous ID given current ID
-
-        :param identifier: feature id
-
-        :returns: feature id
-        """
-        sql = 'SELECT {} AS id FROM {} WHERE {}<%s ORDER BY {} DESC LIMIT 1'
-        cursor.execute(SQL(sql).format(
-            Identifier(self.id_field),
-            Identifier(self.table),
-            Identifier(self.id_field),
-            Identifier(self.id_field),
-        ), (identifier,))
-        item = cursor.fetchall()
-        id_ = item[0]['id'] if item else identifier
-        return id_
-
-    def get_next(self, cursor, identifier):
-        """
-        Query next ID given current ID
-
-        :param identifier: feature id
-
-        :returns: feature id
-        """
-        sql = 'SELECT {} AS id FROM {} WHERE {}>%s ORDER BY {} LIMIT 1'
-        cursor.execute(SQL(sql).format(
-            Identifier(self.id_field),
-            Identifier(self.table),
-            Identifier(self.id_field),
-            Identifier(self.id_field),
-        ), (identifier,))
-        item = cursor.fetchall()
-        id_ = item[0]['id'] if item else identifier
-        return id_
-
-    def __response_feature(self, row_data):
-        """
-        Assembles GeoJSON output from DB query
-
-        :param row_data: DB row result
-
-        :returns: `dict` of GeoJSON Feature
-        """
-
-        if row_data:
-            rd = dict(row_data)
-            feature = {
-                'type': 'Feature'
-            }
-
-            geom = rd.pop('st_asgeojson') if rd.get('st_asgeojson') else None
-
-            feature['geometry'] = json.loads(geom) if geom is not None else None  # noqa
-
-            feature['properties'] = rd
-            feature['id'] = feature['properties'].get(self.id_field)
-
-            return feature
-        else:
-            return None
-
-    def __response_feature_hits(self, hits):
-        """Assembles GeoJSON/Feature number
-        e.g: http://localhost:5000/collections/
-        hotosm_bdi_waterways/items?resulttype=hits
-
-        :returns: GeoJSON FeaturesCollection
-        """
-
-        feature_collection = {"features": [],
-                              "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = hits
-
-        return feature_collection
-
-    def query_cql(self, offset=0, limit=10, resulttype='results',
-                  bbox=[], sortby=[], select_properties=[],
-                  skip_geometry=False, cql_ast=None, **kwargs):
-        # Prepare CQL requirements
-        field_mapping = {column_name: getattr(self.table_model, column_name)
-                         for column_name
-                         in self.table_model.__table__.columns.keys()}
-        filters = to_filter(cql_ast, field_mapping)
-
-        # Create session to run a query
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
-
-        order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
-
-        query = (session.query(self.table_model)
-                 .filter(filters)
-                 .order_by(*order_by_clauses)
-                 .offset(offset)
-                 .limit(limit))
-
-        return query
 
     def _sqlalchemy_to_feature(self, item):
         feature = {
