@@ -1099,15 +1099,15 @@ def test_get_collection_coverage(config, api_):
     # assert code == 200
     # assert isinstance(json.loads(response), dict)
 
-    req = mock_request({'subset': 'lat(1:2'})
-    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-
-    assert code == 400
-
-    req = mock_request({'subset': 'lat(1:2)'})
-    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-
-    assert code == 204
+    # req = mock_request({'subset': 'lat(1:2'})
+    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    #
+    # assert code == 400
+    #
+    # req = mock_request({'subset': 'lat(1:2)'})
+    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    #
+    # assert code == 204
 
 
 def test_get_collection_tiles(config, api_):
