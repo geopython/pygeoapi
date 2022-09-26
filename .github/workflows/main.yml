@@ -84,7 +84,7 @@ jobs:
         pytest tests/test_openapi.py
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
-        pytest tests/test_sensorthings_provider.py 
+        pytest tests/test_sensorthings_provider.py
         pytest tests/test_socrata_provider.py
         #pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
@@ -95,4 +95,8 @@ jobs:
       run: find . -type f -name "*.py" | xargs flake8
     - name: build docs 🏗️
       run: cd docs && make html
+    - name: failed tests 🚩
+      if: ${{ failure() }}
+      run: |
+        pip3 list -v
 
