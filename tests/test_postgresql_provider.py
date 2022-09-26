@@ -2,9 +2,12 @@
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          John A Stevenson <jostev@bgs.ac.uk>
+#          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation

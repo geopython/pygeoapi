@@ -3,9 +3,12 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Sander Schaminee <sander.schaminee@geocat.net>
+#          John A Stevenson <jostev@bgs.ac.uk>
+#          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
