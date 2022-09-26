@@ -1,6 +1,19 @@
-name: build ⚙️
+name: Build
 
-on: [ push, pull_request ]
+on: 
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'  
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'  
+  release:
+    types:
+      - released
 
 jobs:
   main:
@@ -55,6 +68,8 @@ jobs:
         pip3 install -r requirements-provider.txt
         python3 setup.py install
         #pip3 install --upgrade rasterio==1.1.8
+    - name: run flake8 ⚙️
+      run: find . -type f -name "*.py" | xargs flake8
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
@@ -91,8 +106,6 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
-    - name: run flake8 ⚙️
-      run: find . -type f -name "*.py" | xargs flake8
     - name: build docs 🏗️
       run: cd docs && make html
 

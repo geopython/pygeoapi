@@ -49,11 +49,23 @@ pip
 Docker
 ------
 
+Using DockerHub
+^^^^^^^^^^^^^^^
+
 `Docker image <https://hub.docker.com/r/geopython/pygeoapi>`_
 
 .. code-block:: bash
 
    docker pull geopython/pygeoapi:latest
+   
+Using GitHub Container Registry   
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`Docker image <https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi>`_
+
+.. code-block:: bash
+
+   docker pull ghcr.io/geopython/pygeoapi:latest   
 
 Conda
 -----
