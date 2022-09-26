@@ -37,7 +37,11 @@ import pytest
 
 from pygeofilter.parsers.ecql import parse
 
-from pygeoapi.provider.base import ProviderItemNotFoundError
+from pygeoapi.provider.base import (
+    ProviderConnectionError,
+    ProviderItemNotFoundError,
+    ProviderQueryError
+)
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 
 import os
@@ -61,20 +65,6 @@ def config():
     }
 
 
-@pytest.fixture()
-def config_with_properties(config):
-    config_ = {'properties': ['name', 'waterway', 'width', 'does_not_exist']}
-    config_.update(config)
-    return config_
-
-
-@pytest.fixture()
-def config_materialised_view(config):
-    config_ = config.copy()
-    config_['table'] = 'hotosm_bdi_drains'
-    return config_
-
-
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = PostgreSQLProvider(config)
@@ -89,22 +79,14 @@ def test_query(config):
     assert geometry is not None
 
 
-def test_query_materialised_view(config, config_materialised_view):
+def test_query_materialised_view(config):
     """Testing query using a materialised view"""
-    p = PostgreSQLProvider(config_materialised_view)
-    features = p.query(limit=14776).get("features", None)
-    properties = features[0].get("properties", None)
-    # Only width and depth properties should be available
-    assert sorted(list(properties.keys())) == sorted(
-        ["osm_id", "width", "depth"]
-    )
-    p_full = PostgreSQLProvider(config)
-    full_features = p_full.query(limit=14776).get("features", None)
-    drain_features = [
-        f for f in full_features if f["properties"]["waterway"] == "drain"
-    ]
-    # All drains from the original dataset should be in the view
-    assert len(features) == len(drain_features)
+    config_materialised_view = config.copy()
+    config_materialised_view['table'] = 'hotosm_bdi_drains'
+    provider = PostgreSQLProvider(config_materialised_view)
+
+    # Only ID, width and depth properties should be available
+    assert set(provider.get_fields().keys()) == {"osm_id", "width", "depth"}
 
 
 def test_query_with_property_filter(config):
@@ -129,32 +111,32 @@ def test_query_with_property_filter(config):
     assert (len(other_features) != 0)
 
 
-def test_query_with_config_properties(config_with_properties):
+def test_query_with_config_properties(config):
     """
     Test that query is restricted by properties in the config.
     No properties should be returned that are not requested.
     Note that not all requested properties have to exist in the query result.
     """
-    p = PostgreSQLProvider(config_with_properties)
-    feature_collection = p.query()
-    feature = feature_collection.get('features', None)[0]
+    config.update(
+        {'properties': ['name', 'waterway', 'width', 'does_not_exist']})
+    provider = PostgreSQLProvider(config)
+    result = provider.query()
+    feature = result.get('features')[0]
     properties = feature.get('properties', None)
     for property_name in properties.keys():
-        assert property_name in config_with_properties["properties"]
+        assert property_name in config["properties"]
 
 
-def test_query_hits(config):
-    """Test query resulttype=hits with properties"""
-    psp = PostgreSQLProvider(config)
-    results = psp.query(resulttype="hits")
-    assert results["numberMatched"] == 14776
-
-    results = psp.query(
-        bbox=[29.3373, -3.4099, 29.3761, -3.3924], resulttype="hits")
-    assert results["numberMatched"] == 5
-
-    results = psp.query(properties=[("waterway", "stream")], resulttype="hits")
-    assert results["numberMatched"] == 13930
+@pytest.mark.parametrize("property_filter, expected", [
+    ([], 14776),
+    ([("waterway", "stream")], 13930),
+    ([("waterway", "this does not exist")], 0),
+])
+def test_query_hits_with_property_filter(config, property_filter, expected):
+    """Test query resulttype=hits"""
+    provider = PostgreSQLProvider(config)
+    results = provider.query(properties=property_filter, resulttype="hits")
+    assert results["numberMatched"] == expected
 
 
 def test_query_bbox(config):
@@ -180,27 +162,44 @@ def test_query_sortby(config):
 
 def test_query_skip_geometry(config):
     """Test query without geometry"""
-    psp = PostgreSQLProvider(config)
-    skipped = psp.query(skip_geometry=True)
-    assert skipped['features'][0]['geometry'] is None
+    provider = PostgreSQLProvider(config)
+    result = provider.query(skip_geometry=True)
+    feature = result['features'][0]
+    assert feature['geometry'] is None
 
 
-def test_query_select_properties(config):
+@pytest.mark.parametrize('properties', [
+    ['name'],
+    ['name', 'waterway'],
+    ['name', 'waterway', 'this does not exist']
+])
+def test_query_select_properties(config, properties):
     """Test query with selected properties"""
-    psp = PostgreSQLProvider(config)
-    props = psp.query(select_properties=['name'])
-    assert len(props['features'][0]['properties']) == 1
+    provider = PostgreSQLProvider(config)
+    result = provider.query(select_properties=properties)
+    feature = result['features'][0]
+
+    expected = set(provider.get_fields().keys()).intersection(properties)
+    assert set(feature['properties'].keys()) == expected
 
 
-def test_get(config):
-    """Testing query for a specific object"""
+@pytest.mark.parametrize('id_, prev, next_', [
+    (29701937, 29698243, 29704504),
+    (13990765, 13990765, 25469515),  # First item, prev should be id_
+    (620735702, 620420337, 620735702),  # Last item, next should be id_
+])
+def test_get_simple(config, id_, prev, next_):
+    """Testing query for a specific object and identifying prev/next"""
     p = PostgreSQLProvider(config)
-    result = p.get(29701937)
-    assert isinstance(result, dict)
+    result = p.get(id_)
+    assert result['id'] == id_
     assert 'geometry' in result
     assert 'properties' in result
-    assert 'id' in result
-    assert 'Kanyosha' in result['properties']['name']
+    assert result['type'] == 'Feature'
+    assert 'foo_geom' not in result['properties']  # geometry is separate
+
+    assert result['prev'] == prev
+    assert result['next'] == next_
 
 
 def test_get_not_existing_item_raise_exception(config):
@@ -208,6 +207,7 @@ def test_get_not_existing_item_raise_exception(config):
     p = PostgreSQLProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get(-1)
+
 
 @pytest.mark.parametrize('cql, expected_ids', [
   ("osm_id BETWEEN 80800000 AND 80900000",
@@ -223,7 +223,7 @@ def test_get_not_existing_item_raise_exception(config):
    [80835468, 80835472, 80835475, 80835478]),
   ("osm_id BETWEEN 80800000 AND 80900000 AND name IS NULL",
    [80835474, 80835483]),
-  ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",
+  ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",  # noqa
    [80827793, 80835470, 80835472, 80835483, 80835489]),
   ("osm_id BETWEEN 80800000 AND 80900000 AND "
    "CROSSES(foo_geom,  LINESTRING(29.091 -2.731, 29.253 -2.845))",
@@ -232,11 +232,102 @@ def test_get_not_existing_item_raise_exception(config):
 def test_query_cql(config, cql, expected_ids):
     """Test a variety of CQL queries"""
     ast = parse(cql)
-    p = PostgreSQLProvider(config)
+    provider = PostgreSQLProvider(config)
 
-    feature_collection = p.query(filterq=ast)
+    feature_collection = provider.query(filterq=ast)
     assert feature_collection.get('type', None) == 'FeatureCollection'
 
     features = feature_collection.get('features', None)
     ids = [feature["id"] for feature in features]
     assert ids == expected_ids
+
+
+def test_query_cql_properties_bbox_filters(config):
+    """Test query with CQL, properties and bbox filters"""
+    # Arrange
+    properties = [('waterway', 'stream')]
+    bbox = [29, -2.8, 29.2, -2.9]
+    filterq = parse("osm_id BETWEEN 80800000 AND 80900000")
+    expected_ids = [80835470]
+
+    # Act
+    provider = PostgreSQLProvider(config)
+    feature_collection = provider.query(filterq=filterq,
+                                        properties=properties,
+                                        bbox=bbox)
+
+    # Assert
+    ids = [feature["id"] for feature in feature_collection.get('features')]
+    assert ids == expected_ids
+
+
+def test_instantiation(config):
+    """Test attributes are correctly set during instantiation."""
+    # Arrange
+    expected_fields = {
+        'blockage': 'VARCHAR(80)',
+        'covered': 'VARCHAR(80)',
+        'depth': 'VARCHAR(80)',
+        'layer': 'VARCHAR(80)',
+        'name': 'VARCHAR(80)',
+        'natural': 'VARCHAR(80)',
+        'osm_id': 'INTEGER',
+        'tunnel': 'VARCHAR(80)',
+        'water': 'VARCHAR(80)',
+        'waterway': 'VARCHAR(80)',
+        'width': 'VARCHAR(80)',
+        'z_index': 'VARCHAR(80)'
+    }
+
+    # Act
+    provider = PostgreSQLProvider(config)
+
+    # Assert
+    assert provider.name == "PostgreSQL"
+    assert provider.table == "hotosm_bdi_waterways"
+    assert provider.id_field == "osm_id"
+    assert provider.get_fields() == expected_fields
+
+
+@pytest.mark.parametrize('bad_data, exception, match', [
+    ({'table': 'bad_table'}, ProviderQueryError,
+     'Table.*not found in schema.*'),
+    ({'data': {'bad': 'data'}}, ProviderConnectionError,
+     r'Could not connect to .*None:\*\*\*@'),
+    ({'id_field': 'bad_id'}, ProviderQueryError,
+     r'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
+])
+def test_instantiation_with_bad_config(config, bad_data, exception, match):
+    # Arrange
+    config.update(bad_data)
+
+    # Act and assert
+    with pytest.raises(exception, match=match):
+        PostgreSQLProvider(config)
+
+
+def test_instantiation_with_bad_credentials(config):
+    # Arrange
+    config['data'].update({'user': 'bad_user'})
+    match = r'Could not connect to .*bad_user:\*\*\*@'
+
+    # Act and assert
+    with pytest.raises(ProviderConnectionError, match=match):
+        PostgreSQLProvider(config)
+
+
+def test_engine_store(config):
+    provider1 = PostgreSQLProvider(config)
+
+    # Same database connection details
+    different_table = config.copy()
+    different_table.update(table="hotosm_bdi_drains")
+    provider2 = PostgreSQLProvider(different_table)
+    assert repr(provider2._engine) == repr(provider1._engine)
+    assert provider2._engine is provider1._engine
+
+    # Although localhost is 127.0.0.1, this should get different engine
+    different_host = config.copy()
+    different_host["data"]["host"] = "localhost"
+    provider3 = PostgreSQLProvider(different_host)
+    assert provider3._engine is not provider1._engine
