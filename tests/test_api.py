@@ -1091,13 +1091,13 @@ def test_get_collection_coverage(config, api_):
     assert code == 200
     assert isinstance(response, bytes)
 
-    req = mock_request({
-        'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
-    })
-    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-
-    assert code == 200
-    assert isinstance(json.loads(response), dict)
+    # req = mock_request({
+    #     'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
+    # })
+    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    #
+    # assert code == 200
+    # assert isinstance(json.loads(response), dict)
 
     req = mock_request({'subset': 'lat(1:2'})
     rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
