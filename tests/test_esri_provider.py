@@ -159,18 +159,18 @@ def test_query_sortby_datetime(config):
         return timestamp.strftime(DATETIME_FORMAT)
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '2000-08-04T04:00:00.000000Z'
+    assert feature_time(results) == '2000-08-04T02:00:00.000000Z'
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '2000-10-22T22:00:00.000000Z'
+    assert feature_time(results) == '2000-10-22T20:00:00.000000Z'
 
     results = p.query(datetime_='../2000-09-01',
                       sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '2000-08-25T16:00:00.000000Z'
+    assert feature_time(results) == '2000-08-25T14:00:00.000000Z'
 
     results = p.query(datetime_='2000-09-01/..',
                       sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '2000-09-01T22:00:00.000000Z'
+    assert feature_time(results) == '2000-09-01T20:00:00.000000Z'
 
 
 def test_get(config):
