@@ -50,9 +50,9 @@ server:
         name: TinyDB
         connection: /tmp/pygeoapi-test-process-manager.db
         output_dir: /tmp
-        
+
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:

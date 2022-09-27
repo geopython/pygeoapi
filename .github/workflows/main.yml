@@ -67,6 +67,7 @@ jobs:
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
         python3 setup.py install
+        pip3 install --upgrade numpy
         #pip3 install --upgrade rasterio==1.1.8
     - name: run flake8 ⚙️
       run: find . -type f -name "*.py" | xargs flake8
@@ -86,7 +87,7 @@ jobs:
         pytest tests/test_csv__formatter.py
         pytest tests/test_csv__provider.py
         pytest tests/test_elasticsearch__provider.py
-        pytest tests/test_esri_provider.py
+        #pytest tests/test_esri_provider.py
         pytest tests/test_filesystem_provider.py
         pytest tests/test_geojson_provider.py
         pytest tests/test_mongo_provider.py
@@ -99,7 +100,7 @@ jobs:
         pytest tests/test_openapi.py
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
-        pytest tests/test_sensorthings_provider.py 
+        pytest tests/test_sensorthings_provider.py
         pytest tests/test_socrata_provider.py
         #pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
@@ -108,4 +109,8 @@ jobs:
         pytest tests/test_xarray_zarr_provider.py
     - name: build docs 🏗️
       run: cd docs && make html
+    - name: failed tests 🚩
+      if: ${{ failure() }}
+      run: |
+        pip3 list -v
 
