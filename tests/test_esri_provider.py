@@ -159,19 +159,18 @@ def test_query_sortby_datetime(config):
         return timestamp.strftime(DATETIME_FORMAT)
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '2000-08-04T02:00:00.000000Z'
+    assert results['features'][0]['properties'][TIME_FIELD] == 965354400000
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '2000-10-22T20:00:00.000000Z'
+    assert results['features'][0]['properties'][TIME_FIELD] == 972244800000
 
     results = p.query(datetime_='../2000-09-01',
                       sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '2000-08-25T14:00:00.000000Z'
+    assert results['features'][0]['properties'][TIME_FIELD] == 967212000000
 
     results = p.query(datetime_='2000-09-01/..',
                       sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '2000-09-01T20:00:00.000000Z'
-
+    assert results['features'][0]['properties'][TIME_FIELD] == 967838400000
 
 def test_get(config):
     p = ESRIServiceProvider(config)
