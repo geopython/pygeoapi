@@ -556,9 +556,15 @@ def _to_datetime_string(datetime_obj):
 
     try:
         value = np.datetime_as_string(datetime_obj)
+    except TypeError as err:
+        LOGGER.warning(err)
+        if datetime_obj.microsecond != 0:
+            value = datetime_obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        else:
+            value = datetime_obj.strftime('%Y-%m-%dT%H:%M:%SZ')
     except Exception as err:
         LOGGER.warning(err)
-        value = datetime_obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        raise RuntimeError(err)
 
     return value
 
