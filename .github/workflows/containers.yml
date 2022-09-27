@@ -52,9 +52,9 @@ jobs:
           load: true
           tags: ${{ env.DOCKER_TEST_IMAGE }}
 
-      - name: pygeoapi Unit Tests with Docker Image ⚙️
-        run: |
-          docker run --entrypoint "/entrypoint.sh" --rm ${{ env.DOCKER_TEST_IMAGE }} test
+#      - name: pygeoapi Unit Tests with Docker Image ⚙️
+#        run: |
+#          docker run --entrypoint "/entrypoint.sh" --rm ${{ env.DOCKER_TEST_IMAGE }} test
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
