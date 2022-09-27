@@ -172,6 +172,7 @@ def test_query_sortby_datetime(config):
                       sortby=[{'property': TIME_FIELD, 'order': '+'}])
     assert results['features'][0]['properties'][TIME_FIELD] == 967838400000
 
+
 def test_get(config):
     p = ESRIServiceProvider(config)
 
