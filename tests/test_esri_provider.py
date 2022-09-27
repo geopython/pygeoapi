@@ -33,19 +33,17 @@ import pytest
 from pygeoapi.provider.esri import ESRIServiceProvider
 from pygeoapi.util import DATETIME_FORMAT
 
-TIME_FIELD = 'START_DATE'
+TIME_FIELD = 'Date_Time'
 
 
 @pytest.fixture()
 def config():
-    # WATERS Mapping Services
-    # source: EPA Water Mapping Services
-    # URL: https://www.epa.gov/waterdata/waters-mapping-services
-    # License: https://edg.epa.gov/EPA_Data_License.html
+    #  National Hurricane Center ()
+    # source: ESRI, NOAA/National Weather Service
     return {
         'name': 'ESRI',
         'type': 'feature',
-        'data': 'https://watersgeo.epa.gov/arcgis/rest/services/OWRAD_NP21/TMDL_NP21/MapServer/0', # noqa
+        'data': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/Hurricanes/MapServer/0', # noqa
         'id_field': 'OBJECTID',
         'time_field': TIME_FIELD
     }
@@ -67,10 +65,10 @@ def test_query(config):
 
     results = p.query(limit=10)
     assert len(results['features']) == 10
-    assert results['numberMatched'] == 2496
+    assert results['numberMatched'] == 406
 
     results = p.query(limit=10001, resulttype='hits')
-    assert results['numberMatched'] == 2496
+    assert results['numberMatched'] == 406
 
 
 def test_geometry(config):
@@ -78,7 +76,7 @@ def test_geometry(config):
 
     results = p.query()
     geometry = results['features'][0]['geometry']
-    assert geometry['coordinates'] == [-71.22138524800965, 43.83429729362349]
+    assert geometry['coordinates'] == [-17.99999999990007, 10.800000000099885]
 
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
@@ -87,7 +85,7 @@ def test_geometry(config):
     p = ESRIServiceProvider(config)
     results = p.query()
     geometry = results['features'][0]['geometry']
-    assert geometry['coordinates'] == [-7928328.339400001, 5439835.013800003]
+    assert geometry['coordinates'] == [-2003750.8342678, 1209433.8422282021]
 
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
@@ -96,12 +94,13 @@ def test_geometry(config):
 def test_query_bbox(config):
     p = ESRIServiceProvider(config)
 
-    bbox = [-109, 37, -102, 41]
+    bbox = [-171, 18, -67, 71]
     results = p.query(bbox=bbox)
-    assert results['numberReturned'] == 1
+    assert results['numberReturned'] == 10
+    assert results['numberMatched'] == 128
 
     feature = results['features'][0]
-    assert feature['properties']['GEOGSTATE'] == 'CO'
+    assert feature['properties']['EVENTID'] == 'Beryl'
 
     x, y = feature['geometry']['coordinates']
     xmin, ymin, xmax, ymax = bbox
@@ -113,22 +112,22 @@ def test_query_properties(config):
     p = ESRIServiceProvider(config)
 
     results = p.query()
-    assert len(results['features'][0]['properties']) == 26
+    assert len(results['features'][0]['properties']) == 10
 
     # Query by property
-    results = p.query(properties=[('GEOGSTATE', 'CO'), ])
-    assert results['features'][0]['properties']['GEOGSTATE'] == 'CO'
+    results = p.query(properties=[('EVENTID', 'Beryl'), ])
+    assert results['features'][0]['properties']['EVENTID'] == 'Beryl'
 
-    results = p.query(properties=[('GEOGSTATE', 'CO'), ], resulttype='hits')
-    assert results['numberMatched'] == 1
+    results = p.query(properties=[('EVENTID', 'Alberto'), ], resulttype='hits')
+    assert results['numberMatched'] == 87
 
     # Query for property
-    results = p.query(select_properties=['GEOGSTATE', ])
-    assert len(results['features'][0]['properties']) == 1
-    assert 'GEOGSTATE' in results['features'][0]['properties']
+    results = p.query(select_properties=['WINDSPEED', 'PRESSURE'])
+    assert len(results['features'][0]['properties']) == 2
+    assert 'WINDSPEED' in results['features'][0]['properties']
 
     # Query with configured properties
-    config['properties'] = ['OBJECTID', 'GEOGSTATE', 'CYCLE_YEAR']
+    config['properties'] = ['OBJECTID', 'EVENTID', 'TIME']
     p = ESRIServiceProvider(config)
 
     results = p.query()
@@ -136,8 +135,8 @@ def test_query_properties(config):
     assert all(p in props for p in config['properties'])
     assert len(props) == 3
 
-    results = p.query(properties=[('GEOGSTATE', 'CO'), ])
-    assert results['features'][0]['properties']['GEOGSTATE'] == 'CO'
+    results = p.query(properties=[('EVENTID', 'Beryl'), ])
+    assert results['features'][0]['properties']['EVENTID'] == 'Beryl'
 
     results = p.query(select_properties=['GEOGSTATE', ])
     assert len(results['features'][0]['properties']) == 1
@@ -147,11 +146,11 @@ def test_query_sortby_datetime(config):
 
     p = ESRIServiceProvider(config)
 
-    results = p.query(sortby=[{'property': 'CYCLE_YEAR', 'order': '+'}])
-    assert results['features'][0]['properties']['CYCLE_YEAR'] == '1998'
+    results = p.query(sortby=[{'property': 'EVENTID', 'order': '+'}])
+    assert results['features'][0]['properties']['EVENTID'] == 'Alberto'
 
-    results = p.query(sortby=[{'property': 'CYCLE_YEAR', 'order': '-'}])
-    assert results['features'][0]['properties']['CYCLE_YEAR'] == '2012'
+    results = p.query(sortby=[{'property': 'EVENTID', 'order': '-'}])
+    assert results['features'][0]['properties']['EVENTID'] == 'Nadine'
 
     def feature_time(r):
         props = r['features'][0]['properties']
@@ -160,18 +159,18 @@ def test_query_sortby_datetime(config):
         return timestamp.strftime(DATETIME_FORMAT)
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '1998-04-01T00:00:00.000000Z'
+    assert feature_time(results) == '2000-08-04T02:00:00.000000Z'
 
     results = p.query(sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '2012-04-01T00:00:00.000000Z'
+    assert feature_time(results) == '2000-10-22T20:00:00.000000Z'
 
-    results = p.query(datetime_='../2000-01-01T00:00:00.00Z',
+    results = p.query(datetime_='../2000-09-01',
                       sortby=[{'property': TIME_FIELD, 'order': '-'}])
-    assert feature_time(results) == '1998-04-01T00:00:00.000000Z'
+    assert feature_time(results) == '2000-08-25T14:00:00.000000Z'
 
-    results = p.query(datetime_='2000-01-01T00:00:00.00Z/..',
+    results = p.query(datetime_='2000-09-01/..',
                       sortby=[{'property': TIME_FIELD, 'order': '+'}])
-    assert feature_time(results) == '2000-04-01T00:00:00.000000Z'
+    assert feature_time(results) == '2000-09-01T20:00:00.000000Z'
 
 
 def test_get(config):
@@ -179,4 +178,4 @@ def test_get(config):
 
     result = p.get(6)
     assert result['id'] == 6
-    assert result['properties']['GEOGSTATE'] == 'DC'
+    assert result['properties']['EVENTID'] == 'Alberto'

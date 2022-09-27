@@ -45,7 +45,7 @@ server:
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:
@@ -115,18 +115,18 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 1.1.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: gml_id
               layer: rdinfo:stations
 
@@ -164,18 +164,18 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 2.0.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: gml_id
               layer: inspireadressen:inspireadressen
 
@@ -211,18 +211,18 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 2.0.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: NAME
               layer: app:SGID93_LOCATION_UDOTMap_CityLocations
 
@@ -257,18 +257,18 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 1.1.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: gml_id
               layer: unesco:Unesco_point
 
@@ -308,14 +308,14 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: osm_id
               layer: poi_portugal
 
@@ -350,14 +350,14 @@ resources:
                   target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: objectid
 
     cases_italy_per_region_from_github:
