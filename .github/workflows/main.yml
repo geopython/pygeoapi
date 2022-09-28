@@ -1,19 +1,14 @@
 name: Build
 
 on: 
-  push:
+  workflow_run:
+    workflows: ["Lint"]
+    types: [completed] 
     branches:
       - master
     paths-ignore:
       - '**.md'  
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'  
-  release:
-    types:
-      - released
+  
 
 jobs:
   main:
@@ -105,8 +100,6 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
-    - name: run flake8 ⚙️
-      run: find . -type f -name "*.py" | xargs flake8
     - name: build docs 🏗️
       run: cd docs && make html
     - name: failed tests 🚩
