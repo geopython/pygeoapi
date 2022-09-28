@@ -1,8 +1,11 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          John A Stevenson <jostev@bgs.ac.uk>
+#          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -72,6 +75,14 @@ def api_(config):
 @pytest.fixture()
 def api_hidden_resources(config_hidden_resources):
     return API(config_hidden_resources)
+
+
+# API using PostgreSQL provider
+@pytest.fixture()
+def pg_api_():
+    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
+        config = yaml_load(fh)
+        return API(config)
 
 
 def test_apirequest(api_):
@@ -832,16 +843,12 @@ def test_get_collection_items(config, api_):
     assert code == 400
 
 
-def test_get_collection_items_postgresql_cql():
+def test_get_collection_items_postgresql_cql(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
     """
     # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
     cql_query = 'osm_id BETWEEN 80800000 AND 80900000 AND name IS NULL'
     expected_ids = [80835474, 80835483]
 
@@ -850,7 +857,7 @@ def test_get_collection_items_postgresql_cql():
         'filter-lang': 'cql-text',
         'filter': cql_query
     })
-    rsp_headers, code, response = api_.get_collection_items(
+    rsp_headers, code, response = pg_api_.get_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -863,7 +870,7 @@ def test_get_collection_items_postgresql_cql():
     req = mock_request({
         'filter': cql_query
     })
-    rsp_headers, code, response = api_.get_collection_items(
+    rsp_headers, code, response = pg_api_.get_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -873,7 +880,7 @@ def test_get_collection_items_postgresql_cql():
     assert ids == expected_ids
 
 
-def test_get_collection_items_postgresql_cql_invalid_filter_language():
+def test_get_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -881,10 +888,6 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language():
     Test for invalid filter language
     """
     # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
     cql_query = 'osm_id BETWEEN 80800000 AND 80900000 AND name IS NULL'
 
     # Act
@@ -892,7 +895,7 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language():
         'filter-lang': 'cql-json',  # Only cql-text is valid for GET
         'filter': cql_query
     })
-    rsp_headers, code, response = api_.get_collection_items(
+    rsp_headers, code, response = pg_api_.get_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -907,24 +910,18 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language():
     'id EATS (1, 2)',  # Valid CQL relations only
     'id IN (1, 2'  # At some point this may return UnexpectedEOF
 ])
-def test_get_collection_items_postgresql_cql_bad_cql(bad_cql):
+def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
 
     Test for bad cql
     """
-    # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
-
     # Act
     req = mock_request({
         'filter': bad_cql
     })
-    rsp_headers, code, response = api_.get_collection_items(
+    rsp_headers, code, response = pg_api_.get_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -934,16 +931,12 @@ def test_get_collection_items_postgresql_cql_bad_cql(bad_cql):
     assert error_response['description'] == f'Bad CQL string : {bad_cql}'
 
 
-def test_post_collection_items_postgresql_cql():
+def test_post_collection_items_postgresql_cql(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
     """
     # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
     cql = {"and": [{"between": {"value": {"property": "osm_id"},
                                 "lower": 80800000,
                                 "upper": 80900000}},
@@ -958,7 +951,7 @@ def test_post_collection_items_postgresql_cql():
     req = mock_request({
         'filter-lang': 'cql-json'
     }, data=cql, **headers)
-    rsp_headers, code, response = api_.post_collection_items(
+    rsp_headers, code, response = pg_api_.post_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -968,7 +961,7 @@ def test_post_collection_items_postgresql_cql():
     assert ids == expected_ids
 
 
-def test_post_collection_items_postgresql_cql_invalid_filter_language():
+def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -976,10 +969,6 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language():
     Test for invalid filter language
     """
     # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
     # CQL should never be parsed
     cql = {"in": {"value": {"property": "id"}, "list": [1, 2]}}
     headers = {'CONTENT_TYPE': 'application/query-cql-json'}
@@ -988,7 +977,7 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language():
     req = mock_request({
         'filter-lang': 'cql-text'  # Only cql-json is valid for POST
     }, data=cql, **headers)
-    rsp_headers, code, response = api_.post_collection_items(
+    rsp_headers, code, response = pg_api_.post_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
@@ -1004,7 +993,7 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language():
     # At some point this may return UnexpectedEOF
     '{"in": {"value": {"property": "id"}, "list": [1, 2}}'
 ])
-def test_post_collection_items_postgresql_cql_bad_cql(bad_cql):
+def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -1012,17 +1001,13 @@ def test_post_collection_items_postgresql_cql_bad_cql(bad_cql):
     Test for bad cql
     """
     # Arrange
-    # Prepare API configured to use PostgreSQL provider
-    with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
-        config = yaml_load(fh)
-    api_ = API(config)
     headers = {'CONTENT_TYPE': 'application/query-cql-json'}
 
     # Act
     req = mock_request({
         'filter-lang': 'cql-json'
     }, data=bad_cql, **headers)
-    rsp_headers, code, response = api_.post_collection_items(
+    rsp_headers, code, response = pg_api_.post_collection_items(
         req, 'hot_osm_waterways')
 
     # Assert
