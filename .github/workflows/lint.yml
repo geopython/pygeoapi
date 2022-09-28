@@ -4,6 +4,16 @@ on:
   push:
     paths:
       - '*.py'
+      - '!**.md'   
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '*.py'  
+      - '!**.md'  
+  release:
+    types:
+      - released    
 
 jobs:
   flake8_py3:

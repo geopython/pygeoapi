@@ -1,22 +1,14 @@
 name: Build
 
 on: 
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'  
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'  
-  release:
-    types:
-      - released
   workflow_run:
     workflows: ["Lint"]
-    types: [completed]    
+    types: [completed] 
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'  
+  
 
 jobs:
   main:
