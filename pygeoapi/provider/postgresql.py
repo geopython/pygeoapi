@@ -99,6 +99,7 @@ class PostgreSQLProvider(BaseProvider):
         self._engine = self._create_engine()
         LOGGER.debug('DB connection: {}'.format(repr(self._engine.url)))
         self.table_model = self._reflect_table_model()
+        self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -175,7 +176,7 @@ class PostgreSQLProvider(BaseProvider):
 
         fields = {}
         for column in self.table_model.__table__.columns:
-            fields[column.name] = str(column.type)
+            fields[column.name] = {'type': str(column.type)}
 
         fields.pop(self.geom)  # Exclude geometry column
 
@@ -373,7 +374,7 @@ class PostgreSQLProvider(BaseProvider):
             column_names = set(select_properties)
         else:
             # get_fields() doesn't include geometry column
-            column_names = set(self.get_fields().keys())
+            column_names = set(self.fields.keys())
 
         if self.properties:  # optional subset of properties defined in config
             properties_from_config = set(self.properties)

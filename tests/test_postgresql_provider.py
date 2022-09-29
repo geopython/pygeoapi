@@ -264,24 +264,33 @@ def test_query_cql_properties_bbox_filters(config):
     assert ids == expected_ids
 
 
-def test_instantiation(config):
-    """Test attributes are correctly set during instantiation."""
+def test_get_fields(config):
     # Arrange
     expected_fields = {
-        'blockage': 'VARCHAR(80)',
-        'covered': 'VARCHAR(80)',
-        'depth': 'VARCHAR(80)',
-        'layer': 'VARCHAR(80)',
-        'name': 'VARCHAR(80)',
-        'natural': 'VARCHAR(80)',
-        'osm_id': 'INTEGER',
-        'tunnel': 'VARCHAR(80)',
-        'water': 'VARCHAR(80)',
-        'waterway': 'VARCHAR(80)',
-        'width': 'VARCHAR(80)',
-        'z_index': 'VARCHAR(80)'
+        'blockage': {'type': 'VARCHAR(80)'},
+        'covered': {'type': 'VARCHAR(80)'},
+        'depth': {'type': 'VARCHAR(80)'},
+        'layer': {'type': 'VARCHAR(80)'},
+        'name': {'type': 'VARCHAR(80)'},
+        'natural': {'type': 'VARCHAR(80)'},
+        'osm_id': {'type': 'INTEGER'},
+        'tunnel': {'type': 'VARCHAR(80)'},
+        'water': {'type': 'VARCHAR(80)'},
+        'waterway': {'type': 'VARCHAR(80)'},
+        'width': {'type': 'VARCHAR(80)'},
+        'z_index': {'type': 'VARCHAR(80)'}
     }
 
+    # Act
+    provider = PostgreSQLProvider(config)
+
+    # Assert
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields  # API uses .fields attribute
+
+
+def test_instantiation(config):
+    """Test attributes are correctly set during instantiation."""
     # Act
     provider = PostgreSQLProvider(config)
 
@@ -289,7 +298,6 @@ def test_instantiation(config):
     assert provider.name == "PostgreSQL"
     assert provider.table == "hotosm_bdi_waterways"
     assert provider.id_field == "osm_id"
-    assert provider.get_fields() == expected_fields
 
 
 @pytest.mark.parametrize('bad_data, exception, match', [
