@@ -2,12 +2,12 @@ name: Lint
 
 on:
   push:
-    paths:
-      - '!**.md'   
+    paths-ignore:
+      - '**.md'   
   pull_request:
     branches:
       - master
-    paths: 
+    paths-ignore: 
       - '!**.md'  
   release:
     types:
