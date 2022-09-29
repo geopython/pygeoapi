@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: 3.7.14
           architecture: x64
-      - name: Checkout PyTorch
+      - name: Checkout pygeoapi
         uses: actions/checkout@master
       - name: Install flake8
         run: pip install flake8
