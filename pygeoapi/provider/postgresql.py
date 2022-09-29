@@ -124,8 +124,6 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug('Querying PostGIS')
-        # Create session to run a query
-        session = Session(self._engine)
 
         # Prepare filters
         property_filters = self._get_property_filters(properties)
@@ -135,34 +133,35 @@ class PostgreSQLProvider(BaseProvider):
         selected_properties = self._select_properties_clause(select_properties,
                                                              skip_geometry)
 
-        # Execute the query
-        results = (session.query(self.table_model)
-                   .filter(property_filters)
-                   .filter(cql_filters)
-                   .filter(bbox_filter)
-                   .order_by(*order_by_clauses)
-                   .options(selected_properties)
-                   .offset(offset))
+        # Execute query within self-closing database Session context
+        with Session(self._engine) as session:
+            results = (session.query(self.table_model)
+                       .filter(property_filters)
+                       .filter(cql_filters)
+                       .filter(bbox_filter)
+                       .order_by(*order_by_clauses)
+                       .options(selected_properties)
+                       .offset(offset))
 
-        # Prepare and return feature collection response
-        response = {
-            'type': 'FeatureCollection',
-            'features': []
-        }
+            # Prepare and return feature collection response
+            response = {
+                'type': 'FeatureCollection',
+                'features': []
+            }
 
-        if resulttype == "hits":
-            # User requested hit count
-            response['numberMatched'] = results.count()
-            return response
+            if resulttype == "hits":
+                # User requested hit count
+                response['numberMatched'] = results.count()
+                return response
 
-        if not results:
-            # Empty response
-            return response
+            if not results:
+                # Empty response
+                return response
 
-        for item in results.limit(limit):
-            response['features'].append(
-                self._sqlalchemy_to_feature(item)
-            )
+            for item in results.limit(limit):
+                response['features'].append(
+                    self._sqlalchemy_to_feature(item)
+                )
 
         return response
 
@@ -192,30 +191,31 @@ class PostgreSQLProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
         LOGGER.debug(f'Get item by ID: {identifier}')
-        session = Session(self._engine)
 
-        # Retrieve data from database as feature
-        query = session.query(self.table_model)
-        item = query.get(identifier)
-        if item is None:
-            msg = f"No such item: {self.id_field}={identifier}."
-            raise ProviderItemNotFoundError(msg)
-        feature = self._sqlalchemy_to_feature(item)
+        # Execute query within self-closing database Session context
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            query = session.query(self.table_model)
+            item = query.get(identifier)
+            if item is None:
+                msg = f"No such item: {self.id_field}={identifier}."
+                raise ProviderItemNotFoundError(msg)
+            feature = self._sqlalchemy_to_feature(item)
 
-        # Add fields for previous and next items
-        id_field = getattr(self.table_model, self.id_field)
-        prev_item = (session.query(self.table_model)
-                     .order_by(id_field.desc())
-                     .filter(id_field < identifier)
-                     .first())
-        next_item = (session.query(self.table_model)
-                     .order_by(id_field.asc())
-                     .filter(id_field > identifier)
-                     .first())
-        feature['prev'] = (getattr(prev_item, self.id_field)
-                           if prev_item is not None else identifier)
-        feature['next'] = (getattr(next_item, self.id_field)
-                           if next_item is not None else identifier)
+            # Add fields for previous and next items
+            id_field = getattr(self.table_model, self.id_field)
+            prev_item = (session.query(self.table_model)
+                         .order_by(id_field.desc())
+                         .filter(id_field < identifier)
+                         .first())
+            next_item = (session.query(self.table_model)
+                         .order_by(id_field.asc())
+                         .filter(id_field > identifier)
+                         .first())
+            feature['prev'] = (getattr(prev_item, self.id_field)
+                               if prev_item is not None else identifier)
+            feature['next'] = (getattr(next_item, self.id_field)
+                               if next_item is not None else identifier)
 
         return feature
 
@@ -240,7 +240,9 @@ class PostgreSQLProvider(BaseProvider):
         )
         store_key = (self.db_user, self.db_host, self.db_port, self.db_name)
 
-        # Use existing engine from store if available
+        # Use existing engine from store if available.
+        # One long-lived engine is used per database URL:
+        # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
         try:
             engine = _ENGINE_STORE[store_key]
         except KeyError:
