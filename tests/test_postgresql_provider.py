@@ -46,6 +46,7 @@ from pygeoapi.provider.base import (
     ProviderQueryError
 )
 from pygeoapi.provider.postgresql import PostgreSQLProvider
+import pygeoapi.provider.postgresql as postgresql_provider_module
 
 import os
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
@@ -311,6 +312,8 @@ def test_instantiation(config):
 def test_instantiation_with_bad_config(config, bad_data, exception, match):
     # Arrange
     config.update(bad_data)
+    # Make sure we don't use a cached connection in the tests
+    postgresql_provider_module._ENGINE_AND_TABLE_MODEL_STORE = {}
 
     # Act and assert
     with pytest.raises(exception, match=match):
@@ -327,18 +330,26 @@ def test_instantiation_with_bad_credentials(config):
         PostgreSQLProvider(config)
 
 
-def test_engine_store(config):
-    provider1 = PostgreSQLProvider(config)
+def test_engine_and_table_model_store(config):
+    provider0 = PostgreSQLProvider(config)
 
-    # Same database connection details
+    # Same config should return same engine and model
+    provider1 = PostgreSQLProvider(config)
+    assert repr(provider1._engine) == repr(provider0._engine)
+    assert provider1._engine is provider0._engine
+    assert provider1.table_model is provider0.table_model
+
+    # Same database connection details, but different table
     different_table = config.copy()
     different_table.update(table="hotosm_bdi_drains")
     provider2 = PostgreSQLProvider(different_table)
-    assert repr(provider2._engine) == repr(provider1._engine)
-    assert provider2._engine is provider1._engine
+    assert repr(provider2._engine) == repr(provider0._engine)
+    assert provider2._engine is not provider0._engine
+    assert provider2.table_model is not provider0.table_model
 
     # Although localhost is 127.0.0.1, this should get different engine
     different_host = config.copy()
     different_host["data"]["host"] = "localhost"
     provider3 = PostgreSQLProvider(different_host)
-    assert provider3._engine is not provider1._engine
+    assert provider3._engine is not provider0._engine
+    assert provider3.table_model is not provider0.table_model

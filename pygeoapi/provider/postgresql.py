@@ -62,7 +62,7 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
 from geoalchemy2.shape import to_shape
 
-_ENGINE_STORE = {}
+_ENGINE_AND_TABLE_MODEL_STORE = {}
 LOGGER = logging.getLogger(__name__)
 
 
@@ -96,9 +96,8 @@ class PostgreSQLProvider(BaseProvider):
 
         # Read table information from database
         self._store_db_parameters(provider_def['data'])
-        self._engine = self._create_engine()
+        self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug('DB connection: {}'.format(repr(self._engine.url)))
-        self.table_model = self._reflect_table_model()
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
@@ -228,10 +227,11 @@ class PostgreSQLProvider(BaseProvider):
         self.db_search_path = parameters.get('search_path', ['public'])
         self._db_password = parameters.get('password')
 
-    def _create_engine(self):
+    def _get_engine_and_table_model(self):
         """
-        Create a SQL Alchemy engine for the database. It doesn't connect at
-        this point.
+        Create a SQL Alchemy engine for the database and reflect the table
+        model.  The Engine provides connection pooling and the table model
+        doesn't change so both are cached for future reuse.
         """
         conn_str = (
             'postgresql+psycopg2://'
@@ -239,40 +239,44 @@ class PostgreSQLProvider(BaseProvider):
             f'{self.db_host}:{self.db_port}/'
             f'{self.db_name}'
         )
-        store_key = (self.db_user, self.db_host, self.db_port, self.db_name)
+        store_key = (self.db_user, self.db_host, self.db_port,
+                     self.db_name, self.table)
 
-        # Use existing engine from store if available.
+        # Use existing engine and table_model from store if available.
         # One long-lived engine is used per database URL:
         # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
+        # store_key must be unique for connection and table.
         try:
-            engine = _ENGINE_STORE[store_key]
+            engine, table_model = _ENGINE_AND_TABLE_MODEL_STORE[store_key]
         except KeyError:
             engine = create_engine(
                 conn_str,
                 connect_args={'client_encoding': 'utf8',
                               'application_name': 'pygeoapi'})
-            _ENGINE_STORE[store_key] = engine
+            table_model = self._reflect_table_model(engine)
+            _ENGINE_AND_TABLE_MODEL_STORE[store_key] = (engine, table_model)
 
-        return engine
+        return engine, table_model
 
-    def _reflect_table_model(self):
+    def _reflect_table_model(self, engine):
         """
         Reflect database metadata to create a SQL Alchemy model corresponding
-        to target table.  The database is first connected here.
+        to target table.  This requires a database query and is expensive to
+        perform.
         """
-        metadata = MetaData(self._engine)
+        metadata = MetaData(engine)
 
         # Look for table in the first schema in the search path
         try:
             schema = self.db_search_path[0]
             metadata.reflect(schema=schema, only=[self.table], views=True)
         except OperationalError:
-            msg = (f"Could not connect to {repr(self._engine.url)} "
+            msg = (f"Could not connect to {repr(engine.url)} "
                    "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
             msg = (f"Table '{self.table}' not found in schema '{schema}' "
-                   f"on {repr(self._engine.url)}.")
+                   f"on {repr(engine.url)}.")
             raise ProviderQueryError(msg)
 
         # Create SQLAlchemy model from reflected table
