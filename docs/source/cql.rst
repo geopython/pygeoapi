@@ -6,7 +6,7 @@ CQL support
 Providers
 ---------
 
-As of now the available providers supported for CQL filtering are limited to :ref:`Elasticsearch <Elasticsearch>` &  :ref:`PostgreSQL <PostgreSQL>`..
+As of now the available providers supported for CQL filtering are limited to :ref:`Elasticsearch <Elasticsearch>` & :ref:`PostgreSQL <PostgreSQL>`.
  
 Limitations
 -----------
@@ -23,12 +23,12 @@ Formats
 
 At the moment Elasticsearch supports only the CQL dialect with the JSON encoding `CQL-JSON <https://portal.ogc.org/files/96288#simple-cql-JSON>`_.
 
-PostGres supports both CQL-JSON and CQL-Text dialects, `CQL-JSON <https://portal.ogc.org/files/96288#simple-cql-JSON>`_ & `CQL-TEXT <https://portal.ogc.org/files/96288#simple-cql-text>`_
+PostgreSQL supports both CQL-JSON and CQL-text dialects, `CQL-JSON <https://portal.ogc.org/files/96288#simple-cql-JSON>`_ & `CQL-TEXT <https://portal.ogc.org/files/96288#simple-cql-text>`_
 
 Queries
 ^^^^^^^
 
-The PostGres provider utilizes `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions: 
+The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions:
 
 * `Comparison predicates <https://portal.ogc.org/files/96288#simple-cql_comparison-predicates>`_
 * `Spatial predicates <https://portal.ogc.org/files/96288#enhanced-spatial-operators>`_
@@ -56,3 +56,12 @@ A ``between`` example for a specific property through an HTTP POST request:
       "upper": 0.60
     }
   }'
+
+A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the ``filter`` parameter.
+
+.. code-block:: bash
+
+  curl "http://localhost:5000/collections/hot_osm_waterways/items?f=json&filter=CROSSES(foo_geom,%20LINESTRING(28%20-2,%2030%20-4))"
+
+Note the the CQL text has been URL encoded here.
+This is required in CURL commands but when entering in a browser, plain text can be used e.g. "CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))".
