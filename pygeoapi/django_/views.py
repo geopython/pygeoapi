@@ -140,9 +140,13 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
             collection_id,
         )
     elif request.method == 'POST':
-        response_ = _feed_response(
-            request, 'manage_collection_item', request, 'create', collection_id
-        )
+        if request.content_type is not None:
+            if request.content_type == 'application/geo+json':
+                response_ = _feed_response(request, 'manage_collection_item',
+                                           request, 'create', collection_id)
+            else:
+                response_ = _feed_response(request, 'post_collection_items',
+                                           request, collection_id)
 
     response = _to_django_response(*response_)
 
