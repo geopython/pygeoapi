@@ -312,8 +312,9 @@ def test_instantiation(config):
 def test_instantiation_with_bad_config(config, bad_data, exception, match):
     # Arrange
     config.update(bad_data)
-    # Make sure we don't use a cached connection in the tests
-    postgresql_provider_module._ENGINE_AND_TABLE_MODEL_STORE = {}
+    # Make sure we don't use a cached connection or model in the tests
+    postgresql_provider_module._ENGINE_STORE = {}
+    postgresql_provider_module._TABLE_MODEL_STORE = {}
 
     # Act and assert
     with pytest.raises(exception, match=match):
@@ -324,16 +325,18 @@ def test_instantiation_with_bad_credentials(config):
     # Arrange
     config['data'].update({'user': 'bad_user'})
     match = r'Could not connect to .*bad_user:\*\*\*@'
+    # Make sure we don't use a cached connection in the tests
+    postgresql_provider_module._ENGINE_STORE = {}
 
     # Act and assert
     with pytest.raises(ProviderConnectionError, match=match):
         PostgreSQLProvider(config)
 
 
-def test_engine_and_table_model_store(config):
+def test_engine_and_table_model_stores(config):
     provider0 = PostgreSQLProvider(config)
 
-    # Same config should return same engine and model
+    # Same config should return same engine and table_model
     provider1 = PostgreSQLProvider(config)
     assert repr(provider1._engine) == repr(provider0._engine)
     assert provider1._engine is provider0._engine
@@ -344,10 +347,12 @@ def test_engine_and_table_model_store(config):
     different_table.update(table="hotosm_bdi_drains")
     provider2 = PostgreSQLProvider(different_table)
     assert repr(provider2._engine) == repr(provider0._engine)
-    assert provider2._engine is not provider0._engine
+    assert provider2._engine is provider0._engine
     assert provider2.table_model is not provider0.table_model
 
     # Although localhost is 127.0.0.1, this should get different engine
+    # and also a different table_model, as two databases may have different
+    # tables with the same name
     different_host = config.copy()
     different_host["data"]["host"] = "localhost"
     provider3 = PostgreSQLProvider(different_host)

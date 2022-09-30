@@ -62,7 +62,8 @@ from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
 from geoalchemy2.shape import to_shape
 
-_ENGINE_AND_TABLE_MODEL_STORE = {}
+_ENGINE_STORE = {}
+_TABLE_MODEL_STORE = {}
 LOGGER = logging.getLogger(__name__)
 
 
@@ -230,31 +231,36 @@ class PostgreSQLProvider(BaseProvider):
     def _get_engine_and_table_model(self):
         """
         Create a SQL Alchemy engine for the database and reflect the table
-        model.  The Engine provides connection pooling and the table model
-        doesn't change so both are cached for future reuse.
+        model.  Use existing versions from stores if available to allow reuse
+        of Engine connection pool and save expensive table reflection.
         """
-        conn_str = (
-            'postgresql+psycopg2://'
-            f'{self.db_user}:{self._db_password}@'
-            f'{self.db_host}:{self.db_port}/'
-            f'{self.db_name}'
-        )
-        store_key = (self.db_user, self.db_host, self.db_port,
-                     self.db_name, self.table)
-
-        # Use existing engine and table_model from store if available.
         # One long-lived engine is used per database URL:
         # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
-        # store_key must be unique for connection and table.
+        engine_store_key = (self.db_user, self.db_host, self.db_port,
+                            self.db_name)
         try:
-            engine, table_model = _ENGINE_AND_TABLE_MODEL_STORE[store_key]
+            engine = _ENGINE_STORE[engine_store_key]
         except KeyError:
+            conn_str = (
+                'postgresql+psycopg2://'
+                f'{self.db_user}:{self._db_password}@'
+                f'{self.db_host}:{self.db_port}/'
+                f'{self.db_name}'
+            )
             engine = create_engine(
                 conn_str,
                 connect_args={'client_encoding': 'utf8',
                               'application_name': 'pygeoapi'})
+            _ENGINE_STORE[engine_store_key] = engine
+
+        # Reuse table model if one exists
+        table_model_store_key = (self.db_host, self.db_port, self.db_name,
+                                 self.table)
+        try:
+            table_model = _TABLE_MODEL_STORE[table_model_store_key]
+        except KeyError:
             table_model = self._reflect_table_model(engine)
-            _ENGINE_AND_TABLE_MODEL_STORE[store_key] = (engine, table_model)
+            _TABLE_MODEL_STORE[table_model_store_key] = table_model
 
         return engine, table_model
 
