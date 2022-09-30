@@ -233,13 +233,15 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
                 api_.get_collection_items(
                     request, collection_id))
         elif request.method == 'POST':  # filter or manage items
-            if request.headers.get('content-type') is not None:
-                return get_response(
-                    api_.manage_collection_item(request, 'create',
-                                                collection_id))
-            else:
-                return get_response(
-                    api_.post_collection_items(request, collection_id))
+            content_type = request.headers.get('content-type')
+            if content_type is not None:
+                if content_type == 'application/geo+json':
+                    return get_response(
+                        api_.manage_collection_item(request, 'create',
+                                                    collection_id))
+                else:
+                    return get_response(
+                        api_.post_collection_items(request, collection_id))
 
     elif request.method == 'DELETE':
         return get_response(
