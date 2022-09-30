@@ -536,6 +536,7 @@ def test_get_collection_queryables(config, api_):
 
     req = mock_request({'f': 'json'})
     rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
     queryables = json.loads(response)
 
     assert 'properties' in queryables
