@@ -254,6 +254,7 @@ by downstream applications.
    `local-outlier-factor-plugin`_,Manaaki Whenua – Landcare Research,processes for local outlier detection
    `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
    `nldi_xstool`_,United States Geological Survey,Water data processing
+   `pygeometa-plugin`_,pygeometa project,pygeometa as a service
 
 
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter-pypackage
@@ -263,3 +264,4 @@ by downstream applications.
 .. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi
 .. _`nldi_xstool`: https://github.com/ACWI-SSWD/nldi_xstool
 .. _`pygeoapi-plugin-cookiecutter`: https://code.usgs.gov/wma/nhgf/pygeoapi-plugin-cookiecutter
+.. _`pygeometa-plugin`: https://geopython.github.io/pygeometa/pygeoapi-plugin
