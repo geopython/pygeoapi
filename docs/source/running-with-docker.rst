@@ -3,7 +3,7 @@
 Docker
 ======
 
-pygeoapi provides an official `Docker`_ image which is made available on the `geopython Docker Hub`_.  Additional
+pygeoapi provides an official `Docker`_ image which is made available on both the `geopython Docker Hub`_ and our `GitHub Container Registry`_.  Additional
 Docker examples can be found in the `pygeoapi GitHub repository`_, each with sample configurations, test data,
 deployment scenarios and provider backends.
 
@@ -16,6 +16,8 @@ The basics
 ----------
 
 The official pygeoapi Docker image will start a pygeoapi Docker container using Gunicorn on internal port 80.
+
+Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geophython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
 
 To run with the default built-in configuration and data:
 
@@ -113,6 +115,7 @@ Docker is an easy and reproducible approach to deploying systems.
 
 .. _`Docker`: https://www.docker.com
 .. _`geopython Docker Hub`: https://hub.docker.com/r/geopython/pygeoapi
+.. _`GitHub Container Registry`: https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi
 .. _`pygeoapi GitHub repository`: https://github.com/geopython/pygeoapi
 .. _`pygeoapi demo server`: https://demo.pygeoapi.io
 .. _`useful examples`: https://github.com/geopython/demo.pygeoapi.io/tree/master/services

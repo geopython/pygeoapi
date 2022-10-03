@@ -1276,6 +1276,8 @@ class API:
 
             return headers, 200, content
 
+        headers['Content-Type'] = 'application/schema+json'
+
         return headers, 200, to_json(queryables, self.pretty_print)
 
     @gzip
