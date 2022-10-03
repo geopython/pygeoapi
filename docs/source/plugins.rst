@@ -94,6 +94,10 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                }]
            }
 
+       def get_schema():
+           # return a `dict` of a JSON schema (inline or reference)
+           return ('application/geo+json', {'$ref': 'https://geojson.org/schema/Feature.json'})
+
 
 For brevity, the above code will always return the single feature of the dataset.  In reality, the plugin
 developer would connect to a data source with capabilities to run queries and return a relevant result set,
