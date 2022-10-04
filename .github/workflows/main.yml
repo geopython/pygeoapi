@@ -12,7 +12,11 @@ on:
   pull_request:
     branches:
       - ghcr    
-    
+
+env:
+  DOCKER_REPOSITORY: geopython/pygeoapi
+  DOCKER_TEST_IMAGE: geopython/pygeoapi:test
+
 jobs:
   main:
     name: Build, Test and Push Docker Image to DockerHub
@@ -42,6 +46,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          load: true
+          tags: ${{ env.DOCKER_TEST_IMAGE }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
