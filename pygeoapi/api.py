@@ -3,9 +3,12 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Sander Schaminee <sander.schaminee@geocat.net>
+#          John A Stevenson <jostev@bgs.ac.uk>
+#          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,6 +51,8 @@ import urllib.parse
 import uuid
 
 from dateutil.parser import parse as dateparse
+from pygeofilter.parsers.ecql import parse as parse_ecql_text
+from pygeofilter.parsers.cql_json import parse as parse_cql_json
 import pytz
 from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
@@ -1299,7 +1304,8 @@ class API:
         properties = []
         reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
-                               'properties', 'skipGeometry', 'q']
+                               'properties', 'skipGeometry', 'q',
+                               'filter', 'filter-lang']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1447,6 +1453,27 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('processing filter parameter')
+        cql_text = request.params.get('filter')
+        if cql_text is not None:
+            try:
+                filter_ = parse_ecql_text(cql_text)
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {cql_text}'
+                return self.get_exception(
+                    400, headers, request.format, 'InvalidParameterValue', msg)
+        else:
+            filter_ = None
+
+        LOGGER.debug('Processing filter-lang parameter')
+        filter_lang = request.params.get('filter-lang')
+        # Currently only cql-text is handled, but it is optional
+        if filter_lang is not None and filter_lang != 'cql-text':
+            msg = 'Invalid filter language'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
@@ -1462,6 +1489,8 @@ class API:
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
         LOGGER.debug('language: {}'.format(prv_locale))
         LOGGER.debug('q: {}'.format(q))
+        LOGGER.debug('cql_text: {}'.format(cql_text))
+        LOGGER.debug('filter-lang: {}'.format(filter_lang))
 
         try:
             content = p.query(offset=offset, limit=limit,
@@ -1470,7 +1499,7 @@ class API:
                               sortby=sortby,
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
-                              q=q, language=prv_locale)
+                              q=q, language=prv_locale, filterq=filter_)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -1801,9 +1830,7 @@ class API:
 
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
-        if filter_lang == 'cql-json':  # @TODO add check from the configuration
-            val = filter_lang
-        else:
+        if filter_lang != 'cql-json':  # @TODO add check from the configuration
             msg = 'Invalid filter language'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
@@ -1837,14 +1864,39 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'MissingParameterValue', msg)
 
+        filter_ = None
         try:
             # Parse bytes data, if applicable
             data = request.data.decode()
             LOGGER.debug(data)
-            # @TODO validation function
-            filter_ = None
-            if val:
+        except UnicodeDecodeError as err:
+            LOGGER.error(err)
+            msg = 'Unicode error in data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        if p.name == 'PostgreSQL':
+            LOGGER.debug('processing PostgreSQL CQL_JSON data')
+            try:
+                filter_ = parse_cql_json(data)
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {data}'
+                return self.get_exception(
+                    400, headers, request.format,
+                    'InvalidParameterValue', msg)
+        else:
+            LOGGER.debug('processing ElasticSearch CQL_JSON data')
+            try:
                 filter_ = CQLModel.parse_raw(data)
+            except Exception as err:
+                LOGGER.error(err)
+                msg = f'Bad CQL string : {data}'
+                return self.get_exception(
+                    400, headers, request.format,
+                    'InvalidParameterValue', msg)
+
+        try:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
@@ -1853,8 +1905,21 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q,
                               filterq=filter_)
-        except (UnicodeDecodeError, AttributeError):
-            pass
+        except ProviderConnectionError as err:
+            LOGGER.error(err)
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderQueryError as err:
+            LOGGER.error(err)
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            msg = 'generic error (check logs)'
+            return self.get_exception(
+                500, headers, request.format, 'NoApplicableCode', msg)
 
         return headers, 200, to_json(content, self.pretty_print)
 

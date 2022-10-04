@@ -2,6 +2,7 @@ Babel
 click>7,<=9
 Flask
 jsonschema
+pygeofilter
 pyproj
 python-dateutil
 pytz
