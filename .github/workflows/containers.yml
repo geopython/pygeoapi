@@ -7,13 +7,11 @@ name: Publish Docker image
 
 on:
   push:
-    paths-ignore:
-      - '**.md'   
-  pull_request:
     branches:
       - ghcr
-    paths-ignore: 
-      - '!**.md'    
+  pull_request:
+    branches:
+      - ghcr    
     
 jobs:
   on-success:
