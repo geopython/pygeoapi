@@ -5,7 +5,7 @@ on:
     workflows: ["Lint"]
     types: [completed] 
     branches:
-      - master
+      - ghcr
     paths-ignore:
       - '**.md'  
   
