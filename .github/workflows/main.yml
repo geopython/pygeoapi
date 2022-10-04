@@ -14,7 +14,7 @@ on:
       - ghcr    
     
 jobs:
-  on-success:
+  main:
     name: Build, Test and Push Docker Image to DockerHub
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
