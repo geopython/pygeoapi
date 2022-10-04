@@ -8,10 +8,10 @@ name: Publish Docker image
 on:
   push:
     branches:
-      - ghcr
+      - master
   pull_request:
     branches:
-      - ghcr    
+      - master    
 
 env:
   DOCKER_REPOSITORY: geopython/pygeoapi
