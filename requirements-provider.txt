@@ -6,7 +6,7 @@ geoalchemy
 netCDF4
 pandas; python_version < '3.7'
 pandas==1.2.5; python_version >= '3.7'
-psycopg2-binary
+psycopg2
 pygeofilter[backend-sqlalchemy]
 pygeometa
 pymongo==3.10.1
