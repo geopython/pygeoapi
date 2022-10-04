@@ -6,14 +6,15 @@
 name: Publish Docker image
 
 on:
-  workflow_run:
-    workflows: ["Build"]
-    types: [completed]
+  push:
+    paths-ignore:
+      - '**.md'   
+  pull_request:
+    branches:
+      - ghcr
+    paths-ignore: 
+      - '!**.md'    
     
-env:
-  DOCKER_REPOSITORY: geopython/pygeoapi
-  DOCKER_TEST_IMAGE: geopython/pygeoapi:test
-
 jobs:
   on-success:
     name: Build, Test and Push Docker Image to DockerHub
