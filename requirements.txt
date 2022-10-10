@@ -1,5 +1,5 @@
 Babel
-click>7,<=9
+click>7,<=8
 Flask
 jsonschema
 pygeofilter
