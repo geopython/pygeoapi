@@ -127,7 +127,8 @@ class DatabaseConnection:
                 AND attnum > 0
             """
 
-            self.cur.execute(query_cols, (self.table,))
+            #self.cur.execute(query_cols, (self.table,))
+            self.cur.execute(query_cols, ('"' + self.table + '"',))
             result = self.cur.fetchall()
             if self.properties:
                 result = [res for res in result if res[0] in self.properties]
