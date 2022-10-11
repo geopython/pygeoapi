@@ -2171,6 +2171,12 @@ class API:
 
         query_args['bbox'] = bbox
 
+        LOGGER.debug('Processing bbox-crs parameter')
+
+        bboxcrs = request.params.get('bbox-crs')
+
+        query_args['bboxcrs'] = bboxcrs
+
         LOGGER.debug('Processing datetime parameter')
 
         datetime_ = request.params.get('datetime', None)
