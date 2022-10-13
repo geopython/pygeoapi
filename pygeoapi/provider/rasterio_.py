@@ -162,8 +162,8 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, properties=[], subsets={}, bbox=None, bboxcrs=4326, datetime_=None,
-              format_='json', **kwargs):
+    def query(self, properties=[], subsets={}, bbox=None, bboxcrs=4326,
+              datetime_=None, format_='json', **kwargs):
         """
         Extract data from collection collection
         :param properties: list of bands
