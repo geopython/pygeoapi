@@ -295,7 +295,7 @@ resources:
               name: OGR
               data:
                   source_type: WFS
-                  source: WFS:http://geodata.nationaalgeoregister.nl/rdinfo/wfs?
+                  source: WFS:https://service.pdok.nl/kadaster/rdinfo/wfs/v1_0?
                   source_srs: EPSG:28992
                   target_srs: EPSG:4326
                   source_capabilities:
