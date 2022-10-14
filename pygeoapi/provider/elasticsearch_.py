@@ -267,7 +267,7 @@ class ElasticsearchProvider(BaseProvider):
                 sp = sort['property']
 
                 if (self.fields[sp]['type'] == 'string'
-                        and self.fields[sp]['format'] != 'date'):
+                        and self.fields[sp].get('format') != 'date'):
                     LOGGER.debug('setting ES .raw on property')
                     sort_property = '{}.raw'.format(self.mask_prop(sp))
                 else:
