@@ -162,7 +162,7 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, properties=[], subsets={}, bbox=None, bboxcrs=4326,
+    def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):
         """
         Extract data from collection collection
@@ -200,7 +200,7 @@ class RasterioProvider(BaseProvider):
         if len(bbox) > 0:
             minx, miny, maxx, maxy = bbox
 
-            crs_src = CRS.from_epsg(bboxcrs)
+            crs_src = CRS.from_epsg(bbox_crs)
 
             if 'crs' in self.options:
                 crs_dest = CRS.from_string(self.options['crs'])
