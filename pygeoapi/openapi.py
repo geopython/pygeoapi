@@ -1142,7 +1142,7 @@ def openapi():
 
 @click.command()
 @click.pass_context
-@click.argument('config_file', type=click.File())
+@click.argument('config_file', type=click.File(encoding='utf-8'))
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
 @click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
