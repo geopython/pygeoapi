@@ -334,6 +334,18 @@ def get_oas_30(cfg):
                     'default': False
                 }
             },
+            'bbox-crs': {
+                'name': 'bbox-crs',
+                'in': 'query',
+                'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'integer',
+                    'default': 4326
+                }
+            },
             'offset': {
                 'name': 'offset',
                 'in': 'query',
@@ -677,7 +689,9 @@ def get_oas_30(cfg):
                     'operationId': 'get{}Coverage'.format(name.capitalize()),
                     'parameters': [
                         items_f,
-                        items_l
+                        items_l,
+                        {'$ref': '{}#/components/parameters/bbox'.format(OPENAPI_YAML['oapif'])},  # noqa
+                        {'$ref': '#/components/parameters/bbox-crs'}
                     ],
                     'responses': {
                         '200': {'$ref': '{}#/components/responses/Features'.format(OPENAPI_YAML['oapif'])},  # noqa
