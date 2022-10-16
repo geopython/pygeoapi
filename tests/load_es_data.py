@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,7 +32,7 @@ from pathlib import Path
 import sys
 
 from elasticsearch import Elasticsearch, helpers
-es = Elasticsearch()
+es = Elasticsearch('http://localhost:9200')
 
 if len(sys.argv) < 3:
     print(f'Usage: {sys.argv[0]} <path/to/data.geojson> <id-field>')
@@ -41,28 +41,27 @@ if len(sys.argv) < 3:
 index_name = Path(sys.argv[1]).stem.lower()
 id_field = sys.argv[2]
 
-if es.indices.exists(index_name):
-    es.indices.delete(index_name)
+if es.indices.exists(index=index_name):
+    es.indices.delete(index=index_name)
 
 # index settings
 settings = {
-    'settings': {
-        'number_of_shards': 1,
-        'number_of_replicas': 0
-    },
-    'mappings': {
+    'number_of_shards': 1,
+    'number_of_replicas': 0
+}
+
+mappings = {
+    'properties': {
+        'geometry': {
+            'type': 'geo_shape'
+        },
         'properties': {
-            'geometry': {
-                'type': 'geo_shape'
-            },
             'properties': {
-                'properties': {
-                    'nameascii': {
-                        'type': 'text',
-                        'fields': {
-                            'raw': {
-                                'type': 'keyword'
-                            }
+                'nameascii': {
+                    'type': 'text',
+                    'fields': {
+                        'raw': {
+                            'type': 'keyword'
                         }
                     }
                 }
@@ -90,7 +89,8 @@ def gendata(data):
 
 
 # create index
-es.indices.create(index=index_name, body=settings, request_timeout=90)
+es.options(request_timeout=90).indices.create(
+    index=index_name, settings=settings, mappings=mappings)
 
 with open(sys.argv[1], encoding='utf-8') as fh:
     d = json.load(fh)

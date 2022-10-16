@@ -1,5 +1,5 @@
-elasticsearch<8
-elasticsearch-dsl<8
+elasticsearch
+elasticsearch-dsl
 fiona
 #GDAL>=3.0.0
 geoalchemy

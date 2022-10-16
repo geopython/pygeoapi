@@ -47,20 +47,21 @@
 #  psql -U postgres -h 127.0.0.1 -p 5432 test
 
 import logging
-from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
+from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
+from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.shape import to_shape
+from pygeofilter.backends.sqlalchemy.evaluate import to_filter
+import shapely
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
-from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
-from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
-import shapely
-from geoalchemy2.shape import to_shape
+from pygeoapi.provider.base import BaseProvider, \
+    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
+
 
 _ENGINE_STORE = {}
 _TABLE_MODEL_STORE = {}
