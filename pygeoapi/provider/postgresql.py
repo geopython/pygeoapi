@@ -103,7 +103,9 @@ class PostgreSQLProvider(BaseProvider):
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
+              bbox=None, bbox_crs=None, geom_wkt=None,
+              geom_crs=None, data_crs=None,
+              datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               filterq=None, **kwargs):
         """
@@ -114,7 +116,17 @@ class PostgreSQLProvider(BaseProvider):
         :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
-        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param bbox: bounding box [minx,miny,maxx,maxy] to query on
+        (when specified)
+        :param bbox_crs: the spatial projection of the bounding box
+        (when specified)
+        :param geom_wkt: the geom wkt to query on
+        (when specified)
+        :param geom_crs: the spatial projection of the geom wkt
+        (when specified)
+        :param data_crs: the spatial projection of the data being queried, as
+        read from the provider configuration
+        (when specified).
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
