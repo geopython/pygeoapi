@@ -3,9 +3,7 @@ name: Build
 on: 
   workflow_run:
     workflows: ["Lint"]
-    types: [completed] 
-    branches:
-      - master
+    types: [completed]
     paths-ignore:
       - '**.md'  
   
