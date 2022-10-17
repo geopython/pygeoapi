@@ -34,6 +34,7 @@ Returns content from plugins and sets responses.
 """
 
 import asyncio
+import yaml
 from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -53,6 +54,7 @@ from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import __version__, l10n
+from pygeoapi.openapi import get_oas
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
@@ -590,6 +592,94 @@ class APIRequest:
         headers_ = {item[0]: item[1] for item in headers.items()}
         return headers_
 
+    def read_param(self, method: str, param_name: str):
+        """
+        Reads an input parameter from the service end point.
+        This function reads parameters provided via either GET or POST methods.
+        :param method: indicates if the parameter value should be read from
+        a GET or a POST request. Possible values are "GET" or "POST".
+        :param param_name: the name of the parameter to read.
+        :returns: the parameter value
+        """
+
+        # Depending on the method
+        result = None
+        if method == 'POST':
+            d = self.data
+            if d:
+                d = d.decode()
+                d = json.loads(d)
+                if param_name in d:
+                    result = d[param_name]
+
+        else:
+            result = self.params.get(param_name)
+
+        # Return the value of the given parameter name
+        return result
+
+    def read_bbox(self, method: str):
+        """
+        Reads a bbox input parameter from the service end point.
+        This function reads a bbox parameter in either GET or POST methods.
+        :param method: indicates if the parameter value should be read from
+        GET or POST fashion. Possible values are "GET" or "POST".
+        :returns: the bbox value
+        """
+
+        # Read the input
+        q_bbox = self.read_param(method, 'bbox')
+
+        # If found, validate it
+        if q_bbox:
+            q_bbox = validate_bbox(q_bbox)
+
+        return q_bbox
+
+    def read_spatial_filter(self, method: str):
+        """
+        Reads a geometry or bbox spatial filter from the service end point.
+        When a bbox is specified and no geometry is specified, this function
+        also converts the bbox (and its crs) to a geometry (and its crs) for
+        convenience when working with a spatial filter.
+        This function reads spatial filter information in either GET or POST
+        http methods.
+        :param method: indicates if the parameter value should be read from GET
+        or POST fashion. Possible values are "GET" or "POST".
+        :returns: an array of spatial filters as provided in the service
+        request (geom, geom-crs, bbox, bbox-crs).
+        """
+
+        # Read the geometry if any
+        geom = self.read_param(method, 'geom')
+
+        # Read the geometry crs if any
+        geom_crs = self.read_param(method, 'geom-crs')
+
+        # If no geom_wkt
+        bbox = None
+        bbox_crs = None
+        if not geom:
+            # Read the bbox if any
+            bbox = self.read_bbox(method)
+
+            # Read the bbox crs if any
+            bbox_crs = self.read_param(method, 'bbox-crs')
+
+            # If a bbox is set
+            if bbox:
+                # Transform bbox to polygon wkt
+                geom = """POLYGON(({x_min} {y_min}, {x_min} {y_max},
+                                   {x_max} {y_max}, {x_max} {y_min},
+                                   {x_min} {y_min}))""".format(
+                    x_min=bbox[0],
+                    y_min=bbox[1],
+                    x_max=bbox[2],
+                    y_max=bbox[3])
+                geom_crs = bbox_crs
+
+        return geom, geom_crs, bbox, bbox_crs
+
 
 class API:
     """API object"""
@@ -639,6 +729,126 @@ class API:
         LOGGER.debug('Loading process manager {}'.format(manager_def['name']))
         self.manager = load_plugin('process_manager', manager_def)
         LOGGER.info('Process manager plugin loaded')
+
+        # Now that basic configuration is read, call the load ressources.
+        # This call enables the api engine to load resources dynamically.
+        # That is, resources which could be coming from other sources than
+        # the yaml file itself. Indeed, the yaml file could be empty of
+        # resources and all read dynamically from somewhere else
+        # (e.g. a database).
+        # That way, it's a little easier to manage a dynamic ensemble of
+        # resoures, especially on pygeoapi distributed environments.
+        self.load_resources()
+
+    def load_resources(self):
+        """
+        Calls on_load_resources and reassigns the resources configuration.
+        """
+
+        # Call on_load_resources sending the current resources configuration.
+        self.config['resources'] = self.on_load_resources(
+            self.config['resources'])
+
+    def on_load_resources(self, resources):
+        """
+        Overridable function to load (or reload) the available resources
+        dynamically.
+        By default, this function simply returns the resources as-is. This is
+        the original behavior of the API; expecting resources to be
+        already configured correctly per the yaml config file.
+
+        :param resources: the resources as currently configured
+        (self.config['resources'])
+        :returns: the resources dictionary that's available in the API.
+        """
+
+        # By default, return the same resources object, unchanged.
+        return resources
+
+    def on_description_filter_spatially(self, collections, geom_wkt, geom_crs):
+        """
+        Overridable function to spatially filter the collections list based on
+        a geometry.
+        This function is called when the /collections or
+        /collections/<collection_id> end points are hit (as it's the same
+        Python handler method).
+        Example of usage: typically, when the /collections end point is hit,
+        all the collections are returned to the client. This overridable
+        method enables developers to perform additional processing before
+        returning the response to the client..
+        For instance, spatial filtering the collections according to a
+        geometry which would have been provided by the client performing
+        the request.
+        :returns: the collections available in the API.
+        """
+
+        # By default, return the same collections object, unchanged.
+        return collections
+
+    def on_build_collection_finalize(self, locale, collection_data_type,
+                                     input_coll, active_coll):
+        """
+        Overridable function to modify the collection information before
+        returning it to the client.
+        This function is called when the /collections or
+        /collections/<collection_id> end points are hit (as it's the same
+        Python handler method). Edit the "active_coll" object to alter the
+        output to the client for the given collection.
+        Example of usage: we might want to attach some metadata information,
+        fetched dynamically, for each collection information object.
+        """
+
+        # By default, do nothing
+        pass
+
+    def save_config_pygeoapi(self):
+        """
+        Saves the current configuration in the PYGEOAPI_CONFIG file.
+        """
+
+        # Stringify
+        ymalStringData = yaml.dump(self.config, indent=4,
+                                   allow_unicode=True,
+                                   default_flow_style=False,
+                                   sort_keys=False)
+
+        # Write to file
+        with open(os.environ.get('PYGEOAPI_CONFIG'), 'w',
+                  encoding='utf-8') as outfile:
+            outfile.write(ymalStringData)
+
+    def save_config_openapi(self):
+        """
+        Saves the current configuration in the PYGEOAPI_OPENAPI file.
+        This method does basically the same thing as:
+        pygeoapi openapi generate $PYGEOAPI_CONFIG --output-file
+        $PYGEOAPI_OPENAPI
+        """
+
+        # Also save the OpenAPI file
+        content = yaml.safe_dump(get_oas(self.config),
+                                 allow_unicode=True,
+                                 default_flow_style=False)
+
+        # Write to file
+        with open(os.environ.get('PYGEOAPI_OPENAPI'), 'w',
+                  encoding='utf-8') as outfile:
+            outfile.write(content)
+
+    def save_configs(self, save_openapi: bool):
+        """
+        Saves the current configuration in the PYGEOAPI_CONFIG file and,
+        optionally, when save_openapi is true, in the PYGEOAPI_OPENAPI file.
+        """
+
+        # Save the config
+        self.save_config_pygeoapi()
+
+        # If also updating the OpenAPI specs (which in turn is dynamically
+        # read by the openapi end point - thus effectively dynamically adapting
+        # the API swagger according to dynamic resources)
+        if save_openapi:
+            self.save_config_openapi()
 
     @gzip
     @pre_process
@@ -821,8 +1031,44 @@ class API:
     @gzip
     @pre_process
     @jsonldify
+    def get_describe_collections(self, request: Union[APIRequest, Any],
+                                 dataset=None) -> Tuple[dict, int, str]:
+        """
+        Provide collection metadata
+
+        :param request: A request object
+        :param dataset: name of collection
+
+        :returns: tuple of headers, status code, content
+        """
+
+        # Redirect to the common describe_collections method
+        # specifying the GET method was used
+        return self.describe_collections(request, dataset, "GET")
+
+    @gzip
+    @pre_process
+    @jsonldify
+    def post_describe_collections(self, request: Union[APIRequest, Any],
+                                  dataset=None) -> Tuple[dict, int, str]:
+        """
+        Provide collection metadata
+
+        :param request: A request object
+        :param dataset: name of collection
+
+        :returns: tuple of headers, status code, content
+        """
+
+        # Redirect to the common describe_collections method
+        # specifying the POST method was used
+        return self.describe_collections(request, dataset, "POST")
+
+    @gzip
+    @pre_process
+    @jsonldify
     def describe_collections(self, request: Union[APIRequest, Any],
-                             dataset=None) -> Tuple[dict, int, str]:
+                             dataset=None, method=str) -> Tuple[dict, int, str]:  # noqa
         """
         Provide collection metadata
 
@@ -843,6 +1089,22 @@ class API:
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
+
+        geom = None
+        geom_crs = None
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter(method) # noqa
+
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
+        # Filter by bbox
+        collections = self.on_description_filter_spatially(collections, geom, geom_crs) # noqa
 
         if all([dataset is not None, dataset not in collections.keys()]):
             msg = 'Collection not found'
@@ -1131,6 +1393,11 @@ class API:
                 except ProviderTypeError:
                     pass
 
+            # Finalize building the collection information
+            self.on_build_collection_finalize(request.locale,
+                                              collection_data_type, v,
+                                              collection)
+
             if dataset is not None and k == dataset:
                 fcm = collection
                 break
@@ -1297,7 +1564,8 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
+        reserved_fieldnames = ['f', 'lang', 'bbox', 'bbox-crs',
+                               'geom', 'geom-crs', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q']
 
@@ -1345,19 +1613,20 @@ class API:
 
         resulttype = request.params.get('resulttype') or 'results'
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing spatial filter parameters')
 
-        bbox = request.params.get('bbox')
+        geom = None
+        geom_crs = None
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("GET") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    400, headers, request.format, 'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -1450,12 +1719,21 @@ class API:
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
+        # Get crs of the data
+        data_crs = None
+        if 'crs' in provider_def:
+            data_crs = provider_def["crs"]
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('offset: {}'.format(offset))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
         LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('bbox-crs: {}'.format(bbox_crs))
+        LOGGER.debug('geom: {}'.format(geom))
+        LOGGER.debug('geom-crs: {}'.format(geom_crs))
+        LOGGER.debug('data-crs: {}'.format(data_crs))
         LOGGER.debug('datetime: {}'.format(datetime_))
         LOGGER.debug('properties: {}'.format(properties))
         LOGGER.debug('select properties: {}'.format(select_properties))
@@ -1465,7 +1743,10 @@ class API:
 
         try:
             content = p.query(offset=offset, limit=limit,
-                              resulttype=resulttype, bbox=bbox,
+                              resulttype=resulttype,
+                              bbox=bbox, bbox_crs=bbox_crs,
+                              geom_wkt=geom, geom_crs=geom_crs,
+                              data_crs=data_crs,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
                               select_properties=select_properties,
@@ -1691,19 +1972,20 @@ class API:
 
         resulttype = request.params.get('resulttype') or 'results'
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing spatial filter parameters')
 
-        bbox = request.params.get('bbox')
+        geom = None
+        geom_crs = None
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("POST") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    400, headers, request.format, 'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -1725,12 +2007,14 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
-            p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
+            p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             try:
-                p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
+                p = load_plugin('provider', provider_def)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1808,12 +2092,21 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
+        # Get crs of the data
+        data_crs = None
+        if 'crs' in provider_def:
+            data_crs = provider_def["crs"]
+
         LOGGER.debug('Querying provider')
         LOGGER.debug('offset: {}'.format(offset))
         LOGGER.debug('limit: {}'.format(limit))
         LOGGER.debug('resulttype: {}'.format(resulttype))
         LOGGER.debug('sortby: {}'.format(sortby))
         LOGGER.debug('bbox: {}'.format(bbox))
+        LOGGER.debug('bbox-crs: {}'.format(bbox_crs))
+        LOGGER.debug('geom: {}'.format(geom))
+        LOGGER.debug('geom-crs: {}'.format(geom_crs))
+        LOGGER.debug('data-crs: {}'.format(data_crs))
         LOGGER.debug('datetime: {}'.format(datetime_))
         LOGGER.debug('properties: {}'.format(select_properties))
         LOGGER.debug('skipGeometry: {}'.format(skip_geometry))
@@ -1846,7 +2139,10 @@ class API:
             if val:
                 filter_ = CQLModel.parse_raw(data)
             content = p.query(offset=offset, limit=limit,
-                              resulttype=resulttype, bbox=bbox,
+                              resulttype=resulttype,
+                              bbox=bbox, bbox_crs=bbox_crs,
+                              geom_wkt=geom, geom_crs=geom_crs,
+                              data_crs=data_crs,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
                               select_properties=select_properties,
@@ -2155,26 +2451,28 @@ class API:
             return self.get_exception(
                 500, headers, format_, 'NoApplicableCode', msg)
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing spatial filter parameters')
 
-        bbox = request.params.get('bbox')
+        geom = None
+        geom_crs = None
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("GET") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    500, headers, format_, 'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
 
-        query_args['bbox'] = bbox
-
-        LOGGER.debug('Processing bbox-crs parameter')
-
-        bbox_crs = request.params.get('bbox-crs')
-        if bbox_crs is not None:
+        if geom:
+            query_args['geom_wkt'] = geom
+        if geom_crs:
+            query_args['geom_crs'] = geom_crs
+        if bbox:
+            query_args['bbox'] = bbox
+        if bbox_crs:
             query_args['bbox_crs'] = bbox_crs
 
         LOGGER.debug('Processing datetime parameter')
