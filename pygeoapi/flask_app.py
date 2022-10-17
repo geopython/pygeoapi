@@ -153,7 +153,7 @@ def conformance():
     return get_response(api_.conformance(request))
 
 
-@BLUEPRINT.route('/collections')
+@BLUEPRINT.route('/collections', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<path:collection_id>')
 def collections(collection_id=None):
     """
@@ -163,7 +163,13 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_collections(request, collection_id))
+    if request.method == 'POST':  # list collections using POST
+        return get_response(api_.post_describe_collections(request,
+                                                           collection_id))
+
+    else:  # list collections using GET
+        return get_response(api_.get_describe_collections(request,
+                                                          collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
