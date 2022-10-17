@@ -62,45 +62,88 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 ARG TZ="Etc/UTC"
 ARG LANG="en_US.UTF-8"
 ARG BUILD_DEV_IMAGE="false"
-ARG ADD_DEB_PACKAGES="python3-gdal python3-psycopg2 python3-xarray python3-scipy python3-netcdf4 python3-rasterio python3-fiona python3-pandas python3-pyproj python3-elasticsearch python3-pymongo python3-zarr python3-dask python3-tinydb"
+ARG ADD_DEB_PACKAGES="\
+    python3-dask \
+    python3-elasticsearch \
+    python3-fiona \
+    python3-gdal \
+    python3-netcdf4 \
+    python3-pandas \
+    python3-psycopg2 \
+    python3-pymongo \
+    python3-pyproj \
+    python3-rasterio \
+    python3-scipy \
+    python3-tinydb \
+    python3-xarray \
+    python3-zarr \
+    "
 
 # ENV settings
 ENV TZ=${TZ} \
     LANG=${LANG} \
     DEBIAN_FRONTEND="noninteractive" \
-    DEB_BUILD_DEPS="software-properties-common curl unzip" \
-    DEB_PACKAGES="locales locales-all python3-pip python3-setuptools python3-distutils python3-shapely python3-yaml python3-dateutil python3-tz python3-flask python3-flask-cors python3-unicodecsv python3-click python3-greenlet python3-gevent python3-wheel gunicorn libsqlite3-mod-spatialite ${ADD_DEB_PACKAGES}"
+    DEB_BUILD_DEPS="\
+      gcc-aarch64-linux-gnu \
+      curl \
+      python3-dev \
+      software-properties-common \
+      unzip" \
+    DEB_PACKAGES="\
+      gunicorn \
+      libsqlite3-mod-spatialite \
+      locales \
+      locales-all \
+      python3-dateutil \
+      python3-distutils \
+      python3-flask \
+      python3-flask-cors \
+      python3-gevent \
+      python3-greenlet \
+      python3-pip \
+      python3-setuptools \
+      python3-shapely \
+      python3-tz \
+      python3-unicodecsv \
+      python3-wheel \
+      python3-yaml \
+      ${ADD_DEB_PACKAGES}"
 
-RUN mkdir -p /pygeoapi/pygeoapi
-# Add files required for pip/setuptools
-ADD requirements*.txt setup.py README.md /pygeoapi/
-ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
-
-# Run all installs
+# Install operating system dependencies
 RUN \
-    # Install dependencies
     apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y --fix-missing --no-install-recommends ${DEB_BUILD_DEPS}  \
     && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
     && update-locale LANG=${LANG} \
-    && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)" \
+    && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"
+
+# OGC schemas local setup
+WORKDIR /schemas.opengis.net
+RUN \
+    curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
+    && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
+    && rm -f ./SCHEMAS_OPENGIS_NET.zip
+
+WORKDIR /pygeoapi
+RUN mkdir -p /pygeoapi/pygeoapi
+# Add files required for pip/setuptools
+ADD requirements*.txt setup.py README.md /pygeoapi/
+ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
+
+RUN \
     # Install pygeoapi
-    && cd /pygeoapi \
     # Optionally add development/test/doc packages
-    && if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
+    if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
     # Install pygeoapi providers
     && pip3 install -r requirements-provider.txt \
-    # Intall pygeopi
-    && pip3 install -e . \
-    # OGC schemas local setup
-    && mkdir /schemas.opengis.net \
-    && curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
-    && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
-    && rm -f ./SCHEMAS_OPENGIS_NET.zip \
+    # Install pygeoapi
+    && pip3 install -e .
+
+RUN \
     # Cleanup TODO: remove unused Locales and TZs
-    && apt-get remove --purge -y ${DEB_BUILD_DEPS} \
+    apt-get remove --purge -y ${DEB_BUILD_DEPS} \
     && apt autoremove -y  \
     && rm -rf /var/lib/apt/lists/*
 
@@ -109,5 +152,4 @@ ADD . /pygeoapi
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh
 
-WORKDIR /pygeoapi
 ENTRYPOINT ["/entrypoint.sh"]
