@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: 3.6
+    #      - python-version: 3.6
           - python-version: 3.7
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
@@ -106,4 +106,3 @@ jobs:
       if: ${{ failure() }}
       run: |
         pip3 list -v
-

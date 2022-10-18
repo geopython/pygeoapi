@@ -3,6 +3,7 @@ click>7,<=8
 Flask
 jsonschema
 pygeofilter
+pygeoif==0.7
 pyproj
 python-dateutil
 pytz
