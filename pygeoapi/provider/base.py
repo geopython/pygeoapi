@@ -29,8 +29,16 @@
 
 import json
 import logging
+from enum import Enum
 
 LOGGER = logging.getLogger(__name__)
+
+
+class SchemaType(Enum):
+    item = 'item'
+    create = 'create'
+    update = 'update'
+    replace = 'replace'
 
 
 class BaseProvider:
@@ -75,6 +83,18 @@ class BaseProvider:
         Get provider field information (names, types)
 
         :returns: dict of fields
+        """
+
+        raise NotImplementedError()
+
+    def get_schema(self, schema_type: SchemaType = SchemaType.item):
+        """
+        Get provider schema model
+
+        :param schema_type: `SchemaType` of schema (default is 'item')
+
+        :returns: tuple pair of `str` of media type and `dict` of schema
+                  (i.e. JSON Schema)
         """
 
         raise NotImplementedError()

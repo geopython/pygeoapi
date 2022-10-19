@@ -39,7 +39,7 @@ import yaml
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
-from pygeoapi.provider.base import ProviderTypeError
+from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
                            filter_providers_by_type, to_json, yaml_load)
 
@@ -523,25 +523,35 @@ def get_oas_30(cfg):
 
             if p.editable:
                 LOGGER.debug('Provider is editable; adding post')
+
                 paths[items_path]['post'] = {
                     'summary': 'Add {} items'.format(title),  # noqa
                     'description': desc,
                     'tags': [name],
                     'operationId': 'add{}Features'.format(name.capitalize()),
-                    'consumes': ['application/json'],
-                    'produces': ['application/json'],
-                    'parameters': [{
-                        'in': 'body',
-                        'name': 'body',
+                    'requestBody': {
                         'description': 'Adds item to collection',
-                        'required': True,
-                    }],
+                        'content': {
+                            'application/json': {
+                                'schema': {}
+                            }
+                        },
+                        'required': True
+                    },
                     'responses': {
                         '201': {'description': 'Successful creation'},
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                     }
                 }
+
+                try:
+                    schema_ref = p.get_schema(SchemaType.create)
+                    paths[items_path]['post']['requestBody']['content'][schema_ref[0]] = {  # noqa
+                        'schema': schema_ref[1]
+                    }
+                except Exception as err:
+                    LOGGER.debug(err)
 
             if ptype == 'record':
                 paths[items_path]['get']['parameters'].append(
@@ -631,36 +641,58 @@ def get_oas_30(cfg):
                 }
             }
 
+            try:
+                schema_ref = p.get_schema()
+                paths['{}/items/{{featureId}}'.format(collection_name_path)]['get']['responses']['200'] = {  # noqa
+                    'content': {
+                        schema_ref[0]: {
+                            'schema': schema_ref[1]
+                        }
+                    }
+                }
+            except Exception as err:
+                LOGGER.debug(err)
+
             if p.editable:
                 LOGGER.debug('Provider is editable; adding put/delete')
-                paths['{}/items/{{featureId}}'.format(collection_name_path)]['put'] = {  # noqa
+                put_path = '{}/items/{{featureId}}'.format(collection_name_path)  # noqa
+                paths[put_path]['put'] = {  # noqa
                     'summary': 'Update {} items'.format(title),
                     'description': desc,
                     'tags': [name],
                     'operationId': 'update{}Features'.format(name.capitalize()),  # noqa
-                    'consumes': ['application/json'],
-                    'produces': ['application/json'],
                     'parameters': [
                         {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
-                        {
-                            'in': 'body',
-                            'name': 'body',
-                            'description': 'Updates item in collection',
-                            'required': True,
-                        }
                     ],
+                    'requestBody': {
+                        'description': 'Updates item in collection',
+                        'content': {
+                            'application/json': {
+                                'schema': {}
+                            }
+                        },
+                        'required': True
+                    },
                     'responses': {
                         '204': {'description': 'Successful update'},
                         '400': {'$ref': '{}#/components/responses/InvalidParameter'.format(OPENAPI_YAML['oapif'])},  # noqa
                         '500': {'$ref': '{}#/components/responses/ServerError'.format(OPENAPI_YAML['oapif'])}  # noqa
                     }
                 }
+
+                try:
+                    schema_ref = p.get_schema(SchemaType.replace)
+                    paths[put_path]['put']['requestBody']['content'][schema_ref[0]] = {  # noqa
+                        'schema': schema_ref[1]
+                    }
+                except Exception as err:
+                    LOGGER.debug(err)
+
                 paths['{}/items/{{featureId}}'.format(collection_name_path)]['delete'] = {  # noqa
                     'summary': 'Delete {} items'.format(title),
                     'description': desc,
                     'tags': [name],
                     'operationId': 'delete{}Features'.format(name.capitalize()),  # noqa
-                    'produces': ['application/json'],
                     'parameters': [
                         {'$ref': '{}#/components/parameters/featureId'.format(OPENAPI_YAML['oapif'])},  # noqa
                     ],
