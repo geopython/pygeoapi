@@ -176,7 +176,7 @@ class PostgreSQLProvider(BaseProvider):
 
         fields = {}
         for column in self.table_model.__table__.columns:
-            fields[column.name] = {'type': str(column.type)}
+            fields[str(column.name)] = {'type': str(column.type)}
 
         fields.pop(self.geom)  # Exclude geometry column
 
