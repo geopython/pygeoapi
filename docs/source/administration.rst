@@ -28,7 +28,7 @@ This will dump the OpenAPI document as YAML to your system's ``stdout``.  To sav
 
    pygeoapi openapi generate /path/to/my-pygeoapi-config.yml > /path/to/my-pygeoapi-openapi.yml
 
-You can also write to a file explicitly via the ``--output-file`` option::
+You can also write to a file explicitly via the ``--output-file`` option:
 
 .. code-block:: bash
 
