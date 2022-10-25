@@ -28,7 +28,7 @@ PostgreSQL supports both CQL-JSON and CQL-text dialects, `CQL-JSON <https://port
 Queries
 ^^^^^^^
 
-The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions:
+The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions, see examples for:
 
 * `Comparison predicates <https://portal.ogc.org/files/96288#simple-cql_comparison-predicates>`_
 * `Spatial predicates <https://portal.ogc.org/files/96288#enhanced-spatial-operators>`_
@@ -43,7 +43,7 @@ Using ElasticSearch the following type of queries are supported right now:
 Examples
 ^^^^^^^^
 
-A ``between`` example for a specific property through an HTTP POST request:
+A ``BETWEEN`` example for a specific property through an HTTP POST request:
 
 .. code-block:: bash
 
@@ -55,6 +55,35 @@ A ``between`` example for a specific property through an HTTP POST request:
       "lower": 0.59,
       "upper": 0.60
     }
+  }'
+
+Or 
+
+.. code-block:: bash
+
+  curl --location --request POST 'https://ogcapi.bgs.ac.uk/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
+  --header 'Content-Type: application/query-cql-json' 
+  --data-raw '{ 
+    "between":{
+      "value":{"property": "ml"},
+      "lower":4,
+      "upper":4.5
+    }
+  }'
+
+The same ``BETWEEN`` query using HTTP GET request formatted as CQL text and URL encoded as below:
+
+.. code-block:: bash
+
+ curl "https://ogcapi.bgs.ac.uk/collections/recentearthquakes/items?f=json&limit=10&filter=ml%20BETWEEN%204%20AND%204.5"
+
+An ``EQUALS`` example for a specific property:
+
+.. code-block:: bash
+  curl --location --request POST 'https://ogcapi.bgs.ac.uk/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
+  --header 'Content-Type: application/query-cql-json' 
+  --data-raw '{
+      "eq":[{"property": "user_entered"},"APBE"]
   }'
 
 A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the ``filter`` parameter.
