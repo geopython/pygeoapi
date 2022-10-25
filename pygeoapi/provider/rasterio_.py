@@ -162,8 +162,8 @@ class RasterioProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, properties=[], subsets={}, bbox=[], datetime_=None,
-              format_='json', **kwargs):
+    def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
+              datetime_=None, format_='json', **kwargs):
         """
         Extract data from collection collection
         :param properties: list of bands
@@ -183,6 +183,9 @@ class RasterioProvider(BaseProvider):
         }
         shapes = []
 
+        if not bbox:
+            bbox = []
+
         if all([not bands, not subsets, not bbox, format_ != 'json']):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
@@ -197,7 +200,7 @@ class RasterioProvider(BaseProvider):
         if len(bbox) > 0:
             minx, miny, maxx, maxy = bbox
 
-            crs_src = CRS.from_epsg(4326)
+            crs_src = CRS.from_epsg(bbox_crs)
 
             if 'crs' in self.options:
                 crs_dest = CRS.from_string(self.options['crs'])

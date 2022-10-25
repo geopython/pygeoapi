@@ -20,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.7.14
           architecture: x64
       - name: Checkout pygeoapi
         uses: actions/checkout@master
