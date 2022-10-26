@@ -2216,7 +2216,7 @@ class API:
             LOGGER.debug('Creating item')
             try:
                 identifier = p.create(request.data)
-            except ProviderInvalidDataError as err:
+            except (ProviderInvalidDataError, TypeError) as err:
                 msg = str(err)
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
@@ -2230,7 +2230,7 @@ class API:
             LOGGER.debug('Updating item')
             try:
                 _ = p.update(identifier, request.data)
-            except ProviderGenericError as err:
+            except (ProviderInvalidDataError, TypeError) as err:
                 msg = str(err)
                 return self.get_exception(
                     400, headers, request.format, 'InvalidParameterValue', msg)
