@@ -9,6 +9,7 @@ on:
   workflow_run:
     workflows: ["Build"]
     types: [completed]
+    branches: [master]
     
 env:
   DOCKER_REPOSITORY: geopython/pygeoapi

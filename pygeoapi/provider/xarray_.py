@@ -183,14 +183,15 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, properties=[], subsets={}, bbox=[], datetime_=None,
-              format_='json', **kwargs):
+    def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
+              datetime_=None, format_='json', **kwargs):
         """
          Extract data from collection collection
 
         :param properties: list of data variables to return (all if blank)
         :param subsets: dict of subset names with lists of ranges
         :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param bbox_crs: CRS of bounding box
         :param datetime_: temporal (datestamp or extent)
         :param format_: data format of output
 
@@ -237,6 +238,8 @@ class XarrayProvider(BaseProvider):
                         slice(bbox[0], bbox[2])
                     query_params[self._coverage_properties['y_axis_label']] = \
                         slice(bbox[1], bbox[3])
+
+                LOGGER.debug('bbox_crs is not currently handled')
 
             if datetime_ is not None:
                 if self._coverage_properties['time_axis_label'] in subsets:
