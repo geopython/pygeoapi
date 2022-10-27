@@ -1469,7 +1469,7 @@ class API:
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
         # Currently only cql-text is handled, but it is optional
-        if filter_lang is not None and filter_lang != 'cql-text':
+        if filter_lang not in [None, 'cql-text']:
             msg = 'Invalid filter language'
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
@@ -1886,7 +1886,7 @@ class API:
                     400, headers, request.format,
                     'InvalidParameterValue', msg)
         else:
-            LOGGER.debug('processing ElasticSearch CQL_JSON data')
+            LOGGER.debug('processing Elasticsearch CQL_JSON data')
             try:
                 filter_ = CQLModel.parse_raw(data)
             except Exception as err:

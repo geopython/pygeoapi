@@ -250,7 +250,8 @@ class PostgreSQLProvider(BaseProvider):
             engine = create_engine(
                 conn_str,
                 connect_args={'client_encoding': 'utf8',
-                              'application_name': 'pygeoapi'})
+                              'application_name': 'pygeoapi'},
+                pool_pre_ping=True)
             _ENGINE_STORE[engine_store_key] = engine
 
         # Reuse table model if one exists

@@ -121,9 +121,10 @@ def test_query_with_config_properties(config):
     No properties should be returned that are not requested.
     Note that not all requested properties have to exist in the query result.
     """
-    config.update(
-        {'properties': ['name', 'waterway', 'width', 'does_not_exist']})
+    properties_subset = ['name', 'waterway', 'width', 'does_not_exist']
+    config.update({'properties': properties_subset})
     provider = PostgreSQLProvider(config)
+    assert provider.properties == properties_subset
     result = provider.query()
     feature = result.get('features')[0]
     properties = feature.get('properties', None)
