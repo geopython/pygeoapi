@@ -236,8 +236,7 @@ Must have PostGIS installed.
 This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
-
+  :ref:`cql` for more details on how to use the Common Query Language (CQL) to filter the collection with specific queries.
 
 SQLiteGPKG
 ^^^^^^^^^^
