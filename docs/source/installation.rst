@@ -52,7 +52,7 @@ Docker
 Using DockerHub
 ^^^^^^^^^^^^^^^
 
-`Docker image <https://hub.docker.com/r/geopython/pygeoapi>`_
+`Docker image`_
 
 .. code-block:: bash
 
@@ -61,7 +61,7 @@ Using DockerHub
 Using GitHub Container Registry   
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`Docker image <https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi>`_
+`Docker image`_
 
 .. code-block:: bash
 
@@ -101,3 +101,6 @@ Summary
 -------
 Congratulations!  Whichever of the abovementioned methods you chose, you have successfully installed pygeoapi
 onto your system.
+
+
+.. _`Docker image`: https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi

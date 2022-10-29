@@ -1875,6 +1875,7 @@ class API:
             return self.get_exception(
                 400, headers, request.format, 'InvalidParameterValue', msg)
 
+        # FIXME: remove testing backend in use once CQL support is normalized
         if p.name == 'PostgreSQL':
             LOGGER.debug('processing PostgreSQL CQL_JSON data')
             try:

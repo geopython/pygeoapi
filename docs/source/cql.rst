@@ -32,7 +32,7 @@ The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofil
 
 * `Comparison predicates <https://portal.ogc.org/files/96288#simple-cql_comparison-predicates>`_
 * `Spatial predicates <https://portal.ogc.org/files/96288#enhanced-spatial-operators>`_
-* `Temporal predicates <https://portal.ogc.org/files/96288#simple-cql_temporal>
+* `Temporal predicates <https://portal.ogc.org/files/96288#simple-cql_temporal>`_
 
 Using Elasticsearch the following type of queries are supported right now:
 
@@ -80,6 +80,7 @@ The same ``BETWEEN`` query using HTTP GET request formatted as CQL text and URL 
 An ``EQUALS`` example for a specific property:
 
 .. code-block:: bash
+
   curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
   --header 'Content-Type: application/query-cql-json' 
   --data-raw '{
@@ -92,4 +93,4 @@ A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the `
 
   curl "http://localhost:5000/collections/hot_osm_waterways/items?f=json&filter=CROSSES(foo_geom,%20LINESTRING(28%20-2,%2030%20-4))"
 
-Note the the CQL text has been URL encoded. This is required in CURL commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.
+Note that the CQL text has been URL encoded. This is required in curl commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.
