@@ -94,7 +94,7 @@ To publish an Elasticsearch index, the following are required in your index:
 This provider has the support for the CQL queries as indicated in the table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use the Common Query Language to filter the collection with specific queries.
+  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 
 ESRI Feature Service
@@ -209,6 +209,8 @@ MongoDB
          collection: testplaces
 
 
+.. _PostgreSQL:
+
 PostgreSQL
 ^^^^^^^^^^
 
@@ -236,7 +238,7 @@ Must have PostGIS installed.
 This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use the Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 SQLiteGPKG
 ^^^^^^^^^^
