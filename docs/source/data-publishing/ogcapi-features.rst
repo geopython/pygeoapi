@@ -24,7 +24,7 @@ parameters.
    GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
    MongoDB,✅/❌,results,✅,✅,✅,✅,❌,❌
    OGR,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   PostgreSQL,✅/✅,results/hits,✅,❌,✅,✅,❌,❌
+   PostgreSQL,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
    SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
    SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
    Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
@@ -214,7 +214,8 @@ PostgreSQL
 
 Must have PostGIS installed. 
 
-.. todo:: add overview and requirements
+.. note:: 
+   Geometry must be using EPSG:4326
 
 .. code-block:: yaml
 
@@ -232,6 +233,10 @@ Must have PostGIS installed.
          table: hotosm_bdi_waterways
          geom_field: foo_geom
 
+This provider has support for the CQL queries as indicated in the Provider table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use the Common Query Language (CQL) to filter the collection with specific queries.
 
 SQLiteGPKG
 ^^^^^^^^^^
