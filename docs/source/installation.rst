@@ -67,6 +67,44 @@ Using GitHub Container Registry
 
    docker pull ghcr.io/geopython/pygeoapi:latest   
 
+Kubenetes
+---------
+
+.. note:: 
+   If using the postgres provider we recommend setting nginx ingress affinity-mode to persistent, see below ingress example. 
+
+.. code-block:: bash
+   
+   ---
+   apiVersion: networking.k8s.io/v1
+   kind: Ingress
+   metadata:
+   name: ${KUBE_NAMESPACE}
+   labels:
+      app: ${KUBE_NAMESPACE}
+   annotations:
+      nginx.ingress.kubernetes.io/affinity: "cookie"
+      nginx.ingress.kubernetes.io/session-cookie-name: ${KUBE_NAMESPACE}
+      nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+      nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/affinity-mode: persistent
+      nginx.ingress.kubernetes.io/session-cookie-hash: sha1
+   spec:
+   ingressClassName: nginx
+   rules:
+   - host: ${APP_HOSTNAME}
+      http:
+         paths:
+         - path: /
+         pathType: Prefix
+         backend:
+            service:
+               name: ${KUBE_NAMESPACE}
+               port:
+               number: ${CONTAINER_PORT}
+
+
 Conda
 -----
 
