@@ -11,6 +11,9 @@ pytest-env
 coverage
 pyld
 
+# Debugging
+debugpy
+
 # PEP8
 flake8
 

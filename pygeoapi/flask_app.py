@@ -40,6 +40,32 @@ from pygeoapi.api import API
 from pygeoapi.util import get_mimetype, yaml_load
 
 
+def initialize_flask_server_debugger_if_needed():
+    if os.getenv("DEBUGPY"):
+
+        # Must be "true" or a port
+        if os.getenv('DEBUGPY').lower() == 'true':
+            debugport = 5678
+        else:
+            try:
+                debugport = int(os.getenv('DEBUGPY'))
+            except ValueError:
+                print("VS Code debugger disabled")
+                return
+
+        import multiprocessing
+
+        if multiprocessing.current_process().pid > 1:
+            import debugpy
+
+            debugpy.listen(("0.0.0.0", debugport))
+            print("⏳ VS Code debugger can now be attached,"
+                  + " press F5 in VS Code ⏳", flush=True)
+            debugpy.wait_for_client()
+            print("🎉 VS Code debugger attached, enjoy debugging 🎉",
+                  flush=True)
+
+
 CONFIG = None
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
@@ -61,6 +87,8 @@ BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 if CONFIG['server'].get('cors', False):
     from flask_cors import CORS
     CORS(APP)
+
+initialize_flask_server_debugger_if_needed()
 
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)

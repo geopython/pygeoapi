@@ -22,6 +22,51 @@ Tests can be run locally as part of development workflow.  They are also run on 
 To run all tests, simply run ``pytest`` in the repository.  To run a specific test file,
 run ``pytest tests/test_api.py``, for example.
 
+Debugging Using Debugpy (VS Code only)
+--------------------------------------
+
+To enable debug when running flask:
+
+.. code-block:: bash
+
+   # Enable debugpy with port default port 5678
+   export DEBUGPY=True
+   # Or specifiy the port
+   export DEBUGPY=9876
+
+
+Running pygeoapi with debugging in Docker:
+
+.. code-block:: bash
+   
+   docker build -t pygeoapi:devel --build-arg BUILD_DEV_IMAGE=true .
+   docker run  -e DEBUGPY=5678 -e WSGI_WORKERS=1 -e GEVENT_SUPPORT=True -p 5678:5678 -p 5000:80 -it  pygeoapi:devel
+
+
+Use the following VSCode launch.json entry:
+
+.. code-block:: json
+
+   {
+      "version": "0.2.0",
+      "configurations": [
+         {
+            "name": "Python: Docker Pygeoapi",
+            "type": "python",
+            "request": "attach",
+            "port": 5678,
+            "host": "localhost",
+            "pathMappings": [
+               {
+                  "localRoot": "${workspaceFolder}",
+                  "remoteRoot": "/pygeoapi"
+               }
+            ]
+         }
+      ]
+   }
+
+See `debugpy <https://github.com/microsoft/debugpy/>`_ and `VSCode Python Debugging <https://code.visualstudio.com/docs/python/debugging>`_ for more details on debugging.
 
 CQL extension lifecycle
 -----------------------
