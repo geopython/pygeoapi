@@ -240,7 +240,7 @@ This provider has support for the CQL queries as indicated in the Provider table
 .. seealso::
   :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
-It is possible to control the order and which properties are exposed/unexposed from a PostGreSQL table using ``properties``, see the example below. 
+It is possible to control the order and which properties are exposed/unexposed for any supported feature provider using ``properties``, see the example below. 
 
 .. code-block:: yaml
 
