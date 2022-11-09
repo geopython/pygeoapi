@@ -423,7 +423,7 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
         (fmts, mimes) = zip(*FORMAT_TYPES.items())
         # basic support for complex types (i.e. with "q=0.x")
         for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
@@ -605,6 +605,72 @@ class APIRequest:
 
         headers_ = {item[0]: item[1] for item in headers.items()}
         return headers_
+
+    def read_param(self, method: str, param_name: str):
+        """
+        Reads an input parameter from the service end point.
+        This function reads parameters provided via either GET or POST methods.
+        :param method: indicates if the parameter value should be read from
+        a GET or a POST request. Possible values are "GET" or "POST".
+        :param param_name: the name of the parameter to read.
+        :returns: the parameter value
+        """
+
+        # Depending on the method
+        result = None
+        if method == 'POST':
+            d = self.data
+            if d:
+                d = d.decode()
+                d = json.loads(d)
+                if param_name in d:
+                    result = d[param_name]
+
+        else:
+            result = self.params.get(param_name)
+
+        # Return the value of the given parameter name
+        return result
+
+    def read_bbox(self, method: str):
+        """
+        Reads a bbox input parameter from the service end point.
+        This function reads a bbox parameter in either GET or POST methods.
+        :param method: indicates if the parameter value should be read from
+        GET or POST fashion. Possible values are "GET" or "POST".
+        :returns: the bbox value
+        """
+
+        # Read the input
+        q_bbox = self.read_param(method, 'bbox')
+
+        # If found, validate it
+        if q_bbox:
+            q_bbox = validate_bbox(q_bbox)
+
+        return q_bbox
+
+    def read_bbox_parameters(self, method: str):
+        """
+        Reads a bbox and bbox-crs filters from the service end point.
+        This function reads spatial filter information in either GET or POST
+        http methods.
+        :param method: indicates if the parameter value should be read from GET
+        or POST fashion. Possible values are "GET" or "POST".
+        :returns: an array of spatial filters as provided in the service
+        request (bbox, bbox-crs).
+        """
+
+        bbox = None
+        bbox_crs = None
+
+        # Read the bbox if any
+        bbox = self.read_bbox(method)
+
+        # Read the bbox crs if any
+        bbox_crs = self.read_param(method, 'bbox-crs')
+
+        return bbox, bbox_crs
 
 
 class API:
@@ -1316,7 +1382,8 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
+        reserved_fieldnames = ['f', 'lang', 'bbox', 'bbox-crs',
+                               'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
                                'filter', 'filter-lang']
@@ -1369,20 +1436,19 @@ class API:
 
         resulttype = request.params.get('resulttype') or 'results'
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing bbox and bbox-crs parameters')
 
-        bbox = request.params.get('bbox')
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            bbox, bbox_crs = request.read_bbox_parameters("GET")  # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -1509,6 +1575,7 @@ class API:
         LOGGER.debug(f'resulttype: {resulttype}')
         LOGGER.debug(f'sortby: {sortby}')
         LOGGER.debug(f'bbox: {bbox}')
+        LOGGER.debug(f'bbox-crs: {bbox_crs}')
         LOGGER.debug(f'datetime: {datetime_}')
         LOGGER.debug(f'properties: {properties}')
         LOGGER.debug(f'select properties: {select_properties}')
@@ -1521,6 +1588,7 @@ class API:
         try:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
+                              bbox_crs=bbox_crs,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
                               select_properties=select_properties,
@@ -1747,20 +1815,19 @@ class API:
 
         resulttype = request.params.get('resulttype') or 'results'
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing bbox and bbox-crs parameters')
 
-        bbox = request.params.get('bbox')
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            bbox, bbox_crs = request.read_bbox_parameters("POST")  # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -1783,12 +1850,14 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
-            p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
+            p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             try:
-                p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
+                p = load_plugin('provider', provider_def)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
@@ -1876,6 +1945,7 @@ class API:
         LOGGER.debug(f'resulttype: {resulttype}')
         LOGGER.debug(f'sortby: {sortby}')
         LOGGER.debug(f'bbox: {bbox}')
+        LOGGER.debug(f'bbox-crs: {bbox_crs}')
         LOGGER.debug(f'datetime: {datetime_}')
         LOGGER.debug(f'properties: {select_properties}')
         LOGGER.debug(f'skipGeometry: {skip_geometry}')
@@ -1938,6 +2008,7 @@ class API:
         try:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
+                              bbox_crs=bbox_crs,
                               datetime_=datetime_, properties=properties,
                               sortby=sortby,
                               select_properties=select_properties,
@@ -2268,26 +2339,21 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
                 'NoApplicableCode', msg)
 
-        LOGGER.debug('Processing bbox parameter')
+        LOGGER.debug('Processing bbox and bbox-crs parameters')
 
-        bbox = request.params.get('bbox')
+        bbox = None
+        bbox_crs = None
+        try:
+            # Read the spatial filter parameters from the request
+            bbox, bbox_crs = request.read_bbox_parameters("GET")  # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, format_,
+                'InvalidParameterValue', msg)
 
         query_args['bbox'] = bbox
-
-        LOGGER.debug('Processing bbox-crs parameter')
-
-        bbox_crs = request.params.get('bbox-crs')
         if bbox_crs is not None:
             query_args['bbox_crs'] = bbox_crs
 

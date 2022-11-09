@@ -50,13 +50,13 @@ import logging
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
 
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc  # noqa
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.functions import ST_MakeEnvelope, ST_Transform, Find_SRID
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
 import shapely
@@ -99,10 +99,17 @@ class PostgreSQLProvider(BaseProvider):
         self._store_db_parameters(provider_def['data'])
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
+
+        # Read the table fields
         self.fields = self.get_fields()
+        LOGGER.debug('Fields: {}'.format(self.fields))
+
+        # Read the table SRID
+        self.srid = self.get_srid()
+        LOGGER.debug('SRID: {}'.format(self.srid))
 
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
+              bbox=[], bbox_crs=None, datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               filterq=None, **kwargs):
         """
@@ -114,6 +121,7 @@ class PostgreSQLProvider(BaseProvider):
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
         :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param bbox_crs: bounding box crs (default unspecified)
         :param datetime_: temporal (datestamp or extent)
         :param properties: list of tuples (name, value)
         :param sortby: list of dicts (property, order)
@@ -129,7 +137,7 @@ class PostgreSQLProvider(BaseProvider):
         # Prepare filters
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(filterq)
-        bbox_filter = self._get_bbox_filter(bbox)
+        bbox_filter = self._get_bbox_filter(bbox, bbox_crs)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
                                                              skip_geometry)
@@ -182,6 +190,21 @@ class PostgreSQLProvider(BaseProvider):
 
         return fields
 
+    def get_srid(self):
+        """
+        Return the srid of the underlying table
+
+        :returns: integer of the SRID
+        """
+        LOGGER.debug('Get SRID')
+
+        # Execute query within self-closing database Session context
+        srid = None
+        with Session(self._engine) as session:
+            srid = session.scalar(
+                       Find_SRID(self.schema, self.table, self.geom))
+        return srid
+
     def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
@@ -226,6 +249,7 @@ class PostgreSQLProvider(BaseProvider):
         self.db_port = parameters.get('port', 5432)
         self.db_name = parameters.get('dbname')
         self.db_search_path = parameters.get('search_path', ['public'])
+        self.schema = self.db_search_path[0]
         self._db_password = parameters.get('password')
 
     def _get_engine_and_table_model(self):
@@ -275,14 +299,13 @@ class PostgreSQLProvider(BaseProvider):
 
         # Look for table in the first schema in the search path
         try:
-            schema = self.db_search_path[0]
-            metadata.reflect(schema=schema, only=[self.table], views=True)
+            metadata.reflect(schema=self.schema, only=[self.table], views=True)
         except OperationalError:
             msg = (f"Could not connect to {repr(engine.url)} "
                    "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
-            msg = (f"Table '{self.table}' not found in schema '{schema}' "
+            msg = (f"Table '{self.table}' not found in schema '{self.schema}' "
                    f"on {repr(engine.url)}.")
             raise ProviderQueryError(msg)
 
@@ -290,14 +313,15 @@ class PostgreSQLProvider(BaseProvider):
         # It is necessary to add the primary key constraint because SQLAlchemy
         # requires it to reflect the table, but a view in a PostgreSQL database
         # does not have a primary key defined.
-        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
+        sqlalchemy_table_def = metadata.tables[f'{self.schema}.{self.table}']
+
         try:
             sqlalchemy_table_def.append_constraint(
                 PrimaryKeyConstraint(self.id_field)
             )
         except KeyError:
             msg = (f"No such id_field column ({self.id_field}) on "
-                   f"{schema}.{self.table}.")
+                   f"{self.schema}.{self.table}.")
             raise ProviderQueryError(msg)
 
         Base = automap_base(metadata=metadata)
@@ -368,12 +392,23 @@ class PostgreSQLProvider(BaseProvider):
 
         return property_filters
 
-    def _get_bbox_filter(self, bbox):
+    def _get_bbox_filter(self, bbox, bbox_crs):
         if not bbox:
             return True  # Let everything through
 
-        # Convert bbx to SQL Alchemy clauses
-        envelope = ST_MakeEnvelope(*bbox)
+        # If a bbox_crs is specified
+        if bbox_crs:
+            # Append the srid to the bbox coordinates
+            bbox.append(int(bbox_crs))
+            # Make the bbox envelope
+            envelope = ST_MakeEnvelope(*bbox)
+            # Project the bbox's to the SRID of the table
+            envelope = ST_Transform(envelope, self.srid)
+
+        else:
+            # Make the bbox envelope assuming the same crs as the data
+            envelope = ST_MakeEnvelope(*bbox)
+
         geom_column = getattr(self.table_model, self.geom)
         bbox_filter = geom_column.intersects(envelope)
 
