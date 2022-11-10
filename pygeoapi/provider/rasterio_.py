@@ -202,7 +202,7 @@ class RasterioProvider(BaseProvider):
 
             crs_src = CRS.from_epsg(bbox_crs)
 
-            if 'crs' in self.options:
+            if self.options and 'crs' in self.options:
                 crs_dest = CRS.from_string(self.options['crs'])
             else:
                 crs_dest = self._data.crs
