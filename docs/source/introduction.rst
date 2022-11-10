@@ -9,12 +9,14 @@ Features
 --------
 
 * out of the box modern OGC API server
-* certified OGC Compliant and Reference Implementation for OGC API - Features
+* certified OGC Compliant and Reference Implementation
+  * OGC API - Features
+  * OGC API - Environmental Data Retrieval
 * additionally implements
   * OGC API - Coverages
   * OGC API - Tiles
   * OGC API - Processes
-  * OGC API - Environmental Data Retrieval
+  * OGC API - Records
   * SpatioTemporal Asset Library
 * out of the box data provider plugins for rasterio, GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
 * easy to use OpenAPI / Swagger documentation for developers
@@ -46,7 +48,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
    `OGC API - Tiles`_,Implementing
    `OGC API - Processes`_,Implementing
    `OGC API - Records`_,Implementing
-   `OGC API - Environmental Data Retrieval`_,Implementing
+   `OGC API - Environmental Data Retrieval`_,Reference Implementation
    `SpatioTemporal Asset Catalog`_,Implementing
 
 
