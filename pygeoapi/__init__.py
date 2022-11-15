@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-__version__ = '0.13.0'
+__version__ = '0.14.dev0'
 
 import click
 from pygeoapi.config import config
