@@ -29,6 +29,8 @@ Connection examples
 
 ElasticsearchCatalogue
 ^^^^^^^^^^^^^^^^^^^^^^
+.. note::
+   Requires Python packages elasticsearch and elasticsearch-dsl
 
 .. note::
    Elasticsearch 7 or greater is supported.
@@ -50,10 +52,8 @@ To publish an Elasticsearch index, the following are required in your index:
 
 TinyDBCatalogue
 ^^^^^^^^^^^^^^^
-
 .. note::
-   Elasticsearch 7 or greater is supported.
-
+   Requires Python package tinydb
 
 To publish a TinyDB index, the following are required in your index:
 

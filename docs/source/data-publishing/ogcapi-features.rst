@@ -73,6 +73,9 @@ Elasticsearch
 ^^^^^^^^^^^^^
 
 .. note::
+   Requires Python packages elasticsearch and elasticsearch-dsl
+
+.. note::
    Elasticsearch 7 or greater is supported.
 
 
@@ -123,6 +126,9 @@ specify the URL for the service layer in the ``data`` field.
 
 OGR
 ^^^
+
+.. note::
+   Requires Python package gdal
 
 `GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,  
 but also services such as WFS. Read the full list and configuration options at https://gdal.org/drivers/vector.
@@ -196,6 +202,9 @@ MongoDB
 ^^^^^^^
 
 .. note::
+   Requires Python package pymongo
+
+.. note::
    Mongo 5 or greater is supported.
 
 * each document must be a GeoJSON Feature, with a valid geometry.
@@ -213,6 +222,9 @@ MongoDB
 
 PostgreSQL
 ^^^^^^^^^^
+
+.. note::
+   Requires Python packages sqlalchemy, geoalchemy2 and psycopg2-binary
 
 Must have PostGIS installed. 
 
@@ -243,7 +255,8 @@ This provider has support for the CQL queries as indicated in the Provider table
 SQLiteGPKG
 ^^^^^^^^^^
 
-.. todo:: add overview and requirements
+.. note::
+   Requries Spatialite installation
 
 SQLite file:
 

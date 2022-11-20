@@ -31,6 +31,9 @@ Connection examples
 xarray-edr
 ^^^^^^^^^^
 
+.. note::
+   Requires Python package xarray
+
 The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data via `xarray`_.
 
 .. code-block:: yaml
