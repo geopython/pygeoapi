@@ -27,9 +27,12 @@
 #
 # =================================================================
 
+from numpy import float64, int64
+
 import pytest
 
 from pygeoapi.provider.xarray_ import XarrayProvider
+from pygeoapi.util import json_serial
 
 from .util import get_test_file_path
 
@@ -86,3 +89,11 @@ def test_query(config):
 
     data = p.query(format_='zarr')
     assert isinstance(data, bytes)
+
+
+def test_numpy_json_serial():
+    d = int64(500_000_000_000)
+    assert json_serial(d) == 500_000_000_000
+
+    d = float64(500.00000005)
+    assert json_serial(d) == 500.00000005
