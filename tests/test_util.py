@@ -29,7 +29,6 @@
 
 from datetime import datetime, date, time
 from decimal import Decimal
-from numpy import float64, int64
 
 import pytest
 
@@ -87,12 +86,6 @@ def test_json_serial():
 
     d = Decimal(1.0)
     assert util.json_serial(d) == 1.0
-
-    d = int64(500_000_000_000)
-    assert util.json_serial(d) == 500_000_000_000
-
-    d = float64(500.00000005)
-    assert util.json_serial(d) == 500.00000005
 
     with pytest.raises(TypeError):
         util.json_serial('foo')
