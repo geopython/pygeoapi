@@ -30,6 +30,9 @@ Connection examples
 rasterio
 ^^^^^^^^
 
+.. note::
+   Requires Python package rasterio
+
 The `rasterio`_ provider plugin reads and extracts any data that rasterio is
 capable of handling.
 
@@ -51,6 +54,9 @@ capable of handling.
 
 xarray
 ^^^^^^
+
+.. note::
+   Requires Python package xarray
 
 The `xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
 
