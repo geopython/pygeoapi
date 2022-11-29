@@ -299,11 +299,33 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
     return get_response(api_.get_collection_coverage_rangetype(
         request, collection_id))
+
+
+@app.route('/collections/{collection_id:path}/map')
+@app.route('/collections/{collection_id:path}/styles/{style_id:path}/map')
+async def collection_map(request: Request, collection_id, style_id=None):
+    """
+    OGC API - Maps map render endpoint
+
+    :param collection_id: collection identifier
+    :param style_id: style identifier
+
+    :returns: HTTP response
+    """
+
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+    if 'style_id' in request.path_params:
+        style_id = request.path_params['style_id']
+
+    return get_response(api_.get_collection_map(
+        request, collection_id, style_id))
 
 
 @app.route('/processes')

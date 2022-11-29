@@ -92,12 +92,14 @@ F_JSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
+F_PNG = 'png'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
+    (F_PNG, 'image/png')
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -124,6 +126,9 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-rangesubset',  # noqa
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-bbox',  # noqa
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-datetime'  # noqa
+    ],
+    'map': [
+        'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
     ],
     'tile': [
         'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core'
@@ -1095,6 +1100,25 @@ class API:
                     'title': 'Tiles as HTML',
                     'href': '{}/{}/tiles?f={}'.format(
                         self.get_collections_url(), k, F_HTML)
+                })
+
+            try:
+                map_ = get_provider_by_type(v['providers'], 'map')
+            except ProviderTypeError:
+                map_ = None
+
+            if map_:
+                LOGGER.debug('Adding map links')
+
+                map_mimetype = map_['format']['mimetype']
+                map_format = map_['format']['name']
+
+                collection['links'].append({
+                    'type': map_mimetype,
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/map',
+                    'title': 'Map as {}'.format(map_format),
+                    'href': '{}/collections/{}/map?f={}'.format(
+                        self.config['server']['url'], k, map_format)
                 })
 
             try:
@@ -2736,6 +2760,233 @@ class API:
 
     @gzip
     @pre_process
+    def get_collection_map(self, request: Union[APIRequest, Any],
+                           dataset, style=None) -> Tuple[dict, int, str]:
+        """
+        Returns a subset of a collection map
+
+        :param request: A request object
+        :param dataset: dataset name
+        :param style: style name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        query_args = {
+            'crs': 'CRS84'
+        }
+
+        format_ = request.format or 'png'
+        headers = request.get_response_headers()
+
+        LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'map')
+
+            p = load_plugin('provider', collection_def)
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'collection does not exist'
+            }
+            headers['Content-type'] = 'application/json'
+            LOGGER.error(exception)
+            return headers, 404, to_json(exception, self.pretty_print)
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            headers['Content-type'] = 'application/json'
+            LOGGER.error(exception)
+            return headers, 400, to_json(exception, self.pretty_print)
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            headers['Content-type'] = 'application/json'
+            LOGGER.error(exception)
+            return headers, 500, to_json(exception, self.pretty_print)
+
+        query_args['format_'] = request.params.get('f', 'png')
+        query_args['style'] = style
+        query_args['crs'] = request.params.get('crs', 4326)
+        query_args['transparent'] = request.params.get('transparent', True)
+
+        try:
+            query_args['width'] = int(request.params.get('width', 500))
+            query_args['height'] = int(request.params.get('height', 300))
+        except ValueError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid width/height/crs'
+            }
+            headers['Content-type'] = 'application/json'
+            LOGGER.error(exception)
+            return headers, 400, to_json(exception, self.pretty_print)
+
+        LOGGER.debug('Processing bbox parameter')
+        try:
+            bbox = request.params.get('bbox').split(',')
+            if len(bbox) != 4:
+                exception = {
+                    'code': 'InvalidParameterValue',
+                    'description': 'bbox values should be minx,miny,maxx,maxy'
+                }
+                headers['Content-type'] = 'application/json'
+                LOGGER.error(exception)
+                return headers, 400, to_json(exception, self.pretty_print)
+        except AttributeError:
+            bbox = self.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
+        try:
+            query_args['bbox'] = [float(c) for c in bbox]
+        except ValueError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'bbox values must be numbers'
+            }
+            headers['Content-type'] = 'application/json'
+            LOGGER.error(exception)
+            return headers, 400, to_json(exception, self.pretty_print)
+
+        LOGGER.debug('Generating map')
+        try:
+            data = p.query(**query_args)
+        except ProviderInvalidQueryError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error: {}'.format(err),
+            }
+            LOGGER.error(exception)
+            headers['Content-type'] = 'application/json'
+            return headers, 400, to_json(exception, self.pretty_print)
+        except ProviderNoDataError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'No data found'
+            }
+            LOGGER.debug(exception)
+            headers['Content-type'] = 'application/json'
+            return headers, 204, to_json(exception, self.pretty_print)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            headers['Content-type'] = 'application/json'
+            return headers, 500, to_json(exception, self.pretty_print)
+
+        mt = collection_def['format']['name']
+
+        if format_ == mt:
+            headers['Content-Type'] = collection_def['format']['mimetype']
+            return headers, 200, data
+        elif format_ in [None, 'html']:
+            headers['Content-Type'] = collection_def['format']['mimetype']
+            return headers, 200, data
+        else:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid format parameter'
+            }
+            LOGGER.error(exception)
+            return headers, 400, to_json(data, self.pretty_print)
+
+    @gzip
+    def get_collection_map_legend(
+            self, request: Union[APIRequest, Any],
+            dataset, style=None) -> Tuple[dict, int, str]:
+        """
+        Returns a subset of a collection map legend
+
+        :param request: A request object
+        :param dataset: dataset name
+        :param style: style name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        format_ = 'png'
+        headers = request.get_response_headers()
+
+        LOGGER.debug('Processing query parameters')
+
+        LOGGER.debug('Loading provider')
+        try:
+            collection_def = get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'map')
+
+            p = load_plugin('provider', collection_def)
+        except KeyError:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'collection does not exist'
+            }
+            LOGGER.error(exception)
+            return headers, 404, to_json(exception, self.pretty_print)
+        except ProviderTypeError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'invalid provider type'
+            }
+            LOGGER.error(exception)
+            return headers, 400, to_json(exception, self.pretty_print)
+        except ProviderConnectionError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'connection error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers, 500, to_json(exception, self.pretty_print)
+
+        LOGGER.debug('Generating legend')
+        try:
+            data = p.get_legend(style, request.params.get('f', 'png'))
+        except ProviderInvalidQueryError as err:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error: {}'.format(err),
+            }
+            LOGGER.error(exception)
+            return headers, 400, to_json(exception, self.pretty_print)
+        except ProviderNoDataError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'No data found'
+            }
+            LOGGER.debug(exception)
+            return headers, 204, to_json(exception, self.pretty_print)
+        except ProviderQueryError:
+            exception = {
+                'code': 'NoApplicableCode',
+                'description': 'query error (check logs)'
+            }
+            LOGGER.error(exception)
+            return headers, 500, to_json(exception, self.pretty_print)
+
+        mt = collection_def['format']['name']
+
+        if format_ == mt:
+            headers['Content-Type'] = collection_def['format']['mimetype']
+            return headers, 200, data
+        else:
+            exception = {
+                'code': 'InvalidParameterValue',
+                'description': 'invalid format parameter'
+            }
+            LOGGER.error(exception)
+            return headers, 400, to_json(data, self.pretty_print)
+
+    @gzip
+    @pre_process
     @jsonldify
     def describe_processes(self, request: Union[APIRequest, Any],
                            process=None) -> Tuple[dict, int, str]:
@@ -2881,7 +3132,6 @@ class API:
 
         if self.manager:
             if job_id is None:
-                print(self.manager.get_jobs())
                 jobs = sorted(self.manager.get_jobs(),
                               key=lambda k: k['job_start_datetime'],
                               reverse=True)

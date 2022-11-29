@@ -77,6 +77,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-tinydb \
     python3-xarray \
     python3-zarr \
+    python3-mapscript \
     "
 
 # ENV settings
