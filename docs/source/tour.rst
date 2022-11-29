@@ -141,6 +141,16 @@ http://localhost:5000/collections/gdps-temperature/coverage
 .. seealso::
    :ref:`ogcapi-coverages` for more OGC API - Coverages request exampless.
 
+Maps
+----
+
+Datasets can be made available as dynamic maps:
+
+http://localhost:5000/collections/mapserver_world_map/map
+
+.. seealso::
+   :ref:`ogcapi-maps` for more OGC API - Maps request examples.
+
 Tiles
 -----
 

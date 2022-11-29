@@ -438,7 +438,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 21
+    assert len(root['conformsTo']) == 22
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)
@@ -465,7 +465,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 6
+    assert len(collections['collections']) == 7
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -1294,6 +1294,19 @@ def test_get_collection_coverage(config, api_):
     # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
     #
     # assert code == 204
+
+
+def test_get_collection_map(config, api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_map(req, 'notfound')
+    assert code == 404
+
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_map(
+        req, 'mapserver_world_map')
+    assert code == 200
+    assert isinstance(response, bytes)
+    assert response[1:4] == b'PNG'
 
 
 def test_get_collection_tiles(config, api_):

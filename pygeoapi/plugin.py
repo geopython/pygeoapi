@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -50,6 +50,8 @@ PLUGINS = {
         'Hateoas': 'pygeoapi.provider.hateoas.HateoasProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
+        'MapScript': 'pygeoapi.provider.mapscript_.MapScriptProvider',
+        'WMSFacade': 'pygeoapi.provider.wms_facade.WMSFacadeProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',

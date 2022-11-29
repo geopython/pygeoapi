@@ -20,6 +20,7 @@ return back data to the pygeoapi API framework in a plug and play fashion.
 
    ogcapi-features
    ogcapi-coverages
+   ogcapi-maps
    ogcapi-tiles
    ogcapi-processes
    ogcapi-records

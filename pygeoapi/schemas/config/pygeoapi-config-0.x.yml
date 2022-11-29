@@ -348,6 +348,7 @@ properties:
                                               - feature
                                               - coverage
                                               - record
+                                              - map
                                               - tile
                                               - edr
                                               - stac
