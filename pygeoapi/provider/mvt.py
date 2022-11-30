@@ -204,9 +204,20 @@ class MVTProvider(BaseTileProvider):
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
                 session.get(base_url)
-                resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
-                    base_url=base_url, lyr=layer,
-                    z=z, y=y, x=x, f=format_))
+                # There is a "." in the url path
+                if '.' in url.path:
+                    resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}{q}'.format(
+                        base_url=base_url, lyr=layer,
+                        z=z, y=y, x=x, f=format_, q= "?" + url.query
+                    if url.query else ''))
+
+                # There is no "." in the url )e.g. elasticsearch)
+                else:
+                    LOGGER.error("no dot")
+                    resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}{q}'.format(
+                        base_url=base_url, lyr=layer,
+                        z=z, y=y, x=x, q= "?" + url.query
+                    if url.query else ''))
                 resp.raise_for_status()
                 return resp.content
         else:
