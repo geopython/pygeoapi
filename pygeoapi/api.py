@@ -1046,6 +1046,13 @@ class API:
                     'href': '{}/{}/coverage?f={}'.format(
                         self.get_collections_url(), k, F_JSON)
                 })
+                collection['links'].append({
+                    'type': 'text/html',
+                    'rel': '{}/coverage'.format(OGC_RELTYPES_BASE),
+                    'title': 'Coverage viewer',
+                    'href': '{}/{}/coverage'.format(
+                        self.get_collections_url(), k)
+                })
                 if collection_data_format is not None:
                     collection['links'].append({
                         'type': collection_data_format['mimetype'],
