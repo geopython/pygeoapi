@@ -266,7 +266,7 @@ def get_collection_tiles(collection_id=None):
     return get_response(api_.get_collection_tiles(
         request, collection_id))
 
-
+@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
 def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
