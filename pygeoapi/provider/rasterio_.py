@@ -176,7 +176,7 @@ class RasterioProvider(BaseProvider):
         """
 
         bands = properties
-        LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
+        LOGGER.debug('Format: {}, bands: {}, subsets: {}'.format(format_, bands, subsets))
 
         args = {
             'indexes': None
@@ -186,7 +186,7 @@ class RasterioProvider(BaseProvider):
         if not bbox:
             bbox = []
 
-        if all([not bands, not subsets, not bbox, format_ != 'json']):
+        if all([not bands, not subsets, not bbox, format_ != 'json', format_ != 'metadata']):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
 
@@ -274,7 +274,8 @@ class RasterioProvider(BaseProvider):
                 for key, value in self.options.items():
                     out_meta[key] = value
 
-            if shapes:  # spatial subset
+            if shapes:
+                # Read pixels using spatial subset
                 try:
                     LOGGER.debug('Clipping data with bbox')
                     out_image, out_transform = rasterio.mask.mask(
@@ -291,7 +292,11 @@ class RasterioProvider(BaseProvider):
                                  'height': out_image.shape[1],
                                  'width': out_image.shape[2],
                                  'transform': out_transform})
-            else:  # no spatial subset
+            elif format_ == 'metadata':
+                # When querying metadata only, skip reading the pixels
+                pass
+            else:
+                # Read pixels using no spatial subset
                 LOGGER.debug('Creating data in memory with band selection')
                 out_image = _data.read(indexes=args['indexes'])
 
@@ -311,6 +316,11 @@ class RasterioProvider(BaseProvider):
                 ]
 
             out_meta['units'] = _data.units
+
+            if format_ == 'metadata':
+                LOGGER.debug('Returning coverage metadata only')
+                out_meta['crs'] = str( self._coverage_properties['bbox_crs'] )
+                return out_meta
 
             LOGGER.debug('Serializing data in memory')
             with MemoryFile() as memfile:

@@ -22,7 +22,7 @@ main {
 /*    text-transform: capitalize;*/
 }
 
-#items-map, #collection-map {
+#items-map, #collection-map, #coverage-map {
     width: 100%;
     height: 400px;
 }

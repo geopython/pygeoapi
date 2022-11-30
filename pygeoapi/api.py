@@ -2196,11 +2196,10 @@ class API:
         """
 
         query_args = {}
-        format_ = F_JSON
+        format_ = request.format or F_HTML
 
         # Force response content type and language (en-US only) headers
-        headers = request.get_response_headers(SYSTEM_LOCALE,
-                                               FORMAT_TYPES[F_JSON])
+        headers = request.get_response_headers(self.default_locale)
 
         LOGGER.debug('Loading provider')
         try:
@@ -2274,6 +2273,12 @@ class API:
                     return self.get_exception(
                         400, headers, format_, 'InvalidParameterValue', msg)
 
+        # If requesting HTML, do **not** request data to the rasterio backend
+        # connector - a web browser will make a second separate request for the
+        # data in a different format right away
+        if format_ == F_HTML:
+            query_args['format_'] = 'metadata'
+
         if 'subset' in request.params:
             LOGGER.debug('Processing subset parameter')
             try:
@@ -2317,6 +2322,20 @@ class API:
 
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
+        elif format_ == F_HTML:
+            LOGGER.debug(data)
+
+            data['id'] = dataset
+            data['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'],
+                self.default_locale)
+            data['collections_path'] = self.get_collections_url()
+            data['bounds'] = \
+                self.config['resources'][dataset]['extents']['spatial']['bbox']
+            content = render_j2_template(self.config,
+                                        'collections/coverage/index.html',
+                                        data, self.default_locale)
+            return headers, 200, content
         elif format_ == F_JSON:
             headers['Content-Type'] = 'application/prs.coverage+json'
             return headers, 200, to_json(data, self.pretty_print)
