@@ -263,7 +263,7 @@ class MVTProvider(BaseTileProvider):
                     raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, tilejson=True, **kwargs):
+                     tileset=None, metadata_format=None, **kwargs):
         """
         Gets tile metadata
 
@@ -271,9 +271,10 @@ class MVTProvider(BaseTileProvider):
         :param server_url: server base url
         :param layer: mvt tile layer name
         :param tileset: mvt tileset name
-        :param tilejson: `bool` for the returning json structure
-                        if True it returns MapBox TileJSON 3.0
-                        otherwise the raw JSON is served
+        :param metadata_format: format for metadata,
+                        default is Tileset Metadata
+                        tilejson is TileJSON 3.0
+                        customjson loads the raw custom json
 
         :returns: `dict` of JSON metadata
         """
@@ -295,7 +296,8 @@ class MVTProvider(BaseTileProvider):
                 raise ProviderConnectionError(msg)
             with open(self.service_metadata_url, 'r') as md_file:
                 content = json.loads(md_file.read())
-        if tilejson:
+
+        if metadata_format == 'tilejson':
             service_url = urljoin(
                 server_url,
                 'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
@@ -314,7 +316,33 @@ class MVTProvider(BaseTileProvider):
                 "vector_layers": json.loads(
                     content["json"])["vector_layers"]
             }
-        else:
+        elif metadata_format == 'customjson':
             content['json'] = json.loads(content['json'])
+        else:
+            tiling_schemes = self.get_tiling_schemes()
+            # Default values
+            tileMatrixSetURI = tiling_schemes[0]['tileMatrixSetURI']
+            crs = tiling_schemes[0]['crs']
+            # Checking the selected matrix in configured tiling_schemes
+            for schema in tiling_schemes:
+                if (schema['tileMatrixSet'] == tileset):
+                    crs = schema['crs']
+                    tileMatrixSetURI = schema['tileMatrixSetURI']
+
+            content = {
+                "title": layer,
+                # "description": None,
+                # "keywords": None,
+                "dataType": "vector",
+                # "accessConstraints": None,
+                "crs": crs,
+                # "epoch": None,
+                # "links": None,
+                # "layers": None,
+                "tileMatrixSetURI": tileMatrixSetURI,
+                # "tileMatrixSetLimits": None,
+                # "boundingBox": None,
+                # "centerPoint": None
+            }
 
         return content

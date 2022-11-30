@@ -2729,12 +2729,11 @@ class API:
                                       'NotFound', msg)
 
         metadata_format = p.options['metadata_format']
-        tilejson = True if (metadata_format == 'tilejson') else False
 
         tiles_metadata = p.get_metadata(
             dataset=dataset, server_url=self.config['server']['url'],
-            layer=p.get_layer(), tileset=matrix_id, tilejson=tilejson,
-            language=prv_locale)
+            layer=p.get_layer(), tileset=matrix_id,
+            metadata_format=metadata_format, language=prv_locale)
 
         # Set response language to requested provider locale
         # (if it supports language) and/or otherwise the requested pygeoapi
