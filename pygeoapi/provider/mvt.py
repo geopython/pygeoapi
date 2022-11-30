@@ -60,14 +60,14 @@ class MVTProvider(BaseTileProvider):
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
 
-            # try x,y,z - this works for mapbox, ES         
+            # try x,y,z - this works for mapbox, ES
             layer = url.path.split('/{z}/{x}/{y}')[0]
             # try z,y,x - this works for OS Data Hub
             layer = layer.split('/{z}/{y}/{x}')[0]
             # Do we need to try different combinations?
 
             if ('.' in layer):
-                layer=layer.split('.')[0]
+                layer = layer.split('.')[0]
 
             tilepath = '{}/tiles'.format(layer)
             servicepath = \
@@ -80,15 +80,11 @@ class MVTProvider(BaseTileProvider):
                     param_type
                     )
 
-            self._service_url = url_join(baseurl, servicepath
-            )
+            self._service_url = url_join(baseurl, servicepath)
 
             self._service_metadata_url = urljoin(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
-
-
-
         else:
             data_path = Path(self.data)
             if not data_path.exists():
@@ -119,7 +115,8 @@ class MVTProvider(BaseTileProvider):
 
         if is_url(self.data):
             url = urlparse(self.data)
-            # We need to try, at least these different variations that I have seen across products (maybe there more??)
+            # We need to try, at least these different variations that
+            # I have seen across products (maybe there more??)
             layer = url.path.split("/{z}/{x}/{y}")[0]
             layer = layer.split("/{z}/{y}/{x}")[0]
             return layer[1:]
@@ -217,24 +214,25 @@ class MVTProvider(BaseTileProvider):
         """
         if format_ == "mvt":
             format_ = self.format_type
-        if is_url(self.data):            
+        if is_url(self.data):
             url = urlparse(self.data)
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
                 session.get(base_url)
                 # There is a "." in the url path
                 if '.' in url.path:
-                    resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}{q}'.format(
-                        base_url=base_url, lyr=layer,
-                        z=z, y=y, x=x, f=format_, q= "?" + url.query
-                    if url.query else ''))
+                    resp = session.get(
+                        '{base_url}/{lyr}/{z}/{y}/{x}.{f}{q}'.format(
+                            base_url=base_url, lyr=layer,
+                            z=z, y=y, x=x, f=format_, q="?" + url.query
+                            if url.query else ''))
                 # There is no "." in the url )e.g. elasticsearch)
                 else:
-                    LOGGER.error("no dot")
-                    resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}{q}'.format(
-                        base_url=base_url, lyr=layer,
-                        z=z, y=y, x=x, q= "?" + url.query
-                    if url.query else ''))
+                    resp = session.get(
+                        '{base_url}/{lyr}/{z}/{y}/{x}{q}'.format(
+                            base_url=base_url, lyr=layer,
+                            z=z, y=y, x=x, q="?" + url.query
+                            if url.query else ''))
                 resp.raise_for_status()
                 return resp.content
         else:
