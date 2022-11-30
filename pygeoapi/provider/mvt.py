@@ -59,7 +59,16 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
+
+            # try x,y,z - this works for mapbox, ES         
             layer = url.path.split('/{z}/{x}/{y}')[0]
+            # try z,y,x - this works for OS Data Hub
+            layer = layer.split('/{z}/{y}/{x}')[0]
+            # Do we need to try different combinations?
+
+            if ('.' in layer):
+                layer=layer.split('.')[0]
+
             tilepath = '{}/tiles'.format(layer)
             servicepath = \
                 '{}/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
@@ -68,12 +77,18 @@ class MVTProvider(BaseTileProvider):
                     'tileMatrix',
                     'tileRow',
                     'tileCol',
-                    param_type)
+                    param_type
+                    )
 
-            self._service_url = url_join(baseurl, servicepath)
+            self._service_url = url_join(baseurl, servicepath
+            )
+
             self._service_metadata_url = urljoin(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
+
+
+
         else:
             data_path = Path(self.data)
             if not data_path.exists():
@@ -104,7 +119,10 @@ class MVTProvider(BaseTileProvider):
 
         if is_url(self.data):
             url = urlparse(self.data)
-            return url.path.split("/{z}/{x}/{y}")[0][1:]
+            # We need to try, at least these different variations that I have seen across products (maybe there more??)
+            layer = url.path.split("/{z}/{x}/{y}")[0]
+            layer = layer.split("/{z}/{y}/{x}")[0]
+            return layer[1:]
         else:
             return Path(self.data).name
 
@@ -199,7 +217,7 @@ class MVTProvider(BaseTileProvider):
         """
         if format_ == "mvt":
             format_ = self.format_type
-        if is_url(self.data):
+        if is_url(self.data):            
             url = urlparse(self.data)
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
@@ -210,7 +228,6 @@ class MVTProvider(BaseTileProvider):
                         base_url=base_url, lyr=layer,
                         z=z, y=y, x=x, f=format_, q= "?" + url.query
                     if url.query else ''))
-
                 # There is no "." in the url )e.g. elasticsearch)
                 else:
                     LOGGER.error("no dot")
