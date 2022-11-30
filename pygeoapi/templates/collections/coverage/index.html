@@ -30,7 +30,6 @@
 	<div>Width: {{data.width}}</div>
 	<div>Height: {{data.height}}</div>
 	<div>CRS: {{data.crs}}</div>
-	ghuhgreihgerugrsreus
 </div>
 {% endblock %}
 
@@ -57,15 +56,10 @@
     if (crs === "http://www.opengis.net/def/crs/OGC/1.3/CRS84") {
       subdivisions = 4;
       cropY = [-89,89];
-    //   proj4str = "EPSG:4326";
-    // } else if (crs === "http://www.opengis.net/def/crs/OGC/1.3//25833"){
-    //   subdivisions = 1;
-    //   proj4str = "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs";
     }
 
     let arrugatedCoverage = L.imageOverlay.arrugator(
       "{{ data.collections_path }}/{{ data.id }}/coverage?f=png", {
-      // "{{ data.collections_path }}/{{ data.id }}/coverage", {
           controlPoints: [
               [bbox[0], bbox[3]], // top-left
               [bbox[0], bbox[1]], // bottom-left
