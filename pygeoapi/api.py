@@ -2267,6 +2267,17 @@ class API:
             # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
+        # If requesting HTML, do **not** request data to the rasterio backend
+        # connector - a web browser will make a second separate request for the
+        # data in a different format right away
+        if format_ == F_HTML:
+            query_args['format_'] = 'metadata'
+
+        # The standard suggests lowercase "png" as a data format, but the
+        # rasterio backend understands uppercase "PNG" as an output format.
+        if format_ == "png":
+            query_args['format_'] = format_ = "PNG"
+
         properties = request.params.get('properties')
         if properties:
             LOGGER.debug('Processing properties parameter')
@@ -2279,12 +2290,6 @@ class API:
                     msg = 'Invalid field specified'
                     return self.get_exception(
                         400, headers, format_, 'InvalidParameterValue', msg)
-
-        # If requesting HTML, do **not** request data to the rasterio backend
-        # connector - a web browser will make a second separate request for the
-        # data in a different format right away
-        if format_ == F_HTML:
-            query_args['format_'] = 'metadata'
 
         if 'subset' in request.params:
             LOGGER.debug('Processing subset parameter')
@@ -2337,8 +2342,22 @@ class API:
                 self.config['resources'][dataset]['title'],
                 self.default_locale)
             data['collections_path'] = self.get_collections_url()
-            data['bounds'] = \
-                self.config['resources'][dataset]['extents']['spatial']['bbox']
+
+            # Convert the CRS URL into a Proj4 string, since the client
+            # needs the later and we have the Proj DB
+            data['proj4str'] = ""
+            if data['crs'] == "http://www.opengis.net/def/crs/OGC/1.3/CRS84":
+                data['proj4str'] = "+proj=longlat +datum=WGS84 +no_defs"
+            else:
+                match = re.compile("http:\/\/www.opengis.net\/def\/crs\/(?:(?:OGC)|(?:EPSG))\/.*\/\/?(\d+)").match(data['crs'])
+
+                if match != None:
+                    from osgeo import osr as osgeo_osr
+
+                    prj = osgeo_osr.SpatialReference()
+                    prj.ImportFromEPSG(int(match.group(1)))
+                    data['proj4str'] = prj.ExportToProj4()
+
             content = render_j2_template(self.config,
                                         'collections/coverage/index.html',
                                         data, self.default_locale)
