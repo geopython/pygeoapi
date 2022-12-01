@@ -46,6 +46,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
 
    `OGC API - Features`_,Reference Implementation
    `OGC API - Coverages`_,Implementing
+   `OGC API - Maps`_,Implementing
    `OGC API - Tiles`_,Implementing
    `OGC API - Processes`_,Implementing
    `OGC API - Records`_,Implementing
