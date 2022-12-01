@@ -59,15 +59,10 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
+            layer= '/' + self.get_layer()
 
-            # try x,y,z - this works for mapbox, ES
-            layer = url.path.split('/{z}/{x}/{y}')[0]
-            # try z,y,x - this works for OS Data Hub
-            layer = layer.split('/{z}/{y}/{x}')[0]
-            # Do we need to try different combinations?
-
-            if ('.' in layer):
-                layer = layer.split('.')[0]
+            LOGGER.debug('Extracting layer name from url')
+            LOGGER.debug('Layer: {}'.format(layer))
 
             tilepath = '{}/tiles'.format(layer)
             servicepath = \
@@ -117,9 +112,25 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             # We need to try, at least these different variations that
             # I have seen across products (maybe there more??)
+
+            if "/{z}/{x}/{y}" not in url.path and "/{z}/{y}/{x}" not in url.path:
+                msg = 'This url template is not supported yet: {}'.format(
+                url.path)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+
             layer = url.path.split("/{z}/{x}/{y}")[0]
             layer = layer.split("/{z}/{y}/{x}")[0]
-            return layer[1:]
+
+            # Removing the extension, if it is there            
+            if ('.' in layer):
+                layer = layer.split('.')[0]
+
+            LOGGER.debug(layer)
+            # Removing the first "/"
+            layer = layer[1:]
+            LOGGER.debug(layer)
+            return layer
         else:
             return Path(self.data).name
 
