@@ -18,8 +18,8 @@
       <h3>{% trans %}Tiles metadata{% endtrans %} - {{ data['format'] }} {% trans %}format{% endtrans %}</h3>
       <h4>{% trans %}Tileset{% endtrans %} {{ data['tileset'] }}</h4>
       <ul>
-      {% for metadata in data['metadata'].items() %}
-        <li>{{ metadata[0] }} (<code>{{ metadata[1] }}</code>)</li>
+      {% for key in data['metadata'].keys() %}
+        <li>{{ key }} (<code>{{ data['metadata'][key] }}</code>)</li>
       {% endfor %}
       </ul>
     </section>

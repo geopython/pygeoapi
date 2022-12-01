@@ -37,7 +37,10 @@ from pygeoapi.util import is_url, url_join
 from pygeoapi.provider.tile import (
     BaseTileProvider, ProviderTileNotFoundError)
 from pygeoapi.provider.base import ProviderConnectionError
-
+from pygeoapi.models.provider.base import (
+    TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType,
+    GeospatialDataType)
+from pygeoapi.models.provider.mvt import MVTTilesJson
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,18 +134,13 @@ class MVTProvider(BaseTileProvider):
 
     def get_tiling_schemes(self):
 
-        tile_matrix_set_links_list = [{
-                'tileMatrixSet': 'WorldCRS84Quad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json',  # noqa
-                'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-            }, {
-                'tileMatrixSet': 'WebMercatorQuad',
-                'tileMatrixSetURI': 'http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json',  # noqa
-                'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
-            }]
+        tile_matrix_set_links_list = [
+                TileMatrixSetEnum.WORLDCRS84QUAD.value,
+                TileMatrixSetEnum.WEBMERCATORQUAD.value
+            ]
         tile_matrix_set_links = [
-            item for item in tile_matrix_set_links_list if item[
-                'tileMatrixSet'] in self.options['schemes']]
+            item for item in tile_matrix_set_links_list
+            if item.tileMatrixSet in self.options['schemes']]
 
         return tile_matrix_set_links
 
@@ -257,7 +255,8 @@ class MVTProvider(BaseTileProvider):
                     raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, metadata_format=None, **kwargs):
+                     tileset=None, metadata_format=None, title=None,
+                     description=None, keywords=None, **kwargs):
         """
         Gets tile metadata
 
@@ -266,9 +265,7 @@ class MVTProvider(BaseTileProvider):
         :param layer: mvt tile layer name
         :param tileset: mvt tileset name
         :param metadata_format: format for metadata,
-                        default is Tileset Metadata
-                        tilejson is TileJSON 3.0
-                        customjson loads the raw custom json
+                            enum TilesMetadataFormat
 
         :returns: `dict` of JSON metadata
         """
@@ -292,75 +289,68 @@ class MVTProvider(BaseTileProvider):
                 with open(self.service_metadata_url, 'r') as md_file:
                     metadata_json_content = json.loads(md_file.read())
 
+        service_url = urljoin(
+            server_url,
+            'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                dataset, tileset, 'tileMatrix',
+                'tileRow', 'tileCol', '?f=mvt'))
+
         content = {}
-        if metadata_format == 'tilejson':
+        if metadata_format == TilesMetadataFormat.TILEJSON:
             if 'metadata_json_content' in locals():
-                service_url = urljoin(
-                    server_url,
-                    'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                        dataset, tileset, 'tileMatrix',
-                        'tileRow', 'tileCol', '?f=mvt'))
-                content = {
-                    "tilejson": "3.0.0",
-                    "name": metadata_json_content["name"],
-                    "tiles": service_url,
-                    "minzoom": metadata_json_content["minzoom"],
-                    "maxzoom": metadata_json_content["maxzoom"],
-                    "bounds": metadata_json_content["bounds"],
-                    "center": metadata_json_content["center"],
-                    "attribution": None,
-                    "description": None,
-                    "vector_layers": json.loads(
+                content = MVTTilesJson(**metadata_json_content)
+                content.tiles = service_url
+                content.vector_layers = json.loads(
                         metadata_json_content["json"])["vector_layers"]
-                }
+                return content.dict()
             else:
-                msg = 'No tiles metadata available: {}'.format(
+                msg = 'No tiles metadata json available: {}'.format(
                     self.service_metadata_url)
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
-        elif metadata_format == 'customjson':
+        elif metadata_format == TilesMetadataFormat.CUSTOMJSON:
             if 'metadata_json_content' in locals():
                 content = metadata_json_content
                 if 'json' in metadata_json_content:
                     content['json'] = json.loads(metadata_json_content['json'])
+                return content
             else:
-                msg = 'No custom tiles metadata available: {}'.format(
+                msg = 'No custom JSON for tiles metadata available: {}'.format(
                     self.service_metadata_url)
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
         else:
             tiling_schemes = self.get_tiling_schemes()
             # Default values
-            tileMatrixSetURI = tiling_schemes[0]['tileMatrixSetURI']
-            crs = tiling_schemes[0]['crs']
+            tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
+            crs = tiling_schemes[0].crs
             # Checking the selected matrix in configured tiling_schemes
             for schema in tiling_schemes:
-                if (schema['tileMatrixSet'] == tileset):
-                    crs = schema['crs']
-                    tileMatrixSetURI = schema['tileMatrixSetURI']
+                if (schema.tileMatrixSet == tileset):
+                    crs = schema.crs
+                    tileMatrixSetURI = schema.tileMatrixSetURI
 
-            content = {
-                "title": layer,
-                # "description": None,
-                # "keywords": None,
-                "dataType": "vector",
-                # "accessConstraints": None,
-                "crs": crs,
-                # "epoch": None,
-                # "links": None,
-                # "layers": None,
-                "tileMatrixSetURI": tileMatrixSetURI,
-                # "tileMatrixSetLimits": None,
-                # "boundingBox": None,
-                # "centerPoint": None
-            }
+            content = TileSetMetadata(title=title, description=description,
+                                      keywords=keywords, crs=crs,
+                                      tileMatrixSetURI=tileMatrixSetURI)
+
+            links = []
+            service_url_link_type = "application/vnd.mapbox-vector-tile"
+            service_url_link_title = "{} vector tiles for {}".format(
+                tileset, layer
+            )
+            service_url_link = LinkType(href=service_url, rel="item",
+                                        type=service_url_link_type,
+                                        title=service_url_link_title)
+            links.append(service_url_link)
+
+            content.links = links
 
             if 'metadata_json_content' in locals():
                 vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
                 layers = []
-                for l in vector_layers:
-                    layers.append({"id": l['id'], "dataType" : "vector"})
-                content['layers'] = layers
-
-        return content
+                for vector_layer in vector_layers:
+                    layers.append(GeospatialDataType(id=vector_layer['id']))
+                content.layers = layers
+            return content.dict(exclude_none=True)
