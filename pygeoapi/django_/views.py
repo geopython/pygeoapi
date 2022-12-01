@@ -153,6 +153,41 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
     return response
 
 
+def collection_map(request: HttpRequest, collection_id: str):
+    """
+    OGC API - Maps map render endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    response_ = _feed_response(request, 'get_collection_map', collection_id)
+
+    response = _to_django_response(*response_)
+
+    return response
+
+
+def collection_style_map(request: HttpRequest, collection_id: str,
+                         style_id: str = None):
+    """
+    OGC API - Maps map render endpoint
+
+    :param collection_id: collection identifier
+    :param collection_id: style identifier
+
+    :returns: HTTP response
+    """
+
+    response_ = _feed_response(request, 'get_collection_map',
+                               collection_id, style_id)
+
+    response = _to_django_response(*response_)
+
+    return response
+
+
 def collection_item(request: HttpRequest,
                     collection_id: str, item_id: str) -> HttpResponse:
     """
