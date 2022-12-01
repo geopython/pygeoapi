@@ -14,12 +14,6 @@ tile generation software include (but are not limited to):
 * `MapProxy`_
 * `tippecanoe`_
 
-The remote data sources can be an external service like Elasticsearch, read from a generic url template.
-
-.. note::
-   Currently, the url template only supports the formats: `/{z}/{x}/{y}` or `/{z}/{y}/{x}`. 
-   If you have a different use case, feel free to file an `issue <https://github.com/geopython/pygeoapi/issues>`_.  
-
 Providers
 ---------
 
@@ -42,7 +36,15 @@ MVT
 
 The MVT provider plugin provides access to `Mapbox Vector Tiles`_.
 
-This code block shows how to configure pygeoapi to read Mapbox vector tiles, from disk or from an url.
+Remote data sources can be any external service (i.e. Elasticsearch), by providing a URL
+template.
+
+.. note::
+   Currently, the URL templating in this provider supports the following formats: `/{z}/{x}/{y}` or `/{z}/{y}/{x}`.
+   For additional formats: feel free to file an `issue <https://github.com/geopython/pygeoapi/issues>`_.
+
+
+This code block shows how to configure pygeoapi to read Mapbox vector tiles, from disk or a URL.
 
 .. code-block:: yaml
 
@@ -50,7 +52,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles, fro
        - type: tile
          name: MVT 
          data: tests/data/tiles/ne_110m_lakes  # local directory tree
-         # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf # tiles stored on a Minio bucket
+         # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf # tiles stored on a MinIO bucket
          options:
              metadata_format: raw # default | tilejson
              zoom:
