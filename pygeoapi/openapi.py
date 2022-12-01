@@ -1009,6 +1009,7 @@ def get_oas_30(cfg):
                             'style': 'form',
                             'explode': False
                         },
+                        {'$ref': '#/components/parameters/bbox-crs'},
                         map_f
                     ],
                     'responses': {
