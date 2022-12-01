@@ -7,12 +7,18 @@ Publishing map tiles to OGC API - Tiles
 (map, vector, etc.).
 
 pygeoapi can publish tiles from local or remote data sources (including cloud
-object storage).  To integrate tiles from a local data source, it is assumed
+object storage or a tile service). To integrate tiles from a local data source, it is assumed
 that a directory tree of static tiles has been created on disk.  Examples of
 tile generation software include (but are not limited to):
 
 * `MapProxy`_
 * `tippecanoe`_
+
+The remote data sources can be an external service like Elasticsearch, read from a generic url template.
+
+.. note::
+   Currently, the url template only supports the formats: `/{z}/{x}/{y}` or `/{z}/{y}/{x}`. 
+   If you have a different use case, feel free to file an `issue <https://github.com/geopython/pygeoapi/issues>`_.  
 
 Providers
 ---------
@@ -36,13 +42,15 @@ MVT
 
 The MVT provider plugin provides access to `Mapbox Vector Tiles`_.
 
+This code block shows how to configure pygeoapi to read Mapbox vector tiles, from disk or from an url.
+
 .. code-block:: yaml
 
    providers:
        - type: tile
          name: MVT 
          data: tests/data/tiles/ne_110m_lakes  # local directory tree
-         # data: https://example.org/ne_110m_lakes/{z}/{x}/{y}.pbf
+         # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf # tiles stored on a Minio bucket
          options:
              metadata_format: raw # default | tilejson
              zoom:
@@ -54,6 +62,26 @@ The MVT provider plugin provides access to `Mapbox Vector Tiles`_.
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
+This code block shows how to configure pygeoapi to read Mapbox vector tiles, from an Elasticsearch endpoint.
+
+.. code-block:: yaml
+
+   providers:
+       - type: tile
+         name: MVT 
+         data: http://localhost:9200/ne_110m_populated_places_simple2/_mvt/geometry/{z}/{x}/{y}?grid_precision=0
+         # if you don't use precision 0, you will be requesting for aggregations which are not supported in the 
+         # free version of elastic
+         options:
+             metadata_format: raw # default | tilejson
+             zoom:
+                 min: 0
+                 max: 5
+             schemes:
+                 - WorldCRS84Quad
+         format:
+             name: pbf 
+             mimetype: application/vnd.mapbox-vector-tile
 
 Data access examples
 --------------------

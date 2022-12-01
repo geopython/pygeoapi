@@ -39,9 +39,10 @@
       </div>
       <br/>
       <div class="row">
-        <div class="col-md-2 col-sm-12">{% trans %}Metadata{% endtrans %}</div>
-        <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
-      </div>
+        {% if data['format']=='tilejson' %}
+          <div class="col-md-2 col-sm-12">{% trans %}Metadata{% endtrans %}</div>
+          <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
+        {% endif %}      </div>
       <script>
         var select = document.getElementById('tilingScheme');
         var tileset = select.value;
@@ -54,8 +55,10 @@
           var scheme = ev.target.value;
           document.location.search = `scheme=${scheme}`;
         });
-        document.getElementById("tilejson").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + tileset + "/metadata";
-      </script>
+        if (document.getElementById("tilejson")){
+          document.getElementById("tilejson").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + tileset + "/metadata";
+        }
+        </script>
       <br/>
       <div class="row">
         <div class="col-md-2 col-sm-12">Map</div>

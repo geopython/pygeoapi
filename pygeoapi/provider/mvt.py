@@ -59,7 +59,11 @@ class MVTProvider(BaseTileProvider):
             url = urlparse(self.data)
             baseurl = '{}://{}'.format(url.scheme, url.netloc)
             param_type = '?f=mvt'
-            layer = url.path.split('/{z}/{x}/{y}')[0]
+            layer = '/' + self.get_layer()
+
+            LOGGER.debug('Extracting layer name from url')
+            LOGGER.debug('Layer: {}'.format(layer))
+
             tilepath = '{}/tiles'.format(layer)
             servicepath = \
                 '{}/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
@@ -68,9 +72,11 @@ class MVTProvider(BaseTileProvider):
                     'tileMatrix',
                     'tileRow',
                     'tileCol',
-                    param_type)
+                    param_type
+                    )
 
             self._service_url = url_join(baseurl, servicepath)
+
             self._service_metadata_url = urljoin(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
@@ -104,7 +110,28 @@ class MVTProvider(BaseTileProvider):
 
         if is_url(self.data):
             url = urlparse(self.data)
-            return url.path.split("/{z}/{x}/{y}")[0][1:]
+            # We need to try, at least these different variations that
+            # I have seen across products (maybe there more??)
+
+            if ("/{z}/{x}/{y}" not in url.path and
+                    "/{z}/{y}/{x}" not in url.path):
+                msg = 'This url template is not supported yet: {}'.format(
+                    url.path)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
+
+            layer = url.path.split("/{z}/{x}/{y}")[0]
+            layer = layer.split("/{z}/{y}/{x}")[0]
+
+            # Removing the extension, if it is there
+            if ('.' in layer):
+                layer = layer.split('.')[0]
+
+            LOGGER.debug(layer)
+            # Removing the first "/"
+            layer = layer[1:]
+            LOGGER.debug(layer)
+            return layer
         else:
             return Path(self.data).name
 
@@ -204,9 +231,20 @@ class MVTProvider(BaseTileProvider):
             base_url = '{}://{}'.format(url.scheme, url.netloc)
             with requests.Session() as session:
                 session.get(base_url)
-                resp = session.get('{base_url}/{lyr}/{z}/{y}/{x}.{f}'.format(
-                    base_url=base_url, lyr=layer,
-                    z=z, y=y, x=x, f=format_))
+                # There is a "." in the url path
+                if '.' in url.path:
+                    resp = session.get(
+                        '{base_url}/{lyr}/{z}/{y}/{x}.{f}{q}'.format(
+                            base_url=base_url, lyr=layer,
+                            z=z, y=y, x=x, f=format_, q="?" + url.query
+                            if url.query else ''))
+                # There is no "." in the url )e.g. elasticsearch)
+                else:
+                    resp = session.get(
+                        '{base_url}/{lyr}/{z}/{y}/{x}{q}'.format(
+                            base_url=base_url, lyr=layer,
+                            z=z, y=y, x=x, q="?" + url.query
+                            if url.query else ''))
                 resp.raise_for_status()
                 return resp.content
         else:
