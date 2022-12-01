@@ -91,8 +91,7 @@ class MVTProvider(BaseTileProvider):
             if not metadata_path.exists():
                 msg = 'Service metadata does not exist: {}'.format(
                     metadata_path.name)
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
+                LOGGER.warning(msg)
             self._service_metadata_url = metadata_path
 
     def __repr__(self):
@@ -282,37 +281,53 @@ class MVTProvider(BaseTileProvider):
                 resp = session.get('{base_url}/{lyr}/metadata.json'.format(
                     base_url=base_url, lyr=layer))
                 resp.raise_for_status()
-            content = resp.json()
+            metadata_json_content = resp.json()
         else:
             if not isinstance(self.service_metadata_url, Path):
                 msg = 'Wrong data path configuration: {}'.format(
                     self.service_metadata_url)
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
-            with open(self.service_metadata_url, 'r') as md_file:
-                content = json.loads(md_file.read())
+            if self.service_metadata_url.exists():
+                with open(self.service_metadata_url, 'r') as md_file:
+                    metadata_json_content = json.loads(md_file.read())
 
+        content = {}
         if metadata_format == 'tilejson':
-            service_url = urljoin(
-                server_url,
-                'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                    dataset, tileset, 'tileMatrix',
-                    'tileRow', 'tileCol', '?f=mvt'))
-            content = {
-                "tilejson": "3.0.0",
-                "name": content["name"],
-                "tiles": service_url,
-                "minzoom": content["minzoom"],
-                "maxzoom": content["maxzoom"],
-                "bounds": content["bounds"],
-                "center": content["center"],
-                "attribution": None,
-                "description": None,
-                "vector_layers": json.loads(
-                    content["json"])["vector_layers"]
-            }
+            if 'metadata_json_content' in locals():
+                service_url = urljoin(
+                    server_url,
+                    'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
+                        dataset, tileset, 'tileMatrix',
+                        'tileRow', 'tileCol', '?f=mvt'))
+                content = {
+                    "tilejson": "3.0.0",
+                    "name": metadata_json_content["name"],
+                    "tiles": service_url,
+                    "minzoom": metadata_json_content["minzoom"],
+                    "maxzoom": metadata_json_content["maxzoom"],
+                    "bounds": metadata_json_content["bounds"],
+                    "center": metadata_json_content["center"],
+                    "attribution": None,
+                    "description": None,
+                    "vector_layers": json.loads(
+                        metadata_json_content["json"])["vector_layers"]
+                }
+            else:
+                msg = 'No tiles metadata available: {}'.format(
+                    self.service_metadata_url)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
         elif metadata_format == 'customjson':
-            content['json'] = json.loads(content['json'])
+            if 'metadata_json_content' in locals():
+                content = metadata_json_content
+                if 'json' in metadata_json_content:
+                    content['json'] = json.loads(metadata_json_content['json'])
+            else:
+                msg = 'No custom tiles metadata available: {}'.format(
+                    self.service_metadata_url)
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
         else:
             tiling_schemes = self.get_tiling_schemes()
             # Default values
@@ -339,5 +354,13 @@ class MVTProvider(BaseTileProvider):
                 # "boundingBox": None,
                 # "centerPoint": None
             }
+
+            if 'metadata_json_content' in locals():
+                vector_layers = json.loads(
+                    metadata_json_content["json"])["vector_layers"]
+                layers = []
+                for l in vector_layers:
+                    layers.append({"id": l['id'], "dataType" : "vector"})
+                content['layers'] = layers
 
         return content
