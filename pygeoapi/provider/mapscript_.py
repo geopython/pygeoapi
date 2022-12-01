@@ -83,7 +83,6 @@ class MapScriptProvider(BaseProvider):
                 self._layer.connection = self.data
 
             self._layer.type = getattr(mapscript, self.options['type'])
-            self._layer.sizeunits = mapscript.MS_DD
 
             try:
                 self.crs = int(self.options['projection'])
