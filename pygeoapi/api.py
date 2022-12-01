@@ -2856,6 +2856,16 @@ class API:
             LOGGER.error(exception)
             return headers, 400, to_json(exception, self.pretty_print)
 
+        LOGGER.debug('Processing datetime parameter')
+        datetime_ = request.params.get('datetime')
+        try:
+            query_args['datetime_'] = validate_datetime(
+                self.config['resources'][dataset]['extents'], datetime_)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg)
+
         LOGGER.debug('Generating map')
         try:
             data = p.query(**query_args)

@@ -120,6 +120,9 @@ class WMSFacadeProvider(BaseProvider):
             'transparent': self._transparent
         }
 
+        if datetime_ is not None:
+            params['time'] = datetime_
+
         if '?' in self.data:
             request_url = '&'.join([self.data, urlencode(params)])
         else:

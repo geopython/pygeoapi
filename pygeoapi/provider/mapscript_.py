@@ -163,6 +163,14 @@ class MapScriptProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderQueryError('bad projection')
 
+        if datetime_ is not None:
+            if self.time_field is None:
+                LOGGER.debug('collection is not time enabled')
+            else:
+                fe = '{} = "{}"'.format(self.time_field, datetime_)
+                LOGGER.debug('Setting temporal filter: {}'.format(fe))
+                self._layer.setFilter(fe)
+
         LOGGER.debug('Setting output image properties')
         fmt = mapscript.outputFormatObj(image_obj_format)
         if transparent:
