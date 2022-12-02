@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
+# Authors: Benjamin Webb <bwebb@lincolninst.edu>
 #
-# Copyright (c) 2021 Benjamin Webb
+# Copyright (c) 2022 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,7 +37,7 @@ def config():
     return {
         'name': 'SensorThings',
         'type': 'feature',
-        'data': 'http://localhost:8080/FROST-Server/v1.1/',
+        'data': 'http://localhost:8888/FROST-Server/v1.1/',
         'rel_link': 'http://localhost:5000',
         'entity': 'Datastreams',
         'intralink': True,
@@ -47,7 +47,6 @@ def config():
 
 def test_query_datastreams(config):
     p = SensorThingsProvider(config)
-
     fields = p.get_fields()
     assert len(fields) == 15
     assert fields['Thing']['type'] == 'number'
@@ -58,23 +57,23 @@ def test_query_datastreams(config):
     results = p.query()
     assert len(results['features']) == 10
     assert results['numberReturned'] == 10
-    assert len(results['features'][0]['properties']['Observations']) == 18
+    assert len(results['features'][0]['properties']['Observations']) == 17
 
-    assert results['features'][0]['geometry']['coordinates'][0] == -105.581
-    assert results['features'][0]['geometry']['coordinates'][1] == 36.713
+    assert results['features'][0]['geometry']['coordinates'][0] == -108.7483
+    assert results['features'][0]['geometry']['coordinates'][1] == 35.6711
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '9'
+    assert results['features'][0]['id'] == '1'
 
     results = p.query(offset=2, limit=1)
     assert len(results['features']) == 1
-    assert results['features'][0]['id'] == '11'
+    assert results['features'][0]['id'] == '3'
 
     assert len(results['features'][0]['properties']) == 17
 
     results = p.query(bbox=[-109, 36, -106, 37])
-    assert results['numberReturned'] == 2
+    assert results['numberReturned'] == 8
 
     results = p.query(select_properties=['Thing'])
     assert len(results['features'][0]['properties']) == 1
@@ -93,13 +92,13 @@ def test_query_observations(config):
     p = SensorThingsProvider(config)
 
     results = p.query(limit=10, resulttype='hits')
-    assert results['numberMatched'] == 2752
+    assert results['numberMatched'] == 5298
 
     r = p.query(bbox=[-109, 36, -106, 37], resulttype='hits')
-    assert r['numberMatched'] == 44
+    assert r['numberMatched'] == 222
 
     results = p.query(limit=10001, resulttype='hits')
-    assert results['numberMatched'] == 2752
+    assert results['numberMatched'] == 5298
 
     results = p.query(properties=[('result', 7475), ])
     assert results['features'][0]['properties']['result'] == 7475
@@ -109,11 +108,11 @@ def test_query_observations(config):
 
     results = p.query(sortby=[{'property': 'phenomenonTime', 'order': '+'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '1944-10-14T12:00:00.000Z'
+        'phenomenonTime'] == '1944-10-14T12:00:00Z'
 
     results = p.query(sortby=[{'property': 'phenomenonTime', 'order': '-'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '2021-02-09T15:55:01.000Z'
+        'phenomenonTime'] == '2021-02-09T15:55:01Z'
 
     results = p.query(sortby=[{'property': 'result', 'order': '+'}])
     assert results['features'][0]['properties']['result'] == 0.0091
@@ -121,15 +120,15 @@ def test_query_observations(config):
     results = p.query(sortby=[{'property': 'result', 'order': '-'}])
     assert results['features'][0]['properties']['result'] == 7476
 
-    results = p.query(datetime_='../2000-01-01T00:00:00.00Z',
+    results = p.query(datetime_='../2000-01-01T00:00:00Z',
                       sortby=[{'property': 'phenomenonTime', 'order': '-'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '1999-10-15T17:45:00.000Z'
+        'phenomenonTime'] == '1999-12-29T00:00:00Z'
 
     results = p.query(datetime_='2000-01-01T00:00:00.00Z/..',
                       sortby=[{'property': 'phenomenonTime', 'order': '+'}])
     assert results['features'][0]['properties'][
-        'phenomenonTime'] == '2000-02-07T22:45:00.000Z'
+        'phenomenonTime'] == '2000-02-07T22:45:00Z'
 
 
 def test_get(config):
