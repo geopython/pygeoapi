@@ -2267,12 +2267,6 @@ class API:
             # Format explicitly set using a query parameter
             query_args['format_'] = format_ = request.format
 
-        # If requesting HTML, do **not** request data to the rasterio backend
-        # connector - a web browser will make a second separate request for the
-        # data in a different format right away
-        if format_ == F_HTML:
-            query_args['format_'] = 'metadata'
-
         # The standard suggests lowercase "png" as a data format, but the
         # rasterio backend understands uppercase "PNG" as an output format.
         if format_ == "png":
@@ -2310,8 +2304,29 @@ class API:
             query_args['subsets'] = subsets
             LOGGER.debug('Subsets: {}'.format(query_args['subsets']))
 
-        LOGGER.debug('Querying coverage')
+
+        if format_ == F_HTML:
+            # If requesting HTML, do **not** request data to the rasterio backend
+            # connector - a web browser will make a second separate request for the
+            # data in a different format right away
+            LOGGER.debug('Querying coverage metadata')
+            query_args['format_'] = 'metadata'
+            data = p.query(**query_args)
+            LOGGER.debug(data)
+
+            data['id'] = dataset
+            data['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'],
+                self.default_locale)
+            data['collections_path'] = self.get_collections_url()
+
+            content = render_j2_template(self.config,
+                                        'collections/coverage/index.html',
+                                        data, self.default_locale)
+            return headers, 200, content
+
         try:
+            LOGGER.debug('Querying coverage')
             data = p.query(**query_args)
         except ProviderInvalidQueryError as err:
             msg = 'query error: {}'.format(err)
@@ -2334,34 +2349,6 @@ class API:
 
             headers['Content-Type'] = collection_def['format']['mimetype']
             return headers, 200, data
-        elif format_ == F_HTML:
-            LOGGER.debug(data)
-
-            data['id'] = dataset
-            data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'],
-                self.default_locale)
-            data['collections_path'] = self.get_collections_url()
-
-            # Convert the CRS URL into a Proj4 string, since the client
-            # needs the later and we have the Proj DB
-            data['proj4str'] = ""
-            if data['crs'] == "http://www.opengis.net/def/crs/OGC/1.3/CRS84":
-                data['proj4str'] = "+proj=longlat +datum=WGS84 +no_defs"
-            else:
-                match = re.compile("http:\/\/www.opengis.net\/def\/crs\/(?:(?:OGC)|(?:EPSG))\/.*\/\/?(\d+)").match(data['crs'])
-
-                if match != None:
-                    from osgeo import osr as osgeo_osr
-
-                    prj = osgeo_osr.SpatialReference()
-                    prj.ImportFromEPSG(int(match.group(1)))
-                    data['proj4str'] = prj.ExportToProj4()
-
-            content = render_j2_template(self.config,
-                                        'collections/coverage/index.html',
-                                        data, self.default_locale)
-            return headers, 200, content
         elif format_ == F_JSON:
             headers['Content-Type'] = 'application/prs.coverage+json'
             return headers, 200, to_json(data, self.pretty_print)

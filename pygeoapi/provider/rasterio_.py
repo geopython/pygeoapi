@@ -37,6 +37,8 @@ import rasterio.mask
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
 from pygeoapi.util import read_data
+from osgeo import osr as osgeo_osr
+import re
 
 LOGGER = logging.getLogger(__name__)
 
@@ -319,7 +321,21 @@ class RasterioProvider(BaseProvider):
 
             if format_ == 'metadata':
                 LOGGER.debug('Returning coverage metadata only')
-                out_meta['crs'] = str( self._coverage_properties['bbox_crs'] )
+                # Convert the CRS URL into a Proj4 string. The expectation is
+                # to have a proj4js-based client that benefits greatly from this.
+                crs = out_meta['crs'] = str( self._coverage_properties['bbox_crs'] )
+
+                if crs == "http://www.opengis.net/def/crs/OGC/1.3/CRS84":
+                    out_meta['proj4str'] = "+proj=longlat +datum=WGS84 +no_defs"
+                else:
+                    match = re.compile("http:\/\/www.opengis.net\/def\/crs\/(?:(?:OGC)|(?:EPSG))\/.*\/\/?(\d+)").match(crs)
+
+                    if match != None:
+                        prj = osgeo_osr.SpatialReference()
+                        prj.ImportFromEPSG(int(match.group(1)))
+                        out_meta['proj4str'] = prj.ExportToProj4()
+                    else:
+                        out_meta['proj4str'] = ""
                 return out_meta
 
             LOGGER.debug('Serializing data in memory')
