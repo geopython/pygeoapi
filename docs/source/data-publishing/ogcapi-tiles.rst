@@ -64,7 +64,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles, fro
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
-This code block shows how to configure pygeoapi to read Mapbox vector tiles, from an Elasticsearch endpoint.
+This code block shows how to configure pygeoapi to read Mapbox vector tiles, from an `Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html>`_ endpoint.
 
 .. code-block:: yaml
 
@@ -84,6 +84,24 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles, fro
          format:
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
+
+This code block shows how to configure pygeoapi to read Mapbox vector tiles, from a `pg_tileserv <https://access.crunchydata.com/documentation/pg_tileserv/1.0.8/introduction/>`_ endpoint.
+
+.. code-block:: yaml
+
+        providers:
+            - type: tile
+              name: MVT
+              data: http://localhost:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.pbf
+              options:
+                zoom:
+                    min: 0
+                    max: 16
+                schemes:
+                    - WorldCRS84Quad
+              format:
+                    name: pbf
+                    mimetype: application/vnd.mapbox-vector-tile
 
 Data access examples
 --------------------
