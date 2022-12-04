@@ -531,7 +531,8 @@ def serve(ctx, server=None, debug=False):
 
 #    setup_logger(CONFIG['logging'])
     uvicorn.run(
-        app, debug=True,
+        "pygeoapi.starlette_app:app",
+        reload=True,
         host=api_.config['server']['bind']['host'],
         port=api_.config['server']['bind']['port'])
 
