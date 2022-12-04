@@ -175,16 +175,17 @@ class MVTProvider(BaseTileProvider):
             self._service_url = servicepath
         else:
             self._service_url = url_join(baseurl, servicepath)
+        tile_matrix_set = self.service_url.split(
+            '/{tileMatrix}/{tileRow}/{tileCol}')[0]
         self._service_metadata_url = urljoin(
-            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
-            'metadata')
+            tile_matrix_set, 'metadata')
         links = {
             'links': [
                 {
                     'type': 'application/json',
                     'rel': 'self',
                     'title': 'This collection as multi vector tilesets',
-                    'href': self.service_url,
+                    'href': '{}?f=json'.format(tile_matrix_set),
                 },
                 {
                     'type': self.mimetype,
@@ -199,7 +200,6 @@ class MVTProvider(BaseTileProvider):
                 }
             ]
         }
-
         return links
 
     def get_tiles(self, layer=None, tileset=None,
