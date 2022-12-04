@@ -123,10 +123,6 @@ class MVTProvider(BaseTileProvider):
             layer = url.path.split('/{z}/{x}/{y}')[0]
             layer = layer.split('/{z}/{y}/{x}')[0]
 
-            # Removing the extension, if it is there
-            if '.' in layer:
-                layer = layer.split('.')[0]
-
             LOGGER.debug(layer)
             LOGGER.debug('Removing leading "/"')
             return layer[1:]
