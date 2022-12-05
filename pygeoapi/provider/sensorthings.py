@@ -119,8 +119,8 @@ class SensorThingsProvider(BaseProvider):
             try:
                 results = r.json()['value'][0]
             except JSONDecodeError as err:
-                LOGGER.error('Entity {} error: {}'.format(self.entity, err))
-                LOGGER.error('Bad url response at {}'.format(r.url))
+                LOGGER.error(f'Entity {self.entity} error: {err}')
+                LOGGER.error(f'Bad url response at {r.url}')
                 raise ProviderQueryError(err)
 
             for (n, v) in results.items():
@@ -262,7 +262,7 @@ class SensorThingsProvider(BaseProvider):
         hits_ = 1 if identifier else min(limit, response.get('@iot.count'))
         while len(v) < hits_:
             LOGGER.debug('Fetching next set of values')
-            next_ = response.get('@iot.nextLink', None)
+            next_ = response.get('@iot.nextLink')
             if next_ is None:
                 break
             else:
@@ -415,7 +415,6 @@ class SensorThingsProvider(BaseProvider):
 
         for k, v in entity.items():
             # Create intra links
-            path_ = 'collections/{}/items/{}'
             ks = f'{k}s'
             if self.uri_field is not None and k in ['properties']:
                 uri = v.get(self.uri_field, '')
@@ -426,14 +425,9 @@ class SensorThingsProvider(BaseProvider):
                         v[i] = _v['properties'][self._linkables[k]['u']]
                     continue
                 for i, _v in enumerate(v):
-                    id = _v[self.id_field]
-                    id = f"'{id}'" if isinstance(id, str) else str(id)
-                    v[i] = url_join(
-                        self._rel_link,
-                        path_.format(
-                            self._linkables[k]['n'], id
-                        )
-                    )
+                    id_ = _v[self.id_field]
+                    id_ = f"'{id_}'" if isinstance(id_, str) else str(id_)
+                    v[i] = url_join(self._rel_link, f"collections/{self._linkables[k]['n']}/items/{id_}")  # noqa
 
             elif ks in self._linkables.keys():
                 if self._linkables[ks]['u'] != '':
@@ -443,13 +437,10 @@ class SensorThingsProvider(BaseProvider):
                 id = f"'{id}'" if isinstance(id, str) else str(id)
                 entity[k] = url_join(
                     self._rel_link,
-                    path_.format(
-                        self._linkables[ks]['n'], id
-                    )
-                )
+                    f"collections/{self._linkables[ks]['n']}/items/{id_}")
 
         # Make properties block
-        if entity.get('properties', None):
+        if entity.get('properties'):
             entity.update(entity.pop('properties'))
 
         if keys:
@@ -465,4 +456,4 @@ class SensorThingsProvider(BaseProvider):
         return entity
 
     def __repr__(self):
-        return '<SensorThingsProvider> {}, {}'.format(self.data, self.entity)
+        return f'<SensorThingsProvider> {self.data}, {self.entity}'

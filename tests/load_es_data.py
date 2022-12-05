@@ -28,17 +28,17 @@
 # =================================================================
 
 import json
-import os
+from pathlib import Path
 import sys
 
 from elasticsearch import Elasticsearch, helpers
 es = Elasticsearch()
 
 if len(sys.argv) < 3:
-    print('Usage: {} <path/to/data.geojson> <id-field>'.format(sys.argv[0]))
+    print(f'Usage: {sys.argv[0]} <path/to/data.geojson> <id-field>')
     sys.exit(1)
 
-index_name = os.path.splitext(os.path.basename(sys.argv[1]))[0].lower()
+index_name = Path(sys.argv[1]).stem.lower()
 id_field = sys.argv[2]
 
 if es.indices.exists(index_name):

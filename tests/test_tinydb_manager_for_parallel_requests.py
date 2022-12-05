@@ -3,6 +3,7 @@
 # Authors: Martin Pontius <m.pontius@52north.org>
 #
 # Copyright (c) 2022 52°North Spatial Information Research GmbH
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,7 +28,7 @@
 #
 # =================================================================
 
-import os
+from pathlib import Path
 
 from werkzeug.wrappers import Request
 from werkzeug.test import create_environ
@@ -79,10 +80,10 @@ def _create_request(name, message, locales):
 
 
 def test_async_hello_world_process_parallel(api_, config):
-    index_name = config['server']['manager']['connection']
+    index_name = Path(config['server']['manager']['connection'])
 
-    if os.path.exists(index_name):
-        os.remove(index_name)
+    if index_name.exists():
+        index_name.unlink()
 
     NUM_PROCS = 4
     process_id = "hello-world"
@@ -118,10 +119,8 @@ def test_async_hello_world_process_parallel(api_, config):
             assert job_dict["mimetype"] == process_out['headers'][
                 'Content-Type']
             try:
-                with open(
-                        "{}/hello-world-{}".format(os.path.dirname(index_name),
-                                                   job_id)) as json_file:
-                    out_json = json.load(json_file)
+                with open(f'{index_name.parent()}/hello-world-{job_id}') as fh:
+                    out_json = json.load(fh)
                     assert out_json["id"] == "echo"
                     assert out_json["value"] == "Hello World! Hello"
             except FileNotFoundError as e:

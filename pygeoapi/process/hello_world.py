@@ -120,12 +120,13 @@ class HelloWorldProcessor(BaseProcessor):
     def execute(self, data):
 
         mimetype = 'application/json'
-        name = data.get('name', None)
+        name = data.get('name')
 
         if name is None:
             raise ProcessorExecuteError('Cannot process without a name')
 
-        value = 'Hello {}! {}'.format(name, data.get('message', '')).strip()
+        message = data.get('message', '')
+        value = f'Hello {name}! {message}'.strip()
 
         outputs = {
             'id': 'echo',
@@ -135,4 +136,4 @@ class HelloWorldProcessor(BaseProcessor):
         return mimetype, outputs
 
     def __repr__(self):
-        return '<HelloWorldProcessor> {}'.format(self.name)
+        return f'<HelloWorldProcessor> {self.name}'

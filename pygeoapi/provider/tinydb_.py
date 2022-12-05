@@ -58,7 +58,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        LOGGER.debug('Connecting to TinyDB db at {}'.format(self.data))
+        LOGGER.debug(f'Connecting to TinyDB db at {self.data}')
 
         if not os.path.exists(self.data):
             msg = 'TinyDB does not exist'
@@ -117,7 +117,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         """
 
         Q = Query()
-        LOGGER.debug('Query initiated: {}'.format(Q))
+        LOGGER.debug(f'Query initiated: {Q}')
 
         QUERY = []
 
@@ -133,7 +133,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         if bbox:
             LOGGER.debug('processing bbox parameter')
             bbox_as_string = ','.join(str(s) for s in bbox)
-            QUERY.append("Q.properties.extent.spatial.bbox.test(bbox_intersects, '{}')".format(bbox_as_string))  # noqa
+            QUERY.append(f"Q.properties.extent.spatial.bbox.test(bbox_intersects, '{bbox_as_string}')")  # noqa
 
         if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
@@ -146,31 +146,31 @@ class TinyDBCatalogueProvider(BaseProvider):
                 time_begin, time_end = datetime_.split('/')
 
                 if time_begin != '..':
-                    QUERY.append("(Q.properties[self.time_field]>='{}')".format(time_begin))  # noqa
+                    QUERY.append(f"(Q.properties[self.time_field]>='{time_begin}')")  # noqa
                 if time_end != '..':
-                    QUERY.append("(Q.properties[self.time_field]<='{}')".format(time_end))  # noqa
+                    QUERY.append(f"(Q.properties[self.time_field]<='{time_end}')")  # noqa
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                QUERY.append("(Q.properties[self.time_field]=='{}')".format(datetime_))  # noqa
+                QUERY.append(f"(Q.properties[self.time_field]=='{datetime_}')")  # noqa
 
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
-                QUERY.append("(Q.properties['{}']=='{}')".format(*prop))
+                QUERY.append(f"(Q.properties['{prop[0]}']=='{prop[1]}')")
 
         if q is not None:
             for t in q.split():
-                QUERY.append("(Q.properties['_metadata-anytext'].search('{}', flags=re.IGNORECASE))".format(t))  # noqa
+                QUERY.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
 
         QUERY_STRING = '&'.join(QUERY)
-        LOGGER.debug('QUERY_STRING: {}'.format(QUERY_STRING))
-        SEARCH_STRING = 'self.db.search({})'.format(QUERY_STRING)
-        LOGGER.debug('SEARCH_STRING: {}'.format(SEARCH_STRING))
+        LOGGER.debug(f'QUERY_STRING: {QUERY_STRING}')
+        SEARCH_STRING = f'self.db.search({QUERY_STRING})'
+        LOGGER.debug(f'SEARCH_STRING: {SEARCH_STRING}')
 
         LOGGER.debug('querying database')
         if len(QUERY) > 0:
-            LOGGER.debug('running eval on {}'.format(SEARCH_STRING))
+            LOGGER.debug(f'running eval on {SEARCH_STRING}')
             results = eval(SEARCH_STRING)
         else:
             results = self.db.all()
@@ -185,11 +185,11 @@ class TinyDBCatalogueProvider(BaseProvider):
                 try:
                     del r['properties'][e]
                 except KeyError:
-                    LOGGER.debug('Missing excluded property {}'.format(e))
+                    LOGGER.debug(f'Missing excluded property {e}')
 
         len_results = len(results)
 
-        LOGGER.debug('Results found: {}'.format(len_results))
+        LOGGER.debug(f'Results found: {len_results}')
 
         if len_results > limit:
             returned = limit
@@ -221,7 +221,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: `dict` of single record
         """
 
-        LOGGER.debug('Fetching identifier {}'.format(identifier))
+        LOGGER.debug(f'Fetching identifier {identifier}')
 
         record = self.db.get(Query().id == identifier)
 
@@ -232,7 +232,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             try:
                 del record['properties'][e]
             except KeyError:
-                LOGGER.debug('Missing excluded property {}'.format(e))
+                LOGGER.debug(f'Missing excluded property {e}')
 
         return record
 
@@ -256,10 +256,10 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.debug('Missing title and description')
             json_data['properties']['_metadata_anytext'] = ''
 
-        LOGGER.debug('Inserting data with identifier {}'.format(identifier))
+        LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
 
-        LOGGER.debug('Item added with internal id {}'.format(result))
+        LOGGER.debug(f'Item added with internal id {result}')
 
         return identifier
 
@@ -273,7 +273,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: `bool` of update result
         """
 
-        LOGGER.debug('Updating item {}'.format(identifier))
+        LOGGER.debug(f'Updating item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
             item, identifier, raise_if_exists=False)
         self.db.update(json_data, where('id') == identifier)
@@ -289,7 +289,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: `bool` of deletion result
         """
 
-        LOGGER.debug('Deleting item {}'.format(identifier))
+        LOGGER.debug(f'Deleting item {identifier}')
         self.db.remove(where('id') == identifier)
 
         return True
@@ -307,7 +307,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         return True
 
     def __repr__(self):
-        return '<TinyDBCatalogueProvider> {}'.format(self.data)
+        return f'<TinyDBCatalogueProvider> {self.data}'
 
 
 def bbox_intersects(record_bbox, input_bbox):
@@ -323,8 +323,8 @@ def bbox_intersects(record_bbox, input_bbox):
     bbox1 = record_bbox[0]
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
-    LOGGER.debug('Record bbox: {}'.format(bbox1))
-    LOGGER.debug('Input bbox: {}'.format(bbox2))
+    LOGGER.debug(f'Record bbox: {bbox1}')
+    LOGGER.debug(f'Input bbox: {bbox2}')
 
     # any point in bbox1 should be in bbox2
     bbox_tests = [

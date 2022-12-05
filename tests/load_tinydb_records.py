@@ -28,8 +28,7 @@
 # =================================================================
 
 from datetime import datetime
-from glob import glob
-import os
+from pathlib import Path
 import sys
 from typing import Union
 
@@ -39,14 +38,14 @@ from tinydb import TinyDB
 
 
 if len(sys.argv) < 3:
-    print('Usage: {} <path/to/xml-files> <output.db>'.format(sys.argv[0]))
+    print(f'Usage: {sys.argv[0]} <path/to/xml-files> <output.db>')
     sys.exit(1)
 
-xml_dir = sys.argv[1]
-index_name = sys.argv[2]
+xml_dir = Path(sys.argv[1])
+index_name = Path(sys.argv[2])
 
-if os.path.exists(index_name):
-    os.remove(index_name)
+if index_name.exists():
+    index_name.unlink()
 
 db = TinyDB(index_name)
 
@@ -124,7 +123,7 @@ def get_anytext(bag: Union[list, str]) -> str:
     return ' '.join(text_bag)
 
 
-for xml_file in glob('{}/*.xml'.format(xml_dir)):
+for xml_file in xml_dir.glob('*.xml'):
     m = MD_Metadata(etree.parse(xml_file))
 
     _raw_metadata = m.xml.decode('utf-8')
@@ -231,7 +230,6 @@ for xml_file in glob('{}/*.xml'.format(xml_dir)):
 
     try:
         res = db.insert(json_record)
-        print('Metadata record {} loaded with internal id {}'.format(
-            xml_file, res))
+        print(f'Metadata record {xml_file} loaded with internal id {res}')
     except Exception as err:
         print(err)

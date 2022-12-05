@@ -3,7 +3,7 @@
         "app_function": "pygeoapi.flask_app.APP",
         "profile_name": null,
         "project_name": "pygeoapi",
-        "runtime": "python3.6",
+        "runtime": "python3.8",
         "s3_bucket": "zappa-pwpqh2twb",
         "aws_region": "us-east-2",
         "environment_variables": {

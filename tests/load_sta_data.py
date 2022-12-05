@@ -27,17 +27,17 @@
 #
 # =================================================================
 
+from pathlib import Path
 import requests
 import sys
 import json
-import os.path
 
 url = 'http://localhost:8080/FROST-Server/v1.1/Datastreams'
 data_url = 'https://raw.githubusercontent.com/webb-ben/data/main/'
 
 
-def main(path_):
-    filename = os.path.basename(path_)
+def main(path_: Path):
+    filename = path_.name
     r = requests.get(f'{data_url}{filename}')
     data = r.json().get('value')
     for v in data:
@@ -65,7 +65,7 @@ def clean(dirty_dict):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
+        print(f'Usage: {sys.argv[0]} <path/to/data.geojson>')
         sys.exit(1)
 
-    main(sys.argv[1])
+    main(Path(sys.argv[1]))

@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 class CSVFormatter(BaseFormatter):
     """CSV formatter"""
 
-    def __init__(self, formatter_def):
+    def __init__(self, formatter_def: dict):
         """
         Initialize object
 
@@ -56,7 +56,7 @@ class CSVFormatter(BaseFormatter):
         super().__init__({'name': 'csv', 'geom': geom})
         self.mimetype = 'text/csv'
 
-    def write(self, options={}, data=None):
+    def write(self, options: dict = {}, data: dict = None) -> str:
         """
         Generate data in CSV format
 
@@ -83,7 +83,7 @@ class CSVFormatter(BaseFormatter):
                 # TODO: implement wkt geometry serialization
                 LOGGER.debug('not a point geometry, skipping')
 
-        LOGGER.debug('CSV fields: {}'.format(fields))
+        LOGGER.debug(f'CSV fields: {fields}')
 
         try:
             output = io.BytesIO()
@@ -104,4 +104,4 @@ class CSVFormatter(BaseFormatter):
         return output.getvalue()
 
     def __repr__(self):
-        return '<CSVFormatter> {}'.format(self.mimetype)
+        return f'<CSVFormatter> {self.name}'

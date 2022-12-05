@@ -153,7 +153,7 @@ class XarrayProvider(BaseProvider):
         }
 
         for name, var in self._data.variables.items():
-            LOGGER.debug('Determining rangetype for {}'.format(name))
+            LOGGER.debug(f'Determining rangetype for {name}')
 
             desc, units = None, None
             if len(var.shape) >= 3:
@@ -167,12 +167,11 @@ class XarrayProvider(BaseProvider):
                     'type': 'Quantity',
                     'name': var.attrs.get('long_name') or desc,
                     'encodingInfo': {
-                        'dataType': 'http://www.opengis.net/def/dataType/OGC/0/{}'.format(str(var.dtype))  # noqa
+                        'dataType': f'http://www.opengis.net/def/dataType/OGC/0/{var.dtype}'  # noqa
                     },
                     'nodata': 'null',
                     'uom': {
-                        'id': 'http://www.opengis.net/def/uom/UCUM/{}'.format(
-                             units),
+                        'id': f'http://www.opengis.net/def/uom/UCUM/{units}',
                         'type': 'UnitReference',
                         'code': units
                     },
@@ -219,7 +218,7 @@ class XarrayProvider(BaseProvider):
 
             query_params = {}
             for key, val in subsets.items():
-                LOGGER.debug('Processing subset: {}'.format(key))
+                LOGGER.debug(f'Processing subset: {key}')
                 if data.coords[key].values[0] > data.coords[key].values[-1]:
                     LOGGER.debug('Reversing slicing from high to low')
                     query_params[key] = slice(val[1], val[0])
@@ -257,7 +256,7 @@ class XarrayProvider(BaseProvider):
                     else:
                         query_params[self.time_field] = datetime_
 
-            LOGGER.debug('Query parameters: {}'.format(query_params))
+            LOGGER.debug(f'Query parameters: {query_params}')
             try:
                 data = data.sel(query_params)
             except Exception as err:
@@ -329,7 +328,7 @@ class XarrayProvider(BaseProvider):
             tmp_max = data.coords[self.y_field].values
 
         if tmp_min > tmp_max:
-            LOGGER.debug('Reversing direction of {}'.format(self.y_field))
+            LOGGER.debug(f'Reversing direction of {self.y_field}')
             miny = tmp_max
             maxy = tmp_min
 
@@ -471,9 +470,7 @@ class XarrayProvider(BaseProvider):
         }
 
         if 'crs' in self._data.variables.keys():
-            properties['bbox_crs'] = '{}/{}'.format(
-                'http://www.opengis.net/def/crs/OGC/1.3/',
-                self._data.crs.epsg_code)
+            properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.epsg_code}'  # noqa
 
             properties['inverse_flattening'] = self._data.crs.\
                 inverse_flattening
@@ -502,11 +499,11 @@ class XarrayProvider(BaseProvider):
 
         return {
             'id': name,
-            'description': attrs.get('long_name', None),
-            'unit_label': attrs.get('units', None),
-            'unit_symbol': attrs.get('units', None),
+            'description': attrs.get('long_name'),
+            'unit_label': attrs.get('units'),
+            'unit_symbol': attrs.get('units'),
             'observed_property_id': name,
-            'observed_property_name': attrs.get('long_name', None)
+            'observed_property_name': attrs.get('long_name')
         }
 
     def get_time_resolution(self):
@@ -542,7 +539,7 @@ class XarrayProvider(BaseProvider):
             'seconds': int(ms_difference / 1000) % 60
         }
 
-        times = ['{} {}'.format(val, key) for key, val
+        times = [f'{val} {key}' for key, val
                  in time_dict.items() if val > 0]
 
         return ', '.join(times)
@@ -605,12 +602,17 @@ def _get_zarr_data(data):
        """
 
     tmp_dir = tempfile.TemporaryDirectory().name
-    data.to_zarr('{}zarr.zarr'.format(tmp_dir), mode='w')
-    with zipfile.ZipFile('{}zarr.zarr.zip'.format(tmp_dir),
-                         'w', zipfile.ZIP_DEFLATED) as zipf:
-        _zip_dir('{}zarr.zarr'.format(tmp_dir), zipf, os.getcwd())
-    zip_file = open('{}zarr.zarr.zip'.format(tmp_dir), 'rb')
-    return zip_file.read()
+
+    zarr_data_filename = f'{tmp_dir}zarr.zarr'
+    zarr_zip_filename = f'{tmp_dir}zarr.zarr.zip'
+
+    data.to_zarr(zarr_data_filename, mode='w')
+
+    with zipfile.ZipFile(zarr_zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:  # noqa
+        _zip_dir(zarr_data_filename, zipf, os.getcwd())
+
+    with open(zarr_zip_filename, 'rb') as fh:
+        return fh.read()
 
 
 def _convert_float32_to_float64(data):

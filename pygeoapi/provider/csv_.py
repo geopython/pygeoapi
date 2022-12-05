@@ -193,9 +193,9 @@ class CSVProvider(BaseProvider):
         if item:
             return item
         else:
-            err = 'item {} not found'.format(identifier)
+            err = f'item {identifier} not found'
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
 
     def __repr__(self):
-        return '<CSVProvider> {}'.format(self.data)
+        return f'<CSVProvider> {self.data}'

@@ -103,10 +103,10 @@ def test_query_hits_vsicurl(config_vsicurl_csv):
 
     p = OGRProvider(config_vsicurl_csv)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 100
 
@@ -118,10 +118,10 @@ def test_query_bbox_hits_vsicurl(config_vsicurl_csv):
     feature_collection = p.query(
         bbox=[10.497565, 41.520355, 15.111823, 43.308645],
         resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 1
 
@@ -131,15 +131,15 @@ def test_query_with_limit_vsicurl(config_vsicurl_csv):
 
     p = OGRProvider(config_vsicurl_csv)
     feature_collection = p.query(limit=2, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 2
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -148,17 +148,17 @@ def test_query_with_offset_vsicurl(config_vsicurl_csv):
 
     p = OGRProvider(config_vsicurl_csv)
     feature_collection = p.query(offset=20, limit=10, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 10
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
     assert feature['id'] == 21
     assert 'Veneto' in properties['denominazione_regione']
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -169,8 +169,8 @@ def test_query_with_property_vsicurl(config_vsicurl_csv):
     feature_collection = p.query(
         offset=20, limit=10, resulttype='results',
         properties=[('denominazione_regione', 'Lazio')])
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 10
     for feature in features:
         assert 'Lazio' in feature['properties']['denominazione_regione']

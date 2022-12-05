@@ -90,15 +90,15 @@ class PostgreSQLProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
 
-        LOGGER.debug('Name: {}'.format(self.name))
-        LOGGER.debug('Table: {}'.format(self.table))
-        LOGGER.debug('ID field: {}'.format(self.id_field))
-        LOGGER.debug('Geometry field: {}'.format(self.geom))
+        LOGGER.debug(f'Name: {self.name}')
+        LOGGER.debug(f'Table: {self.table}')
+        LOGGER.debug(f'ID field: {self.id_field}')
+        LOGGER.debug(f'Geometry field: {self.geom}')
 
         # Read table information from database
         self._store_db_parameters(provider_def['data'])
         self._engine, self.table_model = self._get_engine_and_table_model()
-        LOGGER.debug('DB connection: {}'.format(repr(self._engine.url)))
+        LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',

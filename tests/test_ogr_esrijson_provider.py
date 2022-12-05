@@ -75,7 +75,7 @@ def config_random_id(config_ArcGIS_ESRIJSON):
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     # Get bunch of features to randomly have an id
     feature_collection = p.query(offset=0, limit=10, resulttype='results')
-    features = feature_collection.get('features', None)
+    features = feature_collection.get('features')
     features_list = []
     for feature in features:
         features_list.append(feature['id'])
@@ -117,10 +117,10 @@ def test_query_hits_agol(config_ArcGIS_ESRIJSON):
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 100
 
@@ -133,10 +133,10 @@ def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
         bbox=[-9822165.181154, 5112669.004249,
               -9807305.104750, 5133712.297986],
         resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 1
 
@@ -146,15 +146,15 @@ def test_query_with_limit_agol(config_ArcGIS_ESRIJSON):
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     feature_collection = p.query(limit=2, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 2
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -163,14 +163,14 @@ def test_query_with_offset(config_ArcGIS_ESRIJSON):
 
     p = OGRProvider(config_ArcGIS_ESRIJSON)
     feature_collection = p.query(offset=10, limit=10, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 10
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
     assert properties['fulladdr'] is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None

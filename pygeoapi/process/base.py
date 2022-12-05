@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+from typing import Any, Tuple
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
-    def __init__(self, processor_def, process_metadata):
+    def __init__(self, processor_def: dict, process_metadata: dict):
         """
         Initialize object
 
@@ -47,7 +48,7 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def execute(self):
+    def execute(self) -> Tuple[str, Any]:
         """
         execute the process
 
@@ -57,7 +58,7 @@ class BaseProcessor:
         raise NotImplementedError()
 
     def __repr__(self):
-        return '<BaseProcessor> {}'.format(self.name)
+        return f'<BaseProcessor> {self.name}'
 
 
 class ProcessorGenericError(Exception):

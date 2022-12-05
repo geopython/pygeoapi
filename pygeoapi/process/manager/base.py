@@ -28,13 +28,14 @@
 # =================================================================
 
 from datetime import datetime
-import io
 import json
 import logging
 from multiprocessing import dummy
-import os
+from pathlib import Path
+from typing import Any, Tuple
 
 from pygeoapi.util import DATETIME_FORMAT, JobStatus
+from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseManager:
     """generic Manager ABC"""
 
-    def __init__(self, manager_def):
+    def __init__(self, manager_def: dict):
         """
         Initialize object
 
@@ -53,10 +54,13 @@ class BaseManager:
 
         self.name = manager_def['name']
         self.is_async = False
-        self.connection = manager_def.get('connection', None)
-        self.output_dir = manager_def.get('output_dir', None)
+        self.connection = manager_def.get('connection')
+        self.output_dir = manager_def.get('output_dir')
 
-    def get_jobs(self, status=None):
+        if self.output_dir is not None:
+            self.output_dir = Path(self.output_dir)
+
+    def get_jobs(self, status: JobStatus = None) -> list:
         """
         Get process jobs, optionally filtered by status
 
@@ -68,7 +72,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def add_job(self, job_metadata):
+    def add_job(self, job_metadata: dict) -> str:
         """
         Add a job
 
@@ -79,7 +83,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def update_job(self, job_id, update_dict):
+    def update_job(self, job_id: str, update_dict: dict) -> bool:
         """
         Updates a job
 
@@ -91,7 +95,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job(self, job_id):
+    def get_job(self, job_id: str) -> dict:
         """
         Get a job (!)
 
@@ -102,7 +106,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def get_job_result(self, job_id):
+    def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
         Returns the actual output from a completed process
 
@@ -113,7 +117,7 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: str) -> bool:
         """
         Deletes a job and associated results/outputs
 
@@ -124,7 +128,8 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def _execute_handler_async(self, p, job_id, data_dict):
+    def _execute_handler_async(self, p: BaseProcessor, job_id: str,
+                               data_dict: dict) -> Tuple[None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -145,7 +150,8 @@ class BaseManager:
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
-    def _execute_handler_sync(self, p, job_id, data_dict):
+    def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
+                              data_dict: dict) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
@@ -180,8 +186,8 @@ class BaseManager:
 
         try:
             if self.output_dir is not None:
-                filename = '{}-{}'.format(p.metadata['id'], job_id)
-                job_filename = os.path.join(self.output_dir, filename)
+                filename = f"{p.metadata['id']}-{job_id}"
+                job_filename = self.output_dir / filename
             else:
                 job_filename = None
 
@@ -195,7 +201,7 @@ class BaseManager:
             })
 
             if self.output_dir is not None:
-                LOGGER.debug('writing output to {}'.format(job_filename))
+                LOGGER.debug(f'writing output to {job_filename}')
                 if isinstance(outputs, dict):
                     mode = 'w'
                     data = json.dumps(outputs, sort_keys=True, indent=4)
@@ -204,7 +210,7 @@ class BaseManager:
                     mode = 'wb'
                     data = outputs
                     encoding = None
-                with io.open(job_filename, mode, encoding=encoding) as fh:
+                with job_filename.open(mode=mode, encoding=encoding) as fh:
                     fh.write(data)
 
             current_status = JobStatus.successful
@@ -213,7 +219,7 @@ class BaseManager:
                 'job_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
                 'status': current_status.value,
-                'location': job_filename,
+                'location': str(job_filename),
                 'mimetype': jfmt,
                 'message': 'Job complete',
                 'progress': 100
@@ -230,6 +236,7 @@ class BaseManager:
             # endpoint, even if the /result endpoint correctly returns the
             # failure information (i.e. what one might assume is a 200
             # response).
+
             current_status = JobStatus.failed
             code = 'InvalidParameterValue'
             outputs = {
@@ -272,4 +279,4 @@ class BaseManager:
             return self._execute_handler_async(p, job_id, data_dict)
 
     def __repr__(self):
-        return '<BaseManager> {}'.format(self.name)
+        return f'<BaseManager> {self.name}'

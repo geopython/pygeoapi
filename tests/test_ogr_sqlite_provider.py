@@ -92,10 +92,10 @@ def test_query_hits_4326(config_sqlite_4326):
 
     p = OGRProvider(config_sqlite_4326)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits == 2481
 
@@ -108,10 +108,10 @@ def test_query_bbox_hits_4326(config_sqlite_4326):
     # bbox=[120000, 480000, 124000, 487000], resulttype='hits')
     feature_collection = p.query(
         bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits == 1
 
@@ -124,15 +124,15 @@ def test_query_bbox_4326(config_sqlite_4326):
     #     bbox=[180800, 452500, 181200, 452700], resulttype='results')
     feature_collection = p.query(
         bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 1
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
@@ -142,15 +142,15 @@ def test_query_with_limit_4326(config_sqlite_4326):
 
     p = OGRProvider(config_sqlite_4326)
     feature_collection = p.query(limit=5, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 5
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -159,17 +159,17 @@ def test_query_with_offset_4326(config_sqlite_4326):
 
     p = OGRProvider(config_sqlite_4326)
     feature_collection = p.query(offset=20, limit=5, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 5
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
     assert feature['id'] == 'inspireadressen.1744969'
     assert 'Egypte' in properties['straatnaam']
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -181,15 +181,15 @@ def test_query_bbox_with_offset_4326(config_sqlite_4326):
         offset=1, limit=50,
         bbox=(5.742, 52.053, 5.773, 52.098),
         resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 3
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
     assert properties['straatnaam'] == 'Egypte'
     assert properties['huisnummer'] == '4'
@@ -206,8 +206,8 @@ def test_query_with_property_filtering(config_sqlite_4326):
         ]
     )
 
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) > 1
 
     for feature in features:

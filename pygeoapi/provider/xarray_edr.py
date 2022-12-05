@@ -77,14 +77,14 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         query_params = {}
 
-        LOGGER.debug('Query parameters: {}'.format(kwargs))
+        LOGGER.debug(f'Query parameters: {kwargs}')
 
-        LOGGER.debug('Query type: {}'.format(kwargs.get('query_type')))
+        LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
 
         wkt = kwargs.get('wkt')
         if wkt is not None:
             LOGGER.debug('Processing WKT')
-            LOGGER.debug('Geometry type: {}'.format(wkt.type))
+            LOGGER.debug(f'Geometry type: {wkt.type}')
             if wkt.type == 'Point':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.x
                 query_params[self._coverage_properties['y_axis_label']] = wkt.y
@@ -102,13 +102,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         # example of fetching instance passed
         # TODO: apply accordingly
         instance = kwargs.get('instance')
-        LOGGER.debug('instance: {}'.format(instance))
+        LOGGER.debug(f'instance: {instance}')
 
         datetime_ = kwargs.get('datetime_')
         if datetime_ is not None:
             query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
 
-        LOGGER.debug('query parameters: {}'.format(query_params))
+        LOGGER.debug(f'query parameters: {query_params}')
 
         try:
             if select_properties:

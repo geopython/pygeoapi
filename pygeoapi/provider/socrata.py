@@ -79,7 +79,7 @@ class SODAServiceProvider(BaseProvider):
                 [dataset] = self.client.datasets(ids=[self.resource_id])
                 resource = dataset['resource']
             except json.decoder.JSONDecodeError as err:
-                LOGGER.error('Bad response at {}'.format(self.data))
+                LOGGER.error(f'Bad response at {self.data}')
                 raise ProviderConnectionError(err)
 
             fields = self.properties or resource[FIELD_NAME]
@@ -269,4 +269,4 @@ class SODAServiceProvider(BaseProvider):
         return int(response['count'])
 
     def __repr__(self):
-        return '<SODAServiceProvider> {}'.format(self.data)
+        return f'<SODAServiceProvider> {self.data}'

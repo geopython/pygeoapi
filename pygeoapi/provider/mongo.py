@@ -60,7 +60,7 @@ class MongoProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        LOGGER.info('Mongo source config: {}'.format(self.data))
+        LOGGER.info(f'Mongo source config: {self.data}')
 
         dbclient = MongoClient(self.data)
         self.featuredb = dbclient.get_default_database()
@@ -167,7 +167,7 @@ class MongoProvider(BaseProvider):
         if featurelist:
             return featurelist[0]
         else:
-            err = 'item {} not found'.format(identifier)
+            err = f'item {identifier} not found'
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
 

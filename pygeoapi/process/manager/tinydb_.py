@@ -28,10 +28,10 @@
 # =================================================================
 
 import fcntl
-import io
 import json
 import logging
-import os
+from pathlib import Path
+from typing import Any, Tuple
 
 import tinydb
 
@@ -44,7 +44,7 @@ LOGGER = logging.getLogger(__name__)
 class TinyDBManager(BaseManager):
     """TinyDB Manager"""
 
-    def __init__(self, manager_def):
+    def __init__(self, manager_def: dict):
         """
         Initialize object
 
@@ -56,7 +56,7 @@ class TinyDBManager(BaseManager):
         super().__init__(manager_def)
         self.is_async = True
 
-    def _connect(self, mode='r'):
+    def _connect(self, mode: str = 'r') -> bool:
         """
         connect to manager
 
@@ -70,7 +70,7 @@ class TinyDBManager(BaseManager):
 
         return True
 
-    def destroy(self):
+    def destroy(self) -> bool:
         """
         Destroy manager
 
@@ -81,7 +81,7 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return True
 
-    def get_jobs(self, status=None):
+    def get_jobs(self, status: JobStatus = None) -> list:
         """
         Get jobs
 
@@ -97,7 +97,7 @@ class TinyDBManager(BaseManager):
 
         return jobs_list
 
-    def add_job(self, job_metadata):
+    def add_job(self, job_metadata: dict) -> str:
         """
         Add a job
 
@@ -112,7 +112,7 @@ class TinyDBManager(BaseManager):
 
         return doc_id
 
-    def update_job(self, job_id, update_dict):
+    def update_job(self, job_id: str, update_dict: dict) -> bool:
         """
         Updates a job
 
@@ -128,7 +128,7 @@ class TinyDBManager(BaseManager):
 
         return True
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: str) -> bool:
         """
         Deletes a job
 
@@ -139,9 +139,9 @@ class TinyDBManager(BaseManager):
         # delete result file if present
         job_result = self.get_job(job_id)
         if job_result:
-            location = job_result.get('location', None)
+            location = job_result.get('location')
             if location and self.output_dir is not None:
-                os.remove(location)
+                Path(location).unlink()
 
         self._connect(mode='w')
         removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
@@ -149,7 +149,7 @@ class TinyDBManager(BaseManager):
 
         return removed
 
-    def get_job(self, job_id):
+    def get_job(self, job_id: str) -> dict:
         """
         Get a single job
 
@@ -166,7 +166,7 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return result
 
-    def get_job_result(self, job_id):
+    def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
         Get a job's status, and actual output of executing the process
 
@@ -180,8 +180,8 @@ class TinyDBManager(BaseManager):
             # job does not exist
             return None
 
-        location = job_result.get('location', None)
-        mimetype = job_result.get('mimetype', None)
+        location = job_result.get('location')
+        mimetype = job_result.get('mimetype')
         job_status = JobStatus[job_result['status']]
 
         if not job_status == JobStatus.successful:
@@ -191,11 +191,13 @@ class TinyDBManager(BaseManager):
             # Job data was not written for some reason
             # TODO log/raise exception?
             return (None,)
+        else:
+            location = Path(location)
 
-        with io.open(location, 'r', encoding='utf-8') as filehandler:
+        with location.open('r', encoding='utf-8') as filehandler:
             result = json.load(filehandler)
 
         return mimetype, result
 
     def __repr__(self):
-        return '<TinyDBManager> {}'.format(self.name)
+        return f'<TinyDBManager> {self.name}'

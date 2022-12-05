@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,8 +27,8 @@
 #
 # =================================================================
 
-import io
 import os
+from pathlib import Path
 import re
 from setuptools import Command, find_packages, setup
 import shutil
@@ -58,7 +58,7 @@ class PyCleanBuild(Command):
 
         for file_ in remove_files:
             try:
-                os.remove(file_)
+                Path(file_).unlink()
             except OSError:
                 pass
 
@@ -68,9 +68,9 @@ class PyCleanBuild(Command):
             except OSError:
                 pass
 
-        for file_ in os.listdir('..'):
-            if file_.endswith(('.deb', '.build', '.changes')):
-                os.remove('../{}'.format(file_))
+        for file_ in [Path(p) for p in os.listdir('..')]:
+            if file_.stem in ['.deb', '.build', '.changes']:
+                os.unlink(Path('..', file_))
 
 
 class PyTest(Command):
@@ -107,16 +107,20 @@ class PyCoverage(Command):
         raise SystemExit(errno)
 
 
-def read(filename, encoding='utf-8'):
+def read(filename):
     """read file contents"""
-    full_path = os.path.join(os.path.dirname(__file__), filename)
-    with io.open(full_path, encoding=encoding) as fh:
+
+    fullpath = Path(__file__).resolve().parent / filename
+
+    with fullpath.open() as fh:
         contents = fh.read().strip()
+
     return contents
 
 
 def get_package_version():
     """get version from top-level package init"""
+
     version_file = read('pygeoapi/__init__.py')
     version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
                               version_file, re.M)
@@ -129,8 +133,9 @@ LONG_DESCRIPTION = read('README.md')
 
 DESCRIPTION = 'pygeoapi provides an API to geospatial data'
 
-if os.path.exists('MANIFEST'):
-    os.unlink('MANIFEST')
+MANIFEST = Path('MANIFEST')
+if MANIFEST.exists():
+    MANIFEST.unlink()
 
 setup(
     name='pygeoapi',

@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class BaseFormatter:
     """generic Formatter ABC"""
 
-    def __init__(self, formatter_def):
+    def __init__(self, formatter_def: dict):
         """
         Initialize object
 
@@ -51,7 +51,7 @@ class BaseFormatter:
         if 'geom' in formatter_def:
             self.geom = formatter_def['geom']
 
-    def write(self, options={}, data=None):
+    def write(self, options: dict = {}, data: dict = None) -> str:
         """
         Generate data in specified format
 
@@ -64,7 +64,7 @@ class BaseFormatter:
         raise NotImplementedError()
 
     def __repr__(self):
-        return '<BaseFormatter> {}'.format(self.name)
+        return f'<BaseFormatter> {self.name}'
 
 
 class FormatterGenericError(Exception):

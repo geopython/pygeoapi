@@ -3,6 +3,7 @@
 # Authors: Timo Tuunanen <timo.tuunanen@rdvelho.com>
 #
 # Copyright (c) 2019 Timo Tuunanen
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,7 +38,7 @@ mongodb = 'testdb'
 mongocollection = 'testplaces'
 
 if len(sys.argv) == 1:
-    print('Usage: {} <path/to/data.geojson>'.format(sys.argv[0]))
+    print(f'Usage: {sys.argv[0]} <path/to/data.geojson>')
     sys.exit(1)
 
 myclient = MongoClient(monogourl)

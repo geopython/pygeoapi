@@ -33,6 +33,7 @@
 """ Starlette module providing the route paths to the api"""
 
 import os
+from pathlib import Path
 
 import click
 
@@ -53,10 +54,14 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
-STATIC_DIR = '{}{}static'.format(os.path.dirname(os.path.realpath(__file__)),
-                                 os.sep)
-if 'templates' in CONFIG['server']:
-    STATIC_DIR = CONFIG['server']['templates'].get('static', STATIC_DIR)
+p = Path(__file__)
+
+STATIC_DIR = Path(p).parent.resolve() / 'static'
+
+try:
+    STATIC_DIR = Path(CONFIG['server']['templates']['static'])
+except KeyError:
+    pass
 
 app = Starlette()
 app.mount('/static', StaticFiles(directory=STATIC_DIR))
@@ -66,11 +71,14 @@ if CONFIG['server'].get('cors', False):
     from starlette.middleware.cors import CORSMiddleware
     app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
-OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+try:
+    OGC_SCHEMAS_LOCATION = Path(CONFIG['server']['ogc_schemas_location'])
+except KeyError:
+    OGC_SCHEMAS_LOCATION = None
 
 if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.startswith('http')):
-    if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        not OGC_SCHEMAS_LOCATION.name.startswith('http')):
+    if not OGC_SCHEMAS_LOCATION.exists():
         raise RuntimeError('OGC schemas misconfigured')
     app.mount('/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION))
 
