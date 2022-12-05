@@ -2831,7 +2831,7 @@ class API:
 
         query_args['format_'] = request.params.get('f', 'png')
         query_args['style'] = style
-        query_args['crs'] = request.params.get('crs', 4326)
+        query_args['crs'] = request.params.get('bbox-crs', 4326)
         query_args['transparent'] = request.params.get('transparent', True)
 
         try:
@@ -2840,7 +2840,7 @@ class API:
         except ValueError:
             exception = {
                 'code': 'InvalidParameterValue',
-                'description': 'invalid width/height/crs'
+                'description': 'invalid width/height'
             }
             headers['Content-type'] = 'application/json'
             LOGGER.error(exception)

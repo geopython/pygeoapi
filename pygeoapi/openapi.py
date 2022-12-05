@@ -1009,6 +1009,7 @@ def get_oas_30(cfg):
                             'style': 'form',
                             'explode': False
                         },
+                        {'$ref': '#/components/parameters/bbox-crs'},
                         map_f
                     ],
                     'responses': {
@@ -1282,7 +1283,9 @@ def generate(ctx, config_file, output_file, format_='yaml'):
     if output_file is None:
         click.echo(content)
     else:
+        click.echo(f'Generating {output_file.name}')
         output_file.write(content)
+        click.echo('Done')
 
 
 @click.command()
