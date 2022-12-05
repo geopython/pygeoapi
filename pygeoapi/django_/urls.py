@@ -113,6 +113,11 @@ urlpatterns = [
         name='collection-tiles',
     ),
     path(
+        'collections/<str:collection_id>/tiles/<str:tileMatrixSetId>',
+        views.collection_tiles_metadata,
+        name='collection-tiles-metadata',
+    ),
+    path(
         'collections/<str:collection_id>/tiles/<str:tileMatrixSetId>/metadata',
         views.collection_tiles_metadata,
         name='collection-tiles-metadata',
