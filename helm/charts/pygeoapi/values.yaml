@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: eo4phregistry.azurecr.io/geopython/pygeoapi
+  repository: geopython/pygeoapi
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.12.0"
+  tag: "0.13.0"
 
 env:
   - name: SCRIPT_NAME
