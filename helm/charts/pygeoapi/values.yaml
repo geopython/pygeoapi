@@ -11,6 +11,7 @@ image:
   tag: "0.13.0"
 
 env:
+  # Subpath for Ingress
   - name: SCRIPT_NAME
     value: '/'
 
