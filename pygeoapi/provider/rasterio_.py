@@ -37,6 +37,8 @@ import rasterio.mask
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
 from pygeoapi.util import read_data
+from osgeo import osr as osgeo_osr
+import re
 
 LOGGER = logging.getLogger(__name__)
 
@@ -176,7 +178,7 @@ class RasterioProvider(BaseProvider):
         """
 
         bands = properties
-        LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
+        LOGGER.debug('Format: {}, bands: {}, subsets: {}'.format(format_, bands, subsets))
 
         args = {
             'indexes': None
@@ -186,7 +188,7 @@ class RasterioProvider(BaseProvider):
         if not bbox:
             bbox = []
 
-        if all([not bands, not subsets, not bbox, format_ != 'json']):
+        if all([not bands, not subsets, not bbox, format_ != 'json', format_ != 'metadata']):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
 
@@ -274,7 +276,8 @@ class RasterioProvider(BaseProvider):
                 for key, value in self.options.items():
                     out_meta[key] = value
 
-            if shapes:  # spatial subset
+            if shapes:
+                # Read pixels using spatial subset
                 try:
                     LOGGER.debug('Clipping data with bbox')
                     out_image, out_transform = rasterio.mask.mask(
@@ -291,7 +294,11 @@ class RasterioProvider(BaseProvider):
                                  'height': out_image.shape[1],
                                  'width': out_image.shape[2],
                                  'transform': out_transform})
-            else:  # no spatial subset
+            elif format_ == 'metadata':
+                # When querying metadata only, skip reading the pixels
+                pass
+            else:
+                # Read pixels using no spatial subset
                 LOGGER.debug('Creating data in memory with band selection')
                 out_image = _data.read(indexes=args['indexes'])
 
@@ -311,6 +318,25 @@ class RasterioProvider(BaseProvider):
                 ]
 
             out_meta['units'] = _data.units
+
+            if format_ == 'metadata':
+                LOGGER.debug('Returning coverage metadata only')
+                # Convert the CRS URL into a Proj4 string. The expectation is
+                # to have a proj4js-based client that benefits greatly from this.
+                crs = out_meta['crs'] = str( self._coverage_properties['bbox_crs'] )
+
+                if crs == "http://www.opengis.net/def/crs/OGC/1.3/CRS84":
+                    out_meta['proj4str'] = "+proj=longlat +datum=WGS84 +no_defs"
+                else:
+                    match = re.compile("http:\/\/www.opengis.net\/def\/crs\/(?:(?:OGC)|(?:EPSG))\/.*\/\/?(\d+)").match(crs)
+
+                    if match != None:
+                        prj = osgeo_osr.SpatialReference()
+                        prj.ImportFromEPSG(int(match.group(1)))
+                        out_meta['proj4str'] = prj.ExportToProj4()
+                    else:
+                        out_meta['proj4str'] = ""
+                return out_meta
 
             LOGGER.debug('Serializing data in memory')
             with MemoryFile() as memfile:
