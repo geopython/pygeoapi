@@ -73,7 +73,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
                  select_properties=[], skip_geometry=False, **kwargs):
 
            # optionally specify the output filename pygeoapi can use as part
-           of the response (HTTP Content-Disposition header)
+           # of the response (HTTP Content-Disposition header)
            self.filename = "my-cool-filename.dat"
 
            # open data file (self.data) and process, return
