@@ -281,7 +281,7 @@ class MVTProvider(BaseTileProvider):
                         metadata_json_content["json"])["vector_layers"]
                 return content.dict()
             else:
-                msg = f'No tiles metadata json available: {self.service_metadata_url}'
+                msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
         elif metadata_format == TilesMetadataFormat.CUSTOMJSON:
