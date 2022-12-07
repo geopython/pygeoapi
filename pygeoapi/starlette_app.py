@@ -524,15 +524,19 @@ def serve(ctx, server=None, debug=False):
     as a uvicorn server. Not recommend for production.
 
     :param server: `string` of server type
-    :param debug: `bool` of whether to run in debug mode
+    :param debug: `bool` of whether to run in debug mode,
+                    default log level is INFO
 
     :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    log_level = 'info'
+    if debug:
+        log_level = 'debug'
     uvicorn.run(
         "pygeoapi.starlette_app:app",
         reload=True,
+        log_level=log_level,
         host=api_.config['server']['bind']['host'],
         port=api_.config['server']['bind']['port'])
 
