@@ -311,9 +311,7 @@ class MVTProvider(BaseTileProvider):
 
             links = []
             service_url_link_type = "application/vnd.mapbox-vector-tile"
-            service_url_link_title = "{} vector tiles for {}".format(
-                tileset, layer
-            )
+            service_url_link_title = f'{tileset} vector tiles for {layer}'
             service_url_link = LinkType(href=service_url, rel="item",
                                         type=service_url_link_type,
                                         title=service_url_link_title)
