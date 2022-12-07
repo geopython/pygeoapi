@@ -2510,14 +2510,14 @@ class API:
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
-                'title': f"{dataset} - {matrix['tileMatrixSet']} - {F_JSON}",
-                'href': f"{self.get_collections_url()}/{dataset}/tiles/{matrix['tileMatrixSet']}?f={F_JSON}"  # noqa
+                'title': f'{dataset} - {matrix.tileMatrixSet} - {F_JSON}',
+                'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
             })
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
-                'title': f"{dataset} - {matrix['tileMatrixSet']} - {F_HTML}",
-                'href': f"{self.get_collections_url()}/{dataset}/tiles/{matrix['tileMatrixSet']}?f={F_HTML}"  # noqa
+                'title': f'{dataset} - {matrix.tileMatrixSet} - {F_HTML}',
+                'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
             })
             tiles['tilesets'].append(tile_matrix)
 
