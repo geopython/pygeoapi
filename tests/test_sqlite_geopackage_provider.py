@@ -38,13 +38,15 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.sqlite import SQLiteGPKGProvider
 
+from .util import get_test_file_path
+
 
 @pytest.fixture()
 def config_sqlite():
     return {
         'name': 'SQLiteGPKG',
         'type': 'feature',
-        'data': './tests/data/ne_110m_admin_0_countries.sqlite',
+        'data': get_test_file_path('data/ne_110m_admin_0_countries.sqlite'),
         'id_field': 'ogc_fid',
         'table': 'ne_110m_admin_0_countries'
     }
@@ -55,7 +57,7 @@ def config_geopackage():
     return {
         'name': 'SQLiteGPKG',
         'type': 'feature',
-        'data': './tests/data/poi_portugal.gpkg',
+        'data': get_test_file_path('data/poi_portugal.gpkg'),
         'id_field': 'osm_id',
         'table': 'poi_portugal'
     }
@@ -175,4 +177,4 @@ def test_get_geopackage_skip_geometry(config_geopackage):
 
     feature_collection = p.query(skip_geometry=True)
     for feature in feature_collection['features']:
-        assert feature['geomtry'] is None
+        assert feature['geometry'] is None
