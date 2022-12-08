@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Martin Pontius <m.pontius@52north.org>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2022 52°North Spatial Information Research GmbH
 # Copyright (c) 2022 Tom Kralidis

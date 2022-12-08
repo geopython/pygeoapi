@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Timo Tuunanen <timo.tuunanen@rdvelho.com>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Timo Tuunanen
 # Copyright (c) 2022 Tom Kralidis

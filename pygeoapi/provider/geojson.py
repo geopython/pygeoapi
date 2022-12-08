@@ -3,7 +3,7 @@
 # Authors: Matthew Perry <perrygeo@gmail.com>
 #
 # Copyright (c) 2018 Matthew Perry
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
