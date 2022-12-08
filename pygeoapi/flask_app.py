@@ -67,7 +67,7 @@ APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
 
 api_ = API(CONFIG)
 
-OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location', None)
+OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
 
 if (OGC_SCHEMAS_LOCATION is not None and
         not OGC_SCHEMAS_LOCATION.startswith('http')):

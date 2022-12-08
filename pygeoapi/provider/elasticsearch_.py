@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2021 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -67,8 +67,8 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Setting Elasticsearch properties')
         self.is_gdal = False
 
-        LOGGER.debug('host: {}'.format(self.es_host))
-        LOGGER.debug('index: {}'.format(self.index_name))
+        LOGGER.debug(f'host: {self.es_host}')
+        LOGGER.debug(f'index: {self.index_name}')
 
         self.type_name = 'FeatureCollection'
         self.url_parsed = urlparse(self.es_host)
@@ -94,7 +94,7 @@ class ElasticsearchProvider(BaseProvider):
         if self.url_parsed.path:
             url_settings['url_prefix'] = self.url_parsed.path
 
-        LOGGER.debug('URL settings: {}'.format(url_settings))
+        LOGGER.debug(f'URL settings: {url_settings}')
         LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch([url_settings])
         if not self.es.ping():
@@ -262,14 +262,14 @@ class ElasticsearchProvider(BaseProvider):
             LOGGER.debug('processing sortby')
             query['sort'] = []
             for sort in sortby:
-                LOGGER.debug('processing sort object: {}'.format(sort))
+                LOGGER.debug(f'processing sort object: {sort}')
 
                 sp = sort['property']
 
                 if (self.fields[sp]['type'] == 'string'
                         and self.fields[sp].get('format') != 'date'):
                     LOGGER.debug('setting ES .raw on property')
-                    sort_property = '{}.raw'.format(self.mask_prop(sp))
+                    sort_property = f'{self.mask_prop(sp)}.raw'
                 else:
                     sort_property = self.mask_prop(sp)
 
@@ -318,7 +318,7 @@ class ElasticsearchProvider(BaseProvider):
         try:
             LOGGER.debug('querying Elasticsearch')
             if filterq:
-                LOGGER.debug('adding cql object: {}'.format(filterq.json()))
+                LOGGER.debug(f'adding cql object: {filterq.json()}')
                 query = update_query(input_query=query, cql=filterq)
             LOGGER.debug(json.dumps(query, indent=4))
 
@@ -378,12 +378,12 @@ class ElasticsearchProvider(BaseProvider):
         """
 
         try:
-            LOGGER.debug('Fetching identifier {}'.format(identifier))
+            LOGGER.debug(f'Fetching identifier {identifier}')
             result = self.es.get(index=self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result)
         except exceptions.NotFoundError as err:
-            LOGGER.debug('Not found via ES id query: {}'.format(err))
+            LOGGER.debug(f'Not found via ES id query: {err}')
             LOGGER.debug('Trying via a real query')
 
             query = {
@@ -425,7 +425,7 @@ class ElasticsearchProvider(BaseProvider):
 
         identifier, json_data = self._load_and_prepare_item(item)
 
-        LOGGER.debug('Inserting data with identifier {}'.format(identifier))
+        LOGGER.debug(f'Inserting data with identifier {identifier}')
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
         LOGGER.debug('Item added')
 
@@ -441,7 +441,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: `bool` of update result
         """
 
-        LOGGER.debug('Updating item {}'.format(identifier))
+        LOGGER.debug(f'Updating item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
             item, identifier, raise_if_exists=False)
 
@@ -458,7 +458,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: `bool` of deletion result
         """
 
-        LOGGER.debug('Deleting item {}'.format(identifier))
+        LOGGER.debug(f'Deleting item {identifier}')
         _ = self.es.delete(index=self.index_name, id=identifier)
 
         return True
@@ -528,13 +528,13 @@ class ElasticsearchProvider(BaseProvider):
         if self.is_gdal:
             return property_name
         else:
-            return 'properties.{}'.format(property_name)
+            return f'properties.{property_name}'
 
     def get_properties(self):
         all_properties = []
 
-        LOGGER.debug('configured properties: {}'.format(self.properties))
-        LOGGER.debug('selected properties: {}'.format(self.select_properties))
+        LOGGER.debug(f'configured properties: {self.properties}')
+        LOGGER.debug(f'selected properties: {self.select_properties}')
 
         if not self.properties and not self.select_properties:
             all_properties = self.get_fields()
@@ -543,11 +543,11 @@ class ElasticsearchProvider(BaseProvider):
         else:
             all_properties = set(self.properties) | set(self.select_properties)
 
-        LOGGER.debug('resulting properties: {}'.format(all_properties))
+        LOGGER.debug(f'resulting properties: {all_properties}')
         return all_properties
 
     def __repr__(self):
-        return '<ElasticsearchProvider> {}'.format(self.data)
+        return f'<ElasticsearchProvider> {self.data}'
 
 
 class ElasticsearchCatalogueProvider(ElasticsearchProvider):
@@ -588,7 +588,7 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
         return records
 
     def __repr__(self):
-        return '<ElasticsearchCatalogueProvider> {}'.format(self.data)
+        return f'<ElasticsearchCatalogueProvider> {self.data}'
 
 
 class ESQueryBuilder:
@@ -769,7 +769,5 @@ def update_query(input_query: Dict, cql: CQLModel):
     output_query = _build_query(query, cql)
     s = s.query(output_query)
 
-    LOGGER.debug('Enhanced query: {}'.format(
-        json.dumps(s.to_dict())
-    ))
+    LOGGER.debug(f'Enhanced query: {json.dumps(s.to_dict())}')
     return s.to_dict()

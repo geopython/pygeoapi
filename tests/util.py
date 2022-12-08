@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,8 +27,8 @@
 #
 # =================================================================
 
-import os
 import logging
+import os.path
 
 from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
@@ -37,7 +37,7 @@ from werkzeug.datastructures import ImmutableMultiDict
 LOGGER = logging.getLogger(__name__)
 
 
-def get_test_file_path(filename):
+def get_test_file_path(filename: str) -> str:
     """helper function to open test file safely"""
 
     if os.path.isfile(filename):

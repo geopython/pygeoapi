@@ -61,7 +61,7 @@ class WMSFacadeProvider(BaseProvider):
 
         BaseProvider.__init__(self, provider_def)
 
-        LOGGER.debug('pyproj version: {}'.format(pyproj.__version__))
+        LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
               height=300, crs=4326, datetime_=None, transparent=True,
@@ -90,7 +90,7 @@ class WMSFacadeProvider(BaseProvider):
                              [bbox[1], bbox[0], bbox[3], bbox[2]])
         else:
             LOGGER.debug('Reprojecting coordinates')
-            LOGGER.debug('Output CRS: {}'.format(CRS_CODES[crs]))
+            LOGGER.debug(f'Output CRS: {CRS_CODES[crs]}')
 
             src_crs = pyproj.CRS.from_string('epsg:4326')
             dest_crs = pyproj.CRS.from_string(CRS_CODES[crs])
@@ -128,7 +128,7 @@ class WMSFacadeProvider(BaseProvider):
         else:
             request_url = '?'.join([self.data, urlencode(params)])
 
-        LOGGER.debug('WMS 1.3.0 request url: {}'.format(request_url))
+        LOGGER.debug(f'WMS 1.3.0 request url: {request_url}')
 
         response = requests.get(request_url)
 
@@ -140,4 +140,4 @@ class WMSFacadeProvider(BaseProvider):
         return response.content
 
     def __repr__(self):
-        return '<MapScriptProvider> {}'.format(self.data)
+        return f'<MapScriptProvider> {self.data}'

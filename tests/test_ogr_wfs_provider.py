@@ -6,7 +6,7 @@
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -259,10 +259,10 @@ def test_query_hits_ms(config_MapServer_WFS_cities):
 
     p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 5000
 
@@ -272,10 +272,10 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
 
     p = OGRProvider(config_geosol_gs_WFS)
     feature_collection = p.query(resulttype='hits')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits == 186
 
@@ -286,10 +286,10 @@ def test_query_hits_geosol_gs(config_geosol_gs_WFS):
 #
 #     p = OGRProvider(config_MapServer_WFS_continents)
 #     feature_collection = p.query(resulttype='hits')
-#     assert feature_collection.get('type', None) == 'FeatureCollection'
-#     features = feature_collection.get('features', None)
+#     assert feature_collection.get('type') == 'FeatureCollection'
+#     features = feature_collection.get('features')
 #     assert len(features) == 0
-#     hits = feature_collection.get('numberMatched', None)
+#     hits = feature_collection.get('numberMatched')
 #     assert hits is not None
 #     assert hits > 8000000
 
@@ -301,10 +301,10 @@ def test_query_bbox_hits_ms(config_MapServer_WFS_cities):
     feature_collection = p.query(
         bbox=[-47, -24, -45, -22], resulttype='hits')
 
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits > 1
 
@@ -315,10 +315,10 @@ def test_query_bbox_hits_gs(config_MapServer_WFS_continents):
     p = OGRProvider(config_MapServer_WFS_continents)
     feature_collection = p.query(bbox=[-61, 46, -60, 47], resulttype='hits')
 
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits == 3
 
@@ -332,10 +332,10 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
     # feature_collection = p.query(bbox=(
     # 5.763409, 52.060197, 5.769256, 52.061976), resulttype='hits')
 
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is not None
     assert hits == 1
 
@@ -348,15 +348,15 @@ def test_query_bbox_ms(config_MapServer_WFS_cities):
     # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
         bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) > 0
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -365,15 +365,15 @@ def test_query_bbox_gs(config_MapServer_WFS_continents):
 
     p = OGRProvider(config_MapServer_WFS_continents)
     feature_collection = p.query(bbox=(5, 52, 6, 53), resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 4
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
     assert properties['NA2DESC'] == 'Netherlands'
     assert properties['NA3DESC'] == 'Europe'
@@ -388,16 +388,16 @@ def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
     feature_collection = p.query(
         bbox=(681417.0, 4849032.0, 681417.3, 4849032.3),
         resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 1
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
     assert properties['sito'] == 'Centro storico di Firenze'
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -406,15 +406,15 @@ def test_query_with_limit_ms(config_MapServer_WFS_cities):
 
     p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(limit=2, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 2
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -423,17 +423,17 @@ def test_query_with_offset(config_MapServer_WFS_cities):
 
     p = OGRProvider(config_MapServer_WFS_cities)
     feature_collection = p.query(offset=20, limit=5, resulttype='results')
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert len(features) == 5
-    hits = feature_collection.get('numberMatched', None)
+    hits = feature_collection.get('numberMatched')
     assert hits is None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
     assert feature['id'] == 'cities.411'
     assert '6610764' in properties['POPULATION']
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 

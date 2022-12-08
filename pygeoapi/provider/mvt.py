@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,23 +62,15 @@ class MVTProvider(BaseTileProvider):
         super().__init__(provider_def)
         if is_url(self.data):
             url = urlparse(self.data)
-            baseurl = '{}://{}'.format(url.scheme, url.netloc)
+            baseurl = f'{url.scheme}://{url.netloc}'
             param_type = '?f=mvt'
-            layer = '/{}'.format(self.get_layer())
+            layer = f'/{self.get_layer()}'
 
             LOGGER.debug('Extracting layer name from URL')
-            LOGGER.debug('Layer: {}'.format(layer))
+            LOGGER.debug(f'Layer: {layer}')
 
-            tilepath = '{}/tiles'.format(layer)
-            servicepath = \
-                '{}/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                    tilepath,
-                    'tileMatrixSetId',
-                    'tileMatrix',
-                    'tileRow',
-                    'tileCol',
-                    param_type
-                    )
+            tilepath = f'{layer}/tiles'
+            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
 
             self._service_url = url_join(baseurl, servicepath)
 
@@ -86,19 +80,19 @@ class MVTProvider(BaseTileProvider):
         else:
             data_path = Path(self.data)
             if not data_path.exists():
-                msg = 'Service does not exist: {}'.format(self.data)
+                msg = f'Service does not exist: {self.data}'
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
             self._service_url = data_path
             metadata_path = data_path.joinpath('metadata.json')
             if not metadata_path.exists():
-                msg = 'Service metadata does not exist: {}'.format(
-                    metadata_path.name)
+                msg = f'Service metadata does not exist: {metadata_path.name}'
+                LOGGER.error(msg)
                 LOGGER.warning(msg)
             self._service_metadata_url = metadata_path
 
     def __repr__(self):
-        return '<MVTProvider> {}'.format(self.data)
+        return f'<MVTProvider> {self.data}'
 
     @property
     def service_url(self):
@@ -117,8 +111,7 @@ class MVTProvider(BaseTileProvider):
 
             if ('/{z}/{x}/{y}' not in url.path and
                     '/{z}/{y}/{x}' not in url.path):
-                msg = 'This url template is not supported yet: {}'.format(
-                    url.path)
+                msg = f'This url template is not supported yet: {url.path}'
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
 
@@ -158,18 +151,11 @@ class MVTProvider(BaseTileProvider):
         """
 
         url = urlparse(self.data)
-        baseurl = baseurl or '{}://{}'.format(url.scheme, url.netloc)
+        baseurl = baseurl or f'{url.scheme}://{url.netloc}'
         # @TODO: support multiple types
         tile_type = tile_type or self.format_type
-        servicepath = \
-            servicepath or \
-            '{}/tiles/{{{}}}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                url.path.split('/{z}/{x}/{y}')[0],
-                'tileMatrixSetId',
-                'tileMatrix',
-                'tileRow',
-                'tileCol',
-                tile_type)
+        basepath = url.path.split('/{z}/{x}/{y}')[0]
+        servicepath = servicepath or f'{basepath}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{tile_type}'  # noqa
 
         if servicepath.startswith(baseurl):
             self._service_url = servicepath
@@ -185,18 +171,18 @@ class MVTProvider(BaseTileProvider):
                     'type': 'application/json',
                     'rel': 'self',
                     'title': 'This collection as multi vector tilesets',
-                    'href': '{}?f=json'.format(tile_matrix_set),
+                    'href': f'{tile_matrix_set}?f=json'
                 },
                 {
                     'type': self.mimetype,
                     'rel': 'item',
                     'title': 'This collection as multi vector tiles',
-                    'href': self.service_url,
+                    'href': self.service_url
                 }, {
                     'type': 'application/json',
                     'rel': 'describedby',
                     'title': 'Collection metadata in TileJSON format',
-                    'href': '{}?f=json'.format(self.service_metadata_url),
+                    'href': f'{self.service_metadata_url}?f=json'
                 }
             ]
         }
@@ -220,36 +206,32 @@ class MVTProvider(BaseTileProvider):
             format_ = self.format_type
         if is_url(self.data):
             url = urlparse(self.data)
-            base_url = '{}://{}'.format(url.scheme, url.netloc)
+            base_url = f'{url.scheme}://{url.netloc}'
+
+            if url.query:
+                url_query = f'?{url.query}'
+            else:
+                url_query = ''
+
             with requests.Session() as session:
                 session.get(base_url)
                 # There is a "." in the url path
                 if '.' in url.path:
-                    resp = session.get(
-                        '{base_url}/{lyr}/{z}/{y}/{x}.{f}{q}'.format(
-                            base_url=base_url, lyr=layer,
-                            z=z, y=y, x=x, f=format_, q="?" + url.query
-                            if url.query else ''))
+                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}.{f}{url_query}')  # noqa
                 # There is no "." in the url )e.g. elasticsearch)
                 else:
-                    resp = session.get(
-                        '{base_url}/{lyr}/{z}/{y}/{x}{q}'.format(
-                            base_url=base_url, lyr=layer,
-                            z=z, y=y, x=x, q="?" + url.query
-                            if url.query else ''))
+                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
                 resp.raise_for_status()
                 return resp.content
         else:
             if not isinstance(self.service_url, Path):
-                msg = 'Wrong data path configuration: {}'.format(
-                    self.service_url)
+                msg = f'Wrong data path configuration: {self.service_url}'
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
             else:
                 try:
-                    with open(self.service_url.joinpath(
-                        '{z}/{y}/{x}.{f}'.format(
-                            z=z, y=y, x=x, f=format_)), 'rb') as tile:
+                    service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
+                    with open(service_url_path) as tile:
                         return tile.read()
                 except FileNotFoundError as err:
                     raise ProviderTileNotFoundError(err)
@@ -272,28 +254,25 @@ class MVTProvider(BaseTileProvider):
 
         if is_url(self.data):
             url = urlparse(self.data)
-            base_url = '{}://{}'.format(url.scheme, url.netloc)
+            base_url = f'{url.scheme}://{url.netloc}'
             with requests.Session() as session:
                 session.get(base_url)
-                resp = session.get('{base_url}/{lyr}/metadata.json'.format(
-                    base_url=base_url, lyr=layer))
+                resp = session.get(f'{base_url}/{layer}/metadata.json')
                 resp.raise_for_status()
             metadata_json_content = resp.json()
         else:
             if not isinstance(self.service_metadata_url, Path):
-                msg = 'Wrong data path configuration: {}'.format(
-                    self.service_metadata_url)
+                msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
+
             if self.service_metadata_url.exists():
                 with open(self.service_metadata_url, 'r') as md_file:
                     metadata_json_content = json.loads(md_file.read())
 
         service_url = urljoin(
             server_url,
-            'collections/{}/tiles/{}/{{{}}}/{{{}}}/{{{}}}{}'.format(
-                dataset, tileset, 'tileMatrix',
-                'tileRow', 'tileCol', '?f=mvt'))
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
 
         content = {}
         if metadata_format == TilesMetadataFormat.TILEJSON:
@@ -304,8 +283,7 @@ class MVTProvider(BaseTileProvider):
                         metadata_json_content["json"])["vector_layers"]
                 return content.dict()
             else:
-                msg = 'No tiles metadata json available: {}'.format(
-                    self.service_metadata_url)
+                msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
         elif metadata_format == TilesMetadataFormat.CUSTOMJSON:
@@ -315,8 +293,7 @@ class MVTProvider(BaseTileProvider):
                     content['json'] = json.loads(metadata_json_content['json'])
                 return content
             else:
-                msg = 'No custom JSON for tiles metadata available: {}'.format(
-                    self.service_metadata_url)
+                msg = f'No custom JSON for tiles metadata available: {self.service_metadata_url}'  # noqa
                 LOGGER.error(msg)
                 raise ProviderConnectionError(msg)
         else:
@@ -336,9 +313,7 @@ class MVTProvider(BaseTileProvider):
 
             links = []
             service_url_link_type = "application/vnd.mapbox-vector-tile"
-            service_url_link_title = "{} vector tiles for {}".format(
-                tileset, layer
-            )
+            service_url_link_title = f'{tileset} vector tiles for {layer}'
             service_url_link = LinkType(href=service_url, rel="item",
                                         type=service_url_link_type,
                                         title=service_url_link_title)

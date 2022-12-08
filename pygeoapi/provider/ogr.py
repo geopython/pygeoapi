@@ -5,7 +5,7 @@
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -172,7 +172,7 @@ class OGRProvider(BaseProvider):
         self._load_source_helper(self.data_def['source_type'])
 
         # Layer name is required
-        self.layer_name = provider_def.get('layer', None)
+        self.layer_name = provider_def.get('layer')
         if not self.layer_name:
             msg = 'Need explicit \'layer\' attr in provider config'
             LOGGER.error(msg)
@@ -193,7 +193,7 @@ class OGRProvider(BaseProvider):
         source_type = self.data_def['source_type']
         self.driver = self.ogr.GetDriverByName(source_type)
         if not self.driver:
-            msg = 'No Driver for Source: {}'.format(source_type)
+            msg = f'No Driver for Source: {source_type}'
             LOGGER.error(msg)
             raise Exception(msg)
         if self.open_options:
@@ -206,8 +206,7 @@ class OGRProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderConnectionError(err)
             except Exception:
-                msg = 'Ignore errors during the connection for Driver \
-                    {}'.format(source_type)
+                msg = f'Ignore errors during the connection for Driver {source_type}'  # noqa
                 LOGGER.error(msg)
                 self.conn = _ignore_gdal_error(
                     self.gdal, 'OpenEx', self.data_def['source'],
@@ -220,8 +219,7 @@ class OGRProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderConnectionError(err)
             except Exception:
-                msg = 'Ignore errors during the connection for Driver \
-                    {}'.format(source_type)
+                msg = f'Ignore errors during the connection for Driver {source_type}'  # noqa
                 LOGGER.error(msg)
                 # ignore errors for ESRIJSON not having geometry member
                 # see https://github.com/OSGeo/gdal/commit/38b0feed67f80ded32be6c508323d862e1a14474 # noqa
@@ -323,12 +321,10 @@ class OGRProvider(BaseProvider):
 
             if bbox:
                 LOGGER.debug('processing bbox parameter')
-                minx, miny, maxx, maxy = bbox
+                minx, miny, maxx, maxy = [float(b) for b in bbox]
 
-                wkt = "POLYGON (({minx} {miny},{minx} {maxy},{maxx} {maxy}," \
-                      "{maxx} {miny},{minx} {miny}))".format(
-                        minx=float(minx), miny=float(miny),
-                        maxx=float(maxx), maxy=float(maxy))
+                wkt = f"POLYGON (({minx} {miny},{minx} {maxy},{maxx} {maxy}," \
+                      "{maxx} {miny},{minx} {miny}))"
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
                 if self.transform_in:
@@ -343,10 +339,7 @@ class OGRProvider(BaseProvider):
                 LOGGER.debug('processing properties')
 
                 attribute_filter = ' and '.join(
-                    map(
-                        lambda x: '{} = \'{}\''.format(x[0], x[1]),
-                        properties
-                    )
+                    map(lambda x: f'{x[0]} = \'{x[1]}\'', properties)
                 )
 
                 LOGGER.debug(attribute_filter)
@@ -389,11 +382,10 @@ class OGRProvider(BaseProvider):
         """
         result = None
         try:
-            LOGGER.debug('Fetching identifier {}'.format(identifier))
+            LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
 
-            layer.SetAttributeFilter("{field} = '{id}'".format(
-                field=self.id_field, id=identifier))
+            layer.SetAttributeFilter(f"{self.id_field} = '{identifier}'")
 
             ogr_feature = self._get_next_feature(layer, identifier)
             result = self._ogr_feature_to_json(ogr_feature)
@@ -417,7 +409,7 @@ class OGRProvider(BaseProvider):
         return result
 
     def __repr__(self):
-        return '<OGRProvider> {}'.format(self.data)
+        return f'<OGRProvider> {self.data}'
 
     def _load_source_helper(self, source_type):
         """
@@ -442,9 +434,9 @@ class OGRProvider(BaseProvider):
     def _get_next_feature(self, layer, feature_id):
         try:
             if layer.GetFeatureCount() == 0:
-                LOGGER.error("item {} is not found".format(feature_id))
-                raise ProviderItemNotFoundError(
-                    "item {} not found".format(feature_id))
+                msg = f"item {feature_id} is not found"
+                LOGGER.error(msg)
+                raise ProviderItemNotFoundError(msg)
             # Ignore gdal error
             next_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             if next_feature:
@@ -455,8 +447,7 @@ class OGRProvider(BaseProvider):
                     )
             else:
                 raise RuntimeError(
-                    "GDAL has returned a null feature for item {}".format(
-                        feature_id))
+                    f"GDAL has returned a null feature for item {feature_id}")
             return next_feature
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())
@@ -476,11 +467,7 @@ class OGRProvider(BaseProvider):
                 self.id_field, json_feature['id']
             )
         except KeyError as err:
-            LOGGER.error(
-                "Cannot use configured id_field nor fid as id, err={}".format(
-                    err
-                )
-            )
+            LOGGER.error(f"Cannot use configured id_field nor fid as id, err={err}")  # noqa
 
         return json_feature
 
@@ -578,8 +565,7 @@ class SourceHelper:
         layer = self.provider.conn.GetLayerByName(self.provider.layer_name)
 
         if not layer:
-            msg = 'Cannot get Layer {} from OGR Source'.\
-                format(self.provider.layer_name)
+            msg = f'Cannot get Layer {self.provider.layer_name} from OGR Source'  # noqa
             LOGGER.error(msg)
             raise Exception(msg)
 
@@ -635,8 +621,7 @@ class CommonSourceHelper(SourceHelper):
         try:
             self.provider.conn.ReleaseResultSet(self.result_set)
         except Exception as err:
-            msg = 'ReleaseResultSet exception for Layer {}'.format(
-                self.provider.layer_name)
+            msg = f'ReleaseResultSet exception for Layer {self.provider.layer_name}'  # noqa
             LOGGER.error(msg, err)
         finally:
             self.result_set = None
@@ -671,10 +656,7 @@ class CommonSourceHelper(SourceHelper):
 
         self.close()
 
-        sql = 'SELECT * FROM "{ds_name}" LIMIT {limit} OFFSET {offset}'.format(
-            ds_name=self.provider.layer_name,
-            limit=self.limit,
-            offset=self.offset)
+        sql = f'SELECT * FROM "{self.provider.layer_name}" LIMIT {self.limit} OFFSET {self.offset}'  # noqa
         self.result_set = self.provider.conn.ExecuteSQL(sql)
 
         # Reset since needs to be set each time explicitly
@@ -682,8 +664,7 @@ class CommonSourceHelper(SourceHelper):
         self.limit = -1
 
         if not self.result_set:
-            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
-                self.provider.layer_name)
+            msg = f'Cannot get Layer {self.provider.layer_name} via ExecuteSQL'
             LOGGER.error(msg)
             raise Exception(msg)
 
@@ -735,10 +716,7 @@ class ESRIJSONHelper(CommonSourceHelper):
 
         self.close()
 
-        sql = "SELECT * FROM {ds_name} LIMIT {limit} OFFSET {offset}".format(
-            ds_name=self.provider.layer_name,
-            limit=self.limit,
-            offset=self.offset)
+        sql = f"SELECT * FROM {self.provider.layer_name} LIMIT {self.limit} OFFSET {self.offset}"  # noqa
         self.result_set = self.provider.conn.ExecuteSQL(sql)
 
         # Reset since needs to be set each time explicitly
@@ -746,8 +724,7 @@ class ESRIJSONHelper(CommonSourceHelper):
         self.limit = -1
 
         if not self.result_set:
-            msg = 'Cannot get Layer {} via ExecuteSQL'.format(
-                self.provider.layer_name)
+            msg = f'Cannot get Layer {self.provider.layer_name} via ExecuteSQL'
             LOGGER.error(msg)
             raise Exception(msg)
 

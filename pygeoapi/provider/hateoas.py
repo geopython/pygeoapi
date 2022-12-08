@@ -77,7 +77,7 @@ class HateoasProvider(BaseProvider):
             parentpath = urljoin(thispath, '.')
             child_links.append({
                 'rel': 'parent',
-                'href': '{}?f=json'.format(parentpath),
+                'href': f'{parentpath}?f=json',
                 'type': 'application/json'
             })
             child_links.append({
@@ -93,7 +93,7 @@ class HateoasProvider(BaseProvider):
         content = {
             'links': [{
                 'rel': 'root',
-                'href': '{}?f=json'.format(root_link),
+                'href': f'{root_link}?f=json',
                 'type': 'application/json'
                 }, {
                 'rel': 'root',
@@ -101,7 +101,7 @@ class HateoasProvider(BaseProvider):
                 'type': 'text/html'
                 }, {
                 'rel': 'self',
-                'href': '{}?f=json'.format(thispath),
+                'href': f'{thispath}?f=json',
                 'type': 'application/json',
                 }, {
                 'rel': 'self',
@@ -113,19 +113,19 @@ class HateoasProvider(BaseProvider):
 
         LOGGER.debug('Checking if path exists as Catalog, Collection or Asset')
         try:
-            jsondata = _get_json_data('{}/catalog.json'.format(data_path))
+            jsondata = _get_json_data(f'{data_path}/catalog.json')
             resource_type = 'Catalog'
         except Exception:
             try:
-                jsondata = _get_json_data('{}/collection.json'.format(data_path)) # noqa
+                jsondata = _get_json_data(f'{data_path}/collection.json')
                 resource_type = 'Collection'
             except Exception:
                 try:
                     filename = os.path.basename(data_path)
-                    jsondata = _get_json_data('{}/{}.json'.format(data_path, filename)) # noqa
+                    jsondata = _get_json_data(f'{data_path}/{filename}.json')
                     resource_type = 'Assets'
                 except Exception:
-                    msg = 'Resource does not exist: {}'.format(data_path)
+                    msg = f'Resource does not exist: {data_path}'
                     LOGGER.error(msg)
                     raise ProviderNotFoundError(msg)
 
@@ -183,7 +183,7 @@ class HateoasProvider(BaseProvider):
         return content
 
     def __repr__(self):
-        return '<HateoasProvider> {}'.format(self.data)
+        return f'<HateoasProvider> {self.data}'
 
 
 def _get_json_data(jsonpath):

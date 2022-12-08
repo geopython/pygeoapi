@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -193,9 +193,9 @@ class CSVProvider(BaseProvider):
         if item:
             return item
         else:
-            err = 'item {} not found'.format(identifier)
+            err = f'item {identifier} not found'
             LOGGER.error(err)
             raise ProviderItemNotFoundError(err)
 
     def __repr__(self):
-        return '<CSVProvider> {}'.format(self.data)
+        return f'<CSVProvider> {self.data}'

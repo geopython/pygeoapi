@@ -64,7 +64,7 @@ class MapScriptProvider(BaseProvider):
         self.styles = []
         self.default_format = 'png'
 
-        LOGGER.debug('MapScript version: {}'.format(mapscript.MS_VERSION))
+        LOGGER.debug(f'MapScript version: {mapscript.MS_VERSION}')
 
         try:
             LOGGER.debug('Creating new mapObj and layerObj')
@@ -91,7 +91,7 @@ class MapScriptProvider(BaseProvider):
 
             self._layer.setProjection(self._epsg2projstring(self.crs))
 
-            LOGGER.debug('Layer projection: {}'.format(self._layer.getProjection()))  # noqa
+            LOGGER.debug(f'Layer projection: {self._layer.getProjection()}')
 
             if 'style' in self.options:
                 if self.options['style'].endswith(('xml', 'sld')):
@@ -135,7 +135,7 @@ class MapScriptProvider(BaseProvider):
         try:
             image_obj_format = IMAGE_FORMATS[format_]
         except KeyError:
-            LOGGER.error('Bad output format: {}'.format(image_obj_format))
+            LOGGER.error(f'Bad output format: {image_obj_format}')
             raise ProviderQueryError('Bad image format')
 
         LOGGER.debug('Setting output map CRS')
@@ -167,8 +167,8 @@ class MapScriptProvider(BaseProvider):
             if self.time_field is None:
                 LOGGER.debug('collection is not time enabled')
             else:
-                fe = '{} = "{}"'.format(self.time_field, datetime_)
-                LOGGER.debug('Setting temporal filter: {}'.format(fe))
+                fe = f'{self.time_field} = "{datetime_}"'
+                LOGGER.debug(f'Setting temporal filter: {fe}')
                 self._layer.setFilter(fe)
 
         LOGGER.debug('Setting output image properties')
@@ -185,7 +185,7 @@ class MapScriptProvider(BaseProvider):
         self._map.setProjection(map_crs)
         self._map.setConfigOption('MS_NONSQUARE', 'yes')
 
-        LOGGER.debug('Mapfile: {}'.format(self._map.convertToString()))
+        LOGGER.debug(f'Mapfile: {self._map.convertToString()}')
         try:
             img = self._map.draw()
         except MapServerError as err:
@@ -209,4 +209,4 @@ class MapScriptProvider(BaseProvider):
         return prj.ExportToProj4().strip()
 
     def __repr__(self):
-        return '<MapScriptProvider> {}'.format(self.data)
+        return f'<MapScriptProvider> {self.data}'

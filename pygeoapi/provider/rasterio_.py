@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -132,7 +132,7 @@ class RasterioProvider(BaseProvider):
 
         for i, dtype, nodataval in zip(self._data.indexes, self._data.dtypes,
                                        self._data.nodatavals):
-            LOGGER.debug('Determing rangetype for band {}'.format(i))
+            LOGGER.debug(f'Determing rangetype for band {i}')
 
             name, units = None, None
             if self._data.units[i-1] is None:
@@ -146,12 +146,11 @@ class RasterioProvider(BaseProvider):
                 'type': 'Quantity',
                 'name': name,
                 'encodingInfo': {
-                    'dataType': 'http://www.opengis.net/def/dataType/OGC/0/{}'.format(dtype)  # noqa
+                    'dataType': f'http://www.opengis.net/def/dataType/OGC/0/{dtype}'  # noqa
                 },
                 'nodata': nodataval,
                 'uom': {
-                    'id': 'http://www.opengis.net/def/uom/UCUM/{}'.format(
-                         units),
+                    'id': f'http://www.opengis.net/def/uom/UCUM/{units}',
                     'type': 'UnitReference',
                     'code': units
                 },
@@ -176,7 +175,7 @@ class RasterioProvider(BaseProvider):
         """
 
         bands = properties
-        LOGGER.debug('Bands: {}, subsets: {}'.format(bands, subsets))
+        LOGGER.debug(f'Bands: {bands}, subsets: {subsets}')
 
         args = {
             'indexes': None
@@ -227,10 +226,8 @@ class RasterioProvider(BaseProvider):
                 minx2, miny2 = t.transform(minx, miny)
                 maxx2, maxy2 = t.transform(maxx, maxy)
 
-                LOGGER.debug('Source coordinates: {}'.format(
-                    [minx, miny, maxx, maxy]))
-                LOGGER.debug('Destination coordinates: {}'.format(
-                    [minx2, miny2, maxx2, maxy2]))
+                LOGGER.debug(f'Source coordinates: {minx}, {miny}, {maxx}, {maxy}')  # noqa
+                LOGGER.debug(f'Destination: {minx2}, {miny2}, {maxx2}, {maxy2}')  # noqa
 
                 shapes = [{
                    'type': 'Polygon',
@@ -371,7 +368,7 @@ class RasterioProvider(BaseProvider):
         else:
             bands_select = metadata['bands']
 
-        LOGGER.debug('bands selected: {}'.format(bands_select))
+        LOGGER.debug(f'bands selected: {bands_select}')
         for bs in bands_select:
             pm = _get_parameter_metadata(
                 self._data.profile['driver'], self._data.tags(bs))
@@ -437,10 +434,7 @@ class RasterioProvider(BaseProvider):
 
         if self._data.crs is not None:
             if self._data.crs.is_projected:
-                properties['bbox_crs'] = '{}/{}'.format(
-                    'http://www.opengis.net/def/crs/OGC/1.3/',
-                    self._data.crs.to_epsg())
-
+                properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.to_epsg()}'  # noqa
                 properties['x_axis_label'] = 'x'
                 properties['y_axis_label'] = 'y'
                 properties['bbox_units'] = self._data.crs.linear_units

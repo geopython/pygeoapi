@@ -28,7 +28,9 @@
 # =================================================================
 
 import logging
+from typing import Any, Tuple
 
+from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -38,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 class DummyManager(BaseManager):
     """generic Manager ABC"""
 
-    def __init__(self, manager_def):
+    def __init__(self, manager_def: dict):
         """
         Initialize object
 
@@ -49,7 +51,7 @@ class DummyManager(BaseManager):
 
         super().__init__(manager_def)
 
-    def get_jobs(self, status=None):
+    def get_jobs(self, status: JobStatus = None) -> list:
         """
         Get process jobs, optionally filtered by status
 
@@ -61,7 +63,8 @@ class DummyManager(BaseManager):
 
         return []
 
-    def execute_process(self, p, job_id, data_dict, is_async=False):
+    def execute_process(self, p: BaseProcessor, job_id: str, data_dict: dict,
+                        is_async: bool = False) -> Tuple[str, Any, int]:
         """
         Default process execution handler
 
@@ -93,4 +96,4 @@ class DummyManager(BaseManager):
         return jfmt, outputs, current_status
 
     def __repr__(self):
-        return '<DummyManager> {}'.format(self.name)
+        return f'<DummyManager> {self.name}'

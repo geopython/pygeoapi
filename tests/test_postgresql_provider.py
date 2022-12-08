@@ -6,7 +6,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -73,13 +73,13 @@ def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = PostgreSQLProvider(config)
     feature_collection = p.query()
-    assert feature_collection.get('type', None) == 'FeatureCollection'
-    features = feature_collection.get('features', None)
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
     assert features is not None
     feature = features[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry', None)
+    geometry = feature.get('geometry')
     assert geometry is not None
 
 
@@ -97,14 +97,14 @@ def test_query_with_property_filter(config):
     """Test query valid features when filtering by property"""
     p = PostgreSQLProvider(config)
     feature_collection = p.query(properties=[("waterway", "stream")])
-    features = feature_collection.get('features', None)
+    features = feature_collection.get('features')
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',
                features))
     assert (len(features) == len(stream_features))
 
     feature_collection = p.query(limit=50)
-    features = feature_collection.get('features', None)
+    features = feature_collection.get('features')
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',
                features))
@@ -127,7 +127,7 @@ def test_query_with_config_properties(config):
     assert provider.properties == properties_subset
     result = provider.query()
     feature = result.get('features')[0]
-    properties = feature.get('properties', None)
+    properties = feature.get('properties')
     for property_name in properties.keys():
         assert property_name in config["properties"]
 
@@ -240,9 +240,9 @@ def test_query_cql(config, cql, expected_ids):
     provider = PostgreSQLProvider(config)
 
     feature_collection = provider.query(filterq=ast)
-    assert feature_collection.get('type', None) == 'FeatureCollection'
+    assert feature_collection.get('type') == 'FeatureCollection'
 
-    features = feature_collection.get('features', None)
+    features = feature_collection.get('features')
     ids = [feature["id"] for feature in features]
     assert ids == expected_ids
 

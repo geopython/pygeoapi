@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,15 +31,16 @@ import click
 import json
 from jsonschema import validate as jsonschema_validate
 import logging
-import os
+from pathlib import Path
 
 from pygeoapi.util import to_json, yaml_load
 
 LOGGER = logging.getLogger(__name__)
-THISDIR = os.path.dirname(os.path.realpath(__file__))
+
+THISDIR = Path(__file__).parent.resolve()
 
 
-def validate_config(instance_dict):
+def validate_config(instance_dict: dict) -> bool:
     """
     Validate pygeoapi configuration against pygeoapi schema
 
@@ -48,10 +49,9 @@ def validate_config(instance_dict):
     :returns: `bool` of validation
     """
 
-    schema_file = os.path.join(THISDIR, 'schemas', 'config',
-                               'pygeoapi-config-0.x.yml')
+    schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
 
-    with open(schema_file) as fh2:
+    with schema_file.open() as fh2:
         schema_dict = yaml_load(fh2)
         jsonschema_validate(json.loads(to_json(instance_dict)), schema_dict)
 
@@ -74,7 +74,7 @@ def validate(ctx, config_file):
         raise click.ClickException('--config/-c required')
 
     with open(config_file) as ff:
-        click.echo('Validating {}'.format(config_file))
+        click.echo(f'Validating {config_file}')
         instance = yaml_load(ff)
         validate_config(instance)
         click.echo('Valid configuration')

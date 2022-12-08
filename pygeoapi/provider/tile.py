@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -50,7 +52,7 @@ class BaseTileProvider:
         self.data = provider_def['data']
         self.format_type = provider_def['format']['name']
         self.mimetype = provider_def['format']['mimetype']
-        self.options = provider_def.get('options', None)
+        self.options = provider_def.get('options')
         self.fields = {}
 
     def get_layer(self):

@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2022 Benjamin Webb
+# Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -79,7 +81,7 @@ class SODAServiceProvider(BaseProvider):
                 [dataset] = self.client.datasets(ids=[self.resource_id])
                 resource = dataset['resource']
             except json.decoder.JSONDecodeError as err:
-                LOGGER.error('Bad response at {}'.format(self.data))
+                LOGGER.error(f'Bad response at {self.data}')
                 raise ProviderConnectionError(err)
 
             fields = self.properties or resource[FIELD_NAME]
@@ -269,4 +271,4 @@ class SODAServiceProvider(BaseProvider):
         return int(response['count'])
 
     def __repr__(self):
-        return '<SODAServiceProvider> {}'.format(self.data)
+        return f'<SODAServiceProvider> {self.data}'
