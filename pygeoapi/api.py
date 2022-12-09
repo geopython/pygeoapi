@@ -95,13 +95,15 @@ F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
+F_MVT = 'mvt'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
-    (F_PNG, 'image/png')
+    (F_PNG, 'image/png'),
+    (F_MVT, 'application/vnd.mapbox-vector-tile')
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -2491,7 +2493,7 @@ class API:
 
         tile_services = p.get_tiles_service(
             baseurl=self.config['server']['url'],
-            servicepath='{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
+            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
         )
 
         for service in tile_services['links']:
@@ -2544,9 +2546,7 @@ class API:
 
         return headers, 200, to_json(tiles, self.pretty_print)
 
-    @gzip
     @pre_process
-    @jsonldify
     def get_collection_tiles_data(
             self, request: Union[APIRequest, Any],
             dataset=None, matrix_id=None,

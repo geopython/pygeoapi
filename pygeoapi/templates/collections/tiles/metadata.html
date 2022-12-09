@@ -2,9 +2,9 @@
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
-/ <a href="../../../{{ data['id'] }}">{{ data['title'] }}</a>
-/ <a href="../../../{{ data['id'] }}/tiles">{% trans %}Tiles{% endtrans %}</a>
-/ <a href="../../../{{ data['id'] }}/tiles/{{ data['tileset'] }}/metadata">Tile Metadata</a>
+/ <a href="../../{{ data['id'] }}">{{ data['title'] }}</a>
+/ <a href="../../{{ data['id'] }}/tiles">{% trans %}Tiles{% endtrans %}</a>
+/ <a href="../../{{ data['id'] }}/tiles/{{ data['tileset'] }}">Tile Metadata</a>
 {% endblock %}
 {% block body %}
     <section id="collection">

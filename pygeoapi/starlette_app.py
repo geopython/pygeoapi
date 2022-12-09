@@ -33,6 +33,7 @@
 """ Starlette module providing the route paths to the api"""
 
 import os
+from typing import Union
 from pathlib import Path
 
 import click
@@ -40,7 +41,7 @@ import click
 from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse, HTMLResponse
 import uvicorn
 
 from pygeoapi.api import API
@@ -56,6 +57,7 @@ with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
 
 p = Path(__file__)
 
+app = Starlette(debug=True)
 STATIC_DIR = Path(p).parent.resolve() / 'static'
 
 try:
@@ -85,7 +87,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
 api_ = API(CONFIG)
 
 
-def get_response(result: tuple) -> Response:
+def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
     """
     Creates a Starlette Response object and updates matching headers.
 
@@ -96,7 +98,13 @@ def get_response(result: tuple) -> Response:
     """
 
     headers, status, content = result
-    response = Response(content=content, status_code=status)
+    if headers['Content-Type'] == 'text/html':
+        response = HTMLResponse(content=content, status_code=status)
+    else:
+        if isinstance(content, dict):
+            response = JSONResponse(content, status_code=status)
+        else:
+            response = Response(content, status_code=status)
 
     if headers is not None:
         response.headers.update(headers)
@@ -163,34 +171,55 @@ async def collection_queryables(request: Request, collection_id=None):
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@app.route('/collections/{name}/tiles')
-@app.route('/collections/{name}/tiles/')
-async def get_collection_tiles(request: Request, name=None):
+@app.route('/collections/{collection_id:path}/tiles')
+@app.route('/collections/{collection_id:path}/tiles/')
+async def get_collection_tiles(request: Request, collection_id=None):
     """
     OGC open api collections tiles access point
 
     :param request: Starlette Request instance
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
 
     :returns: Starlette HTTP Response
     """
-    if 'name' in request.path_params:
-        name = request.path_params['name']
-    return get_response(api_.get_collection_tiles(request, name))
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+    return get_response(api_.get_collection_tiles(
+        request, collection_id))
 
 
-@app.route('/collections/{name}/tiles/\
-    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')
-@app.route('/collections/{name}/tiles/\
-    {tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')
-async def get_collection_items_tiles(request: Request, name=None,
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}')
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/')
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata')  # noqa
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata/')  # noqa
+async def get_collection_tiles_metadata(request: Request, collection_id=None,
+                                        tileMatrixSetId=None):
+    """
+    OGC open api collection tiles service metadata
+
+    :param collection_id: collection identifier
+    :param tileMatrixSetId: identifier of tile matrix set
+
+    :returns: HTTP response
+    """
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+    if 'tileMatrixSetId' in request.path_params:
+        tileMatrixSetId = request.path_params['tileMatrixSetId']
+    return get_response(api_.get_collection_tiles_metadata(
+        request, collection_id, tileMatrixSetId))
+
+
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')  # noqa
+@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')  # noqa
+async def get_collection_items_tiles(request: Request, collection_id=None,
                                      tileMatrixSetId=None, tile_matrix=None,
                                      tileRow=None, tileCol=None):
     """
     OGC open api collection tiles service
 
     :param request: Starlette Request instance
-    :param name: identifier of collection name
+    :param collection_id: collection identifier
     :param tileMatrixSetId: identifier of tile matrix set
     :param tile_matrix: identifier of {z} matrix index
     :param tileRow: identifier of {y} matrix index
@@ -198,8 +227,8 @@ async def get_collection_items_tiles(request: Request, name=None,
 
     :returns: HTTP response
     """
-    if 'name' in request.path_params:
-        name = request.path_params['name']
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
     if 'tile_matrix' in request.path_params:
@@ -209,7 +238,8 @@ async def get_collection_items_tiles(request: Request, name=None,
     if 'tileCol' in request.path_params:
         tileCol = request.path_params['tileCol']
     return get_response(api_.get_collection_tiles_data(
-        request, name, tileMatrixSetId, tile_matrix, tileRow, tileCol))
+        request, collection_id, tileMatrixSetId,
+        tile_matrix, tileRow, tileCol))
 
 
 @app.route('/collections/{collection_id:path}/items', methods=['GET', 'POST'])
@@ -229,8 +259,6 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     :returns: Starlette HTTP Response
     """
 
-    print(request.headers)
-#    print(request.headers['content-type'])
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'item_id' in request.path_params:
@@ -524,14 +552,20 @@ def serve(ctx, server=None, debug=False):
     as a uvicorn server. Not recommend for production.
 
     :param server: `string` of server type
-    :param debug: `bool` of whether to run in debug mode
+    :param debug: `bool` of whether to run in debug mode,
+                    default log level is INFO
 
     :returns: void
     """
 
-#    setup_logger(CONFIG['logging'])
+    log_level = 'info'
+    if debug:
+        log_level = 'debug'
     uvicorn.run(
-        app, debug=True,
+        "pygeoapi.starlette_app:app",
+        reload=True,
+        log_level=log_level,
+        loop='asyncio',
         host=api_.config['server']['bind']['host'],
         port=api_.config['server']['bind']['port'])
 
