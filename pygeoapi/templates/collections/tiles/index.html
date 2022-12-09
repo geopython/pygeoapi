@@ -86,7 +86,7 @@
       {% endif %}
     {% endfor %}
 
-    var url = tilesUrl.replace('{tileMatrixSetId}', tileset).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
+    var url = tilesUrl.replace('{dataset}', '{{ data["id"] }}').replace('{tileMatrixSetId}', tileset).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
 
     var VectorTileOptions = {
         interactive: true,

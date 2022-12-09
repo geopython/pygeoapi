@@ -2493,7 +2493,7 @@ class API:
 
         tile_services = p.get_tiles_service(
             baseurl=self.config['server']['url'],
-            servicepath='{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
+            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
         )
 
         for service in tile_services['links']:
