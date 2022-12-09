@@ -231,7 +231,7 @@ class MVTProvider(BaseTileProvider):
             else:
                 try:
                     service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
-                    with open(service_url_path) as tile:
+                    with open(service_url_path, mode='rb') as tile:
                         return tile.read()
                 except FileNotFoundError as err:
                     raise ProviderTileNotFoundError(err)

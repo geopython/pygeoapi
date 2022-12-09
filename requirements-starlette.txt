@@ -1,4 +1,4 @@
 aiofiles
 starlette
-uvicorn
+uvicorn[standard]
 nest-asyncio
