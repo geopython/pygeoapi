@@ -324,7 +324,7 @@ class OGRProvider(BaseProvider):
                 minx, miny, maxx, maxy = [float(b) for b in bbox]
 
                 wkt = f"POLYGON (({minx} {miny},{minx} {maxy},{maxx} {maxy}," \
-                      "{maxx} {miny},{minx} {miny}))"
+                      f"{maxx} {miny},{minx} {miny}))"
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
                 if self.transform_in:
