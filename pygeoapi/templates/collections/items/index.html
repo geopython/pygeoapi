@@ -42,15 +42,16 @@
                 <div class="col-sm-12">
                   {% trans %}Limit{% endtrans %}:
                   <select id="limits">
-                    <option value="10">10 ({% trans %}default{% endtrans %})</option>
+                    <option value="{{ config['server']['limit'] }}">{{ config['server']['limit'] }} ({% trans %}default{% endtrans %})</option>
                     <option value="100">100</option>
                     <option value="1000">1,000</option>
                     <option value="2000">2,000</option>
                   </select>
                   <script>
                     var select = document.getElementById('limits');
+                    var defaultValue = select.getElementsByTagName('option')[0].value;
                     let params = (new URL(document.location)).searchParams;
-                    select.value = params.get('limit') || 10;
+                    select.value = params.get('limit') || defaultValue;
                     select.addEventListener('change', ev => {
                       var limit = ev.target.value;
                       document.location.search = `limit=${limit}`;
