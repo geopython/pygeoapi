@@ -9,7 +9,7 @@ python-dateutil
 pytz
 PyYAML
 rasterio
-shapely
+shapely<2.0
 tinydb
 unicodecsv
 future-annotations
