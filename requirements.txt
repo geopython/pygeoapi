@@ -15,3 +15,4 @@ unicodecsv
 future-annotations
 pydantic
 jinja2==3.0.3
+requests
