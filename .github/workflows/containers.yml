@@ -19,7 +19,7 @@ jobs:
   on-success:
     name: Build, Test and Push Docker Image to DockerHub
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
       packages: write
       contents: read
