@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2022 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,9 +29,12 @@
 #
 # =================================================================
 
+from typing import Union
 from copy import deepcopy
+from pathlib import Path
 import json
 import logging
+import io
 import os
 
 import click
@@ -39,6 +44,7 @@ import yaml
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
+from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
                            filter_providers_by_type, to_json, yaml_load)
@@ -1248,6 +1254,31 @@ def validate_openapi_document(instance_dict):
         return True
 
 
+def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
+                              output_format: OAPIFormat):
+    """
+    Generate an OpenAPI document from the configuration file
+
+    :param cfg_file: configuration Path instance
+    :param output_format: output format for OpenAPI document
+
+    :returns: content of the OpenAPI document in the output
+              format requested
+    """
+    if isinstance(cfg_file, Path):
+        with cfg_file.open(mode="r") as cf:
+            s = yaml_load(cf)
+    else:
+        s = yaml_load(cfg_file)
+    pretty_print = s['server'].get('pretty_print', False)
+
+    if output_format == 'yaml':
+        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
+    else:
+        content = to_json(get_oas(s), pretty=pretty_print)
+    return content
+
+
 @click.group()
 def openapi():
     """OpenAPI management"""
@@ -1267,13 +1298,7 @@ def generate(ctx, config_file, output_file, format_='yaml'):
     if config_file is None:
         raise click.ClickException('--config/-c required')
 
-    s = yaml_load(config_file)
-    pretty_print = s['server'].get('pretty_print', False)
-
-    if format_ == 'yaml':
-        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
-    else:
-        content = to_json(get_oas(s), pretty=pretty_print)
+    content = generate_openapi_document(config_file, format_)
 
     if output_file is None:
         click.echo(content)
