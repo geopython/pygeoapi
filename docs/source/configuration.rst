@@ -297,16 +297,16 @@ The resulting collection will then be made available at http://localhost:5000/co
   the evolution of hierarchical collection extension specifications at OGC.
 
 
-Selective properties in providers
----------------------------------
+Selective properties in feature and record providers
+----------------------------------------------------
 
-Providers defined in the ``providers`` section of a collection definition can support
+Providers defined in the ``providers`` section of a feature/record collection definition can support
 selective properties to return only a subset of the schema attributes. This allows to
 specialise the behavior of queryables and the GeoJSON's properties returned in the
 payload.
 
 For example, given the above example of the ``lakes`` collection a restriction on
-the schema properties returned by its provider can be defined with the following
+the schema properties returned by its provider can be defined with the following:
 
 .. code-block:: yaml
 
@@ -327,7 +327,7 @@ Examples:
 
   curl https://example.org/collections/lakes/queryables  # only the name definition is returned
   curl https://example.org/collections/lakes/items  # only the name attribute is returned in properties
-  curl https://example.org/collections/lakes/items/{item_id} # only the name attribute is returned in properties
+  curl https://example.org/collections/lakes/items/{item_id}  # only the name attribute is returned in properties
 
 
 Linked Data
