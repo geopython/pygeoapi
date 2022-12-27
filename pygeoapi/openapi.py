@@ -29,13 +29,13 @@
 #
 # =================================================================
 
-from typing import Union
 from copy import deepcopy
-from pathlib import Path
+import io
 import json
 import logging
-import io
 import os
+from pathlib import Path
+from typing import Union
 
 import click
 from jsonschema import validate as jsonschema_validate
