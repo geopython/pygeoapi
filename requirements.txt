@@ -1,7 +1,10 @@
 Babel
 click>7,<=8
 Flask
+future-annotations
+jinja2==3.0.3
 jsonschema
+pydantic
 pygeofilter
 pygeoif==0.7
 pyproj
@@ -9,10 +12,7 @@ python-dateutil
 pytz
 PyYAML
 rasterio
+requests
 shapely<2.0
 tinydb
 unicodecsv
-future-annotations
-pydantic
-jinja2==3.0.3
-requests
