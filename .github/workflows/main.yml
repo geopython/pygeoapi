@@ -77,7 +77,7 @@ jobs:
     - name: Install and run SensorThingsAPI
       uses: cgs-earth/sensorthings-action@v0.0.2
     - name: Install sqlite and gpkg dependencies
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@v1.2.0
       with:
         packages: libsqlite3-mod-spatialite 
         version: 1.0
