@@ -115,11 +115,13 @@ RUN \
     apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y --fix-missing --no-install-recommends ${DEB_BUILD_DEPS}  \
-    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
     && update-locale LANG=${LANG} \
     && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"
 
+   # temporary remode
+   # && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+   
 # OGC schemas local setup
 WORKDIR /schemas.opengis.net
 RUN \
