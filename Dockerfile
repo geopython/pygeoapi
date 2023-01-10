@@ -33,7 +33,7 @@
 #
 # =================================================================
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
