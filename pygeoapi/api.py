@@ -2612,7 +2612,7 @@ class API:
 
             content = render_j2_template(self.config,
                                          'collections/tiles/index.html', tiles,
-                                         SYSTEM_LOCALE)
+                                         request.locale)
 
             return headers, HTTPStatus.OK, content
 
@@ -3281,7 +3281,7 @@ class API:
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
             response = render_j2_template(self.config, j2_template, data,
-                                          SYSTEM_LOCALE)
+                                          request.locale)
             return headers, HTTPStatus.OK, response
 
         return headers, HTTPStatus.OK, to_json(serialized_jobs,
@@ -3462,7 +3462,7 @@ class API:
                 }
                 content = render_j2_template(
                     self.config, 'jobs/results/index.html',
-                    data, SYSTEM_LOCALE)
+                    data, request.locale)
 
         return headers, HTTPStatus.OK, content
 
