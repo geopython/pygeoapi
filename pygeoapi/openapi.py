@@ -977,6 +977,7 @@ def get_oas_30(cfg):
                     'operationId': 'getMap',
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/bbox"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/datetime"},  # noqa
                         {
                             'name': 'width',
                             'in': 'query',
