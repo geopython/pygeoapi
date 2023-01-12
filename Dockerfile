@@ -79,6 +79,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-zarr \
     python3-mapscript \
     python3-pytest \
+    python3-pytest-cov \
     python3-pyld 
     "
 
