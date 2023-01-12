@@ -59,8 +59,11 @@ BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
-    from flask_cors import CORS
-    CORS(APP)
+    try:
+        from flask_cors import CORS
+        CORS(APP)
+    except ModuleNotFoundError:
+        print('Python package flask_cors required for CORS support')
 
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
