@@ -78,6 +78,8 @@ ARG ADD_DEB_PACKAGES="\
     python3-xarray \
     python3-zarr \
     python3-mapscript \
+    python3-pytest \
+    python3-pyld 
     "
 
 # ENV settings
