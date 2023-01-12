@@ -33,7 +33,7 @@
 #
 # =================================================================
 
-FROM ubuntu:22.04
+FROM ubuntu:jammy 
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -88,22 +88,22 @@ ENV TZ=${TZ} \
     LANG=${LANG} \
     DEBIAN_FRONTEND="noninteractive" \
     DEB_BUILD_DEPS="\
-      curl \
-      unzip" \
+    curl \
+    unzip" \
     DEB_PACKAGES="\
-      locales \
-      tzdata \
-      gunicorn \
-      python3-dateutil \
-      python3-flask \
-      python3-flask-cors \
-      python3-gevent \
-      python3-greenlet \
-      python3-pip \
-      python3-tz \
-      python3-unicodecsv \
-      python3-yaml \
-      ${ADD_DEB_PACKAGES}"
+    locales \
+    tzdata \
+    gunicorn \
+    python3-dateutil \
+    python3-flask \
+    python3-flask-cors \
+    python3-gevent \
+    python3-greenlet \
+    python3-pip \
+    python3-tz \
+    python3-unicodecsv \
+    python3-yaml \
+    ${ADD_DEB_PACKAGES}"
 
 WORKDIR /pygeoapi
 ADD . /pygeoapi
@@ -116,10 +116,10 @@ RUN \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"  \
 
-   # temporary remove
-   # && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+    # temporary remove
+    # && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
 
-	# OGC schemas local setup
+    # OGC schemas local setup
     && mkdir /schemas.opengis.net \
     && curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
     && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
@@ -134,10 +134,10 @@ RUN \
 
     # Install pygeoapi
     && pip3 install -e . \
-    
+
     # Set default config and entrypoint for Docker Image
-	&& cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
-	&& cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh  \
+    && cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh  \
 
     # Cleanup TODO: remove unused Locales and TZs
     && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
