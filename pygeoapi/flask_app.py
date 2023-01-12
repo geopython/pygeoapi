@@ -63,7 +63,7 @@ if CONFIG['server'].get('cors', False):
         from flask_cors import CORS
         CORS(APP)
     except ModuleNotFoundError:
-        print('Python package flask_cors required for CORS support')
+        print('Python package flask-cors required for CORS support')
 
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
