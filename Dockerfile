@@ -126,8 +126,6 @@ RUN \
     && rm -f ./SCHEMAS_OPENGIS_NET.zip \
 
     # Install pygeoapi
-    # Optionally add development/test/doc packages
-    && if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
 
     # Install remaining pygeoapi deps
     && pip3 install -r requirements-docker.txt \
