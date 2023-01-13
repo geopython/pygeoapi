@@ -61,7 +61,6 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # ARGS
 ARG TZ="Etc/UTC"
 ARG LANG="en_US.UTF-8"
-ARG BUILD_DEV_IMAGE="false"
 ARG ADD_DEB_PACKAGES="\
     libsqlite3-mod-spatialite \
     python3-dask \
