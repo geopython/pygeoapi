@@ -55,9 +55,6 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # via Docker Volume mapping or within a docker-compose.yml file. See example at
 # https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi
 
-# Build arguments
-# add "--build-arg BUILD_DEV_IMAGE=true" to Docker build command when building with test/doc tools
-
 # ARGS
 ARG TZ="Etc/UTC"
 ARG LANG="en_US.UTF-8"
