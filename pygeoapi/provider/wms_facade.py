@@ -42,6 +42,7 @@ OUTPUT_FORMATS = {
 }
 
 CRS_CODES = {
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'EPSG:4326',
     4326: 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
 }
@@ -84,7 +85,7 @@ class WMSFacadeProvider(BaseProvider):
 
         self._transparent = 'TRUE'
 
-        if crs in [4326, 'CRS;84']:
+        if crs in [4326, 'CRS84', 'http://www.opengis.net/def/crs/OGC/1.3/CRS84']:  # noqa
             LOGGER.debug('Swapping 4326 axis order to WMS 1.3 mode (yx)')
             bbox2 = ','.join(str(c) for c in
                              [bbox[1], bbox[0], bbox[3], bbox[2]])

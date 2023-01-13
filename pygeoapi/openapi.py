@@ -343,13 +343,13 @@ def get_oas_30(cfg):
             'bbox-crs': {
                 'name': 'bbox-crs',
                 'in': 'query',
-                'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
+                'description': 'crs for the specified bbox',
                 'required': False,
                 'style': 'form',
-                'explode': False,
+                'explode': True,
                 'schema': {
-                    'type': 'integer',
-                    'default': 4326
+                    'type': 'string',
+                    'default': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
                 }
             },
             'offset': {
