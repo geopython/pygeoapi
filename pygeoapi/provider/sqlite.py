@@ -91,7 +91,15 @@ class SQLiteGPKGProvider(BaseProvider):
             results = self.cursor.execute(
                 f'PRAGMA table_info({self.table})').fetchall()
             for item in results:
-                self.fields[item['name']] = {'type': item['type']}
+                json_type = None
+
+                if item['type'] in ['INTEGER', 'REAL']:
+                    json_type = 'number'
+                elif item['type'].startswith('TEXT') or item['type'] == 'BLOB':
+                    json_type = 'string'
+
+                if json_type is not None:
+                    self.fields[item['name']] = {'type': json_type}
 
         return self.fields
 
