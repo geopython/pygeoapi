@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -63,6 +63,18 @@ def config_geopackage():
     }
 
 
+def test_get_fields_sqlite(config_sqlite):
+    """Testing field definitions for sqlite3"""
+
+    fields_expected = {
+        'ogc_fid': {'type': 'number'},
+        'scalerank': {'type': 'number'}
+    }
+
+    p = SQLiteGPKGProvider(config_sqlite)
+    assert p.get_fields() == fields_expected
+
+
 def test_query_sqlite(config_sqlite):
     """Testing query for a valid JSON object with geometry for sqlite3"""
 
@@ -76,6 +88,21 @@ def test_query_sqlite(config_sqlite):
     assert properties is not None
     geometry = feature.get('geometry')
     assert geometry is not None
+
+
+def test_get_fields_geopackage(config_geopackage):
+    """Testing field definitions for geopackage"""
+
+    fields_expected = {
+        'fclass': {'type': 'string'},
+        'fid': {'type': 'number'},
+        'gid': {'type': 'number'},
+        'name': {'type': 'string'},
+        'osm_id': {'type': 'number'}
+    }
+
+    p = SQLiteGPKGProvider(config_geopackage)
+    assert p.get_fields() == fields_expected
 
 
 def test_query_geopackage(config_geopackage):
