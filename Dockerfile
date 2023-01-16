@@ -56,6 +56,8 @@
 # Build arguments
 # add "--build-arg BUILD_DEV_IMAGE=true" to Docker build command when building with test/doc tools
 
+ARG groups="provider gunicorn dev"
+
 FROM ubuntu:jammy AS base
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
@@ -87,6 +89,7 @@ RUN curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip && \
     unzip ./SCHEMAS_OPENGIS_NET.zip 'ogcapi/*' -d /schemas.opengis.net
 
 FROM common AS build
+ARG groups
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     --mount=type=cache,sharing=locked,target=/var/lib/apt \
       apt-get update && \
@@ -99,7 +102,8 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
 WORKDIR /pygeoapi
 COPY pyproject.toml pdm.lock ./
 RUN --mount=type=cache,target=/root/.cache/pdm \
-    pdm install --no-lock --group provider --group gunicorn --no-self
+    pdm install --no-lock --no-self \
+      $(for group in $groups; do echo -n "--group $group "; done)
 
 FROM common
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
@@ -117,6 +121,6 @@ COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/pdm \
-    pdm install --no-lock --group provider --group gunicorn
+    pdm install --no-lock
 
 ENTRYPOINT ["/entrypoint.sh"]
