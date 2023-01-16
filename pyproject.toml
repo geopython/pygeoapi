@@ -1,0 +1,126 @@
+[project]
+name = "pygeoapi"
+version = "0.14.dev0"
+description = "pygeoapi provides an API to geospatial data"
+keywords = ["geospatial data api"]
+readme = "README.md"
+authors = [
+    {name = "Tom Kralidis", email = "tomkralidis@gmail.com"},
+]
+maintainers = [
+    {name = "Tom Kralidis", email = "tomkralidis@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+    "Babel",
+    "Flask",
+    "PyYAML",
+    "click>7,<=8",
+    "future-annotations",
+    "jinja2",
+    "jsonschema",
+    "pydantic",
+    "pygeofilter",
+    "pygeoif",
+    "pyproj",
+    "python-dateutil",
+    "pytz",
+    "rasterio",
+    "requests",
+    "shapely<2.0",
+    "tinydb",
+    "unicodecsv",
+    "Babel",
+    "click<=8,>7",
+    "Flask",
+    "future-annotations",
+    "jinja2==3.0.3",
+    "jsonschema",
+    "pydantic",
+    "pygeofilter",
+    "pygeoif==0.7",
+    "pyproj",
+    "python-dateutil",
+    "pytz",
+    "PyYAML",
+    "rasterio",
+    "requests",
+    "shapely<2.0",
+    "tinydb",
+    "unicodecsv",
+    "gdal==3.4.1",
+]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://pygeoapi.io"
+
+[project.scripts]
+pygeoapi = "pygeoapi:cli"
+
+[project.optional-dependencies]
+django = [
+    "Django",
+    "pydantic",
+]
+gunicorn = [
+    "gunicorn",
+    "gevent",
+]
+provider = [
+    "elasticsearch<8",
+    "elasticsearch-dsl<8",
+    "fiona",
+    "geoalchemy",
+    "netCDF4",
+    "pandas",
+    "psycopg2-binary",
+    "pygeofilter[backend-sqlalchemy]",
+    "pygeoif",
+    "pygeometa",
+    "pymongo",
+    "scipy",
+    "sodapy",
+    "xarray",
+    "zarr",
+]
+starlette = [
+    "aiofiles",
+    "starlette",
+    "uvicorn[standard]",
+    "nest-asyncio",
+]
+[tool]
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "flask-cors",
+    "datamodel-code-generator",
+    "pytest",
+    "pytest-cov",
+    "pytest-env",
+    "coverage",
+    "pyld",
+    "flake8",
+    "twine",
+    "wheel",
+    "pyOpenSSL",
+    "ndg-httpsclient",
+    "pyasn1",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"

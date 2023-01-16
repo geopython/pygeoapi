@@ -4,11 +4,13 @@
 #          Just van den Broecke <justb4@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Angelos Tzotsos <gcpp.kalxas@gmail.com>
+#          Francesco Frassinelli <fraph24@gmail.com>
 #
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2021 Angelos Tzotsos
+# Copyright (c) 2022 Francesco Frassinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,10 +35,6 @@
 #
 # =================================================================
 
-FROM ubuntu:focal
-
-LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
-
 # Docker file for full geoapi server with libs/packages for all providers.
 # Server runs with gunicorn. You can override ENV settings.
 # Defaults:
@@ -58,99 +56,67 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # Build arguments
 # add "--build-arg BUILD_DEV_IMAGE=true" to Docker build command when building with test/doc tools
 
-# ARGS
-ARG TZ="Etc/UTC"
-ARG LANG="en_US.UTF-8"
-ARG BUILD_DEV_IMAGE="false"
-ARG ADD_DEB_PACKAGES="\
-    python3-dask \
-    python3-elasticsearch \
-    python3-fiona \
-    python3-gdal \
-    python3-netcdf4 \
-    python3-pandas \
-    python3-psycopg2 \
-    python3-pymongo \
-    python3-pyproj \
-    python3-rasterio \
-    python3-scipy \
-    python3-tinydb \
-    python3-xarray \
-    python3-zarr \
-    python3-mapscript \
-    "
+FROM ubuntu:jammy AS base
+ENV DEBIAN_FRONTEND="noninteractive"
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+      > /etc/apt/apt.conf.d/keep-cache
 
-# ENV settings
-ENV TZ=${TZ} \
-    LANG=${LANG} \
-    DEBIAN_FRONTEND="noninteractive" \
-    DEB_BUILD_DEPS="\
-      gcc-aarch64-linux-gnu \
+FROM base AS common
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,sharing=locked,target=/var/lib/apt \
+      apt-get update && \
+      apt-get install -qy --no-install-recommends \
+        python3 \
+        python3-pip
+
+# Install pdm
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m pip install pdm
+
+FROM base AS schema
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,sharing=locked,target=/var/lib/apt \
+    apt-get update && \
+    apt-get install -qy --no-install-recommends \
       curl \
-      python3-dev \
-      software-properties-common \
-      unzip" \
-    DEB_PACKAGES="\
-      gunicorn \
-      libsqlite3-mod-spatialite \
-      locales \
-      locales-all \
-      python3-dateutil \
-      python3-distutils \
-      python3-flask \
-      python3-flask-cors \
-      python3-gevent \
-      python3-greenlet \
-      python3-pip \
-      python3-setuptools \
-      python3-shapely \
-      python3-tz \
-      python3-unicodecsv \
-      python3-wheel \
-      python3-yaml \
-      ${ADD_DEB_PACKAGES}"
-
-# Install operating system dependencies
-RUN \
-    apt-get update -y \
-    && apt-get upgrade -y \
-    && apt-get install -y --fix-missing --no-install-recommends ${DEB_BUILD_DEPS}  \
-    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    && apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
-    && update-locale LANG=${LANG} \
-    && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"
+      unzip
 
 # OGC schemas local setup
-WORKDIR /schemas.opengis.net
-RUN \
-    curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
-    && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
-    && rm -f ./SCHEMAS_OPENGIS_NET.zip
+RUN curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip && \
+    unzip ./SCHEMAS_OPENGIS_NET.zip 'ogcapi/*' -d /schemas.opengis.net
+
+FROM common AS build
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,sharing=locked,target=/var/lib/apt \
+      apt-get update && \
+      apt-get install -qy --no-install-recommends \
+        python3-dev \
+        gcc \
+        g++ \
+        libgdal-dev
 
 WORKDIR /pygeoapi
-RUN mkdir -p /pygeoapi/pygeoapi
-# Add files required for pip/setuptools
-ADD requirements*.txt setup.py README.md /pygeoapi/
-ADD pygeoapi/__init__.py /pygeoapi/pygeoapi/
+COPY pyproject.toml pdm.lock ./
+RUN --mount=type=cache,target=/root/.cache/pdm \
+    pdm install --no-lock --group provider --group gunicorn --no-self
 
-RUN \
-    # Install pygeoapi
-    # Optionally add development/test/doc packages
-    if [ "$BUILD_DEV_IMAGE" = "true" ] ; then pip3 install -r requirements-dev.txt; fi \
-    # Install pygeoapi providers
-    && pip3 install -r requirements-provider.txt \
-    # Install pygeoapi
-    && pip3 install -e .
+FROM common
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,sharing=locked,target=/var/lib/apt \
+    apt-get update && \
+    apt-get install -qy --no-install-recommends \
+      libsqlite3-mod-spatialite \
+      proj-bin \
+      libgdal30
 
-RUN \
-    # Cleanup TODO: remove unused Locales and TZs
-    apt-get remove --purge -y ${DEB_BUILD_DEPS} \
-    && apt autoremove -y  \
-    && rm -rf /var/lib/apt/lists/*
-
-ADD . /pygeoapi
-
+WORKDIR /pygeoapi
+COPY --from=schema /schemas.opengis.net /schemas.opengis.net
+COPY --from=build /pygeoapi/.venv .venv
 COPY ./docker/default.config.yml /pygeoapi/local.config.yml
 COPY ./docker/entrypoint.sh /entrypoint.sh
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/pdm \
+    pdm install --no-lock --group provider --group gunicorn
 
 ENTRYPOINT ["/entrypoint.sh"]
