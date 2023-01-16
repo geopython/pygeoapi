@@ -13,7 +13,6 @@ on:
     
 env:
   DOCKER_REPOSITORY: geopython/pygeoapi
-  DOCKER_TEST_IMAGE: geopython/pygeoapi:test
 
 jobs:
   on-success:
@@ -46,17 +45,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and export to Docker
-        uses: docker/build-push-action@v3.1.1
-        with:
-          context: .
-          load: true
-          tags: ${{ env.DOCKER_TEST_IMAGE }}
-
-#      - name: pygeoapi Unit Tests with Docker Image ⚙️
-#        run: |
-#          docker run --entrypoint "/entrypoint.sh" --rm ${{ env.DOCKER_TEST_IMAGE }} test
-
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4.0.1
@@ -78,6 +66,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/arm64, linux/amd64
+
+#      - name: pygeoapi Unit Tests with Docker Image ⚙️
+#        run: |
+#          docker run --rm ${{ env.DOCKER_REPOSITORY }} test
   
   on-failure:
     runs-on: ubuntu-latest
