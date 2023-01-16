@@ -109,7 +109,7 @@ def config_geosol_gs_WFS():
         'data': {
             'source_type': 'WFS',
             'source':
-                'WFS:https://demo.geo-solutions.it/geoserver/wfs?',
+                'WFS:https://gs-stable.geosolutionsgroup.com/geoserver/wfs?',
             'source_srs': 'EPSG:32632',
             'target_srs': 'EPSG:4326',
             'source_capabilities': {
