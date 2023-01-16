@@ -20,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.8
           architecture: x64
       - name: Checkout pygeoapi
         uses: actions/checkout@master
@@ -35,21 +35,23 @@ jobs:
 
   main:
     needs: [flake8_py3]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
-          - python-version: 3.6
-          - python-version: 3.7
+          - python-version: 3.8
+          - python-version: 3.9
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install PDM
+      run: pipx install pdm
     - name: Configure sysctl limits
       run: |
         sudo swapoff -a
@@ -83,51 +85,47 @@ jobs:
         version: 4.3.0a-6build1
     - name: Install requirements 📦
       run: |
-        pip3 install -r requirements.txt
-        pip3 install -r requirements-starlette.txt
-        pip3 install -r requirements-dev.txt
-        pip3 install -r requirements-provider.txt
-        python3 setup.py install
-        pip3 install --upgrade numpy
-        #pip3 install --upgrade rasterio==1.1.8
+        sudo apt-get update
+        DEBIAN_FRONTEND="noninteractive" sudo apt-get install -qy libgdal-dev
+        pdm install --group :all
     - name: setup test data ⚙️
       run: |
-        python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
-        python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
-        python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
+        pdm run python tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
+        pdm run python tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        pdm run python tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
     - name: run unit tests ⚙️
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: |
-        pytest tests/test_api.py
-        pytest tests/test_config.py
-        pytest tests/test_csv__formatter.py
-        pytest tests/test_csv__provider.py
-        pytest tests/test_elasticsearch__provider.py
-        pytest tests/test_esri_provider.py
-        pytest tests/test_filesystem_provider.py
-        pytest tests/test_geojson_provider.py
-        pytest tests/test_mongo_provider.py
-        #pytest tests/test_ogr_csv_provider.py
-        #pytest tests/test_ogr_esrijson_provider.py
-        #pytest tests/test_ogr_gpkg_provider.py
-        #pytest tests/test_ogr_shapefile_provider.py
-        #pytest tests/test_ogr_sqlite_provider.py
-        #pytest tests/test_ogr_wfs_provider.py
-        pytest tests/test_openapi.py
-        pytest tests/test_postgresql_provider.py
-        pytest tests/test_rasterio_provider.py
-        pytest tests/test_sensorthings_provider.py
-        pytest tests/test_socrata_provider.py
-        pytest tests/test_sqlite_geopackage_provider.py
-        pytest tests/test_tinydb_catalogue_provider.py
-        pytest tests/test_util.py
-        pytest tests/test_xarray_netcdf_provider.py
-        pytest tests/test_xarray_zarr_provider.py
+        pdm run pytest tests/test_api.py
+        pdm run pytest tests/test_config.py
+        pdm run pytest tests/test_csv__formatter.py
+        pdm run pytest tests/test_csv__provider.py
+        pdm run pytest tests/test_elasticsearch__provider.py
+        pdm run pytest tests/test_esri_provider.py
+        pdm run pytest tests/test_filesystem_provider.py
+        pdm run pytest tests/test_geojson_provider.py
+        pdm run pytest tests/test_mongo_provider.py
+        #pdm run pytest tests/test_ogr_csv_provider.py
+        #pdm run pytest tests/test_ogr_esrijson_provider.py
+        #pdm run pytest tests/test_ogr_gpkg_provider.py
+        #pdm run pytest tests/test_ogr_shapefile_provider.py
+        #pdm run pytest tests/test_ogr_sqlite_provider.py
+        #pdm run pytest tests/test_ogr_wfs_provider.py
+        pdm run pytest tests/test_openapi.py
+        pdm run pytest tests/test_postgresql_provider.py
+        pdm run pytest tests/test_rasterio_provider.py
+        pdm run pytest tests/test_sensorthings_provider.py
+        pdm run pytest tests/test_socrata_provider.py
+        pdm run pytest tests/test_sqlite_geopackage_provider.py
+        pdm run pytest tests/test_tinydb_catalogue_provider.py
+        pdm run pytest tests/test_util.py
+        pdm run pytest tests/test_xarray_netcdf_provider.py
+        pdm run pytest tests/test_xarray_zarr_provider.py
     - name: build docs 🏗️
       run: cd docs && make html
     - name: failed tests 🚩
       if: ${{ failure() }}
       run: |
-        pip3 list -v
+        pdm list --graph
