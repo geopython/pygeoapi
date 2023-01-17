@@ -69,24 +69,11 @@ echo "openapi.yml generated continue to pygeoapi"
 case ${entry_cmd} in
 	# Run Unit tests
 	test)
-	  for test_py in $(ls tests/test_*.py)
-	  do
-	    # Skip tests requireing backend server or libs installed
-	    case ${test_py} in
-	        tests/test_elasticsearch__provider.py)
-	        ;&
-	        tests/test_sensorthings_provider.py)
-	        ;&
-	        tests/test_postgresql_provider.py)
-			;&
-	        tests/test_mongo_provider.py)
-	        	echo "Skipping: ${test_py}"
-	        ;;
-	        *)
-	        	pdm run python3 -m pytest ${test_py}
-	         ;;
-	    esac
-	  done
+	  pdm run pytest \
+	    --ignore tests/test_elasticsearch__provider.py \
+	    --ignore tests/test_sensorthings_provider.py \
+	    --ignore tests/test_postgresql_provider.py \
+	    --ignore tests/test_mongo_provider.py
 	  ;;
 
 	# Run pygeoapi server
