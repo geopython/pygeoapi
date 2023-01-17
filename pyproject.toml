@@ -53,7 +53,6 @@ pygeoapi = "pygeoapi:cli"
 [project.optional-dependencies]
 django = [
     "Django",
-    "pydantic",
 ]
 gunicorn = [
     "gunicorn",

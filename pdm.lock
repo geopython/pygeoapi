@@ -1417,7 +1417,7 @@ dependencies = [
 
 [metadata]
 lock_version = "4.1"
-content_hash = "sha256:82d522e459e83459a0d470f9b39bc0799a44cd65aa1a332c3d41ec8d20a17670"
+content_hash = "sha256:dc3d9b8ea08de7f2280c2ac75566c9b76809816aa051c19b36ae44c615b56c18"
 
 [metadata.files]
 "affine 2.3.1" = [
