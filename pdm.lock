@@ -1382,14 +1382,14 @@ dependencies = [
 
 [[package]]
 name = "zarr"
-version = "2.13.3"
-requires_python = ">=3.8, <4"
-summary = "An implementation of chunked, compressed, N-dimensional arrays for Python."
+version = "2.13.6"
+requires_python = ">=3.8"
+summary = "An implementation of chunked, compressed, N-dimensional arrays for Python"
 dependencies = [
     "asciitree",
     "fasteners",
     "numcodecs>=0.10.0",
-    "numpy>=1.7",
+    "numpy>=1.20",
 ]
 
 [[package]]
@@ -1417,7 +1417,7 @@ dependencies = [
 
 [metadata]
 lock_version = "4.1"
-content_hash = "sha256:38d6ef07e144f6fa64b328200e23042c9689911bc43e778f0c20ff07548c25ac"
+content_hash = "sha256:82d522e459e83459a0d470f9b39bc0799a44cd65aa1a332c3d41ec8d20a17670"
 
 [metadata.files]
 "affine 2.3.1" = [
@@ -3376,9 +3376,9 @@ content_hash = "sha256:38d6ef07e144f6fa64b328200e23042c9689911bc43e778f0c20ff075
     {url = "https://files.pythonhosted.org/packages/0b/43/b61d430c6b4071a687ff29855ba2a3134d064dd6864d9db3075ad51e010e/xarray-2022.12.0-py3-none-any.whl", hash = "sha256:eaf3e4c0b62faebf7965f272ce76bc2fc1c9d93c2b966a390e929ef082a796dd"},
     {url = "https://files.pythonhosted.org/packages/f8/5c/4e160293ad96d5db5c140393eb8f5a529aa63cc6bc26ec9760bf8de4c326/xarray-2022.12.0.tar.gz", hash = "sha256:083d08e552a7647c7ece136dfa3a4b6a1379256beb55bbed8b8ddf05f1e14ec7"},
 ]
-"zarr 2.13.3" = [
-    {url = "https://files.pythonhosted.org/packages/73/6b/789fae6eb756ad97aa8bf352d55050cc91df3e80e0161998cd5adeffddec/zarr-2.13.3.tar.gz", hash = "sha256:db24b090616c638f65e33a6bc5d956d642221182961515ccbc28b17fb0d0b48c"},
-    {url = "https://files.pythonhosted.org/packages/93/72/aa1d08e723048647dcd9826e0fe25eb2711f4e2973fe5ef5354dba77c794/zarr-2.13.3-py3-none-any.whl", hash = "sha256:883305e8ded972e25992269b0355436f11d7057b2943d278bf33cdcd2debfe2d"},
+"zarr 2.13.6" = [
+    {url = "https://files.pythonhosted.org/packages/b3/f0/19865117a1c82443b1f4c5d3be6ab013bb45d503bb6cee3dfbaef830c49a/zarr-2.13.6.tar.gz", hash = "sha256:f079444d5126db7ba5895a682797d86d02813f49b35854ee2d89c7503dc3677e"},
+    {url = "https://files.pythonhosted.org/packages/c3/c9/bfc168b69e2630d33ab28a9ff3355f30d6e5348e8ac5839c1500003a5b23/zarr-2.13.6-py3-none-any.whl", hash = "sha256:ce5d88e5e0e07487d7872e381e69593edb18b750c216a961d838a818c54bb6ed"},
 ]
 "zipp 3.11.0" = [
     {url = "https://files.pythonhosted.org/packages/8e/b3/8b16a007184714f71157b1a71bbe632c5d66dd43bc8152b3c799b13881e1/zipp-3.11.0.tar.gz", hash = "sha256:a7a22e05929290a67401440b39690ae6563279bced5f314609d9d03798f56766"},
