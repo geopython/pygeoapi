@@ -3,7 +3,7 @@
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Benjamin Webb
+# Copyright (c) 2023 Benjamin Webb
 # Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -124,6 +124,9 @@ class SensorThingsProvider(BaseProvider):
                 LOGGER.error(f'Entity {self.entity} error: {err}')
                 LOGGER.error(f'Bad url response at {r.url}')
                 raise ProviderQueryError(err)
+            except IndexError:
+                LOGGER.warning('could not get fields; returning empty set')
+                return {}
 
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
