@@ -75,8 +75,10 @@ case ${entry_cmd} in
 	    case ${test_py} in
 	        tests/test_elasticsearch__provider.py)
 	        ;&
+	        tests/test_sensorthings_provider.py)
+	        ;&
 	        tests/test_postgresql_provider.py)
-			;&
+			    ;&
 	        tests/test_mongo_provider.py)
 	        	echo "Skipping: ${test_py}"
 	        ;;
