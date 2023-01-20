@@ -18,7 +18,7 @@ env:
 jobs:
   on-success:
     name: Build, Test and Push Docker Image to DockerHub
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
       packages: write
@@ -75,12 +75,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-#          cache-from: type=gha
-#          cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/arm64, linux/amd64
-  
+
   on-failure:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     steps:
       - name: Print Test Fail

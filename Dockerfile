@@ -101,6 +101,8 @@ ENV TZ=${TZ} \
     python3-yaml \
     ${ADD_DEB_PACKAGES}"
 
+WORKDIR /pygeoapi
+ADD . /pygeoapi
 
 # Install operating system dependencies
 RUN \
@@ -117,15 +119,10 @@ RUN \
     && mkdir /schemas.opengis.net \
     && curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
     && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
-    && rm -f ./SCHEMAS_OPENGIS_NET.zip
-
-# Install pygeoapi
-WORKDIR /pygeoapi
-ADD . /pygeoapi
-RUN \
+    && rm -f ./SCHEMAS_OPENGIS_NET.zip \
 
     # Install remaining pygeoapi deps
-    pip3 install -r requirements-docker.txt \
+    && pip3 install -r requirements-docker.txt \
 
     # Install pygeoapi
     && pip3 install -e . \
