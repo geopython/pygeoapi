@@ -51,7 +51,7 @@ def config():
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_pygeoapi.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_.settings')
     django_app_path = Path(os.path.dirname(__file__))
     try:
         from django.core.management import execute_from_command_line
