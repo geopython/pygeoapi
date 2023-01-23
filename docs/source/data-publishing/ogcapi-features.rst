@@ -378,4 +378,8 @@ Data access examples
    ``.../items`` queries which return an alternative representation to GeoJSON (which prompt a download)
    will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.csv``)
 
+.. note::
+   provider `id_field` values support slashes (i.e. ``my/cool/identifier``). The client request would then
+   be responsible for encoding the identifier accordingly (i.e. ``http://localhost:5000/collections/foo/items/my%2Fcool%2Fidentifier``)
+
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
