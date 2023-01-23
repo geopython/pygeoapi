@@ -244,9 +244,9 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
 
 @app.route('/collections/{collection_id:path}/items', methods=['GET', 'POST'])
 @app.route('/collections/{collection_id:path}/items/', methods=['GET', 'POST'])
-@app.route('/collections/{collection_id:path}/items/{item_id}',
+@app.route('/collections/{collection_id:path}/items/{item_id:path}',
            methods=['GET', 'PUT', 'DELETE'])
-@app.route('/collections/{collection_id:path}/items/{item_id}/',
+@app.route('/collections/{collection_id:path}/items/{item_id:path}/',
            methods=['GET', 'PUT', 'DELETE'])
 async def collection_items(request: Request, collection_id=None, item_id=None):
     """
