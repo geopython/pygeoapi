@@ -180,7 +180,7 @@ def collection_queryables(collection_id=None):
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
                  methods=['GET', 'POST'])
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<item_id>',
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
                  methods=['GET', 'PUT', 'DELETE'])
 def collection_items(collection_id, item_id=None):
     """
