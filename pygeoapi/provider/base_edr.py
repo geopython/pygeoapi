@@ -29,7 +29,7 @@
 
 import logging
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderGenericError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -95,3 +95,10 @@ class BaseEDRProvider(BaseProvider):
             return getattr(self, kwargs.get('query_type'))(**kwargs)
         except AttributeError:
             raise NotImplementedError('Query not implemented!')
+
+
+class EdrProviderRequestEntityTooLarge(ProviderGenericError):
+    """provider request entity too large error"""
+
+    def __init__(self, request_limit_explanation: str):
+        self.request_limit_explanation = request_limit_explanation
