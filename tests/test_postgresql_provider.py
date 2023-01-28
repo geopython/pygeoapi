@@ -6,7 +6,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -101,7 +101,7 @@ def test_query_with_property_filter(config):
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',
                features))
-    assert (len(features) == len(stream_features))
+    assert len(features) == len(stream_features)
 
     feature_collection = p.query(limit=50)
     features = feature_collection.get('features')
@@ -111,8 +111,10 @@ def test_query_with_property_filter(config):
     other_features = list(
         filter(lambda feature: feature['properties']['waterway'] != 'stream',
                features))
-    assert (len(features) != len(stream_features))
-    assert (len(other_features) != 0)
+    assert len(features) != len(stream_features)
+    assert len(other_features) != 0
+    assert feature_collection['numberMatched'] == 14776
+    assert feature_collection['numberReturned'] == 50
 
 
 def test_query_with_config_properties(config):
