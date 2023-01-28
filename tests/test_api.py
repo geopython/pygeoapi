@@ -4,7 +4,7 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -1343,6 +1343,7 @@ def test_describe_processes(config, api_):
     data = json.loads(response)
     assert code == HTTPStatus.OK
     assert len(data['processes']) == 1
+    assert len(data['links']) == 3
 
     # Test for particular, defined process
     rsp_headers, code, response = api_.describe_processes(req, 'hello-world')

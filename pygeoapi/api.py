@@ -6,7 +6,7 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
@@ -3168,8 +3168,25 @@ class API:
         if process is not None:
             response = processes[0]
         else:
+            process_url = f"{self.config['server']['url']}/processes"
             response = {
-                'processes': processes
+                'processes': processes,
+                'links': [{
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': request.get_linkrel(F_JSON),
+                    'title': 'This document as JSON',
+                    'href': f'{process_url}?f={F_JSON}'
+                }, {
+                    'type': FORMAT_TYPES[F_JSONLD],
+                    'rel': request.get_linkrel(F_JSONLD),
+                    'title': 'This document as RDF (JSON-LD)',
+                    'href': f'{process_url}?f={F_JSONLD}'
+                }, {
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': request.get_linkrel(F_HTML),
+                    'title': 'This document as HTML',
+                    'href': f'{process_url}?f={F_HTML}'
+                }]
             }
 
         if request.format == F_HTML:  # render
