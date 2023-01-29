@@ -69,7 +69,7 @@ from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
     ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError,
-    ProviderRequestEntityTooLarge)
+    ProviderRequestEntityTooLargeError)
 
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
@@ -3631,7 +3631,7 @@ class API:
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
-        except ProviderRequestEntityTooLarge as err:
+        except ProviderRequestEntityTooLargeError as err:
             return self.get_exception(
                 HTTPStatus.REQUEST_ENTITY_TOO_LARGE, headers, request.format,
                 'NoApplicableCode', str(err))

@@ -315,6 +315,6 @@ class ProviderInvalidDataError(ProviderGenericError):
     pass
 
 
-class ProviderRequestEntityTooLarge(ProviderGenericError):
+class ProviderRequestEntityTooLargeError(ProviderGenericError):
     """provider request entity too large error"""
     pass
