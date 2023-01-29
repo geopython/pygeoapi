@@ -3632,10 +3632,9 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderRequestEntityTooLarge as err:
-            msg = 'query error (check logs)'
             return self.get_exception(
                 HTTPStatus.REQUEST_ENTITY_TOO_LARGE, headers, request.format,
-                'NoApplicableCode', err.request_limit_explanation)
+                'NoApplicableCode', str(err))
 
         if request.format == F_HTML:  # render
             content = render_j2_template(self.config,

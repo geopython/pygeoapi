@@ -317,6 +317,4 @@ class ProviderInvalidDataError(ProviderGenericError):
 
 class ProviderRequestEntityTooLarge(ProviderGenericError):
     """provider request entity too large error"""
-
-    def __init__(self, request_limit_explanation: str):
-        self.request_limit_explanation = request_limit_explanation
+    pass
