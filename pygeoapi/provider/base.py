@@ -313,3 +313,8 @@ class ProviderVersionError(ProviderGenericError):
 class ProviderInvalidDataError(ProviderGenericError):
     """provider invalid data error"""
     pass
+
+
+class ProviderRequestEntityTooLargeError(ProviderGenericError):
+    """provider request entity too large error"""
+    pass
