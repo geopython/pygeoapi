@@ -68,8 +68,8 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
-    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError)
-from pygeoapi.provider.base_edr import EdrProviderRequestEntityTooLarge
+    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError,
+    ProviderRequestEntityTooLarge)
 
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
@@ -3631,7 +3631,7 @@ class API:
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
-        except EdrProviderRequestEntityTooLarge as err:
+        except ProviderRequestEntityTooLarge as err:
             msg = 'query error (check logs)'
             return self.get_exception(
                 HTTPStatus.REQUEST_ENTITY_TOO_LARGE, headers, request.format,
