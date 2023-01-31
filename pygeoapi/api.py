@@ -623,7 +623,7 @@ class API:
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
-        if config['server'].get('gzip') is True:
+        if config['server'].get('gzip'):
             FORMAT_TYPES[F_GZIP] = 'application/gzip'
             FORMAT_TYPES.move_to_end(F_JSON)
 

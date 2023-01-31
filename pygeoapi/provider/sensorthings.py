@@ -198,7 +198,7 @@ class SensorThingsProvider(BaseProvider):
                             or p['data'] != self.data):
                         continue
 
-                    if p.get('default', False) is True:
+                    if p.get('default', False):
                         _entity = p['entity']
                         uri = p['uri_field']
 

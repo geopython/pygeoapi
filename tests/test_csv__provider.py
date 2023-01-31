@@ -55,16 +55,16 @@ def test_query(config):
     p = CSVProvider(config)
 
     fields = p.get_fields()
-    assert len(fields) == 6
-    assert fields['value']['type'] == 'string'
-    assert fields['stn_id']['type'] == 'string'
+    assert len(fields) == 4
+    assert fields['value']['type'] == 'number'
+    assert fields['stn_id']['type'] == 'integer'
 
     results = p.query()
     assert len(results['features']) == 5
     assert results['numberMatched'] == 5
     assert results['numberReturned'] == 5
     assert results['features'][0]['id'] == '371'
-    assert results['features'][0]['properties']['value'] == '89.9'
+    assert results['features'][0]['properties']['value'] == 89.9
 
     assert results['features'][0]['geometry']['coordinates'][0] == -75.0
     assert results['features'][0]['geometry']['coordinates'][1] == 45.0
@@ -107,7 +107,7 @@ def test_get(config):
 
     result = p.get('964')
     assert result['id'] == '964'
-    assert result['properties']['value'] == '99.9'
+    assert result['properties']['value'] == 99.9
 
 
 def test_get_not_existing_item_raise_exception(config):

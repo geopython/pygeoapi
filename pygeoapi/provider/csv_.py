@@ -34,6 +34,7 @@ import logging
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,8 +68,25 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             fields = {}
-            for f in data_.fieldnames:
-                fields[f] = {'type': 'string'}
+
+            row = next(data_)
+
+            for key, value in row.items():
+                LOGGER.debug(f'key: {key}, value: {value}')
+                value2 = get_typed_value(value)
+                if key in [self.geometry_x, self.geometry_y]:
+                    continue
+                if key == self.id_field:
+                    type_ = 'string'
+                elif isinstance(value2, float):
+                    type_ = 'number'
+                elif isinstance(value2, int):
+                    type_ = 'integer'
+                else:
+                    type_ = 'string'
+
+                fields[key] = {'type': type_}
+
             return fields
 
     def _load(self, offset=0, limit=10, resulttype='results',
@@ -128,21 +146,27 @@ class CSVProvider(BaseProvider):
                     }
                 else:
                     feature['geometry'] = None
+
+                feature['properties'] = OrderedDict()
+
                 if self.properties or select_properties:
-                    feature['properties'] = OrderedDict()
                     for p in set(self.properties) | set(select_properties):
                         try:
-                            feature['properties'][p] = row[p]
+                            feature['properties'][p] = get_typed_value(row[p])
                         except KeyError as err:
                             LOGGER.error(err)
                             raise ProviderQueryError()
                 else:
-                    feature['properties'] = row
+                    for key, value in row.items():
+                        LOGGER.debug(f'key: {key}, value: {value}')
+                        feature['properties'][key] = get_typed_value(value)
 
                 if identifier is not None and feature['id'] == identifier:
                     found = True
                     result = feature
+
                 feature_collection['features'].append(feature)
+
                 feature_collection['numberMatched'] = \
                     len(feature_collection['features'])
 
