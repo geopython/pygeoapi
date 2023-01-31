@@ -672,7 +672,7 @@ def test_get_collection_items(config, api_):
     features = json.loads(response)
 
     assert len(features['features']) == 2
-    assert features['features'][1]['properties']['stn_id'] == '35'
+    assert features['features'][1]['properties']['stn_id'] == 35
 
     links = features['links']
     assert len(links) == 5
@@ -1073,7 +1073,7 @@ def test_get_collection_item(config, api_):
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
     feature = json.loads(response)
 
-    assert feature['properties']['stn_id'] == '35'
+    assert feature['properties']['stn_id'] == 35
     assert 'prev' not in feature['links']
     assert 'next' not in feature['links']
 
