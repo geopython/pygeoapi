@@ -55,9 +55,9 @@ def test_query(config):
     p = CSVProvider(config)
 
     fields = p.get_fields()
-    assert len(fields) == 6
-    assert fields['value']['type'] == 'string'
-    assert fields['stn_id']['type'] == 'string'
+    assert len(fields) == 4
+    assert fields['value']['type'] == 'number'
+    assert fields['stn_id']['type'] == 'integer'
 
     results = p.query()
     assert len(results['features']) == 5

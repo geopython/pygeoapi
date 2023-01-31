@@ -34,6 +34,7 @@ import logging
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,8 +68,25 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             fields = {}
-            for f in data_.fieldnames:
-                fields[f] = {'type': 'string'}
+
+            row = next(data_)
+
+            for key, value in row.items():
+                LOGGER.debug(f'key: {key}, value: {value}')
+                value2 = get_typed_value(value)
+                if key in [self.geometry_x, self.geometry_y]:
+                    continue
+                if key == self.id_field:
+                    type_ = 'string'
+                elif isinstance(value2, float):
+                    type_ = 'number'
+                elif isinstance(value2, int):
+                    type_ = 'integer'
+                else:
+                    type_ = 'string'
+
+                fields[key] = {'type': type_}
+
             return fields
 
     def _load(self, offset=0, limit=10, resulttype='results',
