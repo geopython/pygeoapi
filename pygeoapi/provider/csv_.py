@@ -146,21 +146,27 @@ class CSVProvider(BaseProvider):
                     }
                 else:
                     feature['geometry'] = None
+
+                feature['properties'] = OrderedDict()
+
                 if self.properties or select_properties:
-                    feature['properties'] = OrderedDict()
                     for p in set(self.properties) | set(select_properties):
                         try:
-                            feature['properties'][p] = row[p]
+                            feature['properties'][p] = get_typed_value(row[p])
                         except KeyError as err:
                             LOGGER.error(err)
                             raise ProviderQueryError()
                 else:
-                    feature['properties'] = row
+                    for key, value in row.items():
+                        LOGGER.debug(f'key: {key}, value: {value}')
+                        feature['properties'][key] = get_typed_value(value)
 
                 if identifier is not None and feature['id'] == identifier:
                     found = True
                     result = feature
+
                 feature_collection['features'].append(feature)
+
                 feature_collection['numberMatched'] = \
                     len(feature_collection['features'])
 
