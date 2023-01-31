@@ -138,7 +138,7 @@ class SODAServiceProvider(BaseProvider):
 
         def make_feature(f):
             f['id'] = f['properties'].pop(self.id_field)
-            if skip_geometry is True:
+            if skip_geometry:
                 f['geometry'] = None
             return f
 

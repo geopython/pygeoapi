@@ -89,8 +89,8 @@ class ESRIServiceProvider(BaseProvider):
             try:
                 # Verify Feature/Map Service supports required capabilities
                 advCapabilities = resp['advancedQueryCapabilities']
-                assert advCapabilities['supportsPagination'] is True
-                assert advCapabilities['supportsOrderBy'] is True
+                assert advCapabilities['supportsPagination']
+                assert advCapabilities['supportsOrderBy']
                 assert 'geoJSON' in resp['supportedQueryFormats']
             except KeyError:
                 msg = f'Could not access resource {self.data}'
