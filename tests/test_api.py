@@ -699,7 +699,7 @@ def test_get_collection_items(config, api_):
     features = json.loads(response)
 
     assert len(features['features']) == 3
-    assert features['features'][1]['properties']['stn_id'] == '2147'
+    assert features['features'][1]['properties']['stn_id'] == 2147
 
     links = features['links']
     assert len(links) == 5
