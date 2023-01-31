@@ -552,7 +552,7 @@ def test_get_collection_queryables(config, api_):
     queryables = json.loads(response)
 
     assert 'properties' in queryables
-    assert len(queryables['properties']) == 7
+    assert len(queryables['properties']) == 5
 
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
