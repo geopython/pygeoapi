@@ -3588,6 +3588,17 @@ class API:
         LOGGER.debug('Processing z parameter')
         z = request.params.get('z')
 
+        bbox = None
+        if query_type == 'cube':
+            try:
+                bbox = validate_bbox(request.params.get('bbox'))
+                if not bbox:
+                    raise ValueError('bbox parameter required by cube queries')
+            except ValueError as err:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', str(err))
+
         LOGGER.debug('Loading provider')
         try:
             p = load_plugin('provider', get_provider_by_type(
@@ -3634,7 +3645,8 @@ class API:
             datetime_=datetime_,
             select_properties=parameternames,
             wkt=wkt,
-            z=z
+            z=z,
+            bbox=bbox
         )
 
         try:
