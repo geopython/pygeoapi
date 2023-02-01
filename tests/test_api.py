@@ -1729,6 +1729,36 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
+    # position no coords
+    req = mock_request({
+        'datetime': '2000-01-17'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # cube bbox parameter 4 dimensional
+    req = mock_request({
+        'bbox': '0,0,10,10'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.OK
+
+    # cube bad bbox parameter
+    req = mock_request({
+        'bbox': '0,0,10'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # cube no bbox parameter
+    req = mock_request({})
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.BAD_REQUEST
+
 
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
