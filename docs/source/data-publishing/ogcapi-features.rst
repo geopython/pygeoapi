@@ -73,7 +73,6 @@ Elasticsearch
 ^^^^^^^^^^^^^
 
 .. note::
-<<<<<<< HEAD
    Requires Python packages elasticsearch and elasticsearch-dsl
 
 .. note::
