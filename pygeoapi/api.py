@@ -1117,7 +1117,8 @@ class API:
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
 
         # Filter by bbox
         collections = self.on_description_filter_spatially(collections, geom, geom_crs) # noqa
@@ -1647,16 +1648,11 @@ class API:
             # Read the spatial filter parameters from the request
             geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("GET") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -2042,16 +2038,11 @@ class API:
             # Read the spatial filter parameters from the request
             geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("POST") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
 
         LOGGER.debug('Processing datetime parameter')
         datetime_ = request.params.get('datetime')
@@ -2582,16 +2573,11 @@ class API:
             # Read the spatial filter parameters from the request
             geom, geom_crs, bbox, bbox_crs = request.read_spatial_filter("GET") # noqa
 
-        if bbox is None:
-            bbox = []
-        else:
-            try:
-                bbox = validate_bbox(bbox)
-            except ValueError as err:
-                msg = str(err)
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                    'InvalidParameterValue', msg)
+        except ValueError as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
+                'InvalidParameterValue', msg)
 
         query_args['bbox'] = bbox
         if geom:
