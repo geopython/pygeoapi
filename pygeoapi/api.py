@@ -3568,19 +3568,30 @@ class API:
         if isinstance(parameternames, str):
             parameternames = parameternames.split(',')
 
+        bbox = None
+        if query_type == 'cube':
+            try:
+                bbox = validate_bbox(request.params.get('bbox'))
+                if not bbox:
+                    raise ValueError('bbox parameter required by cube queries')
+            except ValueError as err:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', str(err))
+
         LOGGER.debug('Processing coords parameter')
         wkt = request.params.get('coords')
 
-        if not wkt:
+        if wkt:
+            try:
+                wkt = shapely_loads(wkt)
+            except WKTReadingError:
+                msg = 'invalid coords parameter'
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+        elif query_type != 'cube':
             msg = 'missing coords parameter'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-
-        try:
-            wkt = shapely_loads(wkt)
-        except WKTReadingError:
-            msg = 'invalid coords parameter'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -3634,7 +3645,8 @@ class API:
             datetime_=datetime_,
             select_properties=parameternames,
             wkt=wkt,
-            z=z
+            z=z,
+            bbox=bbox
         )
 
         try:
