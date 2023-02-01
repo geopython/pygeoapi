@@ -1117,7 +1117,8 @@ class API:
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg)
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
 
         # Filter by bbox
         collections = self.on_description_filter_spatially(collections, geom, geom_crs) # noqa
