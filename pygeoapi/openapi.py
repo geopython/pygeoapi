@@ -352,29 +352,6 @@ def get_oas_30(cfg):
                     'default': 4326
                 }
             },
-            'geom': {
-                'name': 'geom',
-                'in': 'query',
-                'description': 'Only features that have a geometry that intersects the provided geometry are selected. The geometry is provided as a well known text format (WKT)',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'string',
-                }
-            },
-            'geom-crs': {
-                'name': 'geom-crs',
-                'in': 'query',
-                'description': 'Indicates the EPSG for the given Well-Known-Text geometry.',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'integer',
-                    'default': 4326
-                }
-            },
             'offset': {
                 'name': 'offset',
                 'in': 'query',
