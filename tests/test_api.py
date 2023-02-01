@@ -1732,9 +1732,12 @@ def test_get_collection_edr_query(config, api_):
 
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
+    assert validate_bbox('1,2,3,4,5,6') == [1, 2, 3, 4, 5, 6]
     assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]
     assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
             [-142.1, 42.12, -52.22, 84.4])
+    assert (validate_bbox('-142.1,42.12,-5.28,-52.22,84.4,7.39') ==
+            [-142.1, 42.12, -5.28, -52.22, 84.4, 7.39])
 
     assert (validate_bbox('177.0,65.0,-177.0,70.0') ==
             [177.0, 65.0, -177.0, 70.0])
@@ -1743,7 +1746,13 @@ def test_validate_bbox():
         validate_bbox('1,2,4')
 
     with pytest.raises(ValueError):
+        validate_bbox('1,2,4,5,6')
+
+    with pytest.raises(ValueError):
         validate_bbox('3,4,1,2')
+
+    with pytest.raises(ValueError):
+        validate_bbox('1,2,6,4,5,3')
 
 
 def test_validate_datetime():

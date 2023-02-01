@@ -3888,8 +3888,9 @@ def validate_bbox(value=None) -> list:
 
     bbox = value.split(',')
 
-    if len(bbox) != 4:
-        msg = 'bbox should be 4 values (minx,miny,maxx,maxy)'
+    if len(bbox) not in [4, 6]:
+        msg = 'bbox should be either 4 values (minx,miny,maxx,maxy) ' \
+              'or 6 values (minx,miny,minz,maxx,maxy,maxz)'
         LOGGER.debug(msg)
         raise ValueError(msg)
 
@@ -3901,14 +3902,21 @@ def validate_bbox(value=None) -> list:
         LOGGER.debug(msg)
         raise
 
-    if bbox[1] > bbox[3]:
+    if (len(bbox) == 4 and bbox[1] > bbox[3]) \
+            or (len(bbox) == 6 and bbox[1] > bbox[4]):
         msg = 'miny should be less than maxy'
         LOGGER.debug(msg)
         raise ValueError(msg)
 
-    if bbox[0] > bbox[2]:
+    if (len(bbox) == 4 and bbox[0] > bbox[2]) \
+            or (len(bbox) == 6 and bbox[0] > bbox[3]):
         msg = 'minx is greater than maxx (possibly antimeridian bbox)'
         LOGGER.debug(msg)
+
+    if len(bbox) == 6 and bbox[2] > bbox[5]:
+        msg = 'minz should be less than maxz'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
 
     return bbox
 
