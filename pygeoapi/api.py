@@ -3888,8 +3888,8 @@ def validate_bbox(value=None) -> list:
 
     bbox = value.split(',')
 
-    if len(bbox) != 4:
-        msg = 'bbox should be 4 values (minx,miny,maxx,maxy)'
+    if len(bbox) != 4 or len(bbox) != 6:
+        msg = 'bbox should be either 4 values (minx,miny,maxx,maxy) or 6 values (minx,miny,minz,maxx,maxy,maxz)'
         LOGGER.debug(msg)
         raise ValueError(msg)
 
