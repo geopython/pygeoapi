@@ -644,11 +644,8 @@ class APIRequest:
         # Read the input
         q_bbox = self.read_param(method, 'bbox')
 
-        # If found, validate it
-        if q_bbox:
-            q_bbox = validate_bbox(q_bbox)
-
-        return q_bbox
+        # Validate and return it
+        return validate_bbox(q_bbox)
 
     def read_bbox_parameters(self, method: str):
         """
