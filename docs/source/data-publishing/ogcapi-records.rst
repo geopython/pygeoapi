@@ -33,7 +33,7 @@ ElasticsearchCatalogue
    Requires Python packages elasticsearch and elasticsearch-dsl
 
 .. note::
-   Elasticsearch 7 or greater is supported.
+   Elasticsearch 8 or greater is supported.
 
 
 To publish an Elasticsearch index, the following are required in your index:
@@ -52,6 +52,7 @@ To publish an Elasticsearch index, the following are required in your index:
 
 TinyDBCatalogue
 ^^^^^^^^^^^^^^^
+
 .. note::
    Requires Python package tinydb
 
