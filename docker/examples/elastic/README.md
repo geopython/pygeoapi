@@ -1,13 +1,13 @@
-# pygeoapi with ElasticSearch (ES)
+# pygeoapi with Elasticsearch (ES)
 
 These folders contain a Docker Compose configuration necessary to setup a minimal
 `pygeoapi` server that uses a local ES backend service.
 
 This config is only for local development and testing.
 
-## ElasticSearch
+## Elasticsearch
 
-- official ElasticSearch: **5.6.8** on **CentosOS 7**
+- official Elasticsearch: **5.6.8** on **CentosOS 7**
 - ports **9300** and **9200**
 
 ES requires the host system to have its virtual memory

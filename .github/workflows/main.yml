@@ -63,7 +63,7 @@ jobs:
     - name: Install and run Elasticsearch 📦
       uses: getong/elasticsearch-action@v1.2
       with:
-        elasticsearch version: '7.6.1'
+        elasticsearch version: '8.3.1'
         host port: 9200
         container port: 9200
         host node port: 9300
@@ -87,7 +87,8 @@ jobs:
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
         python3 setup.py install
-        pip3 install --upgrade numpy
+        pip3 install --upgrade numpy elasticsearch
+        pip3 install --upgrade numpy "sqlalchemy<2"
         #pip3 install --upgrade rasterio==1.1.8
     - name: setup test data ⚙️
       run: |
