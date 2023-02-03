@@ -16,3 +16,4 @@ requests
 shapely<2.0
 tinydb
 unicodecsv
+SQLAlchemy<2.0.0
