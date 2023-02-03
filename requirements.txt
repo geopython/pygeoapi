@@ -1,7 +1,6 @@
 Babel
 click>7,<=8
 Flask
-future-annotations
 jinja2==3.0.3
 jsonschema
 pydantic
