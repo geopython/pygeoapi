@@ -1,7 +1,6 @@
 Babel
 click>7,<=8
 Flask
-future-annotations
 jinja2==3.0.3
 jsonschema
 pydantic
@@ -14,5 +13,6 @@ PyYAML
 rasterio
 requests
 shapely<2.0
+SQLAlchemy<2.0.0
 tinydb
 unicodecsv
