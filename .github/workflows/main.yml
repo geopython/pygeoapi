@@ -39,6 +39,7 @@ jobs:
     strategy:
       matrix:
         include:
+          - python-version: 3.6
           - python-version: 3.7
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
@@ -88,7 +89,6 @@ jobs:
         pip3 install -r requirements-provider.txt
         python3 setup.py install
         pip3 install --upgrade numpy
-        pip3 install "SQLAlchemy<2"
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
