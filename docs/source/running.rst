@@ -136,6 +136,15 @@ Now configure in Apache:
      Header set Access-Control-Allow-Origin "*"
    </Location>
 
+
+When running pygeoapi in a Python virtual environment, use directives similar to the below:
+
+.. code-block:: apache
+
+   WSGIDaemonProcess pygeoapi processes=1 threads=1 python-home=/path/to/venv/pygeoapi
+   WSGIScriptAlias /pygeoapi /path/to/pygeoapi.wsgi process-group=pygeoapi application-group=%{RESOURCE}
+
+
 Gunicorn
 ^^^^^^^^
 
