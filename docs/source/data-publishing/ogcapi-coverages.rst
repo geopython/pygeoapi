@@ -18,14 +18,16 @@ parameters.
    :header: Provider, properties, subset, bbox, datetime
    :align: left
 
-   `Rasterio`_,✅,✅,✅,
-   `Xarray`_,✅,✅,✅,✅
+   :ref:`Rasterio<rasterio-provider>`,✅,✅,✅,
+   :ref:`Xarray<xarray-provider>`,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
 
 Connection examples
 -------------------
+
+.. _rasterio-provider:
 
 Rasterio
 ^^^^^^^^
@@ -52,7 +54,9 @@ capable of handling.
    The Rasterio provider ``format.name`` directive **requires** a valid
    `GDAL raster driver short name`_.
 
-Xarray
+.. _xarray-provider:
+
+xarray
 ^^^^^^
 
 .. note::
