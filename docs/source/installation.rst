@@ -67,11 +67,11 @@ Using GitHub Container Registry
 
    docker pull ghcr.io/geopython/pygeoapi:latest   
 
-Kubenetes
----------
+Kubernetes
+----------
 
 .. note:: 
-   If using the postgres provider we recommend setting nginx ingress affinity-mode to persistent, see below ingress example. 
+   If using the PostgreSQL feature provider it is recommended to set NGINX ingress affinity-mode to persistent; see the below ingress example. 
 
 .. code-block:: bash
    
