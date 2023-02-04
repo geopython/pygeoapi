@@ -75,6 +75,6 @@ Processing examples
 
 .. todo:: add more examples once OAProc implementation is complete
 
-.. _`OGC API - Processes`: https://github.com/opengeospatial/ogcapi-processes
+.. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
 .. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
-.. _`TinyDB`: https://tinydb.readthedocs.io
+.. _`TinyDB`: https://tinydb.readthedocs.io/en/latest

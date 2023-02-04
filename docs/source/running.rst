@@ -155,7 +155,7 @@ Gunicorn
    HTTP request --> WSGI or ASGI server (gunicorn) <--> Flask or Starlette (pygeoapi/flask_app.py or pygeoapi/starlette_app.py) <--> pygeoapi API
 
 .. note::
-   Gunicorn is as easy to install as ``pip install gunicorn``
+   Gunicorn is as easy to install as ``pip3 install gunicorn``
 
 .. note::
    For a complete list of WSGI server implementations, see the `WSGI server list`_.
@@ -188,7 +188,7 @@ is simple to run from the command, e.g:
    gunicorn pygeoapi.starlette_app:app -w 4 -k uvicorn.workers.UvicornWorker
 
 .. note::
-   Uvicorn is as easy to install as ``pip install uvicorn``
+   Uvicorn is as easy to install as ``pip3 install uvicorn``
 
 
 Django
@@ -222,10 +222,10 @@ and modify accordingly.
 
 
 .. _`WSGI`: https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface
-.. _`ASGI`: https://asgi.readthedocs.io
+.. _`ASGI`: https://asgi.readthedocs.io/en/latest
 .. _`Gunicorn`: https://gunicorn.org
 .. _`WSGI server list`: https://wsgi.readthedocs.io/en/latest/servers.html
-.. _`Gunicorn settings`: http://docs.gunicorn.org/en/stable/settings.html
+.. _`Gunicorn settings`: https://docs.gunicorn.org/en/stable/settings.html
 .. _`Uvicorn`: https://www.uvicorn.org
-.. _`mod_wsgi`: https://modwsgi.readthedocs.io
-.. _`Django`: https://djangoproject.com
+.. _`mod_wsgi`: https://modwsgi.readthedocs.io/en/master
+.. _`Django`: https://www.djangoproject.com

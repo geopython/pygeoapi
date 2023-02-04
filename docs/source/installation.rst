@@ -20,14 +20,14 @@ For developers and the truly impatient
 
 .. code-block:: bash
 
-   python -m venv pygeoapi
+   python3 -m venv pygeoapi
    cd pygeoapi
    . bin/activate
    git clone https://github.com/geopython/pygeoapi.git
    cd pygeoapi
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   python setup.py install
+   pip3 install --upgrade pip
+   pip3 install -r requirements.txt
+   python3 setup.py install
    cp pygeoapi-config.yml example-config.yml
    vi example-config.yml  # edit as required
    export PYGEOAPI_CONFIG=example-config.yml
@@ -44,7 +44,7 @@ pip
 
 .. code-block:: bash
 
-   pip install pygeoapi
+   pip3 install pygeoapi
 
 Docker
 ------
