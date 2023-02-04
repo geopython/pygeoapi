@@ -345,6 +345,19 @@ relies on `sodapy <https://github.com/xmunoz/sodapy>`.
         time_field: datetime # Optional time_field for datetime queries
         token: my_token # Optional app token
 
+Controlling the order of properties
+-----------------------------------
+
+It is possible to control the order and which properties are exposed/unexposed for any supported feature provider using ``properties`` key within a provider definition, see the example below:
+
+.. code-block:: yaml
+
+   properties:
+       - waterway
+       - depth
+       - name
+
+
 Data access examples
 --------------------
 
