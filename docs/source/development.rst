@@ -36,12 +36,12 @@ Schema
 
 The Common Query Language (CQL) is the part 3 of the standard OGC API - Features. This extension has its specification available at 
 `OGC API - Features - Part 3: Filtering and the Common Query Language (CQL) <https://portal.ogc.org/files/96288>`_ and the schema exists in development at
-`cql.json <https://github.com/opengeospatial/ogcapi-features/blob/master/extensions/cql/standard/schema/cql.json>`_.
+`cql.json <https://portal.ogc.org/files/96288#cql-json-schema>`_.
 
 Model generation
 ^^^^^^^^^^^^^^^^
 
-pygeoapi uses a class-based python model interface to translate the schema into python objects defined by `pydantic <https://pydantic-docs.helpmanual.io/>`_ models.
+pygeoapi uses a class-based Python model interface to translate the schema into Python objects defined by `pydantic <https://docs.pydantic.dev/>`_ models.
 The model is generated with the pre-processing of the schema through the utility ``datamodel-codegen``:
 
 .. code-block:: bash
@@ -52,7 +52,7 @@ The model is generated with the pre-processing of the schema through the utility
 How to merge
 ^^^^^^^^^^^^
 
-Once the new pydantic models have been generated then the content of the python file ``cql_update.py`` can be used to replace the old classes within the ``cql.py`` file.
+Once the new pydantic models have been generated then the content of the Python file ``cql_update.py`` can be used to replace the old classes within the ``cql.py`` file.
 Update everything above the function ``get_next_node`` and then verify if the tests for the CQL are still passing, for example ``test_post_cql_json_between_query`` 
 in ``tests/test_elasticsearch__provider.py``.
 
@@ -74,7 +74,7 @@ Make Homebrew and pyenv play nicely together:
    alias brew='env PATH=${PATH//$(pyenv root)\/shims:/} brew'
 
 
-Install python with the option to enable SQLite extensions:
+Install Python with the option to enable SQLite extensions:
 
 .. code-block:: bash
 

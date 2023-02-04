@@ -20,7 +20,7 @@ parameters.
    :header: Provider, coords, parameter-name, datetime
    :align: left
 
-   xarray-edr,✅,✅,✅
+   `xarray-edr`_,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -79,7 +79,7 @@ Data access examples
   * http://localhost:5000/collections/foo/position?coords=POINT(-75%2045)&parameter-name=SST&datetime=2000-01-16
 
 
-.. _`xarray`: https://xarray.pydata.org
+.. _`xarray`: https://docs.xarray.dev/en/stable/
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
 

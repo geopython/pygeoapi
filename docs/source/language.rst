@@ -273,7 +273,7 @@ Notes
   * JSON(-LD) responses returned from providers will **not** have a ``Content-Language`` header if ``language`` is ``None``.
 
 * If the provider supports a requested language, the passed-in ``language`` will be set to the best matching
-  `Babel Locale instance <http://babel.pocoo.org/en/latest/api/core.html#babel.core.Locale>`_.
+  `Babel Locale instance <https://babel.pocoo.org/en/latest/api/core.html>`_.
   Note that this may be the provider default language if no proper match was found.
   No matter the output format, API responses returned from providers will always contain a best-matching ``Content-Language``
   header if one ore more supported provider languages were defined.

@@ -23,7 +23,7 @@ pygeoapi core tile providers are listed below, along with supported storage type
    :header: Provider, local, remote
    :align: left
 
-   MVT,✅,✅
+   `MVT`_,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -121,4 +121,4 @@ Data access examples
 .. _`OGC API - Tiles`: https://github.com/opengeospatial/ogcapi-tiles
 .. _`MapProxy`: https://mapproxy.org
 .. _`tippecanoe`: https://github.com/mapbox/tippecanoe
-.. _`Mapbox Vector Tiles`: https://docs.mapbox.com/vector-tiles/reference
+.. _`Mapbox Vector Tiles`: https://docs.mapbox.com/data/tilesets/guides/vector-tiles-introduction/
