@@ -133,7 +133,7 @@ The following methods are options to connect the plugin to pygeoapi:
 **Option 2**: implement outside of pygeoapi and add to configuration (recommended)
 
 * create a Python package of the ``mycoolvectordata.py`` module (see `Cookiecutter`_ as an example)
-* install your Python package onto your system (``python setup.py install``).  At this point your new package
+* install your Python package onto your system (``python3 setup.py install``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
 * specify in your dataset provider configuration as follows:
 
@@ -261,11 +261,11 @@ by downstream applications.
    `pygeometa-plugin`_,pygeometa project,pygeometa as a service
 
 
-.. _`Cookiecutter`: https://github.com/audreyr/cookiecutter-pypackage
+.. _`Cookiecutter`: https://github.com/audreyfeldroy/cookiecutter-pypackage
 .. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
 .. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill
 .. _`local-outlier-factor-plugin`: https://github.com/manaakiwhenua/local-outlier-factor-plugin
 .. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi
-.. _`nldi_xstool`: https://github.com/ACWI-SSWD/nldi_xstool
+.. _`nldi_xstool`: https://code.usgs.gov/wma/nhgf/toolsteam/nldi-xstool
 .. _`pygeoapi-plugin-cookiecutter`: https://code.usgs.gov/wma/nhgf/pygeoapi-plugin-cookiecutter
 .. _`pygeometa-plugin`: https://geopython.github.io/pygeometa/pygeoapi-plugin

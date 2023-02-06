@@ -9,7 +9,7 @@ endpoints.  OGC API specifications leverage OpenAPI to describe the API in great
 The RESTful structure and payload are defined using JSON or YAML file structures (pygeoapi uses YAML).  The basic
 structure is described here: `<https://swagger.io/docs/specification/basic-structure/>`_
 
-The official OpenAPI specification can be found `on GitHub <https://github.com/OAI/OpenAPI-Specification/tree/master/versions>`_.
+The official OpenAPI specification can be found `on GitHub <https://github.com/OAI/OpenAPI-Specification/tree/main/versions>`_.
 pygeoapi supports OpenAPI version 3.0.2.
 
 As described in :ref:`administration`, the pygeoapi OpenAPI document is automatically generated based on the
@@ -65,7 +65,7 @@ This identifier can be used to obtain a specific item from the dataset using the
 Using OpenAPI via ReDoc
 -----------------------
 
-pygeoapi also supports OpenAPI document rendering via `ReDoc <https://redoc.ly/>`_.
+pygeoapi also supports OpenAPI document rendering via `ReDoc <https://redocly.com/>`_.
 
 ReDoc rendering is accessible at the same ``/openapi`` endpoint, adding ``ui=redoc`` to the request URL.
 
