@@ -18,16 +18,16 @@ parameters.
    :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
    :align: left
 
-   CSV,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   Elasticsearch,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
-   ESRIFeatureService,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   GeoJSON,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   MongoDB,✅/❌,results,✅,✅,✅,✅,❌,❌
-   OGR,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   PostgreSQL,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
-   SQLiteGPKG,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   SensorThingsAPI,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   Socrata,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
+   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
+   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
+   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -287,7 +287,7 @@ SensorThings API
 The STA provider is capable of creating feature collections from OGC SensorThings 
 API endpoints. Three of the STA entities are configurable: Things, Datastreams, and 
 Observations. For a full description of the SensorThings entity model, see 
-`here <http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#figure_2>`_. 
+`here <https://docs.ogc.org/is/15-078r6/15-078r6.html#figure_2>`_. 
 For each entity of ``Things``, pygeoapi will expand all entities directly related to
 the ``Thing``, including its associated ``Location``, from which the 
 geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to 
@@ -344,6 +344,19 @@ relies on `sodapy <https://github.com/xmunoz/sodapy>`.
         geom_field: location
         time_field: datetime # Optional time_field for datetime queries
         token: my_token # Optional app token
+
+Controlling the order of properties
+-----------------------------------
+
+It is possible to control the order and which properties are exposed/unexposed for any supported feature provider using ``properties`` key within a provider definition, see the example below:
+
+.. code-block:: yaml
+
+   properties:
+       - waterway
+       - depth
+       - name
+
 
 Data access examples
 --------------------

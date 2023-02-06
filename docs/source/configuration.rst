@@ -53,7 +53,7 @@ The ``server`` section provides directives on binding and high level tuning.
     map:  # leaflet map setup for HTML pages
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    ogc_schemas_location: /opt/schemas.opengis.net  # local copy of http://schemas.opengis.net
+    ogc_schemas_location: /opt/schemas.opengis.net  # local copy of https://schemas.opengis.net
 
     manager:  # optional OGC API - Processes asynchronous job management
         name: TinyDB  # plugin name (see pygeoapi.plugin for supported process_manager's)
@@ -447,4 +447,4 @@ At this point, you have the configuration ready to administer the server.
 .. _`YAML`: https://en.wikipedia.org/wiki/YAML
 .. _`JSON-LD`: https://json-ld.org
 .. _`Google Structured Data Testing Tool`: https://search.google.com/structured-data/testing-tool#url=https%3A%2F%2Fdemo.pygeoapi.io%2Fmaster
-.. _`Google Dataset Search`: https://developers.google.com/search/docs/data-types/dataset
+.. _`Google Dataset Search`: https://developers.google.com/search/docs/appearance/structured-data/dataset

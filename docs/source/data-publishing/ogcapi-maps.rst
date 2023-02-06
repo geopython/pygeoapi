@@ -18,8 +18,8 @@ parameters.
    :header: Provider, bbox, width/height
    :align: left
 
-   MapScript,,✅,✅
-   WMSFacade,,✅,✅
+   `MapScript`,,✅,✅
+   `WMSFacade`_,,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -98,5 +98,5 @@ Data visualization examples
 * map with bbox and bbox-crs
   * http://localhost:5000/collections/foo/map?bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F3857&bbox=4.022369384765626%2C50.690447870569436%2C4.681549072265626%2C51.00260125274477&width=800&height=600&transparent
 
-.. _`OGC API - Maps`: https://www.ogc.org/standards/ogcapi-maps
+.. _`OGC API - Maps`: https://ogcapi.ogc.org/maps
 .. _`MapScript`: https://mapserver.org/mapscript/index.html

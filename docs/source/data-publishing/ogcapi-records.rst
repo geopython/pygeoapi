@@ -18,8 +18,8 @@ parameters.
    :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), transactions
    :align: left
 
-   ElasticsearchCatalogue,✅,results/hits,✅,✅,✅,✅,❌
-   TinyDBCatalogue,✅,results/hits,✅,✅,✅,✅,✅
+   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌
+   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -101,5 +101,5 @@ Metadata search examples
    provider `id_field` values support slashes (i.e. ``my/cool/identifier``). The client request would then
    be responsible for encoding the identifier accordingly (i.e. ``http://localhost:5000/collections/my-metadata/items/my%2Fcool%2Fidentifier``)
 
-.. _`OGC API - Records`: https://www.ogc.org/standards/ogcapi-records
+.. _`OGC API - Records`: https://ogcapi.ogc.org/records
 .. _`OGC API - Records GeoJSON Features`: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/schemas/recordGeoJSON.yaml
