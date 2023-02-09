@@ -171,6 +171,13 @@ class OGRProvider(BaseProvider):
 
         self._load_source_helper(self.data_def['source_type'])
 
+        # ID field is required
+        self.id_field = provider_def.get('id_field')
+        if not self.id_field:
+            msg = 'Need explicit \'id_field\' attr in provider config'
+            LOGGER.error(msg)
+            raise Exception(msg)
+
         # Layer name is required
         self.layer_name = provider_def.get('layer')
         if not self.layer_name:
