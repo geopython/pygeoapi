@@ -91,6 +91,11 @@ jobs:
     - name: Install and run Oracle
       run: |
         docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
+    - name: Install and run pygeoapi with admin API ⚙️
+      run: |
+        cd docker/examples/admin
+        docker compose build
+        docker compose up -d
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
@@ -145,6 +150,9 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
+    - name: run integration tests ⚙️
+      run: |
+        pytest tests/test_admin_api.py
     - name: build docs 🏗️
       run: cd docs && make html
     - name: failed tests 🚩
