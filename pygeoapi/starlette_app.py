@@ -51,13 +51,10 @@ import uvicorn
 
 from pygeoapi.api import API
 from pygeoapi.openapi import load_openapi_document
-from pygeoapi.util import yaml_load, get_api_rules
+from pygeoapi.config import get_config
+from pygeoapi.util import get_api_rules
 
-if 'PYGEOAPI_CONFIG' not in os.environ:
-    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
+CONFIG = get_config()
 
 if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
