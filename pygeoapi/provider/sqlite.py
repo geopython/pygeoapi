@@ -148,13 +148,17 @@ class SQLiteGPKGProvider(BaseProvider):
         if row_data:
             rd = dict(row_data)  # sqlite3.Row is doesnt support pop
             feature = {
-                'type': 'Feature'
+                'type': 'Feature',
+                'geometry': None
             }
-            feature["geometry"] = json.loads(
-                rd.pop(f'AsGeoJSON({self.geom_col})')
-                )
-            if skip_geometry:
-                feature["geometry"] = None
+
+            try:
+                if not skip_geometry:
+                    feature['geometry'] = json.loads(
+                        rd.pop(f'AsGeoJSON({self.geom_col})')
+                    )
+            except TypeError:
+                LOGGER.warning('Missing geometry')
 
             feature['properties'] = rd
             feature['id'] = feature['properties'].pop(self.id_field)
