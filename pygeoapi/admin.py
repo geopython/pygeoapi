@@ -390,7 +390,6 @@ class Admin(API):
 
         LOGGER.debug(f'Updating resource: {resource_id}')
         config['resources'].update({resource_id: data})
-
         try:
             self.validate(config)
         except ValidationError as err:

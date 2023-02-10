@@ -1,0 +1,70 @@
+<script id="gui-block" type="text/x-template">
+  <div class="gui-block">
+
+    <template v-if="renderable">
+      <span class="mx-2" v-text="vals"></span>
+    </template>
+
+    <template v-else>
+      <v-hover v-slot:default="{ hover }">
+        <v-card
+          width="95%"
+          height="100%"
+          class="mx-auto my-2"
+          hover
+        >
+
+          <v-card-text>
+            <table class="table table-striped mb-0">
+              <tbody>
+                <tr v-for="(v, k) in vals" :key="k">
+                  <td>
+                    <h4
+                      v-if="typeof k === 'string'"
+                      class="mx-1"
+                      v-html="k"
+                    ></h4>
+                    <v-responsive width="100%">
+                      <gui-block
+                        :key="`${id}.${k}`"
+                        :label="k"
+                        :vals="v"
+                        :depth="depth_ + 1"
+                      />
+                    </v-responsive>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </v-card-text>
+
+        </v-card>
+      </v-hover>
+    </template>
+
+    </div>
+</script>
+
+<script type="text/javascript">
+  Vue.component("GuiBlock", {
+    name: "GuiBlock",
+    template: "#gui-block",
+    props: ["label", "vals", "depth"],
+    data: function () {
+      return {
+        dialog: this.$root.dialog,
+        id: this.$vnode.key,
+        depth_: this.depth ? this.depth : 0,
+      };
+    },
+    computed: {
+      renderable: function () {
+        if (typeof this.vals !== "object" || this.vals === null) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+    },
+  });
+</script>
