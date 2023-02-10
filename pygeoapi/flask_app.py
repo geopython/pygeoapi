@@ -38,14 +38,12 @@ from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
 from pygeoapi.openapi import load_openapi_document
-from pygeoapi.util import get_mimetype, yaml_load, get_api_rules
+from pygeoapi.config import get_config
+from pygeoapi.util import get_mimetype, get_api_rules
+from pygeoapi.flask_admin import ADMIN_BLUEPRINT
 
 
-if 'PYGEOAPI_CONFIG' not in os.environ:
-    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
+CONFIG = get_config()
 
 if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
@@ -465,6 +463,8 @@ def stac_catalog_path(path):
 
 
 APP.register_blueprint(BLUEPRINT)
+if CONFIG['server'].get('admin'):
+    APP.register_blueprint(ADMIN_BLUEPRINT)
 
 
 @click.command()

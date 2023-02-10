@@ -25,6 +25,9 @@ properties:
             url:
                 type: string
                 description: URL of server (as used by client)
+            admin:
+                type: boolean
+                description: Enable Admin API
             mimetype:
                 type: string
                 description: default MIME type

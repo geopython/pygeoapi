@@ -33,6 +33,7 @@ import click
 import json
 from jsonschema import validate as jsonschema_validate
 import logging
+import os
 from pathlib import Path
 
 from pygeoapi.util import to_json, yaml_load
@@ -40,6 +41,22 @@ from pygeoapi.util import to_json, yaml_load
 LOGGER = logging.getLogger(__name__)
 
 THISDIR = Path(__file__).parent.resolve()
+CONFIG = None
+
+
+def get_config():
+    """
+    Get pygeoapi configurations
+
+    :returns: `dict` of pygeoapi configuration
+    """
+    if not os.environ.get('PYGEOAPI_CONFIG'):
+        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+
+    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+        CONFIG = yaml_load(fh)
+
+    return CONFIG
 
 
 def load_schema() -> dict:

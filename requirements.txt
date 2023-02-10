@@ -5,6 +5,7 @@ Flask
 importlib_metadata
 jinja2
 jsonschema
+json-merge-patch
 pydantic
 pygeofilter
 pygeoif
