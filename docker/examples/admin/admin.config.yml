@@ -29,9 +29,9 @@
 
 server:
     bind:
-        host: http://0.0.0.0
-        port: 5000
-    url: http://localhost:5000
+        host: ${HOST}
+        port: ${PORT}
+    url: ${HOST}:${PORT}
     admin: true
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
@@ -98,4 +98,4 @@ resources:
     hello-world:
         type: process
         processor:
-            name: HelloWorld
+            name: ${PYGEOAPI_PROCESS}

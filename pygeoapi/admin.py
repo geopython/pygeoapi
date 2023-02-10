@@ -32,7 +32,7 @@
 from copy import deepcopy
 import os
 import json
-import json_merge_patch
+from json_merge_patch import create_patch, merge
 from jsonschema.exceptions import ValidationError
 import logging
 from typing import Any, Tuple, Union
@@ -94,19 +94,23 @@ class Admin(API):
 
         :param config: configuration dict
         """
-
         # validate pygeoapi configuration
+        config = deepcopy(config)
         validate_config(config)
 
-        # Only update resources block
+        # Preserve env variables
+        LOGGER.debug('Reading env variables in configuration')
+        raw_conf = get_config(raw=True)
         conf = get_config()
-        conf.pop('resources')
-        config = json_merge_patch.merge(config, conf)
+        patch = create_patch(conf, raw_conf)
+
+        LOGGER.debug('Merging env variables')
+        config = merge(config, patch)
 
         # write pygeoapi configuration
         LOGGER.debug('Writing pygeoapi configutation')
         yaml_dump(config, self.PYGEOAPI_CONFIG)
-        LOGGER.debug('Finished writing pygeoapiconfigutation')
+        LOGGER.debug('Finished writing pygeoapi configuration')
 
     def write_oas(self, config):
         """
@@ -116,6 +120,7 @@ class Admin(API):
         """
 
         # validate OpenAPI document
+        config = deepcopy(config)
         oas = get_oas(config)
         validate_openapi_document(oas)
 
@@ -379,7 +384,7 @@ class Admin(API):
 
         LOGGER.debug(f'Updating resource: {resource_id}')
         config['resources'].update({resource_id: data})
-        LOGGER.error(to_json(config, True))
+
         try:
             self.validate(config)
         except ValidationError as err:
@@ -445,7 +450,7 @@ class Admin(API):
             )
 
         LOGGER.debug('Merging resource block')
-        data = json_merge_patch.merge(resource, data)
+        data = merge(resource, data)
         LOGGER.debug('Updating resource')
         config['resources'].update({resource_id: data})
 

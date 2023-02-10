@@ -34,19 +34,18 @@ import json
 from jsonschema import validate as jsonschema_validate
 import logging
 import os
-from pathlib import Path
+import yaml
 
-from pygeoapi.util import to_json, yaml_load
+from pygeoapi.util import to_json, yaml_load, THISDIR
 
 LOGGER = logging.getLogger(__name__)
 
-THISDIR = Path(__file__).parent.resolve()
-CONFIG = None
 
-
-def get_config():
+def get_config(raw: bool = False) -> dict:
     """
     Get pygeoapi configurations
+
+    :param raw: `bool` over interpolation during config loading
 
     :returns: `dict` of pygeoapi configuration
     """
@@ -54,7 +53,10 @@ def get_config():
         raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
     with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-        CONFIG = yaml_load(fh)
+        if raw:
+            CONFIG = yaml.safe_load(fh)
+        else:
+            CONFIG = yaml_load(fh)
 
     return CONFIG
 

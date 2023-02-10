@@ -82,7 +82,8 @@ LOGGER = logging.getLogger(__name__)
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
-TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+THISDIR = Path(__file__).parent.resolve()
+TEMPLATES = THISDIR / 'templates'
 
 CRS_AUTHORITY = [
     "AUTO",
