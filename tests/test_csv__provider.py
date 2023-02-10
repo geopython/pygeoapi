@@ -35,6 +35,7 @@ from pygeoapi.provider.csv_ import CSVProvider
 from .util import get_test_file_path
 
 path = get_test_file_path('data/obs.csv')
+stations_path = get_test_file_path('data/station_list.csv')
 
 
 @pytest.fixture()
@@ -47,6 +48,20 @@ def config():
         'geometry': {
             'x_field': 'long',
             'y_field': 'lat'
+        }
+    }
+
+
+@pytest.fixture()
+def station_config():
+    return {
+        'name': 'CSV',
+        'type': 'feature',
+        'data': stations_path,
+        'id_field': 'wigos_station_identifier',
+        'geometry': {
+            'x_field': 'longitude',
+            'y_field': 'latitude'
         }
     }
 
@@ -115,3 +130,18 @@ def test_get_not_existing_item_raise_exception(config):
     p = CSVProvider(config)
     with pytest.raises(ProviderItemNotFoundError):
         p.get('404')
+
+
+def test_get_station(station_config):
+    p = CSVProvider(station_config)
+
+    results = p.query(limit=20)
+    assert len(results['features']) == 20
+    assert results['numberMatched'] == 20
+    assert results['numberReturned'] == 20
+
+    result = p.get('0-20000-0-16337')
+    assert result['properties']['station_name'] == 'BONIFATI (16337-0)'
+
+    result = p.get('0-454-2-AWSNAMITAMBO')
+    assert result['properties']['station_name'] == 'NAMITAMBO'

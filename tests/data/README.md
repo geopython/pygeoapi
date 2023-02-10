@@ -32,6 +32,12 @@ This directory provides test data to demonstrate functionality.
 - Copyright (c) 2008-2018 Open Source Geospatial Foundation
 - Copyright (c) 1996-2008 Regents of the University of Minnesota
 
+### `station_list.csv`
+
+- source: wis2box test data
+- URL: [https://github.com/wmo-im/wis2box/blob/main/tests/data/metadata/station/station_list.csv](https://github.com/wmo-im/wis2box/blob/29a90a469597c832931523f08eb3fddcba6ff6dd/tests/data/metadata/station/station_list.csv)
+- License: https://github.com/wmo-im/wis2box/blob/main/LICENSE
+
 ### `poi_portugal.gpkg`
 
 - source: OpenStreetMap - Natural GIS
