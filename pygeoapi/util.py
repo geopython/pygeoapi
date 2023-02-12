@@ -331,7 +331,7 @@ def render_j2_template(config: dict, template: Path,
     custom_templates = False
     try:
         templates_path = config['server']['templates']['path']
-        env = Environment(loader=FileSystemLoader(templates_path),
+        env = Environment(loader=FileSystemLoader([templates_path, '/']),
                           extensions=['jinja2.ext.i18n',
                                       'jinja2.ext.autoescape'],
                           autoescape=select_autoescape(['html', 'xml']))
