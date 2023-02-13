@@ -301,7 +301,7 @@ def geom2schemageo(geom: shape) -> dict:
         return f
 
     elif geom.geom_type == 'MultiPoint':
-        points = [(x, y) for (x, y, *_) in geom.geoms]
+        points = [(x, y) for pt in geom.geoms for (x, y, *_) in pt.coords]
         points.append(points[0])
 
     elif geom.geom_type == 'Polygon':
