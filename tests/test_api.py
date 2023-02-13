@@ -370,6 +370,29 @@ def test_gzip(config, api_):
         gzip.decompress(rsp_gzip_html).decode(enc_16)
 
 
+def test_gzip_csv(config, api_):
+    req_csv = mock_request({'f': 'csv'})
+    rsp_csv_headers, _, rsp_csv = api_.get_collection_items(req_csv, 'obs')
+    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
+    rsp_csv = rsp_csv.decode('utf-8')
+
+    req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
+    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
+    rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
+    assert rsp_csv == rsp_csv_
+
+    # Use utf-16 encoding
+    config['server']['encoding'] = 'utf-16'
+    api_ = API(config)
+
+    req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
+    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-16'
+    rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-16')
+    assert rsp_csv == rsp_csv_
+
+
 def test_root(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.landing_page(req)
