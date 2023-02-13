@@ -45,6 +45,7 @@ class BaseFormatter:
         """
 
         self.mimetype = None
+        self.content_type = None
         self.geom = False
 
         self.name = formatter_def['name']

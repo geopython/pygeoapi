@@ -388,8 +388,8 @@ def test_gzip_csv(config, api_):
 
     req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
     rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
-    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-16'
-    rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-16')
+    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
+    rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
 
 
