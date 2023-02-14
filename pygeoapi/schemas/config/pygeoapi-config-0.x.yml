@@ -55,7 +55,7 @@ properties:
                 properties:
                     path:
                         type: string
-                        description: path to templates folder containing the jinja2 template HTML files
+                        description: path to templates folder containing the Jinja2 template HTML files
                     static:
                         type: string
                         description: path to static folder containing css, js, images and other static files referenced by the template
@@ -270,7 +270,7 @@ properties:
                             properties:
                                 item_template:
                                     type: string
-                                    description: path to JSON-LD jinja2 template
+                                    description: path to JSON-LD Jinja2 template
                                 context:
                                     type: array
                                     description: additional JSON-LD context

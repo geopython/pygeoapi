@@ -47,7 +47,7 @@ The ``server`` section provides directives on binding and high level tuning.
     limit: 10  # server limit on number of items to return
 
     templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
-      path: /path/to/jinja2/templates/folder # path to templates folder containing the jinja2 template HTML files
+      path: /path/to/jinja2/templates/folder # path to templates folder containing the Jinja2 template HTML files
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
 
     map:  # leaflet map setup for HTML pages
@@ -446,7 +446,7 @@ This relationship can further be maintained in the JSON-LD structured data using
 
 Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
 aliasing properties using a context. In thise case, it is possible to specify a Jinja2 template. When ``item_template``
-is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render the jinja2 template
+is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render the Jinja2 template
 specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. For even more
 deployment flexibility, the path can be specified with string interpolation of environment variables.
 
@@ -460,7 +460,7 @@ deployment flexibility, the path can be specified with string interpolation of e
 
 .. note::
    The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities 
-   of jinja2 templates, see :ref:`html-templating`.
+   of Jinja2 templates, see :ref:`html-templating`.
 
 Summary
 -------
