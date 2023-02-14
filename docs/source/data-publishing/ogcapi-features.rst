@@ -178,7 +178,7 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
          - type: feature
            name: OGR
            data:
-             source_type: ESRIJSON
+             source_type: 
              source: https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/boreholes/MapServer/0/query?where=BGS_ID+%3D+BGS_ID&outfields=*&orderByFields=BGS_ID+ASC&f=json
              source_srs: EPSG:27700
              target_srs: EPSG:4326
@@ -194,6 +194,20 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
                  CPL_DEBUG: NO
            id_field: BGS_ID
            layer: ESRIJSON
+
+.. code-block:: yaml
+
+    providers:
+         - type: feature
+           name: OGR
+           data:
+             source_type: PostgreSQL
+             source: "PG: host=127.0.0.1 dbname=test user=postgres password=postgres"
+             source_srs: EPSG:4326
+             target_srs: EPSG:4326 # Can be used to transform/reproject the data
+           id_field: osm_id
+           layer: osm.hotosm_bdi_waterways # Value follows a 'my_schema.my_table' structure
+           geom_field: foo_geom
 
 
 
