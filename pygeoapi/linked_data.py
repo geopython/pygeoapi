@@ -289,23 +289,23 @@ def geom2schemageo(geom: shape) -> dict:
         }
 
     elif geom.geom_type == 'LineString':
-        _ = [f'{x},{y}' for (x, y) in geom.coords[:]]
-        f['schema:line'] = ' '.join(_)
+        points = [f'{x},{y}' for (x, y, *_) in geom.coords[:]]
+        f['schema:line'] = ' '.join(points)
         return f
 
     elif geom.geom_type == 'MultiLineString':
         points = list()
-        [points.extend(p.coords[:]) for p in geom.geoms]
-        _ = [f'{x},{y}' for (x, y) in points]
-        f['schema:line'] = ' '.join(_)
+        for line in geom.geoms:
+            points.extend([f'{x},{y}' for (x, y, *_) in line.coords[:]])
+        f['schema:line'] = ' '.join(points)
         return f
 
     elif geom.geom_type == 'MultiPoint':
-        poly_geom = [(p.x, p.y) for p in geom.geoms]
-        poly_geom.append(poly_geom[0])
+        points = [(x, y) for pt in geom.geoms for (x, y, *_) in pt.coords]
+        points.append(points[0])
 
     elif geom.geom_type == 'Polygon':
-        poly_geom = geom.exterior.coords[:]
+        points = geom.exterior.coords[:]
 
     elif geom.geom_type == 'MultiPolygon':
         # MultiPolygon to Polygon (buffer of 0 helps ensure manifold polygon)
@@ -314,20 +314,17 @@ def geom2schemageo(geom: shape) -> dict:
             LOGGER.debug(f'Invalid MultiPolygon: {poly.geom_type}')
             poly = poly.convex_hull
             LOGGER.debug(f'New MultiPolygon: {poly.geom_type}')
-        poly_geom = poly.exterior.coords[:]
+        points = poly.exterior.coords[:]
 
     else:
-        poly_geom = list()
+        points = list()
         for p in geom.geoms:
             try:
-                poly_geom.extend(p.coords[:])
+                points.extend(p.coords[:])
             except NotImplementedError:
-                poly_geom.extend(p.exterior.coords[:])
+                points.extend(p.exterior.coords[:])
 
-    try:
-        schema_polygon = [f'{x},{y}' for (x, y) in poly_geom]
-    except ValueError:
-        schema_polygon = [f'{x},{y},{z}' for (x, y, z) in poly_geom]
+    schema_polygon = [f'{x},{y}' for (x, y, *_) in points]
 
     f['schema:polygon'] = ' '.join(schema_polygon)
 
