@@ -178,7 +178,7 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
          - type: feature
            name: OGR
            data:
-             source_type: 
+             source_type: ESRIJSON
              source: https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/boreholes/MapServer/0/query?where=BGS_ID+%3D+BGS_ID&outfields=*&orderByFields=BGS_ID+ASC&f=json
              source_srs: EPSG:27700
              target_srs: EPSG:4326
