@@ -475,8 +475,6 @@ class OGRProvider(BaseProvider):
         json_feature = ogr_feature.ExportToJson(as_object=True)
         if skip_geometry:
             json_feature['geometry'] = None
-        elif geom is not None:
-            json_feature['geometry'] = json.loads(geom.ExportToJson())
         else:
             json_feature['geometry'] = json.loads(geom.ExportToJson())
         try:
