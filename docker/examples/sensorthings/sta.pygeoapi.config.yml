@@ -97,11 +97,12 @@ resources:
         keywords:
             - Things
             - SensorThings
-        context:
-            - sosa: "http://www.w3.org/ns/sosa/"
-              ssn: "http://www.w3.org/ns/ssn/"
-              Datastreams: sosa:ObservationCollection
-              name: schema:name
+        json-ld:
+            context:
+                - sosa: "http://www.w3.org/ns/sosa/"
+                  ssn: "http://www.w3.org/ns/ssn/"
+                  Datastreams: sosa:ObservationCollection
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical
@@ -132,12 +133,13 @@ resources:
         keywords:
             - Datastreams
             - SensorThings
-        context:
-            - sosa: http://www.w3.org/ns/sosa/
-              ssn: http://www.w3.org/ns/ssn/
-              Observations: sosa:hasMember
-              Thing: sosa:hasFeatureOfInterest
-              name: schema:name
+        json-ld:
+            context:
+                - sosa: http://www.w3.org/ns/sosa/
+                  ssn: http://www.w3.org/ns/ssn/
+                  Observations: sosa:hasMember
+                  Thing: sosa:hasFeatureOfInterest
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical
@@ -172,11 +174,12 @@ resources:
         keywords:
             - Observations
             - SensorThings
-        context:
-            - sosa: http://www.w3.org/ns/sosa/
-              ssn: http://www.w3.org/ns/ssn/
-              Datastream: sosa:isMemberOf
-              name: schema:name
+        json-ld:
+            context:
+                - sosa: http://www.w3.org/ns/sosa/
+                  ssn: http://www.w3.org/ns/ssn/
+                  Datastream: sosa:isMemberOf
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical

@@ -2224,14 +2224,6 @@ class API:
                 self.config, content, dataset, uri, (p.uri_field or 'id')
             )
 
-            template = self.config['resources'][dataset].get('item_template')
-            if template is not None:
-                LOGGER.debug('Rendering JSON-LD template: {}'.format(template))
-                # Render jsonld template
-                content = render_j2_template(
-                    self.config, template, content)
-                content = json.loads(content)
-
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     @pre_process

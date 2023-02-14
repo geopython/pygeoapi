@@ -150,11 +150,13 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
-          context:  # linked data configuration (see Linked Data section)
-              - datetime: https://schema.org/DateTime
-              - vocab: https://example.com/vocab#
-                stn_id: "vocab:stn_id"
-                value: "vocab:value"
+          json-ld: # linked data configuration (see Linked Data section)
+              item_template: tests/data/base.jsonld 
+              context:  
+                  - datetime: https://schema.org/DateTime
+                  - vocab: https://example.com/vocab#
+                    stn_id: "vocab:stn_id"
+                    value: "vocab:value"
           links:  # list of 1..n related links
               - type: text/csv  # MIME type
                 rel: canonical  # link relations per https://www.iana.org/assignments/link-relations/link-relations.xhtml
@@ -377,7 +379,8 @@ The default pygeoapi configuration includes an example for the ``obs`` sample da
 
 .. code-block:: yaml
 
-  context:
+  json-ld:
+    context:
       - datetime: https://schema.org/DateTime
       - vocab: https://example.com/vocab#
         stn_id: "vocab:stn_id"
@@ -389,7 +392,8 @@ one with terms defined by schema.org:
 
 .. code-block:: yaml
 
-  context:
+  json-ld:
+    context:
       - schema: https://schema.org/
         stn_id: schema:identifer
         datetime:
@@ -419,26 +423,29 @@ This relationship can further be maintained in the JSON-LD structured data using
 .. code-block:: yaml
 
     Things:
-      context:
+      json-ld:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Datastreams: sosa:ObservationCollection
 
     Datastreams:
-      context:
+      json-ld:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Observations: sosa:hasMember
             Thing: sosa:hasFeatureOfInterest
 
     Observations:
-      context:
+      json-ld:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Datastream: sosa:isMemberOf
 
 Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
-aliasing properties using a context. In thise case, it is possible to specify a jinja2 template. When ``item_template``
+aliasing properties using a context. In thise case, it is possible to specify a Jinja2 template. When ``item_template``
 is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render the jinja2 template
 specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. For even more
 deployment flexibility, the path can be specified with string interpolation of environment variables.
@@ -446,12 +453,14 @@ deployment flexibility, the path can be specified with string interpolation of e
 
 .. code-block:: yaml
 
-    item_template: jsonld/base.jsonld
-    context:
+    json-ld:
+      item_template: tests/data/base.jsonld 
+      context:
         - datetime: https://schema.org/DateTime
 
 .. note::
-   For more information on the capacities of jinja2 templates, see :ref:`html-templating`.
+   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities 
+   of jinja2 templates, see :ref:`html-templating`.
 
 Summary
 -------

@@ -264,19 +264,23 @@ properties:
                           keywords:
                               $ref: '#/definitions/i18n_array'
                               description: list of keywords about the service
-                          item_template:
-                            type: string
-                            description: path to JSON-LD jinja2 template
-                          context:
-                              type: array
-                              description: linked data configuration
-                              items:
-                                  type: object
-                                  patternProperties:
-                                      "^.*$":
-                                          anyOf:
-                                              - type: string
-                                              - type: object
+                          json-ld:
+                            type: object
+                            description: linked data configuration
+                            properties:
+                                item_template:
+                                    type: string
+                                    description: path to JSON-LD jinja2 template
+                                context:
+                                    type: array
+                                    description: additional JSON-LD context
+                                    items:
+                                        type: object
+                                        patternProperties:
+                                            "^.*$":
+                                                anyOf:
+                                                    - type: string
+                                                    - type: object
                           links:
                               type: array
                               description: list of related links
