@@ -113,6 +113,9 @@ class CSVProvider(BaseProvider):
             'type': 'FeatureCollection',
             'features': []
         }
+        if identifier is not None:
+            # Loop through all rows when searching for a single feature
+            limit = self._load(resulttype='hits').get('numberMatched')
 
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
