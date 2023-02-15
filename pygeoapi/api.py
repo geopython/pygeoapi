@@ -1654,7 +1654,7 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-            headers['Content-Type'] = formatter.content_type
+            headers['Content-Type'] = formatter.mimetype
 
             if p.filename is None:
                 filename = f'{dataset}.csv'
