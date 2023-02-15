@@ -462,7 +462,8 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 22
+    assert len(root['conformsTo']) == 23
+    assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' in root['conformsTo']
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)

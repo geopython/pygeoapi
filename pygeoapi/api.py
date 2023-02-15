@@ -121,6 +121,7 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+        'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
         'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
@@ -158,6 +159,11 @@ CONFORMANCE = {
 }
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
+
+DEFAULT_CRS_LIST = [
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    'http://www.opengis.net/def/crs/EPSG/0/4326'
+]
 
 
 def pre_process(func):
