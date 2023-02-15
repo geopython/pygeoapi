@@ -194,12 +194,16 @@ def gzip(func):
 
     def inner(*args, **kwargs):
         headers, status, content = func(*args, **kwargs)
+        charset = CHARSET[0]
         if F_GZIP in headers.get('Content-Encoding', []):
             try:
-                charset = CHARSET[0]
-                headers['Content-Type'] = \
-                    f"{headers['Content-Type']}; charset={charset}"
-                content = compress(content.encode(charset))
+                if isinstance(content, bytes):
+                    # bytes means Content-Type needs to be set upstream
+                    content = compress(content)
+                else:
+                    headers['Content-Type'] = \
+                        f"{headers['Content-Type']}; charset={charset}"
+                    content = compress(content.encode(charset))
             except TypeError as err:
                 headers.pop('Content-Encoding')
                 LOGGER.error(f'Error in compression: {err}')
@@ -1650,7 +1654,7 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-            headers['Content-Type'] = f"{formatter.mimetype}; charset={self.config['server']['encoding']}"  # noqa
+            headers['Content-Type'] = formatter.mimetype
 
             if p.filename is None:
                 filename = f'{dataset}.csv'
