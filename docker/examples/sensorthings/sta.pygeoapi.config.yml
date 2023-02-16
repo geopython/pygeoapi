@@ -97,7 +97,7 @@ resources:
         keywords:
             - Things
             - SensorThings
-        json-ld:
+        linked-data:
             context:
                 - sosa: "http://www.w3.org/ns/sosa/"
                   ssn: "http://www.w3.org/ns/ssn/"
@@ -133,7 +133,7 @@ resources:
         keywords:
             - Datastreams
             - SensorThings
-        json-ld:
+        linked-data:
             context:
                 - sosa: http://www.w3.org/ns/sosa/
                   ssn: http://www.w3.org/ns/ssn/
@@ -174,7 +174,7 @@ resources:
         keywords:
             - Observations
             - SensorThings
-        json-ld:
+        linked-data:
             context:
                 - sosa: http://www.w3.org/ns/sosa/
                   ssn: http://www.w3.org/ns/ssn/

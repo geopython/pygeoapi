@@ -264,7 +264,7 @@ properties:
                           keywords:
                               $ref: '#/definitions/i18n_array'
                               description: list of keywords about the service
-                          json-ld:
+                          linked-data:
                             type: object
                             description: linked data configuration
                             properties:

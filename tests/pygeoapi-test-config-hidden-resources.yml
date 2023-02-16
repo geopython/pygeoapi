@@ -121,7 +121,7 @@ resources:
               title: data
               href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
               hreflang: en-US
-        json-ld:
+        linked-data:
             context:
                 - schema: https://schema.org/
                   stn_id:

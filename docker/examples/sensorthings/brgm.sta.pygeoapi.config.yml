@@ -103,7 +103,7 @@ resources:
             - Things
             - SensorThings
             - BRGM
-        json-ld:
+        linked-data:
             context:
                 - sosa: "http://www.w3.org/ns/sosa/"
                   ssn: "http://www.w3.org/ns/ssn/"
@@ -141,7 +141,7 @@ resources:
             - Datastreams
             - SensorThings
             - BRGM
-        json-ld:
+        linked-data:
             context:
                 - sosa: http://www.w3.org/ns/sosa/
                   ssn: http://www.w3.org/ns/ssn/
@@ -183,7 +183,7 @@ resources:
             - Observations
             - SensorThings
             - BRGM
-        json-ld:
+        linked-data:
             context:
                 - sosa: http://www.w3.org/ns/sosa/
                   ssn: http://www.w3.org/ns/ssn/

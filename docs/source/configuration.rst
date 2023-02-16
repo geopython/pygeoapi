@@ -150,7 +150,7 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
-          json-ld: # linked data configuration (see Linked Data section)
+          linked-data: # linked data configuration (see Linked Data section)
               item_template: tests/data/base.jsonld 
               context:  
                   - datetime: https://schema.org/DateTime
@@ -379,7 +379,7 @@ The default pygeoapi configuration includes an example for the ``obs`` sample da
 
 .. code-block:: yaml
 
-  json-ld:
+  linked-data:
     context:
       - datetime: https://schema.org/DateTime
       - vocab: https://example.com/vocab#
@@ -392,7 +392,7 @@ one with terms defined by schema.org:
 
 .. code-block:: yaml
 
-  json-ld:
+  linked-data:
     context:
       - schema: https://schema.org/
         stn_id: schema:identifer
@@ -423,14 +423,14 @@ This relationship can further be maintained in the JSON-LD structured data using
 .. code-block:: yaml
 
     Things:
-      json-ld:
+      linked-data:
         context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Datastreams: sosa:ObservationCollection
 
     Datastreams:
-      json-ld:
+      linked-data:
         context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
@@ -438,7 +438,7 @@ This relationship can further be maintained in the JSON-LD structured data using
             Thing: sosa:hasFeatureOfInterest
 
     Observations:
-      json-ld:
+      linked-data:
         context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
@@ -453,7 +453,7 @@ deployment flexibility, the path can be specified with string interpolation of e
 
 .. code-block:: yaml
 
-    json-ld:
+    linked-data:
       item_template: tests/data/base.jsonld 
       context:
         - datetime: https://schema.org/DateTime

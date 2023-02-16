@@ -108,7 +108,7 @@ resources:
         keywords:
             - observations
             - monitoring
-        json-ld:
+        linked-data:
             context:
                 - datetime: https://schema.org/DateTime
                 - vocab: https://example.com/vocab#
