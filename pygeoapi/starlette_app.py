@@ -38,16 +38,16 @@ from pathlib import Path
 
 import click
 
+from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
+from starlette.types import ASGIApp, Scope, Send, Receive
 from starlette.responses import Response, JSONResponse, HTMLResponse
 import uvicorn
 
 from pygeoapi.api import API
-from pygeoapi.util import yaml_load
-
-CONFIG = None
+from pygeoapi.util import yaml_load, get_api_rules
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
@@ -57,7 +57,7 @@ with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
 
 p = Path(__file__)
 
-app = Starlette(debug=True)
+APP = Starlette(debug=True)
 STATIC_DIR = Path(p).parent.resolve() / 'static'
 
 try:
@@ -65,24 +65,7 @@ try:
 except KeyError:
     pass
 
-app = Starlette()
-app.mount('/static', StaticFiles(directory=STATIC_DIR))
-
-# CORS: optionally enable from config.
-if CONFIG['server'].get('cors', False):
-    from starlette.middleware.cors import CORSMiddleware
-    app.add_middleware(CORSMiddleware, allow_origins=['*'])
-
-try:
-    OGC_SCHEMAS_LOCATION = Path(CONFIG['server']['ogc_schemas_location'])
-except KeyError:
-    OGC_SCHEMAS_LOCATION = None
-
-if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.name.startswith('http')):
-    if not OGC_SCHEMAS_LOCATION.exists():
-        raise RuntimeError('OGC schemas misconfigured')
-    app.mount('/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION))
+API_RULES = get_api_rules(CONFIG)
 
 api_ = API(CONFIG)
 
@@ -111,7 +94,6 @@ def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
     return response
 
 
-@app.route('/')
 async def landing_page(request: Request):
     """
     OGC API landing page endpoint
@@ -123,8 +105,6 @@ async def landing_page(request: Request):
     return get_response(api_.landing_page(request))
 
 
-@app.route('/openapi')
-@app.route('/openapi/')
 async def openapi(request: Request):
     """
     OpenAPI endpoint
@@ -142,8 +122,6 @@ async def openapi(request: Request):
     return get_response(api_.openapi(request, openapi_))
 
 
-@app.route('/conformance')
-@app.route('/conformance/')
 async def conformance(request: Request):
     """
     OGC API conformance endpoint
@@ -155,8 +133,6 @@ async def conformance(request: Request):
     return get_response(api_.conformance(request))
 
 
-@app.route('/collections/{collection_id:path}/queryables')
-@app.route('/collections/{collection_id:path}/queryables/')
 async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
@@ -171,8 +147,6 @@ async def collection_queryables(request: Request, collection_id=None):
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
-@app.route('/collections/{collection_id:path}/tiles')
-@app.route('/collections/{collection_id:path}/tiles/')
 async def get_collection_tiles(request: Request, collection_id=None):
     """
     OGC open api collections tiles access point
@@ -188,10 +162,6 @@ async def get_collection_tiles(request: Request, collection_id=None):
         request, collection_id))
 
 
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}')
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/')
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata')  # noqa
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata/')  # noqa
 async def get_collection_tiles_metadata(request: Request, collection_id=None,
                                         tileMatrixSetId=None):
     """
@@ -210,8 +180,6 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
         request, collection_id, tileMatrixSetId))
 
 
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}')  # noqa
-@app.route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}/')  # noqa
 async def get_collection_items_tiles(request: Request, collection_id=None,
                                      tileMatrixSetId=None, tile_matrix=None,
                                      tileRow=None, tileCol=None):
@@ -242,14 +210,6 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
         tile_matrix, tileRow, tileCol))
 
 
-@app.route('/collections/{collection_id:path}/items',
-           methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/collections/{collection_id:path}/items/',
-           methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/collections/{collection_id:path}/items/{item_id:path}',
-           methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-@app.route('/collections/{collection_id:path}/items/{item_id:path}/',
-           methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
 async def collection_items(request: Request, collection_id=None, item_id=None):
     """
     OGC API collections items endpoint
@@ -301,7 +261,6 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
             request, collection_id, item_id))
 
 
-@app.route('/collections/{collection_id:path}/coverage')
 async def collection_coverage(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage endpoint
@@ -317,7 +276,6 @@ async def collection_coverage(request: Request, collection_id=None):
     return get_response(api_.get_collection_coverage(request, collection_id))
 
 
-@app.route('/collections/{collection_id:path}/coverage/domainset')
 async def collection_coverage_domainset(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage domainset endpoint
@@ -334,7 +292,6 @@ async def collection_coverage_domainset(request: Request, collection_id=None):
         request, collection_id))
 
 
-@app.route('/collections/{collection_id:path}/coverage/rangetype')
 async def collection_coverage_rangetype(request: Request, collection_id=None):
     """
     OGC API - Coverages coverage rangetype endpoint
@@ -352,8 +309,6 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
         request, collection_id))
 
 
-@app.route('/collections/{collection_id:path}/map')
-@app.route('/collections/{collection_id:path}/styles/{style_id:path}/map')
 async def collection_map(request: Request, collection_id, style_id=None):
     """
     OGC API - Maps map render endpoint
@@ -373,10 +328,6 @@ async def collection_map(request: Request, collection_id, style_id=None):
         request, collection_id, style_id))
 
 
-@app.route('/processes')
-@app.route('/processes/')
-@app.route('/processes/{process_id}')
-@app.route('/processes/{process_id}/')
 async def get_processes(request: Request, process_id=None):
     """
     OGC API - Processes description endpoint
@@ -392,9 +343,6 @@ async def get_processes(request: Request, process_id=None):
     return get_response(api_.describe_processes(request, process_id))
 
 
-@app.route('/jobs')
-@app.route('/jobs/{job_id}', methods=['GET', 'DELETE'])
-@app.route('/jobs/{job_id}/', methods=['GET', 'DELETE'])
 async def get_jobs(request: Request, job_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -417,8 +365,6 @@ async def get_jobs(request: Request, job_id=None):
             return get_response(api_.get_jobs(request, job_id))
 
 
-@app.route('/processes/{process_id}/execution', methods=['POST'])
-@app.route('/processes/{process_id}/execution/', methods=['POST'])
 async def execute_process_jobs(request: Request, process_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -435,8 +381,6 @@ async def execute_process_jobs(request: Request, process_id=None):
     return get_response(api_.execute_process(request, process_id))
 
 
-@app.route('/jobs/{job_id}/results', methods=['GET'])
-@app.route('/jobs/{job_id}/results/', methods=['GET'])
 async def get_job_result(request: Request, job_id=None):
     """
     OGC API - Processes job result endpoint
@@ -453,10 +397,6 @@ async def get_job_result(request: Request, job_id=None):
     return get_response(api_.get_job_result(request, job_id))
 
 
-@app.route('/jobs/{job_id}/results/{resource}',
-           methods=['GET'])
-@app.route('/jobs/{job_id}/results/{resource}/',
-           methods=['GET'])
 async def get_job_result_resource(request: Request,
                                   job_id=None, resource=None):
     """
@@ -478,18 +418,6 @@ async def get_job_result_resource(request: Request,
         request, job_id, resource))
 
 
-@app.route('/collections/{collection_id:path}/position')
-@app.route('/collections/{collection_id:path}/area')
-@app.route('/collections/{collection_id:path}/cube')
-@app.route('/collections/{collection_id:path}/radius')
-@app.route('/collections/{collection_id:path}/trajectory')
-@app.route('/collections/{collection_id:path}/corridor')
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/position')  # noqa
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/area')
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/cube')
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/radius')
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/trajectory')  # noqa
-@app.route('/collections/{collection_id:path}/instances/{instance_id}/corridor')  # noqa
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
     """
     OGC EDR API endpoints
@@ -511,10 +439,6 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
                                                       instance_id, query_type))
 
 
-@app.route('/collections')
-@app.route('/collections/')
-@app.route('/collections/{collection_id:path}')
-@app.route('/collections/{collection_id:path}/')
 async def collections(request: Request, collection_id=None):
     """
     OGC API collections endpoint
@@ -529,7 +453,6 @@ async def collections(request: Request, collection_id=None):
     return get_response(api_.describe_collections(request, collection_id))
 
 
-@app.route('/stac')
 async def stac_catalog_root(request: Request):
     """
     STAC root endpoint
@@ -541,7 +464,6 @@ async def stac_catalog_root(request: Request):
     return get_response(api_.get_stac_root(request))
 
 
-@app.route('/stac/{path:path}')
 async def stac_catalog_path(request: Request):
     """
     STAC endpoint
@@ -552,6 +474,111 @@ async def stac_catalog_path(request: Request):
     """
     path = request.path_params["path"]
     return get_response(api_.get_stac_path(request, path))
+
+
+class ApiRulesMiddleware:
+    """ Custom middleware to properly deal with trailing slashes.
+    See https://github.com/encode/starlette/issues/869.
+    """
+    def __init__(
+            self,
+            app: ASGIApp
+    ) -> None:
+        self.app = app
+        self.prefix = API_RULES.get_url_prefix('starlette')
+
+    async def __call__(self, scope: Scope,
+                       receive: Receive, send: Send) -> None:
+        if scope['type'] == "http" and API_RULES.strict_slashes:
+            path = scope['path']
+            if path == self.prefix:
+                # If the root (landing page) is requested without
+                # a trailing slash, this should return a 200.
+                # However, because Starlette does not like an empty Route path,
+                # it will return a 404 instead.
+                # To prevent this, we will append a trailing slash here.
+                scope['path'] = f"{self.prefix}/"
+                scope['raw_path'] = scope['path'].encode()
+            elif path.endswith('/'):
+                # All other resource paths should not have trailing slashes
+                response = Response(status_code=404)
+                await response(scope, receive, send)
+                return
+
+        await self.app(scope, receive, send)
+
+
+api_routes = [
+    Route('/', landing_page),
+    Route('/openapi', openapi),
+    Route('/conformance', conformance),
+    Route('/collections/{collection_id:path}/queryables', collection_queryables),  # noqa
+    Route('/collections/{collection_id:path}/tiles', get_collection_tiles),
+    Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}', get_collection_tiles_metadata),  # noqa
+    Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata', get_collection_tiles_metadata),  # noqa
+    Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}', get_collection_items_tiles),  # noqa
+    Route('/collections/{collection_id:path}/items', collection_items, methods=['GET', 'POST', 'OPTIONS']),  # noqa
+    Route('/collections/{collection_id:path}/items/{item_id:path}', collection_items, methods=['GET', 'PUT', 'DELETE', 'OPTIONS']),  # noqa
+    Route('/collections/{collection_id:path}/coverage', collection_coverage),  # noqa
+    Route('/collections/{collection_id:path}/coverage/domainset', collection_coverage_domainset),  # noqa
+    Route('/collections/{collection_id:path}/coverage/rangetype', collection_coverage_rangetype),  # noqa
+    Route('/collections/{collection_id:path}/map', collection_map),
+    Route('/collections/{collection_id:path}/styles/{style_id:path}/map', collection_map),  # noqa
+    Route('/processes', get_processes),
+    Route('/processes/{process_id}', get_processes),
+    Route('/jobs', get_jobs),
+    Route('/jobs/{job_id}', get_jobs, methods=['GET', 'DELETE']),
+    Route('/processes/{process_id}/execution', execute_process_jobs, methods=['POST']),  # noqa
+    Route('/jobs/{job_id}/results', get_job_result),
+    Route('/jobs/{job_id}/results/{resource}', get_job_result_resource),
+    Route('/collections/{collection_id:path}/position', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/area', get_collection_edr_query),
+    Route('/collections/{collection_id:path}/cube', get_collection_edr_query),
+    Route('/collections/{collection_id:path}/radius', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/trajectory', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/corridor', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/position', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/area', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/cube', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/radius', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/trajectory', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/corridor', get_collection_edr_query),  # noqa
+    Route('/collections', collections),
+    Route('/collections/{collection_id:path}', collections),
+    Route('/stac', stac_catalog_root),
+    Route('/stac/{path:path}', stac_catalog_path),
+]
+
+url_prefix = API_RULES.get_url_prefix('starlette')
+APP = Starlette(
+    routes=[
+        Mount(f'{url_prefix}/static', StaticFiles(directory=STATIC_DIR)),
+        Mount(url_prefix or '/', routes=api_routes)
+    ]
+)
+
+# If API rules require strict slashes, do not redirect
+if API_RULES.strict_slashes:
+    APP.router.redirect_slashes = False
+    APP.add_middleware(ApiRulesMiddleware)
+
+# CORS: optionally enable from config.
+if CONFIG['server'].get('cors', False):
+    from starlette.middleware.cors import CORSMiddleware
+    APP.add_middleware(CORSMiddleware, allow_origins=['*'])
+
+try:
+    OGC_SCHEMAS_LOCATION = Path(CONFIG['server']['ogc_schemas_location'])
+except KeyError:
+    OGC_SCHEMAS_LOCATION = None
+
+if (OGC_SCHEMAS_LOCATION is not None and
+        not OGC_SCHEMAS_LOCATION.name.startswith('http')):
+    if not OGC_SCHEMAS_LOCATION.exists():
+        raise RuntimeError('OGC schemas misconfigured')
+    APP.mount(
+        f'{url_prefix}/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION)
+    )
 
 
 @click.command()

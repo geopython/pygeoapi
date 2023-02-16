@@ -101,6 +101,24 @@ properties:
                     - name
                     - connection
                     - output_dir
+            api_rules:
+                type: object
+                description: optional API design rules to which pygeoapi should adhere
+                properties:
+                    api_version:
+                        type: string
+                        description: optional semantic API version number override
+                    strict_slashes:
+                        type: boolean
+                        description: whether trailing slashes are allowed in URLs (disallow = True)
+                    url_prefix:
+                        type: string
+                        description: |-
+                            Set to include a prefix in the URL path (e.g. https://base.com/my_prefix/endpoint).
+                            Please refer to the configuration section of the documentation for more info.
+                    version_header:
+                        type: string
+                        description: API version response header (leave empty or unset to omit this header)
         required:
             - bind
             - url

@@ -11,6 +11,11 @@ pytest-env
 coverage
 pyld
 
+# Testing with mock Starlette client
+starlette
+uvicorn[standard]
+httpx
+
 # PEP8
 flake8
 

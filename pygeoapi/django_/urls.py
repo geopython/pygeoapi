@@ -53,27 +53,46 @@ from django.urls import (
     path,
 )
 from django.conf import settings
+from django.conf.urls import include
 from django.conf.urls.static import static
 
 from . import views
 
+
+def apply_slash_rule(url: str):
+    """ Strip trailing slashes if the API rules are strict about it.
+    This works in conjunction with Django's APPEND_SLASH setting.
+    """
+    if settings.API_RULES.strict_slashes:
+        url = url.rstrip('/')
+    return url
+
+
 urlpatterns = [
     path('', views.landing_page, name='landing-page'),
-    path('openapi/', views.openapi, name='openapi'),
-    path('conformance/', views.conformance, name='conformance'),
-    path('collections/', views.collections, name='collections'),
+    path(apply_slash_rule('openapi/'), views.openapi, name='openapi'),
+    path(
+        apply_slash_rule('conformance/'),
+        views.conformance,
+        name='conformance'
+    ),
+    path(
+        apply_slash_rule('collections/'),
+        views.collections,
+        name='collections'
+    ),
     path(
         'collections/<str:collection_id>',
         views.collections,
         name='collection-detail',
     ),
     path(
-        'collections/<str:collection_id>/queryables/',
+        apply_slash_rule('collections/<str:collection_id>/queryables/'),
         views.collection_queryables,
         name='collection-queryables',
     ),
     path(
-        'collections/<str:collection_id>/items/',
+        apply_slash_rule('collections/<str:collection_id>/items/'),
         views.collection_items,
         name='collection-items',
     ),
@@ -83,17 +102,17 @@ urlpatterns = [
         name='collection-item',
     ),
     path(
-        'collections/<str:collection_id>/coverage/',
+        apply_slash_rule('collections/<str:collection_id>/coverage/'),
         views.collection_coverage,
         name='collection-coverage',
     ),
     path(
-        'collections/<str:collection_id>/coverage/domainset/',
+        apply_slash_rule('collections/<str:collection_id>/coverage/domainset/'),  # noqa
         views.collection_coverage_domainset,
         name='collection-coverage-domainset',
     ),
     path(
-        'collections/<str:collection_id>/coverage/rangetype/',
+        apply_slash_rule('collections/<str:collection_id>/coverage/rangetype/'),  # noqa
         views.collection_coverage_rangetype,
         name='collection-coverage-rangetype',
     ),
@@ -103,12 +122,12 @@ urlpatterns = [
         name='collection-map',
     ),
     path(
-        'collections/<str:collection_id>/styles/<str:style_id/map',
+        'collections/<str:collection_id>/styles/<str:style_id>/map',
         views.collection_style_map,
         name='collection-style-map',
     ),
     path(
-        'collections/<str:collection_id>/tiles/',
+        apply_slash_rule('collections/<str:collection_id>/tiles/'),
         views.collection_tiles,
         name='collection-tiles',
     ),
@@ -188,12 +207,12 @@ urlpatterns = [
         views.get_collection_edr_query,
         name='collection-edr-instance-corridor',
     ),
-    path('processes/', views.processes, name='processes'),
+    path(apply_slash_rule('processes/'), views.processes, name='processes'),
     path('processes/<str:process_id>', views.processes, name='process-detail'),
-    path('jobs/', views.jobs, name='jobs'),
+    path(apply_slash_rule('jobs/'), views.jobs, name='jobs'),
     path('jobs/<str:job_id>', views.jobs, name='job'),
     path(
-        'jobs/<str:job_id>/results/',
+        apply_slash_rule('jobs/<str:job_id>/results/'),
         views.job_results,
         name='job-results',
     ),
@@ -202,9 +221,31 @@ urlpatterns = [
         views.job_results_resource,
         name='job-results-resource',
     ),
-    path('stac/', views.stac_catalog_root, name='stac-catalog-root'),
+    path(
+        apply_slash_rule('stac/'),
+        views.stac_catalog_root,
+        name='stac-catalog-root'
+    ),
     path('stac/<str:path>', views.stac_catalog_path, name='stac-catalog-path'),
     path(
-        'stac/search/', views.stac_catalog_search, name='stac-catalog-search'
+        apply_slash_rule('stac/search/'),
+        views.stac_catalog_search,
+        name='stac-catalog-search'
     ),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
+
+url_route_prefix = settings.API_RULES.get_url_prefix('django')
+if url_route_prefix:
+    # Add a URL prefix to all routes if configured
+    urlpatterns = [
+        path(url_route_prefix, include(urlpatterns))
+    ]
+
+# Add static URL and optionally add prefix (note: do NOT use django style here)
+url_static_prefix = settings.API_RULES.get_url_prefix()
+urlpatterns.append(
+    static(
+        f"{url_static_prefix}{settings.STATIC_URL}",
+        document_root=settings.STATIC_ROOT
+    )
+)

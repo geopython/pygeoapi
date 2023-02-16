@@ -28,6 +28,7 @@
 # =================================================================
 
 import os
+from copy import deepcopy
 
 from jsonschema.exceptions import ValidationError
 import pytest
@@ -60,7 +61,7 @@ def test_config_envvars():
 
     with pytest.raises(EnvironmentError):
         with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:  # noqa
-            config = yaml_load(fh)
+            yaml_load(fh)
 
 
 def test_validate_config(config):
@@ -68,4 +69,22 @@ def test_validate_config(config):
     assert is_valid
 
     with pytest.raises(ValidationError):
-        is_valid = validate_config({'foo': 'bar'})
+        validate_config({'foo': 'bar'})
+
+    # Test API rules
+    cfg_copy = deepcopy(config)
+    cfg_copy['server']['api_rules'] = {
+        'api_version': '1.2.3',
+        'strict_slashes': True,
+        'url_prefix': 'v{major_version}',
+        'version_header': 'API-Version'
+    }
+    assert validate_config(cfg_copy)
+
+    cfg_copy['server']['api_rules'] = {
+        'api_version': 123,
+        'url_prefix': 0,
+        'strict_slashes': 'bad_value'
+    }
+    with pytest.raises(ValidationError):
+        validate_config(cfg_copy)

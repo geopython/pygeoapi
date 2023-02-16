@@ -30,31 +30,30 @@
 """Generic util functions used in the code"""
 
 import base64
-from typing import List
-from datetime import date, datetime, time
-from decimal import Decimal
-from enum import Enum
 import json
 import logging
 import mimetypes
 import os
-from pathlib import Path
 import re
-from typing import Any, IO, Union
-from urllib.request import urlopen
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
+from pathlib import Path
+from typing import Any, IO, Union, List
 from urllib.parse import urlparse
-
-from shapely.geometry import Polygon
+from urllib.request import urlopen
 
 import dateutil.parser
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from babel.support import Translations
 import yaml
+from babel.support import Translations
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from shapely.geometry import Polygon
 from requests import Session
 from requests.structures import CaseInsensitiveDict
 
 from pygeoapi import __version__
 from pygeoapi import l10n
+from pygeoapi.models import config as config_models
 from pygeoapi.provider.base import ProviderTypeError
 
 LOGGER = logging.getLogger(__name__)
@@ -137,6 +136,23 @@ def yaml_load(fh: IO) -> dict:
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
+def get_api_rules(config: dict) -> config_models.APIRules:
+    """ Extracts the default API design rules from the given configuration.
+
+    :param config:  Current pygeoapi configuration (dictionary).
+    :returns:       An APIRules instance.
+    """
+    rules = config['server'].get('api_rules') or {}
+    rules.setdefault('api_version', __version__)
+    return config_models.APIRules.create(**rules)
+
+
+def get_base_url(config: dict) -> str:
+    """ Returns the full pygeoapi base URL. """
+    rules = get_api_rules(config)
+    return url_join(config['server']['url'], rules.get_url_prefix())
+
+
 def str2bool(value: Union[bool, str]) -> bool:
     """
     helper function to return Python boolean
@@ -172,8 +188,7 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial,
-                      indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent)
 
 
 def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:
@@ -493,7 +508,7 @@ class JobStatus(Enum):
 
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
-    helper function to read data (file or networrk)
+    helper function to read data (file or network)
     """
 
     LOGGER.debug(f'Attempting to read {path}')
@@ -508,7 +523,7 @@ def read_data(path: Union[Path, str]) -> Union[bytes, str]:
             return r.read()
 
 
-def url_join(*parts: list) -> str:
+def url_join(*parts: str) -> str:
     """
     helper function to join a URL from a number of parts/fragments.
     Implemented because urllib.parse.urljoin strips subpaths from
@@ -521,7 +536,7 @@ def url_join(*parts: list) -> str:
     :returns: str of resulting URL
     """
 
-    return '/'.join([p.strip().strip('/') for p in parts])
+    return '/'.join([p.strip().strip('/') for p in parts]).rstrip('/')
 
 
 def get_envelope(coords_list: List[List[float]]) -> list:
