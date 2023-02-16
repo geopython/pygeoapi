@@ -75,11 +75,10 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.util import (dategetter, DATETIME_FORMAT,
+from pygeoapi.util import (dategetter, DATETIME_FORMAT, to_json,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
-                           json_serial, render_j2_template, str2bool,
-                           TEMPLATES, to_json)
+                           json_serial, render_j2_template, str2bool)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -634,9 +633,6 @@ class API:
         # Process language settings (first locale is default!)
         self.locales = l10n.get_locales(config)
         self.default_locale = self.locales[0]
-
-        if 'templates' not in self.config['server']:
-            self.config['server']['templates'] = {'path': TEMPLATES}
 
         if 'pretty_print' not in self.config['server']:
             self.config['server']['pretty_print'] = False
