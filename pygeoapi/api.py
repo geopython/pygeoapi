@@ -3574,6 +3574,7 @@ class API:
 
         bbox = None
         if query_type == 'cube':
+            LOGGER.debug('Processing cube bbox')
             try:
                 bbox = validate_bbox(request.params.get('bbox'))
                 if not bbox:
@@ -3599,6 +3600,12 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
+
+        within = within_units = None
+        if query_type == 'radius':
+            LOGGER.debug('Processing within / within-units parameters')
+            within = request.params.get('within')
+            within_units = request.params.get('within-units')
 
         LOGGER.debug('Processing z parameter')
         z = request.params.get('z')
@@ -3650,7 +3657,9 @@ class API:
             select_properties=parameternames,
             wkt=wkt,
             z=z,
-            bbox=bbox
+            bbox=bbox,
+            within=within,
+            within_units=within_units
         )
 
         try:
