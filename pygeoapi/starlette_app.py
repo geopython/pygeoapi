@@ -472,11 +472,13 @@ async def get_job_result_resource(request: Request,
 @app.route('/collections/{collection_id:path}/position')
 @app.route('/collections/{collection_id:path}/area')
 @app.route('/collections/{collection_id:path}/cube')
+@app.route('/collections/{collection_id:path}/radius')
 @app.route('/collections/{collection_id:path}/trajectory')
 @app.route('/collections/{collection_id:path}/corridor')
 @app.route('/collections/{collection_id:path}/instances/{instance_id}/position')  # noqa
 @app.route('/collections/{collection_id:path}/instances/{instance_id}/area')
 @app.route('/collections/{collection_id:path}/instances/{instance_id}/cube')
+@app.route('/collections/{collection_id:path}/instances/{instance_id}/radius')
 @app.route('/collections/{collection_id:path}/instances/{instance_id}/trajectory')  # noqa
 @app.route('/collections/{collection_id:path}/instances/{instance_id}/corridor')  # noqa
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
