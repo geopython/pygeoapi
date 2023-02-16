@@ -519,6 +519,16 @@ def test_describe_collections(config, api_):
         }
     }
 
+    # OAPIF Part 2 CRS 6.2.1 A, B, configured CRS + defaults
+    assert collection['crs'] is not None
+    crs_set = [
+        'http://www.opengis.net/def/crs/EPSG/0/28992',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326',
+    ]
+    for crs in crs_set:
+        assert crs in collection['crs']
+
     # French language request
     req = mock_request({'lang': 'fr'})
     rsp_headers, code, response = api_.describe_collections(req, 'obs')
@@ -547,6 +557,15 @@ def test_describe_collections(config, api_):
         req, 'naturalearth/lakes')
     collection = json.loads(response)
     assert collection['id'] == 'naturalearth/lakes'
+
+    # OAPIF Part 2 CRS 6.2.1 B, defaults when not configured
+    assert collection['crs'] is not None
+    crs_set = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326',
+    ]
+    for crs in crs_set:
+        assert crs in collection['crs']
 
 
 def test_describe_collections_hidden_resources(

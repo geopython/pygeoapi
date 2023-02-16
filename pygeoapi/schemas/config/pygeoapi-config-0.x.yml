@@ -429,6 +429,13 @@ properties:
                                               type: string
                                           minItems: 1
                                           uniqueItems: true
+                                      crs:
+                                           type: array
+                                           description: optional supported CRSs, should contain at least http://www.opengis.net/def/crs/OGC/1.3/CRS84 and http://www.opengis.net/def/crs/EPSG/0/4326
+                                           items:
+                                               type: string
+                                           minItems: 2
+                                           uniqueItems: true
                                   required:
                                       - type
                                       - name

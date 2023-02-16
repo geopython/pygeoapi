@@ -1008,6 +1008,10 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
                 })
 
+                # OAPIF Part 2 - list supported CRSs
+                if collection_data_type == 'feature':
+                    collection['crs'] = collection_data.get('crs', DEFAULT_CRS_LIST) # noqa
+
             elif collection_data_type == 'coverage':
                 # TODO: translate
                 LOGGER.debug('Adding coverage based links')
