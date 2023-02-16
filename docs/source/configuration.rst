@@ -47,7 +47,7 @@ The ``server`` section provides directives on binding and high level tuning.
     limit: 10  # server limit on number of items to return
 
     templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
-      path: /path/to/jinja2/templates/folder # path to templates folder containing the jinja2 template HTML files
+      path: /path/to/jinja2/templates/folder # path to templates folder containing the Jinja2 template HTML files
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
 
     map:  # leaflet map setup for HTML pages
@@ -128,7 +128,7 @@ The ``resource.type`` property is required.  Allowed types are:
 - ``process``
 - ``stac-collection``
 
-The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each 
+The ``providers`` block is a list of 1..n providers with which to operate the data on.  Each
 provider requires a ``type`` property.  Allowed types are:
 
 - ``feature``
@@ -150,11 +150,13 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
-          context:  # linked data configuration (see Linked Data section)
-              - datetime: https://schema.org/DateTime
-              - vocab: https://example.com/vocab#
-                stn_id: "vocab:stn_id"
-                value: "vocab:value"
+          linked-data: # linked data configuration (see Linked Data section)
+              item_template: tests/data/base.jsonld 
+              context:  
+                  - datetime: https://schema.org/DateTime
+                  - vocab: https://example.com/vocab#
+                    stn_id: "vocab:stn_id"
+                    value: "vocab:value"
           links:  # list of 1..n related links
               - type: text/csv  # MIME type
                 rel: canonical  # link relations per https://www.iana.org/assignments/link-relations/link-relations.xhtml
@@ -351,7 +353,7 @@ For collections, at the level of item, the default JSON-LD representation adds:
 
 - An ``@id`` for the item, which is the URL for that item. If uri_field is specified,
   it is used, otherwise the URL is to its HTML representation in pygeoapi.
-- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo` 
+- Separate GeoSPARQL/WKT and `schema.org/geo` versions of the geometry. `schema.org/geo`
   only supports point, line, and polygon geometries. Multipart lines are merged into a single line.
   The rest of the multipart geometries are transformed reduced and into a polygon via unary union
   or convex hull transform.
@@ -377,7 +379,8 @@ The default pygeoapi configuration includes an example for the ``obs`` sample da
 
 .. code-block:: yaml
 
-  context:
+  linked-data:
+    context:
       - datetime: https://schema.org/DateTime
       - vocab: https://example.com/vocab#
         stn_id: "vocab:stn_id"
@@ -389,7 +392,8 @@ one with terms defined by schema.org:
 
 .. code-block:: yaml
 
-  context:
+  linked-data:
+    context:
       - schema: https://schema.org/
         stn_id: schema:identifer
         datetime:
@@ -411,32 +415,52 @@ by the dataset provider, not pygeoapi.
 
 An example of a data provider that includes relationships between items is the SensorThings API provider.
 SensorThings API, by default, has relationships between entities within its data model.
-Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi 
-to represent the relationship between configured entities as intra-pygeoapi links or URIs. 
-This relationship can further be maintained in the JSON-LD structured data using the appropiate 
+Setting the ``intralink`` field of the SensorThings provider to ``true`` sets pygeoapi
+to represent the relationship between configured entities as intra-pygeoapi links or URIs.
+This relationship can further be maintained in the JSON-LD structured data using the appropiate
 ``@context`` with the sosa/ssn ontology. For example:
 
 .. code-block:: yaml
 
     Things:
-      context:
+      linked-data:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Datastreams: sosa:ObservationCollection
 
     Datastreams:
-      context:
+      linked-data:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Observations: sosa:hasMember
             Thing: sosa:hasFeatureOfInterest
 
     Observations:
-      context:
+      linked-data:
+        context:
           - sosa: "http://www.w3.org/ns/sosa/"
             ssn: "http://www.w3.org/ns/ssn/"
             Datastream: sosa:isMemberOf
 
+Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
+aliasing properties using a context. In thise case, it is possible to specify a Jinja2 template. When ``item_template``
+is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render the Jinja2 template
+specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. For even more
+deployment flexibility, the path can be specified with string interpolation of environment variables.
+
+
+.. code-block:: yaml
+
+    linked-data:
+      item_template: tests/data/base.jsonld 
+      context:
+        - datetime: https://schema.org/DateTime
+
+.. note::
+   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities 
+   of Jinja2 templates, see :ref:`html-templating`.
 
 Summary
 -------

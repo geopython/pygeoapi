@@ -87,6 +87,9 @@ class BaseEDRProvider(BaseProvider):
         :param select_properties: list of parameters
         :param z: vertical level(s)
         :param format_: data format of output
+        :param bbox: bbox geometry (for cube queries)
+        :param within: distance (for radius querires)
+        :param within_units: distance units (for radius querires)
 
         :returns: coverage data as `dict` of CoverageJSON or native format
         """

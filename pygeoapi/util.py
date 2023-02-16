@@ -49,7 +49,6 @@ from shapely.geometry import Polygon
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
-from jinja2.exceptions import TemplateNotFound
 import yaml
 
 from pygeoapi import __version__
@@ -328,21 +327,18 @@ def render_j2_template(config: dict, template: Path,
     :returns: string of rendered template
     """
 
-    custom_templates = False
+    template_paths = {TEMPLATES, '.'}
     try:
-        templates_path = config['server']['templates']['path']
-        env = Environment(loader=FileSystemLoader(templates_path),
-                          extensions=['jinja2.ext.i18n',
-                                      'jinja2.ext.autoescape'],
-                          autoescape=select_autoescape(['html', 'xml']))
-        custom_templates = True
-        LOGGER.debug(f'using custom templates: {templates_path}')
+        templates = config['server']['templates']['path']
+        template_paths.add(templates)
+        LOGGER.debug(f'using custom templates: {templates}')
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES),
-                          extensions=['jinja2.ext.i18n',
-                                      'jinja2.ext.autoescape'],
-                          autoescape=select_autoescape(['html', 'xml']))
         LOGGER.debug(f'using default templates: {TEMPLATES}')
+
+    env = Environment(loader=FileSystemLoader(template_paths),
+                      extensions=['jinja2.ext.i18n',
+                                  'jinja2.ext.autoescape'],
+                      autoescape=select_autoescape(['html', 'xml']))
 
     env.filters['to_json'] = to_json
     env.filters['format_datetime'] = format_datetime
@@ -362,18 +358,7 @@ def render_j2_template(config: dict, template: Path,
     translations = Translations.load('locale', [locale_])
     env.install_gettext_translations(translations)
 
-    try:
-        template = env.get_template(template)
-    except TemplateNotFound as err:
-        if custom_templates:
-            LOGGER.debug(err)
-            LOGGER.debug('Custom template not found; using default')
-            env = Environment(loader=FileSystemLoader(TEMPLATES),
-                              extensions=['jinja2.ext.i18n'])
-            env.install_gettext_translations(translations)
-            template = env.get_template(template)
-        else:
-            raise
+    template = env.get_template(template)
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
                            data=data, locale=locale_, version=__version__)

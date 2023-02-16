@@ -29,7 +29,7 @@
 
 import logging
 
-from pygeoapi.provider.base import ProviderNoDataError
+from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.xarray_ import _to_datetime_string, XarrayProvider
 
@@ -135,6 +135,84 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         bbox = wkt.bounds
         out_meta = {
             'bbox': [bbox[0], bbox[1], bbox[2], bbox[3]],
+            "time": [
+                _to_datetime_string(data.coords[self.time_field].values[0]),
+                _to_datetime_string(data.coords[self.time_field].values[-1])
+            ],
+            "driver": "xarray",
+            "height": height,
+            "width": width,
+            "time_steps": data.dims[self.time_field],
+            "variables": {var_name: var.attrs
+                          for var_name, var in data.variables.items()}
+        }
+
+        return self.gen_covjson(out_meta, data, self.fields)
+
+    @BaseEDRProvider.register()
+    def cube(self, **kwargs):
+        """
+        Extract data from collection
+
+        :param query_type: query type
+        :param bbox: `list` of minx,miny,maxx,maxy coordinate values as `float`
+        :param datetime_: temporal (datestamp or extent)
+        :param select_properties: list of parameters
+        :param z: vertical level(s)
+        :param format_: data format of output
+
+        :returns: coverage data as dict of CoverageJSON or native format
+        """
+
+        query_params = {}
+
+        LOGGER.debug(f'Query parameters: {kwargs}')
+
+        LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
+
+        bbox = kwargs.get('bbox')
+        if len(bbox) == 4:
+            query_params[self.x_field] = slice(bbox[0], bbox[2])
+            query_params[self.y_field] = slice(bbox[1], bbox[3])
+        else:
+            raise ProviderQueryError('z-axis not supported')
+
+        LOGGER.debug('Processing parameter-name')
+        select_properties = kwargs.get('select_properties')
+
+        # example of fetching instance passed
+        # TODO: apply accordingly
+        instance = kwargs.get('instance')
+        LOGGER.debug(f'instance: {instance}')
+
+        datetime_ = kwargs.get('datetime_')
+        if datetime_ is not None:
+            query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
+
+        LOGGER.debug(f'query parameters: {query_params}')
+        try:
+            if select_properties:
+                self.fields = select_properties
+                data = self._data[[*select_properties]]
+            else:
+                data = self._data
+            data = data.sel(query_params)
+        except KeyError:
+            raise ProviderNoDataError()
+
+        if len(data.coords[self.time_field].values) < 1:
+            raise ProviderNoDataError()
+
+        height = data.dims[self.y_field]
+        width = data.dims[self.x_field]
+
+        out_meta = {
+            'bbox': [
+                data.coords[self.x_field].values[0],
+                data.coords[self.y_field].values[0],
+                data.coords[self.x_field].values[-1],
+                data.coords[self.y_field].values[-1]
+            ],
             "time": [
                 _to_datetime_string(data.coords[self.time_field].values[0]),
                 _to_datetime_string(data.coords[self.time_field].values[-1])
