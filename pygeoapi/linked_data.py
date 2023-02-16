@@ -31,10 +31,11 @@
 Returns content as linked data representations
 """
 
+import json
 import logging
 from typing import Callable
 
-from pygeoapi.util import is_url
+from pygeoapi.util import is_url, render_j2_template
 from pygeoapi import l10n
 from shapely.geometry import shape
 from shapely.ops import unary_union
@@ -188,17 +189,21 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
     :returns: string of rendered JSON (GeoJSON-LD)
     """
 
-    context = config['resources'][dataset].get('context', []).copy()
+    LOGGER.debug('Fetching context and template from resource configuration')
+    jsonld = config['resources'][dataset].get('linked-data', {})
+
+    context = jsonld.get('context', []).copy()
+    template = jsonld.get('item_template', None)
+
     defaultVocabulary = {
         'schema': 'https://schema.org/',
-        id_field: '@id',
         'type': '@type'
     }
 
     if identifier:
         # Single jsonld
         defaultVocabulary.update({
-            'geosparql': 'http://www.opengis.net/ont/geosparql#'
+            'gsp': 'http://www.opengis.net/ont/geosparql#'
         })
 
         # Expand properties block
@@ -207,7 +212,7 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
         # Include multiple geometry encodings
         data['type'] = 'schema:Place'
         jsonldify_geometry(data)
-        data[id_field] = identifier
+        data['@id'] = identifier
 
     else:
         # Collection of jsonld
@@ -223,10 +228,10 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
             identifier = feature.get(id_field,
                                      feature['properties'].get(id_field, ''))
             if not is_url(str(identifier)):
-                identifier = f"config['server']['url']/collections/{dataset}/items/{feature['id']}"  # noqa
+                identifier = f"{config['server']['url']}/collections/{dataset}/items/{feature['id']}"  # noqa
 
             data['features'][i] = {
-                id_field: identifier,
+                '@id': identifier,
                 'type': 'schema:Place'
             }
 
@@ -240,7 +245,15 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
         **data
     }
 
-    return ldjsonData
+    if None in (template, identifier):
+        return ldjsonData
+    else:
+        # Render jsonld template for single item with template configured
+        LOGGER.debug(f'Rendering JSON-LD template: {template}')
+        content = render_j2_template(
+            config, template, ldjsonData)
+        ldjsonData = json.loads(content)
+        return ldjsonData
 
 
 def jsonldify_geometry(feature: dict) -> None:
@@ -260,9 +273,9 @@ def jsonldify_geometry(feature: dict) -> None:
     feature['geometry'] = feature.pop('geometry')
 
     # Geosparql geometry
-    feature['geosparql:hasGeometry'] = {
+    feature['gsp:hasGeometry'] = {
         '@type': f'http://www.opengis.net/ont/sf#{geom.geom_type}',
-        'geosparql:asWKT': {
+        'gsp:asWKT': {
             '@type': 'http://www.opengis.net/ont/geosparql#wktLiteral',
             '@value': f'{geom.wkt}'
         }

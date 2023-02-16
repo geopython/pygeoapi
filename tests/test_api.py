@@ -1109,7 +1109,7 @@ def test_get_collection_item_json_ld(config, api_):
     feature = json.loads(response)
     assert '@context' in feature
     assert all((f in feature['@context'][0] for
-                f in ('schema', 'type', 'geosparql')))
+                f in ('schema', 'type', 'gsp')))
     assert len(feature['@context']) == 1
     assert 'schema' in feature['@context'][0]
     assert feature['@context'][0]['schema'] == 'https://schema.org/'

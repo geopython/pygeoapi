@@ -120,17 +120,18 @@ resources:
               title: data
               href: https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv
               hreflang: en-US
-        context:
-            - schema: https://schema.org/
-              stn_id:
-                "@id": schema:identifier
-                "@type": schema:Text
-              datetime:
-                "@type": schema:DateTime
-                "@id": schema:observationDate
-              value:
-                "@type": schema:Number
-                "@id": schema:QuantitativeValue
+        linked-data:
+            context:
+                - schema: https://schema.org/
+                  stn_id:
+                      "@id": schema:identifier
+                      "@type": schema:Text
+                  datetime:
+                      "@type": schema:DateTime
+                      "@id": schema:observationDate
+                  value:
+                      "@type": schema:Number
+                      "@id": schema:QuantitativeValue
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
@@ -285,6 +286,8 @@ resources:
               title: data source
               href: https://en.wikipedia.org/wiki/GeoJSON
               hreflang: en-US
+        linked-data:
+            item_template: tests/data/base.jsonld
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
