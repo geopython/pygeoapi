@@ -73,40 +73,61 @@
           </div>
         </div>
       </div>
-      <div class="col-sm-12 col-md-6">
-          <table class="table table-striped table-bordered">
-            <thead>
+
+      <div class="col-sm-12 col-md-6" style="overflow-x: scroll;">
+        {% set props = [] %}
+        <table class="table table-striped table-bordered">
+          <thead>
             <tr>
               {% if data.get('uri_field') %}
-              <th>{{ data['uri_field'] }}</th>
-              {% endif %}
+                {% set uri_field = data.uri_field %}
+                <th>{{ uri_field }}</th>
+              {% elif data.get('title_field') %}
+                {% set title_field = data.title_field %}
+                <th>{{ title_field }}</th>
+              {% else %}
                 <th>id</th>
-                {% if data['title_field'] %}
-                  <th>{{ data['title_field'] }}</th>
-                {% endif %}
-                {% for k, v in data['features'][0]['properties'].items() %}
-                  {# start with id & title then take first 5 columns for table #}
-                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
+              {% endif %}
+
+              {% for k in data['features'][0]['properties'].keys() %}
+                {% if k not in [data.id_field, data.title_field, data.uri_field, 'extent'] %}
+                  {% set props = props.append(k) %}
                   <th>{{ k }}</th>
-                  {% endif %}
-                {% endfor %}
+                {% endif %}
+              {% endfor %}
             </tr>
           </thead>
           <tbody>
-            {% for ft in data['features'] %}
+            {% for ft in data.features %}
               <tr>
                 {% if data.get('uri_field') %}
-                <td data-label="{{ data.get('uri_field') }}"><a href="{{ ft['properties'].get(data['uri_field'])}}" title="{{ ft['properties'][data['uri_field']] }}">{{ft['properties'][data.get('uri_field')]}}</a></td>
+                  {% set uri_field = data.uri_field %}
+                  <td data-label="{{ uri_field }}">
+                    <a href="{{ ft.properties.get(uri_field) }}" title="{{ ft.properties.get(uri_field) }}">
+                      {{ ft.properties.get(uri_field) }}
+                    </a>
+                  </td>
+                {% elif data.get('title_field') %}
+                  {% set title_field = data.title_field %}
+                  <td data-label="{{ title_field }}">
+                    <a href="{{ data.items_path }}/{{ ft['id'] }}" title="{{ ft.properties.get(title_field) }}">
+                      {{ ft.properties.get(title_field) | string | truncate( 35 ) }}
+                    </a>
+                  </td>
+                {% else %}
+                  <td data-label="id">
+                    <a href="{{ data.items_path }}/{{ ft.id }}" title="{{ ft.id }}">
+                      {{ ft.id | string | truncate( 12 )  }}
+                    </a>
+                  </td>
                 {% endif %}
-                <td data-label="id"><a href="{{ data['items_path']}}/{{ ft.id }}" title="{{ ft.id }}">{{ ft.id | string | truncate( 12 )  }}</a></td>
-                {% if data['title_field'] %}
-                  <td data-label="name"><a href="{{ data['items_path']}}/{{ ft['id'] }}" title="{{ ft['properties'][data['title_field']] }}">{{ ft['properties'][data['title_field']] | string | truncate( 35 ) }}</a></td>
-                {% endif %}
-                {% for k, v in ft['properties'].items() %}
-                  {% if loop.index < 5 and k not in [data['id_field'], data['title_field'], data['uri_field'], 'extent'] %}
-                  <td data-label="{{ k }}">{{ v | string | truncate( 35 ) }}</td>
-                  {% endif %}
+
+                {% for prop in props %}
+                  <td data-label="{{ prop }}">
+                    {{ ft.properties.get(prop, '') | string | truncate( 35 ) }}
+                  </td>
                 {% endfor %}
+
               </tr>
             {% endfor %}
           </tbody>
