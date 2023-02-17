@@ -55,7 +55,7 @@ properties:
                 properties:
                     path:
                         type: string
-                        description: path to templates folder containing the jinja2 template HTML files
+                        description: path to templates folder containing the Jinja2 template HTML files
                     static:
                         type: string
                         description: path to static folder containing css, js, images and other static files referenced by the template
@@ -264,16 +264,23 @@ properties:
                           keywords:
                               $ref: '#/definitions/i18n_array'
                               description: list of keywords about the service
-                          context:
-                              type: array
-                              description: linked data configuration
-                              items:
-                                  type: object
-                                  patternProperties:
-                                      "^.*$":
-                                          anyOf:
-                                              - type: string
-                                              - type: object
+                          linked-data:
+                            type: object
+                            description: linked data configuration
+                            properties:
+                                item_template:
+                                    type: string
+                                    description: path to JSON-LD Jinja2 template
+                                context:
+                                    type: array
+                                    description: additional JSON-LD context
+                                    items:
+                                        type: object
+                                        patternProperties:
+                                            "^.*$":
+                                                anyOf:
+                                                    - type: string
+                                                    - type: object
                           links:
                               type: array
                               description: list of related links

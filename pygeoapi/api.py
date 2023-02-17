@@ -121,7 +121,7 @@ CONFORMANCE = {
     ],
     'feature': [
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
         'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
@@ -3696,22 +3696,40 @@ class API:
         if isinstance(parameternames, str):
             parameternames = parameternames.split(',')
 
+        bbox = None
+        if query_type == 'cube':
+            LOGGER.debug('Processing cube bbox')
+            try:
+                bbox = validate_bbox(request.params.get('bbox'))
+                if not bbox:
+                    raise ValueError('bbox parameter required by cube queries')
+            except ValueError as err:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', str(err))
+
         LOGGER.debug('Processing coords parameter')
         wkt = request.params.get('coords')
 
-        if not wkt:
+        if wkt:
+            try:
+                wkt = shapely_loads(wkt)
+            except WKTReadingError:
+                msg = 'invalid coords parameter'
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+        elif query_type != 'cube':
             msg = 'missing coords parameter'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        try:
-            wkt = shapely_loads(wkt)
-        except WKTReadingError:
-            msg = 'invalid coords parameter'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
+        within = within_units = None
+        if query_type == 'radius':
+            LOGGER.debug('Processing within / within-units parameters')
+            within = request.params.get('within')
+            within_units = request.params.get('within-units')
 
         LOGGER.debug('Processing z parameter')
         z = request.params.get('z')
@@ -3762,7 +3780,10 @@ class API:
             datetime_=datetime_,
             select_properties=parameternames,
             wkt=wkt,
-            z=z
+            z=z,
+            bbox=bbox,
+            within=within,
+            within_units=within_units
         )
 
         try:
@@ -4004,8 +4025,9 @@ def validate_bbox(value=None) -> list:
 
     bbox = value.split(',')
 
-    if len(bbox) != 4:
-        msg = 'bbox should be 4 values (minx,miny,maxx,maxy)'
+    if len(bbox) not in [4, 6]:
+        msg = 'bbox should be either 4 values (minx,miny,maxx,maxy) ' \
+              'or 6 values (minx,miny,minz,maxx,maxy,maxz)'
         LOGGER.debug(msg)
         raise ValueError(msg)
 
@@ -4017,14 +4039,21 @@ def validate_bbox(value=None) -> list:
         LOGGER.debug(msg)
         raise
 
-    if bbox[1] > bbox[3]:
+    if (len(bbox) == 4 and bbox[1] > bbox[3]) \
+            or (len(bbox) == 6 and bbox[1] > bbox[4]):
         msg = 'miny should be less than maxy'
         LOGGER.debug(msg)
         raise ValueError(msg)
 
-    if bbox[0] > bbox[2]:
+    if (len(bbox) == 4 and bbox[0] > bbox[2]) \
+            or (len(bbox) == 6 and bbox[0] > bbox[3]):
         msg = 'minx is greater than maxx (possibly antimeridian bbox)'
         LOGGER.debug(msg)
+
+    if len(bbox) == 6 and bbox[2] > bbox[5]:
+        msg = 'minz should be less than maxz'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
 
     return bbox
 
