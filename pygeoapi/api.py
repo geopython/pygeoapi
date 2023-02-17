@@ -54,6 +54,8 @@ import uuid
 from dateutil.parser import parse as dateparse
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
+import pyproj
+from pyproj.exceptions import CRSError
 import pytz
 from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
@@ -79,7 +81,8 @@ from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
-                           TEMPLATES, to_json)
+                           TEMPLATES, to_json, get_crs_from_uri,
+                           get_transform_from_crs)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -1320,7 +1323,7 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
+        reserved_fieldnames = ['bbox', 'crs', 'f', 'lang', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
                                'filter', 'filter-lang']
@@ -1405,13 +1408,15 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
+            provider_type = 'feature'
             provider_def = get_provider_by_type(
-                collections[dataset]['providers'], 'feature')
+                collections[dataset]['providers'], provider_type)
             p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             try:
+                provider_type = 'record'
                 provider_def = get_provider_by_type(
-                    collections[dataset]['providers'], 'record')
+                    collections[dataset]['providers'], provider_type)
                 p = load_plugin('provider', provider_def)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
@@ -1428,6 +1433,58 @@ class API:
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
+
+        crs_transform_out = None
+        if provider_type == 'feature':
+            # crs query parameter is only available for OGC API - Features
+            # right now, not for OGC API - Records.
+            LOGGER.debug('Processing crs parameter')
+            # List of CRSs supported by the server for the collection.
+            # NOTE: syntax here makes 'crs' and 'storage_crs' mandatory, one
+            # can rather use collections[dataset].get(key) where key =
+            # crs|storage_crs to leave it as an option in the config file.
+            supported_crs_list = [
+                str(get_crs_from_uri(uri)) for uri in collections[dataset]['crs']
+            ]
+            storage_crs_uri = collections[dataset]['storage_crs']
+            crs_uri = request.params.get('crs')
+            if not crs_uri:
+                LOGGER.debug('crs parameter unspecified')
+                crs = None
+            else:
+                try:
+                    crs = get_crs_from_uri(crs_uri)
+                    # Check that the crs specified by the query parameter is
+                    # supported, only applicable if 'crs' is made mandatory for
+                    # a collection.
+                    if not str(crs) in supported_crs_list:
+                        raise ValueError
+                except CRSError as err:
+                    msg = str(err)
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
+                except ValueError:
+                    msg = (
+                        f'CRS {crs_uri!r} not supported for this collection. '
+                        'List of supported CRSs: '
+                        f'{", ".join(collections[dataset]["crs"])}.'
+                    )
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
+                # Check if the coordinates of requested features need to be
+                # transformed when served to the end-users.
+                storage_crs = get_crs_from_uri(storage_crs_uri)
+                if str(storage_crs) != str(crs):
+                    LOGGER.debug(f'CRS transformation: {storage_crs} -> {crs}')
+                    crs_transform_out = get_transform_from_crs(
+                        storage_crs_uri, crs_uri,
+                    )
+                    headers['Content-Crs'] = f'<{crs_uri}>'
+                else:
+                    LOGGER.debug('No CRS transformation')
+                    headers['Content-Crs'] = f'<{storage_crs_uri}>'
 
         LOGGER.debug('processing property parameters')
         for k, v in request.params.items():
@@ -1513,6 +1570,7 @@ class API:
         LOGGER.debug(f'resulttype: {resulttype}')
         LOGGER.debug(f'sortby: {sortby}')
         LOGGER.debug(f'bbox: {bbox}')
+        LOGGER.debug(f'crs: {crs}')
         LOGGER.debug(f'datetime: {datetime_}')
         LOGGER.debug(f'properties: {properties}')
         LOGGER.debug(f'select properties: {select_properties}')
@@ -1526,7 +1584,7 @@ class API:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
-                              sortby=sortby,
+                              sortby=sortby, crs_transform_out=crs_transform_out,
                               select_properties=select_properties,
                               skip_geometry=skip_geometry,
                               q=q, language=prv_locale, filterq=filter_)
@@ -2102,26 +2160,92 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
+            provider_type = 'feature'
             provider_def = get_provider_by_type(
-                collections[dataset]['providers'], 'feature')
+                collections[dataset]['providers'], provider_type)
             p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             try:
+                provider_type = 'record'
                 provider_def = get_provider_by_type(
-                    collections[dataset]['providers'], 'record')
+                    collections[dataset]['providers'], provider_type)
                 p = load_plugin('provider', provider_def)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        crs_transform_out = None
+        if provider_type == 'feature':
+            # crs query parameter is only available for OGC API - Features
+            # right now, not for OGC API - Records.
+            LOGGER.debug('Processing crs parameter')
+            # List of CRSs supported by the server for the collection.
+            # NOTE: syntax here makes 'crs' and 'storage_crs' mandatory, one
+            # can rather use collections[dataset].get(key) where key =
+            # crs|storage_crs to leave it as an option in the config file.
+            supported_crs_list = [
+                str(get_crs_from_uri(uri)) for uri in collections[dataset]['crs']
+            ]
+            storage_crs_uri = collections[dataset]['storage_crs']
+            crs_uri = request.params.get('crs')
+            if not crs_uri:
+                LOGGER.debug('crs parameter unspecified')
+                crs = None
+            else:
+                try:
+                    crs = get_crs_from_uri(crs_uri)
+                    # Check that the crs specified by the query parameter is
+                    # supported, only applicable if 'crs' is made mandatory for
+                    # a collection.
+                    if not str(crs) in supported_crs_list:
+                        raise ValueError
+                except CRSError as err:
+                    msg = str(err)
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
+                except ValueError:
+                    msg = (
+                        f'CRS {crs_uri!r} not supported for this collection. '
+                        'List of supported CRSs: '
+                        f'{", ".join(collections[dataset]["crs"])}.'
+                    )
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
+                # Check if the coordinates of requested features need to be
+                # transformed when served to the end-users.
+                storage_crs = get_crs_from_uri(storage_crs_uri)
+                if str(storage_crs) != str(crs):
+                    LOGGER.debug(f'CRS transformation: {storage_crs} -> {crs}')
+                    crs_transform_out = get_transform_from_crs(
+                        storage_crs_uri, crs_uri,
+                    )
+                    headers['Content-Crs'] = f'<{crs_uri}>'
+                else:
+                    LOGGER.debug('No CRS transformation')
+                    headers['Content-Crs'] = f'<{storage_crs_uri}>'
 
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
         try:
             LOGGER.debug(f'Fetching id {identifier}')
-            content = p.get(identifier, language=prv_locale)
+            content = p.get(
+                identifier, language=prv_locale, crs_transform_out=crs_transform_out,
+            )
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'

@@ -30,7 +30,9 @@
 """Generic util functions used in the code"""
 
 import base64
+from functools import partial
 from typing import List
+from collections.abc import Callable
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
@@ -43,13 +45,22 @@ import re
 from typing import Any, IO, Union
 from urllib.request import urlopen
 from urllib.parse import urlparse
-
-from shapely.geometry import Polygon
-
+import shapely.ops
+from shapely.geometry import (
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
 from jinja2.exceptions import TemplateNotFound
+import pyproj
+from pyproj.exceptions import CRSError
 import yaml
 
 from pygeoapi import __version__
@@ -61,6 +72,12 @@ LOGGER = logging.getLogger(__name__)
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+
+CRS_AUTHORITY = [
+    "AUTO",
+    "EPSG",
+    "OGC",
+]
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -548,3 +565,70 @@ def get_envelope(coords_list: List[List[float]]) -> list:
     bounds = polygon.bounds
     return [[bounds[0], bounds[3]],
             [bounds[2], bounds[1]]]
+
+
+def get_crs_from_uri(uri: str) -> pyproj.CRS:
+    """Get a `pyproj.CRS` instance from a CRS URI.
+
+    :param uri: Uniform resource identifier of the coordinate
+        reference system.
+    :type uri: str
+
+
+    :raises `CRSError`: Error raised if no CRS could be identified from the
+        URI.
+
+    :returns: `pyproj.CRS` instance matching the input URI.
+    :rtype: `pyproj.CRS`
+    """
+    uri_pattern = re.compile(
+        (
+         rf"^http://www.opengis\.net/def/crs/(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+         rf"[\d|\.]+?/(?P<code>\w+?)$"
+        )
+    )
+    try:
+        crs = pyproj.CRS.from_authority(*uri_pattern.search(uri).groups())
+    except CRSError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r} "
+            f"(Authority: {uri_pattern.search(uri).group('auth')!r}, "
+            f"Code: {uri_pattern.search(uri).group('code')!r})."
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    else:
+        return crs
+
+
+# Type for shapely geometrical objects.
+GeomObject = Union[
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+]
+
+
+def get_transform_from_crs(
+    crs_in: pyproj.CRS, crs_out: pyproj.CRS,
+) -> Callable[[GeomObject], GeomObject]:
+    """ Get transformation function from two `pyproj.CRS` instances.
+
+    Get function to transform the coordinates of a Shapely geometrical object
+    from one coordinate reference system to another.
+
+    :param crs_in: Coordinate Reference System of the input geometrical object.
+    :type crs_in: `pyproj.CRS`
+    :param crs_out: Coordinate Reference System of the output geometrical
+        object.
+    :type crs_out: `pyproj.CRS`
+
+    :returns: Function to transform the coordinates of a `GeomObject`.
+    :rtype: callable
+    """
+    crs_transform = pyproj.Transformer.from_crs(crs_in, crs_out).transform
+    return partial(shapely.ops.transform, crs_transform)
