@@ -3098,6 +3098,7 @@ class API:
             if process is not None:
                 relevant_processes = [process]
             else:
+                LOGGER.debug('Processing limit parameter')
                 try:
                     limit = int(request.params.get('limit'))
 
@@ -3111,6 +3112,11 @@ class API:
                 except TypeError:
                     LOGGER.debug('returning all processes')
                     relevant_processes = processes_config.keys()
+                except ValueError:
+                    msg = 'limit value should be an integer'
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
 
             for key in relevant_processes:
                 p = load_plugin('process',
