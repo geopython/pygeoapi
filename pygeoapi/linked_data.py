@@ -225,13 +225,13 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
 
         for i, feature in enumerate(data['features']):
             # Get URI for each feature
-            identifier = feature.get(id_field,
-                                     feature['properties'].get(id_field, ''))
-            if not is_url(str(identifier)):
-                identifier = f"{config['server']['url']}/collections/{dataset}/items/{feature['id']}"  # noqa
+            identifier_ = feature.get(id_field,
+                                      feature['properties'].get(id_field, ''))
+            if not is_url(str(identifier_)):
+                identifier_ = f"{config['server']['url']}/collections/{dataset}/items/{feature['id']}"  # noqa
 
             data['features'][i] = {
-                '@id': identifier,
+                '@id': identifier_,
                 'type': 'schema:Place'
             }
 
