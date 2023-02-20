@@ -32,8 +32,7 @@
 import base64
 from functools import partial
 from dataclasses import dataclass
-from typing import List
-from collections.abc import Callable
+from typing import List, Callable
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
