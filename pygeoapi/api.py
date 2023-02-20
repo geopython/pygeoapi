@@ -2194,7 +2194,7 @@ class API:
             supported_crs_list = collections[dataset].get('crs', list())
             for uri in DEFAULT_CRS:
                 if uri not in supported_crs_list:
-                    supported_crs_list.append(crs_uri)
+                    supported_crs_list.append(uri)
             storage_crs_uri = collections[dataset].get('storage_crs')
             crs_uri_out = request.params.get('crs')
             if not crs_uri_out:
@@ -2204,7 +2204,7 @@ class API:
                 try:
                     # Check that the crs specified by the query parameter is
                     # supported.
-                    if not crs_uri_out in supported_crs_list:
+                    if crs_uri_out not in supported_crs_list:
                         raise ValueError
                 except CRSError as err:
                     msg = str(err)
