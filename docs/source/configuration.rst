@@ -238,6 +238,17 @@ default.
                     mimetype: application/json  # required: format mimetype
                 options:  # optional options to pass to provider (i.e. GDAL creation)
                     option_name: option_value
+                data_queries: # optional and for edr providers only, to enrich /collections metadata
+                    cube: # Specify query type (ie. position, radius, cube, area, corridor, locations, trajectory)
+                        output_formats: # optional
+                            - CoverageJSON
+                        crs_details: # optional
+                            - crs: CRS84
+                              wkt: "GEOGCS[\"WGS 84 ..."
+                        # Optional, specify query specific units, defaults to [""]
+                        # cube has `height_units`, radius has `within_units`, corridor has `height_units` and `width_units`
+                        height_units:
+                            - m
 
       hello-world:  # name of process
           type: collection  # REQUIRED (collection, process, or stac-collection)

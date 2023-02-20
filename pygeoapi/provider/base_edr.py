@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+from typing import List, Dict
 
 from pygeoapi.provider.base import BaseProvider
 
@@ -38,6 +39,13 @@ class BaseEDRProvider(BaseProvider):
     """Base EDR Provider"""
 
     query_types = []
+    radius_within_units: List[str]
+    cube_height_units: List[str]
+    corridor_height_units: List[str]
+    corridor_width_units: List[str]
+
+    output_formats: Dict[str, List[str]] = {}
+    crs_details: Dict[str, Dict] = {}
 
     def __init__(self, provider_def):
         """
@@ -49,6 +57,27 @@ class BaseEDRProvider(BaseProvider):
         """
 
         super().__init__(provider_def)
+
+        for query_type in self.get_query_types():
+            self.output_formats[query_type] = \
+                provider_def.get('data_queries', {}).get(query_type, {}) \
+                                                    .get('output_formats')
+            self.crs_details[query_type] = \
+                provider_def.get('data_queries', {}).get(query_type, {}) \
+                                                    .get('crs_details')
+
+        self.cube_height_units = \
+            provider_def.get('data_queries', {}).get('cube', {}) \
+                        .get('height_units', [""])
+        self.radius_within_units = \
+            provider_def.get('data_queries', {}).get('radius', {}) \
+                        .get('within_units', [""])
+        self.corridor_height_units = \
+            provider_def.get('data_queries', {}).get('corridor', {}) \
+                        .get('height_units', [""])
+        self.corridor_width_units = \
+            provider_def.get('data_queries', {}).get('corridor', {}) \
+                        .get('width_units', [""])
 
         self.instances = []
 
@@ -76,6 +105,24 @@ class BaseEDRProvider(BaseProvider):
         """
 
         return self.query_types
+
+    def get_output_formats(self, query_type: str):
+        return self.output_formats.get(query_type)
+
+    def get_crs_details(self, query_type: str):
+        return self.crs_details.get(query_type)
+
+    def get_cube_height_units(self):
+        return self.cube_height_units
+
+    def get_radius_within_units(self):
+        return self.radius_within_units
+
+    def get_corridor_width_units(self):
+        return self.corridor_width_units
+
+    def get_corridor_height_units(self):
+        return self.corridor_height_units
 
     def query(self, **kwargs):
         """
