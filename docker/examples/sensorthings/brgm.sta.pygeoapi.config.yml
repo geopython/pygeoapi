@@ -103,11 +103,12 @@ resources:
             - Things
             - SensorThings
             - BRGM
-        context:
-            - sosa: "http://www.w3.org/ns/sosa/"
-              ssn: "http://www.w3.org/ns/ssn/"
-              Datastreams: sosa:ObservationCollection
-              name: schema:name
+        linked-data:
+            context:
+                - sosa: "http://www.w3.org/ns/sosa/"
+                  ssn: "http://www.w3.org/ns/ssn/"
+                  Datastreams: sosa:ObservationCollection
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical
@@ -140,12 +141,13 @@ resources:
             - Datastreams
             - SensorThings
             - BRGM
-        context:
-            - sosa: http://www.w3.org/ns/sosa/
-              ssn: http://www.w3.org/ns/ssn/
-              Observations: sosa:hasMember
-              Thing: sosa:hasFeatureOfInterest
-              name: schema:name
+        linked-data:
+            context:
+                - sosa: http://www.w3.org/ns/sosa/
+                  ssn: http://www.w3.org/ns/ssn/
+                  Observations: sosa:hasMember
+                  Thing: sosa:hasFeatureOfInterest
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical
@@ -181,11 +183,12 @@ resources:
             - Observations
             - SensorThings
             - BRGM
-        context:
-            - sosa: http://www.w3.org/ns/sosa/
-              ssn: http://www.w3.org/ns/ssn/
-              Datastream: sosa:isMemberOf
-              name: schema:name
+        linked-data:
+            context:
+                - sosa: http://www.w3.org/ns/sosa/
+                  ssn: http://www.w3.org/ns/ssn/
+                  Datastream: sosa:isMemberOf
+                  name: schema:name
         links:
             - type: application/html
               rel: canonical

@@ -1109,7 +1109,7 @@ def test_get_collection_item_json_ld(config, api_):
     feature = json.loads(response)
     assert '@context' in feature
     assert all((f in feature['@context'][0] for
-                f in ('schema', 'type', 'geosparql')))
+                f in ('schema', 'type', 'gsp')))
     assert len(feature['@context']) == 1
     assert 'schema' in feature['@context'][0]
     assert feature['@context'][0]['schema'] == 'https://schema.org/'
@@ -1353,6 +1353,14 @@ def test_get_collection_tiles(config, api_):
 
 
 def test_describe_processes(config, api_):
+    req = mock_request({'limit': 1})
+    # Test for description of single processes
+    rsp_headers, code, response = api_.describe_processes(req)
+    data = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert len(data['processes']) == 1
+    assert len(data['links']) == 3
+
     req = mock_request()
 
     # Test for undefined process
@@ -1365,7 +1373,7 @@ def test_describe_processes(config, api_):
     rsp_headers, code, response = api_.describe_processes(req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
-    assert len(data['processes']) == 1
+    assert len(data['processes']) == 2
     assert len(data['links']) == 3
 
     # Test for particular, defined process
@@ -1752,12 +1760,45 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
+    # position no coords
+    req = mock_request({
+        'datetime': '2000-01-17'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # cube bbox parameter 4 dimensional
+    req = mock_request({
+        'bbox': '0,0,10,10'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.OK
+
+    # cube bad bbox parameter
+    req = mock_request({
+        'bbox': '0,0,10'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # cube no bbox parameter
+    req = mock_request({})
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'cube')
+    assert code == HTTPStatus.BAD_REQUEST
+
 
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
+    assert validate_bbox('1,2,3,4,5,6') == [1, 2, 3, 4, 5, 6]
     assert validate_bbox('-142,42,-52,84') == [-142, 42, -52, 84]
     assert (validate_bbox('-142.1,42.12,-52.22,84.4') ==
             [-142.1, 42.12, -52.22, 84.4])
+    assert (validate_bbox('-142.1,42.12,-5.28,-52.22,84.4,7.39') ==
+            [-142.1, 42.12, -5.28, -52.22, 84.4, 7.39])
 
     assert (validate_bbox('177.0,65.0,-177.0,70.0') ==
             [177.0, 65.0, -177.0, 70.0])
@@ -1766,7 +1807,13 @@ def test_validate_bbox():
         validate_bbox('1,2,4')
 
     with pytest.raises(ValueError):
+        validate_bbox('1,2,4,5,6')
+
+    with pytest.raises(ValueError):
         validate_bbox('3,4,1,2')
+
+    with pytest.raises(ValueError):
+        validate_bbox('1,2,6,4,5,3')
 
 
 def test_validate_datetime():

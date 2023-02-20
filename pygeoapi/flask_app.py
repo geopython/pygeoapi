@@ -411,11 +411,13 @@ def get_job_result_resource(job_id, resource):
 @BLUEPRINT.route('/collections/<path:collection_id>/position')
 @BLUEPRINT.route('/collections/<path:collection_id>/area')
 @BLUEPRINT.route('/collections/<path:collection_id>/cube')
+@BLUEPRINT.route('/collections/<path:collection_id>/radius')
 @BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
 @BLUEPRINT.route('/collections/<path:collection_id>/corridor')
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
 def get_collection_edr_query(collection_id, instance_id=None):
