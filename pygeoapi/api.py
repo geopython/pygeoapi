@@ -81,11 +81,10 @@ from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_crs_from_uri,
-                           get_transform_from_crs, DEFAULT_CRS,
-                           CrsTransformWkt
-)
+                           DEFAULT_CRS, CrsTransformWkt)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -162,6 +161,7 @@ CONFORMANCE = {
 }
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
+
 
 def pre_process(func):
     """
@@ -1443,7 +1443,7 @@ class API:
             supported_crs_list = collections[dataset].get('crs', list())
             for uri in DEFAULT_CRS:
                 if uri not in supported_crs_list:
-                    supported_crs_list.append(crs_uri)
+                    supported_crs_list.append(uri)
             storage_crs_uri = collections[dataset].get('storage_crs')
             crs_uri_out = request.params.get('crs')
             if not crs_uri_out:
@@ -1453,7 +1453,7 @@ class API:
                 try:
                     # Check that the crs specified by the query parameter is
                     # supported.
-                    if not crs_uri_out in supported_crs_list:
+                    if crs_uri_out not in supported_crs_list:
                         raise ValueError
                 except CRSError as err:
                     msg = str(err)
@@ -1583,9 +1583,9 @@ class API:
             content = p.query(offset=offset, limit=limit,
                               resulttype=resulttype, bbox=bbox,
                               datetime_=datetime_, properties=properties,
-                              sortby=sortby, crs_transform_wkt=crs_transform_wkt,
+                              sortby=sortby, skip_geometry=skip_geometry,
                               select_properties=select_properties,
-                              skip_geometry=skip_geometry,
+                              crs_transform_wkt=crs_transform_wkt,
                               q=q, language=prv_locale, filterq=filter_)
         except ProviderConnectionError as err:
             LOGGER.error(err)
@@ -2242,7 +2242,9 @@ class API:
         try:
             LOGGER.debug(f'Fetching id {identifier}')
             content = p.get(
-                identifier, language=prv_locale, crs_transform_wkt=crs_transform_wkt,
+                identifier,
+                language=prv_locale,
+                crs_transform_wkt=crs_transform_wkt,
             )
         except ProviderConnectionError as err:
             LOGGER.error(err)
