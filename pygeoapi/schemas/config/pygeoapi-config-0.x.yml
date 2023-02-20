@@ -344,7 +344,7 @@ properties:
                                   - spatial
                           crs:
                               type: array
-			      description: |-
+                              description: |-
                                   list of coordinate reference systems
                                   supported by the collection
                               items:
@@ -352,13 +352,14 @@ properties:
                                   format: uri
                               default:
                                   - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                                  - http://www.opengis.net/def/crs/OGC/1.3/CRS84h
                           storage_crs:
                               description: |-
                                   storage coordinate reference system for the
                                   collection
                               type: string
                               format: uri
-			      default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                              default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
                           providers:
                               type: array
                               description: required connection information
