@@ -1,6 +1,6 @@
 elasticsearch-dsl<8
 geoalchemy
 pygeofilter[backend-sqlalchemy]
-pygeoif<1.0.0
+pygeoif
 pygeometa
 sodapy
