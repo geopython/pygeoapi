@@ -1569,7 +1569,8 @@ class API:
         LOGGER.debug(f'resulttype: {resulttype}')
         LOGGER.debug(f'sortby: {sortby}')
         LOGGER.debug(f'bbox: {bbox}')
-        LOGGER.debug(f'crs: {crs_out}')
+        if provider_type == 'feature':
+            LOGGER.debug(f'crs: {crs_uri_out}')
         LOGGER.debug(f'datetime: {datetime_}')
         LOGGER.debug(f'properties: {properties}')
         LOGGER.debug(f'select properties: {select_properties}')
