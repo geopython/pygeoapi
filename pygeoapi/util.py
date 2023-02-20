@@ -31,6 +31,7 @@
 
 import base64
 from functools import partial
+from dataclasses import dataclass
 from typing import List
 from collections.abc import Callable
 from datetime import date, datetime, time
@@ -58,7 +59,6 @@ from shapely.geometry import (
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
-from jinja2.exceptions import TemplateNotFound
 import pyproj
 from pyproj.exceptions import CRSError
 import yaml
@@ -78,6 +78,17 @@ CRS_AUTHORITY = [
     "EPSG",
     "OGC",
 ]
+
+DEFAULT_CRS = [
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
+]
+
+@dataclass
+class CrsTransformWkt:
+    source_crs_wkt: str
+    target_crs_wkt: str
+
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -569,7 +580,8 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     """
     uri_pattern = re.compile(
         (
-         rf"^http://www.opengis\.net/def/crs/(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+         rf"^http://www.opengis\.net/def/crs/"
+         rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
          rf"[\d|\.]+?/(?P<code>\w+?)$"
         )
     )
