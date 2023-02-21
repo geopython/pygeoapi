@@ -628,5 +628,7 @@ def get_transform_from_crs(
     :returns: Function to transform the coordinates of a `GeomObject`.
     :rtype: callable
     """
-    crs_transform = pyproj.Transformer.from_crs(crs_in, crs_out).transform
+    crs_transform = pyproj.Transformer.from_crs(
+        crs_in, crs_out, always_xy=True,
+    ).transform
     return partial(shapely.ops.transform, crs_transform)
