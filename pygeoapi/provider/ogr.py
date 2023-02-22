@@ -403,7 +403,7 @@ class OGRProvider(BaseProvider):
         else:
             crs_transform = self.transform_out
         return crs_transform
-    
+
     def get(self, identifier, crs_transform_wkt=None, **kwargs):
         """
         Get Feature by id
