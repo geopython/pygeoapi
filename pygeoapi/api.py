@@ -1011,6 +1011,10 @@ class API:
                 # OAPIF Part 2 - list supported CRSs
                 if collection_data_type == 'feature':
                     collection['crs'] = collection_data.get('crs', DEFAULT_CRS_LIST) # noqa
+                    for crs in DEFAULT_CRS_LIST:
+                        # Must at least contain default CRSs
+                        if crs not in collection['crs']:
+                            collection['crs'].append(crs)
 
             elif collection_data_type == 'coverage':
                 # TODO: translate
