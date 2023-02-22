@@ -69,6 +69,17 @@
             </a></li>
       {% endfor %}
       </ul>
+      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
+      <h3>{% trans %}Reference Systems{% endtrans %}</h3>
+      <ul>
+      {% for crs in data['crs'] %}
+          <li>
+            <a title="{{ crs }}" href="{{ crs }}"><span>{{ crs }}</span></a>
+            </li>
+      {% endfor %}
+      </ul>
+     {% endif %}
+
     </section>
 {% endblock %}
 
