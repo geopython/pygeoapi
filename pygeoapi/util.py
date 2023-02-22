@@ -587,7 +587,7 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     )
     try:
         crs = pyproj.CRS.from_authority(*uri_pattern.search(uri).groups())
-    except CRSError:
+    except (CRSError, AttributeError):
         msg = (
             f"CRS could not be identified from URI {uri!r} "
             f"(Authority: {uri_pattern.search(uri).group('auth')!r}, "

@@ -163,6 +163,8 @@ def test_read_data():
 def test_get_crs_from_uri():
     with pytest.raises(CRSError):
         util.get_crs_from_uri('http://www.opengis.net/not/a/valid/crs/uri')
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/0')
     crs = util.get_crs_from_uri('http://www.opengis.net/def/crs/OGC/1.3/CRS84')
     assert crs.to_authority() == ('OGC', 'CRS84')
 
