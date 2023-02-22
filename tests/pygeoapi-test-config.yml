@@ -148,6 +148,7 @@ resources:
                 - http://www.opengis.net/def/crs/EPSG/0/4326
                 - http://www.opengis.net/def/crs/EPSG/0/3857
                 - http://www.opengis.net/def/crs/EPSG/0/28992
+              storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
               id_field: id
               geometry:
                   x_field: long
@@ -209,6 +210,7 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
+              storage_crs_coordinate_epoch: 2017.23
             - type: tile
               name: MVT
               # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}

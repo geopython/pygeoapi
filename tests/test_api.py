@@ -528,6 +528,9 @@ def test_describe_collections(config, api_):
     ]
     for crs in crs_set:
         assert crs in collection['crs']
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/EPSG/0/28992' # noqa
+    assert 'storageCrsCoordinateEpoch' not in collection
 
     # French language request
     req = mock_request({'lang': 'fr'})
@@ -566,6 +569,9 @@ def test_describe_collections(config, api_):
     ]
     for crs in crs_set:
         assert crs in collection['crs']
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert collection['storageCrsCoordinateEpoch'] == 2017.23
 
 
 def test_describe_collections_hidden_resources(

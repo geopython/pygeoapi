@@ -165,6 +165,8 @@ DEFAULT_CRS_LIST = [
     'http://www.opengis.net/def/crs/EPSG/0/4326'
 ]
 
+DEFAULT_STORAGE_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+
 
 def pre_process(func):
     """
@@ -1008,13 +1010,16 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
                 })
 
-                # OAPIF Part 2 - list supported CRSs
+                # OAPIF Part 2 - list supported CRSs and StorageCRS
                 if collection_data_type == 'feature':
                     collection['crs'] = collection_data.get('crs', DEFAULT_CRS_LIST) # noqa
                     for crs in DEFAULT_CRS_LIST:
                         # Must at least contain default CRSs
                         if crs not in collection['crs']:
                             collection['crs'].append(crs)
+                    collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+                    if 'storage_crs_coordinate_epoch' in collection_data:
+                        collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
 
             elif collection_data_type == 'coverage':
                 # TODO: translate

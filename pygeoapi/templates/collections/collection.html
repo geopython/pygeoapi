@@ -69,7 +69,7 @@
             </a></li>
       {% endfor %}
       </ul>
-      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
+      {% if data['itemType'] == 'feature' %}
       <h3>{% trans %}Reference Systems{% endtrans %}</h3>
       <ul>
       {% for crs in data['crs'] %}
@@ -77,6 +77,15 @@
             <a title="{{ crs }}" href="{{ crs }}"><span>{{ crs }}</span></a>
             </li>
       {% endfor %}
+      </ul>
+      <h3>{% trans %}Storage CRS{% endtrans %}</h3>
+      <ul>
+          <li>
+            CRS: <a title="{{ data['storageCRS'] }}" href="{{ data['storageCRS'] }}"><span>{{ data['storageCRS'] }}</span></a>
+          </li>
+        <li>
+          Epoch: <span>{{ data['storageCrsCoordinateEpoch'] or 'not specified' }}</span></a>
+        </li>
       </ul>
      {% endif %}
 
