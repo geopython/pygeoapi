@@ -31,6 +31,8 @@ from datetime import datetime, date, time
 from decimal import Decimal
 
 import pytest
+from pyproj.exceptions import CRSError
+from shapely.geometry import Point
 
 from pygeoapi import util
 from pygeoapi.provider.base import ProviderTypeError
@@ -156,3 +158,19 @@ def test_read_data():
     data = util.read_data(get_test_file_path('pygeoapi-test-config.yml'))
 
     assert isinstance(data, bytes)
+
+
+def test_get_crs_from_uri():
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/not/a/valid/crs/uri')
+    crs = util.get_crs_from_uri('http://www.opengis.net/def/crs/OGC/1.3/CRS84')
+    assert crs.to_authority() == ('OGC', 'CRS84')
+
+
+def test_get_transform_from_crs():
+    crs_in = util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/4258')
+    crs_out = util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/25833')
+    transform_func = util.get_transform_from_crs(crs_in, crs_out)
+    p_in = Point((14.394493, 67.278972))
+    p_out = Point((473901.6105, 7462606.8762))
+    assert p_out.equals_exact(transform_func(p_in), 1e-3)
