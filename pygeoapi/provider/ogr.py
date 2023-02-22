@@ -388,7 +388,7 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def _get_crs_transform_out(self, crs_transform_wkt=None):
+    def _get_crs_transform(self, crs_transform_wkt=None):
         if crs_transform_wkt is not None:
             source = osgeo_osr.SpatialReference()
             source.SetAxisMappingStrategy(
@@ -401,7 +401,7 @@ class OGRProvider(BaseProvider):
             target.ImportFromWkt(crs_transform_wkt.target_crs_wkt)
             crs_transform = osgeo_osr.CoordinateTransformation(source, target)
         else:
-            crs_transform = self.transform_out
+            crs_transform = None
         return crs_transform
 
     def get(self, identifier, crs_transform_wkt=None, **kwargs):
@@ -414,7 +414,7 @@ class OGRProvider(BaseProvider):
         :returns: feature collection
         """
         result = None
-        crs_transform = self._get_crs_transform_out(crs_transform_wkt)
+        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -423,7 +423,7 @@ class OGRProvider(BaseProvider):
 
             ogr_feature = self._get_next_feature(layer, identifier)
             result = self._ogr_feature_to_json(
-                ogr_feature, crs_transform=crs_transform,
+                ogr_feature, crs_transform_out=crs_transform_out,
             )
 
         except RuntimeError as err:
@@ -490,15 +490,15 @@ class OGRProvider(BaseProvider):
             raise gdalerr
 
     def _ogr_feature_to_json(
-        self, ogr_feature, skip_geometry=False, crs_transform=None,
+        self, ogr_feature, skip_geometry=False, crs_transform_out=None,
     ):
         if self.geom_field is not None:
             geom = ogr_feature.GetGeomFieldRef(self.geom_field)
         else:
             geom = ogr_feature.GetGeometryRef()
-        if crs_transform is not None:
+        if crs_transform_out is not None:
             # Optionally reproject the geometry
-            geom.Transform(crs_transform)
+            geom.Transform(crs_transform_out)
 
         json_feature = ogr_feature.ExportToJson(as_object=True)
         if skip_geometry:
@@ -532,7 +532,7 @@ class OGRProvider(BaseProvider):
         # See https://github.com/OSGeo/gdal/blob/master/autotest/
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
-        crs_transform = self._get_crs_transform_out(crs_transform_wkt)
+        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
@@ -541,7 +541,7 @@ class OGRProvider(BaseProvider):
                 json_feature = self._ogr_feature_to_json(
                     ogr_feature,
                     skip_geometry=skip_geometry,
-                    crs_transform=crs_transform,
+                    crs_transform_out=crs_transform_out,
                 )
 
                 feature_collection['features'].append(json_feature)

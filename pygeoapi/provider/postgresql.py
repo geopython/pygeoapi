@@ -167,16 +167,10 @@ class PostgreSQLProvider(BaseProvider):
             if resulttype == "hits" or not results:
                 response['numberReturned'] = 0
                 return response
-            if crs_transform_wkt is not None:
-                crs_transform = get_transform_from_crs(
-                    pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
-                    pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
-                )
-            else:
-                crs_transform = None
+            crs_transform_out = self._get_crs_transform(crs_transform_wkt)
             for item in results.limit(limit):
                 response['features'].append(
-                    self._sqlalchemy_to_feature(item, crs_transform)
+                    self._sqlalchemy_to_feature(item, crs_transform_out)
                 )
 
         return response
@@ -217,14 +211,8 @@ class PostgreSQLProvider(BaseProvider):
             if item is None:
                 msg = f"No such item: {self.id_field}={identifier}."
                 raise ProviderItemNotFoundError(msg)
-            if crs_transform_wkt is not None:
-                crs_transform = get_transform_from_crs(
-                    pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
-                    pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
-                )
-            else:
-                crs_transform = None
-            feature = self._sqlalchemy_to_feature(item, crs_transform)
+            crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+            feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Add fields for previous and next items
             id_field = getattr(self.table_model, self.id_field)
@@ -329,7 +317,7 @@ class PostgreSQLProvider(BaseProvider):
 
         return TableModel
 
-    def _sqlalchemy_to_feature(self, item, crs_transform):
+    def _sqlalchemy_to_feature(self, item, crs_transform_out):
         feature = {
             'type': 'Feature'
         }
@@ -344,8 +332,8 @@ class PostgreSQLProvider(BaseProvider):
         if feature['properties'].get(self.geom):
             wkb_geom = feature['properties'].pop(self.geom)
             shapely_geom = to_shape(wkb_geom)
-            if crs_transform is not None:
-                shapely_geom = crs_transform(shapely_geom)
+            if crs_transform_out is not None:
+                shapely_geom = crs_transform_out(shapely_geom)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
             feature['geometry'] = geojson_geom
         else:
@@ -430,3 +418,13 @@ class PostgreSQLProvider(BaseProvider):
         selected_properties_clause = load_only(*selected_columns)
 
         return selected_properties_clause
+
+    def _get_crs_transform(self, crs_transform_wkt=None):
+        if crs_transform_wkt is not None:
+            crs_transform = get_transform_from_crs(
+                pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
+                pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+            )
+        else:
+            crs_transform = None
+        return crs_transform
