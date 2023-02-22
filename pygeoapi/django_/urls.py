@@ -144,6 +144,11 @@ urlpatterns = [
         name='collection-edr-cube',
     ),
     path(
+        'collections/<str:collection_id>/radius',
+        views.get_collection_edr_query,
+        name='collection-edr-radius',
+    ),
+    path(
         'collections/<str:collection_id>/trajectory',
         views.get_collection_edr_query,
         name='collection-edr-trajectory',
@@ -167,6 +172,11 @@ urlpatterns = [
         'collections/<str:collection_id>/instances/<str:instance_id>/cube',
         views.get_collection_edr_query,
         name='collection-edr-instance-cube',
+    ),
+    path(
+        'collections/<str:collection_id>/instances/<str:instance_id>/radius',
+        views.get_collection_edr_query,
+        name='collection-edr-instance-radius',
     ),
     path(
         'collections/<str:collection_id>/instances/<str:instance_id>/trajectory',  # noqa

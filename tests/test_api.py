@@ -1374,6 +1374,14 @@ def test_get_collection_tiles(config, api_):
 
 
 def test_describe_processes(config, api_):
+    req = mock_request({'limit': 1})
+    # Test for description of single processes
+    rsp_headers, code, response = api_.describe_processes(req)
+    data = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert len(data['processes']) == 1
+    assert len(data['links']) == 3
+
     req = mock_request()
 
     # Test for undefined process
@@ -1386,7 +1394,7 @@ def test_describe_processes(config, api_):
     rsp_headers, code, response = api_.describe_processes(req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
-    assert len(data['processes']) == 1
+    assert len(data['processes']) == 2
     assert len(data['links']) == 3
 
     # Test for particular, defined process

@@ -5,7 +5,7 @@ jinja2==3.0.3
 jsonschema
 pydantic
 pygeofilter
-pygeoif==0.7
+pygeoif
 pyproj
 python-dateutil
 pytz
