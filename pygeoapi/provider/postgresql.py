@@ -54,6 +54,7 @@ from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from sqlalchemy.engine import URL
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
@@ -245,11 +246,13 @@ class PostgreSQLProvider(BaseProvider):
         try:
             engine = _ENGINE_STORE[engine_store_key]
         except KeyError:
-            conn_str = (
-                'postgresql+psycopg2://'
-                f'{self.db_user}:{self._db_password}@'
-                f'{self.db_host}:{self.db_port}/'
-                f'{self.db_name}'
+            conn_str = URL.create(
+                'postgresql+psycopg2',
+                username=self.db_user,
+                password=self._db_password,
+                host=self.db_host,
+                port=self.db_port,
+                database=self.db_name
             )
             engine = create_engine(
                 conn_str,
