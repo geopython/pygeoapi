@@ -600,7 +600,7 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
             f"CRS could not be identified from URI {uri!r}. CRS URIs must "
             "follow the format "
             "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' "
-            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)." #noqa
+            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
         )
         LOGGER.error(msg)
         raise CRSError(msg)
