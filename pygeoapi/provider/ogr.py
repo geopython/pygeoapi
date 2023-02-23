@@ -415,6 +415,9 @@ class OGRProvider(BaseProvider):
         """
         result = None
         crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # Keep support for source_srs/target_srs
+        if crs_transform_out is None:
+            crs_transform_out = self.transform_out
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -533,6 +536,9 @@ class OGRProvider(BaseProvider):
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
         crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # Keep support for source_srs/target_srs
+        if crs_transform_out is None:
+            crs_transform_out = self.transform_out
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
