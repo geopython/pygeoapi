@@ -3221,11 +3221,29 @@ class API:
 
         if processes_config:
             if process is not None:
-                relevant_processes = [(process, processes_config[process])]
+                relevant_processes = [process]
             else:
-                relevant_processes = processes_config.items()
+                LOGGER.debug('Processing limit parameter')
+                try:
+                    limit = int(request.params.get('limit'))
 
-            for key, value in relevant_processes:
+                    if limit <= 0:
+                        msg = 'limit value should be strictly positive'
+                        return self.get_exception(
+                            HTTPStatus.BAD_REQUEST, headers, request.format,
+                            'InvalidParameterValue', msg)
+
+                    relevant_processes = [*processes_config][:limit]
+                except TypeError:
+                    LOGGER.debug('returning all processes')
+                    relevant_processes = processes_config.keys()
+                except ValueError:
+                    msg = 'limit value should be an integer'
+                    return self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', msg)
+
+            for key in relevant_processes:
                 p = load_plugin('process',
                                 processes_config[key]['processor'])
 
@@ -3784,7 +3802,8 @@ class API:
             z=z,
             bbox=bbox,
             within=within,
-            within_units=within_units
+            within_units=within_units,
+            limit=int(self.config['server']['limit'])
         )
 
         try:

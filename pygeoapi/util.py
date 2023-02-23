@@ -356,10 +356,10 @@ def render_j2_template(config: dict, template: Path,
     :returns: string of rendered template
     """
 
-    template_paths = {TEMPLATES, '.'}
+    template_paths = [TEMPLATES, '.']
     try:
         templates = config['server']['templates']['path']
-        template_paths.add(templates)
+        template_paths.insert(0, templates)
         LOGGER.debug(f'using custom templates: {templates}')
     except (KeyError, TypeError):
         LOGGER.debug(f'using default templates: {TEMPLATES}')
