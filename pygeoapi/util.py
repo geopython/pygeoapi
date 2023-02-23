@@ -587,11 +587,20 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     )
     try:
         crs = pyproj.CRS.from_authority(*uri_pattern.search(uri).groups())
-    except (CRSError, AttributeError):
+    except CRSError:
         msg = (
             f"CRS could not be identified from URI {uri!r} "
             f"(Authority: {uri_pattern.search(uri).group('auth')!r}, "
             f"Code: {uri_pattern.search(uri).group('code')!r})."
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    except AttributeError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
+            "follow the format "
+            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' "
+            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)." #noqa
         )
         LOGGER.error(msg)
         raise CRSError(msg)
