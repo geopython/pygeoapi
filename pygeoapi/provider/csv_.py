@@ -34,7 +34,7 @@ import logging
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import get_typed_value
+from pygeoapi.util import get_typed_value, crs_transform_fc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -183,6 +183,7 @@ class CSVProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform_fc
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -208,6 +209,7 @@ class CSVProvider(BaseProvider):
                           select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
+    @crs_transform_fc
     def get(self, identifier, **kwargs):
         """
         query CSV id
