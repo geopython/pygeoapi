@@ -1440,17 +1440,18 @@ class API:
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
             # List of CRSs supported by the server for the collection.
-            supported_crs_list = collections[dataset].get('crs', list())
+            supported_crs_list = provider_def.get('crs', list())
             for uri in DEFAULT_CRS:
                 if uri not in supported_crs_list:
                     supported_crs_list.append(uri)
-            storage_crs_uri = collections[dataset].get('storage_crs')
+            storage_crs_uri = provider_def.get('storage_crs')
             crs_uri_out = request.params.get('crs')
             if not crs_uri_out:
                 LOGGER.debug('crs parameter unspecified')
                 headers['Content-Crs'] = f'<{storage_crs_uri}>'
             else:
                 try:
+                    crs_out = get_crs_from_uri(crs_uri_out)
                     # Check that the crs specified by the query parameter is
                     # supported.
                     if crs_uri_out not in supported_crs_list:
@@ -1472,7 +1473,6 @@ class API:
                 headers['Content-Crs'] = f'<{crs_uri_out}>'
                 # Check if the coordinates of requested features need to be
                 # transformed when served to the end-users.
-                crs_out = get_crs_from_uri(crs_uri_out)
                 storage_crs = get_crs_from_uri(storage_crs_uri)
                 if str(storage_crs) != str(crs_out):
                     LOGGER.debug(
@@ -2192,17 +2192,18 @@ class API:
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
             # List of CRSs supported by the server for the collection.
-            supported_crs_list = collections[dataset].get('crs', list())
+            supported_crs_list = provider_def.get('crs', list())
             for uri in DEFAULT_CRS:
                 if uri not in supported_crs_list:
                     supported_crs_list.append(uri)
-            storage_crs_uri = collections[dataset].get('storage_crs')
+            storage_crs_uri = provider_def.get('storage_crs')
             crs_uri_out = request.params.get('crs')
             if not crs_uri_out:
                 LOGGER.debug('crs parameter unspecified')
                 headers['Content-Crs'] = f'<{storage_crs_uri}>'
             else:
                 try:
+                    crs_out = get_crs_from_uri(crs_uri_out)
                     # Check that the crs specified by the query parameter is
                     # supported.
                     if crs_uri_out not in supported_crs_list:
@@ -2224,7 +2225,6 @@ class API:
                 headers['Content-Crs'] = f'<{crs_uri_out}>'
                 # Check if the coordinates of requested features need to be
                 # transformed when served to the end-users.
-                crs_out = get_crs_from_uri(crs_uri_out)
                 storage_crs = get_crs_from_uri(storage_crs_uri)
                 if str(storage_crs) != str(crs_out):
                     LOGGER.debug(
