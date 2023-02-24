@@ -36,6 +36,7 @@ from typing import List, Callable
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
+import functools
 import json
 import logging
 import mimetypes
@@ -47,6 +48,7 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 import shapely.ops
 from shapely.geometry import (
+    GeometryCollection,
     LinearRing,
     LineString,
     MultiLineString,
@@ -54,6 +56,8 @@ from shapely.geometry import (
     MultiPolygon,
     Point,
     Polygon,
+    shape as geojson_to_geom,
+    mapping as geom_to_geojson,
 )
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -610,6 +614,7 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
 
 # Type for shapely geometrical objects.
 GeomObject = Union[
+    GeometryCollection,
     LinearRing,
     LineString,
     MultiLineString,
@@ -635,9 +640,56 @@ def get_transform_from_crs(
     :type crs_out: `pyproj.CRS`
 
     :returns: Function to transform the coordinates of a `GeomObject`.
-    :rtype: callable
+    :rtype: `callable`
     """
     crs_transform = pyproj.Transformer.from_crs(
         crs_in, crs_out, always_xy=True,
     ).transform
     return partial(shapely.ops.transform, crs_transform)
+
+
+def crs_transform_fc(func):
+    """Decorator that transform the geometries' coordinates of a
+    FeatureCollection.
+
+    This function can be used to decorate another function which returns a
+    FeatureCollection (GeoJSON-like `dict`), and which features are stored in a
+    ´list´ available at the 'features' key of the returned `dict`. The
+    decorated function may take a 'crs_transform_wkt' parameter, which accepts
+    a `CrsTransformWkt` instance as value. If the `CrsTransformWkt` instance
+    represents a coordinates transformation between two different CRSs, the
+    coordinates of the FeatureCollection's geometries will be transformed
+    before returning the FeatureCollection. If the 'crs_transform_wkt'
+    parameter is not given, passed `None` or passed a `CrsTransformWkt`
+    instance which does not represent a coordinates transformation, the
+    FeatureCollection is returned unchanged. This decorator can for example be
+    use to help supporting coordinates transformation of FeatureCollection
+    `dict` objects returned by the `get` and `query` methods of (new or with no
+    native support for transformations) providers of type 'feature'.
+
+    :param func: Function to decorate.
+    :type func: `callable`
+
+    :returns: Decorated function.
+    :rtype: `callable`
+    """
+    @functools.wraps(func)
+    def get_fc(*args, **kwargs):
+        crs_transform_wkt = kwargs.get('crs_transform_wkt')
+        results = func(*args, **kwargs)
+        if crs_transform_wkt is None:
+            return results
+        else:
+            transform_func = get_transform_from_crs(
+                pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
+                pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+            )
+            for feature in results['features']:
+                json_geometry = feature.get('geometry')
+                if json_geometry is None:
+                    continue
+                feature['geometry'] = geom_to_geojson(
+                    transform_func(geojson_to_geom(json_geometry))
+                )
+            return results
+    return get_fc
