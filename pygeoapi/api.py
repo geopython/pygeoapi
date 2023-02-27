@@ -3740,7 +3740,8 @@ class API:
             z=z,
             bbox=bbox,
             within=within,
-            within_units=within_units
+            within_units=within_units,
+            limit=int(self.config['server']['limit'])
         )
 
         try:
