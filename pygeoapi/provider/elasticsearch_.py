@@ -451,7 +451,7 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Fetching id and geometry from GeoJSON document')
         feature_ = doc['_source']
 
-        if 'id' not in doc['_source']:
+        if self.id_field in doc['_source']['properties']:
             id_ = doc['_source']['properties'][self.id_field]
         else:
             id_ = doc['_source']['id']
