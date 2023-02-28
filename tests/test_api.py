@@ -1225,9 +1225,9 @@ def test_get_collection_item_crs(config, api_):
         always_xy=True,
     ).transform
     loc_transf = Point(
-        transform_func(feature_25833['geometry']['coordinates'])
+        transform_func(*feature_25833['geometry']['coordinates'])
     )
-    loc_4258 = Point(feature_4258['geometry']['coordinates'])
+    loc_4258 = Point(*feature_4258['geometry']['coordinates'])
 
     assert loc_4258.equals_exact(loc_transf, 1e-5)
 
