@@ -38,6 +38,7 @@ import json
 from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -275,6 +276,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return cursor
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -334,6 +336,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Query the provider for a specific
@@ -341,7 +344,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         :param identifier: feature id
 
-        :returns: GeoJSON FeaturesCollection
+        :returns: dict of single GeoJSON feature
         """
 
         LOGGER.debug('Get item from SQLite/GPKG')

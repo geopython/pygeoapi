@@ -34,6 +34,7 @@ import os
 import uuid
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
+from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,6 +131,7 @@ class GeoJSONProvider(BaseProvider):
                                    if k in set(self.properties) | set(select_properties)}  # noqa
         return data
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -164,6 +166,7 @@ class GeoJSONProvider(BaseProvider):
 
         return data
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         query the provider by id

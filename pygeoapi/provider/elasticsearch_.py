@@ -40,7 +40,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
 from pygeoapi.models.cql import CQLModel, get_next_node
-from pygeoapi.util import get_envelope
+from pygeoapi.util import get_envelope, crs_transform
 
 
 LOGGER = logging.getLogger(__name__)
@@ -126,6 +126,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return fields_
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -341,6 +342,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Get ES document by id
