@@ -869,6 +869,9 @@ def test_get_collection_items(config, api_):
 
     assert code == HTTPStatus.BAD_REQUEST
 
+
+def test_get_collection_items_crs(config, api_):
+
     # Invalid CRS query parameter
     req = mock_request({'crs': '4326'})
     rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
@@ -1159,6 +1162,66 @@ def test_get_collection_item(config, api_):
     assert feature['properties']['stn_id'] == 35
     assert 'prev' not in feature['links']
     assert 'next' not in feature['links']
+
+
+def test_get_collection_item_crs(config, api_):
+
+    # Invalid CRS query parameter
+    req = mock_request({'crs': '4326', 'id': '1015'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Unsupported CRS
+    req = mock_request(
+        {'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633', 'id': '1015'}
+    )
+    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Supported CRSs
+    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/25833'
+    crs_4258 = 'http://www.opengis.net/def/crs/EPSG/0/4258'
+    supported_crs_list = [storage_crs, crs_4258]
+
+    for crs in supported_crs_list:
+        req = mock_request({'crs': crs, 'id': '1015'})
+        rsp_headers, code, response = api_.get_collection_item(
+            req, 'norway_pop',
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+    # Without CRS query parameter
+    req = mock_request({'id': '1015'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+    feature_25833 = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    req = mock_request({'crs': crs_4258, 'id': '1015'})
+    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
+
+    feature_4258 = json.loads(response)
+    transform_func = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_epsg(25833),
+        pyproj.CRS.from_epsg(4258),
+        always_xy=True,
+    ).transform
+    loc_transf = Point(
+        transform_func(feature_25833['geometry']['coordinates'])
+    )
+    loc_4258 = Point(feature_4258['geometry']['coordinates'])
+
+    assert loc_4258.equals_exact(loc_transf, 1e-5)
 
 
 def test_get_collection_item_json_ld(config, api_):
