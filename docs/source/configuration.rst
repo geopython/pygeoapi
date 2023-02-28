@@ -151,8 +151,8 @@ default.
               - observations
               - monitoring
           linked-data: # linked data configuration (see Linked Data section)
-              item_template: tests/data/base.jsonld 
-              context:  
+              item_template: tests/data/base.jsonld
+              context:
                   - datetime: https://schema.org/DateTime
                   - vocab: https://example.com/vocab#
                     stn_id: "vocab:stn_id"
@@ -193,6 +193,14 @@ default.
                 properties:  # optional: only return the following properties, in order
                     - stn_id
                     - value
+                # coordinate reference systems (CRS) section is optional
+                # default CRSs are http://www.opengis.net/def/crs/OGC/1.3/CRS84 (coordinates without height)
+                # and http://www.opengis.net/def/crs/OGC/1.3/CRS84h (coordinates with ellipsoidal height)
+                storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992 # CRS of the dataset to publish
+                crs: # supported coordinate reference systems (CRS) for 'crs' query parameter
+                    - http://www.opengis.net/def/crs/EPSG/0/28992
+                    - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                    - http://www.opengis.net/def/crs/EPSG/0/4326
 
       hello-world:  # name of process
           type: collection  # REQUIRED (collection, process, or stac-collection)
@@ -454,12 +462,12 @@ deployment flexibility, the path can be specified with string interpolation of e
 .. code-block:: yaml
 
     linked-data:
-      item_template: tests/data/base.jsonld 
+      item_template: tests/data/base.jsonld
       context:
         - datetime: https://schema.org/DateTime
 
 .. note::
-   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities 
+   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities
    of Jinja2 templates, see :ref:`html-templating`.
 
 Summary

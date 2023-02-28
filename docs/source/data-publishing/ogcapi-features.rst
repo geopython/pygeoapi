@@ -15,19 +15,19 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
-   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
-   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
+   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
+   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -52,6 +52,11 @@ definition.
          geometry:
              x_field: long
              y_field: lat
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
+         crs:
+             - http://www.opengis.net/def/crs/EPSG/0/28992
+             - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+             - http://www.opengis.net/def/crs/EPSG/0/4326
 
 
 GeoJSON
@@ -129,9 +134,9 @@ OGR
 .. note::
    Requires Python package gdal
 
-`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,  
+`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,
 but also services such as WFS. Read the full list and configuration options at https://gdal.org/drivers/vector.
-Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_, 
+Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_,
 use this driver for example for flat database files (CSV).
 
 The OGR provider requires a recent (3+) version of GDAL to be installed.
@@ -171,7 +176,7 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
                 CPL_DEBUG: NO
           id_field: gml_id
           layer: rdinfo:stations
-          
+
 .. code-block:: yaml
 
     providers:
@@ -204,11 +209,17 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
              source_type: PostgreSQL
              source: "PG: host=127.0.0.1 dbname=test user=postgres password=postgres"
              source_srs: EPSG:4326
-             target_srs: EPSG:4326 # Can be used to transform/reproject the data
+             target_srs: EPSG:4326 # Can be used to transform/reproject the data consistently
            id_field: osm_id
            layer: osm.hotosm_bdi_waterways # Value follows a 'my_schema.my_table' structure
            geom_field: foo_geom
 
+.. note::
+   The ``source_srs`` and ``target_srs`` fields can be used to
+   transform/reproject the data consistently (for every request) when published
+   with the OGR provider. However, these fields will be ignored if the `crs`
+   query parameter is used
+   (e.g. ``http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633``).
 
 
 MongoDB
@@ -239,9 +250,9 @@ PostgreSQL
 .. note::
    Requires Python packages sqlalchemy, geoalchemy2 and psycopg2-binary
 
-Must have PostGIS installed. 
+Must have PostGIS installed.
 
-.. note:: 
+.. note::
    Geometry must be using EPSG:4326
 
 .. code-block:: yaml
@@ -251,7 +262,7 @@ Must have PostGIS installed.
          name: PostgreSQL
          data:
              host: 127.0.0.1
-             port: 3010 # Default 5432 if not provided 
+             port: 3010 # Default 5432 if not provided
              dbname: test
              user: postgres
              password: postgres
@@ -298,22 +309,22 @@ GeoPackage file:
 SensorThings API
 ^^^^^^^^^^^^^^^^
 
-The STA provider is capable of creating feature collections from OGC SensorThings 
-API endpoints. Three of the STA entities are configurable: Things, Datastreams, and 
-Observations. For a full description of the SensorThings entity model, see 
-`here <https://docs.ogc.org/is/15-078r6/15-078r6.html#figure_2>`_. 
+The STA provider is capable of creating feature collections from OGC SensorThings
+API endpoints. Three of the STA entities are configurable: Things, Datastreams, and
+Observations. For a full description of the SensorThings entity model, see
+`here <https://docs.ogc.org/is/15-078r6/15-078r6.html#figure_2>`_.
 For each entity of ``Things``, pygeoapi will expand all entities directly related to
-the ``Thing``, including its associated ``Location``, from which the 
-geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to 
-include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``. 
+the ``Thing``, including its associated ``Location``, from which the
+geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to
+include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``.
 
-The default id_field is ``@iot.id``. The STA provider adds one required field, 
-``entity``, and an optional field, ``intralink``. The ``entity`` field refers to 
-which STA entity to use for the feature collection. The ``intralink`` field controls 
+The default id_field is ``@iot.id``. The STA provider adds one required field,
+``entity``, and an optional field, ``intralink``. The ``entity`` field refers to
+which STA entity to use for the feature collection. The ``intralink`` field controls
 how the provider is acted upon by other STA providers and is by default, False.
-If ``intralink`` is true for an adjacent STA provider collection within a 
-pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi 
-link to the other entity or it's ``uri_field`` if declared. 
+If ``intralink`` is true for an adjacent STA provider collection within a
+pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi
+link to the other entity or it's ``uri_field`` if declared.
 
 .. code-block:: yaml
 
@@ -322,14 +333,14 @@ link to the other entity or it's ``uri_field`` if declared.
          name: SensorThings
          data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
          uri_field: uri
-         entity: Datastreams 
+         entity: Datastreams
          time_field: phenomenonTime
          intralink: true
 
-If all three entities are configured, the STA provider will represent a complete STA 
-endpoint as OGC-API feature collections. The ``Things`` features will include links 
-to the associated features in the ``Datastreams`` feature collection, and the 
-``Observations`` features will include links to the associated features in the 
+If all three entities are configured, the STA provider will represent a complete STA
+endpoint as OGC-API feature collections. The ``Things`` features will include links
+to the associated features in the ``Datastreams`` feature collection, and the
+``Observations`` features will include links to the associated features in the
 ``Datastreams`` feature collection. Examples with three entities configured
 are included in the docker examples for SensorThings.
 
