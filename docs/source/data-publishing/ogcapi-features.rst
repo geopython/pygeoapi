@@ -408,8 +408,12 @@ Data access examples
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
 * query features (temporal) and sort descending by a property
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
+* query features in a given (and supported) CRS
+  * http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 * fetch a specific feature
   * http://localhost:5000/collections/foo/items/123
+* fetch a specific feature in a given (and supported) CRS
+  * http://localhost:5000/collections/foo/items/123?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 
 .. note::
    ``.../items`` queries which return an alternative representation to GeoJSON (which prompt a download)
