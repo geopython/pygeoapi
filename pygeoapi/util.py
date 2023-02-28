@@ -648,24 +648,27 @@ def get_transform_from_crs(
     return partial(shapely.ops.transform, crs_transform)
 
 
-def crs_transform_fc(func):
-    """Decorator that transform the geometries' coordinates of a
-    FeatureCollection.
+def crs_transform(func):
+    """Decorator that transform the geometry's/geometries' coordinates of a
+    Feature/FeatureCollection.
 
-    This function can be used to decorate another function which returns a
-    FeatureCollection (GeoJSON-like `dict`), and which features are stored in a
-    ´list´ available at the 'features' key of the returned `dict`. The
-    decorated function may take a 'crs_transform_wkt' parameter, which accepts
-    a `CrsTransformWkt` instance as value. If the `CrsTransformWkt` instance
-    represents a coordinates transformation between two different CRSs, the
-    coordinates of the FeatureCollection's geometries will be transformed
-    before returning the FeatureCollection. If the 'crs_transform_wkt'
+    This function can be used to decorate another function which returns either
+    a Feature or a FeatureCollection (GeoJSON-like `dict`). For a
+    FeatureCollection, the Features are stored in a ´list´ available at the
+    'features' key of the returned `dict`. For each Feature, the geometry is
+    available at the 'geometry' key. The decorated function may take a
+    'crs_transform_wkt' parameter, which accepts a `CrsTransformWkt` instance
+    as value. If the `CrsTransformWkt` instance represents a coordinates
+    transformation between two different CRSs, the coordinates of the
+    Feature's/FeatureCollection's geometry/geometries will be transformed
+    before returning the Feature/FeatureCollection. If the 'crs_transform_wkt'
     parameter is not given, passed `None` or passed a `CrsTransformWkt`
     instance which does not represent a coordinates transformation, the
-    FeatureCollection is returned unchanged. This decorator can for example be
-    use to help supporting coordinates transformation of FeatureCollection
-    `dict` objects returned by the `get` and `query` methods of (new or with no
-    native support for transformations) providers of type 'feature'.
+    Feature/FeatureCollection is returned unchanged. This decorator can for
+    example be use to help supporting coordinates transformation of
+    Feature/FeatureCollection `dict` objects returned by the `get` and `query`
+    methods of (new or with no native support for transformations) providers of
+    type 'feature'.
 
     :param func: Function to decorate.
     :type func: `callable`
@@ -674,22 +677,44 @@ def crs_transform_fc(func):
     :rtype: `callable`
     """
     @functools.wraps(func)
-    def get_fc(*args, **kwargs):
+    def get_geojsonf(*args, **kwargs):
         crs_transform_wkt = kwargs.get('crs_transform_wkt')
-        results = func(*args, **kwargs)
+        result = func(*args, **kwargs)
         if crs_transform_wkt is None:
-            return results
+            return result
         else:
             transform_func = get_transform_from_crs(
                 pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
                 pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
             )
-            for feature in results['features']:
-                json_geometry = feature.get('geometry')
-                if json_geometry is None:
-                    continue
-                feature['geometry'] = geom_to_geojson(
-                    transform_func(geojson_to_geom(json_geometry))
-                )
-            return results
-    return get_fc
+            features = result.get('features')
+            # Decorated function returns a single Feature
+            if features is None:
+                # Transform the feature's coordinates
+                crs_transform_feature(result, transform_func)
+                return result
+            # Decorated function returns a FeatureCollection
+            else:
+                # Transform all features' coordinates
+                for feature in features:
+                    crs_transform_feature(feature, transform_func)
+                return result
+    return get_geojsonf
+
+
+def crs_transform_feature(feature, transform_func):
+    """Transform the coordinates of a Feature.
+
+    :param feature: Feature (GeoJSON-like `dict`) to transform.
+    :type feature: `dict`
+    :param transform_func: Function that transforms the coordinates of a
+        `GeomObject` instance.
+    :type transform_func: `callable`
+
+    :returns: None
+    """
+    json_geometry = feature.get('geometry')
+    if json_geometry is not None:
+        feature['geometry'] = geom_to_geojson(
+            transform_func(geojson_to_geom(json_geometry))
+        )
