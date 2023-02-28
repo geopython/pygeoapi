@@ -277,7 +277,7 @@ class ElasticsearchProvider(BaseProvider):
                 'includes': list(map(self.mask_prop, all_properties))
             }
 
-            query['_source']['includes'].append(self.mask_prop(self.id_field))
+            query['_source']['includes'].append('id')
             query['_source']['includes'].append('type')
             query['_source']['includes'].append('geometry')
 
@@ -366,7 +366,7 @@ class ElasticsearchProvider(BaseProvider):
                     'bool': {
                         'filter': [{
                             'match_phrase': {
-                                self.mask_prop(self.id_field): identifier
+                                'id': identifier
                             }
                         }]
                     }
@@ -452,7 +452,12 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('Fetching id and geometry from GeoJSON document')
         feature_ = doc['_source']
-        id_ = doc['_source']['properties'][self.id_field]
+
+        if self.id_field in doc['_source']['properties']:
+            id_ = doc['_source']['properties'][self.id_field]
+        else:
+            id_ = doc['_source']['id']
+
         feature_['id'] = id_
         feature_['geometry'] = doc['_source'].get('geometry')
 
@@ -487,7 +492,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: masked property name
         """
 
-        return 'properties.{}'.format(property_name)
+        return f'properties.{property_name}'
 
     def get_properties(self):
         all_properties = []
