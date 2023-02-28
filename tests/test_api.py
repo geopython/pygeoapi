@@ -1167,16 +1167,20 @@ def test_get_collection_item(config, api_):
 def test_get_collection_item_crs(config, api_):
 
     # Invalid CRS query parameter
-    req = mock_request({'crs': '4326', 'id': '1015'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+    req = mock_request({'crs': '4326'})
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
 
     assert code == HTTPStatus.BAD_REQUEST
 
     # Unsupported CRS
     req = mock_request(
-        {'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633', 'id': '1015'}
+        {'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'}
     )
-    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
 
     assert code == HTTPStatus.BAD_REQUEST
 
@@ -1186,17 +1190,19 @@ def test_get_collection_item_crs(config, api_):
     supported_crs_list = [storage_crs, crs_4258]
 
     for crs in supported_crs_list:
-        req = mock_request({'crs': crs, 'id': '1015'})
+        req = mock_request({'crs': crs})
         rsp_headers, code, response = api_.get_collection_item(
-            req, 'norway_pop',
+            req, 'norway_pop', '1015',
         )
 
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs}>'
 
     # Without CRS query parameter
-    req = mock_request({'id': '1015'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
@@ -1204,8 +1210,10 @@ def test_get_collection_item_crs(config, api_):
     feature_25833 = json.loads(response)
 
     # With CRS query parameter resulting in coordinates transformation
-    req = mock_request({'crs': crs_4258, 'id': '1015'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'norway_pop')
+    req = mock_request({'crs': crs_4258})
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
