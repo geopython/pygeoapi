@@ -677,6 +677,28 @@ def test_get_collection_items(config, api_):
 
     assert code == HTTPStatus.BAD_REQUEST
 
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection (CSV will ignore)
+    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
+
     req = mock_request({'f': 'html', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
