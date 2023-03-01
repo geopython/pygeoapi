@@ -36,6 +36,7 @@
 # See pygeoapi/provider/postgresql.py for instructions on setting up
 # test database in Docker
 
+import os
 import json
 import pytest
 from http import HTTPStatus
@@ -52,12 +53,12 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 import pygeoapi.provider.postgresql as postgresql_provider_module
 
-import os
-PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
-
 from pygeoapi.util import yaml_load
 
 from .util import get_test_file_path, mock_request
+
+PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
+
 
 @pytest.fixture()
 def config():
