@@ -53,11 +53,14 @@ from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from shapely.geometry import GeometryCollection
+from sqlalchemy import (
+    create_engine, MetaData, PrimaryKeyConstraint, asc, desc, text,
+)
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
-from sqlalchemy.sql.expression import and_
+from sqlalchemy.sql.expression import and_, or_
 
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
@@ -90,16 +93,19 @@ class PostgreSQLProvider(BaseProvider):
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
+        if isinstance(self.geom, str):
+            self.geom = [self.geom]
 
         LOGGER.debug(f'Name: {self.name}')
         LOGGER.debug(f'Table: {self.table}')
         LOGGER.debug(f'ID field: {self.id_field}')
-        LOGGER.debug(f'Geometry field: {self.geom}')
+        LOGGER.debug(f'Geometry field(s): {",".join(self.geom)}')
 
         # Read table information from database
         self._store_db_parameters(provider_def['data'])
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
+        self._geom_fields = self._get_geom_fields()
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
@@ -182,7 +188,8 @@ class PostgreSQLProvider(BaseProvider):
         for column in self.table_model.__table__.columns:
             fields[str(column.name)] = {'type': str(column.type)}
 
-        fields.pop(self.geom)  # Exclude geometry column
+        for f in self._geom_fields:
+            fields.pop(f)  # Exclude geometry column(s)
 
         return fields
 
@@ -230,6 +237,7 @@ class PostgreSQLProvider(BaseProvider):
         self.db_port = parameters.get('port', 5432)
         self.db_name = parameters.get('dbname')
         self.db_search_path = parameters.get('search_path', ['public'])
+        self.schema = self.db_search_path[0]
         self._db_password = parameters.get('password')
 
     def _get_engine_and_table_model(self):
@@ -279,14 +287,13 @@ class PostgreSQLProvider(BaseProvider):
 
         # Look for table in the first schema in the search path
         try:
-            schema = self.db_search_path[0]
-            metadata.reflect(schema=schema, only=[self.table], views=True)
+            metadata.reflect(schema=self.schema, only=[self.table], views=True)
         except OperationalError:
             msg = (f"Could not connect to {repr(engine.url)} "
                    "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
-            msg = (f"Table '{self.table}' not found in schema '{schema}' "
+            msg = (f"Table '{self.table}' not found in schema '{self.schema}' "
                    f"on {repr(engine.url)}.")
             raise ProviderQueryError(msg)
 
@@ -294,14 +301,14 @@ class PostgreSQLProvider(BaseProvider):
         # It is necessary to add the primary key constraint because SQLAlchemy
         # requires it to reflect the table, but a view in a PostgreSQL database
         # does not have a primary key defined.
-        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
+        sqlalchemy_table_def = metadata.tables[f'{self.schema}.{self.table}']
         try:
             sqlalchemy_table_def.append_constraint(
                 PrimaryKeyConstraint(self.id_field)
             )
         except KeyError:
             msg = (f"No such id_field column ({self.id_field}) on "
-                   f"{schema}.{self.table}.")
+                   f"{self.schema}.{self.table}.")
             raise ProviderQueryError(msg)
 
         Base = automap_base(metadata=metadata)
@@ -309,6 +316,23 @@ class PostgreSQLProvider(BaseProvider):
         TableModel = getattr(Base.classes, self.table)
 
         return TableModel
+
+    def _get_geom_fields(self):
+        with Session(self._engine) as session:
+            stmt = text(
+                'SELECT f_geometry_column FROM geometry_columns '
+                'WHERE f_table_schema=:schema AND f_table_name=:table'
+            ).bindparams(schema=self.schema, table=self.table)
+            return session.scalars(stmt).all()
+
+    def _flatten_feature_geoms(self, feature_geoms):
+        flattened_geoms = list()
+        for geom in feature_geoms:
+            if geom.geom_type.lower() != 'geometrycollection':
+                flattened_geoms.append(geom)
+            else:
+                flattened_geoms.extend(self._flatten_feature_geoms(geom.geoms))
+        return flattened_geoms
 
     def _sqlalchemy_to_feature(self, item):
         feature = {
@@ -320,16 +344,29 @@ class PostgreSQLProvider(BaseProvider):
         item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
         feature['properties'] = item_dict
         feature['id'] = item_dict.pop(self.id_field)
+        LOGGER.info(feature)
 
         # Convert geometry to GeoJSON style
-        if feature['properties'].get(self.geom):
-            wkb_geom = feature['properties'].pop(self.geom)
-            shapely_geom = to_shape(wkb_geom)
+        spatial_elements = [feature['properties'].get(gf) for gf in self.geom]
+        LOGGER.info(feature['properties'])
+        for gf in self.geom:
+            _ = feature['properties'].pop(gf)
+        LOGGER.info(feature['properties'])
+        if any(spatial_elements):
+            LOGGER.info('not empty')
+            feature_geoms = [to_shape(se) for se in spatial_elements if se]
+            flattened_geoms = self._flatten_feature_geoms(feature_geoms)
+            if len(flattened_geoms) == 1:
+                shapely_geom = flattened_geoms[0]
+            else:
+                shapely_geom = GeometryCollection(flattened_geoms)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
             feature['geometry'] = geojson_geom
         else:
+            LOGGER.info('empty')
             feature['geometry'] = None
 
+        LOGGER.info(feature)
         return feature
 
     def _get_order_by_clauses(self, sort_by, table_model):
@@ -378,9 +415,11 @@ class PostgreSQLProvider(BaseProvider):
 
         # Convert bbx to SQL Alchemy clauses
         envelope = ST_MakeEnvelope(*bbox)
-        geom_column = getattr(self.table_model, self.geom)
-        bbox_filter = geom_column.intersects(envelope)
-
+        filter_group = list()
+        for geom_field in self.geom:
+            geom_column = getattr(self.table_model, geom_field)
+            filter_group.append(geom_column.intersects(envelope))
+        bbox_filter = or_(*filter_group)
         return bbox_filter
 
     def _select_properties_clause(self, select_properties, skip_geometry):
@@ -396,7 +435,8 @@ class PostgreSQLProvider(BaseProvider):
             column_names = column_names.intersection(properties_from_config)
 
         if not skip_geometry:
-            column_names.add(self.geom)
+            for col in self.geom:
+                column_names.add(col)
 
         # Convert names to SQL Alchemy clause
         selected_columns = []
