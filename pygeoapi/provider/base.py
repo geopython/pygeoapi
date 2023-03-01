@@ -131,7 +131,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
         """
         query the provider by id
 
