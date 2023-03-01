@@ -143,7 +143,7 @@ def get_oas_30(cfg):
 
     osl = get_ogc_schemas_location(cfg['server'])
     OPENAPI_YAML['oapif-1'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
-    OPENAPI_YAML['oapif2'] = os.path.join(osl, 'ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml') # noqa
+    OPENAPI_YAML['oapif-2'] = os.path.join(osl, 'ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml') # noqa
 
     LOGGER.debug('setting up server info')
     oas = {

@@ -877,6 +877,7 @@ def test_get_collection_items_crs(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
 
     assert code == HTTPStatus.BAD_REQUEST
+
     # Unsupported CRS
     req = mock_request({'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'})
     rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
