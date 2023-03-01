@@ -317,7 +317,7 @@ class PostgreSQLProvider(BaseProvider):
 
         return TableModel
 
-    def _sqlalchemy_to_feature(self, item, crs_transform_out):
+    def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
         feature = {
             'type': 'Feature'
         }
