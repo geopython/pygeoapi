@@ -84,6 +84,7 @@ jobs:
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: python3-gdal
+        version: 3.0.4
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
@@ -93,6 +94,7 @@ jobs:
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
         pip3 install --upgrade numpy "sqlalchemy<2"
+        pip3 install --upgrade gdal==3.0.4
         #pip3 install --upgrade rasterio==1.1.8
     - name: setup test data ⚙️
       run: |
