@@ -158,6 +158,33 @@ def test_read_data():
     assert isinstance(data, bytes)
 
 
+def test_get_supported_crs_list():
+    DEFAULT_CRS_LIST = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326'
+    ]
+    DUTCH_CRS = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+
+    # Make various combinations of configs
+    CONFIGS = \
+        [
+            dict(),
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     DUTCH_CRS]},
+        ]
+    # Apply all configs to util function
+    for config in CONFIGS:
+        crs_list = util.get_supported_crs_list(config, DEFAULT_CRS_LIST)
+        # Whatever config: all defaults should be present
+        for default_crs in DEFAULT_CRS_LIST:
+            assert default_crs in crs_list
+
+        # Extra CRSs supplied should also be present
+        if DUTCH_CRS in config:
+            assert DUTCH_CRS in crs_list
+
+
 def test_get_crs_from_uri():
     CRS_DICT = {
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'OGC:CRS84',

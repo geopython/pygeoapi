@@ -78,9 +78,9 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, DATETIME_FORMAT,
-                           filter_dict_by_key_value, get_provider_by_type,
-                           get_provider_default, get_typed_value,
-                           JobStatus, json_serial,
+                           filter_dict_by_key_value, get_supported_crs_list,
+                           get_provider_by_type, get_provider_default,
+                           get_typed_value, JobStatus, json_serial,
                            render_j2_template, str2bool,
                            transform_bbox, TEMPLATES, to_json)
 
@@ -1015,11 +1015,7 @@ class API:
 
                 # OAPIF Part 2 - list supported CRSs and StorageCRS
                 if collection_data_type == 'feature':
-                    collection['crs'] = collection_data.get('crs', DEFAULT_CRS_LIST) # noqa
-                    for crs in DEFAULT_CRS_LIST:
-                        # Must at least contain default CRSs
-                        if crs not in collection['crs']:
-                            collection['crs'].append(crs)
+                    collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
                     collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
                     if 'storage_crs_coordinate_epoch' in collection_data:
                         collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
@@ -1467,7 +1463,7 @@ class API:
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
 
-            supported_crs_list = provider_def.get('crs', DEFAULT_CRS_LIST)
+            supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST) # noqa
             if bbox_crs not in supported_crs_list:
                 msg = f'bbox-crs {bbox_crs} not supported for this collection'
                 return self.get_exception(
