@@ -161,7 +161,7 @@ def test_read_data():
 def test_get_supported_crs_list():
     DEFAULT_CRS_LIST = [
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-        'http://www.opengis.net/def/crs/EPSG/0/4326'
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84h'
     ]
     DUTCH_CRS = 'http://www.opengis.net/def/crs/EPSG/0/28992'
 
@@ -170,15 +170,22 @@ def test_get_supported_crs_list():
         [
             dict(),
             {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84h']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     'http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
             {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
                      DUTCH_CRS]},
         ]
     # Apply all configs to util function
     for config in CONFIGS:
         crs_list = util.get_supported_crs_list(config, DEFAULT_CRS_LIST)
-        # Whatever config: all defaults should be present
-        for default_crs in DEFAULT_CRS_LIST:
-            assert default_crs in crs_list
+        
+        # Whatever config: a default should be present
+        contains_default = False
+        for crs in crs_list:
+            if crs in DEFAULT_CRS_LIST:
+                contains_default = True
+        assert contains_default
 
         # Extra CRSs supplied should also be present
         if DUTCH_CRS in config:

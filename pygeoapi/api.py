@@ -165,7 +165,7 @@ OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
 DEFAULT_CRS_LIST = [
     'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'http://www.opengis.net/def/crs/EPSG/0/4326'
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
 ]
 
 DEFAULT_STORAGE_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'

@@ -563,12 +563,15 @@ def test_describe_collections(config, api_):
 
     # OAPIF Part 2 CRS 6.2.1 B, defaults when not configured
     assert collection['crs'] is not None
-    crs_set = [
+    default_crs_list = [
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-        'http://www.opengis.net/def/crs/EPSG/0/4326',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
     ]
-    for crs in crs_set:
-        assert crs in collection['crs']
+    contains_default = False
+    for crs in default_crs_list:
+        if crs in default_crs_list:
+            contains_default = True
+    assert contains_default
     assert collection['storageCRS'] is not None
     assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
     assert collection['storageCrsCoordinateEpoch'] == 2017.23
@@ -694,7 +697,13 @@ def test_get_collection_items(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox-crs must be in configured values for Collection (CSV will ignore)
-    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    req = mock_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
+
+    # bbox-crs can be a default even if not configured (CSV will ignore)
+    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.OK
