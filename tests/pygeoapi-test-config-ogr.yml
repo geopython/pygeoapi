@@ -132,7 +132,7 @@ resources:
 
   dutch_addresses_4326:
     type: collection
-    title: Dutch Addresses via OGR WFS
+    title: Dutch Addresses from GeoPackage in EPSG:4326
     description: Selection of Dutch addresses as derived from the key registry BAG.
     keywords:
       - Netherlands
@@ -170,6 +170,49 @@ resources:
             - http://www.opengis.net/def/crs/EPSG/0/3857
             - http://www.opengis.net/def/crs/EPSG/0/28992
           storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+          id_field: id
+          layer: ogrgeojson
+
+  dutch_addresses_28992:
+    type: collection
+    title: Dutch Addresses from GeoPackage in EPSG:28992
+    description: Selection of Dutch addresses as derived from the key registry BAG.
+    keywords:
+      - Netherlands
+      - Addresses
+      - Europe
+      - Holland
+      - BAG
+    links:
+      - type: text/html
+        rel: canonical
+        title: information
+        href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3a97fbe4-2b0d-4e9c-9644-276883400dd7
+        hreflang: nl-NL
+    extents:
+      spatial:
+        bbox: [ 5.670670, 52.042700, 5.829110, 52.123700 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin:
+        end: null  # or empty
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: GPKG
+            source:
+              # Feature Count: 2481
+              ./tests/data/dutch_addresses_28992.gpkg
+            source_srs: EPSG:4326
+            target_srs: EPSG:4326
+            source_capabilities:
+              paging: True
+          crs:
+            - http://www.opengis.net/def/crs/EPSG/0/4326
+            - http://www.opengis.net/def/crs/EPSG/0/4258
+            - http://www.opengis.net/def/crs/EPSG/0/28992
+          storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
           id_field: id
           layer: ogrgeojson
 

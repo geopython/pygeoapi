@@ -80,6 +80,10 @@ jobs:
       with:
         packages: libsqlite3-mod-spatialite 
         version: 4.3.0a-6build1
+    - name: Install GDAL with Python bindings
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: python3-gdal
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
