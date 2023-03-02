@@ -179,7 +179,7 @@ def test_get_supported_crs_list():
     # Apply all configs to util function
     for config in CONFIGS:
         crs_list = util.get_supported_crs_list(config, DEFAULT_CRS_LIST)
-        
+
         # Whatever config: a default should be present
         contains_default = False
         for crs in crs_list:
