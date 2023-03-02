@@ -31,16 +31,8 @@
 
 import json
 import logging
-import time
-import gzip
-from http import HTTPStatus
-
-from pyld import jsonld
 import pytest
-from pygeoapi.api import (
-    API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
-    validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP
-)
+from pygeoapi.api import (API)
 from pygeoapi.util import yaml_load
 
 from .util import get_test_file_path, mock_request
@@ -63,21 +55,21 @@ def test_get_collection_items_bbox_crs(config, api_):
 
     # bbox-crs full extent
     req = mock_request({'bbox': '5.670670, 52.042700, 5.829110, 52.123700', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326')
+    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326') # noqa
     features = json.loads(response)['features']
 
     assert len(features) == 10
 
     # bbox-crs outside extent
     req = mock_request({'bbox': '5, 51.9, 5.1, 52.0', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326')
+    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326') # noqa
     features = json.loads(response)['features']
 
     assert len(features) == 0
 
     # bbox-crs full extent - axis reversed CRS
     req = mock_request({'bbox': '52.042700, 5.670670, 52.123700, 5.829110', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326')
+    rsp_headers, code, response = api_.get_collection_items(req, 'dutch_addresses_4326') # noqa
     features = json.loads(response)['features']
 
     assert len(features) == 10
