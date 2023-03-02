@@ -1,0 +1,310 @@
+# =================================================================
+#
+# Authors: Just van den Broecke <justb4@gmail.com>
+#
+# Copyright (c) 2019 Just van den Broecke
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+server:
+  bind:
+    host: 0.0.0.0
+    port: 5000
+  url: http://localhost:5000/
+  mimetype: application/json; charset=UTF-8
+  encoding: utf-8
+  language: en-US
+  cors: true
+  gzip: false
+  pretty_print: true
+  limit: 10
+  # templates: /path/to/templates
+  map:
+    url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
+    attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+
+logging:
+  level: DEBUG
+  #logfile: /tmp/pygeoapi.log
+
+metadata:
+  identification:
+    title: pygeoapi default instance
+    description: pygeoapi provides an API to geospatial data
+    keywords:
+      - geospatial
+      - data
+      - api
+    keywords_type: theme
+    terms_of_service: https://creativecommons.org/licenses/by/4.0/
+    url: http://example.org
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  provider:
+    name: Organization Name
+    url: https://pygeoapi.io
+  contact:
+    name: Lastname, Firstname
+    position: Position Title
+    address: Mailing Address
+    city: City
+    stateorprovince: Administrative Area
+    postalcode: Zip or Postal Code
+    country: Country
+    phone: +xx-xxx-xxx-xxxx
+    fax: +xx-xxx-xxx-xxxx
+    email: you@example.org
+    url: Contact URL
+    hours: Hours of Service
+    instructions: During hours of service.  Off on weekends.
+    role: pointOfContact
+
+resources:
+  dutch_georef_stations:
+    type: collection
+    title: Dutch Georef Stations via OGR WFS
+    description: Locations of RD/GNSS-reference stations from Dutch Kadaster PDOK a.k.a RDInfo. Uses MapServer WFS v2 backend via OGRProvider.
+    keywords:
+      - Netherlands
+      - GNSS
+      - Surveying
+      - Holland
+      - RD
+    links:
+      - type: text/html
+        rel: canonical
+        title: information
+        href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3ebe56dc-5f09-4fb3-b224-55c2db4ca2fd?tab=general
+        hreflang: nl-NL
+    extents:
+      spatial:
+        bbox: [ 50.7539, 7.21097, 53.4658, 3.37087 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin:
+        end: null  # or empty
+    providers:
+      - type: feature
+        name: OGR
+        data:
+          source_type: WFS
+          source: WFS:https://service.pdok.nl/kadaster/rdinfo/wfs/v1_0?
+          source_srs: EPSG:28992
+          target_srs: EPSG:4326
+          source_capabilities:
+            paging: True
+
+          source_options:
+            #                    OGR_WFS_VERSION: 1.1.0
+            OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
+
+          gdal_ogr_options:
+            EMPTY_AS_NULL: NO
+            GDAL_CACHEMAX: 64
+            # GDAL_HTTP_PROXY: (optional proxy)
+            # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+            CPL_DEBUG: NO
+
+        id_field: gml_id
+        layer: rdinfo:stations
+
+  dutch_addresses_4326:
+    type: collection
+    title: Dutch Addresses via OGR WFS
+    description: Selection of Dutch addresses as derived from the key registry BAG.
+    keywords:
+      - Netherlands
+      - Addresses
+      - Europe
+      - Holland
+      - BAG
+    links:
+      - type: text/html
+        rel: canonical
+        title: information
+        href: http://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/3a97fbe4-2b0d-4e9c-9644-276883400dd7
+        hreflang: nl-NL
+    extents:
+      spatial:
+        bbox: [ 5.670670, 52.042700, 5.829110, 52.123700 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin:
+        end: null  # or empty
+    providers:
+        - type: feature
+          name: OGR
+          data:
+            source_type: GPKG
+            source:
+              # Feature Count: 2481
+              ./tests/data/dutch_addresses_4326.gpkg
+            source_srs: EPSG:4326
+            target_srs: EPSG:4326
+            source_capabilities:
+              paging: True
+          crs:
+            - http://www.opengis.net/def/crs/EPSG/0/4326
+            - http://www.opengis.net/def/crs/EPSG/0/3857
+            - http://www.opengis.net/def/crs/EPSG/0/28992
+          storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+          id_field: id
+          layer: ogrgeojson
+
+  ogr_gpkg_poi:
+    type: collection
+    title: Portuguese Points of Interest via OGR GPKG
+    description: Portuguese Points of Interest obtained from OpenStreetMap. Dataset includes Madeira and Azores islands. Uses GeoPackage backend via OGR provider.
+    keywords:
+      - Portugal
+      - POI
+      - Point of Interrest
+      - Madeira
+      - Azores
+      - OSM
+      - Open Street Map
+      - NaturaGIS
+    links:
+      - type: text/html
+        rel: canonical
+        title: information
+        href: https://wiki.openstreetmap.org/wiki/Points_of_interest/
+        hreflang: en-US
+    extents:
+      spatial:
+        bbox: [ -31.2687, 32.5898, -6.18992, 42.152 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin:
+        end: null  # or empty
+    providers:
+      - type: feature
+        name: OGR
+        data:
+          source_type: GPKG
+          source: tests/data/poi_portugal.gpkg
+          source_srs: EPSG:4326
+          target_srs: EPSG:4326
+          source_capabilities:
+            paging: True
+
+          gdal_ogr_options:
+            EMPTY_AS_NULL: NO
+            GDAL_CACHEMAX: 64
+            # GDAL_HTTP_PROXY: (optional proxy)
+            # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+            CPL_DEBUG: NO
+
+        id_field: osm_id
+        layer: poi_portugal
+
+  sf_311incidents:
+    type: collection
+    title: SF 311Incidents via OGR ESRI Feature Server
+    description: OGR Provider - ESRI Feature Server - SF 311Incidents
+    keywords:
+      - USA
+      - ESRI
+    links:
+      - type: text/html
+        rel: canonical
+        title: information
+        href: http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0
+        hreflang: en-US
+    extents:
+      spatial:
+        bbox: [ -180, -90, 180, 90 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin:
+        end: null  # or empty
+    providers:
+      - type: feature
+        name: OGR
+        data:
+          source_type: ESRIJSON
+          source: ESRIJSON:http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json
+          source_srs: EPSG:4326
+          target_srs: EPSG:4326
+          source_capabilities:
+            paging: True
+
+          gdal_ogr_options:
+            EMPTY_AS_NULL: NO
+            GDAL_CACHEMAX: 64
+            # GDAL_HTTP_PROXY: (optional proxy)
+            # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+            CPL_DEBUG: NO
+
+        id_field: objectid
+
+  cases_italy_per_region_from_github:
+    type: collection
+    title: "Cases in Italy - DPC GitHub"
+    description: "Current situation within Italy, number of cases with variation per Italy, provided by ESRI, source data from DPC."
+    keywords: [ Daily, Cases Variation, Region ]
+    crs:
+      - CRS84
+    links:
+      - type: text/html
+        rel: canonical
+        title: "GitHub DPC repository - COVID-19 raw data for Italy"
+        href: https://github.com/pcm-dpc/COVID-19
+        hreflang: it-IT
+    extents:
+      spatial:
+        bbox: [ -180,-90,180,90 ]
+        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+      temporal:
+        begin: 2020-01-01T00:00:00Z
+        end: # or empty
+
+    providers:
+      - type: feature
+        name: OGR
+        data:
+          source_type: CSV
+          source: /vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv
+          source_srs: EPSG:4326
+          target_srs: EPSG:4326
+          source_capabilities:
+            paging: True
+          open_options:
+            X_POSSIBLE_NAMES: long
+            Y_POSSIBLE_NAMES: lat
+          gdal_ogr_options:
+            EMPTY_AS_NULL: NO
+            GDAL_CACHEMAX: 64
+            # GDAL_HTTP_PROXY: (optional proxy)
+            # GDAL_PROXY_AUTH: (optional auth for remote WFS)
+            CPL_DEBUG: NO
+        id_field: fid
+        time_field: data
+        layer: dpc-covid19-ita-regioni
+
+  hello-world:
+    type: process
+    processor:
+      name: HelloWorld
