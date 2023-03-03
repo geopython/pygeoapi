@@ -48,7 +48,7 @@ def config():
 def test_query_datastreams(config):
     p = SensorThingsProvider(config)
     fields = p.get_fields()
-    assert len(fields) == 15
+    assert len(fields) == 16
     assert fields['Thing']['type'] == 'number'
     assert fields['Observations']['type'] == 'number'
     assert fields['@iot.id']['type'] == 'number'
