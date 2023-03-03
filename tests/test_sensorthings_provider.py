@@ -70,7 +70,7 @@ def test_query_datastreams(config):
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '3'
 
-    assert len(results['features'][0]['properties']) == 17
+    assert len(results['features'][0]['properties']) == 18
 
     results = p.query(bbox=[-109, 36, -106, 37])
     assert results['numberReturned'] == 8
