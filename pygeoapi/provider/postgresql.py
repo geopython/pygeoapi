@@ -344,16 +344,12 @@ class PostgreSQLProvider(BaseProvider):
         item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
         feature['properties'] = item_dict
         feature['id'] = item_dict.pop(self.id_field)
-        LOGGER.info(feature)
 
         # Convert geometry to GeoJSON style
         spatial_elements = [feature['properties'].get(gf) for gf in self.geom]
-        LOGGER.info(feature['properties'])
-        for gf in self.geom:
-            _ = feature['properties'].pop(gf)
-        LOGGER.info(feature['properties'])
+        for gf in self._geom_fields:
+            _ = feature['properties'].pop(gf, None)
         if any(spatial_elements):
-            LOGGER.info('not empty')
             feature_geoms = [to_shape(se) for se in spatial_elements if se]
             flattened_geoms = self._flatten_feature_geoms(feature_geoms)
             if len(flattened_geoms) == 1:
@@ -363,10 +359,8 @@ class PostgreSQLProvider(BaseProvider):
             geojson_geom = shapely.geometry.mapping(shapely_geom)
             feature['geometry'] = geojson_geom
         else:
-            LOGGER.info('empty')
             feature['geometry'] = None
 
-        LOGGER.info(feature)
         return feature
 
     def _get_order_by_clauses(self, sort_by, table_model):
