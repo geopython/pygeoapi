@@ -329,7 +329,7 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
 
     p = OGRProvider(config_geosol_gs_WFS)
     feature_collection = p.query(
-        bbox=(681417.0, 4849032.0, 681417.3, 4849032.3), resulttype='hits')
+        bbox=(957858, 4561555, 957862, 4561557), resulttype='hits')
     # feature_collection = p.query(bbox=(
     # 5.763409, 52.060197, 5.769256, 52.061976), resulttype='hits')
 
@@ -381,13 +381,36 @@ def test_query_bbox_gs(config_MapServer_WFS_continents):
 
 
 def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
-    """Testing query for a valid JSON object with geometry"""
+    """Testing query for a valid JSON object with geometry
+       <wfs:member>
+        <unesco:Unesco_point gml:id="Unesco_point.59">
+            <gml:boundedBy>
+                <gml:Envelope srsName="urn:ogc:def:crs:EPSG::32632"
+                srsDimension="2">
+                    <gml:lowerCorner>957860.4622 4561556.7274</gml:lowerCorner>
+                    <gml:upperCorner>957860.4622 4561556.7274</gml:upperCorner>
+                </gml:Envelope>
+            </gml:boundedBy>
+            <unesco:the_geom>
+                <gml:Point srsName="urn:ogc:def:crs:EPSG::32632"
+                srsDimension="2" gml:id="Unesco_point.59.the_geom">
+                    <gml:pos>957860.4622 4561556.7274</gml:pos>
+                </gml:Point>
+            </unesco:the_geom>
+            <unesco:cod_unesco>IT_174</unesco:cod_unesco>
+            <unesco:sito>Centro storico di Firenze</unesco:sito>
+            <unesco:seriale>0</unesco:seriale>
+            <unesco:tipo_area>sito</unesco:tipo_area>
+        </unesco:Unesco_point>
+    </wfs:member>
+
+    """
 
     p = OGRProvider(config_geosol_gs_WFS)
     # feature_collection = p.query(
     # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
-        bbox=(681417.0, 4849032.0, 681417.3, 4849032.3),
+        bbox=(957858, 4561555, 957862, 4561557),
         resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
     features = feature_collection.get('features')
