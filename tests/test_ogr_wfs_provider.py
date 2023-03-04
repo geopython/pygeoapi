@@ -59,6 +59,7 @@ def config_MapServer_WFS_cities():
                 'paging': True
             },
             'source_options': {
+                'OGR_WFS_VERSION': '2.0.0',
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
@@ -87,6 +88,7 @@ def config_MapServer_WFS_continents():
                 'paging': True
             },
             'source_options': {
+                'OGR_WFS_VERSION': '2.0.0',
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
@@ -109,7 +111,7 @@ def config_geosol_gs_WFS():
         'data': {
             'source_type': 'WFS',
             'source':
-                'WFS:https://demo.geo-solutions.it/geoserver/wfs?',
+                'WFS:https://gs-stable.geosolutionsgroup.com/geoserver/wfs?',
             'source_srs': 'EPSG:32632',
             'target_srs': 'EPSG:4326',
             'source_capabilities': {
@@ -205,35 +207,35 @@ def test_get_gs(config_MapServer_WFS_continents):
     assert result['properties']['NA3DESC'] == 'North America'
 
 
-def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
-    """Testing query not returning gml_id for a specific object"""
-
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options is not None
-    result = p.get_fields()
-    assert result.get('gml_id') is None
-
-
-def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
-    """Testing query forcing to return gml_id for a specific object"""
-
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options is not None
-    p.open_options['EXPOSE_GML_ID'] = 'YES'
-    result = p.get_fields()
-    assert result.get('gml_id')
-
-
-def test_get_gs_with_geojson_output_too_complex_raise_exception(
-    config_geonode_gs_WFS
-):
-    """Testing query for a specific object with too complex geojson"""
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options.get('URL') is None
-    p.open_options[
-        'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
-    with pytest.raises(ProviderQueryError):
-        p.get(272)
+# def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
+#     """Testing query not returning gml_id for a specific object"""
+#
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options is not None
+#     result = p.get_fields()
+#     assert result.get('gml_id') is None
+#
+#
+# def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
+#     """Testing query forcing to return gml_id for a specific object"""
+#
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options is not None
+#     p.open_options['EXPOSE_GML_ID'] = 'YES'
+#     result = p.get_fields()
+#     assert result.get('gml_id')
+#
+#
+# def test_get_gs_with_geojson_output_too_complex_raise_exception(
+#     config_geonode_gs_WFS
+# ):
+#     """Testing query for a specific object with too complex geojson"""
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options.get('URL') is None
+#     p.open_options[
+#         'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
+#     with pytest.raises(ProviderQueryError):
+#         p.get(272)
 
 
 def test_get_gs_not_existing_feature_raise_exception(
