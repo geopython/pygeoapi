@@ -37,8 +37,7 @@ import logging
 
 import pytest
 
-from pygeoapi.provider.base import (
-    ProviderQueryError, ProviderItemNotFoundError)
+from pygeoapi.provider.base import (ProviderItemNotFoundError)
 from pygeoapi.provider.ogr import OGRProvider
 
 
