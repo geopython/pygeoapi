@@ -100,6 +100,7 @@ class ElasticsearchProvider(BaseProvider):
         fields_ = {}
         ii = self.es.indices.get(index=self.index_name)
 
+        LOGGER.debug(f'Response: {ii}')
         try:
             if '*' not in self.index_name:
                 p = ii[self.index_name]['mappings']['properties']['properties']
