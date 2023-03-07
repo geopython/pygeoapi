@@ -4,7 +4,7 @@ CRS support
 ===========
 
 pygeoapi supports the complete specification: `OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`_.
-This entails the following CRS capabilities for all Feature data Providers.
+The specified CRS-related capabilities are available for all Feature data Providers.
 
 Configuration
 -------------
@@ -17,7 +17,7 @@ For details visit the :ref:`configuration` section for Feature Providers. At thi
 * `storage_crs_coordinate_epoch` - epoch of `storage_crs` for a dynamic coordinate reference system
 
 
-These configuration fields are all optional. Default for CRS-values is `http://www.opengis.net/def/crs/OGC/1.3/CRS84`, so "WGS84" with lon/lat axis ordering.
+These per-Provider configuration fields are all optional. Default for CRS-values is `http://www.opengis.net/def/crs/OGC/1.3/CRS84`, so "WGS84" with lon/lat axis ordering.
 If the storage CRS of the spatial feature collection is a dynamic coordinate reference system,
 `storage_crs_coordinate_epoch` configures the coordinate epoch of the coordinates.
 
@@ -37,15 +37,17 @@ Parameters
 
 The `items` query supports the following parameters:
 
-* `crs` - the CRS in which Features coordinates should be returned
-* `bbox-crs` - the CRS of the `bbox` parameter
+* `crs` - the CRS in which Features coordinates should be returned, also for the 'get single item' request
+* `bbox-crs` - the CRS of the `bbox` parameter (only for Providers that support the `bbox` parameter)
 
-If any or both parameters are specified, they should be a CRS from the configuration.
+If any or both of these parameters are specified, their CRS-value should be from the advertised CRS-list in the Collection metadata (see above).
 
-An HTTP Header named `Content-Crs` specifies the CRS of the returned Feature-coordinates as
-according to the "OGC API - Features - Part 2" standard. For example `Content-Crs: <http://www.opengis.net/def/crs/EPSG/0/3395>`.
+An HTTP Header named `Content-Crs` specifies the CRS for returned Feature-coordinates as
+according to the "OGC API - Features - Part 2" standard. For example:
 
-Note that the values of these parameters need to be URL-encoded.
+`Content-Crs: <http://www.opengis.net/def/crs/EPSG/0/3395>`.
+
+Note that the values of these parameters may need to be URL-encoded.
 
 Implementation
 --------------
@@ -56,6 +58,7 @@ BBOX CRS Parameter
 ^^^^^^^^^^^^^^^^^^
 
 The `bbox-crs` parameter is handled at the common level of pygeoapi, thus transparent for Feature Providers.
+Obviously the Provider should support `bbox`.
 A transformation of the `bbox` parameter is performed
 according to the `storage_crs` configuration. Then the (transformed) `bbox` is passed with the
 other query parameters to the Provider instance.
@@ -95,10 +98,10 @@ Suppose an addresses collection with the following CRS support in its collection
    "storageCRS": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 
 
-This allows a bbox-crs query using Dutch "RD" coordinates as `http://www.opengis.net/def/crs/EPSG/0/28992` to retreive
-a single address. Note that the URIs are URL-encoded,
+This allows a `bbox-crs` query using Dutch "RD" coordinates with CRS `http://www.opengis.net/def/crs/EPSG/0/28992` to retrieve
+for example a single address. Note that the URIs are URL-encoded,
 This is sometimes required in `curl` commands but when entering in a browser, plain text can be used.
-Though `curl` may also understand non-encoded URLs when using single quotes around the URL with query string.
+Though `curl` may also understand non-encoded URLs when using single quotes around the complete URL.
 
 .. code-block:: bash
 
@@ -134,7 +137,7 @@ Though `curl` may also understand non-encoded URLs when using single quotes arou
     .
     .
 
-You can also use a WGS84 equivalent with lat/lon axis order as in `http://www.opengis.net/def/crs/EPSG/0/4326`.
+You can also use a WGS84 equivalent with lat/lon axis order as in CRS `http://www.opengis.net/def/crs/EPSG/0/4326`.
 
 .. code-block:: bash
 
@@ -168,5 +171,78 @@ You can also use a WGS84 equivalent with lat/lon axis order as in `http://www.op
     .
     .
 
+Using the `crs` parameter you can retrieve the data within the bbox in a different CRS like
+`http://www.opengis.net/def/crs/EPSG/0/28992`. The `bbox` is assumed to specified in the Storage CRS `http://www.opengis.net/def/crs/OGC/1.3/CRS84`.
+
+.. code-block:: bash
+
+  curl 'http://localhost:5000/collections/dutch_addresses_4326/items?f=json&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&bbox=5.71484,52.12122,5.71486,52.12123'
+  # or plain URL
+  curl 'http://localhost:5000/collections/dutch_addresses_4326/items?f=json&crs=http://www.opengis.net/def/crs/EPSG/0/28992&bbox=5.71484,52.12122,5.71486,52.12123'
+
+  # response fragment
+  {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    177439.0002001376,
+                    459273.9995615507
+                ]
+            },
+            "properties": {
+                "straatnaam": "Willinkhuizersteeg",
+                "huisnummer": "2",
+                "huisletter": "C",
+                "woonplaats": "Wekerom",
+                "postcode": "6733EB",
+                "toevoeging": null
+            },
+            "id": "inspireadressen.1742212"
+        }
+    ],
+    "links": [
+    .
+    .
+
+
+Or you may specify both `crs` and `bbox-crs` and thus `bbox` in that CRS `http://www.opengis.net/def/crs/EPSG/0/28992`.
+
+.. code-block:: bash
+
+  curl 'http://localhost:5000/collections/dutch_addresses_4326/items?f=json&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&bbox=177430,459268,177440,459278'
+  # or plain URL
+  curl 'http://localhost:5000/collections/dutch_addresses_4326/items?f=json&crs=http://www.opengis.net/def/crs/EPSG/0/28992&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/28992&bbox=177430,459268,177440,459278'
+
+  # response fragment
+  {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    177439.0002001376,
+                    459273.9995615507
+                ]
+            },
+            "properties": {
+                "straatnaam": "Willinkhuizersteeg",
+                "huisnummer": "2",
+                "huisletter": "C",
+                "woonplaats": "Wekerom",
+                "postcode": "6733EB",
+                "toevoeging": null
+            },
+            "id": "inspireadressen.1742212"
+        }
+    ],
+    "links": [
+    .
+    .
 
 .. _`OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`: https://docs.opengeospatial.org/is/18-058r1/18-058r1.html

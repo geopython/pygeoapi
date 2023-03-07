@@ -107,6 +107,7 @@ its base provider, all other functionality is left to the provider implementatio
 Each base class documents the functions, arguments and return types required for implementation.
 
 .. note::  You can add language support to your plugin using :ref:`these guides<language>`.
+
 .. note::  You can let the pygeoapi core do coordinate transformation for `crs` queries using the `@crs_transform` Decorator on `query()` and `get()` methods. See :ref:`crs`.
 
 

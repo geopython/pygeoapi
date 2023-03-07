@@ -573,6 +573,7 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     """
     Get a `pyproj.CRS` instance from a CRS URI.
     Author: @MTachon
+
     :param uri: Uniform resource identifier of the coordinate
         reference system.
     :type uri: str
@@ -616,7 +617,6 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
     helper function to transform a bounding box (bbox) from
     a source to a target CRS. CRSs in URI str format.
     Uses pyproj Transformer.
-
 
     :param bbox: list of coordinates in 'from_crs' projection
     :param from_crs: CRS URI to transform from

@@ -29,11 +29,18 @@ parameters.
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
 
+.. note::
 
-Below are specific connection examples based on supported providers.
+   * All Providers that support `bbox` also support the `bbox-crs` parameter.
+   * All Providers support the `crs` parameter to CRS-transform response data. Some, like PostgreSQL, perform transformations natively.
+
 
 Connection examples
 -------------------
+
+Below are specific connection examples based on supported providers.
+To support `crs` on queries, one needs to configure both a list of supported CRSs, and a 'Storage CRS'.
+See also :ref:`crs` and :ref:`configuration`.
 
 CSV
 ^^^
