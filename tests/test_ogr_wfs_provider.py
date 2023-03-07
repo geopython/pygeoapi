@@ -345,8 +345,6 @@ def test_query_bbox_ms(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_MapServer_WFS_cities)
-    # feature_collection = p.query(
-    # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
         bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
@@ -407,8 +405,6 @@ def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
     """
 
     p = OGRProvider(config_geosol_gs_WFS)
-    # feature_collection = p.query(
-    # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
         bbox=(957858, 4561555, 957862, 4561557),
         resulttype='results')
