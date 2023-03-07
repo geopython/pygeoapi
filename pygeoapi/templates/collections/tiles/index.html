@@ -131,7 +131,7 @@
       .addTo(map);
 
     map.on('click', clearHighlight);
-    bounds = L.latLngBounds([[{{ data['bounds'][0] }},{{data['bounds'][1]}}],[{{ data['bounds'][2] }},{{data['bounds'][3]}}]])
+    bounds = L.latLngBounds([[{{ data['bounds'][1] }},{{data['bounds'][0]}}],[{{ data['bounds'][3] }},{{data['bounds'][2]}}]])
     map.fitBounds(bounds, maxZoom={{ data['maxzoom']}});
 
     </script>
