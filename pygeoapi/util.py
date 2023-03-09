@@ -649,7 +649,7 @@ def get_transform_from_crs(
 
 
 def crs_transform(func):
-    """Decorator that transform the geometry's/geometries' coordinates of a
+    """Decorator that transforms the geometry's/geometries' coordinates of a
     Feature/FeatureCollection.
 
     This function can be used to decorate another function which returns either
@@ -681,24 +681,27 @@ def crs_transform(func):
         crs_transform_wkt = kwargs.get('crs_transform_wkt')
         result = func(*args, **kwargs)
         if crs_transform_wkt is None:
+            # No coordinates transformation for feature(s) returned by the
+            # decorated function.
             return result
+        # Create transformation function and transform the output feature(s)'
+        # coordinates before returning them.
+        transform_func = get_transform_from_crs(
+            pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
+            pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+        )
+        features = result.get('features')
+        # Decorated function returns a single Feature
+        if features is None:
+            # Transform the feature's coordinates
+            crs_transform_feature(result, transform_func)
+            return result
+        # Decorated function returns a FeatureCollection
         else:
-            transform_func = get_transform_from_crs(
-                pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
-                pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
-            )
-            features = result.get('features')
-            # Decorated function returns a single Feature
-            if features is None:
-                # Transform the feature's coordinates
-                crs_transform_feature(result, transform_func)
-                return result
-            # Decorated function returns a FeatureCollection
-            else:
-                # Transform all features' coordinates
-                for feature in features:
-                    crs_transform_feature(feature, transform_func)
-                return result
+            # Transform all features' coordinates
+            for feature in features:
+                crs_transform_feature(feature, transform_func)
+            return result
     return get_geojsonf
 
 
