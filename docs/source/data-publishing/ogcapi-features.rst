@@ -14,25 +14,26 @@ Providers
 pygeoapi core feature providers are listed below, along with a matrix of supported query
 parameters.
 
+
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
-   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
-   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
+   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅n
+   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
 
 .. note::
 
    * All Providers that support `bbox` also support the `bbox-crs` parameter.
-   * All Providers support the `crs` parameter to CRS-transform response data. Some, like PostgreSQL, perform transformations natively.
+   * All Providers support the `crs` parameter to CRS-transform response data. Some, like PostgreSQL, perform transformations natively: '✅n'.
 
 
 Connection examples
