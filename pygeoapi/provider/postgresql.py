@@ -105,7 +105,7 @@ class PostgreSQLProvider(BaseProvider):
         self._store_db_parameters(provider_def['data'])
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
-        self._geom_fields = self._get_geom_fields()
+        self._geom_fields = self._get_geo_fields()
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
@@ -317,13 +317,19 @@ class PostgreSQLProvider(BaseProvider):
 
         return TableModel
 
-    def _get_geom_fields(self):
+    def _get_geo_fields(self):
+        geo_fields = list()
         with Session(self._engine) as session:
-            stmt = text(
-                'SELECT f_geometry_column FROM geometry_columns '
+            stmt_temp = (
+                'SELECT f_{dtype}_column FROM {dtype}_columns '
                 'WHERE f_table_schema=:schema AND f_table_name=:table'
-            ).bindparams(schema=self.schema, table=self.table)
-            return session.scalars(stmt).all()
+            )
+            for dtype in ('geometry', 'geography'):
+                stmt = text(
+                    stmt_temp.format(dtype=dtype)
+                ).bindparams(schema=self.schema, table=self.table)
+                geo_fields.extend(session.scalars(stmt).all())
+        return geo_fields
 
     def _flatten_feature_geoms(self, feature_geoms):
         flattened_geoms = list()
