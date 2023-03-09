@@ -594,11 +594,10 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     features_32735 = json.loads(response)
 
     # Make sure that we compare the same features
-    assert len(features_orig) == len(features_4326) == len(features_32735)
     assert (
-        sorted(features_orig['features'])
-        == sorted(features_4326['features'])
-        == sorted(features_32735['features'])
+        sorted(f['id'] for f in features_orig['features'])
+        == sorted(f['id'] for f in features_4326['features'])
+        == sorted(f['id'] for f in features_32735['features'])
     )
 
     # Without 'crs' query parameter or with 'crs' set to 'storage_crs', the
