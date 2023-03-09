@@ -695,13 +695,12 @@ def crs_transform(func):
         if features is None:
             # Transform the feature's coordinates
             crs_transform_feature(result, transform_func)
-            return result
         # Decorated function returns a FeatureCollection
         else:
             # Transform all features' coordinates
             for feature in features:
                 crs_transform_feature(feature, transform_func)
-            return result
+        return result
     return get_geojsonf
 
 

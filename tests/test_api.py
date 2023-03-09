@@ -885,9 +885,10 @@ def test_get_collection_items_crs(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
 
     # Supported CRSs
+    default_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
     storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/25833'
     crs_4258 = 'http://www.opengis.net/def/crs/EPSG/0/4258'
-    supported_crs_list = [storage_crs, crs_4258]
+    supported_crs_list = [default_crs, storage_crs, crs_4258]
 
     for crs in supported_crs_list:
         req = mock_request({'crs': crs})
