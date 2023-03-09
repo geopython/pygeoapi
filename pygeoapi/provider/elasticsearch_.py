@@ -70,18 +70,16 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug(f'index: {self.index_name}')
 
         LOGGER.debug('Connecting to Elasticsearch')
-
-        LOGGER.debug('Connecting to Elasticsearch')
         self.es = Elasticsearch(self.es_host)
         if not self.es.ping():
-            msg = 'Cannot connect to Elasticsearch'
+            msg = f'Cannot connect to Elasticsearch: {self.es_host}'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
         LOGGER.debug('Determining ES version')
         v = self.es.info()['version']['number'][:3]
-        if float(v) < 7:
-            msg = 'only ES 7+ supported'
+        if float(v) < 8:
+            msg = 'only ES 8+ supported'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -102,6 +100,7 @@ class ElasticsearchProvider(BaseProvider):
         fields_ = {}
         ii = self.es.indices.get(index=self.index_name)
 
+        LOGGER.debug(f'Response: {ii}')
         try:
             if '*' not in self.index_name:
                 p = ii[self.index_name]['mappings']['properties']['properties']
@@ -109,6 +108,10 @@ class ElasticsearchProvider(BaseProvider):
                 LOGGER.debug('Wildcard index; setting from first match')
                 index_name_ = list(ii.keys())[0]
                 p = ii[index_name_]['mappings']['properties']['properties']
+        except KeyError:
+            LOGGER.warning('Trying for alias')
+            alias_name = next(iter(ii))
+            p = ii[alias_name]['mappings']['properties']['properties']
         except IndexError:
             LOGGER.warning('could not get fields; returning empty set')
             return {}
