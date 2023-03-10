@@ -733,7 +733,7 @@ def get_oas_30(cfg):
                         items_f,
                         items_l,
                         {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/bbox"},  # noqa
-                        {'$ref': '#/components/parameters/bbox-crs'}
+                        {'$ref': f"{OPENAPI_YAML['oapif-2']}#/components/parameters/bbox-crs"},  # noqa
                     ],
                     'responses': {
                         '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
