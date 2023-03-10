@@ -647,7 +647,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
     ]
     for fid in fid_list:
         # Without CRS query parameter -> no coordinates transformation
-        req = mock_request()
+        req = mock_request({'f': 'json'})
         rsp_headers, code, response = pg_api_.get_collection_item(
             req, 'hot_osm_waterways', fid,
         )
@@ -659,7 +659,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
 
         # With CRS query parameter not resulting in coordinates transformation
         # (i.e. 'crs' query parameter is the same as 'storage_crs')
-        req = mock_request({'crs': storage_crs})
+        req = mock_request({'f': 'json', 'crs': storage_crs})
         rsp_headers, code, response = pg_api_.get_collection_item(
             req, 'hot_osm_waterways', fid,
         )
@@ -673,7 +673,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         assert feat_orig['geometry'] == feat_4326['geometry']
 
         # With CRS query parameter resulting in coordinates transformation
-        req = mock_request({'crs': crs_32735})
+        req = mock_request({'f': 'json', 'crs': crs_32735})
         rsp_headers, code, response = pg_api_.get_collection_item(
             req, 'hot_osm_waterways', fid,
         )
