@@ -70,6 +70,15 @@ CRS_AUTHORITY = [
     "OGC",
 ]
 
+# Global to compile only once
+CRS_URI_PATTERN = re.compile(
+    (
+     rf"^http://www.opengis\.net/def/crs/"
+     rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+     rf"[\d|\.]+?/(?P<code>\w+?)$"
+    )
+)
+
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
 
@@ -582,20 +591,14 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     :returns: `pyproj.CRS` instance matching the input URI.
     :rtype: `pyproj.CRS`
     """
-    uri_pattern = re.compile(
-        (
-         rf"^http://www.opengis\.net/def/crs/"
-         rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
-         rf"[\d|\.]+?/(?P<code>\w+?)$"
-        )
-    )
+
     try:
-        crs = pyproj.CRS.from_authority(*uri_pattern.search(uri).groups())
+        crs = pyproj.CRS.from_authority(*CRS_URI_PATTERN.search(uri).groups())
     except CRSError:
         msg = (
             f"CRS could not be identified from URI {uri!r} "
-            f"(Authority: {uri_pattern.search(uri).group('auth')!r}, "
-            f"Code: {uri_pattern.search(uri).group('code')!r})."
+            f"(Authority: {CRS_URI_PATTERN.search(uri).group('auth')!r}, "
+            f"Code: {CRS_URI_PATTERN.search(uri).group('code')!r})."
         )
         LOGGER.error(msg)
         raise CRSError(msg)
@@ -626,6 +629,7 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
 
     :returns: list of 4 or 6 coordinates
     """
+
     from_crs_obj = get_crs_from_uri(from_crs)
     to_crs_obj = get_crs_from_uri(to_crs)
     transform_func = pyproj.Transformer.from_crs(
