@@ -361,6 +361,10 @@ def render_j2_template(config: dict, template: Path,
     """
 
     template_paths = [TEMPLATES, '.']
+
+    locale_dir = config['server'].get('locale_dir', 'locale')
+    LOGGER.debug(f'Locale directory: {locale_dir}')
+
     try:
         templates = config['server']['templates']['path']
         template_paths.insert(0, templates)
@@ -388,7 +392,7 @@ def render_j2_template(config: dict, template: Path,
     env.filters['filter_dict_by_key_value'] = filter_dict_by_key_value
     env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
 
-    translations = Translations.load('locale', [locale_])
+    translations = Translations.load(locale_dir, [locale_])
     env.install_gettext_translations(translations)
 
     template = env.get_template(template)

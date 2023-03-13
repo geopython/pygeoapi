@@ -174,11 +174,15 @@ Translator guide
 ----------------
 
 Hardcoded strings in pygeoapi templates are translated using the Babel translation system.
-Translation files are stored on the `/locale` folder.
+
+By default, pygeoapi stores translation files in the `locale` directory at the root of the
+source code repository. This value can be overriden in the pygeoapi configuration with
+the `server.locale_dir` directive.
+
 Translators can follow these steps to prepare their environment for translations.
 
 
-1. Extract from latest code the keys to be translated. These keys are captured in a `.pot` file.  Note that the `.pot` file is not to be stored in version control, but as an intermediary file used to update `/locale/*/LC_MESSAGES/messages.po` files:
+1. Extract from latest code the keys to be translated. These keys are captured in a `.pot` file.  Note that the `.pot` file is not to be stored in version control, but as an intermediary file used to update `locale/*/LC_MESSAGES/messages.po` files:
 
    .. code-block:: bash
 
