@@ -37,6 +37,15 @@ properties:
             language:
                 type: string
                 description: default server language
+            languages:
+                type: array
+                description: supported languages
+                items:
+                    type: string
+                    description: supported language
+            locale_dir:
+                type: string
+                description: directory of translations
             cors:
                 type: boolean
                 description: boolean on whether server should support CORS
