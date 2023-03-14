@@ -34,8 +34,6 @@ from urllib.parse import urlsplit
 from importlib import reload
 from contextlib import contextmanager
 
-from pygeoapi.util import get_base_url
-
 from flask.testing import FlaskClient
 from starlette.testclient import TestClient as StarletteClient
 from werkzeug.test import create_environ
@@ -83,6 +81,8 @@ def mock_request(params: dict = None, data=None, **headers) -> Request:
 def mock_flask(config_file: str = 'pygeoapi-test-config.yml', **kwargs) -> FlaskClient:  # noqa
     """
     Mocks a Flask client so we can test the API routing with applied API rules.
+    Does not follow redirects by default. Set `follow_redirects=True` option
+    on individual requests to enable.
 
     :param config_file: Optional configuration YAML file to use.
                         If not set, the default test configuration is used.
@@ -100,7 +100,7 @@ def mock_flask(config_file: str = 'pygeoapi-test-config.yml', **kwargs) -> Flask
         reload(flask_app)
 
         # Set server root path
-        url_parts = urlsplit(get_base_url(flask_app.CONFIG))
+        url_parts = urlsplit(flask_app.CONFIG['server']['url'])
         app_root = url_parts.path.rstrip('/') or '/'
         flask_app.APP.config['SERVER_NAME'] = url_parts.netloc
         flask_app.APP.config['APPLICATION_ROOT'] = app_root
@@ -128,6 +128,8 @@ def mock_starlette(config_file: str = 'pygeoapi-test-config.yml', **kwargs) -> S
     """
     Mocks a Starlette client so we can test the API routing with applied
     API rules.
+    Does not follow redirects by default. Set `follow_redirects=True` option
+    on individual requests to enable.
 
     :param config_file: Optional configuration YAML file to use.
                         If not set, the default test configuration is used.
@@ -145,7 +147,7 @@ def mock_starlette(config_file: str = 'pygeoapi-test-config.yml', **kwargs) -> S
         reload(starlette_app)
 
         # Get server root path
-        base_url = get_base_url(starlette_app.CONFIG)
+        base_url = starlette_app.CONFIG['server']['url'].rstrip('/')
         root_path = urlsplit(base_url).path.rstrip('/') or ''
 
         # Create and return test client
@@ -157,6 +159,8 @@ def mock_starlette(config_file: str = 'pygeoapi-test-config.yml', **kwargs) -> S
             root_path=root_path,
             **kwargs
         )
+        # Override follow_redirects so behavior is the same as Flask mock
+        client.follow_redirects = False
         yield client
 
     finally:

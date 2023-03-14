@@ -122,7 +122,7 @@ def get_response(result: tuple):
     return response
 
 
-@BLUEPRINT.route('' if API_RULES.strict_slashes else '/')
+@BLUEPRINT.route('/')
 def landing_page():
     """
     OGC API landing page endpoint

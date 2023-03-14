@@ -625,7 +625,6 @@ class API:
         """
 
         self.config = config
-        self.config['server']['url'] = self.config['server']['url'].rstrip('/')
         self.api_headers = get_api_rules(self.config).response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
@@ -648,6 +647,10 @@ class API:
         self.pretty_print = self.config['server']['pretty_print']
 
         setup_logger(self.config['logging'])
+
+        # Create config clone for HTML templating with modified base URL
+        self.tpl_config = deepcopy(self.config)
+        self.tpl_config['server']['url'] = self.base_url
 
         # TODO: add as decorator
         if 'manager' in self.config['server']:
@@ -756,8 +759,8 @@ class API:
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
 
-            content = render_j2_template(self.config, 'landing_page.html', fcm,
-                                         request.locale)
+            content = render_j2_template(self.tpl_config, 'landing_page.html',
+                                         fcm, request.locale)
             return headers, HTTPStatus.OK, content
 
         if request.format == F_JSONLD:
@@ -793,7 +796,7 @@ class API:
             data = {
                 'openapi-document-path': path
             }
-            content = render_j2_template(self.config, template, data,
+            content = render_j2_template(self.tpl_config, template, data,
                                          request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -835,7 +838,7 @@ class API:
 
         headers = request.get_response_headers(**self.api_headers)
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.config, 'conformance.html',
+            content = render_j2_template(self.tpl_config, 'conformance.html',
                                          conformance, request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -1206,11 +1209,11 @@ class API:
         if request.format == F_HTML:  # render
             fcm['collections_path'] = self.get_collections_url()
             if dataset is not None:
-                content = render_j2_template(self.config,
+                content = render_j2_template(self.tpl_config,
                                              'collections/collection.html',
                                              fcm, request.locale)
             else:
-                content = render_j2_template(self.config,
+                content = render_j2_template(self.tpl_config,
                                              'collections/index.html', fcm,
                                              request.locale)
 
@@ -1311,7 +1314,7 @@ class API:
 
             queryables['collections_path'] = self.get_collections_url()
 
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/queryables.html',
                                          queryables, request.locale)
 
@@ -1654,7 +1657,7 @@ class API:
                                                         request.locale)
                 # If title exists, use it as id in html templates
                 content['id_field'] = content['title_field']
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/items/index.html',
                                          content, request.locale)
             return headers, HTTPStatus.OK, content
@@ -2255,7 +2258,7 @@ class API:
                                                         request.locale)
             content['collections_path'] = self.get_collections_url()
 
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/items/item.html',
                                          content, request.locale)
             return headers, HTTPStatus.OK, content
@@ -2471,7 +2474,7 @@ class API:
                 self.config['resources'][dataset]['title'],
                 self.default_locale)
             data['collections_path'] = self.get_collections_url()
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/coverage/domainset.html',
                                          data, self.default_locale)
             return headers, HTTPStatus.OK, content
@@ -2528,7 +2531,7 @@ class API:
                 self.config['resources'][dataset]['title'],
                 self.default_locale)
             data['collections_path'] = self.get_collections_url()
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/coverage/rangetype.html',
                                          data, self.default_locale)
             return headers, HTTPStatus.OK, content
@@ -2653,7 +2656,7 @@ class API:
             tiles['maxzoom'] = p.options['zoom']['max']
             tiles['collections_path'] = self.get_collections_url()
 
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/tiles/index.html', tiles,
                                          request.locale)
 
@@ -2827,7 +2830,7 @@ class API:
             metadata['format'] = metadata_format.value
             metadata['collections_path'] = self.get_collections_url()
 
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/tiles/metadata.html',
                                          metadata, request.locale)
 
@@ -3249,11 +3252,11 @@ class API:
 
         if request.format == F_HTML:  # render
             if process is not None:
-                response = render_j2_template(self.config,
+                response = render_j2_template(self.tpl_config,
                                               'processes/process.html',
                                               response, request.locale)
             else:
-                response = render_j2_template(self.config,
+                response = render_j2_template(self.tpl_config,
                                               'processes/index.html', response,
                                               request.locale)
 
@@ -3355,7 +3358,7 @@ class API:
                 'jobs': serialized_jobs,
                 'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
             }
-            response = render_j2_template(self.config, j2_template, data,
+            response = render_j2_template(self.tpl_config, j2_template, data,
                                           request.locale)
             return headers, HTTPStatus.OK, response
 
@@ -3733,7 +3736,7 @@ class API:
                 'NoApplicableCode', str(err))
 
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/edr/query.html', data,
                                          self.default_locale)
         else:
@@ -3791,7 +3794,8 @@ class API:
             })
 
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.config, 'stac/collection.html',
+            content = render_j2_template(self.tpl_config,
+                                         'stac/collection.html',
                                          content, request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -3875,11 +3879,11 @@ class API:
             if request.format == F_HTML:  # render
                 content['path'] = path
                 if 'assets' in content:  # item view
-                    content = render_j2_template(self.config,
+                    content = render_j2_template(self.tpl_config,
                                                  'stac/item.html',
                                                  content, request.locale)
                 else:
-                    content = render_j2_template(self.config,
+                    content = render_j2_template(self.tpl_config,
                                                  'stac/catalog.html',
                                                  content, request.locale)
 

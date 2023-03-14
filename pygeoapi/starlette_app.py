@@ -42,8 +42,11 @@ from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.requests import Request
+from starlette.datastructures import URL
 from starlette.types import ASGIApp, Scope, Send, Receive
-from starlette.responses import Response, JSONResponse, HTMLResponse
+from starlette.responses import (
+    Response, JSONResponse, HTMLResponse, RedirectResponse
+)
 import uvicorn
 
 from pygeoapi.api import API
@@ -492,15 +495,16 @@ class ApiRulesMiddleware:
         if scope['type'] == "http" and API_RULES.strict_slashes:
             path = scope['path']
             if path == self.prefix:
-                # If the root (landing page) is requested without
-                # a trailing slash, this should return a 200.
-                # However, because Starlette does not like an empty Route path,
-                # it will return a 404 instead.
-                # To prevent this, we will append a trailing slash here.
-                scope['path'] = f"{self.prefix}/"
-                scope['raw_path'] = scope['path'].encode()
-            elif path.endswith('/'):
-                # All other resource paths should not have trailing slashes
+                # If the root (landing page) is requested without a trailing
+                # slash, redirect to landing page with trailing slash.
+                # Starlette will otherwise throw a 404, as it does not like
+                # empty Route paths.
+                url = URL(scope=scope).replace(path=f"{path}/")
+                response = RedirectResponse(url)
+                await response(scope, receive, send)
+                return
+            elif path != f"{self.prefix}/" and path.endswith('/'):
+                # Resource paths should NOT have trailing slashes
                 response = Response(status_code=404)
                 await response(scope, receive, send)
                 return
@@ -556,6 +560,15 @@ APP = Starlette(
         Mount(url_prefix or '/', routes=api_routes)
     ]
 )
+
+if url_prefix:
+    # If a URL prefix is in effect, Flask allows the static resource URLs
+    # to be written both with or without that prefix (200 in both cases).
+    # Starlette does not allow this, so for consistency we'll add a static
+    # mount here WITHOUT the URL prefix (due to router order).
+    APP.mount(
+        '/static', StaticFiles(directory=STATIC_DIR),
+    )
 
 # If API rules require strict slashes, do not redirect
 if API_RULES.strict_slashes:
