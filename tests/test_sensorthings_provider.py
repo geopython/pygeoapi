@@ -37,9 +37,8 @@ def config():
     return {
         'name': 'SensorThings',
         'type': 'feature',
-        'data': 'http://localhost:8888/FROST-Server/v1.1/',
+        'data': 'http://localhost:8888/FROST-Server/v1.1/Datastreams',
         'rel_link': 'http://localhost:5000',
-        'entity': 'Datastreams',
         'intralink': True,
         'time_field': 'phenomenonTime'
     }
@@ -88,6 +87,7 @@ def test_query_datastreams(config):
 def test_query_observations(config):
     config['properties'] = ['Datastream', 'phenomenonTime',
                             'FeatureOfInterest', 'result']
+    config['data'] = 'http://localhost:8888/FROST-Server/v1.1/'
     config['entity'] = 'Observations'
     p = SensorThingsProvider(config)
 
