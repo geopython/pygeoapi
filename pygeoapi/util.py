@@ -572,6 +572,33 @@ def get_envelope(coords_list: List[List[float]]) -> list:
             [bounds[2], bounds[1]]]
 
 
+def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
+    """
+    Helper function to get a complete list of supported CRSs
+    from a (Provider) config dict. Result should always include
+    a default CRS according to OAPIF Part 2 OGC Standard.
+    This will be the default when no CRS list in config or
+    added when (partially) missing in config.
+
+    Author: @justb4
+
+    :param config: dictionary with or without a list of CRSs
+    :param default_crs_list: default CRS alternatives, first is default
+    :returns: list of supported CRSs
+    """
+    supported_crs_list = config.get('crs', list())
+    contains_default = False
+    for uri in supported_crs_list:
+        if uri in default_crs_list:
+            contains_default = True
+            break
+
+    # A default CRS is missing: add the first which is the default
+    if not contains_default:
+        supported_crs_list.append(default_crs_list[0])
+    return supported_crs_list
+
+
 def get_crs_from_uri(uri: str) -> pyproj.CRS:
     """Get a `pyproj.CRS` instance from a CRS URI.
 

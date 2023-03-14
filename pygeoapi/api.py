@@ -47,7 +47,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Tuple, Union
+from typing import Any, Tuple, Union, Optional
 import urllib.parse
 import uuid
 
@@ -80,8 +80,8 @@ from pygeoapi.util import (dategetter, DATETIME_FORMAT,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
-                           TEMPLATES, to_json, get_crs_from_uri,
-                           DEFAULT_CRS, CrsTransformWkt)
+                           TEMPLATES, to_json, get_supported_crs_list,
+                           get_crs_from_uri, CrsTransformWkt)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -161,6 +161,13 @@ CONFORMANCE = {
 }
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
+
+DEFAULT_CRS_LIST = [
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
+]
+
+DEFAULT_STORAGE_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
 
 def pre_process(func):
@@ -1439,51 +1446,17 @@ class API:
             # crs query parameter is only available for OGC API - Features
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
-            # List of CRSs supported by the server for the collection.
-            supported_crs_list = provider_def.get('crs', list())
-            for uri in DEFAULT_CRS:
-                if uri not in supported_crs_list:
-                    supported_crs_list.append(uri)
-            storage_crs_uri = provider_def.get('storage_crs')
-            crs_uri_out = request.params.get('crs')
-            if not crs_uri_out:
-                LOGGER.debug('crs parameter unspecified')
-                headers['Content-Crs'] = f'<{storage_crs_uri}>'
-            else:
-                try:
-                    crs_out = get_crs_from_uri(crs_uri_out)
-                    # Check that the crs specified by the query parameter is
-                    # supported.
-                    if crs_uri_out not in supported_crs_list:
-                        raise ValueError
-                except CRSError as err:
-                    msg = str(err)
-                    return self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', msg)
-                except ValueError:
-                    msg = (
-                        f'CRS {crs_uri_out!r} not supported for this '
-                        'collection. List of supported CRSs: '
-                        f'{", ".join(supported_crs_list)}.'
-                    )
-                    return self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', msg)
-                headers['Content-Crs'] = f'<{crs_uri_out}>'
-                # Check if the coordinates of requested features need to be
-                # transformed when served to the end-users.
-                storage_crs = get_crs_from_uri(storage_crs_uri)
-                if str(storage_crs) != str(crs_out):
-                    LOGGER.debug(
-                        f'CRS transformation: {storage_crs} -> {crs_out}'
-                    )
-                    crs_transform_wkt = CrsTransformWkt(
-                        source_crs_wkt=storage_crs.to_wkt(),
-                        target_crs_wkt=crs_out.to_wkt(),
-                    )
-                else:
-                    LOGGER.debug('No CRS transformation')
+            query_crs_uri = request.params.get('crs')
+            try:
+                crs_transform_wkt = self._create_crs_transform_wkt(
+                    provider_def, query_crs_uri,
+                )
+            except (ValueError, CRSError) as err:
+                msg = str(err)
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+            self._set_content_crs_header(headers, provider_def, query_crs_uri)
 
         LOGGER.debug('processing property parameters')
         for k, v in request.params.items():
@@ -1570,7 +1543,7 @@ class API:
         LOGGER.debug(f'sortby: {sortby}')
         LOGGER.debug(f'bbox: {bbox}')
         if provider_type == 'feature':
-            LOGGER.debug(f'crs: {crs_uri_out}')
+            LOGGER.debug(f'crs: {query_crs_uri}')
         LOGGER.debug(f'datetime: {datetime_}')
         LOGGER.debug(f'properties: {properties}')
         LOGGER.debug(f'select properties: {select_properties}')
@@ -2191,51 +2164,17 @@ class API:
             # crs query parameter is only available for OGC API - Features
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
-            # List of CRSs supported by the server for the collection.
-            supported_crs_list = provider_def.get('crs', list())
-            for uri in DEFAULT_CRS:
-                if uri not in supported_crs_list:
-                    supported_crs_list.append(uri)
-            storage_crs_uri = provider_def.get('storage_crs')
-            crs_uri_out = request.params.get('crs')
-            if not crs_uri_out:
-                LOGGER.debug('crs parameter unspecified')
-                headers['Content-Crs'] = f'<{storage_crs_uri}>'
-            else:
-                try:
-                    crs_out = get_crs_from_uri(crs_uri_out)
-                    # Check that the crs specified by the query parameter is
-                    # supported.
-                    if crs_uri_out not in supported_crs_list:
-                        raise ValueError
-                except CRSError as err:
-                    msg = str(err)
-                    return self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', msg)
-                except ValueError:
-                    msg = (
-                        f'CRS {crs_uri_out!r} not supported for this '
-                        'collection. List of supported CRSs: '
-                        f'{", ".join(supported_crs_list)}.'
-                    )
-                    return self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', msg)
-                headers['Content-Crs'] = f'<{crs_uri_out}>'
-                # Check if the coordinates of requested features need to be
-                # transformed when served to the end-users.
-                storage_crs = get_crs_from_uri(storage_crs_uri)
-                if str(storage_crs) != str(crs_out):
-                    LOGGER.debug(
-                        f'CRS transformation: {storage_crs} -> {crs_out}'
-                    )
-                    crs_transform_wkt = CrsTransformWkt(
-                        source_crs_wkt=storage_crs.to_wkt(),
-                        target_crs_wkt=crs_out.to_wkt(),
-                    )
-                else:
-                    LOGGER.debug('No CRS transformation')
+            query_crs_uri = request.params.get('crs')
+            try:
+                crs_transform_wkt = self._create_crs_transform_wkt(
+                    provider_def, query_crs_uri,
+                )
+            except (ValueError, CRSError) as err:
+                msg = str(err)
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+            self._set_content_crs_header(headers, provider_def, query_crs_uri)
 
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
@@ -4028,6 +3967,81 @@ class API:
 
     def get_collections_url(self):
         return f"{self.config['server']['url']}/collections"
+
+    @staticmethod
+    def _create_crs_transform_wkt(
+        config: dict,
+        query_crs_uri: Optional[str] = None,
+    ) -> Union[None, CrsTransformWkt]:
+        """Create a `CrsTransformWkt` instance based on provider config and
+        *crs* query parameter.
+
+        :param config: Provider config dictionary.
+        :type config: dict
+        :param query_crs_uri: Uniform resource identifier of the coordinate
+            reference system (CRS) specified in query parameter (if specified).
+        :type query_crs_uri: str, optional
+
+        :raises ValueError: Error raised if the CRS specified in the query
+            parameter is not in the list of supported CRSs of the provider.
+        :raises `CRSError`: Error raised if no CRS could be identified from the
+            query *crs* parameter (URI).
+
+        :returns: `CrsTransformWkt` instance if the CRS specified in query
+            parameter differs from the storage CRS, else `None`.
+        :rtype: Union[None, CrsTransformWkt]
+        """
+        if not query_crs_uri:
+            LOGGER.debug('crs query parameter unspecified')
+            return None
+        supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
+        # Check that the crs specified by the query parameter is supported.
+        if query_crs_uri not in supported_crs_list:
+            raise ValueError(
+                f'CRS {query_crs_uri!r} not supported for this '
+                'collection. List of supported CRSs: '
+                f'{", ".join(supported_crs_list)}.'
+            )
+        crs_out = get_crs_from_uri(query_crs_uri)
+        # Get storage/default CRS for colelction.
+        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+        storage_crs = get_crs_from_uri(storage_crs_uri)
+        # Check if the crs specified in query parameter differs from the
+        # storage crs.
+        if str(storage_crs) != str(crs_out):
+            LOGGER.debug(
+                f'CRS transformation: {storage_crs} -> {crs_out}'
+            )
+            return CrsTransformWkt(
+                source_crs_wkt=storage_crs.to_wkt(),
+                target_crs_wkt=crs_out.to_wkt(),
+            )
+        else:
+            LOGGER.debug('No CRS transformation')
+            return None
+
+    @staticmethod
+    def _set_content_crs_header(
+        headers: dict,
+        config: dict,
+        query_crs_uri: Optional[str] = None,
+    ):
+        """Set the *Content-Crs* header in responses from providers of Feature
+        type.
+
+        :param headers: Response headers dictionary.
+        :type headers: dict
+        :param config: Provider config dictionary.
+        :type config: dict
+        :param query_crs_uri: Uniform resource identifier of the coordinate
+            reference system specified in query parameter (if specified).
+        :type query_crs_uri: str, optional
+        """
+        if query_crs_uri:
+            content_crs_uri = query_crs_uri
+        else:
+            content_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+        headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
 def validate_bbox(value=None) -> list:
