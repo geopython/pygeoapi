@@ -51,6 +51,8 @@ from typing import Any, Tuple, Union
 import urllib.parse
 import uuid
 
+from pyproj.exceptions import CRSError
+
 from dateutil.parser import parse as dateparse
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
@@ -76,10 +78,11 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, DATETIME_FORMAT,
-                           filter_dict_by_key_value, get_provider_by_type,
-                           get_provider_default, get_typed_value, JobStatus,
-                           json_serial, render_j2_template, str2bool,
-                           TEMPLATES, to_json)
+                           filter_dict_by_key_value, get_supported_crs_list,
+                           get_provider_by_type, get_provider_default,
+                           get_typed_value, JobStatus, json_serial,
+                           render_j2_template, str2bool,
+                           transform_bbox, TEMPLATES, to_json)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -121,6 +124,7 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+        'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
         'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
@@ -158,6 +162,13 @@ CONFORMANCE = {
 }
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
+
+DEFAULT_CRS_LIST = [
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
+]
+
+DEFAULT_STORAGE_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
 
 def pre_process(func):
@@ -1002,6 +1013,13 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
                 })
 
+                # OAPIF Part 2 - list supported CRSs and StorageCRS
+                if collection_data_type == 'feature':
+                    collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
+                    collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+                    if 'storage_crs_coordinate_epoch' in collection_data:
+                        collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
+
             elif collection_data_type == 'coverage':
                 # TODO: translate
                 LOGGER.debug('Adding coverage based links')
@@ -1320,8 +1338,8 @@ class API:
         headers = request.get_response_headers(SYSTEM_LOCALE)
 
         properties = []
-        reserved_fieldnames = ['bbox', 'f', 'lang', 'limit', 'offset',
-                               'resulttype', 'datetime', 'sortby',
+        reserved_fieldnames = ['bbox', 'bbox-crs', 'crs', 'f', 'lang', 'limit',
+                               'offset', 'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
                                'filter', 'filter-lang']
 
@@ -1404,6 +1422,7 @@ class API:
 
         LOGGER.debug('Loading provider')
 
+        provider_def = None
         try:
             provider_def = get_provider_by_type(
                 collections[dataset]['providers'], 'feature')
@@ -1428,6 +1447,39 @@ class API:
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
+
+        LOGGER.debug('Processing bbox-crs parameter')
+        bbox_crs = request.params.get('bbox-crs')
+        if bbox_crs is not None:
+            if len(bbox) == 0:
+                msg = 'bbox-crs specified without bbox parameter'
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            if len(bbox_crs) == 0:
+                msg = 'bbox-crs specified but is empty'
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST) # noqa
+            if bbox_crs not in supported_crs_list:
+                msg = f'bbox-crs {bbox_crs} not supported for this collection'
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            try:
+                # Get a pyproj CRS instance for the Collection's Storage CRS
+                storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+
+                # Do the (optional) Transform to the Storage CRS
+                bbox = transform_bbox(bbox, bbox_crs, storage_crs)
+            except CRSError as e:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'NoApplicableCode', str(e))
 
         LOGGER.debug('processing property parameters')
         for k, v in request.params.items():

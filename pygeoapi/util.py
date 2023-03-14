@@ -49,6 +49,9 @@ from shapely.geometry import Polygon
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
+import pyproj
+from pyproj.exceptions import CRSError
+
 import yaml
 
 from pygeoapi import __version__
@@ -60,6 +63,21 @@ LOGGER = logging.getLogger(__name__)
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+
+CRS_AUTHORITY = [
+    "AUTO",
+    "EPSG",
+    "OGC",
+]
+
+# Global to compile only once
+CRS_URI_PATTERN = re.compile(
+    (
+     rf"^http://www.opengis\.net/def/crs/"
+     rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+     rf"[\d|\.]+?/(?P<code>\w+?)$"
+    )
+)
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -537,3 +555,89 @@ def get_envelope(coords_list: List[List[float]]) -> list:
     bounds = polygon.bounds
     return [[bounds[0], bounds[3]],
             [bounds[2], bounds[1]]]
+
+
+def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
+    """
+    Helper function to get a complete list of supported CRSs
+    from a (Provider) config dict. Result should always include
+    a default CRS according to OAPIF Part 2 OGC Standard.
+    This will be the default when no CRS list in config or
+    added when (partially) missing in config.
+
+    :param config: dictionary with or without a list of CRSs
+    :param default_crs_list: default CRS alternatives, first is default
+    :returns: list of supported CRSs
+    """
+    supported_crs_list = config.get('crs', list())
+    contains_default = False
+    for uri in supported_crs_list:
+        if uri in default_crs_list:
+            contains_default = True
+            break
+
+    # A default CRS is missing: add the first which is the default
+    if not contains_default:
+        supported_crs_list.append(default_crs_list[0])
+    return supported_crs_list
+
+
+def get_crs_from_uri(uri: str) -> pyproj.CRS:
+    """
+    Get a `pyproj.CRS` instance from a CRS URI.
+    Author: @MTachon
+
+    :param uri: Uniform resource identifier of the coordinate
+        reference system.
+    :type uri: str
+    :raises `CRSError`: Error raised if no CRS could be identified from the
+        URI.
+    :returns: `pyproj.CRS` instance matching the input URI.
+    :rtype: `pyproj.CRS`
+    """
+
+    try:
+        crs = pyproj.CRS.from_authority(*CRS_URI_PATTERN.search(uri).groups())
+    except CRSError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r} "
+            f"(Authority: {CRS_URI_PATTERN.search(uri).group('auth')!r}, "
+            f"Code: {CRS_URI_PATTERN.search(uri).group('code')!r})."
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    except AttributeError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
+            "follow the format "
+            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' "
+            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    else:
+        return crs
+
+
+def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
+    """
+    helper function to transform a bounding box (bbox) from
+    a source to a target CRS. CRSs in URI str format.
+    Uses pyproj Transformer.
+
+    :param bbox: list of coordinates in 'from_crs' projection
+    :param from_crs: CRS URI to transform from
+    :param to_crs: CRS URI to transform to
+    :raises `CRSError`: Error raised if no CRS could be identified from an
+        URI.
+
+    :returns: list of 4 or 6 coordinates
+    """
+
+    from_crs_obj = get_crs_from_uri(from_crs)
+    to_crs_obj = get_crs_from_uri(to_crs)
+    transform_func = pyproj.Transformer.from_crs(
+        from_crs_obj, to_crs_obj).transform
+    n_dims = len(bbox) // 2
+    return list(transform_func(*bbox[:n_dims]) + transform_func(
+        *bbox[n_dims:]))
