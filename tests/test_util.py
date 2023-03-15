@@ -156,3 +156,21 @@ def test_read_data():
     data = util.read_data(get_test_file_path('pygeoapi-test-config.yml'))
 
     assert isinstance(data, bytes)
+
+
+def test_prefetcher():
+    prefetcher = util.UrlPrefetcher()
+    assert prefetcher.get_headers('bad_url') == {}
+    # URL below will redirect once
+    url = 'https://github.com/geopython/pygeoapi/raw/4a18393662583e53b8c7d591130246d9cd2c3f3f/pygeoapi/static/img/pygeoapi.png'  # noqa
+    headers = prefetcher.get_headers(url)
+    length = int(headers.get('content-length', 0))
+    assert length > 0
+    # Test without redirect
+    headers = prefetcher.get_headers(url, allow_redirects=False)
+    assert headers.get('content-length') in (0, '0', None)
+    assert headers.get('content-type') != 'image/png'
+    # Test using redirect location from header
+    headers = prefetcher.get_headers(headers['location'])
+    assert int(headers.get('content-length', 0)) == length
+    assert headers.get('content-type') == 'image/png'

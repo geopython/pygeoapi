@@ -50,6 +50,8 @@ import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
 import yaml
+from requests import Session
+from requests.structures import CaseInsensitiveDict
 
 from pygeoapi import __version__
 from pygeoapi import l10n
@@ -537,3 +539,28 @@ def get_envelope(coords_list: List[List[float]]) -> list:
     bounds = polygon.bounds
     return [[bounds[0], bounds[3]],
             [bounds[2], bounds[1]]]
+
+
+class UrlPrefetcher:
+    """ Prefetcher to get HTTP headers for specific URLs.
+    Allows a maximum of 1 redirect by default.
+    """
+    def __init__(self):
+        self._session = Session()
+        self._session.max_redirects = 1
+
+    def get_headers(self, url: str, **kwargs) -> CaseInsensitiveDict:
+        """ Issues an HTTP HEAD request to the given URL.
+        Returns a case-insensitive dictionary of all headers.
+        If the request times out (defaults to 1 second unless `timeout`
+        keyword argument is set), or the response has a bad status code,
+        an empty dictionary is returned.
+        """
+        kwargs.setdefault('timeout', 1)
+        kwargs.setdefault('allow_redirects', True)
+        try:
+            response = self._session.head(url, **kwargs)
+            response.raise_for_status()
+        except Exception:  # noqa
+            return CaseInsensitiveDict()
+        return response.headers
