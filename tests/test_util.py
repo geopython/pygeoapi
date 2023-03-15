@@ -238,3 +238,21 @@ def test_transform_bbox():
     bbox_trans = util.transform_bbox(bbox, from_crs, to_crs)
     for n in range(4):
         assert round(bbox_trans[n]) == result[n]
+
+
+def test_prefetcher():
+    prefetcher = util.UrlPrefetcher()
+    assert prefetcher.get_headers('bad_url') == {}
+    # URL below will redirect once
+    url = 'https://github.com/geopython/pygeoapi/raw/4a18393662583e53b8c7d591130246d9cd2c3f3f/pygeoapi/static/img/pygeoapi.png'  # noqa
+    headers = prefetcher.get_headers(url)
+    length = int(headers.get('content-length', 0))
+    assert length > 0
+    # Test without redirect
+    headers = prefetcher.get_headers(url, allow_redirects=False)
+    assert headers.get('content-length') in (0, '0', None)
+    assert headers.get('content-type') != 'image/png'
+    # Test using redirect location from header
+    headers = prefetcher.get_headers(headers['location'])
+    assert int(headers.get('content-length', 0)) == length
+    assert headers.get('content-type') == 'image/png'
