@@ -456,7 +456,9 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 22
+    assert len(root['conformsTo']) == 23
+    assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
+           in root['conformsTo']
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)
@@ -511,6 +513,19 @@ def test_describe_collections(config, api_):
         }
     }
 
+    # OAPIF Part 2 CRS 6.2.1 A, B, configured CRS + defaults
+    assert collection['crs'] is not None
+    crs_set = [
+        'http://www.opengis.net/def/crs/EPSG/0/28992',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326',
+    ]
+    for crs in crs_set:
+        assert crs in collection['crs']
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/EPSG/0/28992' # noqa
+    assert 'storageCrsCoordinateEpoch' not in collection
+
     # French language request
     req = mock_request({'lang': 'fr'})
     rsp_headers, code, response = api_.describe_collections(req, 'obs')
@@ -539,6 +554,21 @@ def test_describe_collections(config, api_):
         req, 'naturalearth/lakes')
     collection = json.loads(response)
     assert collection['id'] == 'naturalearth/lakes'
+
+    # OAPIF Part 2 CRS 6.2.1 B, defaults when not configured
+    assert collection['crs'] is not None
+    default_crs_list = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    ]
+    contains_default = False
+    for crs in default_crs_list:
+        if crs in default_crs_list:
+            contains_default = True
+    assert contains_default
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert collection['storageCrsCoordinateEpoch'] == 2017.23
 
 
 def test_describe_collections_hidden_resources(
@@ -643,6 +673,34 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection (CSV will ignore)
+    req = mock_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
+
+    # bbox-crs can be a default even if not configured (CSV will ignore)
+    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
 
     req = mock_request({'f': 'html', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')

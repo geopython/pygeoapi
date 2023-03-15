@@ -53,7 +53,7 @@ RUN echo "http.host: 0.0.0.0" >> config/elasticsearch.yml
 RUN echo "discovery.type: single-node" >> config/elasticsearch.yml
 
 RUN     apt install -y python3 python3-pip python3-setuptools python-typing \
-        && pip3 install --upgrade pip elasticsearch==7.17.1 elasticsearch-dsl \
+        && pip3 install --upgrade pip elasticsearch==8.4.0 elasticsearch-dsl \
 	&& apt clean packages
 
 USER elasticsearch

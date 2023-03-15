@@ -70,6 +70,7 @@ from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
 
+
 LOGGER = logging.getLogger(__name__)
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
@@ -82,10 +83,14 @@ CRS_AUTHORITY = [
     "OGC",
 ]
 
-DEFAULT_CRS = [
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
-]
+# Global to compile only once
+CRS_URI_PATTERN = re.compile(
+    (
+     rf"^http://www.opengis\.net/def/crs/"
+     rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+     rf"[\d|\.]+?/(?P<code>\w+?)$"
+    )
+)
 
 
 @dataclass
@@ -600,12 +605,13 @@ def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
 
 
 def get_crs_from_uri(uri: str) -> pyproj.CRS:
-    """Get a `pyproj.CRS` instance from a CRS URI.
+    """
+    Get a `pyproj.CRS` instance from a CRS URI.
+    Author: @MTachon
 
     :param uri: Uniform resource identifier of the coordinate
         reference system.
     :type uri: str
-
 
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
@@ -613,20 +619,14 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     :returns: `pyproj.CRS` instance matching the input URI.
     :rtype: `pyproj.CRS`
     """
-    uri_pattern = re.compile(
-        (
-         rf"^http://www.opengis\.net/def/crs/"
-         rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
-         rf"[\d|\.]+?/(?P<code>\w+?)$"
-        )
-    )
+
     try:
-        crs = pyproj.CRS.from_authority(*uri_pattern.search(uri).groups())
+        crs = pyproj.CRS.from_authority(*CRS_URI_PATTERN.search(uri).groups())
     except CRSError:
         msg = (
             f"CRS could not be identified from URI {uri!r} "
-            f"(Authority: {uri_pattern.search(uri).group('auth')!r}, "
-            f"Code: {uri_pattern.search(uri).group('code')!r})."
+            f"(Authority: {CRS_URI_PATTERN.search(uri).group('auth')!r}, "
+            f"Code: {CRS_URI_PATTERN.search(uri).group('code')!r})."
         )
         LOGGER.error(msg)
         raise CRSError(msg)
@@ -751,3 +751,27 @@ def crs_transform_feature(feature, transform_func):
         feature['geometry'] = geom_to_geojson(
             transform_func(geojson_to_geom(json_geometry))
         )
+
+
+def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
+    """
+    helper function to transform a bounding box (bbox) from
+    a source to a target CRS. CRSs in URI str format.
+    Uses pyproj Transformer.
+
+    :param bbox: list of coordinates in 'from_crs' projection
+    :param from_crs: CRS URI to transform from
+    :param to_crs: CRS URI to transform to
+    :raises `CRSError`: Error raised if no CRS could be identified from an
+        URI.
+
+    :returns: list of 4 or 6 coordinates
+    """
+
+    from_crs_obj = get_crs_from_uri(from_crs)
+    to_crs_obj = get_crs_from_uri(to_crs)
+    transform_func = pyproj.Transformer.from_crs(
+        from_crs_obj, to_crs_obj).transform
+    n_dims = len(bbox) // 2
+    return list(transform_func(*bbox[:n_dims]) + transform_func(
+        *bbox[n_dims:]))
