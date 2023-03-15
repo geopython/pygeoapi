@@ -305,7 +305,8 @@ class OGRProvider(BaseProvider):
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False, q=None,
+              crs_transform_wkt=None, **kwargs):
         """
         Query OGR source
 
@@ -319,6 +320,7 @@ class OGRProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
+        :param crs_transform_wkt: `CrsTransformWkt` instance, optional
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -363,7 +365,11 @@ class OGRProvider(BaseProvider):
             elif resulttype == 'results':
                 LOGGER.debug('results specified')
                 result = self._response_feature_collection(
-                    layer, limit, skip_geometry=skip_geometry)
+                    layer,
+                    limit,
+                    skip_geometry=skip_geometry,
+                    crs_transform_wkt=crs_transform_wkt,
+                )
             else:
                 LOGGER.error('Invalid resulttype: %s' % resulttype)
 
@@ -382,15 +388,36 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def get(self, identifier, **kwargs):
+    def _get_crs_transform(self, crs_transform_wkt=None):
+        if crs_transform_wkt is not None:
+            source = osgeo_osr.SpatialReference()
+            source.SetAxisMappingStrategy(
+                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
+            source.ImportFromWkt(crs_transform_wkt.source_crs_wkt)
+
+            target = osgeo_osr.SpatialReference()
+            target.SetAxisMappingStrategy(
+                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
+            target.ImportFromWkt(crs_transform_wkt.target_crs_wkt)
+            crs_transform = osgeo_osr.CoordinateTransformation(source, target)
+        else:
+            crs_transform = None
+        return crs_transform
+
+    def get(self, identifier, crs_transform_wkt=None, **kwargs):
         """
         Get Feature by id
 
         :param identifier: feature id
+        :param crs_transform_wkt: `CrsTransformWkt` instance, optional
 
         :returns: feature collection
         """
         result = None
+        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # Keep support for source_srs/target_srs
+        if crs_transform_out is None:
+            crs_transform_out = self.transform_out
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -398,7 +425,9 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter(f"{self.id_field} = '{identifier}'")
 
             ogr_feature = self._get_next_feature(layer, identifier)
-            result = self._ogr_feature_to_json(ogr_feature)
+            result = self._ogr_feature_to_json(
+                ogr_feature, crs_transform_out=crs_transform_out,
+            )
 
         except RuntimeError as err:
             LOGGER.error(err)
@@ -463,14 +492,16 @@ class OGRProvider(BaseProvider):
             LOGGER.error(self.gdal.GetLastErrorMsg())
             raise gdalerr
 
-    def _ogr_feature_to_json(self, ogr_feature, skip_geometry=False):
+    def _ogr_feature_to_json(
+        self, ogr_feature, skip_geometry=False, crs_transform_out=None,
+    ):
         if self.geom_field is not None:
             geom = ogr_feature.GetGeomFieldRef(self.geom_field)
         else:
             geom = ogr_feature.GetGeometryRef()
-        if self.transform_out:
+        if crs_transform_out is not None:
             # Optionally reproject the geometry
-            geom.Transform(self.transform_out)
+            geom.Transform(crs_transform_out)
 
         json_feature = ogr_feature.ExportToJson(as_object=True)
         if skip_geometry:
@@ -486,7 +517,9 @@ class OGRProvider(BaseProvider):
 
         return json_feature
 
-    def _response_feature_collection(self, layer, limit, skip_geometry=False):
+    def _response_feature_collection(
+        self, layer, limit, skip_geometry=False, crs_transform_wkt=None,
+    ):
         """
         Assembles output from Layer query as
         GeoJSON FeatureCollection structure.
@@ -502,14 +535,20 @@ class OGRProvider(BaseProvider):
         # See https://github.com/OSGeo/gdal/blob/master/autotest/
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
-
+        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # Keep support for source_srs/target_srs
+        if crs_transform_out is None:
+            crs_transform_out = self.transform_out
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             count = 0
             while ogr_feature is not None:
                 json_feature = self._ogr_feature_to_json(
-                    ogr_feature, skip_geometry=skip_geometry)
+                    ogr_feature,
+                    skip_geometry=skip_geometry,
+                    crs_transform_out=crs_transform_out,
+                )
 
                 feature_collection['features'].append(json_feature)
 

@@ -30,10 +30,13 @@
 """Generic util functions used in the code"""
 
 import base64
-from typing import List
+from functools import partial
+from dataclasses import dataclass
+from typing import List, Callable
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
+import functools
 import json
 import logging
 import mimetypes
@@ -43,15 +46,24 @@ import re
 from typing import Any, IO, Union
 from urllib.request import urlopen
 from urllib.parse import urlparse
-
-from shapely.geometry import Polygon
-
+import shapely.ops
+from shapely.geometry import (
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+    shape as geojson_to_geom,
+    mapping as geom_to_geojson,
+)
 import dateutil.parser
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from babel.support import Translations
 import pyproj
 from pyproj.exceptions import CRSError
-
 import yaml
 from requests import Session
 from requests.structures import CaseInsensitiveDict
@@ -59,6 +71,7 @@ from requests.structures import CaseInsensitiveDict
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.provider.base import ProviderTypeError
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +93,13 @@ CRS_URI_PATTERN = re.compile(
      rf"[\d|\.]+?/(?P<code>\w+?)$"
     )
 )
+
+
+@dataclass
+class CrsTransformWkt:
+    source_crs_wkt: str
+    target_crs_wkt: str
+
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -567,6 +587,8 @@ def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
     This will be the default when no CRS list in config or
     added when (partially) missing in config.
 
+    Author: @justb4
+
     :param config: dictionary with or without a list of CRSs
     :param default_crs_list: default CRS alternatives, first is default
     :returns: list of supported CRSs
@@ -592,8 +614,10 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     :param uri: Uniform resource identifier of the coordinate
         reference system.
     :type uri: str
+
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
+
     :returns: `pyproj.CRS` instance matching the input URI.
     :rtype: `pyproj.CRS`
     """
@@ -619,6 +643,116 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
         raise CRSError(msg)
     else:
         return crs
+
+
+# Type for shapely geometrical objects.
+GeomObject = Union[
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+]
+
+
+def get_transform_from_crs(
+    crs_in: pyproj.CRS, crs_out: pyproj.CRS,
+) -> Callable[[GeomObject], GeomObject]:
+    """ Get transformation function from two `pyproj.CRS` instances.
+
+    Get function to transform the coordinates of a Shapely geometrical object
+    from one coordinate reference system to another.
+
+    :param crs_in: Coordinate Reference System of the input geometrical object.
+    :type crs_in: `pyproj.CRS`
+    :param crs_out: Coordinate Reference System of the output geometrical
+        object.
+    :type crs_out: `pyproj.CRS`
+
+    :returns: Function to transform the coordinates of a `GeomObject`.
+    :rtype: `callable`
+    """
+    crs_transform = pyproj.Transformer.from_crs(
+        crs_in, crs_out, always_xy=True,
+    ).transform
+    return partial(shapely.ops.transform, crs_transform)
+
+
+def crs_transform(func):
+    """Decorator that transforms the geometry's/geometries' coordinates of a
+    Feature/FeatureCollection.
+
+    This function can be used to decorate another function which returns either
+    a Feature or a FeatureCollection (GeoJSON-like `dict`). For a
+    FeatureCollection, the Features are stored in a ´list´ available at the
+    'features' key of the returned `dict`. For each Feature, the geometry is
+    available at the 'geometry' key. The decorated function may take a
+    'crs_transform_wkt' parameter, which accepts a `CrsTransformWkt` instance
+    as value. If the `CrsTransformWkt` instance represents a coordinates
+    transformation between two different CRSs, the coordinates of the
+    Feature's/FeatureCollection's geometry/geometries will be transformed
+    before returning the Feature/FeatureCollection. If the 'crs_transform_wkt'
+    parameter is not given, passed `None` or passed a `CrsTransformWkt`
+    instance which does not represent a coordinates transformation, the
+    Feature/FeatureCollection is returned unchanged. This decorator can for
+    example be use to help supporting coordinates transformation of
+    Feature/FeatureCollection `dict` objects returned by the `get` and `query`
+    methods of (new or with no native support for transformations) providers of
+    type 'feature'.
+
+    :param func: Function to decorate.
+    :type func: `callable`
+
+    :returns: Decorated function.
+    :rtype: `callable`
+    """
+    @functools.wraps(func)
+    def get_geojsonf(*args, **kwargs):
+        crs_transform_wkt = kwargs.get('crs_transform_wkt')
+        result = func(*args, **kwargs)
+        if crs_transform_wkt is None:
+            # No coordinates transformation for feature(s) returned by the
+            # decorated function.
+            return result
+        # Create transformation function and transform the output feature(s)'
+        # coordinates before returning them.
+        transform_func = get_transform_from_crs(
+            pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
+            pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+        )
+        features = result.get('features')
+        # Decorated function returns a single Feature
+        if features is None:
+            # Transform the feature's coordinates
+            crs_transform_feature(result, transform_func)
+        # Decorated function returns a FeatureCollection
+        else:
+            # Transform all features' coordinates
+            for feature in features:
+                crs_transform_feature(feature, transform_func)
+        return result
+    return get_geojsonf
+
+
+def crs_transform_feature(feature, transform_func):
+    """Transform the coordinates of a Feature.
+
+    :param feature: Feature (GeoJSON-like `dict`) to transform.
+    :type feature: `dict`
+    :param transform_func: Function that transforms the coordinates of a
+        `GeomObject` instance.
+    :type transform_func: `callable`
+
+    :returns: None
+    """
+    json_geometry = feature.get('geometry')
+    if json_geometry is not None:
+        feature['geometry'] = geom_to_geojson(
+            transform_func(geojson_to_geom(json_geometry))
+        )
 
 
 def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:

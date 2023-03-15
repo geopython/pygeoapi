@@ -35,7 +35,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError,
                                     ProviderItemNotFoundError)
 from json.decoder import JSONDecodeError
-from pygeoapi.util import yaml_load, url_join
+from pygeoapi.util import yaml_load, url_join, crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,6 +141,7 @@ class SensorThingsProvider(BaseProvider):
 
         return self.fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -166,6 +167,7 @@ class SensorThingsProvider(BaseProvider):
                           sortby=sortby, select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Query the STA by id

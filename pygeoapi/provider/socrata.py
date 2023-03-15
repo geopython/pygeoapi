@@ -37,7 +37,7 @@ import logging
 
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError)
-from pygeoapi.util import format_datetime
+from pygeoapi.util import format_datetime, crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ class SODAServiceProvider(BaseProvider):
 
         return self.fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -157,6 +158,7 @@ class SODAServiceProvider(BaseProvider):
 
         return fc
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Query SODA by id

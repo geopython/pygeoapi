@@ -38,6 +38,8 @@ from http import HTTPStatus
 
 from pyld import jsonld
 import pytest
+import pyproj
+from shapely.geometry import Point
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP
@@ -496,7 +498,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 7
+    assert len(collections['collections']) == 8
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -931,6 +933,69 @@ def test_get_collection_items(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
 
 
+def test_get_collection_items_crs(config, api_):
+
+    # Invalid CRS query parameter
+    req = mock_request({'crs': '4326'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Unsupported CRS
+    req = mock_request({'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Supported CRSs
+    default_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/25833'
+    crs_4258 = 'http://www.opengis.net/def/crs/EPSG/0/4258'
+    supported_crs_list = [default_crs, storage_crs, crs_4258]
+
+    for crs in supported_crs_list:
+        req = mock_request({'crs': crs})
+        rsp_headers, code, response = api_.get_collection_items(
+            req, 'norway_pop',
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+    # Without CRS query parameter
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+    features_25833 = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    req = mock_request({'crs': crs_4258})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
+
+    features_4258 = json.loads(response)
+    transform_func = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_epsg(25833),
+        pyproj.CRS.from_epsg(4258),
+        always_xy=True,
+    ).transform
+    for feat_orig in features_25833['features']:
+        id_ = feat_orig['id']
+        x, y, *_ = feat_orig['geometry']['coordinates']
+        loc_transf = Point(transform_func(x, y))
+        for feat_out in features_4258['features']:
+            if id_ == feat_out['id']:
+                loc_out = Point(feat_out['geometry']['coordinates'][:2])
+
+                assert loc_out.equals_exact(loc_transf, 1e-5)
+                break
+
+
 def test_describe_collections_enclosures(config_enclosure, enclosure_api):
     original_enclosures = {
         lnk['title']: lnk
@@ -1019,6 +1084,75 @@ def test_get_collection_item(config, api_):
     assert feature['properties']['stn_id'] == 35
     assert 'prev' not in feature['links']
     assert 'next' not in feature['links']
+
+
+def test_get_collection_item_crs(config, api_):
+
+    # Invalid CRS query parameter
+    req = mock_request({'crs': '4326'})
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Unsupported CRS
+    req = mock_request(
+        {'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'}
+    )
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Supported CRSs
+    default_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/25833'
+    crs_4258 = 'http://www.opengis.net/def/crs/EPSG/0/4258'
+    supported_crs_list = [default_crs, storage_crs, crs_4258]
+
+    for crs in supported_crs_list:
+        req = mock_request({'crs': crs})
+        rsp_headers, code, response = api_.get_collection_item(
+            req, 'norway_pop', '1015',
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+    # Without CRS query parameter
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+    feature_25833 = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    req = mock_request({'crs': crs_4258})
+    rsp_headers, code, response = api_.get_collection_item(
+        req, 'norway_pop', '1015',
+    )
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
+
+    feature_4258 = json.loads(response)
+    transform_func = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_epsg(25833),
+        pyproj.CRS.from_epsg(4258),
+        always_xy=True,
+    ).transform
+    loc_transf = Point(
+        transform_func(*feature_25833['geometry']['coordinates'])
+    )
+    loc_4258 = Point(*feature_4258['geometry']['coordinates'])
+
+    assert loc_4258.equals_exact(loc_transf, 1e-5)
 
 
 def test_get_collection_item_json_ld(config, api_):

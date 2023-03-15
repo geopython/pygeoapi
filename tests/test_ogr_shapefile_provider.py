@@ -34,9 +34,13 @@
 import logging
 
 import pytest
+import pyproj
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
+from pygeoapi.util import (
+    CrsTransformWkt, get_transform_from_crs, geojson_to_geom,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,6 +58,8 @@ def config_shapefile_4326():
             'source_type': 'ESRI Shapefile',
             'source':
                 './tests/data/dutch_addresses_shape_4326/inspireadressen.shp',
+            'source_srs': 'EPSG:4326',
+            'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -84,6 +90,14 @@ def config_shapefile_28992():
     }
 
 
+@pytest.fixture()
+def crs_transform_wkt():
+    return CrsTransformWkt(
+        source_crs_wkt=pyproj.CRS.from_epsg(4326).to_wkt(),
+        target_crs_wkt=pyproj.CRS.from_epsg(32631).to_wkt(),
+    )
+
+
 def test_get_fields_4326(config_shapefile_4326):
     """Testing field types"""
     p = OGRProvider(config_shapefile_4326)
@@ -100,12 +114,29 @@ def test_get_28992(config_shapefile_28992):
     assert 'Mosselsepad' in result['properties']['straatnaam']
 
 
-def test_get_4326(config_shapefile_4326):
-    """Testing query for a specific object"""
+def test_get_crs_4326(config_shapefile_4326, crs_transform_wkt):
+    """Testing query with and without crs parameter for a specific object"""
+    # Query without CRS parameter
     p = OGRProvider(config_shapefile_4326)
-    result = p.get('inspireadressen.1747652')
-    assert result['id'] == 'inspireadressen.1747652'
-    assert 'Mosselsepad' in result['properties']['straatnaam']
+    result_orig = p.get('inspireadressen.1747652')
+    geom_orig = geojson_to_geom(result_orig['geometry'])
+    assert result_orig['id'] == 'inspireadressen.1747652'
+    assert 'Mosselsepad' in result_orig['properties']['straatnaam']
+
+    # Query with CRS parameter
+    result_32631 = p.get(
+        'inspireadressen.1747652', crs_transform_wkt=crs_transform_wkt,
+    )
+    geom_32631 = geojson_to_geom(result_32631['geometry'])
+    assert result_32631['id'] == 'inspireadressen.1747652'
+    assert 'Mosselsepad' in result_32631['properties']['straatnaam']
+
+    transform_func = get_transform_from_crs(
+        pyproj.CRS.from_epsg(4326),
+        pyproj.CRS.from_epsg(32631),
+        always_xy=True,
+    )
+    assert geom_32631.equals_exact(transform_func(geom_orig), 1)
 
 
 def test_get_not_existing_feature_raise_exception(
@@ -197,25 +228,53 @@ def test_query_bbox_28992(config_shapefile_28992):
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
 
-def test_query_bbox_4326(config_shapefile_4326):
-    """Testing query for a valid JSON object with geometry"""
+def test_query_crs_and_bbox_4326(config_shapefile_4326, crs_transform_wkt):
+    """Testing query for a valid JSON object with bbox and with/without crs"""
 
     p = OGRProvider(config_shapefile_4326)
     # feature_collection = p.query(
     #     bbox=[180800, 452500, 181200, 452700], resulttype='results')
-    feature_collection = p.query(
+    # Query without CRS parameter
+    fc_orig = p.query(
         bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
-    assert feature_collection.get('type') == 'FeatureCollection'
-    features = feature_collection.get('features')
-    assert len(features) == 1
-    hits = feature_collection.get('numberMatched')
+    assert fc_orig.get('type') == 'FeatureCollection'
+    features_orig = fc_orig.get('features')
+    assert len(features_orig) == 1
+    hits = fc_orig.get('numberMatched')
     assert hits is None
-    feature = features[0]
+    feature = features_orig[0]
     properties = feature.get('properties')
     assert properties is not None
-    geometry = feature.get('geometry')
-    assert geometry is not None
+    geojson_geom_orig = feature.get('geometry')
+    assert geojson_geom_orig is not None
     assert properties['straatnaam'] == 'Planken Wambuisweg'
+
+    # Query with CRS parameter
+    fc_32631 = p.query(
+        bbox=(5.763409, 52.060197, 5.769256, 52.061976),
+        resulttype='results',
+        crs_transform_wkt=crs_transform_wkt,
+    )
+    assert fc_32631.get('type') == 'FeatureCollection'
+    features_32631 = fc_32631.get('features')
+    assert len(features_32631) == 1
+    hits = fc_32631.get('numberMatched')
+    assert hits is None
+    feature = features_32631[0]
+    properties = feature.get('properties')
+    assert properties is not None
+    geojson_geom_32631 = feature.get('geometry')
+    assert geojson_geom_32631 is not None
+    assert properties['straatnaam'] == 'Planken Wambuisweg'
+
+    transform_func = get_transform_from_crs(
+        pyproj.CRS.from_epsg(4326),
+        pyproj.CRS.from_epsg(32631),
+        always_xy=True,
+    )
+    geom_orig = geojson_to_geom(geojson_geom_orig)
+    geom_32631 = geojson_to_geom(geojson_geom_32631)
+    assert geom_32631.equals_exact(transform_func(geom_orig), 1)
 
 
 def test_query_with_limit_28992(config_shapefile_28992):

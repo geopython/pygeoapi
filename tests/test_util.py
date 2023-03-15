@@ -31,6 +31,8 @@ from datetime import datetime, date, time
 from decimal import Decimal
 
 import pytest
+from pyproj.exceptions import CRSError
+from shapely.geometry import Point
 
 from pygeoapi import util
 from pygeoapi.provider.base import ProviderTypeError
@@ -116,7 +118,7 @@ def test_filter_dict_by_key_value():
 
     collections = util.filter_dict_by_key_value(d['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 7
+    assert len(collections) == 8
 
     notfound = util.filter_dict_by_key_value(d['resources'],
                                              'type', 'foo')
@@ -158,6 +160,19 @@ def test_read_data():
     assert isinstance(data, bytes)
 
 
+def test_get_transform_from_crs():
+    crs_in = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/4258'
+    )
+    crs_out = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/25833'
+    )
+    transform_func = util.get_transform_from_crs(crs_in, crs_out)
+    p_in = Point((14.394493, 67.278972))
+    p_out = Point((473901.6105, 7462606.8762))
+    assert p_out.equals_exact(transform_func(p_in), 1e-3)
+
+
 def test_get_supported_crs_list():
     DEFAULT_CRS_LIST = [
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
@@ -193,6 +208,10 @@ def test_get_supported_crs_list():
 
 
 def test_get_crs_from_uri():
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/not/a/valid/crs/uri')
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/0')
     CRS_DICT = {
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'OGC:CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',

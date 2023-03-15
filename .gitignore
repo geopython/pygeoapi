@@ -115,3 +115,9 @@ ENV/
 
 .DS_Store
 examples/django/sample_project/db.sqlite3
+
+# Backup files
+*~
+
+# Pre-commit hooks config file
+.pre-commit-config.yaml
