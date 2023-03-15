@@ -78,7 +78,7 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
 from pygeoapi.models.cql import CQLModel
 
 from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
-                           filter_dict_by_key_value, get_crs_from_uri, 
+                           filter_dict_by_key_value, get_crs_from_uri,
                            get_supported_crs_list, CrsTransformWkt,
                            get_provider_by_type, get_provider_default,
                            get_typed_value, JobStatus, json_serial,
