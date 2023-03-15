@@ -56,6 +56,13 @@ def config():
 
 
 @pytest.fixture()
+def config_enclosure() -> dict:
+    """ Returns a pygeoapi configuration with enclosure links. """
+    with open(get_test_file_path('pygeoapi-test-config-enclosure.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def config_hidden_resources():
     filename = 'pygeoapi-test-config-hidden-resources.yml'
     with open(get_test_file_path(filename)) as fh:
@@ -71,6 +78,12 @@ def openapi():
 @pytest.fixture()
 def api_(config):
     return API(config)
+
+
+@pytest.fixture()
+def enclosure_api(config_enclosure):
+    """ Returns an API instance with a collection with enclosure links. """
+    return API(config_enclosure)
 
 
 @pytest.fixture()
@@ -916,6 +929,37 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+
+def test_describe_collections_enclosures(config_enclosure, enclosure_api):
+    original_enclosures = {
+        lnk['title']: lnk
+        for lnk in config_enclosure['resources']['objects']['links']
+        if lnk['rel'] == 'enclosure'
+    }
+
+    req = mock_request()
+    _, _, response = enclosure_api.describe_collections(req, 'objects')
+    features = json.loads(response)
+    modified_enclosures = {
+        lnk['title']: lnk for lnk in features['links']
+        if lnk['rel'] == 'enclosure'
+    }
+
+    # If type and length is set, do not verify/update link
+    assert original_enclosures['download link 1'] == \
+           modified_enclosures['download link 1']
+    # If length is missing, modify link type and length
+    assert original_enclosures['download link 2']['type'] == \
+           modified_enclosures['download link 2']['type']
+    assert modified_enclosures['download link 2']['type'] == \
+           modified_enclosures['download link 3']['type']
+    assert 'length' not in original_enclosures['download link 2']
+    assert modified_enclosures['download link 2']['length'] > 0
+    assert modified_enclosures['download link 2']['length'] == \
+           modified_enclosures['download link 3']['length']
+    assert original_enclosures['download link 3']['type'] != \
+           modified_enclosures['download link 3']['type']
 
 
 def test_get_collection_items_json_ld(config, api_):

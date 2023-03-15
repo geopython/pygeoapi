@@ -312,6 +312,9 @@ properties:
                                       hreflang:
                                           type: string
                                           description: language
+                                      length:
+                                          type: integer
+                                          description: optional content size in bytes (e.g. for download links)
                                   required:
                                       - type
                                       - rel
