@@ -94,7 +94,7 @@ def config_shapefile_28992():
 def crs_transform_wkt():
     return CrsTransformWkt(
         source_crs_wkt=pyproj.CRS.from_epsg(4326).to_wkt(),
-        target_crs_wkt=pyproj.CRS.from_epsg(32631).to_wkt(),
+        target_crs_wkt=pyproj.CRS.from_epsg(28992).to_wkt(),
     )
 
 
@@ -124,19 +124,18 @@ def test_get_crs_4326(config_shapefile_4326, crs_transform_wkt):
     assert 'Mosselsepad' in result_orig['properties']['straatnaam']
 
     # Query with CRS parameter
-    result_32631 = p.get(
+    result_28992 = p.get(
         'inspireadressen.1747652', crs_transform_wkt=crs_transform_wkt,
     )
-    geom_32631 = geojson_to_geom(result_32631['geometry'])
-    assert result_32631['id'] == 'inspireadressen.1747652'
-    assert 'Mosselsepad' in result_32631['properties']['straatnaam']
+    geom_28992 = geojson_to_geom(result_28992['geometry'])
+    assert result_28992['id'] == 'inspireadressen.1747652'
+    assert 'Mosselsepad' in result_28992['properties']['straatnaam']
 
     transform_func = get_transform_from_crs(
         pyproj.CRS.from_epsg(4326),
-        pyproj.CRS.from_epsg(32631),
-        always_xy=True,
+        pyproj.CRS.from_epsg(28992)
     )
-    assert geom_32631.equals_exact(transform_func(geom_orig), 1)
+    assert geom_28992.equals_exact(transform_func(geom_orig), 1)
 
 
 def test_get_not_existing_feature_raise_exception(
@@ -250,31 +249,30 @@ def test_query_crs_and_bbox_4326(config_shapefile_4326, crs_transform_wkt):
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
     # Query with CRS parameter
-    fc_32631 = p.query(
+    fc_28992 = p.query(
         bbox=(5.763409, 52.060197, 5.769256, 52.061976),
         resulttype='results',
         crs_transform_wkt=crs_transform_wkt,
     )
-    assert fc_32631.get('type') == 'FeatureCollection'
-    features_32631 = fc_32631.get('features')
-    assert len(features_32631) == 1
-    hits = fc_32631.get('numberMatched')
+    assert fc_28992.get('type') == 'FeatureCollection'
+    features_28992 = fc_28992.get('features')
+    assert len(features_28992) == 1
+    hits = fc_28992.get('numberMatched')
     assert hits is None
-    feature = features_32631[0]
+    feature = features_28992[0]
     properties = feature.get('properties')
     assert properties is not None
-    geojson_geom_32631 = feature.get('geometry')
-    assert geojson_geom_32631 is not None
+    geojson_geom_28992 = feature.get('geometry')
+    assert geojson_geom_28992 is not None
     assert properties['straatnaam'] == 'Planken Wambuisweg'
 
     transform_func = get_transform_from_crs(
         pyproj.CRS.from_epsg(4326),
-        pyproj.CRS.from_epsg(32631),
-        always_xy=True,
+        pyproj.CRS.from_epsg(28992)
     )
     geom_orig = geojson_to_geom(geojson_geom_orig)
-    geom_32631 = geojson_to_geom(geojson_geom_32631)
-    assert geom_32631.equals_exact(transform_func(geom_orig), 1)
+    geom_28992 = geojson_to_geom(geojson_geom_28992)
+    assert geom_28992.equals_exact(transform_func(geom_orig), 1)
 
 
 def test_query_with_limit_28992(config_shapefile_28992):
