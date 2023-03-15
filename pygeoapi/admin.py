@@ -170,15 +170,17 @@ class Admin(API):
 
         headers = request.get_response_headers()
 
+        cfg = get_config(raw=True)
+
         if request.format == F_HTML:
             content = render_j2_template(
                 self.config,
                 'admin/index.html',
-                self.config['resources'],
+                cfg['resources'],
                 request.locale,
             )
         else:
-            content = to_json(self.config['resources'], self.pretty_print)
+            content = to_json(cfg['resources'], self.pretty_print)
 
         return headers, 200, content
 
@@ -270,8 +272,10 @@ class Admin(API):
 
         headers = request.get_response_headers()
 
+        cfg = get_config(raw=True)
+
         try:
-            resource = self.config['resources'][resource_id]
+            resource = cfg['resources'][resource_id]
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
