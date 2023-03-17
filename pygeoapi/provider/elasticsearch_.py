@@ -459,7 +459,7 @@ class ElasticsearchProvider(BaseProvider):
         if self.id_field in doc['_source']['properties']:
             id_ = doc['_source']['properties'][self.id_field]
         else:
-            id_ = doc['_source']['id']
+            id_ = doc['_source'].get('id', doc['_id'])
 
         feature_['id'] = id_
         feature_['geometry'] = doc['_source'].get('geometry')
