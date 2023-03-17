@@ -77,7 +77,7 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.util import (dategetter, DATETIME_FORMAT,
+from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
@@ -715,6 +715,7 @@ class API:
 
         self.config = config
         self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+        self.prefetcher = UrlPrefetcher()
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip'):
@@ -1184,6 +1185,7 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
+            LOGGER.debug('Processing configured collection links')
             for link in l10n.translate(v['links'], request.locale):
                 lnk = {
                     'type': link['type'],
@@ -1194,6 +1196,25 @@ class API:
                 if 'hreflang' in link:
                     lnk['hreflang'] = l10n.translate(
                         link['hreflang'], request.locale)
+                content_length = link.get('length', 0)
+
+                if lnk['rel'] == 'enclosure' and content_length == 0:
+                    # Issue HEAD request for enclosure links without length
+                    lnk_headers = self.prefetcher.get_headers(lnk['href'])
+                    content_length = int(lnk_headers.get('content-length', 0))
+                    content_type = lnk_headers.get('content-type', lnk['type'])
+                    if content_length == 0:
+                        # Skip this (broken) link
+                        LOGGER.debug(f"Enclosure {lnk['href']} is invalid")
+                        continue
+                    if content_type != lnk['type']:
+                        # Update content type if different from specified
+                        lnk['type'] = content_type
+                        LOGGER.debug(
+                            f"Fixed media type for enclosure {lnk['href']}")
+
+                if content_length > 0:
+                    lnk['length'] = content_length
 
                 collection['links'].append(lnk)
 
