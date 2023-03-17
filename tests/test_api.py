@@ -982,7 +982,7 @@ def test_get_collection_items_crs(config, api_):
     transform_func = pyproj.Transformer.from_crs(
         pyproj.CRS.from_epsg(25833),
         pyproj.CRS.from_epsg(4258),
-        always_xy=True,
+        always_xy=False,
     ).transform
     for feat_orig in features_25833['features']:
         id_ = feat_orig['id']
@@ -1145,7 +1145,7 @@ def test_get_collection_item_crs(config, api_):
     transform_func = pyproj.Transformer.from_crs(
         pyproj.CRS.from_epsg(25833),
         pyproj.CRS.from_epsg(4258),
-        always_xy=True,
+        always_xy=False,
     ).transform
     loc_transf = Point(
         transform_func(*feature_25833['geometry']['coordinates'])

@@ -659,7 +659,7 @@ GeomObject = Union[
 
 
 def get_transform_from_crs(
-    crs_in: pyproj.CRS, crs_out: pyproj.CRS,
+    crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
 ) -> Callable[[GeomObject], GeomObject]:
     """ Get transformation function from two `pyproj.CRS` instances.
 
@@ -671,12 +671,15 @@ def get_transform_from_crs(
     :param crs_out: Coordinate Reference System of the output geometrical
         object.
     :type crs_out: `pyproj.CRS`
+    :param always_xy: should axis order be forced to x,y (lon, lat) even if CRS
+         declares y,x (lat,lon)
+    :type always_xy: `bool`
 
     :returns: Function to transform the coordinates of a `GeomObject`.
     :rtype: `callable`
     """
     crs_transform = pyproj.Transformer.from_crs(
-        crs_in, crs_out, always_xy=True,
+        crs_in, crs_out, always_xy=always_xy,
     ).transform
     return partial(shapely.ops.transform, crs_transform)
 

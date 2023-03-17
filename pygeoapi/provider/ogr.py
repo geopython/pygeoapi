@@ -73,8 +73,8 @@ class OGRProvider(BaseProvider):
     os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
         'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
 
-    # Setting for traditional CRS axis order.
-    OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
+    # Setting for CRS-compliant axis order.
+    CRS_AXIS_ORDER = osgeo_osr.OAMS_AUTHORITY_COMPLIANT
 
     def __init__(self, provider_def):
         """
@@ -155,15 +155,8 @@ class OGRProvider(BaseProvider):
         self.transform_in = None
         self.transform_out = None
         if self.source_srs != self.target_srs:
-            source = osgeo_osr.SpatialReference()
-            source.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
-            source.ImportFromEPSG(self.source_srs)
-
-            target = osgeo_osr.SpatialReference()
-            target.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
-            target.ImportFromEPSG(self.target_srs)
+            source = self._get_spatial_reference(self.source_srs)
+            target = self._get_spatial_reference(self.target_srs)
 
             self.transform_in = \
                 osgeo_osr.CoordinateTransformation(target, source)
@@ -388,16 +381,27 @@ class OGRProvider(BaseProvider):
 
         return result
 
+    def _get_spatial_reference(self, epsg_code):
+        axis_order = OGRProvider.CRS_AXIS_ORDER
+        # Assume http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        # for EPSG:4326, GeoJSON Compliant
+        if epsg_code == 4326:
+            axis_order = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
+        spatial_ref = osgeo_osr.SpatialReference()
+        spatial_ref.SetAxisMappingStrategy(axis_order)
+        spatial_ref.ImportFromEPSG(epsg_code)
+        return spatial_ref
+
     def _get_crs_transform(self, crs_transform_wkt=None):
         if crs_transform_wkt is not None:
             source = osgeo_osr.SpatialReference()
             source.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
+                OGRProvider.CRS_AXIS_ORDER)
             source.ImportFromWkt(crs_transform_wkt.source_crs_wkt)
 
             target = osgeo_osr.SpatialReference()
             target.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
+                OGRProvider.CRS_AXIS_ORDER)
             target.ImportFromWkt(crs_transform_wkt.target_crs_wkt)
             crs_transform = osgeo_osr.CoordinateTransformation(source, target)
         else:
