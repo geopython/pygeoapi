@@ -46,6 +46,8 @@ from pygeoapi.provider.base import (
     ProviderQueryError, ProviderConnectionError,
     ProviderItemNotFoundError)
 
+from pygeoapi.util import crs_transform
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -296,6 +298,7 @@ class OGRProvider(BaseProvider):
 
         return fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -408,6 +411,7 @@ class OGRProvider(BaseProvider):
             crs_transform = None
         return crs_transform
 
+    @crs_transform
     def get(self, identifier, crs_transform_wkt=None, **kwargs):
         """
         Get Feature by id
@@ -418,7 +422,8 @@ class OGRProvider(BaseProvider):
         :returns: feature collection
         """
         result = None
-        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        crs_transform_out = None
         # Keep support for source_srs/target_srs
         if crs_transform_out is None:
             crs_transform_out = self.transform_out
@@ -539,7 +544,8 @@ class OGRProvider(BaseProvider):
         # See https://github.com/OSGeo/gdal/blob/master/autotest/
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
-        crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        # crs_transform_out = self._get_crs_transform(crs_transform_wkt)
+        crs_transform_out = None
         # Keep support for source_srs/target_srs
         if crs_transform_out is None:
             crs_transform_out = self.transform_out
