@@ -35,10 +35,13 @@ import json
 import logging
 from typing import Callable
 
-from pygeoapi.util import is_url, render_j2_template
-from pygeoapi import l10n
+import pyproj
 from shapely.geometry import shape
 from shapely.ops import unary_union
+
+from pygeoapi.util import is_url, render_j2_template, get_transform_from_crs
+from pygeoapi import l10n
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -173,8 +176,14 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
     return dataset
 
 
-def geojson2jsonld(config: dict, data: dict, dataset: str,
-                   identifier: str = None, id_field: str = 'id') -> str:
+def geojson2jsonld(
+    config: dict,
+    data: dict,
+    dataset: str,
+    identifier: str = None,
+    id_field: str = 'id',
+    crs_transform_wkt=None,
+) -> str:
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
     read from, and extended by, the pygeoapi configuration for a particular
@@ -185,6 +194,7 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
     :param id_field: item identifier_field (optional)
+    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
@@ -256,12 +266,13 @@ def geojson2jsonld(config: dict, data: dict, dataset: str,
         return ldjsonData
 
 
-def jsonldify_geometry(feature: dict) -> None:
+def jsonldify_geometry(feature: dict, crs_transform_wkt=None) -> None:
     """
     Render JSON-LD for feature with GeoJSON, Geosparql/WKT, and
     schema geometry encodings.
 
     :param feature: feature body to with GeoJSON geometry
+    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
 
     :returns: None
     """
@@ -285,36 +296,56 @@ def jsonldify_geometry(feature: dict) -> None:
     feature['schema:geo'] = geom2schemageo(geom)
 
 
-def geom2schemageo(geom: shape) -> dict:
+def geom2schemageo(geom: shape, crs_transform_wkt=None) -> dict:
     """
     Render Schema Geometry from a GeoJSON base.
 
     :param geom: shapely geom of feature
+    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
 
     :returns: dict of rendered schema:geo geometry
     """
+    if (
+        crs_transform_wkt is not None
+        and pyproj.CRS.from_wkt(
+            crs_transform_wkt.target_srs_wkt
+        ).to_epsg() != 4326
+    ):
+        crs_transform = get_transform_from_crs(
+            pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+            pyproj.CRS.from_epsg(4326),
+        )
+        geom = crs_transform(geom)
     f = {'@type': 'schema:GeoShape'}
     if geom.geom_type == 'Point':
         return {
             '@type': 'schema:GeoCoordinates',
-            'schema:longitude': geom.x,
-            'schema:latitude': geom.y
+            # shapely's objects do not know about CRSs. Following CRS
+            # (EPSG:4326) axis order convention, lat is first axis (X
+            # coordinate for shapely's geometrical objects), lon is second axis
+            # (Y coordinate for shapely's geometrical objects).
+            'schema:latitude': geom.x,
+            'schema:longitude': geom.y
         }
 
     elif geom.geom_type == 'LineString':
-        points = [f'{x},{y}' for (x, y, *_) in geom.coords[:]]
+        points = [f'{lat},{lon}' for (lat, lon, *_) in geom.coords[:]]
         f['schema:line'] = ' '.join(points)
         return f
 
     elif geom.geom_type == 'MultiLineString':
         points = list()
         for line in geom.geoms:
-            points.extend([f'{x},{y}' for (x, y, *_) in line.coords[:]])
+            points.extend(
+                [f'{lat},{lon}' for (lat, lon, *_) in line.coords[:]]
+            )
         f['schema:line'] = ' '.join(points)
         return f
 
     elif geom.geom_type == 'MultiPoint':
-        points = [(x, y) for pt in geom.geoms for (x, y, *_) in pt.coords]
+        points = [
+            (lat, lon) for pt in geom.geoms for (lat, lon, *_) in pt.coords
+        ]
         points.append(points[0])
 
     elif geom.geom_type == 'Polygon':
@@ -337,7 +368,7 @@ def geom2schemageo(geom: shape) -> dict:
             except NotImplementedError:
                 points.extend(p.exterior.coords[:])
 
-    schema_polygon = [f'{x},{y}' for (x, y, *_) in points]
+    schema_polygon = [f'{lat},{lon}' for (lat, lon, *_) in points]
 
     f['schema:polygon'] = ' '.join(schema_polygon)
 
