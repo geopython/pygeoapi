@@ -232,7 +232,7 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
-                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/LandingPage"},  # noqa
+                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ConformanceDeclaration"},  # noqa
                 '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
                 '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
             }
@@ -250,7 +250,7 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
-                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/LandingPage"},  # noqa
+                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/Collections"},  # noqa
                 '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
                 '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
             }
