@@ -4,10 +4,12 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -223,6 +225,22 @@ def test_get_simple(config, id_, prev, next_):
 
     assert result['prev'] == prev
     assert result['next'] == next_
+
+
+def test_get_with_config_properties(config):
+    """
+    Test that get is restricted by properties in the config.
+    No properties should be returned that are not requested.
+    Note that not all requested properties have to exist in the query result.
+    """
+    properties_subset = ['name', 'waterway', 'width', 'does_not_exist']
+    config.update({'properties': properties_subset})
+    provider = PostgreSQLProvider(config)
+    assert provider.properties == properties_subset
+    result = provider.get(80835483)
+    properties = result.get('properties')
+    for property_name in properties.keys():
+        assert property_name in config["properties"]
 
 
 def test_get_not_existing_item_raise_exception(config):
