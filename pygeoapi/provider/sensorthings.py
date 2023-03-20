@@ -134,8 +134,8 @@ class SensorThingsProvider(BaseProvider):
         :returns: dict of fields
         """
         if not self.fields:
+            r = self._get_response(self._url)
             try:
-                r = self._get_response(self._url)
                 results = r['value'][0]
             except IndexError:
                 LOGGER.warning('could not get fields; returning empty set')
@@ -203,6 +203,7 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: dict of GeoJSON FeatureCollection
         """
+
         fc = {'type': 'FeatureCollection', 'features': []}
 
         # Make params
@@ -218,38 +219,7 @@ class SensorThingsProvider(BaseProvider):
         if sortby:
             params['$orderby'] = self._make_orderby(sortby)
 
-        # Form URL for GET request
-        LOGGER.debug('Sending query')
-        if identifier:
-            url = f'{self._url}({identifier})'
-            response = self._get_response(url=url, params=params)
-            count = 1
-        else:
-            response = self._get_response(url=self._url, params=params)
-            count = response.get('@iot.count')
-
-        # if hits, return count
-        if resulttype == 'hits':
-            LOGGER.debug('Returning hits')
-            fc['numberMatched'] = count
-            return fc
-
-        hits_ = min(limit, count)
-        if identifier is None:
-            # Query if values are less than expected
-            v = response['value']
-            while len(v) < hits_:
-                LOGGER.debug('Fetching next set of values')
-                next_ = response.get('@iot.nextLink')
-
-                if next_:
-                    response = self._get_response(next_)
-                    v.extend(response.get('value'))
-                else:
-                    break
-
-        for entity in v[:hits_]:
-            # Make feature
+        def make_feature(entity):
             _ = entity.pop(self.id_field)
             id = f"'{_}'" if isinstance(_, str) else str(_)
             f = {
@@ -268,14 +238,41 @@ class SensorThingsProvider(BaseProvider):
                 LOGGER.error(err)
                 raise ProviderQueryError(err)
 
-            fc['features'].append(f)
+            return f
 
+        # Form URL for GET request
+        LOGGER.debug('Sending query')
+        if identifier:
+            url = f'{self._url}({identifier})'
+            response = self._get_response(url=url, params=params)
+            return make_feature(response)
+        else:
+            response = self._get_response(url=self._url, params=params)
+            count = response.get('@iot.count')
+
+        # if hits, return count
+        if resulttype == 'hits':
+            LOGGER.debug('Returning hits')
+            fc['numberMatched'] = count
+            return fc
+
+        hits_ = min(limit, count)
+        # Query if values are less than expected
+        v = response['value']
+        while len(v) < hits_:
+            LOGGER.debug('Fetching next set of values')
+            next_ = response.get('@iot.nextLink')
+            if next_:
+                response = self._get_response(next_)
+                v.extend(response.get('value'))
+            else:
+                break
+
+        # Make features
+        fc['features'] = [make_feature(entity) for entity in v[:hits_]]
         fc['numberReturned'] = len(fc['features'])
 
-        if identifier:
-            return f
-        else:
-            return fc
+        return fc
 
     def _get_response(self, url: str, params: dict = {}):
         """
@@ -291,9 +288,8 @@ class SensorThingsProvider(BaseProvider):
         r = self.http.get(url, params=params)
 
         if not r.ok:
-            msg = 'Bad http response code'
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
+            LOGGER.error('Bad http response code')
+            raise ProviderConnectionError('Bad http response code')
 
         try:
             response = r.json()
@@ -410,7 +406,7 @@ class SensorThingsProvider(BaseProvider):
 
         def expand_location(thing):
             try:
-                extra_props = thing['Locations'][0]['properties']
+                extra_props = thing['Locations'][0].get('properties', {})
                 thing['properties'].update(extra_props)
             except (KeyError, IndexError):
                 LOGGER.warning(f'{self.entity} missing Location')
