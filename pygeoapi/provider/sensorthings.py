@@ -209,8 +209,7 @@ class SensorThingsProvider(BaseProvider):
         # Make params
         params = {
             '$skip': str(offset),
-            '$top': str(limit),
-            '$count': 'true'
+            '$top': str(limit)
         }
 
         if properties or bbox or datetime_:
@@ -246,15 +245,15 @@ class SensorThingsProvider(BaseProvider):
             url = f'{self._url}({identifier})'
             response = self._get_response(url=url, params=params)
             return make_feature(response)
+        elif resulttype == 'hits':
+            LOGGER.debug('Returning hits')
+            params['$count'] = 'true'
+            response = self._get_response(url=self._url, params=params)
+            fc['numberMatched'] = response.get('@iot.count')
+            return fc
         else:
             response = self._get_response(url=self._url, params=params)
-            count = response.get('@iot.count')
-
-        # if hits, return count
-        if resulttype == 'hits':
-            LOGGER.debug('Returning hits')
-            fc['numberMatched'] = count
-            return fc
+            count = len(response.get('value'))
 
         hits_ = min(limit, count)
         # Query if values are less than expected
