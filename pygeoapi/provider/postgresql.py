@@ -5,10 +5,12 @@
 #          Mary Bucknell <mbucknell@usgs.gov>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,6 +50,7 @@
 
 import logging
 
+from copy import deepcopy
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
@@ -206,6 +209,14 @@ class PostgreSQLProvider(BaseProvider):
                 msg = f"No such item: {self.id_field}={identifier}."
                 raise ProviderItemNotFoundError(msg)
             feature = self._sqlalchemy_to_feature(item)
+
+            # Drop non-defined properties
+            if self.properties:
+                props = feature['properties']
+                dropping_keys = deepcopy(props).keys()
+                for item in dropping_keys:
+                    if item not in self.properties:
+                        props.pop(item)
 
             # Add fields for previous and next items
             id_field = getattr(self.table_model, self.id_field)
