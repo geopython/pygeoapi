@@ -46,7 +46,7 @@ from pygeoapi.provider.base import (
     ProviderQueryError, ProviderConnectionError,
     ProviderItemNotFoundError)
 
-from pygeoapi.util import crs_transform
+from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,9 +74,6 @@ class OGRProvider(BaseProvider):
     }
     os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
         'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
-
-    # Setting for CRS-compliant axis order.
-    CRS_AXIS_ORDER = osgeo_osr.OAMS_AUTHORITY_COMPLIANT
 
     def __init__(self, provider_def):
         """
@@ -157,8 +154,8 @@ class OGRProvider(BaseProvider):
         self.transform_in = None
         self.transform_out = None
         if self.source_srs != self.target_srs:
-            source = self._get_spatial_reference(self.source_srs)
-            target = self._get_spatial_reference(self.target_srs)
+            source = self._get_spatial_ref_from_epsg(self.source_srs)
+            target = self._get_spatial_ref_from_epsg(self.target_srs)
 
             self.transform_in = \
                 osgeo_osr.CoordinateTransformation(target, source)
@@ -298,11 +295,10 @@ class OGRProvider(BaseProvider):
 
         return fields
 
-    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
-              crs_transform_wkt=None, **kwargs):
+              crs_transform_spec=None, **kwargs):
         """
         Query OGR source
 
@@ -316,7 +312,7 @@ class OGRProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
-        :param crs_transform_wkt: `CrsTransformWkt` instance, optional
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -364,7 +360,7 @@ class OGRProvider(BaseProvider):
                     layer,
                     limit,
                     skip_geometry=skip_geometry,
-                    crs_transform_wkt=crs_transform_wkt,
+                    crs_transform_spec=crs_transform_spec,
                 )
             else:
                 LOGGER.error('Invalid resulttype: %s' % resulttype)
@@ -384,46 +380,53 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def _get_spatial_reference(self, epsg_code):
-        axis_order = OGRProvider.CRS_AXIS_ORDER
+    def _get_spatial_ref_from_epsg(self, epsg_code, force_auth_comply=False):
+        axis_order = osgeo_osr.OAMS_AUTHORITY_COMPLIANT
         # Assume http://www.opengis.net/def/crs/OGC/1.3/CRS84
         # for EPSG:4326, GeoJSON Compliant
-        if epsg_code == 4326:
+        if epsg_code == 4326 and not force_auth_comply:
             axis_order = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
         spatial_ref = osgeo_osr.SpatialReference()
         spatial_ref.SetAxisMappingStrategy(axis_order)
         spatial_ref.ImportFromEPSG(epsg_code)
         return spatial_ref
 
-    def _get_crs_transform(self, crs_transform_wkt=None):
-        if crs_transform_wkt is not None:
-            source = osgeo_osr.SpatialReference()
-            source.SetAxisMappingStrategy(
-                OGRProvider.CRS_AXIS_ORDER)
-            source.ImportFromWkt(crs_transform_wkt.source_crs_wkt)
+    def _get_spatial_ref_from_uri(self, crs_uri):
+        # Assume http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        # is EPSG:4326, with lon/lat order
+        if crs_uri == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84':
+            epsg_code = 4326
+            force_auth_comply = False
+        else:
+            pyproj_crs = get_crs_from_uri(crs_uri)
+            epsg_code = int(pyproj_crs.srs.split(':')[1])
+            force_auth_comply = True
+        return self._get_spatial_ref_from_epsg(
+            epsg_code, force_auth_comply=force_auth_comply)
 
-            target = osgeo_osr.SpatialReference()
-            target.SetAxisMappingStrategy(
-                OGRProvider.CRS_AXIS_ORDER)
-            target.ImportFromWkt(crs_transform_wkt.target_crs_wkt)
+    def _get_crs_transform(self, crs_transform_spec=None):
+        if crs_transform_spec is not None:
+            source = self._get_spatial_ref_from_uri(
+                crs_transform_spec.source_crs_uri)
+            target = self._get_spatial_ref_from_uri(
+                crs_transform_spec.target_crs_uri)
             crs_transform = osgeo_osr.CoordinateTransformation(source, target)
         else:
             crs_transform = None
         return crs_transform
 
-    @crs_transform
-    def get(self, identifier, crs_transform_wkt=None, **kwargs):
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
         Get Feature by id
 
         :param identifier: feature id
-        :param crs_transform_wkt: `CrsTransformWkt` instance, optional
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: feature collection
         """
         result = None
-        # crs_transform_out = self._get_crs_transform(crs_transform_wkt)
-        crs_transform_out = None
+        crs_transform_out = self._get_crs_transform(crs_transform_spec)
+
         # Keep support for source_srs/target_srs
         if crs_transform_out is None:
             crs_transform_out = self.transform_out
@@ -527,7 +530,7 @@ class OGRProvider(BaseProvider):
         return json_feature
 
     def _response_feature_collection(
-        self, layer, limit, skip_geometry=False, crs_transform_wkt=None,
+        self, layer, limit, skip_geometry=False, crs_transform_spec=None,
     ):
         """
         Assembles output from Layer query as
@@ -544,8 +547,8 @@ class OGRProvider(BaseProvider):
         # See https://github.com/OSGeo/gdal/blob/master/autotest/
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
-        # crs_transform_out = self._get_crs_transform(crs_transform_wkt)
-        crs_transform_out = None
+        crs_transform_out = self._get_crs_transform(crs_transform_spec)
+
         # Keep support for source_srs/target_srs
         if crs_transform_out is None:
             crs_transform_out = self.transform_out
