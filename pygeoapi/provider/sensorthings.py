@@ -439,7 +439,7 @@ class SensorThingsProvider(BaseProvider):
                         v[i] = get_id(_v, k)
 
             elif ks in self.links:
-                link = self.links[k]
+                link = self.links[ks]
                 entity[k] = \
                     v['properties'][link['u']] if link['u'] else get_id(v, ks)
 
