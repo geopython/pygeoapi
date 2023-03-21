@@ -134,7 +134,7 @@ class SensorThingsProvider(BaseProvider):
         :returns: dict of fields
         """
         if not self.fields:
-            r = self._get_response(self._url)
+            r = self._get_response(self._url, {'$top': 1})
             try:
                 results = r['value'][0]
             except IndexError:
@@ -410,11 +410,14 @@ class SensorThingsProvider(BaseProvider):
             except (KeyError, IndexError):
                 LOGGER.warning(f'{self.entity} missing Location')
 
-        def get_id(v_, k_):
+        def get_id(v_, link):
+            if link['u']:
+                return v_['properties'][link['u']]
+
             id_ = v_[self.id_field]
             id_ = f"'{id_}'" if isinstance(id_, str) else str(id_)
             return url_join(
-                self._rel, 'collections', self.links[k_]['n'], 'items', id_)
+                self._rel, 'collections', link['n'], 'items', id_)
 
         if self.entity == 'Things':
             expand_location(entity)
@@ -424,24 +427,12 @@ class SensorThingsProvider(BaseProvider):
         # Create intra links
         LOGGER.debug('Creating intralinks')
         for k, v in entity.items():
-            ks = f'{k}s'
-
             if self.uri_field is not None and k in ['properties']:
                 uri = v.get(self.uri_field)
-
             elif k in self.links:
-                link = self.links[k]
-                if link['u']:
-                    for i, _v in enumerate(v):
-                        v[i] = _v['properties'][link['u']]
-                else:
-                    for i, _v in enumerate(v):
-                        v[i] = get_id(_v, k)
-
-            elif ks in self.links:
-                link = self.links[ks]
-                entity[k] = \
-                    v['properties'][link['u']] if link['u'] else get_id(v, ks)
+                v = [get_id(_v, self.links[k]) for _v in v]
+            elif f'{k}s' in self.links:
+                entity[k] = get_id(v, self.links[f'{k}s'])
 
         # Make properties block
         LOGGER.debug('Making properties block')
