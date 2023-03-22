@@ -53,8 +53,8 @@ def config_ArcGIS_ESRIJSON():
         'data': {
             'source_type': 'ESRIJSON',
             'source': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/CommunityAddressing/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&orderByFields=objectid+ASC&f=json', # noqa
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },

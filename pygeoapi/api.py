@@ -170,7 +170,8 @@ DEFAULT_CRS_LIST = [
     'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
 ]
 
-DEFAULT_STORAGE_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 
 def pre_process(func):
@@ -1493,6 +1494,7 @@ class API:
         LOGGER.debug('Processing bbox-crs parameter')
         bbox_crs = request.params.get('bbox-crs')
         if bbox_crs is not None:
+            # Validate bbox-crs parameter
             if len(bbox) == 0:
                 msg = 'bbox-crs specified without bbox parameter'
                 return self.get_exception(
@@ -1511,7 +1513,13 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
+        elif len(bbox) > 0:
+            # bbox but no bbox-crs parm: assume bbox is in default CRS
+            bbox_crs = DEFAULT_CRS
 
+        # Transform bbox to storageCRS
+        # when bbox-crs different from storageCRS.
+        if len(bbox) > 0:
             try:
                 # Get a pyproj CRS instance for the Collection's Storage CRS
                 storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
@@ -4056,9 +4064,18 @@ class API:
             parameter differs from the storage CRS, else `None`.
         :rtype: Union[None, CrsTransformSpec]
         """
+        # Get storage/default CRS for Collection.
+        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+
         if not query_crs_uri:
-            LOGGER.debug('crs query parameter unspecified')
-            return None
+            if storage_crs_uri in DEFAULT_CRS_LIST:
+                # Could be that storageCRS is
+                # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
+                query_crs_uri = storage_crs_uri
+            else:
+                query_crs_uri = DEFAULT_CRS
+            LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
+
         supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
         # Check that the crs specified by the query parameter is supported.
         if query_crs_uri not in supported_crs_list:
@@ -4068,8 +4085,7 @@ class API:
                 f'{", ".join(supported_crs_list)}.'
             )
         crs_out = get_crs_from_uri(query_crs_uri)
-        # Get storage/default CRS for colelction.
-        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+
         storage_crs = get_crs_from_uri(storage_crs_uri)
         # Check if the crs specified in query parameter differs from the
         # storage crs.
@@ -4107,7 +4123,15 @@ class API:
         if query_crs_uri:
             content_crs_uri = query_crs_uri
         else:
-            content_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+            # If empty use default CRS
+            storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+            if storage_crs_uri in DEFAULT_CRS_LIST:
+                # Could be that storageCRS is one of the defaults like
+                # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
+                content_crs_uri = storage_crs_uri
+            else:
+                content_crs_uri = DEFAULT_CRS
+
         headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
