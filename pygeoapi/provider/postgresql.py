@@ -343,6 +343,9 @@ class PostgreSQLProvider(BaseProvider):
         return geo_fields
 
     def _flatten_feature_geoms(self, feature_geoms):
+        """Flattens a sequence of shapely geometrical objects which may include
+        'GeometryCollection' instances.
+        """
         flattened_geoms = list()
         for geom in feature_geoms:
             if geom.geom_type.lower() != 'geometrycollection':
