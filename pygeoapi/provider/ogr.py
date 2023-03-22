@@ -147,6 +147,10 @@ class OGRProvider(BaseProvider):
         #                                         'EPSG:4326').split(':')[1])
         # self.target_srs = int(self.data_def.get('target_srs',
         #                                         'EPSG:4326').split(':')[1])
+        if self.data_def.get('source_srs') is not None \
+                or self.data_def.get('target_srs') is not None:
+            LOGGER.warning('source/target_srs no longer supported in OGRProvider') # noqa
+            LOGGER.warning('Use crs and storage_crs in config, see docs')
 
         # Optional coordinate transformation inward (requests) and
         # outward (responses) when the source layers and

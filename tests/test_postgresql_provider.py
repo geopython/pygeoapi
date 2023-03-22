@@ -579,7 +579,7 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     """Test the coordinates transformation implementation of
     PostgreSQLProvider when using the crs parameter.
     """
-    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    storage_crs = DEFAULT_CRS
     crs_32735 = 'http://www.opengis.net/def/crs/EPSG/0/32735'
 
     # Without CRS query parameter -> no coordinates transformation
@@ -603,7 +603,7 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
 
-    features_4326 = json.loads(response)
+    features_storage_crs = json.loads(response)
 
     # With CRS query parameter resulting in coordinates transformation
     req = mock_request({'crs': crs_32735, 'bbox': '29.0,-2.85,29.05,-2.8'})
@@ -619,7 +619,7 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     # Make sure that we compare the same features
     assert (
         sorted(f['id'] for f in features_orig['features'])
-        == sorted(f['id'] for f in features_4326['features'])
+        == sorted(f['id'] for f in features_storage_crs['features'])
         == sorted(f['id'] for f in features_32735['features'])
     )
 
@@ -627,10 +627,9 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     # geometries of the returned features should be the same
     for feat_orig in features_orig['features']:
         id_ = feat_orig['id']
-        for feat_4326 in features_4326['features']:
-            if id_ == feat_4326['id']:
-
-                assert feat_orig['geometry'] == feat_4326['geometry']
+        for feat_storage_crs in features_storage_crs['features']:
+            if id_ == feat_storage_crs['id']:
+                assert feat_orig['geometry'] == feat_storage_crs['geometry']
                 break
 
     transform_func = get_transform_from_crs(
@@ -654,7 +653,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
     """Test the coordinates transformation implementation of
     PostgreSQLProvider when using the crs parameter.
     """
-    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    storage_crs = DEFAULT_CRS
     crs_32735 = 'http://www.opengis.net/def/crs/EPSG/0/32735'
     # List of feature IDs located in UTM zone 35S
     fid_list = [
@@ -692,11 +691,11 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
 
-        feat_4326 = json.loads(response)
+        feat_storage_crs = json.loads(response)
 
         # Without 'crs' query parameter or with 'crs' set to 'storage_crs', the
-        # geometries should be identical
-        assert feat_orig['geometry'] == feat_4326['geometry']
+        # geometries should be identical, when storage CRS is WGS84 lon,lat.
+        assert feat_orig['geometry'] == feat_storage_crs['geometry']
 
         # With CRS query parameter resulting in coordinates transformation
         req = mock_request({'f': 'json', 'crs': crs_32735})
