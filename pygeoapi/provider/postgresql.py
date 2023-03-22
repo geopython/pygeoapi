@@ -317,16 +317,19 @@ class PostgreSQLProvider(BaseProvider):
 
         Base = automap_base(metadata=metadata)
         Base.prepare(
-            name_for_scalar_relationship=self.name_for_scalar_relationship,
+            name_for_scalar_relationship=self._name_for_scalar_relationship,
         )
         TableModel = getattr(Base.classes, self.table)
 
         return TableModel
 
     @staticmethod
-    def name_for_scalar_relationship(
+    def _name_for_scalar_relationship(
         base, local_cls, referred_cls, constraint,
     ):
+        """Function used when automapping classes and relationships from
+        database schema and fixes potential naming conflicts.
+        """
         name = referred_cls.__name__.lower()
         local_table = local_cls.__table__
         if name in local_table.columns:
