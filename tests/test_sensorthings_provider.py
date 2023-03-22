@@ -37,9 +37,8 @@ def config():
     return {
         'name': 'SensorThings',
         'type': 'feature',
-        'data': 'http://localhost:8888/FROST-Server/v1.1/',
+        'data': 'http://localhost:8888/FROST-Server/v1.1/Datastreams',
         'rel_link': 'http://localhost:5000',
-        'entity': 'Datastreams',
         'intralink': True,
         'time_field': 'phenomenonTime'
     }
@@ -48,7 +47,7 @@ def config():
 def test_query_datastreams(config):
     p = SensorThingsProvider(config)
     fields = p.get_fields()
-    assert len(fields) == 15
+    assert len(fields) == 16
     assert fields['Thing']['type'] == 'number'
     assert fields['Observations']['type'] == 'number'
     assert fields['@iot.id']['type'] == 'number'
@@ -70,7 +69,7 @@ def test_query_datastreams(config):
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '3'
 
-    assert len(results['features'][0]['properties']) == 17
+    assert len(results['features'][0]['properties']) == 18
 
     results = p.query(bbox=[-109, 36, -106, 37])
     assert results['numberReturned'] == 8
@@ -88,6 +87,7 @@ def test_query_datastreams(config):
 def test_query_observations(config):
     config['properties'] = ['Datastream', 'phenomenonTime',
                             'FeatureOfInterest', 'result']
+    config['data'] = 'http://localhost:8888/FROST-Server/v1.1/'
     config['entity'] = 'Observations'
     p = SensorThingsProvider(config)
 
