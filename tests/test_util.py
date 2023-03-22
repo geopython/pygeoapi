@@ -168,7 +168,7 @@ def test_get_transform_from_crs():
         'http://www.opengis.net/def/crs/EPSG/0/25833'
     )
     transform_func = util.get_transform_from_crs(crs_in, crs_out)
-    p_in = Point((14.394493, 67.278972))
+    p_in = Point((67.278972, 14.394493))
     p_out = Point((473901.6105, 7462606.8762))
     assert p_out.equals_exact(transform_func(p_in), 1e-3)
 

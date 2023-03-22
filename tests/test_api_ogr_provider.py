@@ -33,7 +33,7 @@ import json
 import logging
 import pytest
 from pygeoapi.api import (API)
-from pygeoapi.util import yaml_load
+from pygeoapi.util import yaml_load, geojson_to_geom
 
 from .util import get_test_file_path, mock_request
 
@@ -105,3 +105,98 @@ def test_get_collection_items_bbox_crs(config, api_):
         features = json.loads(response)['features']
 
         assert len(features) == 10
+
+
+def test_get_collection_items_crs(config, api_):
+    CRS_DICT = {
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84': [5.714847, 52.12122746], # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/28992': [177439, 459274], # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/4258': [52.12122746, 5.714847], # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/4326': [52.12122746, 5.714847], # noqa
+    }
+    CRS_BBOX_DICT = {
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84': '5.71484, 52.12122, 5.71486, 52.12123', # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/4326': '52.12122, 5.71484, 52.12123, 5.71486', # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/4258': '52.12122, 5.71484, 52.12123, 5.71486', # noqa
+        'http://www.opengis.net/def/crs/EPSG/0/28992': '177430,	459268, 177440,	459278' # noqa
+    }
+
+    COLLECTIONS = ['dutch_addresses_4326', 'dutch_addresses_28992']
+    for coll in COLLECTIONS:
+        # crs full extent to get target feature
+        req = mock_request({}) # noqa
+        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        features = json.loads(response)['features']
+
+        assert len(features) == 10
+        feature_id = features[0]['id']
+
+        # request with multiple CRSs
+        for crs in CRS_DICT:
+            # Do for query (/items)
+            req = mock_request({'crs': crs}) # noqa
+            rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+            features = json.loads(response)['features']
+
+            assert len(features) == 10
+
+            test_feature = features[0]
+            assert test_feature['id'] == feature_id
+
+            properties = test_feature['properties']
+            assert properties['straatnaam'] == 'Willinkhuizersteeg'
+            assert properties['huisnummer'] == '2'
+
+            # Test if CRS in header and the feature coordinates
+            # correspond to CRS parameter.
+            assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+            test_geom_json = test_feature.get('geometry')
+            test_geom = geojson_to_geom(test_geom_json)
+            crs_geom = geojson_to_geom({'type': 'Point', 'coordinates': CRS_DICT[crs]})  # noqa
+            assert test_geom.equals_exact(crs_geom, 1), f'coords not equal for CRS: {crs} {crs_geom} in COLL: {coll} {test_geom}' # noqa
+
+            # Same for single Feature 'get'
+            req = mock_request({'crs': crs}) # noqa
+            rsp_headers, code, response = api_.get_collection_item(req, coll, feature_id) # noqa
+            test_feature = json.loads(response)
+
+            assert test_feature['id'] == feature_id
+
+            properties = test_feature['properties']
+            assert properties['straatnaam'] == 'Willinkhuizersteeg'
+            assert properties['huisnummer'] == '2'
+
+            # Test if CRS in header and the feature coordinates
+            # correspond to CRS parameter.
+            assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+            test_geom_json = test_feature.get('geometry')
+            test_geom = geojson_to_geom(test_geom_json)
+            crs_geom = geojson_to_geom({'type': 'Point', 'coordinates': CRS_DICT[crs]})  # noqa
+            assert test_geom.equals_exact(crs_geom, 1), f'coords not equal for CRS: {crs} {crs_geom} in COLL: {coll} {test_geom}' # noqa
+
+            # Test combining BBOX and BBOX-CRS
+            for bbox_crs in CRS_BBOX_DICT:
+                # Do for query (/items)
+                req = mock_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs], 'bbox-crs': bbox_crs}) # noqa
+                rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+                features = json.loads(response)['features']
+
+                assert len(features) == 1
+
+                test_feature = features[0]
+                assert test_feature['id'] == feature_id
+
+                properties = test_feature['properties']
+                assert properties['straatnaam'] == 'Willinkhuizersteeg'
+                assert properties['huisnummer'] == '2'
+
+                # Test if CRS in header and the feature coordinates
+                # correspond to CRS parameter.
+                assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+                test_geom_json = test_feature.get('geometry')
+                test_geom = geojson_to_geom(test_geom_json)
+                crs_geom = geojson_to_geom({'type': 'Point', 'coordinates': CRS_DICT[crs]})  # noqa
+                assert test_geom.equals_exact(crs_geom, 1), f'coords not equal for CRS: {crs} {crs_geom} in COLL: {coll} {test_geom} bbox-crs={bbox_crs}' # noqa

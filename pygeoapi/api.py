@@ -79,7 +79,7 @@ from pygeoapi.models.cql import CQLModel
 
 from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_crs_from_uri,
-                           get_supported_crs_list, CrsTransformWkt,
+                           get_supported_crs_list, CrsTransformSpec,
                            get_provider_by_type, get_provider_default,
                            get_typed_value, JobStatus, json_serial,
                            render_j2_template, str2bool,
@@ -1473,14 +1473,14 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        crs_transform_wkt = None
+        crs_transform_spec = None
         if provider_type == 'feature':
             # crs query parameter is only available for OGC API - Features
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
             query_crs_uri = request.params.get('crs')
             try:
-                crs_transform_wkt = self._create_crs_transform_wkt(
+                crs_transform_spec = self._create_crs_transform_spec(
                     provider_def, query_crs_uri,
                 )
             except (ValueError, CRSError) as err:
@@ -1624,7 +1624,7 @@ class API:
                               datetime_=datetime_, properties=properties,
                               sortby=sortby, skip_geometry=skip_geometry,
                               select_properties=select_properties,
-                              crs_transform_wkt=crs_transform_wkt,
+                              crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
         except ProviderConnectionError as err:
             LOGGER.error(err)
@@ -2224,14 +2224,14 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        crs_transform_wkt = None
+        crs_transform_spec = None
         if provider_type == 'feature':
             # crs query parameter is only available for OGC API - Features
             # right now, not for OGC API - Records.
             LOGGER.debug('Processing crs parameter')
             query_crs_uri = request.params.get('crs')
             try:
-                crs_transform_wkt = self._create_crs_transform_wkt(
+                crs_transform_spec = self._create_crs_transform_spec(
                     provider_def, query_crs_uri,
                 )
             except (ValueError, CRSError) as err:
@@ -2249,7 +2249,7 @@ class API:
             content = p.get(
                 identifier,
                 language=prv_locale,
-                crs_transform_wkt=crs_transform_wkt,
+                crs_transform_spec=crs_transform_spec,
             )
         except ProviderConnectionError as err:
             LOGGER.error(err)
@@ -4034,11 +4034,11 @@ class API:
         return f"{self.config['server']['url']}/collections"
 
     @staticmethod
-    def _create_crs_transform_wkt(
+    def _create_crs_transform_spec(
         config: dict,
         query_crs_uri: Optional[str] = None,
-    ) -> Union[None, CrsTransformWkt]:
-        """Create a `CrsTransformWkt` instance based on provider config and
+    ) -> Union[None, CrsTransformSpec]:
+        """Create a `CrsTransformSpec` instance based on provider config and
         *crs* query parameter.
 
         :param config: Provider config dictionary.
@@ -4052,9 +4052,9 @@ class API:
         :raises `CRSError`: Error raised if no CRS could be identified from the
             query *crs* parameter (URI).
 
-        :returns: `CrsTransformWkt` instance if the CRS specified in query
+        :returns: `CrsTransformSpec` instance if the CRS specified in query
             parameter differs from the storage CRS, else `None`.
-        :rtype: Union[None, CrsTransformWkt]
+        :rtype: Union[None, CrsTransformSpec]
         """
         if not query_crs_uri:
             LOGGER.debug('crs query parameter unspecified')
@@ -4077,8 +4077,10 @@ class API:
             LOGGER.debug(
                 f'CRS transformation: {storage_crs} -> {crs_out}'
             )
-            return CrsTransformWkt(
+            return CrsTransformSpec(
+                source_crs_uri=storage_crs_uri,
                 source_crs_wkt=storage_crs.to_wkt(),
+                target_crs_uri=query_crs_uri,
                 target_crs_wkt=crs_out.to_wkt(),
             )
         else:

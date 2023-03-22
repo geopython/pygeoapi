@@ -96,8 +96,10 @@ CRS_URI_PATTERN = re.compile(
 
 
 @dataclass
-class CrsTransformWkt:
+class CrsTransformSpec:
+    source_crs_uri: str
     source_crs_wkt: str
+    target_crs_uri: str
     target_crs_wkt: str
 
 
@@ -693,12 +695,12 @@ def crs_transform(func):
     FeatureCollection, the Features are stored in a ´list´ available at the
     'features' key of the returned `dict`. For each Feature, the geometry is
     available at the 'geometry' key. The decorated function may take a
-    'crs_transform_wkt' parameter, which accepts a `CrsTransformWkt` instance
-    as value. If the `CrsTransformWkt` instance represents a coordinates
+    'crs_transform_spec' parameter, which accepts a `CrsTransformSpec` instance
+    as value. If the `CrsTransformSpec` instance represents a coordinates
     transformation between two different CRSs, the coordinates of the
     Feature's/FeatureCollection's geometry/geometries will be transformed
-    before returning the Feature/FeatureCollection. If the 'crs_transform_wkt'
-    parameter is not given, passed `None` or passed a `CrsTransformWkt`
+    before returning the Feature/FeatureCollection. If the 'crs_transform_spec'
+    parameter is not given, passed `None` or passed a `CrsTransformSpec`
     instance which does not represent a coordinates transformation, the
     Feature/FeatureCollection is returned unchanged. This decorator can for
     example be use to help supporting coordinates transformation of
@@ -714,17 +716,17 @@ def crs_transform(func):
     """
     @functools.wraps(func)
     def get_geojsonf(*args, **kwargs):
-        crs_transform_wkt = kwargs.get('crs_transform_wkt')
+        crs_transform_spec = kwargs.get('crs_transform_spec')
         result = func(*args, **kwargs)
-        if crs_transform_wkt is None:
+        if crs_transform_spec is None:
             # No coordinates transformation for feature(s) returned by the
             # decorated function.
             return result
         # Create transformation function and transform the output feature(s)'
         # coordinates before returning them.
         transform_func = get_transform_from_crs(
-            pyproj.CRS.from_wkt(crs_transform_wkt.source_crs_wkt),
-            pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+            pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
+            pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
         )
         features = result.get('features')
         # Decorated function returns a single Feature
