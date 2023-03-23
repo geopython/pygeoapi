@@ -28,6 +28,7 @@
 # =================================================================
 
 import json
+import shutil
 
 import pytest
 
@@ -59,11 +60,31 @@ def data():
 
 
 @pytest.fixture()
-def config():
+def data_no_id():
+    return json.dumps({
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [100.0, 0.0], [101.0, 0.0], [101.0, 1.0],
+                [100.0, 1.0], [100.0, 0.0]
+                ]]
+        },
+        'properties': {
+            'title': 'test item',
+            'description': 'test item'
+        }
+    })
+
+
+@pytest.fixture()
+def config(tmp_path):
+    tmp_file = tmp_path / 'sample-records.tinydb'
+    shutil.copy(path, tmp_file)
     return {
         'name': 'TinyDBCatalogue',
         'type': 'feature',
-        'data': path,
+        'data': tmp_file,
         'id_field': 'externalId',
         'time_field': 'recordCreated'
     }
@@ -157,3 +178,21 @@ def test_transactions_create(config, data):
     assert p.update(123, data)
 
     assert p.delete(123)
+
+
+def test_transactions_create_no_id(config, data_no_id):
+    """Testing transactional capabilities with incoming feature without ID"""
+
+    p = TinyDBCatalogueProvider(config)
+
+    new_id = p.create(data_no_id)
+    assert new_id is not None
+
+    data_got = p.get(new_id)
+    assert data_got["id"] == new_id
+    assert data_got["properties"] == json.loads(data_no_id)["properties"]
+    assert data_got["geometry"] == json.loads(data_no_id)["geometry"]
+
+    assert p.update(new_id, json.dumps(data_got))
+
+    assert p.delete(new_id)

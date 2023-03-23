@@ -30,6 +30,7 @@
 import logging
 import re  # noqa
 import os
+import uuid
 
 from tinydb import TinyDB, Query, where
 
@@ -245,7 +246,12 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: identifier of newly created item
         """
 
-        identifier, json_data = self._load_and_prepare_item(item)
+        identifier, json_data = self._load_and_prepare_item(
+            item, accept_missing_identifier=True)
+        if identifier is None:
+            # If there is no incoming identifier, allocate a random one
+            identifier = str(uuid.uuid4())
+            json_data["id"] = identifier
 
         try:
             json_data['properties']['_metadata-anytext'] = ''.join([
