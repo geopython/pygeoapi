@@ -30,6 +30,7 @@
 #
 # =================================================================
 
+import copy
 import json
 import logging
 import time
@@ -871,6 +872,42 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+
+def test_manage_collection_item_read_only_options_req(config, api_):
+    """Test OPTIONS request on a read-only items endpoint"""
+    req = mock_request()
+    _, code, _ = api_.manage_collection_item(req, 'options', 'foo')
+    assert code == HTTPStatus.NOT_FOUND
+
+    req = mock_request()
+    rsp_headers, code, _ = api_.manage_collection_item(req, 'options', 'obs')
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Allow'] == 'HEAD, GET'
+
+    req = mock_request()
+    rsp_headers, code, _ = api_.manage_collection_item(
+        req, 'options', 'obs', 'ressource_id')
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Allow'] == 'HEAD, GET'
+
+
+def test_manage_collection_item_editable_options_req(config):
+    """Test OPTIONS request on a editable items endpoint"""
+    config = copy.deepcopy(config)
+    config['resources']['obs']['providers'][0]['editable'] = True
+    api_ = API(config)
+
+    req = mock_request()
+    rsp_headers, code, _ = api_.manage_collection_item(req, 'options', 'obs')
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Allow'] == 'HEAD, GET, POST'
+
+    req = mock_request()
+    rsp_headers, code, _ = api_.manage_collection_item(
+        req, 'options', 'obs', 'ressource_id')
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Allow'] == 'HEAD, GET, PUT, DELETE'
 
 
 def test_describe_collections_enclosures(config_enclosure, enclosure_api):
