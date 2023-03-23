@@ -32,7 +32,6 @@
 
 import functools
 import importlib
-import json
 import logging
 import os
 from typing import Any
@@ -521,17 +520,14 @@ class OGRProvider(BaseProvider):
             geom.Transform(crs_transform_out)
 
         # NB With GDAL >= 3.3 seems that Axis is swapped for e.g.
-        #  EPSG:4258 where it shouldn't. See #1174.
-        # wkt = geom.ExportToWkt()
-        # LOGGER.info(f'coords before export to JSON: {wkt}')
+        # EPSG:4258 in ExportToJson where it shouldn't. See #1174.
+        # Suppress swapping by unassigning SpatialReference
+        geom.AssignSpatialReference(None)
         json_feature = ogr_feature.ExportToJson(as_object=True)
-        # coords = json_feature['geometry']['coordinates']
-        # LOGGER.info(f'coords after export to JSON: {coords}')
 
         if skip_geometry:
             json_feature['geometry'] = None
-        else:
-            json_feature['geometry'] = json.loads(geom.ExportToJson())
+
         try:
             json_feature['id'] = json_feature['properties'].pop(
                 self.id_field, json_feature['id']
