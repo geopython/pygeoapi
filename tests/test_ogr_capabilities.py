@@ -95,7 +95,7 @@ def test_transforms():
         feature = ogr.Feature(feature_defn)
         wkt = "POINT({} {})".format(result[0], result[1])
         geom = ogr.CreateGeometryFromWkt(wkt)
-        
+
         # Suppress swapping by unassigning SpatialReference
         geom.AssignSpatialReference(None)
         feature.SetGeometry(geom)
