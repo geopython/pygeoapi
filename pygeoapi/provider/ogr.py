@@ -515,11 +515,19 @@ class OGRProvider(BaseProvider):
             geom = ogr_feature.GetGeomFieldRef(self.geom_field)
         else:
             geom = ogr_feature.GetGeometryRef()
+
         if crs_transform_out is not None:
             # Optionally reproject the geometry
             geom.Transform(crs_transform_out)
 
+        # NB With GDAL >= 3.3 seems that Axis is swapped for e.g.
+        #  EPSG:4258 where it shouldn't. See #1174.
+        # wkt = geom.ExportToWkt()
+        # LOGGER.info(f'coords before export to JSON: {wkt}')
         json_feature = ogr_feature.ExportToJson(as_object=True)
+        # coords = json_feature['geometry']['coordinates']
+        # LOGGER.info(f'coords after export to JSON: {coords}')
+
         if skip_geometry:
             json_feature['geometry'] = None
         else:
