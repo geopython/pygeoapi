@@ -95,9 +95,10 @@ def test_transforms():
         feature = ogr.Feature(feature_defn)
         wkt = "POINT({} {})".format(result[0], result[1])
         geom = ogr.CreateGeometryFromWkt(wkt)
-        feature.SetGeometry(geom)
+        
         # Suppress swapping by unassigning SpatialReference
         geom.AssignSpatialReference(None)
+        feature.SetGeometry(geom)
         json_feature = feature.ExportToJson(as_object=True)
 
         # Determine Axis order after ExportToJson
