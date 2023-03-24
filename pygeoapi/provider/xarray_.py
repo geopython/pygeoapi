@@ -36,6 +36,7 @@ import zipfile
 
 import xarray
 import s3fs
+import fsspec
 import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
@@ -69,7 +70,18 @@ class XarrayProvider(BaseProvider):
                 else:
                     open_func = xarray.open_dataset
             if provider_def['data'].startswith('s3://'):
+<<<<<<< HEAD
                 data_to_open = _s3open(self.data)
+=======
+                LOGGER.debug('Data is stored in S3 bucket.')
+                try:
+                    self._storage_options = provider_def['storage_options']
+                except KeyError:
+                    raise RuntimeError('storage_options required for s3.')
+                data_to_open = fsspec.get_mapper(self.data,
+                                                 **self._storage_options)
+                LOGGER.debug('Completed S3 Open Function')
+>>>>>>> 24c5529 (storage options for fsspec)
             else:
                 data_to_open = self.data
 
