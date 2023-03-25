@@ -179,9 +179,11 @@ def collection_queryables(collection_id=None):
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
-                 methods=['GET', 'POST'])
+                 methods=['GET', 'POST', 'OPTIONS'],
+                 provide_automatic_options=False)
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
-                 methods=['GET', 'PUT', 'DELETE'])
+                 methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
+                 provide_automatic_options=False)
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -205,6 +207,9 @@ def collection_items(collection_id, item_id=None):
                 else:
                     return get_response(
                         api_.post_collection_items(request, collection_id))
+        elif request.method == 'OPTIONS':
+            return get_response(
+                api_.manage_collection_item(request, 'options', collection_id))
 
     elif request.method == 'DELETE':
         return get_response(
@@ -213,6 +218,10 @@ def collection_items(collection_id, item_id=None):
     elif request.method == 'PUT':
         return get_response(
             api_.manage_collection_item(request, 'update',
+                                        collection_id, item_id))
+    elif request.method == 'OPTIONS':
+        return get_response(
+            api_.manage_collection_item(request, 'options',
                                         collection_id, item_id))
     else:
         return get_response(
