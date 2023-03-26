@@ -32,6 +32,7 @@ import re  # noqa
 import os
 import uuid
 
+from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
@@ -261,6 +262,17 @@ class TinyDBCatalogueProvider(BaseProvider):
         except KeyError:
             LOGGER.debug('Missing title and description')
             json_data['properties']['_metadata_anytext'] = ''
+
+        # Create properties.extent.spatial.bbox if not existing
+        if "geometry" in json_data and json_data["geometry"] is not None and \
+            ("extent" not in json_data["properties"] or
+             "spatial" not in json_data["properties"]["extent"]):
+            if "extent" not in json_data["properties"]:
+                json_data["properties"]["extent"] = {}
+            if "spatial" not in json_data["properties"]["extent"]:
+                json_data["properties"]["extent"]["spatial"] = {}
+            json_data["properties"]["extent"]["spatial"]["bbox"] = \
+                [list(shape(json_data["geometry"]).bounds)]
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
