@@ -39,6 +39,8 @@ from .util import get_test_file_path, mock_request
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+
 
 @pytest.fixture()
 def config():
@@ -108,16 +110,18 @@ def test_get_collection_items_bbox_crs(config, api_):
 
 
 def test_get_collection_items_crs(config, api_):
+    #         'http://www.opengis.net/def/crs/EPSG/0/4258': [52.12122746, 5.714847], # noqa
     CRS_DICT = {
+        'none': [5.714847, 52.12122746], # noqa
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84': [5.714847, 52.12122746], # noqa
         'http://www.opengis.net/def/crs/EPSG/0/28992': [177439, 459274], # noqa
-        'http://www.opengis.net/def/crs/EPSG/0/4258': [52.12122746, 5.714847], # noqa
         'http://www.opengis.net/def/crs/EPSG/0/4326': [52.12122746, 5.714847], # noqa
     }
+    #         'http://www.opengis.net/def/crs/EPSG/0/4258': '52.12122, 5.71484, 52.12123, 5.71486', # noqa
     CRS_BBOX_DICT = {
+        'none': '5.71484, 52.12122, 5.71486, 52.12123', # noqa
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84': '5.71484, 52.12122, 5.71486, 52.12123', # noqa
         'http://www.opengis.net/def/crs/EPSG/0/4326': '52.12122, 5.71484, 52.12123, 5.71486', # noqa
-        'http://www.opengis.net/def/crs/EPSG/0/4258': '52.12122, 5.71484, 52.12123, 5.71486', # noqa
         'http://www.opengis.net/def/crs/EPSG/0/28992': '177430,	459268, 177440,	459278' # noqa
     }
 
@@ -135,6 +139,11 @@ def test_get_collection_items_crs(config, api_):
         for crs in CRS_DICT:
             # Do for query (/items)
             req = mock_request({'crs': crs}) # noqa
+            if crs == 'none':
+                # Test for default bbox CRS
+                req = mock_request({}) # noqa
+                crs = DEFAULT_CRS
+
             rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
             features = json.loads(response)['features']
 
@@ -180,6 +189,11 @@ def test_get_collection_items_crs(config, api_):
             for bbox_crs in CRS_BBOX_DICT:
                 # Do for query (/items)
                 req = mock_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs], 'bbox-crs': bbox_crs}) # noqa
+                if bbox_crs == 'none':
+                    # Test for default bbox CRS
+                    req = mock_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs]}) # noqa
+                    bbox_crs = DEFAULT_CRS
+
                 rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
                 features = json.loads(response)['features']
 

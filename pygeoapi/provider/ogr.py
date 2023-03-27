@@ -32,7 +32,6 @@
 
 import functools
 import importlib
-import json
 import logging
 import os
 from typing import Any
@@ -143,24 +142,28 @@ class OGRProvider(BaseProvider):
         self.source_capabilities = self.data_def.get('source_capabilities',
                                                      {'paging': False})
 
-        self.source_srs = int(self.data_def.get('source_srs',
-                                                'EPSG:4326').split(':')[1])
-        self.target_srs = int(self.data_def.get('target_srs',
-                                                'EPSG:4326').split(':')[1])
+        # self.source_srs = int(self.data_def.get('source_srs',
+        #                                         'EPSG:4326').split(':')[1])
+        # self.target_srs = int(self.data_def.get('target_srs',
+        #                                         'EPSG:4326').split(':')[1])
+        if self.data_def.get('source_srs') is not None \
+                or self.data_def.get('target_srs') is not None:
+            LOGGER.warning('source/target_srs no longer supported in OGRProvider') # noqa
+            LOGGER.warning('Use crs and storage_crs in config, see docs')
 
         # Optional coordinate transformation inward (requests) and
         # outward (responses) when the source layers and
         # OGC API - Features collections differ in EPSG-codes.
         self.transform_in = None
         self.transform_out = None
-        if self.source_srs != self.target_srs:
-            source = self._get_spatial_ref_from_epsg(self.source_srs)
-            target = self._get_spatial_ref_from_epsg(self.target_srs)
-
-            self.transform_in = \
-                osgeo_osr.CoordinateTransformation(target, source)
-            self.transform_out = \
-                osgeo_osr.CoordinateTransformation(source, target)
+        # if self.source_srs != self.target_srs:
+        #     source = self._get_spatial_ref_from_epsg(self.source_srs)
+        #     target = self._get_spatial_ref_from_epsg(self.target_srs)
+        #
+        #     self.transform_in = \
+        #         osgeo_osr.CoordinateTransformation(target, source)
+        #     self.transform_out = \
+        #         osgeo_osr.CoordinateTransformation(source, target)
 
         self._load_source_helper(self.data_def['source_type'])
 
@@ -331,8 +334,8 @@ class OGRProvider(BaseProvider):
                       f"{maxx} {miny},{minx} {miny}))"
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
-                if self.transform_in:
-                    polygon.Transform(self.transform_in)
+                # if self.transform_in:
+                #     polygon.Transform(self.transform_in)
 
                 layer.SetSpatialFilter(polygon)
 
@@ -428,8 +431,8 @@ class OGRProvider(BaseProvider):
         crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
         # Keep support for source_srs/target_srs
-        if crs_transform_out is None:
-            crs_transform_out = self.transform_out
+        # if crs_transform_out is None:
+        #     crs_transform_out = self.transform_out
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -511,15 +514,20 @@ class OGRProvider(BaseProvider):
             geom = ogr_feature.GetGeomFieldRef(self.geom_field)
         else:
             geom = ogr_feature.GetGeometryRef()
+
         if crs_transform_out is not None:
             # Optionally reproject the geometry
             geom.Transform(crs_transform_out)
 
+        # NB With GDAL >= 3.3 seems that Axis is swapped for e.g.
+        # EPSG:4258 in ExportToJson where it shouldn't. See #1174.
+        # Suppress swapping by unassigning SpatialReference
+        geom.AssignSpatialReference(None)
         json_feature = ogr_feature.ExportToJson(as_object=True)
+
         if skip_geometry:
             json_feature['geometry'] = None
-        else:
-            json_feature['geometry'] = json.loads(geom.ExportToJson())
+
         try:
             json_feature['id'] = json_feature['properties'].pop(
                 self.id_field, json_feature['id']
@@ -550,8 +558,8 @@ class OGRProvider(BaseProvider):
         crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
         # Keep support for source_srs/target_srs
-        if crs_transform_out is None:
-            crs_transform_out = self.transform_out
+        # if crs_transform_out is None:
+        #     crs_transform_out = self.transform_out
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')

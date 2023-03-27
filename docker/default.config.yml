@@ -211,8 +211,8 @@ resources:
               data:
                   source_type: WFS
                   source: WFS:https://service.pdok.nl/kadaster/rdinfo/wfs/v1_0?
-                  source_srs: EPSG:28992
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:28992
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -227,6 +227,10 @@ resources:
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
   
+              crs:
+                - http://www.opengis.net/def/crs/EPSG/0/4258
+                - http://www.opengis.net/def/crs/EPSG/0/28992
+              storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
               id_field: gml_id
               layer: rdinfo:stations
 
@@ -258,8 +262,8 @@ resources:
               data:
                   source_type: WFS
                   source: WFS:http://demo.deegree.org/utah-workspace/services/wfs?TYPENAME=app:SGID93_LOCATION_UDOTMap_CityLocations
-                  source_srs: EPSG:26912
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:26912
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -274,6 +278,10 @@ resources:
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
   
+              crs:
+                - http://www.opengis.net/def/crs/EPSG/0/4258
+                - http://www.opengis.net/def/crs/EPSG/0/26912
+              storage_crs: http://www.opengis.net/def/crs/EPSG/0/26912
               id_field: NAME
               layer: app:SGID93_LOCATION_UDOTMap_CityLocations
 
@@ -304,8 +312,8 @@ resources:
               data:
                   source_type: WFS
                   source: WFS:https://gs-stable.geosolutionsgroup.com/geoserver/wfs
-                  source_srs: EPSG:32632
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:32632
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -320,6 +328,10 @@ resources:
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
   
+              crs:
+                - http://www.opengis.net/def/crs/EPSG/0/4258
+                - http://www.opengis.net/def/crs/EPSG/0/32632
+              storage_crs: http://www.opengis.net/def/crs/EPSG/0/32632
               id_field: gml_id
               layer: unesco:Unesco_point
 
@@ -355,8 +367,8 @@ resources:
               data:
                   source_type: GPKG
                   source: tests/data/poi_portugal.gpkg
-                  source_srs: EPSG:4326
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:4326
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -395,8 +407,8 @@ resources:
               data:
                   source_type: GeoJSON
                   source: tests/data/ne_110m_lakes.geojson
-                  source_srs: EPSG:4326
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:4326
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -438,8 +450,8 @@ resources:
                   source_type: SQLite
                   # source: tests/data/ne_110m_admin_0_countries.sqlite
                   source: tests/data/dutch_addresses_4326.sqlite
-                  source_srs: EPSG:4326
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:4326
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   
@@ -480,8 +492,8 @@ resources:
               data:
                   source_type: GPKG
                   source: tests/data/dutch_addresses_4326.gpkg
-                  source_srs: EPSG:4326
-                  target_srs: EPSG:4326
+#                  source_srs: EPSG:4326
+#                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
   

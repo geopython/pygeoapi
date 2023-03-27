@@ -111,8 +111,8 @@ resources:
         data:
           source_type: WFS
           source: WFS:https://service.pdok.nl/kadaster/rdinfo/wfs/v1_0?
-          source_srs: EPSG:28992
-          target_srs: EPSG:4326
+#          source_srs: EPSG:28992
+#          target_srs: EPSG:4326
           source_capabilities:
             paging: True
 
@@ -127,6 +127,7 @@ resources:
             # GDAL_PROXY_AUTH: (optional auth for remote WFS)
             CPL_DEBUG: NO
 
+        storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
         id_field: gml_id
         layer: rdinfo:stations
 
@@ -161,8 +162,8 @@ resources:
             source:
               # Feature Count: 2481
               ./tests/data/dutch_addresses_4326.gpkg
-            source_srs: EPSG:4326
-            target_srs: EPSG:4326
+#            source_srs: EPSG:4326
+#            target_srs: EPSG:4326
             source_capabilities:
               paging: True
           crs:
@@ -205,8 +206,8 @@ resources:
             source:
               # Feature Count: 2481
               ./tests/data/dutch_addresses_28992.gpkg
-            source_srs: EPSG:4326
-            target_srs: EPSG:4326
+#            source_srs: EPSG:4326
+#            target_srs: EPSG:4326
             source_capabilities:
               paging: True
           crs:
@@ -249,8 +250,8 @@ resources:
         data:
           source_type: GPKG
           source: tests/data/poi_portugal.gpkg
-          source_srs: EPSG:4326
-          target_srs: EPSG:4326
+#          source_srs: EPSG:4326
+#          target_srs: EPSG:4326
           source_capabilities:
             paging: True
 
@@ -290,8 +291,8 @@ resources:
         data:
           source_type: ESRIJSON
           source: ESRIJSON:http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json
-          source_srs: EPSG:4326
-          target_srs: EPSG:4326
+#          source_srs: EPSG:4326
+#          target_srs: EPSG:4326
           source_capabilities:
             paging: True
 
@@ -331,8 +332,8 @@ resources:
         data:
           source_type: CSV
           source: /vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv
-          source_srs: EPSG:4326
-          target_srs: EPSG:4326
+#          source_srs: EPSG:4326
+#          target_srs: EPSG:4326
           source_capabilities:
             paging: True
           open_options:
