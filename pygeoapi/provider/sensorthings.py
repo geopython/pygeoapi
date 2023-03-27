@@ -97,7 +97,10 @@ class SensorThingsProvider(BaseProvider):
         LOGGER.debug(f'STA endpoint: {self.data}, Entity: {self.entity}')
 
         # Default id
-        if not self.id_field:
+        if self.id_field:
+            LOGGER.debug(f'Using id field: {self.id_field}')
+        else:
+            LOGGER.debug('Using default @iot.id for id field')
             self.id_field = '@iot.id'
 
         # Create intra-links
@@ -132,7 +135,7 @@ class SensorThingsProvider(BaseProvider):
 
                 self.links[e] = {
                     'cnm': name,  # OAPI collection name,
-                    'cid': p.get('id_field'),  # OAPI collection id_fields
+                    'cid': p.get('id_field', '@iot.id'),  # OAPI id_field
                     'uri': p.get('uri_field')  # STA uri_field
                 }
 
@@ -243,11 +246,9 @@ class SensorThingsProvider(BaseProvider):
 
         response = self._get_response(url=self._url, params=params)
         v = response.get('value')
-        count = len(v)
-        hits_ = min(limit, count)
 
         # Query if values are less than expected
-        while len(v) < hits_:
+        while len(v) < limit:
             LOGGER.debug('Fetching next set of values')
             next_ = response.get('@iot.nextLink')
             if next_:
@@ -257,9 +258,10 @@ class SensorThingsProvider(BaseProvider):
                 break
 
         # Make features
+        hits_ = min(limit, len(v))
         props = (select_properties, skip_geometry)
         fc['features'] = [self._make_feature(e, *props) for e in v[:hits_]]
-        fc['numberReturned'] = len(fc['features'])
+        fc['numberReturned'] = hits_
 
         return fc
 
@@ -423,27 +425,24 @@ class SensorThingsProvider(BaseProvider):
         keys = (() if not self.properties and not keys else
                 set(self.properties) | set(keys))
 
-        def expand_location(thing):
-            try:
-                extra_props = thing['Locations'][0].get('properties', {})
-                thing['properties'].update(extra_props)
-            except (KeyError, IndexError):
-                LOGGER.warning(f'{self.entity} missing Location')
-
         if self.entity == 'Things':
-            expand_location(entity)
+            self._expand_location(entity)
         elif 'Thing' in entity.keys():
-            expand_location(entity['Thing'])
+            self._expand_location(entity['Thing'])
+
+        # Retain URI if present
+        if entity.get('properties') and self.uri_field:
+            uri = entity['properties']
 
         # Create intra links
         LOGGER.debug('Creating intralinks')
         for k, v in entity.items():
-            if self.uri_field is not None and k in ['properties']:
-                uri = v.get(self.uri_field)
-            elif k in self.links:
+            if k in self.links:
                 entity[k] = [self._get_uri(_v, **self.links[k]) for _v in v]
+                LOGGER.debug(f'Created link for {k}')
             elif f'{k}s' in self.links:
                 entity[k] = self._get_uri(v, **self.links[f'{k}s'])
+                LOGGER.debug(f'Created link for {k}')
 
         # Make properties block
         LOGGER.debug('Making properties block')
@@ -454,9 +453,25 @@ class SensorThingsProvider(BaseProvider):
             ret = {k: entity.pop(k) for k in keys}
             entity = ret
 
-        # Retain URI if present
         if self.uri_field is not None and uri != '':
             entity[self.uri_field] = uri
+
+        return entity
+
+    @staticmethod
+    def _expand_location(entity):
+        """
+        Private function: Get STA item uri
+
+        :param entity: `dict` of STA entity
+
+        :returns: dict of expanded location properties
+        """
+        try:
+            extra_props = entity['Locations'][0].get('properties', {})
+            entity['properties'].update(extra_props)
+        except (KeyError, IndexError):
+            LOGGER.warning(f'{entity} missing Location')
 
         return entity
 
