@@ -190,7 +190,12 @@ def test_transactions_create_no_id(config, data_no_id):
 
     data_got = p.get(new_id)
     assert data_got["id"] == new_id
-    assert data_got["properties"] == json.loads(data_no_id)["properties"]
+    expected_properties = json.loads(data_no_id)["properties"]
+    expected_properties["extent"] = {}
+    expected_properties["extent"]["spatial"] = {}
+    expected_properties["extent"]["spatial"]["bbox"] = \
+        [[100.0, 0.0, 101.0, 1.0]]
+    assert data_got["properties"] == expected_properties
     assert data_got["geometry"] == json.loads(data_no_id)["geometry"]
 
     assert p.update(new_id, json.dumps(data_got))
