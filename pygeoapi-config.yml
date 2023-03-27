@@ -52,10 +52,6 @@ server:
 #        name: TinyDB
 #        connection: /tmp/pygeoapi-process-manager.db
 #        output_dir: /tmp/
-#    manager:
-#        name: MongoDB
-#        connection: mongodb://[username:password@]localhost:27017
-#        output_dir: /tmp/
     # ogc_schemas_location: /opt/schemas.opengis.net
 logging:
     level: ERROR
