@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -86,7 +86,7 @@ def config(tmp_path):
         'type': 'feature',
         'data': tmp_file,
         'id_field': 'externalId',
-        'time_field': 'recordCreated'
+        'time_field': 'created'
     }
 
 
@@ -95,7 +95,7 @@ def test_query(config):
 
     fields = p.get_fields()
     assert len(fields) == 9
-    assert fields['recordCreated']['type'] == 'string'
+    assert fields['created']['type'] == 'string'
     assert fields['title']['type'] == 'string'
     assert fields['q']['type'] == 'string'
 
@@ -189,14 +189,8 @@ def test_transactions_create_no_id(config, data_no_id):
     assert new_id is not None
 
     data_got = p.get(new_id)
-    assert data_got["id"] == new_id
-    expected_properties = json.loads(data_no_id)["properties"]
-    expected_properties["extent"] = {}
-    expected_properties["extent"]["spatial"] = {}
-    expected_properties["extent"]["spatial"]["bbox"] = \
-        [[100.0, 0.0, 101.0, 1.0]]
-    assert data_got["properties"] == expected_properties
-    assert data_got["geometry"] == json.loads(data_no_id)["geometry"]
+    assert data_got['id'] == new_id
+    assert data_got['geometry'] == json.loads(data_no_id)['geometry']
 
     assert p.update(new_id, json.dumps(data_got))
 

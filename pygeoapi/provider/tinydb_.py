@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,11 +32,9 @@ import re  # noqa
 import os
 import uuid
 
-from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderQueryError,
                                     ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +89,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             return fields
 
         for p in r['properties'].keys():
-            if p not in self.excludes + ['extent']:
+            if p not in self.excludes:
                 fields[p] = {'type': 'string'}
 
         fields['q'] = {'type': 'string'}
@@ -135,26 +133,30 @@ class TinyDBCatalogueProvider(BaseProvider):
         if bbox:
             LOGGER.debug('processing bbox parameter')
             bbox_as_string = ','.join(str(s) for s in bbox)
-            QUERY.append(f"Q.properties.extent.spatial.bbox.test(bbox_intersects, '{bbox_as_string}')")  # noqa
+            QUERY.append(f"Q.geometry.coordinates.test(bbox_intersects, '{bbox_as_string}')")  # noqa
 
         if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
             if self.time_field is None:
                 LOGGER.error('time_field not enabled for collection')
-                raise ProviderQueryError()
+                LOGGER.error('Using default time property')
+                time_field2 = 'time'
+            else:
+                LOGGER.error(f'Using properties.{self.time_field}')
+                time_field2 = f"properties['{self.time_field}']"
 
             if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
                 time_begin, time_end = datetime_.split('/')
 
                 if time_begin != '..':
-                    QUERY.append(f"(Q.properties[self.time_field]>='{time_begin}')")  # noqa
+                    QUERY.append(f"(Q.{time_field2}>='{time_begin}')")  # noqa
                 if time_end != '..':
-                    QUERY.append(f"(Q.properties[self.time_field]<='{time_end}')")  # noqa
+                    QUERY.append(f"(Q.{time_field2}<='{time_end}')")  # noqa
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                QUERY.append(f"(Q.properties[self.time_field]=='{datetime_}')")  # noqa
+                QUERY.append(f"(Q.{time_field2}=='{datetime_}')")  # noqa
 
         if properties:
             LOGGER.debug('processing properties')
@@ -263,17 +265,6 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.debug('Missing title and description')
             json_data['properties']['_metadata_anytext'] = ''
 
-        # Create properties.extent.spatial.bbox if not existing
-        if "geometry" in json_data and json_data["geometry"] is not None and \
-            ("extent" not in json_data["properties"] or
-             "spatial" not in json_data["properties"]["extent"]):
-            if "extent" not in json_data["properties"]:
-                json_data["properties"]["extent"] = {}
-            if "spatial" not in json_data["properties"]["extent"]:
-                json_data["properties"]["extent"]["spatial"] = {}
-            json_data["properties"]["extent"]["spatial"]["bbox"] = \
-                [list(shape(json_data["geometry"]).bounds)]
-
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
 
@@ -338,7 +329,13 @@ def bbox_intersects(record_bbox, input_bbox):
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = record_bbox[0]
+    bbox1 = [
+        record_bbox[0][0][0],
+        record_bbox[0][0][1],
+        record_bbox[0][2][0],
+        record_bbox[0][2][1]
+    ]
+
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
     LOGGER.debug(f'Record bbox: {bbox1}')
