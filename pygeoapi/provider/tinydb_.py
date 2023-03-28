@@ -32,6 +32,7 @@ import re  # noqa
 import os
 import uuid
 
+from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
@@ -133,7 +134,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         if bbox:
             LOGGER.debug('processing bbox parameter')
             bbox_as_string = ','.join(str(s) for s in bbox)
-            QUERY.append(f"Q.geometry.coordinates.test(bbox_intersects, '{bbox_as_string}')")  # noqa
+            QUERY.append(f"Q.geometry.test(bbox_intersects, '{bbox_as_string}')")  # noqa
 
         if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
@@ -319,37 +320,27 @@ class TinyDBCatalogueProvider(BaseProvider):
         return f'<TinyDBCatalogueProvider> {self.data}'
 
 
-def bbox_intersects(record_bbox, input_bbox):
+def bbox_intersects(record_geometry, input_bbox):
     """
     Manual bbox intersection calculation
 
-    :param record_bbox: `dict` of polygon geometry
+    :param record_geometry: `dict` of polygon geometry
     :param input_bbox: `str` of 'minx,miny,maxx,maxy'
 
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = [
-        record_bbox[0][0][0],
-        record_bbox[0][0][1],
-        record_bbox[0][2][0],
-        record_bbox[0][2][1]
-    ]
+    bbox1 = list(shape(record_geometry).bounds)
 
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
     LOGGER.debug(f'Record bbox: {bbox1}')
     LOGGER.debug(f'Input bbox: {bbox2}')
 
-    # any point in bbox1 should be in bbox2
-    bbox_tests = [
-        bbox2[0] <= bbox1[0] <= bbox2[2],
-        bbox2[1] <= bbox1[1] <= bbox2[3],
-        bbox2[0] <= bbox1[2] <= bbox2[2],
-        bbox2[1] <= bbox1[3] <= bbox2[3]
-    ]
+    bbox1_minx, bbox1_miny, bbox1_maxx, bbox1_maxy = bbox1
+    bbox2_minx, bbox2_miny, bbox2_maxx, bbox2_maxy = bbox2
 
-    if any(bbox_tests):
-        return True
-
-    return False
+    return bbox1_minx <= bbox2_maxx and \
+        bbox1_miny <= bbox2_maxy and \
+        bbox2_minx <= bbox1_maxx and \
+        bbox2_miny <= bbox1_maxy
