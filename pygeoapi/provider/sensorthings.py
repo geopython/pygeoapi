@@ -244,20 +244,20 @@ class SensorThingsProvider(BaseProvider):
             fc['numberMatched'] = response.get('@iot.count')
             return fc
 
+        # Make features
         response = self._get_response(url=self._url, params=params)
         v = response.get('value')
 
         # Query if values are less than expected
         while len(v) < limit:
-            LOGGER.debug('Fetching next set of values')
-            next_ = response.get('@iot.nextLink')
-            if next_:
+            try:
+                LOGGER.debug('Fetching next set of values')
+                next_ = response['@iot.nextLink']
                 response = self._get_response(next_)
-                v.extend(response.get('value'))
-            else:
+                v.extend(response['value'])
+            except (ProviderConnectionError, KeyError):
                 break
 
-        # Make features
         hits_ = min(limit, len(v))
         props = (select_properties, skip_geometry)
         fc['features'] = [self._make_feature(e, *props) for e in v[:hits_]]
@@ -351,8 +351,9 @@ class SensorThingsProvider(BaseProvider):
 
         if datetime_ is not None:
             if self.time_field is None:
-                LOGGER.error('time_field not enabled for collection')
-                raise ProviderQueryError()
+                msg = 'time_field not enabled for collection'
+                LOGGER.error(msg)
+                raise ProviderQueryError(msg)
 
             if '/' in datetime_:
                 time_start, time_end = datetime_.split('/')
@@ -382,6 +383,7 @@ class SensorThingsProvider(BaseProvider):
                 ret.append(f'{prop}/@iot.id {order}')
             else:
                 ret.append(f'{prop} {order}')
+
         return ','.join(ret)
 
     def _geometry(self, entity):
@@ -395,16 +397,16 @@ class SensorThingsProvider(BaseProvider):
         try:
             if self.entity == 'Things':
                 return entity['Locations'][0]['location']
-            elif self.entity == 'Datastreams':
-                try:
-                    geo = entity['Observations'][0][
-                        'FeatureOfInterest'].pop('feature')
-                except (KeyError, IndexError):
-                    geo = entity['Thing'].pop('Locations')[
-                        0]['location']
-                return geo
+
             elif self.entity == 'Observations':
                 return entity['FeatureOfInterest'].pop('feature')
+
+            elif self.entity == 'Datastreams':
+                try:
+                    return entity['Observations'][0]['FeatureOfInterest'].pop('feature')  # noqa
+                except (KeyError, IndexError):
+                    return entity['Thing'].pop('Locations')[0]['location']
+
         except (KeyError, IndexError):
             LOGGER.warning('No geometry found')
             return None
@@ -465,15 +467,14 @@ class SensorThingsProvider(BaseProvider):
 
         :param entity: `dict` of STA entity
 
-        :returns: dict of expanded location properties
+        :returns: None
         """
         try:
-            extra_props = entity['Locations'][0].get('properties', {})
+            extra_props = entity['Locations'][0]['properties']
             entity['properties'].update(extra_props)
         except (KeyError, IndexError):
-            LOGGER.warning(f'{entity} missing Location')
-
-        return entity
+            selfLink = entity['@iot.selfLink']
+            LOGGER.debug(f'{selfLink} has no Location properties')
 
     def _get_uri(self, entity, cnm, cid='@iot.id', uri=''):
         """
