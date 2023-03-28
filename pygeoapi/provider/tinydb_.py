@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,6 @@ from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderQueryError,
                                     ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +90,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             return fields
 
         for p in r['properties'].keys():
-            if p not in self.excludes + ['extent']:
+            if p not in self.excludes:
                 fields[p] = {'type': 'string'}
 
         fields['q'] = {'type': 'string'}
@@ -135,26 +134,30 @@ class TinyDBCatalogueProvider(BaseProvider):
         if bbox:
             LOGGER.debug('processing bbox parameter')
             bbox_as_string = ','.join(str(s) for s in bbox)
-            QUERY.append(f"Q.properties.extent.spatial.bbox.test(bbox_intersects, '{bbox_as_string}')")  # noqa
+            QUERY.append(f"Q.geometry.test(bbox_intersects, '{bbox_as_string}')")  # noqa
 
         if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
             if self.time_field is None:
                 LOGGER.error('time_field not enabled for collection')
-                raise ProviderQueryError()
+                LOGGER.error('Using default time property')
+                time_field2 = 'time'
+            else:
+                LOGGER.error(f'Using properties.{self.time_field}')
+                time_field2 = f"properties['{self.time_field}']"
 
             if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
                 time_begin, time_end = datetime_.split('/')
 
                 if time_begin != '..':
-                    QUERY.append(f"(Q.properties[self.time_field]>='{time_begin}')")  # noqa
+                    QUERY.append(f"(Q.{time_field2}>='{time_begin}')")  # noqa
                 if time_end != '..':
-                    QUERY.append(f"(Q.properties[self.time_field]<='{time_end}')")  # noqa
+                    QUERY.append(f"(Q.{time_field2}<='{time_end}')")  # noqa
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                QUERY.append(f"(Q.properties[self.time_field]=='{datetime_}')")  # noqa
+                QUERY.append(f"(Q.{time_field2}=='{datetime_}')")  # noqa
 
         if properties:
             LOGGER.debug('processing properties')
@@ -263,17 +266,6 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.debug('Missing title and description')
             json_data['properties']['_metadata_anytext'] = ''
 
-        # Create properties.extent.spatial.bbox if not existing
-        if "geometry" in json_data and json_data["geometry"] is not None and \
-            ("extent" not in json_data["properties"] or
-             "spatial" not in json_data["properties"]["extent"]):
-            if "extent" not in json_data["properties"]:
-                json_data["properties"]["extent"] = {}
-            if "spatial" not in json_data["properties"]["extent"]:
-                json_data["properties"]["extent"]["spatial"] = {}
-            json_data["properties"]["extent"]["spatial"]["bbox"] = \
-                [list(shape(json_data["geometry"]).bounds)]
-
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
 
@@ -328,31 +320,27 @@ class TinyDBCatalogueProvider(BaseProvider):
         return f'<TinyDBCatalogueProvider> {self.data}'
 
 
-def bbox_intersects(record_bbox, input_bbox):
+def bbox_intersects(record_geometry, input_bbox):
     """
     Manual bbox intersection calculation
 
-    :param record_bbox: `dict` of polygon geometry
+    :param record_geometry: `dict` of polygon geometry
     :param input_bbox: `str` of 'minx,miny,maxx,maxy'
 
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = record_bbox[0]
+    bbox1 = list(shape(record_geometry).bounds)
+
     bbox2 = [float(c) for c in input_bbox.split(',')]
 
     LOGGER.debug(f'Record bbox: {bbox1}')
     LOGGER.debug(f'Input bbox: {bbox2}')
 
-    # any point in bbox1 should be in bbox2
-    bbox_tests = [
-        bbox2[0] <= bbox1[0] <= bbox2[2],
-        bbox2[1] <= bbox1[1] <= bbox2[3],
-        bbox2[0] <= bbox1[2] <= bbox2[2],
-        bbox2[1] <= bbox1[3] <= bbox2[3]
-    ]
+    bbox1_minx, bbox1_miny, bbox1_maxx, bbox1_maxy = bbox1
+    bbox2_minx, bbox2_miny, bbox2_maxx, bbox2_maxy = bbox2
 
-    if any(bbox_tests):
-        return True
-
-    return False
+    return bbox1_minx <= bbox2_maxx and \
+        bbox1_miny <= bbox2_maxy and \
+        bbox2_minx <= bbox1_maxx and \
+        bbox2_miny <= bbox1_maxy
