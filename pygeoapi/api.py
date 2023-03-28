@@ -2082,6 +2082,7 @@ class API:
         Adds an item to a collection
 
         :param request: A request object
+        :param action: an action among 'create', 'update', 'delete', 'options'
         :param dataset: dataset name
 
         :returns: tuple of headers, status code, content
@@ -2119,6 +2120,15 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
+
+        if action == 'options':
+            headers['Allow'] = 'HEAD, GET'
+            if p.editable:
+                if identifier is None:
+                    headers['Allow'] += ', POST'
+                else:
+                    headers['Allow'] += ', PUT, DELETE'
+            return headers, HTTPStatus.OK, ''
 
         if not p.editable:
             msg = 'Collection is not editable'
