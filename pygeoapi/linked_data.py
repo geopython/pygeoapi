@@ -39,7 +39,9 @@ import pyproj
 from shapely.geometry import shape
 from shapely.ops import unary_union
 
-from pygeoapi.util import is_url, render_j2_template, get_transform_from_crs
+from pygeoapi.util import (
+    is_url, render_j2_template, get_transform_from_crs, get_crs_from_uri,
+)
 from pygeoapi import l10n
 
 
@@ -182,7 +184,7 @@ def geojson2jsonld(
     dataset: str,
     identifier: str = None,
     id_field: str = 'id',
-    crs_transform_wkt=None,
+    crs_transform_spec=None,
 ) -> str:
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
@@ -194,7 +196,7 @@ def geojson2jsonld(
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
     :param id_field: item identifier_field (optional)
-    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
+    :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
@@ -266,13 +268,13 @@ def geojson2jsonld(
         return ldjsonData
 
 
-def jsonldify_geometry(feature: dict, crs_transform_wkt=None) -> None:
+def jsonldify_geometry(feature: dict, crs_transform_spec=None) -> None:
     """
     Render JSON-LD for feature with GeoJSON, Geosparql/WKT, and
     schema geometry encodings.
 
     :param feature: feature body to with GeoJSON geometry
-    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
+    :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
     :returns: None
     """
@@ -296,23 +298,23 @@ def jsonldify_geometry(feature: dict, crs_transform_wkt=None) -> None:
     feature['schema:geo'] = geom2schemageo(geom)
 
 
-def geom2schemageo(geom: shape, crs_transform_wkt=None) -> dict:
+def geom2schemageo(geom: shape, crs_transform_spec=None) -> dict:
     """
     Render Schema Geometry from a GeoJSON base.
 
     :param geom: shapely geom of feature
-    :param crs_transform_wkt: `CrsTransformWkt` instance, optional
+    :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
     :returns: dict of rendered schema:geo geometry
     """
     if (
-        crs_transform_wkt is not None
-        and pyproj.CRS.from_wkt(
-            crs_transform_wkt.target_srs_wkt
+        crs_transform_spec is not None
+        and get_crs_from_uri(
+            crs_transform_spec.target_srs_uri
         ).to_epsg() != 4326
     ):
         crs_transform = get_transform_from_crs(
-            pyproj.CRS.from_wkt(crs_transform_wkt.target_crs_wkt),
+            get_crs_from_uri(crs_transform_spec.target_crs_uri),
             pyproj.CRS.from_epsg(4326),
         )
         geom = crs_transform(geom)
