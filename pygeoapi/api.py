@@ -1772,7 +1772,10 @@ class API:
 
         elif request.format == F_JSONLD:
             content = geojson2jsonld(
-                self.config, content, dataset, id_field=(p.uri_field or 'id')
+                self.config,
+                content, dataset,
+                id_field=(p.uri_field or 'id'),
+                crs_transform_spec=crs_transform_spec,
             )
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
@@ -2372,7 +2375,12 @@ class API:
 
         elif request.format == F_JSONLD:
             content = geojson2jsonld(
-                self.config, content, dataset, uri, (p.uri_field or 'id')
+                self.config,
+                content,
+                dataset,
+                uri,
+                (p.uri_field or 'id'),
+                crs_transform_spec=crs_transform_spec,
             )
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
