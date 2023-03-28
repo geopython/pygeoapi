@@ -14,8 +14,93 @@ mosaics. STAC is intentionally designed with a minimal core and flexible extensi
 to support a broad set of use cases. This specification has matured over the past several
 years, and is used in numerous production deployments.
 
-pygeoapi has two built-in providers to browse STAC catalogs: `FileSystem Provider`_ and
-`Hateoas Provider`_.
+pygeoapi built-in providers to browse STAC catalogs are described below:
+
+
+FileSystem Provider
+===================
+
+The FileSystem Provider implements STAC as a geospatial file browser through the server's file system,
+supporting any level of file/directory nesting/hierarchy.
+
+Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider property
+to the given directory and specifying allowed file types:
+
+Connection examples
+-------------------
+
+.. code-block:: yaml
+
+   my-stac-resource:
+       type: stac-collection
+       ...
+       providers:
+           - type: stac
+             name: FileSystem
+             data: /Users/tomkralidis/Dev/data/gdps
+             file_types:
+                 - .grib2
+
+
+.. note::
+   ``rasterio`` and ``fiona`` are required for describing geospatial files.
+
+
+pygeometa metadata control files
+--------------------------------
+
+pygeoapi's STAC filesystem fuctionality supports `pygeometa`_ MCF files residing
+in the same directory as data files.  If an MCF file is found, it will be used
+as part of generating the STAC item metadata (e.g. a file named ``birds.csv``
+having an associated ``birds.yml`` file).  If no MCF file is found, then
+pygeometa will generate the STAC item metadata from configuration and by
+reading the data's properties.
+
+Publishing ESRI Shapefiles
+--------------------------
+
+ESRI Shapefile publishing requires to specify all required component file extensions
+(``.shp``, ``.shx``, ``.dbf``) with the provider ``file_types`` option.
+
+Data access examples
+--------------------
+
+* STAC root page
+  * http://localhost:5000/stac
+
+From here, browse the filesystem accordingly.
+
+Azure Blob Storage Provider
+===========================
+
+The AzureBlobStorage Provider implements STAC as a geospatial file browser through Azure Blob Storage,
+supporting any level of file/directory nesting/hierarchy.
+
+Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider property
+to the given container and specifying allowed file types:
+
+Connection examples
+-------------------
+
+.. code-block:: yaml
+
+   my-stac-resource:
+       type: stac-collection
+       ...
+       providers:
+           - type: stac
+             name: AzureBlobStorage
+             data: my-container-name
+             file_types:
+                 - .grib2
+
+
+.. note::
+   The `AZURE_STORAGE_CONNECTION_STRING` environment variable is required and should be set accordingly.
+
+.. note::
+   ``rasterio`` and ``fiona`` are required for describing geospatial files.
+
 
 Hateoas Provider
 ================
@@ -181,7 +266,7 @@ Collections are similar to Catalogs with extra fields.
       "license": "proprietary"
   }
 
--------------------------------------
+
 
 **Structure of the Item <id>.json file**
 
@@ -261,7 +346,7 @@ The example below shows the content of a file named *arcticdem-frontiere-0.json*
       "collection": "hrdsm"
   }
 
----------------------
+
 
 HATEOAS Configuration
 ---------------------
@@ -292,59 +377,6 @@ Connection examples
              data: tests/stac
              file_types: catalog.json
 
--------------------
-
-FileSystem Provider
-===================
-
-The FileSystem Provider implements STAC as a geospatial file browser through the server's file system,
-supporting any level of file/directory nesting/hierarchy.
-
-Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider property
-to the given directory and specifying allowed file types:
-
-Connection examples
--------------------
-
-.. code-block:: yaml
-
-   my-stac-resource:
-       type: stac-collection
-       ...
-       providers:
-           - type: stac
-             name: FileSystem
-             data: /Users/tomkralidis/Dev/data/gdps
-             file_types:
-                 - .grib2
-
-
-.. note::
-   ``rasterio`` and ``fiona`` are required for describing geospatial files.
-
-pygeometa metadata control files
---------------------------------
-
-pygeoapi's STAC filesystem fuctionality supports `pygeometa`_ MCF files residing
-in the same directory as data files.  If an MCF file is found, it will be used
-as part of generating the STAC item metadata (e.g. a file named ``birds.csv``
-having an associated ``birds.yml`` file).  If no MCF file is found, then
-pygeometa will generate the STAC item metadata from configuration and by
-reading the data's properties.
-
-Publishing ESRI Shapefiles
---------------------------
-
-ESRI Shapefile publishing requires to specify all required component file extensions
-(``.shp``, ``.shx``, ``.dbf``) with the provider ``file_types`` option.
-
-Data access examples
---------------------
-
-* STAC root page
-  * http://localhost:5000/stac
-
-From here, browse the filesystem accordingly.
 
 .. _`SpatioTemporal Asset Catalog (STAC)`: https://stacspec.org
 .. _`pygeometa`: https://geopython.github.io/pygeometa
