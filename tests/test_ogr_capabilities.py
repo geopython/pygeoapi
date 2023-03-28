@@ -49,7 +49,7 @@ def get_axis_order(coords):
 
 def test_transforms():
     version_num = int(gdal.VersionInfo('VERSION_NUM'))
-    assert version_num > 3000000, f'Version={version_num} must be > 3.0.0'
+    assert version_num > 3000000, f'GDAL version={version_num} must be > 3.0.0'
     print(f'GDAL Version num = {version_num}')
 
     pyproj.show_versions()
@@ -84,10 +84,12 @@ def test_transforms():
         # Determine Axis order
         axis_order = get_axis_order(result)
 
+        # Axis order should match that of CRS
         print(f'Transform result={result} Axis order={axis_order}')
-        assert axis_order == crs_entry['order'], f'Axis order should be lat,lon {result}' # noqa
+        crs_axis_order = crs_entry['order']
+        assert axis_order == crs_axis_order, f'Axis order for {crs} after Transform should be {crs_axis_order} result={result}' # noqa
 
-        # We define an dummy in-memory OGR dataset
+        # Create an dummy in-memory OGR dataset
         drv = ogr.GetDriverByName('Memory')
         dst_ds = drv.CreateDataSource('out')
         dst_layer = dst_ds.CreateLayer('dummy', srs=target, geom_type=ogr.wkbPoint) # noqa
@@ -96,7 +98,7 @@ def test_transforms():
         wkt = "POINT({} {})".format(result[0], result[1])
         geom = ogr.CreateGeometryFromWkt(wkt)
 
-        # Suppress swapping by unassigning SpatialReference
+        # Suppress swapping by nulling SpatialReference
         geom.AssignSpatialReference(None)
         feature.SetGeometry(geom)
         json_feature = feature.ExportToJson(as_object=True)
@@ -105,7 +107,7 @@ def test_transforms():
         coords = json_feature['geometry']['coordinates']
         axis_order = get_axis_order(coords)
         print(f'ExportToJson result={coords} Axis order={axis_order}')
-        assert axis_order == crs_entry['order'], f'Axis order should be lat,lon {coords}' # noqa
+        assert axis_order == crs_axis_order, f'Axis order for {crs} after ExportToJson should be {crs_axis_order} coords={coords}' # noqa
 
 
 if __name__ == '__main__':

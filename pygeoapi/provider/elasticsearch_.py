@@ -32,6 +32,7 @@ from typing import Dict
 from collections import OrderedDict
 import json
 import logging
+import uuid
 
 from elasticsearch import Elasticsearch, exceptions, helpers
 from elasticsearch_dsl import Search, Q
@@ -401,7 +402,12 @@ class ElasticsearchProvider(BaseProvider):
         :returns: identifier of created item
         """
 
-        identifier, json_data = self._load_and_prepare_item(item)
+        identifier, json_data = self._load_and_prepare_item(
+            item, accept_missing_identifier=True)
+        if identifier is None:
+            # If there is no incoming identifier, allocate a random one
+            identifier = str(uuid.uuid4())
+            json_data["id"] = identifier
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
