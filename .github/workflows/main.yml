@@ -1,17 +1,17 @@
 name: Build
 
-on: 
+on:
   push:
     paths-ignore:
-      - '**.md'   
+      - '**.md'
   pull_request:
     branches:
       - master
-    paths-ignore: 
-      - '!**.md'  
+    paths-ignore:
+      - '!**.md'
   release:
     types:
-      - released 
+      - released
 
 jobs:
   flake8_py3:
@@ -78,7 +78,7 @@ jobs:
     - name: Install sqlite and gpkg dependencies
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: libsqlite3-mod-spatialite 
+        packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
     - name: Install requirements 📦
       run: |
@@ -96,6 +96,7 @@ jobs:
         python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
+        psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_buildings.sql
     - name: run unit tests ⚙️
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}

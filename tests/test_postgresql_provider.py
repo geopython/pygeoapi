@@ -43,6 +43,8 @@ import json
 import pytest
 from http import HTTPStatus
 
+from shapely.geometry import mapping as geojson_to_geom
+
 from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
@@ -398,6 +400,59 @@ def test_engine_and_table_model_stores(config):
 
 
 # START: EXTERNAL API TESTS
+def test_get_collection_items_postgresql_multiple_geoms(pg_api_):
+    """
+    Test for PostgreSQL for table with multiple geometry columns.
+
+    Requires local PostgreSQL with appropriate data. See
+    pygeoapi/provider/postgresql.py for details.
+    """
+    req = mock_request()
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_buildings_centroid')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response)
+    fid_without_geom = (10, 12)
+    for f in features:
+        if f['id'] not in fid_without_geom:
+            geom = geojson_to_geom(f['geometry'])
+            assert geom.geom_type.lower() == 'point'
+        else:
+            assert f.get('geometry') is None
+
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_buildings_contours')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response)
+    fid_without_geom = (11, 12)
+    for f in features:
+        if f['id'] not in fid_without_geom:
+            geom = geojson_to_geom(f['geometry'])
+            assert geom.geom_type.lower() == 'polygon'
+        else:
+            assert f.get('geometry') is None
+
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_buildings_geoms')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response)
+    for f in features:
+        if f['id'] < 10:
+            geom = geojson_to_geom(f['geometry'])
+            assert geom.geom_type.lower() == 'geometrycollection'
+        elif f['id'] == 10:
+            geom = geojson_to_geom(f['geometry'])
+            assert geom.geom_type.lower() == 'polygon'
+        elif f['id'] == 11:
+            geom = geojson_to_geom(f['geometry'])
+            assert geom.geom_type.lower() == 'point'
+        elif f['id'] == 12:
+            assert f.get('geometry') is None
+
+
 def test_get_collection_items_postgresql_cql(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate

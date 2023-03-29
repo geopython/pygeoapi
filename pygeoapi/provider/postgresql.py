@@ -47,6 +47,8 @@
 # Import dump:
 # gunzip < tests/data/hotosm_bdi_waterways.sql.gz |
 #  psql -U postgres -h 127.0.0.1 -p 5432 test
+# Import dummy data:
+# psql -U postgres -h 127.0.0.1 -p 5432 test -f tests/data/dummy_buildings.sql
 
 import logging
 
