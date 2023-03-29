@@ -43,8 +43,6 @@ import json
 import pytest
 from http import HTTPStatus
 
-from shapely.geometry import mapping as geojson_to_geom
-
 from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
@@ -412,12 +410,11 @@ def test_get_collection_items_postgresql_multiple_geoms(pg_api_):
         req, 'dummy_buildings_centroid')
 
     assert code == HTTPStatus.OK
-    features = json.loads(response)
+    fc = json.loads(response)
     fid_without_geom = (10, 12)
-    for f in features:
+    for f in fc['features']:
         if f['id'] not in fid_without_geom:
-            geom = geojson_to_geom(f['geometry'])
-            assert geom.geom_type.lower() == 'point'
+            assert f['geometry']['type'].lower() == 'point'
         else:
             assert f.get('geometry') is None
 
@@ -425,12 +422,11 @@ def test_get_collection_items_postgresql_multiple_geoms(pg_api_):
         req, 'dummy_buildings_contours')
 
     assert code == HTTPStatus.OK
-    features = json.loads(response)
+    fc = json.loads(response)
     fid_without_geom = (11, 12)
-    for f in features:
+    for f in fc['features']:
         if f['id'] not in fid_without_geom:
-            geom = geojson_to_geom(f['geometry'])
-            assert geom.geom_type.lower() == 'polygon'
+            assert f['geometry']['type'].lower() == 'polygon'
         else:
             assert f.get('geometry') is None
 
@@ -438,17 +434,20 @@ def test_get_collection_items_postgresql_multiple_geoms(pg_api_):
         req, 'dummy_buildings_geoms')
 
     assert code == HTTPStatus.OK
-    features = json.loads(response)
-    for f in features:
+    fc = json.loads(response)
+    for f in fc['features']:
         if f['id'] < 10:
-            geom = geojson_to_geom(f['geometry'])
-            assert geom.geom_type.lower() == 'geometrycollection'
+            assert f['geometry']['type'].lower() == 'geometrycollection'
+            geom_types = [
+                geom['type'].lower() for geom in f['geometry']['geometries']
+            ]
+            assert len(geom_types) == 2
+            assert 'point' in geom_types
+            assert 'polygon' in geom_types
         elif f['id'] == 10:
-            geom = geojson_to_geom(f['geometry'])
-            assert geom.geom_type.lower() == 'polygon'
+            assert f['geometry']['type'].lower() == 'polygon'
         elif f['id'] == 11:
-            geom = geojson_to_geom(f['geometry'])
-            assert geom.geom_type.lower() == 'point'
+            assert f['geometry']['type'].lower() == 'point'
         elif f['id'] == 12:
             assert f.get('geometry') is None
 
