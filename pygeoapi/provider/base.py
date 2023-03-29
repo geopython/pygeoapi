@@ -195,6 +195,7 @@ class BaseProvider:
         raise NotImplementedError()
 
     def _load_and_prepare_item(self, item, identifier=None,
+                               accept_missing_identifier=False,
                                raise_if_exists=True):
         """
         Helper function to load a record, detect its idenfier and prepare
@@ -202,6 +203,9 @@ class BaseProvider:
 
         :param item: `str` of incoming item data
         :param identifier: `str` of item identifier (optional)
+        :param accept_missing_identifier: `bool` of whether a missing
+                                          identifier in item is valid
+                                          (typically for a create() method)
         :param raise_if_exists: `bool` of whether to check if record
                                  already exists
 
@@ -238,7 +242,7 @@ class BaseProvider:
                 except KeyError:
                     LOGGER.debug('Cannot find properties.identifier')
 
-        if identifier2 is None:
+        if identifier2 is None and not accept_missing_identifier:
             msg = 'Missing identifier (id or properties.identifier)'
             LOGGER.error(msg)
             raise ProviderInvalidDataError(msg)
@@ -248,7 +252,7 @@ class BaseProvider:
             LOGGER.error(msg)
             raise ProviderInvalidDataError(msg)
 
-        if raise_if_exists:
+        if identifier2 is not None and raise_if_exists:
             LOGGER.debug('Querying database whether item exists')
             try:
                 _ = self.get(identifier2)
