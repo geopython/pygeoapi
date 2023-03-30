@@ -1,3 +1,5 @@
+azure-identity
+azure-storage-blob
 elasticsearch
 elasticsearch-dsl
 fiona

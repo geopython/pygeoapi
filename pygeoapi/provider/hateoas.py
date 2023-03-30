@@ -3,6 +3,7 @@
 # Authors: yves.choquette <yves.choquette@NRCan-RNCan.gc.ca>
 #
 # Copyright (c) 2022 Yves Choquette
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,10 +31,10 @@
 import requests
 import logging
 import os
-from urllib.parse import urljoin
 import json
 
 from pygeoapi.provider.base import (BaseProvider, ProviderNotFoundError)
+from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class HateoasProvider(BaseProvider):
         if '/' not in entrypath:  # root
             root_link = baseurl
         else:
-            parentpath = urljoin(thispath, '.')
+            parentpath = url_join(thispath, '.')
             child_links.append({
                 'rel': 'parent',
                 'href': f'{parentpath}?f=json',
@@ -88,7 +89,7 @@ class HateoasProvider(BaseProvider):
 
             depth = entrypath.count('/')
             root_path = '/'.replace('/', '../' * depth, 1)
-            root_link = urljoin(thispath, root_path)
+            root_link = url_join(thispath, root_path)
 
         content = {
             'links': [{
