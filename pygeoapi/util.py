@@ -452,28 +452,93 @@ def get_mimetype(filename: str) -> str:
     return mimetypes.guess_type(filename)[0]
 
 
-def get_breadcrumbs(urlpath: str) -> list:
+def get_breadcrumbs(home_url: str, *crumbs) -> list:
     """
-    helper function to make breadcrumbs from a URL path
+    Helper function to create breadcrumb objects (links) from a URL path.
 
-    :param urlpath: URL path
+    :param home_url: The URL that will be used as Home, i.e. the landing page
+                     of the website. This URL may include a path component.
+                     The first breadcrumb will be labelled Home and have
+                     this URL as its hyperlink reference.
+    :param crumbs:   Sequence of breadcrumbs (path parts) following after Home.
+                     You can simply specify path directory names and labels
+                     will be created automatically (underscores and dashes in
+                     the path will be replaced for spaces).
+                     You can also specify a tuple of (directory name, label)
+                     if you need a specific breadcrumb label to appear.
+                     Note that if the given breadcrumb path is not a single
+                     directory (i.e. it contains slashes), the path will be
+                     split and multiple crumbs will be generated. In that case,
+                     the behavior remains the same as above, i.e. if you need
+                     specific labels, you need to provide a tuple of
+                     (path/to/dir, label1/label2/label3) that uses slashes to
+                     separate the label names. This means that forward slashes
+                     in label names are not allowed and the number of path and
+                     label tokens must match.
 
-    :returns: `list` of `dict` objects of labels and links
+    :returns: `list` of `dict` objects with labels and links
     """
 
-    links = []
+    def iter_crumbs(bcs):
+        """ Generator function to create path tokens and labels from
+        user-specified breadcrumbs. """
+        for bc in bcs:
+            if isinstance(bc, str):
+                # Crumb is a string: split at slash if there are any
+                for b in bc.strip('/').split('/'):
+                    if not b:
+                        # Skip empty path strings
+                        continue
+                    yield b, None
+            elif isinstance(bc, (tuple, list)) and len(bc) == 2:
+                # Crumb is a tuple or list with 2 items: unpack
+                b, lbl = bc
+                if not b:
+                    # Skip empty path strings
+                    continue
+                # Split at slash if there are any, also for labels
+                b_list = b.strip('/').split('/')
+                l_list = lbl.strip('/').split('/')
+                if len(b_list) != len(l_list):
+                    # Number of path token must match number of labels
+                    raise ValueError(f'breadcrumb token mismatch: {bc}')
+                for b, l in zip(b_list, l_list):
+                    yield b, l
+            else:
+                # Bad input
+                raise ValueError(f'illegal breadcrumb token: {bc}')
 
-    tokens = urlpath.split('/')
+    # Validate home URL
+    base_url = urlparse(home_url)
+    if not base_url.netloc or not base_url.scheme:
+        raise ValueError('home url must contain scheme and domain')
+    if '.' in base_url.path:
+        raise ValueError('home url path must be a directory, not a file')
+    root_url = f'{base_url.scheme}://{base_url.netloc}'
+    if base_url.path.strip('/'):
+        # If there is a path, append it to the root URL
+        root_url = url_join(root_url, base_url.path)
 
-    s = ''
-    for t in tokens:
-        if s:
-            s += '/' + t
-        else:
-            s = t
+    # Generate breadcrumbs
+    links = [{
+        'href': root_url,
+        'title': 'Home'
+    }]
+    output_path = []
+    for i, (path_token, label) in enumerate(iter_crumbs(crumbs)):
+        if label is None:
+            # Create label from path token if not specified:
+            # First replace dashes and underscores for spaces...
+            label = path_token.replace('-', ' ').replace('_', ' ')
+            # ... and make it title case if there's no dot in the label
+            if '.' not in label:
+                label = label.title()
+        # Make sure we are appending to the output path
+        output_path.append(path_token)
+        # Add breadcrumb object
         links.append({
-            'href': s,
-            'title': t,
+            'href': url_join(root_url, *output_path),
+            'title': label,
         })
 
     return links
@@ -493,18 +558,18 @@ def filter_dict_by_key_value(dict_: dict, key: str, value: str) -> dict:
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
 
-def filter_providers_by_type(providers: list, type: str) -> dict:
+def filter_providers_by_type(providers: list, type_: str) -> dict:
     """
     helper function to filter a list of providers by type
 
     :param providers: ``list``
-    :param type: str
+    :param type_: str
 
     :returns: filtered ``dict`` provider
     """
 
     providers_ = {provider['type']: provider for provider in providers}
-    return providers_.get(type)
+    return providers_.get(type_)
 
 
 def get_provider_by_type(providers: list, provider_type: str) -> dict:

@@ -3648,7 +3648,7 @@ class API:
                     'result': job_output
                 }
                 content = render_j2_template(
-                    self.config, 'jobs/results/index.html',
+                    self.tpl_config, 'jobs/results/index.html',
                     data, request.locale)
 
         return headers, HTTPStatus.OK, content
@@ -4027,7 +4027,7 @@ class API:
         if format_ == F_HTML:
             headers['Content-Type'] = FORMAT_TYPES[F_HTML]
             content = render_j2_template(
-                self.config, 'exception.html', exception, SYSTEM_LOCALE)
+                self.tpl_config, 'exception.html', exception, SYSTEM_LOCALE)
         else:
             content = to_json(exception, self.pretty_print)
 

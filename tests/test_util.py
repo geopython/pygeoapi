@@ -112,12 +112,46 @@ def test_mimetype():
     assert util.get_mimetype('file.yaml') == 'text/plain'
 
 
-def test_get_breadcrumbs():
-    path = '/dataset/model-run/forecast-hour/variable.grib2'
-    breadcrumbs = util.get_breadcrumbs(path)
+def test_get_breadcrumbs(config, config_with_rules):
+    base_url = util.get_base_url(config)
+    breadcrumbs = util.get_breadcrumbs(base_url)
+    assert len(breadcrumbs) == 1
+    assert breadcrumbs[0] == {'href': base_url, 'title': 'Home'}
+
+    path_tokens = 'dataset/model-run/forecast-hour/variable.grib2'.split('/')
+    breadcrumbs = util.get_breadcrumbs(base_url, *path_tokens)
 
     assert len(breadcrumbs) == 5
-    assert breadcrumbs[3]['href'] == 'dataset/model-run/forecast-hour'
+    assert breadcrumbs[0] == {'href': base_url, 'title': 'Home'}
+    assert breadcrumbs[3]['href'] == f'{base_url}/dataset/model-run/forecast-hour'  # noqa
+    assert breadcrumbs[3]['title'] == 'Forecast Hour'
+    assert breadcrumbs[4]['href'] == f'{base_url}/dataset/model-run/forecast-hour/variable.grib2'  # noqa
+    assert breadcrumbs[4]['title'] == 'variable.grib2'
+
+    base_url = util.get_base_url(config_with_rules)
+    breadcrumbs = util.get_breadcrumbs(base_url, *path_tokens)
+    assert breadcrumbs[0]['href'] == base_url
+    assert breadcrumbs[1]['href'] == f'{base_url}/dataset'
+
+    with pytest.raises(ValueError):
+        util.get_breadcrumbs('/')
+        util.get_breadcrumbs('.')
+        util.get_breadcrumbs('pygeoapi.io', 'collections')
+        util.get_breadcrumbs(base_url, 1, 2, 3)
+        util.get_breadcrumbs(base_url, ('my/path', 'too/many/labels'))
+
+    breadcrumbs = util.get_breadcrumbs(f'{base_url}?lang=en&f=json', 'test')
+    assert breadcrumbs[0]['href'] == base_url
+    assert breadcrumbs[1]['href'] == f'{base_url}/test'
+
+    breadcrumbs = util.get_breadcrumbs(base_url, '/dataset', ('model-run', 'Run'), ['/forecast-hour/variable.grib2', 'Forecast/Variable'])  # noqa
+    assert len(breadcrumbs) == 5
+    assert breadcrumbs[1] == {'href': f'{base_url}/dataset', 'title': 'Dataset'}  # noqa
+    assert breadcrumbs[2]['title'] == 'Run'
+    assert breadcrumbs[3]['href'].endswith('forecast-hour')
+    assert breadcrumbs[3]['title'] == 'Forecast'
+    assert breadcrumbs[4]['href'].endswith('variable.grib2')
+    assert breadcrumbs[4]['title'] == 'Variable'
 
 
 def test_path_basename():

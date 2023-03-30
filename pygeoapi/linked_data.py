@@ -251,7 +251,7 @@ def geojson2jsonld(cls, data: dict, dataset: str,
     else:
         # Render jsonld template for single item with template configured
         LOGGER.debug(f'Rendering JSON-LD template: {template}')
-        content = render_j2_template(cls.config, template, ldjsonData)
+        content = render_j2_template(cls.tpl_config, template, ldjsonData)
         ldjsonData = json.loads(content)
         return ldjsonData
 
