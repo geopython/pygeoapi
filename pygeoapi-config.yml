@@ -53,7 +53,7 @@ server:
 #        connection: /tmp/pygeoapi-process-manager.db
 #        output_dir: /tmp/
     # ogc_schemas_location: /opt/schemas.opengis.net
-
+    
 logging:
     level: ERROR
     #logfile: /tmp/pygeoapi.log

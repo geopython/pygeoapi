@@ -67,6 +67,7 @@ PLUGINS = {
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
+        'MongoDB': 'pygeoapi.process.manager.mongodb_.MongoDBManager',
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
     }
 }
