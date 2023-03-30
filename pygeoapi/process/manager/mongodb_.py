@@ -33,7 +33,6 @@ import traceback
 from pymongo import MongoClient
 
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import JobStatus
 
 LOGGER = logging.getLogger(__name__)
 class MongoDBManager(BaseManager):
