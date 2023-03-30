@@ -102,7 +102,37 @@ def test_get_breadcrumbs():
     breadcrumbs = util.get_breadcrumbs(path)
 
     assert len(breadcrumbs) == 5
-    assert breadcrumbs[3]['href'] == 'dataset/model-run/forecast-hour'
+    assert breadcrumbs[0] == {'href': '.', 'title': 'Home'}
+    assert breadcrumbs[3]['href'] == './dataset/model-run/forecast-hour'
+    assert breadcrumbs[3]['title'] == 'Forecast Hour'
+    assert breadcrumbs[4]['href'] == './dataset/model-run/forecast-hour/variable.grib2'  # noqa
+    assert breadcrumbs[4]['title'] == 'Variable'
+
+    breadcrumbs = util.get_breadcrumbs(path, root_label='Root')
+    assert breadcrumbs[0]['title'] == 'Root'
+
+    root = 'http://localhost:8000'
+    breadcrumbs = util.get_breadcrumbs(path, root)
+    assert breadcrumbs[0]['href'] == root
+    assert breadcrumbs[1]['href'] == f'{root}/dataset'
+
+    root = 'http://localhost:8000/path'
+    breadcrumbs = util.get_breadcrumbs(path, root)
+    assert breadcrumbs[0]['href'] == root
+    assert breadcrumbs[1]['href'] == f'{root}/dataset'
+
+    breadcrumbs = util.get_breadcrumbs(f'{path}?lang=en&f=json', f'{root}?lang=en#main')  # noqa
+    assert breadcrumbs[0]['href'] == root
+    assert breadcrumbs[1]['href'] == f'{root}/dataset'
+
+    path = 'dataset/model-run/forecast-hour/variable.grib2'
+    breadcrumbs = util.get_breadcrumbs(path, endpoint_label='Test Variable')
+    assert breadcrumbs[-1]['title'] == 'Test Variable'
+
+    path = 'dataset/model-run/forecast-hour/'
+    breadcrumbs = util.get_breadcrumbs(path)
+    assert breadcrumbs[-1]['href'] == './dataset/model-run/forecast-hour'
+    assert breadcrumbs[-1]['title'] == 'forecast-hour'
 
 
 def test_path_basename():

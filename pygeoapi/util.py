@@ -382,28 +382,78 @@ def get_mimetype(filename: str) -> str:
     return mimetypes.guess_type(filename)[0]
 
 
-def get_breadcrumbs(urlpath: str) -> list:
+def get_breadcrumbs(url_path: str, root_url: str = None, endpoint_label: str = None,  # noqa
+                    root_label: str = 'Home') -> list:
     """
-    helper function to make breadcrumbs from a URL path
+    Helper function to create breadcrumb objects (links) from a URL path.
 
-    :param urlpath: URL path
+    :param url_path:       URL path. This may be an absolute or relative path.
+                           Breadcrumbs will be created for each path component.
+    :param root_url:       If a root is specified and the URL path is relative,
+                           the returned breadcrumbs will become absolute URLs,
+                           i.e. the root and the `url_path` will be combined.
+                           Note that if the root contains a path as well, those
+                           paths will not result in additional breadcrumbs
+                           being created, i.e. 1 breadcrumb will be created for
+                           the root.
+    :param endpoint_label: Optional label for the final breadcrumb.
+                           If not set, it will be derived from the final URL
+                           component (which may not be very meaningful).
+    :param root_label:     Label to apply to the root breadcrumb. Only used
+                           if `root_url` is set. Defaults to 'Home' if omitted.
 
     :returns: `list` of `dict` objects of labels and links
     """
 
-    links = []
-
-    tokens = urlpath.split('/')
-
-    s = ''
-    for t in tokens:
-        if s:
-            s += '/' + t
+    # Validate URL path
+    url_path = urlparse(url_path)
+    if not url_path.netloc:
+        # URL path is relative:
+        if not root_url:
+            # Set relative root URL
+            root_url = '.'
         else:
-            s = t
+            # Validate given root URL
+            url_obj = urlparse(root_url)
+            if not url_obj.netloc or not url_obj.scheme:
+                raise ValueError('root url must contain scheme and domain')
+            if '.' in url_obj.path:
+                raise ValueError('root url path must be a directory')
+            root_url = f'{url_obj.scheme}://{url_obj.netloc}'
+            if url_obj.path.strip('/'):
+                # If there is a path, append it to the root URL
+                root_url = url_join(root_url, url_obj.path)
+        url_path = url_path.geturl()
+    else:
+        # URL path is absolute:
+        # ignore root_url parameter and strip root from url_path
+        root_url = f'{url_path.scheme}://{url_path.netloc}'
+        url_path = url_path.geturl()[len(root_url):]
+
+    # Generate breadcrumbs
+    links = [{
+        'href': root_url,
+        'title': root_label
+    }]
+    tokens = url_path.strip('/').split('/')
+    for i, t in enumerate(tokens, 1):
+        if i == len(tokens):
+            # Last token gets endpoint_label
+            label = endpoint_label
+            if not label:
+                # No endpoint label specified so derive from token:
+                # Remove extension for last token if there is only 1...
+                label = t.split('.')[0] if t.count('.') == 1 else t
+                # ... and apply title case if there are no dashes/underscores
+                if not any(c for c in label if c in ('-', '_')):
+                    label = label.title()
+        else:
+            # Replace dashes and underscores for spaces and apply title case
+            # for all other tokens
+            label = t.replace('-', ' ').replace('_', ' ').title()
         links.append({
-            'href': s,
-            'title': t,
+            'href': url_join(root_url, *tokens[:i]),
+            'title': label,
         })
 
     return links
@@ -423,18 +473,18 @@ def filter_dict_by_key_value(dict_: dict, key: str, value: str) -> dict:
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
 
-def filter_providers_by_type(providers: list, type: str) -> dict:
+def filter_providers_by_type(providers: list, type_: str) -> dict:
     """
     helper function to filter a list of providers by type
 
     :param providers: ``list``
-    :param type: str
+    :param type_: str
 
     :returns: filtered ``dict`` provider
     """
 
     providers_ = {provider['type']: provider for provider in providers}
-    return providers_.get(type)
+    return providers_.get(type_)
 
 
 def get_provider_by_type(providers: list, provider_type: str) -> dict:
