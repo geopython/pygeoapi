@@ -46,6 +46,21 @@ advanced job management capabilities (e.g. Kubernetes, databases, etc.).
            connection: /tmp/pygeoapi-process-manager.db
            output_dir: /tmp/
 
+MongoDB
+--------------------
+As an alternative to the default a manager using `MongoDB`_ can be used. 
+The connection to an installed `MongoDB`_ instance must be provided in the configuration.
+`MongoDB`_ uses the localhost and port 27017 by default. Jobs are stored in a collection named
+job_manager_pygeoapi.
+
+.. code-block:: yaml
+
+   server:
+       manager:
+           name: MongoDB
+           connection: mongodb://host:port
+           output_dir: /tmp/
+
 
 Putting it all together
 -----------------------
