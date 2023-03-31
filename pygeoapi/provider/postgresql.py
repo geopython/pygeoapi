@@ -326,10 +326,30 @@ class PostgreSQLProvider(BaseProvider):
             raise ProviderQueryError(msg)
 
         Base = automap_base(metadata=metadata)
-        Base.prepare()
+        Base.prepare(
+            name_for_scalar_relationship=self._name_for_scalar_relationship,
+        )
         TableModel = getattr(Base.classes, self.table)
 
         return TableModel
+
+    @staticmethod
+    def _name_for_scalar_relationship(
+        base, local_cls, referred_cls, constraint,
+    ):
+        """Function used when automapping classes and relationships from
+        database schema and fixes potential naming conflicts.
+        """
+        name = referred_cls.__name__.lower()
+        local_table = local_cls.__table__
+        if name in local_table.columns:
+            newname = name + '_'
+            LOGGER.debug(
+                f'Already detected column name {name!r} in table '
+                f'{local_table!r}. Using {newname!r} for relationship name.'
+            )
+            return newname
+        return name
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
         feature = {

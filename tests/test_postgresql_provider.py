@@ -716,3 +716,17 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         )
         # Check that the coordinates of returned feature were transformed
         assert geom_32735.equals_exact(transform_func(geom_orig), 1)
+
+
+def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
+    """
+    Test that PostgreSQLProvider can handle naming conflicts when automapping
+    classes and relationships from database schema.
+    """
+    req = mock_request()
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_naming_conflicts')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response).get('features')
+    assert len(features) == 0
