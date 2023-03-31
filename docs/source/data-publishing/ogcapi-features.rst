@@ -287,6 +287,24 @@ Must have PostGIS installed.
          table: hotosm_bdi_waterways
          geom_field: foo_geom
 
+The PostgreSQL provider is also able to connect to Cloud SQL databases.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: PostgreSQL
+         data:
+             host: /cloudsql/INSTANCE_CONNECTION_NAME # e.g. 'project:region:instance'
+             dbname: reference
+             user: postgres
+             password: postgres
+         id_field: id
+         table: states
+
+This is what a configuration for `Google Cloud SQL`_ connection looks like. The ``host``
+block contains the necessary socket connection information.
+
 This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
@@ -449,4 +467,5 @@ Data access examples
    provider `id_field` values support slashes (i.e. ``my/cool/identifier``). The client request would then
    be responsible for encoding the identifier accordingly (i.e. ``http://localhost:5000/collections/foo/items/my%2Fcool%2Fidentifier``)
 
+.. _`Google Cloud SQL`: https://cloud.google.com/sql
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
