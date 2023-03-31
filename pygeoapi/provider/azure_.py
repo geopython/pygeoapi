@@ -28,10 +28,10 @@
 # =================================================================
 
 from datetime import datetime
-import io
-from json import loads
 import logging
 import os
+
+from azure.storage.blob import BlobServiceClient
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
@@ -40,8 +40,8 @@ from pygeoapi.util import file_modified_iso8601, get_path_basename, url_join
 LOGGER = logging.getLogger(__name__)
 
 
-class FileSystemProvider(BaseProvider):
-    """filesystem Provider"""
+class AzureBlobStorageProvider(BaseProvider):
+    """Azure blob storage Provider"""
 
     def __init__(self, provider_def):
         """
@@ -54,10 +54,15 @@ class FileSystemProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        if not os.path.exists(self.data):
-            msg = f'Directory does not exist: {self.data}'
+        if os.environ.get('AZURE_STORAGE_CONNECTION_STRING') is None:
+            msg = 'AZURE_STORAGE_CONNECTION_STRING not set!'
             LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
+            raise ProviderConnectionError()
+
+        self.blob_service_client = BlobServiceClient.from_connection_string(
+            os.environ.get('AZURE_STORAGE_CONNECTION_STRING'))
+        self.container_client = self.blob_service_client.get_container_client(
+            self.data)
 
     def get_data_path(self, baseurl, urlpath, dirpath):
         """
@@ -70,7 +75,12 @@ class FileSystemProvider(BaseProvider):
         :returns: `dict` of file listing or `dict` of GeoJSON item or raw file
         """
 
+        urlpath = urlpath.split('/')[0]
         thispath = os.path.join(baseurl, urlpath)
+
+        LOGGER.debug(f'basepath: {baseurl}')
+        LOGGER.debug(f'urlpath: {urlpath}')
+        LOGGER.debug(f'path: {thispath}')
 
         resource_type = None
         root_link = None
@@ -115,80 +125,93 @@ class FileSystemProvider(BaseProvider):
                 'rel': 'self',
                 'href': thispath,
                 'type': 'text/html'
-                }
+               }
             ]
         }
+
+        LOGGER.debug(f'data path: {data_path}')
+        data_path = data_path.replace(self.data, '').lstrip('/')
+        LOGGER.debug(f'data path: {data_path}')
+
+        if data_path == '':
+            LOGGER.debug('Root of container')
+
+        self.blob_client = self.blob_service_client.get_blob_client(
+            container=self.data, blob=data_path+'/')
 
         LOGGER.debug('Checking if path exists as raw file or directory')
         if data_path.endswith(tuple(self.file_types)):
             resource_type = 'raw_file'
-        elif os.path.exists(data_path):
+        elif self.container_client.walk_blobs(name_starts_with=data_path, prefix='/') or data_path == '':  # noqa
             resource_type = 'directory'
-        else:
-            LOGGER.debug('Checking if path exists as file via file_types')
-            for ft in self.file_types:
-                tmp_path = f'{data_path}{ft}'
-                if os.path.exists(tmp_path):
-                    resource_type = 'file'
-                    data_path = tmp_path
-                    break
 
+        LOGGER.debug('Checking if path exists as file via file_types')
+        for ft in self.file_types:
+            tmp_path = f'{data_path}{ft}'
+            blob_tmp_path = self.blob_service_client.get_blob_client(
+                container=self.data.lstrip('/'), blob=tmp_path)
+
+            if blob_tmp_path.exists():
+                resource_type = 'file'
+                data_path = tmp_path
+                break
+
+        LOGGER.debug(f'Resource type: {resource_type}')
         if resource_type is None:
             msg = f'Resource does not exist: {data_path}'
             LOGGER.error(msg)
             raise ProviderNotFoundError(msg)
 
         if resource_type == 'raw_file':
-            with io.open(data_path, 'rb') as fh:
-                return fh.read()
+            data = self.blob_service_client.get_blob_client(
+                container=self.data.lstrip('/'), blob=data_path)
+            return data.download_blob().read()
 
         elif resource_type == 'directory':
             content['type'] = 'Catalog'
-            dirpath2 = os.listdir(data_path)
-            dirpath2.sort()
-            for dc in dirpath2:
-                # TODO: handle a generic directory for tiles
-                if dc == "tiles":
-                    continue
+            LOGGER.debug(f'DATA PATH: {data_path}')
+            for dc in self.container_client.walk_blobs(
+                    name_starts_with=data_path, prefix='/'):
+                fullpath = dc.name
 
-                fullpath = os.path.join(data_path, dc)
-                filectime = file_modified_iso8601(fullpath)
-                filesize = os.path.getsize(fullpath)
-
-                if os.path.isdir(fullpath):
-                    newpath = os.path.join(baseurl, urlpath, dc)
+                LOGGER.debug(f'FULLPATH: {fullpath}')
+                if fullpath.endswith('/'):
+                    newpath = os.path.join(baseurl, urlpath, str(dc.name))
                     child_links.append({
                         'rel': 'child',
                         'href': newpath,
                         'type': 'text/html',
-                        'created': filectime,
                         'entry:type': 'Catalog'
                     })
-                elif os.path.isfile(fullpath):
-                    basename, extension = os.path.splitext(dc)
+
+                else:
+                    basename, extension = os.path.splitext(dc.name)
                     newpath = os.path.join(baseurl, urlpath, basename)
                     newpath2 = f'{newpath}{extension}'
                     if extension in self.file_types:
-                        fullpath = os.path.join(data_path, dc)
+                        fullpath = os.path.join(data_path, dc.name)
                         child_links.append({
                             'rel': 'item',
                             'href': newpath,
                             'title': get_path_basename(newpath2),
-                            'created': filectime,
-                            'file:size': filesize,
+                            'created': dc.creation_time,
+                            'file:size': dc.size,
                             'entry:type': 'Item'
                         })
 
         elif resource_type == 'file':
+            blob_tmp_path = self.blob_service_client.get_blob_client(
+                container=self.data.lstrip('/'), blob=tmp_path)
+            blob_properties = blob_tmp_path.get_blob_properties()
             filename = os.path.basename(data_path)
 
             id_ = os.path.splitext(filename)[0]
             if urlpath:
                 filename = filename.replace(id_, '')
-            url = f'{baseurl}/{urlpath}{filename}'
+            url = f'{baseurl}/{urlpath}/{tmp_path}'
 
-            filectime = file_modified_iso8601(data_path)
-            filesize = os.path.getsize(data_path)
+            filectime = blob_properties.creation_time
+            filesize = blob_properties.size
 
             content = {
                 'id': id_,
@@ -198,7 +221,7 @@ class FileSystemProvider(BaseProvider):
                 'assets': {}
             }
 
-            content.update(_describe_file(data_path))
+            content.update(_describe_file(blob_tmp_path.download_blob()))
 
             content['assets']['default'] = {
                 'href': url,
@@ -216,9 +239,8 @@ class FileSystemProvider(BaseProvider):
 
 def _describe_file(filepath):
     """
-    Helper function to describe a geospatial data
-    First checks if a sidecar mcf file is available, if so uses that
-    if not, script will parse the file to retrieve some info from the file
+    Helper function to describe geospatial data
+    Parse file using rasterio/fiona to retrieve properties
 
     :param filepath: path to file
 
@@ -231,29 +253,11 @@ def _describe_file(filepath):
         'properties': {}
     }
 
-    mcf_file = f'{os.path.splitext(filepath)[0]}.yml'
-
-    if os.path.isfile(mcf_file):
-        try:
-            from pygeometa.core import read_mcf, MCFReadError
-            from pygeometa.schemas.stac import STACItemOutputSchema
-
-            md = read_mcf(mcf_file)
-            stacjson = STACItemOutputSchema.write(STACItemOutputSchema, md)
-            stacdata = loads(stacjson)
-            for k, v in stacdata.items():
-                content[k] = v
-        except ImportError:
-            LOGGER.debug('pygeometa not found')
-        except MCFReadError as err:
-            LOGGER.warning(f'MCF error: {err}')
-    else:
-        LOGGER.debug(f'No mcf found at: {mcf_file}')
-
     if content['geometry'] is None and content['bbox'] is None:
         try:
             import rasterio
             from rasterio.crs import CRS
+            from rasterio.io import MemoryFile
             from rasterio.warp import transform_bounds
         except ImportError as err:
             LOGGER.warning('rasterio not found')
@@ -269,35 +273,38 @@ def _describe_file(filepath):
 
         try:  # raster
             LOGGER.debug('Testing raster data detection')
-            d = rasterio.open(filepath)
-            scrs = CRS(d.crs)
-            if scrs.to_epsg() not in [None, 4326]:
-                tcrs = CRS.from_epsg(4326)
-                bnds = transform_bounds(scrs, tcrs,
-                                        d.bounds[0], d.bounds[1],
-                                        d.bounds[2], d.bounds[3])
-                content['properties']['projection'] = scrs.to_epsg()
-            else:
-                bnds = [d.bounds.left, d.bounds.bottom,
-                        d.bounds.right, d.bounds.top]
-            content['bbox'] = bnds
-            content['geometry'] = {
-                'type': 'Polygon',
-                'coordinates': [[
-                    [bnds[0],  bnds[1]],
-                    [bnds[0],  bnds[3]],
-                    [bnds[2], bnds[3]],
-                    [bnds[2], bnds[1]],
-                    [bnds[0],  bnds[1]]
-                ]]
-            }
-            for k, v in d.tags(d.count).items():
-                content['properties'][k] = v
-                if k in ['GRIB_REF_TIME']:
-                    value = int(v.split()[0])
-                    datetime_ = datetime.fromtimestamp(value)
-                    content['properties']['datetime'] = datetime_.isoformat() + 'Z'  # noqa
-        except rasterio.errors.RasterioIOError:
+
+            with MemoryFile(filepath) as memfile:
+                with memfile.open() as d:
+                    scrs = CRS(d.crs)
+                    if scrs.to_epsg() not in [None, 4326]:
+                        tcrs = CRS.from_epsg(4326)
+                        bnds = transform_bounds(scrs, tcrs,
+                                                d.bounds[0], d.bounds[1],
+                                                d.bounds[2], d.bounds[3])
+                        content['properties']['projection'] = scrs.to_epsg()
+                    else:
+                        bnds = [d.bounds.left, d.bounds.bottom,
+                                d.bounds.right, d.bounds.top]
+                    content['bbox'] = bnds
+                    content['geometry'] = {
+                        'type': 'Polygon',
+                        'coordinates': [[
+                            [bnds[0], bnds[1]],
+                            [bnds[0], bnds[3]],
+                            [bnds[2], bnds[3]],
+                            [bnds[2], bnds[1]],
+                            [bnds[0], bnds[1]]
+                        ]]
+                    }
+                    for k, v in d.tags(d.count).items():
+                        content['properties'][k] = v
+                        if k in ['GRIB_REF_TIME']:
+                            value = int(v.split()[0])
+                            datetime_ = datetime.fromtimestamp(value)
+                            content['properties']['datetime'] = datetime_.isoformat() + 'Z'  # noqa
+        except rasterio.errors.RasterioIOError as err:
+            LOGGER.debug(err)
             try:
                 LOGGER.debug('Testing vector data detection')
                 d = fiona.open(filepath)

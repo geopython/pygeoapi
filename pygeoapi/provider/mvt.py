@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,9 +33,8 @@ import json
 import logging
 import requests
 from pathlib import Path
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 
-from pygeoapi.util import is_url, url_join
 from pygeoapi.provider.tile import (
     BaseTileProvider, ProviderTileNotFoundError)
 from pygeoapi.provider.base import ProviderConnectionError
@@ -43,6 +42,7 @@ from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType,
     GeospatialDataType)
 from pygeoapi.models.provider.mvt import MVTTilesJson
+from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class MVTProvider(BaseTileProvider):
 
             self._service_url = url_join(baseurl, servicepath)
 
-            self._service_metadata_url = urljoin(
+            self._service_metadata_url = url_join(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
         else:
@@ -163,8 +163,7 @@ class MVTProvider(BaseTileProvider):
             self._service_url = url_join(baseurl, servicepath)
         tile_matrix_set = self.service_url.split(
             '/{tileMatrix}/{tileRow}/{tileCol}')[0]
-        self._service_metadata_url = urljoin(
-            tile_matrix_set, 'metadata')
+        self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
         links = {
             'links': [
                 {
@@ -270,7 +269,7 @@ class MVTProvider(BaseTileProvider):
                 with open(self.service_metadata_url, 'r') as md_file:
                     metadata_json_content = json.loads(md_file.read())
 
-        service_url = urljoin(
+        service_url = url_join(
             server_url,
             f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
 
