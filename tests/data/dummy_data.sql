@@ -52,5 +52,5 @@ CREATE TABLE IF NOT EXISTS dummy.naming_conflicts_table(
     id INTEGER PRIMARY KEY,
     point_geom geometry(POINT, 4326),
     referred_table INTEGER,
-    FOREIGN KEY(referred_table) REFERENCES referred_table(id)
+    FOREIGN KEY(referred_table) REFERENCES dummy.referred_table(id)
 );
