@@ -2,6 +2,7 @@ CREATE SCHEMA IF NOT EXISTS dummy AUTHORIZATION postgres;
 
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA dummy;
 
+-- table with multiple geometry columns
 CREATE TABLE IF NOT EXISTS dummy.buildings(
     gid serial PRIMARY KEY,
     centroid geometry(POINT, 25833),
@@ -36,3 +37,20 @@ VALUES (ST_GeomFromText('POINT (473449 7463146)', 25833),
     -- gid 12
     (NULL,
      NULL);
+
+/* Two tables which create a naming conflict
+
+The name of relationship or referred table is the same as the name of an
+existing column. Example adapted from
+https://docs-sqlalchemy.readthedocs.io/ko/latest/orm/extensions/automap.html#handling-simple-naming-conflicts
+*/
+CREATE TABLE IF NOT EXISTS dummy.referred_table(
+    id INTEGER PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS dummy.naming_conflicts_table(
+    id INTEGER PRIMARY KEY,
+    point_geom geometry(POINT, 4326),
+    referred_table INTEGER,
+    FOREIGN KEY(referred_table) REFERENCES dummy.referred_table(id)
+);

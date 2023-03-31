@@ -342,7 +342,7 @@ def test_instantiation(config):
     ({'table': 'bad_table'}, ProviderQueryError,
      'Table.*not found in schema.*'),
     ({'data': {'bad': 'data'}}, ProviderConnectionError,
-     r'Could not connect to .*None:\*\*\*@'),
+     r'Could not connect to postgresql\+psycopg2:\/\/:5432 \(password hidden\).'), # noqa
     ({'id_field': 'bad_id'}, ProviderQueryError,
      r'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
 ])
@@ -624,3 +624,17 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
     assert error_response['description'].startswith('Bad CQL string')
+
+
+def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
+    """
+    Test that PostgreSQLProvider can handle naming conflicts when automapping
+    classes and relationships from database schema.
+    """
+    req = mock_request()
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_naming_conflicts')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response).get('features')
+    assert len(features) == 0

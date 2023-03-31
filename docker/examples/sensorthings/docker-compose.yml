@@ -36,35 +36,5 @@ services:
     ports:
       - "5000:80"
     volumes:
-      - ./brgm.sta.pygeoapi.config.yml:/pygeoapi/local.config.yml
-
-#     depends_on:
-#       - web
-#     restart: always
-#   web:
-#     image: fraunhoferiosb/frost-server:latest
-#     environment:
-#       - serviceRootUrl=http://localhost:8080/FROST-Server
-#       - http_cors_enable=true
-#       - http_cors_allowed.origins=*
-#       - persistence_db_driver=org.postgresql.Driver
-#       - persistence_db_url=jdbc:postgresql://database:5432/sensorthings
-#       - persistence_db_username=sensorthings
-#       - persistence_db_password=ChangeMe
-#       - persistence_autoUpdateDatabase=true
-#     ports:
-#       - 8080:8080
-#       - 1883:1883
-#     depends_on:
-#       - database
-
-#   database:
-#     image: postgis/postgis:11-2.5-alpine
-#     environment:
-#       - POSTGRES_DB=sensorthings
-#       - POSTGRES_USER=sensorthings
-#       - POSTGRES_PASSWORD=ChangeMe
-#     volumes:
-#       - postgis_volume:/var/lib/postgresql/data
-# volumes:
-#     postgis_volume:
+      - ./brgm.config.yml:/pygeoapi/local.config.yml
+      # - ./usgs.config.yml:/pygeoapi/local.config.yml
