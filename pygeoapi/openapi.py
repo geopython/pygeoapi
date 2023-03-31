@@ -1051,8 +1051,6 @@ def get_oas_30(cfg):
 
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
 
-    has_manager = 'manager' in cfg['server']
-
     if processes:
         paths['/processes'] = {
             'get': {
