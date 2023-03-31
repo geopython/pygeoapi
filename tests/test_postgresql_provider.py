@@ -570,3 +570,17 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
     assert error_response['description'].startswith('Bad CQL string')
+
+
+def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
+    """
+    Test that PostgreSQLProvider can handle naming conflicts when automapping
+    classes and relationships from database schema.
+    """
+    req = mock_request()
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'dummy_naming_conflicts')
+
+    assert code == HTTPStatus.OK
+    features = json.loads(response).get('features')
+    assert len(features) == 0
