@@ -48,7 +48,7 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def execute(self) -> Tuple[str, Any]:
+    def execute(self, data: dict) -> Tuple[str, Any]:
         """
         execute the process
 
