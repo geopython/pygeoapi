@@ -33,7 +33,10 @@ import uuid
 
 from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import JobStatus
+from pygeoapi.util import (
+    RequestedProcessExecutionMode,
+    JobStatus,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,23 +71,29 @@ class DummyManager(BaseManager):
             self,
             p: BaseProcessor,
             data_dict: dict,
-            is_async: bool = False
-    ) -> Tuple[str, str, Any, JobStatus]:
+            execution_mode: RequestedProcessExecutionMode | None = None
+    ) -> Tuple[str, str, Any, JobStatus, dict[str, str] | None]:
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
         :param data_dict: `dict` of data parameters
-        :param is_async: `bool` specifying sync or async processing.
+        :param execution_mode: requested execution mode
 
-        :returns: tuple of job_id, MIME type, response payload and status
+        :returns: tuple of job_id, MIME type, response payload, status and
+                  optionally additional HTTP headers to include in the
+                  response
         """
 
         jfmt = 'application/json'
 
-        if is_async:
-            LOGGER.debug('Dummy manager does not support asynchronous')
-            LOGGER.debug('Forcing synchronous execution')
+        response_headers = None
+        if execution_mode is not None:
+            response_headers = {
+                "Preference-Applied": RequestedProcessExecutionMode.wait.value}
+            if execution_mode == RequestedProcessExecutionMode.respond_async:
+                LOGGER.debug('Dummy manager does not support asynchronous')
+                LOGGER.debug('Forcing synchronous execution')
 
         try:
             jfmt, outputs = p.execute(data_dict)
@@ -96,9 +105,8 @@ class DummyManager(BaseManager):
             }
             current_status = JobStatus.failed
             LOGGER.error(err)
-
         job_id = str(uuid.uuid1())
-        return job_id, jfmt, outputs, current_status
+        return job_id, jfmt, outputs, current_status, response_headers
 
     def __repr__(self):
         return f'<DummyManager> {self.name}'
