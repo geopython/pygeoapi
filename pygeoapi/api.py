@@ -45,7 +45,6 @@ from gzip import compress
 from http import HTTPStatus
 import json
 import logging
-import os
 import re
 from typing import Any, Tuple, Union, Optional
 import urllib.parse
@@ -76,17 +75,15 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
-
 from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_crs_from_uri,
                            get_supported_crs_list, CrsTransformSpec,
                            get_provider_by_type, get_provider_default,
                            get_typed_value, JobStatus, json_serial,
                            render_j2_template, str2bool,
-                           transform_bbox, TEMPLATES, to_json)
+                           transform_bbox, TEMPLATES, to_json, get_api_rules, get_base_url)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -567,7 +564,8 @@ class APIRequest:
 
     def get_response_headers(self, force_lang: l10n.Locale = None,
                              force_type: str = None,
-                             force_encoding: str = None) -> dict:
+                             force_encoding: str = None,
+                             **custom_headers) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
 
@@ -595,6 +593,7 @@ class APIRequest:
         """
 
         headers = HEADERS.copy()
+        headers.update(**custom_headers)
         l10n.set_response_language(headers, force_lang or self._locale)
         if force_type:
             # Set custom MIME type if specified
@@ -638,7 +637,8 @@ class API:
         """
 
         self.config = config
-        self.config['server']['url'] = self.config['server']['url'].rstrip('/')
+        self.api_headers = get_api_rules(self.config).response_headers
+        self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
@@ -659,6 +659,10 @@ class API:
         self.pretty_print = self.config['server']['pretty_print']
 
         setup_logger(self.config['logging'])
+
+        # Create config clone for HTML templating with modified base URL
+        self.tpl_config = deepcopy(self.config)
+        self.tpl_config['server']['url'] = self.base_url
 
         # TODO: add as decorator
         if 'manager' in self.config['server']:
@@ -708,34 +712,34 @@ class API:
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
             'title': 'This document as JSON',
-            'href': f"{self.config['server']['url']}?f={F_JSON}"
+            'href': f"{self.base_url}?f={F_JSON}"
         }, {
             'rel': request.get_linkrel(F_JSONLD),
             'type': FORMAT_TYPES[F_JSONLD],
             'title': 'This document as RDF (JSON-LD)',
-            'href': f"{self.config['server']['url']}?f={F_JSONLD}"
+            'href': f"{self.base_url}?f={F_JSONLD}"
         }, {
             'rel': request.get_linkrel(F_HTML),
             'type': FORMAT_TYPES[F_HTML],
             'title': 'This document as HTML',
-            'href': f"{self.config['server']['url']}?f={F_HTML}",
+            'href': f"{self.base_url}?f={F_HTML}",
             'hreflang': self.default_locale
         }, {
             'rel': 'service-desc',
             'type': 'application/vnd.oai.openapi+json;version=3.0',
             'title': 'The OpenAPI definition as JSON',
-            'href': f"{self.config['server']['url']}/openapi"
+            'href': f"{self.base_url}/openapi"
         }, {
             'rel': 'service-doc',
             'type': FORMAT_TYPES[F_HTML],
             'title': 'The OpenAPI definition as HTML',
-            'href': f"{self.config['server']['url']}/openapi?f={F_HTML}",
+            'href': f"{self.base_url}/openapi?f={F_HTML}",
             'hreflang': self.default_locale
         }, {
             'rel': 'conformance',
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Conformance',
-            'href': f"{self.config['server']['url']}/conformance"
+            'href': f"{self.base_url}/conformance"
         }, {
             'rel': 'data',
             'type': FORMAT_TYPES[F_JSON],
@@ -745,15 +749,15 @@ class API:
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Processes',
-            'href': f"{self.config['server']['url']}/processes"
+            'href': f"{self.base_url}/processes"
         }, {
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Jobs',
-            'href': f"{self.config['server']['url']}/jobs"
+            'href': f"{self.base_url}/jobs"
         }]
 
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(**self.api_headers)
         if request.format == F_HTML:  # render
 
             fcm['processes'] = False
@@ -767,8 +771,8 @@ class API:
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
 
-            content = render_j2_template(self.config, 'landing_page.html', fcm,
-                                         request.locale)
+            content = render_j2_template(self.tpl_config, 'landing_page.html',
+                                         fcm, request.locale)
             return headers, HTTPStatus.OK, content
 
         if request.format == F_JSONLD:
@@ -793,19 +797,18 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
 
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(**self.api_headers)
 
         if request.format == F_HTML:
             template = 'openapi/swagger.html'
             if request._args.get('ui') == 'redoc':
                 template = 'openapi/redoc.html'
 
-            path = '/'.join([self.config['server']['url'].rstrip('/'),
-                            'openapi'])
+            path = f'{self.base_url}/openapi'
             data = {
                 'openapi-document-path': path
             }
-            content = render_j2_template(self.config, template, data,
+            content = render_j2_template(self.tpl_config, template, data,
                                          request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -845,9 +848,9 @@ class API:
             'conformsTo': list(set(conformance_list))
         }
 
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(**self.api_headers)
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.config, 'conformance.html',
+            content = render_j2_template(self.tpl_config, 'conformance.html',
                                          conformance, request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -869,7 +872,7 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(**self.api_headers)
 
         fcm = {
             'collections': [],
@@ -975,13 +978,13 @@ class API:
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'root',
                 'title': 'The landing page of this server as JSON',
-                'href': f"{self.config['server']['url']}?f={F_JSON}"
+                'href': f"{self.base_url}?f={F_JSON}"
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': 'root',
                 'title': 'The landing page of this server as HTML',
-                'href': f"{self.config['server']['url']}?f={F_HTML}"
+                'href': f"{self.base_url}?f={F_HTML}"
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
@@ -1154,7 +1157,7 @@ class API:
                     'type': map_mimetype,
                     'rel': 'http://www.opengis.net/def/rel/ogc/1.0/map',
                     'title': f'Map as {map_format}',
-                    'href': f"{self.config['server']['url']}/collections/{k}/map?f={map_format}"  # noqa
+                    'href': f"{self.get_collections_url()}/{k}/map?f={map_format}"  # noqa
                 })
 
             try:
@@ -1225,11 +1228,11 @@ class API:
         if request.format == F_HTML:  # render
             fcm['collections_path'] = self.get_collections_url()
             if dataset is not None:
-                content = render_j2_template(self.config,
+                content = render_j2_template(self.tpl_config,
                                              'collections/collection.html',
                                              fcm, request.locale)
             else:
-                content = render_j2_template(self.config,
+                content = render_j2_template(self.tpl_config,
                                              'collections/index.html', fcm,
                                              request.locale)
 
@@ -1265,7 +1268,7 @@ class API:
 
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers()
+        headers = request.get_response_headers(**self.api_headers)
 
         if any([dataset is None,
                 dataset not in self.config['resources'].keys()]):
@@ -1330,7 +1333,7 @@ class API:
 
             queryables['collections_path'] = self.get_collections_url()
 
-            content = render_j2_template(self.config,
+            content = render_j2_template(self.tpl_config,
                                          'collections/queryables.html',
                                          queryables, request.locale)
 
@@ -1359,7 +1362,8 @@ class API:
 
         # Set Content-Language to system locale until provider locale
         # has been determined
-        headers = request.get_response_headers(SYSTEM_LOCALE)
+        headers = request.get_response_headers(SYSTEM_LOCALE,
+                                               **self.api_headers)
 
         properties = []
         reserved_fieldnames = ['bbox', 'bbox-crs', 'crs', 'f', 'lang', 'limit',
@@ -2201,7 +2205,8 @@ class API:
 
         # Set Content-Language to system locale until provider locale
         # has been determined
-        headers = request.get_response_headers(SYSTEM_LOCALE)
+        headers = request.get_response_headers(SYSTEM_LOCALE,
+                                               **self.api_headers)
 
         LOGGER.debug('Processing query parameters')
 

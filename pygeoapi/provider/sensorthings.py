@@ -37,7 +37,7 @@ from requests import Session
 from pygeoapi.provider.base import (
     BaseProvider, ProviderQueryError, ProviderConnectionError)
 from pygeoapi.util import (
-    yaml_load, url_join, get_provider_default, crs_transform)
+    yaml_load, url_join, get_provider_default, crs_transform, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class SensorThingsProvider(BaseProvider):
             # Read from pygeoapi config
             with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
                 CONFIG = yaml_load(fh)
-                self.rel_link = CONFIG['server']['url']
+                self.rel_link = get_base_url(CONFIG)
 
             for (name, rs) in CONFIG['resources'].items():
                 pvs = rs.get('providers')
