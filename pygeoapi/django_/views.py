@@ -147,6 +147,9 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
             else:
                 response_ = _feed_response(request, 'post_collection_items',
                                            request, collection_id)
+    elif request.method == 'OPTIONS':
+        response_ = _feed_response(request, 'manage_collection_item',
+                                   request, 'options', collection_id)
 
     response = _to_django_response(*response_)
 
@@ -214,6 +217,10 @@ def collection_item(request: HttpRequest,
             request, 'manage_collection_item', request, 'delete',
             collection_id, item_id
         )
+    elif request.method == 'OPTIONS':
+        response_ = _feed_response(
+            request, 'manage_collection_item', request, 'options',
+            collection_id, item_id)
 
     response = _to_django_response(*response_)
 
