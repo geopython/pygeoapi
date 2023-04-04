@@ -30,24 +30,23 @@
 """Generic util functions used in the code"""
 
 import base64
-from functools import partial
-from dataclasses import dataclass
-from typing import List, Callable
-from datetime import date, datetime, time
-from decimal import Decimal
-from enum import Enum
-import functools
 import json
 import logging
 import mimetypes
 import os
 import re
+import functools
+from functools import partial
+from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, IO, Union, List
+from typing import Any, IO, Union, List, Callable
 from urllib.parse import urlparse
+from urllib.request import urlopen
+
+import dateutil.parser
 import shapely.ops
 from shapely.geometry import (
     GeometryCollection,
@@ -56,22 +55,16 @@ from shapely.geometry import (
     MultiLineString,
     MultiPoint,
     MultiPolygon,
-    Point,
     Polygon,
+    Point,
     shape as geojson_to_geom,
     mapping as geom_to_geojson,
 )
-from urllib.request import urlopen
-
-import dateutil.parser
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from babel.support import Translations
-import pyproj
-from pyproj.exceptions import CRSError
 import yaml
 from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from shapely.geometry import Polygon
+import pyproj
+from pyproj.exceptions import CRSError
 from requests import Session
 from requests.structures import CaseInsensitiveDict
 
