@@ -63,6 +63,8 @@ def config_MapServer_WFS_cities():
             },
             'gdal_ogr_options': {
                 'GDAL_CACHEMAX': '64',
+                'GDAL_HTTP_VERSION': '1.1',
+                'GDAL_HTTP_UNSAFESSL': 'YES',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
                 'CPL_DEBUG': 'NO'
@@ -92,6 +94,8 @@ def config_MapServer_WFS_continents():
             },
             'gdal_ogr_options': {
                 'GDAL_CACHEMAX': '64',
+                'GDAL_HTTP_VERSION': '1.1',
+                'GDAL_HTTP_UNSAFESSL': 'YES',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
                 'CPL_DEBUG': 'NO'

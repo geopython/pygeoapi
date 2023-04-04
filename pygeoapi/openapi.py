@@ -53,7 +53,7 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapif-2': 'http://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
+    'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
@@ -342,7 +342,54 @@ def get_oas_30(cfg):
                     'default': False
                 }
             },
+            'crs': {
+                'name': 'crs',
+                'in': 'query',
+                'description': 'Indicates the coordinate reference system for the results.',  # noqa
+                'style': 'form',
+                'required': False,
+                'explode': False,
+                'schema': {
+                    'format': 'uri',
+                    'type': 'string'
+                }
+            },
+            'bbox': {
+                'name': 'bbox',
+                'in': 'query',
+                'description': 'Only features that have a geometry that intersects the bounding box are selected.'  # noqa
+                               'The bounding box is provided as four or six numbers, depending on whether the '  # noqa
+                               'coordinate reference system includes a vertical axis (height or depth).',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'array',
+                    'minItems': 4,
+                    'maxItems': 6,
+                    'items': {
+                        'type': 'number'
+                    }
+                }
+            },
             'bbox-crs': {
+                'name': 'bbox-crs',
+                'in': 'query',
+                'description': 'Indicates the coordinate reference system for the given bbox coordinates.',  # noqa
+                'style': 'form',
+                'required': False,
+                'explode': False,
+                'schema': {
+                    'format': 'uri',
+                    'type': 'string'
+                }
+            },
+            # FIXME: This is not compatible with the bbox-crs definition in
+            #        OGCAPI Features Part 2!
+            #        We need to change the mapscript provider and
+            #        get_collection_map() method in the API!
+            #        So this is for de map-provider only.
+            'bbox-crs-epsg': {
                 'name': 'bbox-crs',
                 'in': 'query',
                 'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
@@ -512,10 +559,10 @@ def get_oas_30(cfg):
                     'parameters': [
                         items_f,
                         items_l,
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/bbox"},  # noqa
+                        {'$ref': '#/components/parameters/bbox'},
                         {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif-2']}#/components/parameters/crs"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif-2']}#/components/parameters/bbox-crs"},  # noqa
+                        {'$ref': '#/components/parameters/crs'},  # noqa
+                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
                         coll_properties,
                         {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
                         {'$ref': '#/components/parameters/skipGeometry'},
@@ -638,7 +685,7 @@ def get_oas_30(cfg):
                     'operationId': f'get{name.capitalize()}Feature',
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif-2']}#/components/parameters/crs"},  # noqa
+                        {'$ref': '#/components/parameters/crs'},  # noqa
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
                     ],
@@ -732,8 +779,8 @@ def get_oas_30(cfg):
                     'parameters': [
                         items_f,
                         items_l,
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/bbox"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif-2']}#/components/parameters/bbox-crs"},  # noqa
+                        {'$ref': '#/components/parameters/bbox'},
+                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
                     ],
                     'responses': {
                         '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
@@ -981,7 +1028,7 @@ def get_oas_30(cfg):
                     'tags': [k],
                     'operationId': 'getMap',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/bbox"},  # noqa
+                        {'$ref': '#/components/parameters/bbox'},
                         {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                         {
                             'name': 'width',
@@ -1017,7 +1064,7 @@ def get_oas_30(cfg):
                             'style': 'form',
                             'explode': False
                         },
-                        {'$ref': '#/components/parameters/bbox-crs'},
+                        {'$ref': '#/components/parameters/bbox-crs-epsg'},
                         map_f
                     ],
                     'responses': {
