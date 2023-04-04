@@ -41,13 +41,13 @@ import click
 from jsonschema import validate as jsonschema_validate
 import yaml
 
-from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, to_json, yaml_load)
+                           filter_providers_by_type, to_json, yaml_load,
+                           get_api_rules, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +75,8 @@ def get_ogc_schemas_location(server_config):
         if osl.startswith('http'):
             value = osl
         elif osl.startswith('/'):
-            value = os.path.join(server_config['url'], 'schemas')
+            base_url = get_base_url({'server': server_config})
+            value = f'{base_url}/schemas'
 
     return value
 
@@ -140,6 +141,8 @@ def get_oas_30(cfg):
     server_locales = l10n.get_locales(cfg)
     locale_ = server_locales[0]
 
+    api_rules = get_api_rules(cfg)
+
     osl = get_ogc_schemas_location(cfg['server'])
     OPENAPI_YAML['oapif'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
 
@@ -163,12 +166,12 @@ def get_oas_30(cfg):
             'name': cfg['metadata']['license']['name'],
             'url': cfg['metadata']['license']['url']
         },
-        'version': __version__
+        'version': api_rules.api_version
     }
     oas['info'] = info
 
     oas['servers'] = [{
-        'url': cfg['server']['url'],
+        'url': get_base_url(cfg),
         'description': l10n.translate(cfg['metadata']['identification']['description'], locale_)  # noqa
     }]
 
