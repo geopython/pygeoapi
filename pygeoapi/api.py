@@ -74,7 +74,8 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
+from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
+                           DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
@@ -3544,18 +3545,17 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
-        is_async = data.get('mode', 'auto') == 'async'
-        if is_async:
-            LOGGER.debug('Asynchronous request mode detected')
-
-        if is_async and not self.manager.is_async:
-            LOGGER.debug('async manager not configured/enabled')
-            is_async = False
-
+        try:
+            execution_mode = RequestedProcessExecutionMode(
+                request.headers.get("Prefer"))
+        except ValueError:
+            execution_mode = None
         try:
             LOGGER.debug('Executing process')
-            job_id, mime_type, outputs, status = self.manager.execute_process(
-                process, data_dict, is_async)
+            execution_result = self.manager.execute_process(
+                process, data_dict, execution_mode=execution_mode)
+            job_id, mime_type, outputs, status, additional_headers = execution_result
+            headers.update(additional_headers)
             headers['Location'] = f"{self.base_url}/jobs/{job_id}"
         except ProcessorExecuteError as err:
             LOGGER.error(err)
@@ -3571,11 +3571,10 @@ class API:
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             response = outputs
-
-        elif status != JobStatus.failed and not is_async:
+        elif status not in (JobStatus.failed, JobStatus.accepted):
             response['outputs'] = [outputs]
 
-        if is_async:
+        if status == JobStatus.accepted:
             http_status = HTTPStatus.CREATED
         else:
             http_status = HTTPStatus.OK
