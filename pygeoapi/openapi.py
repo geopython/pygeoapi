@@ -1051,8 +1051,6 @@ def get_oas_30(cfg):
 
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
 
-    has_manager = 'manager' in cfg['server']
-
     if processes:
         paths['/processes'] = {
             'get': {
@@ -1150,70 +1148,69 @@ def get_oas_30(cfg):
                 }
             }
 
-        if has_manager:
-            paths['/jobs'] = {
-                'get': {
-                    'summary': 'Retrieve jobs list',
-                    'description': 'Retrieve a list of jobs',
-                    'tags': ['server'],
-                    'operationId': 'getJobs',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}
-                    }
+        paths['/jobs'] = {
+            'get': {
+                'summary': 'Retrieve jobs list',
+                'description': 'Retrieve a list of jobs',
+                'tags': ['server'],
+                'operationId': 'getJobs',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
                 }
             }
+        }
 
-            paths['/jobs/{jobId}'] = {
-                'get': {
-                    'summary': 'Retrieve job details',
-                    'description': 'Retrieve job details',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path,
-                        {'$ref': '#/components/parameters/f'}
-                    ],
-                    'operationId': 'getJob',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
-                },
-                'delete': {
-                    'summary': 'Cancel / delete job',
-                    'description': 'Cancel / delete job',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path
-                    ],
-                    'operationId': 'deleteJob',
-                    'responses': {
-                        '204': {'$ref': '#/components/responses/204'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
-                },
-            }
+        paths['/jobs/{jobId}'] = {
+            'get': {
+                'summary': 'Retrieve job details',
+                'description': 'Retrieve job details',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJob',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
+                }
+            },
+            'delete': {
+                'summary': 'Cancel / delete job',
+                'description': 'Cancel / delete job',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path
+                ],
+                'operationId': 'deleteJob',
+                'responses': {
+                    '204': {'$ref': '#/components/responses/204'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
+                }
+            },
+        }
 
-            paths['/jobs/{jobId}/results'] = {
-                'get': {
-                    'summary': 'Retrieve job results',
-                    'description': 'Retrive job resiults',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path,
-                        {'$ref': '#/components/parameters/f'}
-                    ],
-                    'operationId': 'getJobResults',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
+        paths['/jobs/{jobId}/results'] = {
+            'get': {
+                'summary': 'Retrieve job results',
+                'description': 'Retrive job resiults',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJobResults',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
                 }
             }
+        }
 
     oas['paths'] = paths
 
