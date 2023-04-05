@@ -96,6 +96,19 @@ CRS_URI_PATTERN = re.compile(
 )
 
 
+# Type for Shapely geometrical objects.
+GeomObject = Union[
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+]
+
+
 @dataclass
 class CrsTransformSpec:
     source_crs_uri: str
@@ -662,19 +675,6 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
         raise CRSError(msg)
     else:
         return crs
-
-
-# Type for shapely geometrical objects.
-GeomObject = Union[
-    GeometryCollection,
-    LinearRing,
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Point,
-    Polygon,
-]
 
 
 def get_transform_from_crs(
