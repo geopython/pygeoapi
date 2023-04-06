@@ -1824,7 +1824,6 @@ def test_delete_job(api_):
     }
 
     req_body_async = {
-        'mode': 'async',
         'inputs': {
             'name': 'Async Test Deletion'
         }
@@ -1847,7 +1846,7 @@ def test_delete_job(api_):
     rsp_headers, code, response = api_.delete_job(job_id)
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request(data=req_body_async)
+    req = mock_request(data=req_body_async, HTTP_Prefer="respond-async")
     rsp_headers, code, response = api_.execute_process(
         req, 'hello-world')
 
