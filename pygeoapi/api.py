@@ -3549,7 +3549,7 @@ class API:
             execution_result = self.manager.execute_process(
                 process, data_dict, execution_mode=execution_mode)
             job_id, mime_type, outputs, status, additional_headers = execution_result
-            headers.update(additional_headers)
+            headers.update(additional_headers or {})
             headers['Location'] = f"{self.base_url}/jobs/{job_id}"
         except ProcessorExecuteError as err:
             LOGGER.error(err)
