@@ -275,7 +275,8 @@ class BaseManager:
 
         :param p: `pygeoapi.process` object
         :param data_dict: `dict` of data parameters
-        :param execution_mode: `str` optionally specifying sync or async processing.
+        :param execution_mode: `str` optionally specifying sync or async
+        processing.
 
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
@@ -291,25 +292,29 @@ class BaseManager:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
                 response_headers = {
-                    "Preference-Applied": RequestedProcessExecutionMode.respond_async.value}
+                    "Preference-Applied": (
+                        RequestedProcessExecutionMode.respond_async.value)
+                }
             else:
                 LOGGER.debug('Synchronous execution')
                 handler = self._execute_handler_sync
                 response_headers = {
-                    "Preference-Applied": RequestedProcessExecutionMode.wait.value}
+                    "Preference-Applied": (
+                        RequestedProcessExecutionMode.wait.value)
+                }
         elif execution_mode == RequestedProcessExecutionMode.wait:
-            # client wants sync - pygeoapi implicitly always support sync execution mode
+            # client wants sync - pygeoapi implicitly supports sync mode
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
             response_headers = {
                 "Preference-Applied": RequestedProcessExecutionMode.wait.value}
         else:  # client has no preference
-            # according to the OAPI - Processes spec we ought to respond with sync
+            # according to OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
             response_headers = None
-        # TODO: the handler's response could also be allowed to include more HTTP
-        #  headers
+        # TODO: handler's response could also be allowed to include more HTTP
+        # headers
         mime_type, outputs, status = handler(p, job_id, data_dict)
         return job_id, mime_type, outputs, status, response_headers
 
