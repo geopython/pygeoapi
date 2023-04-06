@@ -3507,12 +3507,6 @@ class API:
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
-        if not self.manager:
-            msg = 'Process manager is undefined'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
-
         process = load_plugin('process',
                               processes_config[process_id]['processor'])
 

@@ -290,16 +290,19 @@ class BaseManager:
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
-                response_headers = {"Preference-Applied": "respond-async"}
+                response_headers = {
+                    "Preference-Applied": RequestedProcessExecutionMode.respond_async.value}
             else:
                 LOGGER.debug('Synchronous execution')
                 handler = self._execute_handler_sync
-                response_headers = {"Preference-Applied": "respond-sync"}
+                response_headers = {
+                    "Preference-Applied": RequestedProcessExecutionMode.wait.value}
         elif execution_mode == RequestedProcessExecutionMode.wait:
             # client wants sync - pygeoapi implicitly always support sync execution mode
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
-            response_headers = {"Preference-Applied": "respond-sync"}
+            response_headers = {
+                "Preference-Applied": RequestedProcessExecutionMode.wait.value}
         else:  # client has no preference
             # according to the OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')
