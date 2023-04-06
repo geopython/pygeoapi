@@ -21,6 +21,7 @@ parameters.
 
    `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
+   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
@@ -397,14 +398,41 @@ relies on `sodapy <https://github.com/xmunoz/sodapy>`.
 .. code-block:: yaml
 
    providers:
-      - type: feature
-        name: Socrata
-        data: https://soda.demo.socrata.com/
-        resource_id: emdb-u46w
-        id_field: earthquake_id
-        geom_field: location
-        time_field: datetime # Optional time_field for datetime queries
-        token: my_token # Optional app token
+       - type: feature
+         name: Socrata
+         data: https://soda.demo.socrata.com/
+         resource_id: emdb-u46w
+         id_field: earthquake_id
+         geom_field: location
+         time_field: datetime # Optional time_field for datetime queries
+         token: my_token # Optional app token
+
+
+.. _ERDDAP Tabledap Service:
+
+ERDDAP Tabledap Service
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   Requires Python package `requests`_
+
+To publish from an ERDDAP `Tabledap`_ service, the following are required in your index:
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: ERDDAPTabledap
+         data: http://osmc.noaa.gov/erddap/tabledap/OSMC_Points
+         id_field: PLATFORM_CODE
+         time_field: time
+         options:
+             filters: "&parameter=\"SLP\"&platform!=\"C-MAN%20WEATHER%20STATIONS\"&platform!=\"TIDE GAUGE STATIONS (GENERIC)\""
+             max_age_hours: 12
+
+
+.. note::
+   If the ``datetime`` parameter is passed by the client, this overrides the ``options.max_age_hours`` setting.
 
 Controlling the order of properties
 -----------------------------------
@@ -471,3 +499,5 @@ Data access examples
 
 .. _`Google Cloud SQL`: https://cloud.google.com/sql
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`Tabledap`: https://coastwatch.pfeg.noaa.gov/erddap/tabledap/documentation.html
+.. _`requests`: https://requests.readthedocs.io
