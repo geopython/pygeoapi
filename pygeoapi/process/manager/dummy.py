@@ -28,7 +28,7 @@
 # =================================================================
 
 import logging
-from typing import Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 import uuid
 
 from pygeoapi.process.base import BaseProcessor
@@ -71,8 +71,8 @@ class DummyManager(BaseManager):
             self,
             p: BaseProcessor,
             data_dict: dict,
-            execution_mode: RequestedProcessExecutionMode | None = None
-    ) -> Tuple[str, str, Any, JobStatus, dict[str, str] | None]:
+            execution_mode: Optional[RequestedProcessExecutionMode] = None
+    ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
