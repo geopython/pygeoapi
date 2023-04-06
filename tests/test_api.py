@@ -1794,8 +1794,7 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req_body_1['mode'] = 'async'
-    req = mock_request(data=req_body_1)
+    req = mock_request(data=req_body_1, HTTP_Prefer="respond-async")
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 
     assert 'Location' in rsp_headers

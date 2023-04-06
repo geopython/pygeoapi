@@ -38,6 +38,7 @@ import uuid
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
+    ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
 from pygeoapi.process.base import BaseProcessor
@@ -286,8 +287,11 @@ class BaseManager:
         job_id = str(uuid.uuid1())
         if execution_mode == RequestedProcessExecutionMode.respond_async:
             # client wants async - do we support it?
-            process_supports_async = "execute-async" in p.metadata.get(
-                "jobControlOptions", [])
+            process_supports_async = (
+                ProcessExecutionMode.async_execute.value in p.metadata.get(
+                    "jobControlOptions", []
+                )
+            )
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
