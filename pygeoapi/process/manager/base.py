@@ -32,7 +32,7 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional
 import uuid
 
 from pygeoapi.util import (
@@ -269,7 +269,7 @@ class BaseManager:
             p: BaseProcessor,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> tuple[str, str, Any, JobStatus, Optional[dict[str, str]]]:
+    ) -> tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
