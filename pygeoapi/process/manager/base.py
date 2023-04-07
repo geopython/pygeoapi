@@ -27,9 +27,10 @@
 #
 # =================================================================
 
-from datetime import datetime
 import json
 import logging
+import uuid
+from datetime import datetime
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Tuple
@@ -259,24 +260,25 @@ class BaseManager:
 
         return jfmt, outputs, current_status
 
-    def execute_process(self, p, job_id, data_dict, is_async=False):
+    def execute_process(self, p, data_dict, is_async=False):
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
-        :param job_id: job identifier
         :param data_dict: `dict` of data parameters
         :param is_async: `bool` specifying sync or async processing.
 
-        :returns: tuple of MIME type, response payload and status
+        :returns: tuple of job_id, MIME type, response payload and status
         """
 
+        job_id = str(uuid.uuid1())
         if not is_async:
             LOGGER.debug('Synchronous execution')
-            return self._execute_handler_sync(p, job_id, data_dict)
+            result = self._execute_handler_sync(p, job_id, data_dict)
         else:
             LOGGER.debug('Asynchronous execution')
-            return self._execute_handler_async(p, job_id, data_dict)
+            result = self._execute_handler_async(p, job_id, data_dict)
+        return job_id, *result
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
