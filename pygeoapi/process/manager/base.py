@@ -130,7 +130,7 @@ class BaseManager:
         raise NotImplementedError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[None, JobStatus]:
+                               data_dict: dict) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -260,7 +260,12 @@ class BaseManager:
 
         return jfmt, outputs, current_status
 
-    def execute_process(self, p, data_dict, is_async=False):
+    def execute_process(
+            self,
+            p,
+            data_dict,
+            is_async=False
+    ) -> Tuple[str, str, Any, JobStatus]:
         """
         Default process execution handler
 

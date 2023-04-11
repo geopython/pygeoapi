@@ -48,7 +48,6 @@ import logging
 import re
 from typing import Any, Tuple, Union
 import urllib.parse
-import uuid
 
 from dateutil.parser import parse as dateparse
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
@@ -3430,7 +3429,6 @@ class API:
 
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
-
 
         is_async = data.get('mode', 'auto') == 'async'
         if is_async:

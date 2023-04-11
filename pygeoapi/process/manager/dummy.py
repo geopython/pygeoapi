@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+import uuid
 from typing import Any, Tuple
 
 from pygeoapi.process.base import BaseProcessor
@@ -63,17 +64,20 @@ class DummyManager(BaseManager):
 
         return []
 
-    def execute_process(self, p: BaseProcessor, job_id: str, data_dict: dict,
-                        is_async: bool = False) -> Tuple[str, Any, int]:
+    def execute_process(
+            self,
+            p: BaseProcessor,
+            data_dict: dict,
+            is_async: bool = False
+    ) -> Tuple[str, str, Any, JobStatus]:
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
-        :param job_id: job identifier
         :param data_dict: `dict` of data parameters
         :param is_async: `bool` specifying sync or async processing.
 
-        :returns: tuple of MIME type, response payload and status
+        :returns: tuple of job_id, MIME type, response payload and status
         """
 
         jfmt = 'application/json'
@@ -93,7 +97,8 @@ class DummyManager(BaseManager):
             current_status = JobStatus.failed
             LOGGER.error(err)
 
-        return jfmt, outputs, current_status
+        job_id = str(uuid.uuid1())
+        return job_id, jfmt, outputs, current_status
 
     def __repr__(self):
         return f'<DummyManager> {self.name}'
