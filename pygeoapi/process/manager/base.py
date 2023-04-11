@@ -283,7 +283,7 @@ class BaseManager:
         else:
             LOGGER.debug('Asynchronous execution')
             result = self._execute_handler_async(p, job_id, data_dict)
-        return job_id, *result
+        return (job_id, *result)
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
