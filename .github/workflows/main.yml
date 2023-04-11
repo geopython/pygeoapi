@@ -80,6 +80,11 @@ jobs:
       with:
         packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
+    - name: Install GDAL with Python bindings
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: gdal-bin libgdal-dev
+        version: 3.0.4
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
@@ -89,6 +94,7 @@ jobs:
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
         pip3 install --upgrade numpy "sqlalchemy<2"
+        pip3 install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
         #pip3 install --upgrade rasterio==1.1.8
     - name: setup test data ⚙️
       run: |
@@ -102,6 +108,7 @@ jobs:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: |
         pytest tests/test_api.py
+        pytest tests/test_api_ogr_provider.py
         pytest tests/test_config.py
         pytest tests/test_csv__formatter.py
         pytest tests/test_csv__provider.py
@@ -110,12 +117,12 @@ jobs:
         pytest tests/test_filesystem_provider.py
         pytest tests/test_geojson_provider.py
         pytest tests/test_mongo_provider.py
-        #pytest tests/test_ogr_csv_provider.py
-        #pytest tests/test_ogr_esrijson_provider.py
-        #pytest tests/test_ogr_gpkg_provider.py
-        #pytest tests/test_ogr_shapefile_provider.py
-        #pytest tests/test_ogr_sqlite_provider.py
-        #pytest tests/test_ogr_wfs_provider.py
+        pytest tests/test_ogr_csv_provider.py
+        pytest tests/test_ogr_esrijson_provider.py
+        pytest tests/test_ogr_gpkg_provider.py
+        pytest tests/test_ogr_shapefile_provider.py
+        pytest tests/test_ogr_sqlite_provider.py
+        pytest tests/test_ogr_wfs_provider.py
         pytest tests/test_openapi.py
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py

@@ -50,8 +50,8 @@ def config_poi_portugal():
         'data': {
             'source_type': 'GPKG',
             'source': './tests/data/poi_portugal.gpkg',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -105,8 +105,8 @@ def config_gpkg_4326():
             'source_type': 'GPKG',
             'source':
                 './tests/data/dutch_addresses_4326.gpkg',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -126,12 +126,17 @@ def config_gpkg_28992():
             'source_type': 'GPKG',
             'source':
                 './tests/data/dutch_addresses_28992.gpkg',
-            'source_srs': 'EPSG:28992',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:28992',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
         },
+        'crs': [
+             'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+             'http://www.opengis.net/def/crs/EPSG/0/28992'
+         ],
+        'storageCRS': 'http://www.opengis.net/def/crs/EPSG/0/28992',
         'id_field': 'id',
         'layer': 'OGRGeoJSON'
     }
@@ -210,7 +215,7 @@ def test_query_bbox_hits_28992(config_gpkg_28992):
     # feature_collection = p.query(
     #     bbox=(180800, 452500, 181200, 452700), resulttype='hits')
     feature_collection = p.query(
-        bbox=[5.763409, 52.060197, 5.769256, 52.061976], resulttype='hits')
+        bbox=[180800, 452500, 181200, 452700], resulttype='hits')
 
     assert feature_collection.get('type') == 'FeatureCollection'
     features = feature_collection.get('features')
@@ -227,7 +232,7 @@ def test_query_bbox_28992(config_gpkg_28992):
     # feature_collection = p.query(
     #     bbox=[180800, 452500, 181200, 452700], resulttype='results')
     feature_collection = p.query(
-        bbox=(5.763409, 52.060197, 5.769256, 52.061976), resulttype='results')
+        bbox=(180800, 452500, 181200, 452700), resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
     features = feature_collection.get('features')
     assert len(features) == 1
@@ -340,7 +345,7 @@ def test_query_bbox_with_offset_28992(config_gpkg_28992):
     p = OGRProvider(config_gpkg_28992)
     feature_collection = p.query(
         offset=10, limit=5,
-        bbox=(5.742, 52.053, 5.773, 52.098),
+        bbox=(181000, 456000, 182000, 457000),
         resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
     features = feature_collection.get('features')
@@ -352,8 +357,8 @@ def test_query_bbox_with_offset_28992(config_gpkg_28992):
     assert properties is not None
     geometry = feature.get('geometry')
     assert geometry is not None
-    assert properties['straatnaam'] == 'Buurtweg'
-    assert properties['huisnummer'] == '4'
+    assert properties['straatnaam'] == 'Arnhemseweg'
+    assert properties['huisnummer'] == '99'
 
 
 def test_query_bbox_with_offset_4326(config_gpkg_4326):

@@ -55,6 +55,7 @@ from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is nee
 from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
+import pyproj
 import shapely
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.engine import URL
@@ -65,6 +66,7 @@ from sqlalchemy.sql.expression import and_
 
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
+from pygeoapi.util import get_transform_from_crs
 
 
 _ENGINE_STORE = {}
@@ -109,7 +111,7 @@ class PostgreSQLProvider(BaseProvider):
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
-              filterq=None, **kwargs):
+              filterq=None, crs_transform_spec=None, **kwargs):
         """
         Query Postgis for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
@@ -126,6 +128,7 @@ class PostgreSQLProvider(BaseProvider):
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
         :param filterq: CQL query as text string
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: GeoJSON FeatureCollection
         """
@@ -168,9 +171,11 @@ class PostgreSQLProvider(BaseProvider):
             if resulttype == "hits" or not results:
                 response['numberReturned'] = 0
                 return response
-
+            crs_transform_out = self._get_crs_transform(crs_transform_spec)
             for item in results.limit(limit):
-                response['features'].append(self._sqlalchemy_to_feature(item))
+                response['features'].append(
+                    self._sqlalchemy_to_feature(item, crs_transform_out)
+                )
 
         return response
 
@@ -190,12 +195,13 @@ class PostgreSQLProvider(BaseProvider):
 
         return fields
 
-    def get(self, identifier, **kwargs):
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
 
         :param identifier: feature id
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: GeoJSON FeatureCollection
         """
@@ -209,7 +215,8 @@ class PostgreSQLProvider(BaseProvider):
             if item is None:
                 msg = f"No such item: {self.id_field}={identifier}."
                 raise ProviderItemNotFoundError(msg)
-            feature = self._sqlalchemy_to_feature(item)
+            crs_transform_out = self._get_crs_transform(crs_transform_spec)
+            feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Drop non-defined properties
             if self.properties:
@@ -344,7 +351,7 @@ class PostgreSQLProvider(BaseProvider):
             return newname
         return name
 
-    def _sqlalchemy_to_feature(self, item):
+    def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
         feature = {
             'type': 'Feature'
         }
@@ -359,6 +366,8 @@ class PostgreSQLProvider(BaseProvider):
         if feature['properties'].get(self.geom):
             wkb_geom = feature['properties'].pop(self.geom)
             shapely_geom = to_shape(wkb_geom)
+            if crs_transform_out is not None:
+                shapely_geom = crs_transform_out(shapely_geom)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
             feature['geometry'] = geojson_geom
         else:
@@ -443,3 +452,13 @@ class PostgreSQLProvider(BaseProvider):
         selected_properties_clause = load_only(*selected_columns)
 
         return selected_properties_clause
+
+    def _get_crs_transform(self, crs_transform_spec=None):
+        if crs_transform_spec is not None:
+            crs_transform = get_transform_from_crs(
+                pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
+                pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+            )
+        else:
+            crs_transform = None
+        return crs_transform

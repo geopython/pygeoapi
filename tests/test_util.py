@@ -32,6 +32,8 @@ from decimal import Decimal
 from copy import deepcopy
 
 import pytest
+from pyproj.exceptions import CRSError
+from shapely.geometry import Point
 
 from pygeoapi import util
 from pygeoapi.api import __version__
@@ -126,7 +128,7 @@ def test_path_basename():
 def test_filter_dict_by_key_value(config):
     collections = util.filter_dict_by_key_value(config['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 7
+    assert len(collections) == 8
 
     notfound = util.filter_dict_by_key_value(config['resources'],
                                              'type', 'foo')
@@ -216,6 +218,86 @@ def test_get_api_rules(config, config_with_rules):
     assert rules.get_url_prefix('flask') == '/test'
     assert rules.get_url_prefix('starlette') == '/test'
     assert rules.get_url_prefix('django') == r'^test/'
+
+
+def test_get_transform_from_crs():
+    crs_in = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/4258'
+    )
+    crs_out = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/25833'
+    )
+    transform_func = util.get_transform_from_crs(crs_in, crs_out)
+    p_in = Point((67.278972, 14.394493))
+    p_out = Point((473901.6105, 7462606.8762))
+    assert p_out.equals_exact(transform_func(p_in), 1e-3)
+
+
+def test_get_supported_crs_list():
+    DEFAULT_CRS_LIST = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84h'
+    ]
+    DUTCH_CRS = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+
+    # Make various combinations of configs
+    CONFIGS = \
+        [
+            dict(),
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84h']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     'http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     DUTCH_CRS]},
+        ]
+    # Apply all configs to util function
+    for config in CONFIGS:
+        crs_list = util.get_supported_crs_list(config, DEFAULT_CRS_LIST)
+
+        # Whatever config: a default should be present
+        contains_default = False
+        for crs in crs_list:
+            if crs in DEFAULT_CRS_LIST:
+                contains_default = True
+        assert contains_default
+
+        # Extra CRSs supplied should also be present
+        if DUTCH_CRS in config:
+            assert DUTCH_CRS in crs_list
+
+
+def test_get_crs_from_uri():
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/not/a/valid/crs/uri')
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/0')
+    CRS_DICT = {
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'OGC:CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
+        'http://www.opengis.net/def/crs/EPSG/0/28992': 'EPSG:28992'
+    }
+    for key in CRS_DICT:
+        crs_obj = util.get_crs_from_uri(key)
+        assert crs_obj.srs == CRS_DICT[key]
+
+
+def test_transform_bbox():
+    # Use rounded values as fractions may differ
+    result = [59742, 446645, 129005, 557074]
+
+    bbox = [4, 52, 5, 53]
+    from_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    to_crs = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+    bbox_trans = util.transform_bbox(bbox, from_crs, to_crs)
+    for n in range(4):
+        assert round(bbox_trans[n]) == result[n]
+
+    bbox = [52, 4, 53, 5]
+    from_crs = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    bbox_trans = util.transform_bbox(bbox, from_crs, to_crs)
+    for n in range(4):
+        assert round(bbox_trans[n]) == result[n]
 
 
 def test_prefetcher():

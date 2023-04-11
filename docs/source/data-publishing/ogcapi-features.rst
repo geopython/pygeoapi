@@ -14,26 +14,36 @@ Providers
 pygeoapi core feature providers are listed below, along with a matrix of supported query
 parameters.
 
+
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅
-   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌
-   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌
-   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
-   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌
+   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
+   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
+   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅n
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅n
+   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
 
+.. note::
 
-Below are specific connection examples based on supported providers.
+   * All Providers that support `bbox` also support the `bbox-crs` parameter. `bbox-crs` is handled within pygeoapi core.
+   * All Providers support the `crs` parameter to reproject (transform) response data. Some, like PostgreSQL and OGR, perform this natively: '✅n'.
+
 
 Connection examples
 -------------------
+
+Below are specific connection examples based on supported providers.
+To support `crs` on queries, one needs to configure both a list of supported CRSs, and a 'Storage CRS'.
+See also :ref:`crs` and :ref:`configuration`. When no CRS information is configured the
+default CRS/'Storage CRS' value http://www.opengis.net/def/crs/OGC/1.3/CRS84 is assumed.
+That is: WGS84 with lon,lat axis-ordering as in standard GeoJSON.
 
 CSV
 ^^^
@@ -52,6 +62,11 @@ definition.
          geometry:
              x_field: long
              y_field: lat
+         crs:
+             - http://www.opengis.net/def/crs/EPSG/0/28992
+             - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+             - http://www.opengis.net/def/crs/EPSG/0/4326
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
 
 
 GeoJSON
@@ -118,7 +133,7 @@ specify the URL for the service layer in the ``data`` field.
          data: https://sampleserver5.arcgisonline.com/arcgis/rest/services/NYTimes_Covid19Cases_USCounties/MapServer/0
          id_field: objectid
          time_field: date_in_your_device_time_zone # Optional time field
-         crs: 4326 # Optional crs (default is ESPG:4326)
+         crs: 4326 # Optional crs (default is EPSG:4326)
          username: username # Optional ArcGIS username
          password: password # Optional ArcGIS password
 
@@ -129,9 +144,9 @@ OGR
 .. note::
    Requires Python package gdal
 
-`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,  
+`GDAL/OGR <https://gdal.org>`_ supports a wide range of spatial file formats, such as shapefile, dxf, gpx, kml,
 but also services such as WFS. Read the full list and configuration options at https://gdal.org/drivers/vector.
-Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_, 
+Additional formats and features are available via the `virtual format <https://gdal.org/drivers/vector/vrt.html#vector-vrt>`_,
 use this driver for example for flat database files (CSV).
 
 The OGR provider requires a recent (3+) version of GDAL to be installed.
@@ -169,9 +184,15 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
                 GDAL_HTTP_PROXY: (optional proxy)
                 GDAL_PROXY_AUTH: (optional auth for remote WFS)
                 CPL_DEBUG: NO
+          crs:
+            - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            - http://www.opengis.net/def/crs/EPSG/0/4326
+            - http://www.opengis.net/def/crs/EPSG/0/4258
+            - http://www.opengis.net/def/crs/EPSG/0/28992
+          storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
           id_field: gml_id
           layer: rdinfo:stations
-          
+
 .. code-block:: yaml
 
     providers:
@@ -180,8 +201,6 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
            data:
              source_type: ESRIJSON
              source: https://map.bgs.ac.uk/arcgis/rest/services/GeoIndex_Onshore/boreholes/MapServer/0/query?where=BGS_ID+%3D+BGS_ID&outfields=*&orderByFields=BGS_ID+ASC&f=json
-             source_srs: EPSG:27700
-             target_srs: EPSG:4326
              source_capabilities:
                  paging: True
              open_options:
@@ -203,12 +222,22 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
            data:
              source_type: PostgreSQL
              source: "PG: host=127.0.0.1 dbname=test user=postgres password=postgres"
-             source_srs: EPSG:4326
-             target_srs: EPSG:4326 # Can be used to transform/reproject the data
            id_field: osm_id
            layer: osm.hotosm_bdi_waterways # Value follows a 'my_schema.my_table' structure
            geom_field: foo_geom
 
+.. note::
+   NB: Formerly the config parameters ``source_srs`` and ``target_srs`` could be used to
+   transform/reproject the data for every request. Starting with pygeoapi release 0.15.0 these fields are no longer supported.
+   Reason is that pygeoapi now supports CRS-handling as per the OGC API Features Standard "Part 2".
+   `storage_crs`: is basically the same as `source_crs` but complying with standards (and axis ordering!)
+   It should be set to the actual or default CRS of the source data/service. When omitted the default http://www.opengis.net/def/crs/OGC/1.3/CRS84
+   if assumed.
+   `crs` is an array of supported CRSs, also the same default applies when omitted.
+   The `crs` or `bbox-crs` query parameter can now be used and must be present in the `crs` array (or
+   the default applies).
+   The `crs` query parameter is used as follows:
+   e.g. ``http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992``.
 
 
 MongoDB
@@ -239,9 +268,9 @@ PostgreSQL
 .. note::
    Requires Python packages sqlalchemy, geoalchemy2 and psycopg2-binary
 
-Must have PostGIS installed. 
+Must have PostGIS installed.
 
-.. note:: 
+.. note::
    Geometry must be using EPSG:4326
 
 .. code-block:: yaml
@@ -251,7 +280,7 @@ Must have PostGIS installed.
          name: PostgreSQL
          data:
              host: 127.0.0.1
-             port: 3010 # Default 5432 if not provided 
+             port: 3010 # Default 5432 if not provided
              dbname: test
              user: postgres
              password: postgres
@@ -316,22 +345,22 @@ GeoPackage file:
 SensorThings API
 ^^^^^^^^^^^^^^^^
 
-The STA provider is capable of creating feature collections from OGC SensorThings 
-API endpoints. Three of the STA entities are configurable: Things, Datastreams, and 
-Observations. For a full description of the SensorThings entity model, see 
-`here <https://docs.ogc.org/is/15-078r6/15-078r6.html#figure_2>`_. 
+The STA provider is capable of creating feature collections from OGC SensorThings
+API endpoints. Three of the STA entities are configurable: Things, Datastreams, and
+Observations. For a full description of the SensorThings entity model, see
+`here <https://docs.ogc.org/is/15-078r6/15-078r6.html#figure_2>`_.
 For each entity of ``Things``, pygeoapi will expand all entities directly related to
-the ``Thing``, including its associated ``Location``, from which the 
-geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to 
-include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``. 
+the ``Thing``, including its associated ``Location``, from which the
+geometry for the feature collection is derived. Similarly, ``Datastreams`` are expanded to
+include the associated ``Thing``, ``Sensor`` and ``ObservedProperty``.
 
-The default id_field is ``@iot.id``. The STA provider adds one required field, 
-``entity``, and an optional field, ``intralink``. The ``entity`` field refers to 
-which STA entity to use for the feature collection. The ``intralink`` field controls 
+The default id_field is ``@iot.id``. The STA provider adds one required field,
+``entity``, and an optional field, ``intralink``. The ``entity`` field refers to
+which STA entity to use for the feature collection. The ``intralink`` field controls
 how the provider is acted upon by other STA providers and is by default, False.
-If ``intralink`` is true for an adjacent STA provider collection within a 
-pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi 
-link to the other entity or it's ``uri_field`` if declared. 
+If ``intralink`` is true for an adjacent STA provider collection within a
+pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi
+link to the other entity or it's ``uri_field`` if declared.
 
 .. code-block:: yaml
 
@@ -340,14 +369,14 @@ link to the other entity or it's ``uri_field`` if declared.
          name: SensorThings
          data: https://sensorthings-wq.brgm-rec.fr/FROST-Server/v1.0/
          uri_field: uri
-         entity: Datastreams 
+         entity: Datastreams
          time_field: phenomenonTime
          intralink: true
 
-If all three entities are configured, the STA provider will represent a complete STA 
-endpoint as OGC-API feature collections. The ``Things`` features will include links 
-to the associated features in the ``Datastreams`` feature collection, and the 
-``Observations`` features will include links to the associated features in the 
+If all three entities are configured, the STA provider will represent a complete STA
+endpoint as OGC-API feature collections. The ``Things`` features will include links
+to the associated features in the ``Datastreams`` feature collection, and the
+``Observations`` features will include links to the associated features in the
 ``Datastreams`` feature collection. Examples with three entities configured
 are included in the docker examples for SensorThings.
 
@@ -407,6 +436,8 @@ Data access examples
   * http://localhost:5000/collections/foo/items?f=csv
 * query features (spatial)
   * http://localhost:5000/collections/foo/items?bbox=-180,-90,180,90
+* query features (spatial with bbox-crs)
+  * http://localhost:5000/collections/foo/items?bbox=120000,450000,130000,460000&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992
 * query features (attribute)
   * http://localhost:5000/collections/foo/items?propertyname=foo
 * query features (temporal)
@@ -415,8 +446,20 @@ Data access examples
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
 * query features (temporal) and sort descending by a property
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
+* query features in a given (and supported) CRS
+  * http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
+* query features in a given bounding BBOX and return in given CRS
+  * http://localhost:5000/collections/foo/items?bbox=120000,450000,130000,460000&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 * fetch a specific feature
   * http://localhost:5000/collections/foo/items/123
+* fetch a specific feature in a given (and supported) CRS
+  * http://localhost:5000/collections/foo/items/123?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
+
+.. note::
+   when no ``crs`` and/or ``bbox-crs`` is provided, the default CRS http://www.opengis.net/def/crs/OGC/1.3/CRS84 (WGS84 in lon, lat ordering) is assumed.
+   pygeoapi may perform the necessary transformations if the ``storage_crs`` differs from this default. Features are then always returned in
+   that default CRS (as per the GeoJSON Standard).
+   In all cases, weather or not these query parameters are supplied, the HTTP Header ``Content-Crs`` denotes the CRS of the Feature(s) in the response.
 
 .. note::
    ``.../items`` queries which return an alternative representation to GeoJSON (which prompt a download)

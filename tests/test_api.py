@@ -39,13 +39,18 @@ from http import HTTPStatus
 
 from pyld import jsonld
 import pytest
+import pyproj
+from shapely.geometry import Point
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
-from pygeoapi.util import yaml_load, get_api_rules, get_base_url
-from .util import get_test_file_path, mock_request, mock_flask, mock_starlette
+from pygeoapi.util import (yaml_load, get_crs_from_uri,
+                           get_api_rules, get_base_url)
+
+from .util import (get_test_file_path, mock_request,
+                   mock_flask, mock_starlette)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -602,7 +607,9 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 22
+    assert len(root['conformsTo']) == 23
+    assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
+           in root['conformsTo']
 
     req = mock_request({'f': 'foo'})
     rsp_headers, code, response = api_.conformance(req)
@@ -629,7 +636,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 7
+    assert len(collections['collections']) == 8
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -656,6 +663,19 @@ def test_describe_collections(config, api_):
             'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
         }
     }
+
+    # OAPIF Part 2 CRS 6.2.1 A, B, configured CRS + defaults
+    assert collection['crs'] is not None
+    crs_set = [
+        'http://www.opengis.net/def/crs/EPSG/0/28992',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326',
+    ]
+    for crs in crs_set:
+        assert crs in collection['crs']
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert 'storageCrsCoordinateEpoch' not in collection
 
     # French language request
     req = mock_request({'lang': 'fr'})
@@ -685,6 +705,21 @@ def test_describe_collections(config, api_):
         req, 'naturalearth/lakes')
     collection = json.loads(response)
     assert collection['id'] == 'naturalearth/lakes'
+
+    # OAPIF Part 2 CRS 6.2.1 B, defaults when not configured
+    assert collection['crs'] is not None
+    default_crs_list = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
+    ]
+    contains_default = False
+    for crs in default_crs_list:
+        if crs in default_crs_list:
+            contains_default = True
+    assert contains_default
+    assert collection['storageCRS'] is not None
+    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert collection['storageCrsCoordinateEpoch'] == 2017.23
 
 
 def test_describe_collections_hidden_resources(
@@ -789,6 +824,40 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection
+    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # bbox-crs must be in configured values for Collection (CSV will ignore)
+    req = mock_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
+
+    # bbox-crs can be a default even if not configured
+    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
+
+    # bbox-crs can be a default even if not configured
+    req = mock_request({'bbox': '4,52,5,53'}) # noqa
+    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+
+    assert code == HTTPStatus.OK
 
     req = mock_request({'f': 'html', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
@@ -1006,6 +1075,95 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+
+def test_get_collection_items_crs(config, api_):
+
+    # Invalid CRS query parameter
+    req = mock_request({'crs': '4326'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Unsupported CRS
+    req = mock_request({'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Supported CRSs
+    default_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    storage_crs = 'http://www.opengis.net/def/crs/EPSG/0/25833'
+    crs_4258 = 'http://www.opengis.net/def/crs/EPSG/0/4258'
+    supported_crs_list = [default_crs, storage_crs, crs_4258]
+
+    for crs in supported_crs_list:
+        req = mock_request({'crs': crs})
+        rsp_headers, code, response = api_.get_collection_items(
+            req, 'norway_pop',
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{crs}>'
+
+    # With CRS query parameter, using storageCRS
+    req = mock_request({'crs': storage_crs})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+    features_25833 = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    req = mock_request({'crs': crs_4258})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
+
+    features_4258 = json.loads(response)
+    transform_func = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_epsg(25833),
+        pyproj.CRS.from_epsg(4258),
+        always_xy=False,
+    ).transform
+    for feat_orig in features_25833['features']:
+        id_ = feat_orig['id']
+        x, y, *_ = feat_orig['geometry']['coordinates']
+        loc_transf = Point(transform_func(x, y))
+        for feat_out in features_4258['features']:
+            if id_ == feat_out['id']:
+                loc_out = Point(feat_out['geometry']['coordinates'][:2])
+
+                assert loc_out.equals_exact(loc_transf, 1e-5)
+                break
+
+    # Without CRS query parameter: assume Transform to default WGS84 lon,lat
+    req = mock_request({})
+    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{default_crs}>'
+
+    features_wgs84 = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    transform_func = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_epsg(4258),
+        get_crs_from_uri(default_crs),
+        always_xy=False,
+    ).transform
+    for feat_orig in features_4258['features']:
+        id_ = feat_orig['id']
+        x, y, *_ = feat_orig['geometry']['coordinates']
+        loc_transf = Point(transform_func(x, y))
+        for feat_out in features_wgs84['features']:
+            if id_ == feat_out['id']:
+                loc_out = Point(feat_out['geometry']['coordinates'][:2])
+
+                assert loc_out.equals_exact(loc_transf, 1e-5)
+                break
 
 
 def test_manage_collection_item_read_only_options_req(config, api_):

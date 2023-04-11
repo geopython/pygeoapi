@@ -32,7 +32,6 @@
 
 import functools
 import importlib
-import json
 import logging
 import os
 from typing import Any
@@ -45,6 +44,8 @@ from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError,
     ProviderQueryError, ProviderConnectionError,
     ProviderItemNotFoundError)
+
+from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,9 +73,6 @@ class OGRProvider(BaseProvider):
     }
     os.environ['OGR_GEOJSON_MAX_OBJ_SIZE'] = os.environ.get(
         'OGR_GEOJSON_MAX_OBJ_SIZE', '20MB')
-
-    # Setting for traditional CRS axis order.
-    OAMS_TRADITIONAL_GIS_ORDER = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
 
     def __init__(self, provider_def):
         """
@@ -144,31 +142,28 @@ class OGRProvider(BaseProvider):
         self.source_capabilities = self.data_def.get('source_capabilities',
                                                      {'paging': False})
 
-        self.source_srs = int(self.data_def.get('source_srs',
-                                                'EPSG:4326').split(':')[1])
-        self.target_srs = int(self.data_def.get('target_srs',
-                                                'EPSG:4326').split(':')[1])
+        # self.source_srs = int(self.data_def.get('source_srs',
+        #                                         'EPSG:4326').split(':')[1])
+        # self.target_srs = int(self.data_def.get('target_srs',
+        #                                         'EPSG:4326').split(':')[1])
+        if self.data_def.get('source_srs') is not None \
+                or self.data_def.get('target_srs') is not None:
+            LOGGER.warning('source/target_srs no longer supported in OGRProvider') # noqa
+            LOGGER.warning('Use crs and storage_crs in config, see docs')
 
         # Optional coordinate transformation inward (requests) and
         # outward (responses) when the source layers and
         # OGC API - Features collections differ in EPSG-codes.
         self.transform_in = None
         self.transform_out = None
-        if self.source_srs != self.target_srs:
-            source = osgeo_osr.SpatialReference()
-            source.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
-            source.ImportFromEPSG(self.source_srs)
-
-            target = osgeo_osr.SpatialReference()
-            target.SetAxisMappingStrategy(
-                OGRProvider.OAMS_TRADITIONAL_GIS_ORDER)
-            target.ImportFromEPSG(self.target_srs)
-
-            self.transform_in = \
-                osgeo_osr.CoordinateTransformation(target, source)
-            self.transform_out = \
-                osgeo_osr.CoordinateTransformation(source, target)
+        # if self.source_srs != self.target_srs:
+        #     source = self._get_spatial_ref_from_epsg(self.source_srs)
+        #     target = self._get_spatial_ref_from_epsg(self.target_srs)
+        #
+        #     self.transform_in = \
+        #         osgeo_osr.CoordinateTransformation(target, source)
+        #     self.transform_out = \
+        #         osgeo_osr.CoordinateTransformation(source, target)
 
         self._load_source_helper(self.data_def['source_type'])
 
@@ -305,7 +300,8 @@ class OGRProvider(BaseProvider):
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False, q=None,
+              crs_transform_spec=None, **kwargs):
         """
         Query OGR source
 
@@ -319,6 +315,7 @@ class OGRProvider(BaseProvider):
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
         :param q: full-text search term(s)
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: dict of 0..n GeoJSON features
         """
@@ -337,8 +334,8 @@ class OGRProvider(BaseProvider):
                       f"{maxx} {miny},{minx} {miny}))"
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
-                if self.transform_in:
-                    polygon.Transform(self.transform_in)
+                # if self.transform_in:
+                #     polygon.Transform(self.transform_in)
 
                 layer.SetSpatialFilter(polygon)
 
@@ -363,7 +360,11 @@ class OGRProvider(BaseProvider):
             elif resulttype == 'results':
                 LOGGER.debug('results specified')
                 result = self._response_feature_collection(
-                    layer, limit, skip_geometry=skip_geometry)
+                    layer,
+                    limit,
+                    skip_geometry=skip_geometry,
+                    crs_transform_spec=crs_transform_spec,
+                )
             else:
                 LOGGER.error('Invalid resulttype: %s' % resulttype)
 
@@ -382,15 +383,56 @@ class OGRProvider(BaseProvider):
 
         return result
 
-    def get(self, identifier, **kwargs):
+    def _get_spatial_ref_from_epsg(self, epsg_code, force_auth_comply=False):
+        axis_order = osgeo_osr.OAMS_AUTHORITY_COMPLIANT
+        # Assume http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        # for EPSG:4326, GeoJSON Compliant
+        if epsg_code == 4326 and not force_auth_comply:
+            axis_order = osgeo_osr.OAMS_TRADITIONAL_GIS_ORDER
+        spatial_ref = osgeo_osr.SpatialReference()
+        spatial_ref.SetAxisMappingStrategy(axis_order)
+        spatial_ref.ImportFromEPSG(epsg_code)
+        return spatial_ref
+
+    def _get_spatial_ref_from_uri(self, crs_uri):
+        # Assume http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        # is EPSG:4326, with lon/lat order
+        if crs_uri == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84':
+            epsg_code = 4326
+            force_auth_comply = False
+        else:
+            pyproj_crs = get_crs_from_uri(crs_uri)
+            epsg_code = int(pyproj_crs.srs.split(':')[1])
+            force_auth_comply = True
+        return self._get_spatial_ref_from_epsg(
+            epsg_code, force_auth_comply=force_auth_comply)
+
+    def _get_crs_transform(self, crs_transform_spec=None):
+        if crs_transform_spec is not None:
+            source = self._get_spatial_ref_from_uri(
+                crs_transform_spec.source_crs_uri)
+            target = self._get_spatial_ref_from_uri(
+                crs_transform_spec.target_crs_uri)
+            crs_transform = osgeo_osr.CoordinateTransformation(source, target)
+        else:
+            crs_transform = None
+        return crs_transform
+
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
         Get Feature by id
 
         :param identifier: feature id
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: feature collection
         """
         result = None
+        crs_transform_out = self._get_crs_transform(crs_transform_spec)
+
+        # Keep support for source_srs/target_srs
+        # if crs_transform_out is None:
+        #     crs_transform_out = self.transform_out
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -398,7 +440,9 @@ class OGRProvider(BaseProvider):
             layer.SetAttributeFilter(f"{self.id_field} = '{identifier}'")
 
             ogr_feature = self._get_next_feature(layer, identifier)
-            result = self._ogr_feature_to_json(ogr_feature)
+            result = self._ogr_feature_to_json(
+                ogr_feature, crs_transform_out=crs_transform_out,
+            )
 
         except RuntimeError as err:
             LOGGER.error(err)
@@ -463,20 +507,27 @@ class OGRProvider(BaseProvider):
             LOGGER.error(self.gdal.GetLastErrorMsg())
             raise gdalerr
 
-    def _ogr_feature_to_json(self, ogr_feature, skip_geometry=False):
+    def _ogr_feature_to_json(
+        self, ogr_feature, skip_geometry=False, crs_transform_out=None,
+    ):
         if self.geom_field is not None:
             geom = ogr_feature.GetGeomFieldRef(self.geom_field)
         else:
             geom = ogr_feature.GetGeometryRef()
-        if self.transform_out:
-            # Optionally reproject the geometry
-            geom.Transform(self.transform_out)
 
+        if crs_transform_out is not None:
+            # Optionally reproject the geometry
+            geom.Transform(crs_transform_out)
+
+        # NB With GDAL >= 3.3 seems that Axis is swapped for e.g.
+        # EPSG:4258 in ExportToJson where it shouldn't. See #1174.
+        # Suppress swapping by unassigning SpatialReference
+        geom.AssignSpatialReference(None)
         json_feature = ogr_feature.ExportToJson(as_object=True)
+
         if skip_geometry:
             json_feature['geometry'] = None
-        else:
-            json_feature['geometry'] = json.loads(geom.ExportToJson())
+
         try:
             json_feature['id'] = json_feature['properties'].pop(
                 self.id_field, json_feature['id']
@@ -486,7 +537,9 @@ class OGRProvider(BaseProvider):
 
         return json_feature
 
-    def _response_feature_collection(self, layer, limit, skip_geometry=False):
+    def _response_feature_collection(
+        self, layer, limit, skip_geometry=False, crs_transform_spec=None,
+    ):
         """
         Assembles output from Layer query as
         GeoJSON FeatureCollection structure.
@@ -502,14 +555,21 @@ class OGRProvider(BaseProvider):
         # See https://github.com/OSGeo/gdal/blob/master/autotest/
         #     ogr/ogr_wfs.py#L313
         layer.ResetReading()
+        crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
+        # Keep support for source_srs/target_srs
+        # if crs_transform_out is None:
+        #     crs_transform_out = self.transform_out
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
             count = 0
             while ogr_feature is not None:
                 json_feature = self._ogr_feature_to_json(
-                    ogr_feature, skip_geometry=skip_geometry)
+                    ogr_feature,
+                    skip_geometry=skip_geometry,
+                    crs_transform_out=crs_transform_out,
+                )
 
                 feature_collection['features'].append(json_feature)
 
