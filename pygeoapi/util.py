@@ -738,6 +738,7 @@ def crs_transform(func):
         if crs_transform_spec is None:
             # No coordinates transformation for feature(s) returned by the
             # decorated function.
+            LOGGER.debug('crs_transform: NOT applying coordinate transforms')
             return result
         # Create transformation function and transform the output feature(s)'
         # coordinates before returning them.
@@ -745,6 +746,11 @@ def crs_transform(func):
             pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
             pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
         )
+
+        LOGGER.debug(f'crs_transform: transforming features CRS '
+                     f'from {crs_transform_spec.source_crs_uri} '
+                     f'to {crs_transform_spec.target_crs_uri}')
+
         features = result.get('features')
         # Decorated function returns a single Feature
         if features is None:
