@@ -163,8 +163,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         out_meta = {
             'bbox': [bbox[0], bbox[1], bbox[2], bbox[3]],
             "time": [
-                _to_datetime_string(data.coords[self.time_field].values[0]),
-                _to_datetime_string(data.coords[self.time_field].values[-1])
+                _to_datetime_string(data.coords[self.time_field].values.min()),
+                _to_datetime_string(data.coords[self.time_field].values.max())
             ],
             "driver": "xarray",
             "height": height,
