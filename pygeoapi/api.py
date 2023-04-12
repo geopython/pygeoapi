@@ -1781,7 +1781,7 @@ class API:
                 self,
                 content, dataset,
                 id_field=(p.uri_field or 'id'),
-                crs_transform_spec=crs_transform_spec,
+                content_crs_header=headers.get('Content-Crs'),
             )
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
@@ -2389,7 +2389,7 @@ class API:
                 dataset,
                 uri,
                 (p.uri_field or 'id'),
-                crs_transform_spec=crs_transform_spec,
+                content_crs_header=headers.get('Content-Crs'),
             )
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)

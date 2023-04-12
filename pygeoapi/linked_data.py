@@ -184,7 +184,7 @@ def geojson2jsonld(
     dataset: str,
     identifier: str = None,
     id_field: str = 'id',
-    crs_transform_spec=None,
+    content_crs_header: str = None,
 ) -> str:
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
@@ -196,7 +196,8 @@ def geojson2jsonld(
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
     :param id_field: item identifier_field (optional)
-    :param crs_transform_spec: `CrsTransformSpec` instance, optional
+    :param content_crs_header: 'Content-Crs' header of output response,
+        optional
 
     :returns: string of rendered JSON (GeoJSON-LD)
     """
@@ -224,7 +225,7 @@ def geojson2jsonld(
 
         # Include multiple geometry encodings
         data['type'] = 'schema:Place'
-        jsonldify_geometry(data)
+        jsonldify_geometry(data, content_crs_header)
         data['@id'] = identifier
 
     else:
@@ -268,13 +269,14 @@ def geojson2jsonld(
         return ldjsonData
 
 
-def jsonldify_geometry(feature: dict, crs_transform_spec=None) -> None:
+def jsonldify_geometry(feature: dict, content_crs_header: str = None) -> None:
     """
     Render JSON-LD for feature with GeoJSON, Geosparql/WKT, and
     schema geometry encodings.
 
     :param feature: feature body to with GeoJSON geometry
-    :param crs_transform_spec: `CrsTransformSpec` instance, optional
+    :param content_crs_header: 'Content-Crs' header of output response,
+        optional
 
     :returns: None
     """
@@ -295,26 +297,29 @@ def jsonldify_geometry(feature: dict, crs_transform_spec=None) -> None:
     }
 
     # Schema geometry
-    feature['schema:geo'] = geom2schemageo(geom)
+    feature['schema:geo'] = geom2schemageo(geom, content_crs_header)
 
 
-def geom2schemageo(geom: shape, crs_transform_spec=None) -> dict:
+def geom2schemageo(geom: shape, content_crs_header: str = None) -> dict:
     """
     Render Schema Geometry from a GeoJSON base.
 
     :param geom: shapely geom of feature
-    :param crs_transform_spec: `CrsTransformSpec` instance, optional
+    :param content_crs_header: 'Content-Crs' header of output response,
+        optional
 
     :returns: dict of rendered schema:geo geometry
     """
+    if content_crs_header is not None:
+        content_crs_uri = content_crs_header.strip('<>')
+    else:
+        content_crs_uri = None
     if (
-        crs_transform_spec is not None
-        and get_crs_from_uri(
-            crs_transform_spec.target_srs_uri
-        ).to_epsg() != 4326
+        content_crs_uri is not None
+        and content_crs_uri != 'http://www.opengis.net/def/crs/EPSG/0/4326'
     ):
         crs_transform = get_transform_from_crs(
-            get_crs_from_uri(crs_transform_spec.target_crs_uri),
+            get_crs_from_uri(content_crs_uri),
             pyproj.CRS.from_epsg(4326),
         )
         geom = crs_transform(geom)
