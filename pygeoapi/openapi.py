@@ -1130,7 +1130,7 @@ def get_oas_30(cfg):
                 LOGGER.debug(f'Skipping hidden layer: {k}')
                 continue
             name = l10n.translate(k, locale_)
-            p = load_plugin('process', v['processor'])
+            p = process_manager.get_processor(k)
 
             md_desc = l10n.translate(p.metadata['description'], locale_)
             process_name_path = f'/processes/{name}'
