@@ -3546,9 +3546,9 @@ class API:
             execution_mode = None
         try:
             LOGGER.debug('Executing process')
-            execution_result = self.manager.execute_process(
+            result = self.manager.execute_process(
                 process, data_dict, execution_mode=execution_mode)
-            job_id, mime_type, outputs, status, additional_headers = execution_result
+            job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f"{self.base_url}/jobs/{job_id}"
         except ProcessorExecuteError as err:
