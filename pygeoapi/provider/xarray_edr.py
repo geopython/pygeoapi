@@ -136,7 +136,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data
             if isinstance(query_params[self._coverage_properties['time_axis_label']], slice):
                 LOGGER.debug('Separating temporal query')
-                time_query = query_params[self._coverage_properties['time_axis_label']]
+                time_query = {self._coverage_properties['time_axis_label']: 
+                              query_params[self._coverage_properties['time_axis_label']]}
                 remaining_query = {key: val for key,
                                    val in query_params.items() 
                                    if key != self._coverage_properties['time_axis_label']}
