@@ -48,7 +48,6 @@ import logging
 import re
 from typing import Any, Tuple, Union, Optional
 import urllib.parse
-import uuid
 
 from dateutil.parser import parse as dateparse
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
@@ -3545,11 +3544,6 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
-        job_id = data.get("job_id", str(uuid.uuid1()))
-        url = f"{self.base_url}/jobs/{job_id}"
-
-        headers['Location'] = url
-
         is_async = data.get('mode', 'auto') == 'async'
         if is_async:
             LOGGER.debug('Asynchronous request mode detected')
@@ -3560,8 +3554,9 @@ class API:
 
         try:
             LOGGER.debug('Executing process')
-            mime_type, outputs, status = self.manager.execute_process(
-                process, job_id, data_dict, is_async)
+            job_id, mime_type, outputs, status = self.manager.execute_process(
+                process, data_dict, is_async)
+            headers['Location'] = f"{self.base_url}/jobs/{job_id}"
         except ProcessorExecuteError as err:
             LOGGER.error(err)
             msg = 'Processing error'

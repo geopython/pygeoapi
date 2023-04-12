@@ -33,9 +33,10 @@ import logging
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Tuple
+import uuid
 
-from pygeoapi.util import DATETIME_FORMAT, JobStatus
 from pygeoapi.process.base import BaseProcessor
+from pygeoapi.util import DATETIME_FORMAT, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ class BaseManager:
         raise NotImplementedError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[None, JobStatus]:
+                               data_dict: dict) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -259,24 +260,30 @@ class BaseManager:
 
         return jfmt, outputs, current_status
 
-    def execute_process(self, p, job_id, data_dict, is_async=False):
+    def execute_process(
+            self,
+            p,
+            data_dict,
+            is_async=False
+    ) -> Tuple[str, str, Any, JobStatus]:
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
-        :param job_id: job identifier
         :param data_dict: `dict` of data parameters
         :param is_async: `bool` specifying sync or async processing.
 
-        :returns: tuple of MIME type, response payload and status
+        :returns: tuple of job_id, MIME type, response payload and status
         """
 
+        job_id = str(uuid.uuid1())
         if not is_async:
             LOGGER.debug('Synchronous execution')
-            return self._execute_handler_sync(p, job_id, data_dict)
+            result = self._execute_handler_sync(p, job_id, data_dict)
         else:
             LOGGER.debug('Asynchronous execution')
-            return self._execute_handler_async(p, job_id, data_dict)
+            result = self._execute_handler_async(p, job_id, data_dict)
+        return (job_id, *result)
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
