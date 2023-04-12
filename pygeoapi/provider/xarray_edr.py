@@ -104,10 +104,11 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         instance = kwargs.get('instance')
         LOGGER.debug(f'instance: {instance}')
 
-        # TODO: move to method so it can apply to cube function as well?
+        # TODO: move to method so it can apply to cube function as well
         datetime_ = kwargs.get('datetime_')
         if datetime_ is not None:
             if '/' in datetime_:
+                LOGGER.debug('Splitting time range')
                 begin, end = datetime_.split('/')
                 if begin == '..':
                     begin = self._data[self._coverage_properties['time_axis_label']].min().values
