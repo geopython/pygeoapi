@@ -24,16 +24,16 @@ parameters.
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅n
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅n
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
 
 .. note::
 
-   * All Providers that support `bbox` also support the `bbox-crs` parameter.
-   * All Providers support the `crs` parameter to CRS-transform response data. Some, like PostgreSQL, perform transformations natively: '✅n'.
+   * All Providers that support `bbox` also support the `bbox-crs` parameter. `bbox-crs` is handled within pygeoapi core.
+   * All Providers support the `crs` parameter to reproject (transform) response data. Some, like PostgreSQL and OGR, perform this natively: '✅n'.
 
 
 Connection examples
@@ -41,7 +41,9 @@ Connection examples
 
 Below are specific connection examples based on supported providers.
 To support `crs` on queries, one needs to configure both a list of supported CRSs, and a 'Storage CRS'.
-See also :ref:`crs` and :ref:`configuration`.
+See also :ref:`crs` and :ref:`configuration`. When no CRS information is configured the
+default CRS/'Storage CRS' value http://www.opengis.net/def/crs/OGC/1.3/CRS84 is assumed.
+That is: WGS84 with lon,lat axis-ordering as in standard GeoJSON.
 
 CSV
 ^^^
@@ -131,7 +133,7 @@ specify the URL for the service layer in the ``data`` field.
          data: https://sampleserver5.arcgisonline.com/arcgis/rest/services/NYTimes_Covid19Cases_USCounties/MapServer/0
          id_field: objectid
          time_field: date_in_your_device_time_zone # Optional time field
-         crs: 4326 # Optional crs (default is ESPG:4326)
+         crs: 4326 # Optional crs (default is EPSG:4326)
          username: username # Optional ArcGIS username
          password: password # Optional ArcGIS password
 
@@ -227,7 +229,7 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
 .. note::
    NB: Formerly the config parameters ``source_srs`` and ``target_srs`` could be used to
    transform/reproject the data for every request. Starting with pygeoapi release 0.15.0 these fields are no longer supported.
-   Reason is that pygeoapi now supports CRS-handling as per the OGC API Features STandard "Part 2".
+   Reason is that pygeoapi now supports CRS-handling as per the OGC API Features Standard "Part 2".
    `storage_crs`: is basically the same as `source_crs` but complying with standards (and axis ordering!)
    It should be set to the actual or default CRS of the source data/service. When omitted the default http://www.opengis.net/def/crs/OGC/1.3/CRS84
    if assumed.

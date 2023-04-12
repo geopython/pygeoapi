@@ -40,6 +40,14 @@ LOGGER = logging.getLogger(__name__)
 THISDIR = Path(__file__).parent.resolve()
 
 
+def load_schema() -> dict:
+    """ Reads the JSON schema YAML file. """
+    schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
+
+    with schema_file.open() as fh2:
+        return yaml_load(fh2)
+
+
 def validate_config(instance_dict: dict) -> bool:
     """
     Validate pygeoapi configuration against pygeoapi schema
@@ -48,14 +56,8 @@ def validate_config(instance_dict: dict) -> bool:
 
     :returns: `bool` of validation
     """
-
-    schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
-
-    with schema_file.open() as fh2:
-        schema_dict = yaml_load(fh2)
-        jsonschema_validate(json.loads(to_json(instance_dict)), schema_dict)
-
-        return True
+    jsonschema_validate(json.loads(to_json(instance_dict)), load_schema())
+    return True
 
 
 @click.group()

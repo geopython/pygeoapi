@@ -271,7 +271,11 @@ def _describe_file(filepath):
             LOGGER.debug('Testing raster data detection')
             d = rasterio.open(filepath)
             scrs = CRS(d.crs)
-            if scrs.to_epsg() not in [None, 4326]:
+            LOGGER.debug(f'CRS: {d.crs}')
+            LOGGER.debug(f'bounds: {d.bounds}')
+            LOGGER.debug(f'Is geographic: {scrs.is_geographic}')
+            if not scrs.is_geographic:
+                LOGGER.debug('Reprojecting coordinates')
                 tcrs = CRS.from_epsg(4326)
                 bnds = transform_bounds(scrs, tcrs,
                                         d.bounds[0], d.bounds[1],
@@ -301,8 +305,14 @@ def _describe_file(filepath):
             try:
                 LOGGER.debug('Testing vector data detection')
                 d = fiona.open(filepath)
+                LOGGER.debug(f'CRS: {d.crs}')
+                LOGGER.debug(f'bounds: {d.bounds}')
                 scrs = CRS(d.crs)
-                if scrs.to_epsg() not in [None, 4326]:
+                LOGGER.debug(f'CRS: {d.crs}')
+                LOGGER.debug(f'bounds: {d.bounds}')
+                LOGGER.debug(f'Is geographic: {scrs.is_geographic}')
+                if not scrs.is_geographic:
+                    LOGGER.debug('Reprojecting coordinates')
                     tcrs = CRS.from_epsg(4326)
                     bnds = transform_bounds(scrs, tcrs,
                                             d.bounds[0], d.bounds[1],

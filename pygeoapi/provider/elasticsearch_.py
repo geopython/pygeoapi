@@ -361,7 +361,7 @@ class ElasticsearchProvider(BaseProvider):
             result = self.es.get(index=self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result)
-        except exceptions.NotFoundError as err:
+        except Exception as err:
             LOGGER.debug(f'Not found via ES id query: {err}')
             LOGGER.debug('Trying via a real query')
 
@@ -370,13 +370,14 @@ class ElasticsearchProvider(BaseProvider):
                     'bool': {
                         'filter': [{
                             'match_phrase': {
-                                'id': identifier
+                                '_id': identifier
                             }
                         }]
                     }
                 }
             }
 
+            LOGGER.debug(f'Query: {query}')
             try:
                 result = self.es.search(index=self.index_name, **query)
                 if len(result['hits']['hits']) == 0:

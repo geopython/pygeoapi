@@ -48,6 +48,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 # pygeoapi specific
 from pygeoapi.django_app import config
+from pygeoapi.util import get_api_rules
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -166,3 +167,9 @@ STATIC_URL = '/static/'
 
 # pygeoapi specific
 PYGEOAPI_CONFIG = config()
+
+API_RULES = get_api_rules(PYGEOAPI_CONFIG)
+
+# Defaults to True in Django
+# https://docs.djangoproject.com/en/3.2/ref/settings/#append-slash
+APPEND_SLASH = not API_RULES.strict_slashes

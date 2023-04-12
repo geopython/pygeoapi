@@ -30,22 +30,23 @@
 """Generic util functions used in the code"""
 
 import base64
-from functools import partial
-from dataclasses import dataclass
-from typing import List, Callable
-from datetime import date, datetime, time
-from decimal import Decimal
-from enum import Enum
-import functools
 import json
 import logging
 import mimetypes
 import os
-from pathlib import Path
 import re
-from typing import Any, IO, Union
-from urllib.request import urlopen
+import functools
+from functools import partial
+from dataclasses import dataclass
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
+from pathlib import Path
+from typing import Any, IO, Union, List, Callable
 from urllib.parse import urlparse
+from urllib.request import urlopen
+
+import dateutil.parser
 import shapely.ops
 from shapely.geometry import (
     GeometryCollection,
@@ -54,22 +55,22 @@ from shapely.geometry import (
     MultiLineString,
     MultiPoint,
     MultiPolygon,
-    Point,
     Polygon,
+    Point,
     shape as geojson_to_geom,
     mapping as geom_to_geojson,
 )
-import dateutil.parser
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+import yaml
 from babel.support import Translations
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import pyproj
 from pyproj.exceptions import CRSError
-import yaml
 from requests import Session
 from requests.structures import CaseInsensitiveDict
 
 from pygeoapi import __version__
 from pygeoapi import l10n
+from pygeoapi.models import config as config_models
 from pygeoapi.provider.base import ProviderTypeError
 
 
@@ -93,6 +94,19 @@ CRS_URI_PATTERN = re.compile(
      rf"[\d|\.]+?/(?P<code>\w+?)$"
     )
 )
+
+
+# Type for Shapely geometrical objects.
+GeomObject = Union[
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+]
 
 
 @dataclass
@@ -177,6 +191,23 @@ def yaml_load(fh: IO) -> dict:
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
+def get_api_rules(config: dict) -> config_models.APIRules:
+    """ Extracts the default API design rules from the given configuration.
+
+    :param config:  Current pygeoapi configuration (dictionary).
+    :returns:       An APIRules instance.
+    """
+    rules = config['server'].get('api_rules') or {}
+    rules.setdefault('api_version', __version__)
+    return config_models.APIRules.create(**rules)
+
+
+def get_base_url(config: dict) -> str:
+    """ Returns the full pygeoapi base URL. """
+    rules = get_api_rules(config)
+    return url_join(config['server']['url'], rules.get_url_prefix())
+
+
 def str2bool(value: Union[bool, str]) -> bool:
     """
     helper function to return Python boolean
@@ -212,8 +243,7 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial,
-                      indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent)
 
 
 def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:
@@ -533,7 +563,7 @@ class JobStatus(Enum):
 
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
-    helper function to read data (file or networrk)
+    helper function to read data (file or network)
     """
 
     LOGGER.debug(f'Attempting to read {path}')
@@ -548,7 +578,7 @@ def read_data(path: Union[Path, str]) -> Union[bytes, str]:
             return r.read()
 
 
-def url_join(*parts: list) -> str:
+def url_join(*parts: str) -> str:
     """
     helper function to join a URL from a number of parts/fragments.
     Implemented because urllib.parse.urljoin strips subpaths from
@@ -561,7 +591,7 @@ def url_join(*parts: list) -> str:
     :returns: str of resulting URL
     """
 
-    return '/'.join([p.strip().strip('/') for p in parts])
+    return '/'.join([p.strip().strip('/') for p in parts]).rstrip('/')
 
 
 def get_envelope(coords_list: List[List[float]]) -> list:
@@ -647,19 +677,6 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
         return crs
 
 
-# Type for shapely geometrical objects.
-GeomObject = Union[
-    GeometryCollection,
-    LinearRing,
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Point,
-    Polygon,
-]
-
-
 def get_transform_from_crs(
     crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
 ) -> Callable[[GeomObject], GeomObject]:
@@ -721,6 +738,7 @@ def crs_transform(func):
         if crs_transform_spec is None:
             # No coordinates transformation for feature(s) returned by the
             # decorated function.
+            LOGGER.debug('crs_transform: NOT applying coordinate transforms')
             return result
         # Create transformation function and transform the output feature(s)'
         # coordinates before returning them.
@@ -728,6 +746,10 @@ def crs_transform(func):
             pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
             pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
         )
+        LOGGER.debug(f'crs_transform: transforming features CRS '
+                     f'from {crs_transform_spec.source_crs_uri} '
+                     f'to {crs_transform_spec.target_crs_uri}')
+
         features = result.get('features')
         # Decorated function returns a single Feature
         if features is None:

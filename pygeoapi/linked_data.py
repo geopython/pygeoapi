@@ -144,7 +144,7 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
     dataset = {
         "@type": "Dataset",
-        "@id": f"{cls.config['server']['url']}/collections/{collection['id']}",
+        "@id": f"{cls.base_url}/collections/{collection['id']}",
         "name": l10n.translate(collection['title'], locale_),
         "description": l10n.translate(collection['description'], locale_),
         "license": cls.fcmld['license'],
@@ -179,6 +179,7 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
 
 def geojson2jsonld(
+    cls,
     config: dict,
     data: dict,
     dataset: str,
@@ -191,7 +192,7 @@ def geojson2jsonld(
     read from, and extended by, the pygeoapi configuration for a particular
     dataset.
 
-    :param config: dict of configuration
+    :param cls: API object
     :param data: dict of data:
     :param dataset: dataset identifier
     :param identifier: item identifier (optional)
@@ -202,7 +203,8 @@ def geojson2jsonld(
     """
 
     LOGGER.debug('Fetching context and template from resource configuration')
-    jsonld = config['resources'][dataset].get('linked-data', {})
+    jsonld = cls.config['resources'][dataset].get('linked-data', {})
+    ds_url = f"{cls.get_collections_url()}/{dataset}"
 
     context = jsonld.get('context', []).copy()
     template = jsonld.get('item_template', None)
@@ -233,14 +235,14 @@ def geojson2jsonld(
             'FeatureCollection': 'schema:itemList'
         })
 
-        data['@id'] = f"{config['server']['url']}/collections/{dataset}"
+        data['@id'] = ds_url
 
         for i, feature in enumerate(data['features']):
             # Get URI for each feature
             identifier_ = feature.get(id_field,
                                       feature['properties'].get(id_field, ''))
             if not is_url(str(identifier_)):
-                identifier_ = f"{config['server']['url']}/collections/{dataset}/items/{feature['id']}"  # noqa
+                identifier_ = f"{ds_url}/items/{feature['id']}"  # noqa
 
             data['features'][i] = {
                 '@id': identifier_,
@@ -262,8 +264,7 @@ def geojson2jsonld(
     else:
         # Render jsonld template for single item with template configured
         LOGGER.debug(f'Rendering JSON-LD template: {template}')
-        content = render_j2_template(
-            config, template, ldjsonData)
+        content = render_j2_template(cls.config, template, ldjsonData)
         ldjsonData = json.loads(content)
         return ldjsonData
 
