@@ -1778,7 +1778,7 @@ class API:
 
         elif request.format == F_JSONLD:
             content = geojson2jsonld(
-                self.config,
+                self,
                 content, dataset,
                 id_field=(p.uri_field or 'id'),
                 crs_transform_spec=crs_transform_spec,
@@ -2384,7 +2384,7 @@ class API:
 
         elif request.format == F_JSONLD:
             content = geojson2jsonld(
-                self.config,
+                self,
                 content,
                 dataset,
                 uri,

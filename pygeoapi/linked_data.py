@@ -180,7 +180,6 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
 def geojson2jsonld(
     cls,
-    config: dict,
     data: dict,
     dataset: str,
     identifier: str = None,
