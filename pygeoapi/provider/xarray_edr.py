@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+import numpy as np
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
@@ -114,6 +115,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                     begin = self._data[self._coverage_properties['time_axis_label']].min().values
                 elif end == '..':
                     end = self._data[self._coverage_properties['time_axis_label']].max().values
+                begin = np.datetime64(begin)
+                end = np.datetime64(end)
                 LOGGER.debug(f'begin = {begin} and end = {end}')
                 if begin < end:
                     query_params[self._coverage_properties['time_axis_label']] = slice(begin, end)
@@ -131,7 +134,15 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
-            data = data.sel(query_params, method='nearest')
+            if isinstance(query_params[self._coverage_properties['time_axis_label']], slice):
+                LOGGER.debug('Separating temporal query')
+                time_query = query_params[self._coverage_properties['time_axis_label']]
+                remaining_query = {key: val for key,
+                                   val in query_params.items() 
+                                   if key != self._coverage_properties['time_axis_label']}
+                data = data.sel(time_query).sel(remaining_query, method='nearest')
+            else:   
+                data = data.sel(query_params, method='nearest')
         except KeyError:
             raise ProviderNoDataError()
 
