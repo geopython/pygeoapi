@@ -32,16 +32,20 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 import uuid
 
+from pygeoapi.process.base import (
+    BaseProcessor,
+    ProcessorGenericError,
+)
+from pygeoapi.plugin import load_plugin
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
-from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,6 +66,9 @@ class BaseManager:
         self.is_async = False
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
+        self.processes = {}
+        for id_, process_conf in manager_def.get("processes", {}).items():
+            self.processes[id_] = dict(process_conf)
 
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
@@ -77,6 +84,23 @@ class BaseManager:
         """
 
         raise NotImplementedError()
+
+    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+        """Instantiate a process
+
+        :param process_id: identifier of the process, as defined in the
+                           pygeoapi configuration file
+
+        :returns: instance of the process
+        """
+        try:
+            process_conf = self.processes[process_id]
+        except KeyError as exc:
+            msg = "Invalid process identifier"
+            LOGGER.warning(msg)
+            raise ProcessorGenericError(msg) from exc
+        else:
+            return load_plugin("process", process_conf["processor"])
 
     def add_job(self, job_metadata: dict) -> str:
         """
@@ -267,14 +291,14 @@ class BaseManager:
 
     def execute_process(
             self,
-            p: BaseProcessor,
-            data_dict: dict,
+            process_id: str,
+            data_dict: Dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
+    ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
-        :param p: `pygeoapi.process` object
+        :param process_id: identifier of the process to be executed
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
         processing.
@@ -284,6 +308,7 @@ class BaseManager:
                   response
         """
 
+        p = self.get_processor(process_id)
         job_id = str(uuid.uuid1())
         if execution_mode == RequestedProcessExecutionMode.respond_async:
             # client wants async - do we support it?
