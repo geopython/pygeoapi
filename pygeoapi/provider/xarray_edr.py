@@ -104,9 +104,23 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         instance = kwargs.get('instance')
         LOGGER.debug(f'instance: {instance}')
 
+        # TODO: move to method so it can apply to cube function as well?
         datetime_ = kwargs.get('datetime_')
         if datetime_ is not None:
-            query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
+            if '/' in datetime_:
+                begin, end = datetime_.split('/')
+                if begin == '..':
+                    begin = self._data[self._coverage_properties['time_axis_label']].min().values
+                elif end == '..':
+                    end = self._data[self._coverage_properties['time_axis_label']].max().values
+                LOGGER.debug(f'begin = {begin} and end = {end}')
+                if begin < end:
+                    query_params[self._coverage_properties['time_axis_label']] = slice(begin, end)
+                else:
+                    LOGGER.debug('Reversing slicing from high to low')
+                    query_params[self._coverage_properties['time_axis_label']] = slice(end, begin)
+            else:
+                query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
 
         LOGGER.debug(f'query parameters: {query_params}')
 
