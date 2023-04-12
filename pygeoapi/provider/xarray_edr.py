@@ -147,7 +147,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         except KeyError:
             raise ProviderNoDataError()
 
-        if len(data.coords[self.time_field].values) < 1:
+        if data.coords[self.time_field].size < 1:
             raise ProviderNoDataError()
 
         try:
