@@ -62,8 +62,16 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import ProcessorExecuteError
-from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.process.base import (
+    ProcessorExecuteError,
+    ProcessorGenericError,
+)
+from pygeoapi.process.manager import get_manager
+from pygeoapi.plugin import (
+    InvalidPluginError,
+    load_plugin,
+    PLUGINS,
+)
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
@@ -663,20 +671,7 @@ class API:
         # Create config clone for HTML templating with modified base URL
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
-
-        # TODO: add as decorator
-        if 'manager' in self.config['server']:
-            manager_def = self.config['server']['manager']
-        else:
-            LOGGER.info('No process manager defined; starting dummy manager')
-            manager_def = {
-                'name': 'Dummy',
-                'connection': None,
-                'output_dir': None
-            }
-
-        LOGGER.debug(f"Loading process manager {manager_def['name']}")
-        self.manager = load_plugin('process_manager', manager_def)
+        self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
     @gzip
@@ -3236,17 +3231,14 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
-
         if process is not None:
-            if process not in processes_config.keys() or not processes_config:
+            if process not in self.manager.processes:
                 msg = 'Identifier not found'
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers,
                     request.format, 'NoSuchProcess', msg)
 
-        if processes_config:
+        if len(self.manager.processes) > 0:
             if process is not None:
                 relevant_processes = [process]
             else:
@@ -3260,10 +3252,10 @@ class API:
                             HTTPStatus.BAD_REQUEST, headers, request.format,
                             'InvalidParameterValue', msg)
 
-                    relevant_processes = [*processes_config][:limit]
+                    relevant_processes = [*self.manager.processes][:limit]
                 except TypeError:
                     LOGGER.debug('returning all processes')
-                    relevant_processes = processes_config.keys()
+                    relevant_processes = self.manager.processes.keys()
                 except ValueError:
                     msg = 'limit value should be an integer'
                     return self.get_exception(
@@ -3271,12 +3263,9 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin('process',
-                                processes_config[key]['processor'])
-
+                p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
-
                 if process is None:
                     p2.pop('inputs')
                     p2.pop('outputs')
@@ -3498,17 +3487,10 @@ class API:
         # Responses are always in US English only
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        processes_config = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process'
-        )
-        if process_id not in processes_config:
-            msg = 'identifier not found'
+        if process_id not in self.manager.processes:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
-                request.format, 'NoSuchProcess', msg)
-
-        process = load_plugin('process',
-                              processes_config[process_id]['processor'])
+                request.format, 'NoSuchProcess', 'identifier not found')
 
         data = request.data
         if not data:
@@ -3547,11 +3529,18 @@ class API:
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process, data_dict, execution_mode=execution_mode)
+                process_id, data_dict, execution_mode=execution_mode)
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
-            headers['Location'] = f'{self.base_url}/jobs/{job_id}'
-        except ProcessorExecuteError as err:
+            headers['Location'] = f"{self.base_url}/jobs/{job_id}"
+        except InvalidPluginError as err:
+            LOGGER.error(err)
+            msg = 'Internal error'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                request.format, 'NoApplicableCode', msg
+            )
+        except (ProcessorExecuteError, ProcessorGenericError) as err:
             LOGGER.error(err)
             msg = 'Processing error'
             return self.get_exception(

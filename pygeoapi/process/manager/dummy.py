@@ -31,7 +31,6 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 import uuid
 
-from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import (
     RequestedProcessExecutionMode,
@@ -69,14 +68,14 @@ class DummyManager(BaseManager):
 
     def execute_process(
             self,
-            p: BaseProcessor,
-            data_dict: dict,
+            process_id: str,
+            data_dict: Dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
-        :param p: `pygeoapi.process` object
+        :param process_id: identifier of the process to be executed
         :param data_dict: `dict` of data parameters
         :param execution_mode: requested execution mode
 
@@ -95,6 +94,7 @@ class DummyManager(BaseManager):
                 LOGGER.debug('Dummy manager does not support asynchronous')
                 LOGGER.debug('Forcing synchronous execution')
 
+        p = self.get_processor(process_id)
         try:
             jfmt, outputs = p.execute(data_dict)
             current_status = JobStatus.successful
