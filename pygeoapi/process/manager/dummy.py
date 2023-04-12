@@ -28,8 +28,8 @@
 # =================================================================
 
 import logging
-import uuid
 from typing import Any, Tuple
+import uuid
 
 from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager

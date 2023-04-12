@@ -27,16 +27,16 @@
 #
 # =================================================================
 
+from datetime import datetime
 import json
 import logging
-import uuid
-from datetime import datetime
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Tuple
+import uuid
 
-from pygeoapi.util import DATETIME_FORMAT, JobStatus
 from pygeoapi.process.base import BaseProcessor
+from pygeoapi.util import DATETIME_FORMAT, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
