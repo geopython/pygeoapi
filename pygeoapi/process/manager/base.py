@@ -270,7 +270,7 @@ class BaseManager:
             p: BaseProcessor,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
+    ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
