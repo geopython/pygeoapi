@@ -62,26 +62,26 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import (
-    ProcessorExecuteError,
-    ProcessorGenericError,
-)
-from pygeoapi.process.manager import get_manager
+from pygeoapi.models.cql import CQLModel
+from pygeoapi.models.provider.base import TilesMetadataFormat
 from pygeoapi.plugin import (
     InvalidPluginError,
     load_plugin,
     PLUGINS,
 )
+from pygeoapi.process.base import (
+    ProcessorExecuteError,
+    ProcessorGenericError,
+)
+from pygeoapi.process.manager import get_manager
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
     ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError,
     ProviderRequestEntityTooLargeError)
-
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
-from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
@@ -91,7 +91,6 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            get_crs_from_uri, get_supported_crs_list,
                            CrsTransformSpec, transform_bbox)
 
-from pygeoapi.models.provider.base import TilesMetadataFormat
 
 LOGGER = logging.getLogger(__name__)
 

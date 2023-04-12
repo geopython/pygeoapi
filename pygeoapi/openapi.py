@@ -42,10 +42,10 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import l10n
-from pygeoapi.plugin import load_plugin
 from pygeoapi.models.openapi import OAPIFormat
-from pygeoapi.provider.base import ProviderTypeError, SchemaType
+from pygeoapi.plugin import load_plugin
 from pygeoapi.process.manager import get_manager
+from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
                            filter_providers_by_type, to_json, yaml_load,
                            get_api_rules, get_base_url)
