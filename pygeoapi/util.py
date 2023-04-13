@@ -42,7 +42,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, IO, Union, List, Callable
+from typing import Any, IO, Union, List, Callable, Sequence
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -57,8 +57,6 @@ from shapely.geometry import (
     MultiPolygon,
     Polygon,
     Point,
-    shape as geojson_to_geom,
-    mapping as geom_to_geojson,
 )
 import yaml
 from babel.support import Translations
@@ -678,29 +676,41 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
 
 
 def get_transform_from_crs(
-    crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
-) -> Callable[[GeomObject], GeomObject]:
+    crs_in: pyproj.CRS,
+    crs_out: pyproj.CRS,
+    always_xy: bool = False,
+    geom_objects: bool = True,
+) -> Union[
+    Callable[[GeomObject], GeomObject],
+    Callable[[Sequence[float]], Sequence[float]]
+]:
     """ Get transformation function from two `pyproj.CRS` instances.
 
-    Get function to transform the coordinates of a Shapely geometrical object
-    from one coordinate reference system to another.
+    Get function to transform the coordinates of Shapely geometrical objects or
+    points (xy, xyz or xyzt), from one coordinate reference system to another.
 
-    :param crs_in: Coordinate Reference System of the input geometrical object.
+    :param crs_in: Coordinate Reference System of the input coordinates.
     :type crs_in: `pyproj.CRS`
-    :param crs_out: Coordinate Reference System of the output geometrical
-        object.
+    :param crs_out: Coordinate Reference System of the output coordinates.
     :type crs_out: `pyproj.CRS`
-    :param always_xy: should axis order be forced to x,y (lon, lat) even if CRS
+    :param always_xy: Should axis order be forced to x,y (lon, lat) even if CRS
          declares y,x (lat,lon)
     :type always_xy: `bool`
+    :param geom_objects: Should the returned transformation function be used on
+        `GeomObject` instances, defaults to True.
+    :type geom_objects: `bool`
 
-    :returns: Function to transform the coordinates of a `GeomObject`.
+    :returns: Function to transform the coordinates of `GeomObject` instances
+        or points.
     :rtype: `callable`
     """
     crs_transform = pyproj.Transformer.from_crs(
         crs_in, crs_out, always_xy=always_xy,
     ).transform
-    return partial(shapely.ops.transform, crs_transform)
+    if geom_objects:
+        return partial(shapely.ops.transform, crs_transform)
+    else:
+        return crs_transform
 
 
 def crs_transform(func):
@@ -745,6 +755,7 @@ def crs_transform(func):
         transform_func = get_transform_from_crs(
             pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
             pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+            geom_objects=False,
         )
 
         LOGGER.debug(f'crs_transform: transforming features CRS '
@@ -770,17 +781,50 @@ def crs_transform_feature(feature, transform_func):
 
     :param feature: Feature (GeoJSON-like `dict`) to transform.
     :type feature: `dict`
-    :param transform_func: Function that transforms the coordinates of a
-        `GeomObject` instance.
+    :param transform_func: Function that transforms points between two
+        coordinate systems.
     :type transform_func: `callable`
 
     :returns: None
     """
     json_geometry = feature.get('geometry')
     if json_geometry is not None:
-        feature['geometry'] = geom_to_geojson(
-            transform_func(geojson_to_geom(json_geometry))
-        )
+        crs_transform_json_geom(feature['geometry'], transform_func)
+
+
+def crs_transform_json_geom(json_geom: dict, transform_func: callable) -> None:
+    """Transform the coordinates of a Feature's geometry.
+
+    :param json_geom: Geometry of a GeoJSON feature to transform.
+    :type json_geom: `dict`
+    :param transform_func: Function that transforms points between two
+        coordinate systems.
+    :type transform_func: `callable`
+
+    :returns: None
+    """
+    if json_geom['type'] == 'Point':
+        json_geom['coordinates'] = transform_func(*json_geom['coordinates'])
+    elif json_geom['type'] in ('LineString', 'MultiPoint'):
+        json_geom['coordinates'] = [
+            transform_func(*coord) for coord in json_geom['coordinates']
+        ]
+    elif json_geom['type'] in ('Polygon', 'MultiLineString'):
+        json_geom['coordinates'] = [
+            [transform_func(*coord) for coord in ring]
+            for ring in json_geom['coordinates']
+        ]
+    elif json_geom['type'] == 'MultiPolygon':
+        json_geom['coordinates'] = [
+            [
+             [transform_func(*coord) for coord in ring]
+             for ring in poly
+            ]
+            for poly in json_geom['coordinates']
+        ]
+    elif json_geom['type'] == 'GeometryCollection':
+        for geom in json_geom['geometries']:
+            crs_transform_json_geom(geom, transform_func)
 
 
 def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
