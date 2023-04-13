@@ -1328,7 +1328,7 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == 'MULTIPOINT (10 40, 40 30, 20 20, 30 10)'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/polygon'][0][
-            '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"
+            '@value'] == '40.0,10.0 30.0,40.0 20.0,20.0 10.0,30.0 40.0,10.0'
 
     _, _, response = api_.get_collection_item(req, 'objects', '1')
     feature = json.loads(response)
@@ -1338,7 +1338,7 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == 'LINESTRING (30 10, 10 30, 40 40)'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/line'][0][
-            '@value'] == '30.0,10.0 10.0,30.0 40.0,40.0'
+            '@value'] == '10.0,30.0 30.0,10.0 40.0,40.0'
 
     _, _, response = api_.get_collection_item(req, 'objects', '4')
     feature = json.loads(response)
@@ -1349,8 +1349,8 @@ def test_get_collection_item_json_ld(config, api_):
         '(40 40, 30 30, 40 20, 30 10))'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/line'][0][
-            '@value'] == '10.0,10.0 20.0,20.0 10.0,40.0 40.0,40.0 ' \
-        '30.0,30.0 40.0,20.0 30.0,10.0'
+            '@value'] == '10.0,10.0 20.0,20.0 40.0,10.0 40.0,40.0 ' \
+        '30.0,30.0 20.0,40.0 10.0,30.0'
 
     _, _, response = api_.get_collection_item(req, 'objects', '5')
     feature = json.loads(response)
@@ -1360,7 +1360,7 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == 'POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/polygon'][0][
-            '@value'] == '30.0,10.0 40.0,40.0 20.0,40.0 10.0,20.0 30.0,10.0'
+            '@value'] == '10.0,30.0 40.0,40.0 40.0,20.0 20.0,10.0 10.0,30.0'
 
     _, _, response = api_.get_collection_item(req, 'objects', '7')
     feature = json.loads(response)
@@ -1371,13 +1371,26 @@ def test_get_collection_item_json_ld(config, api_):
         '((15 5, 40 10, 10 20, 5 10, 15 5)))'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/polygon'][0][
-            '@value'] == '15.0,5.0 5.0,10.0 10.0,40.0 '\
-        '45.0,40.0 40.0,10.0 15.0,5.0'
+            '@value'] == '5.0,15.0 10.0,5.0 40.0,10.0 '\
+        '40.0,45.0 10.0,40.0 5.0,15.0'
 
     req = mock_request({'f': 'jsonld', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'fr-CA'
+
+    req = mock_request(
+        {'f': 'jsonld', 'crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}
+    )
+    _, _, response = api_.get_collection_item(req, 'objects', '1')
+    feature = json.loads(response)
+    expanded = jsonld.expand(feature)[0]
+    assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
+            'http://www.opengis.net/ont/geosparql#asWKT'][0][
+            '@value'] == 'LINESTRING (10 30, 30 10, 40 40)'
+    assert expanded['https://schema.org/geo'][0][
+            'https://schema.org/line'][0][
+            '@value'] == '10.0,30.0 30.0,10.0 40.0,40.0'
 
 
 def test_get_coverage_domainset(config, api_):
