@@ -1370,15 +1370,18 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == 'MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)), '\
         '((15 5, 40 10, 10 20, 5 10, 15 5)))'
     assert expanded['https://schema.org/geo'][0][
-            'https://schema.org/polygon'][0][
-            '@value'] == '5.0,15.0 10.0,5.0 40.0,10.0 '\
-        '40.0,45.0 10.0,40.0 5.0,15.0'
+            'https://schema.org/polygon'][0]['@value'] == (
+                '10.0,5.0 5.0,15.0 10.0,40.0 40.0,45.0 40.0,10.0 10.0,5.0'
+            )
 
     req = mock_request({'f': 'jsonld', 'lang': 'fr'})
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'fr-CA'
 
+    # Check that axis ordering is switched for the returned feature in the WKT
+    # string (storageCRS is http://www.opengis.net/def/crs/OGC/1.3/CRS84), but
+    # not in the schema.org markup (always WGS84 Lat/Lon).
     req = mock_request(
         {'f': 'jsonld', 'crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}
     )
