@@ -430,7 +430,7 @@ class ElasticsearchProvider(BaseProvider):
         identifier, json_data = self._load_and_prepare_item(
             item, identifier, raise_if_exists=False)
 
-        _ = self.es.index(index=self.index_name, id=identifier, **json_data)
+        _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
 
         return True
 
