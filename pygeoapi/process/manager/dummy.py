@@ -28,14 +28,13 @@
 # =================================================================
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
+from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import (
-    RequestedProcessExecutionMode,
-    JobStatus,
-)
+from pygeoapi.models.processes import JobStatus
+from pygeoapi.util import RequestesProcessExecutionMode
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,17 +53,37 @@ class DummyManager(BaseManager):
 
         super().__init__(manager_def)
 
-    def get_jobs(self, status: JobStatus = None) -> list:
+    def get_jobs(
+            self,
+            type_: Optional[str] = None,
+            process_id: Optional[str] = None,
+            status: Optional[JobStatus] = None,
+            date_time: Optional[str] = None,
+            min_duration_seconds: Optional[int] = None,
+            max_duration_seconds: Optional[int] = None,
+            limit: Optional[int] = 10,
+            offset: Optional[int] = 0,
+    ) -> Tuple[int, int, List[Dict]]:
         """
         Get process jobs, optionally filtered by status
 
+        :param type_: process type
+        :param process_id: identifier of the parent process of jobs
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
+        :param date_time: temporal interval that a job's `create` property
+                          must intersect
+        :param min_duration_seconds: minimum duration of jobs
+        :param max_duration_seconds: maximum duration of jobs
+        :param limit: number of jobs to return
+        :param offset: Offset for selecting which jobs to return
 
-        :returns: `list` of jobs (identifier, status, process identifier)
+        :returns: a three-element tuple with the total number of jobs, the
+                  total number of jobs that match the filtering parameters
+                  and a list of jobs
         """
 
-        return []
+        return 0, 0, []
 
     def execute_process(
             self,

@@ -32,9 +32,13 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
+from pygeoapi.models.processes import (
+    JobStatusInfoInternal,
+    JobStatus,
+)
 from pygeoapi.process.base import (
     BaseProcessor,
     ProcessorGenericError,
@@ -42,7 +46,6 @@ from pygeoapi.process.base import (
 from pygeoapi.plugin import load_plugin
 from pygeoapi.util import (
     DATETIME_FORMAT,
-    JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
@@ -73,14 +76,50 @@ class BaseManager:
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
 
-    def get_jobs(self, status: JobStatus = None) -> list:
+    def get_jobs(
+            self,
+            type_: Optional[str] = None,
+            process_id: Optional[str] = None,
+            status: Optional[JobStatus] = None,
+            date_time: Optional[str] = None,
+            min_duration_seconds: Optional[int] = None,
+            max_duration_seconds: Optional[int] = None,
+            limit: Optional[int] = 10,
+            offset: Optional[int] = 0,
+    ) -> Tuple[int, int, List[JobStatusInfoInternal]]:
         """
-        Get process jobs, optionally filtered by status
+        Get process jobs, optionally filtered by relevant parameters.
 
+        The filtering parameters follow their respective definition in
+        OAPI - Processes spec, as per:
+
+        https://docs.ogc.org/is/18-062r2/18-062r2.html#toc49
+
+        :param type_: process type
+        :param process_id: identifier of the parent process of jobs
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
+        :param date_time: temporal interval that a job's `create` property
+                          must intersect
+        :param min_duration_seconds: minimum duration of jobs
+        :param max_duration_seconds: maximum duration of jobs
+        :param limit: number of jobs to return
+        :param offset: Offset for selecting which jobs to return
 
-        :returns: `list` of jobs (identifier, status, process identifier)
+        :returns: a three-element tuple with the total number of jobs, the
+                  total number of jobs that match the filtering parameters
+                  and a list of job statuses
+        """
+
+        raise NotImplementedError()
+
+    def add_job(self, job_status: JobStatusInfoInternal) -> str:
+        """
+        Add a job
+
+        :param job_status: job status info
+
+        :returns: `str` added job identifier
         """
 
         raise NotImplementedError()
@@ -101,17 +140,6 @@ class BaseManager:
             raise ProcessorGenericError(msg) from exc
         else:
             return load_plugin('process', process_conf['processor'])
-
-    def add_job(self, job_metadata: dict) -> str:
-        """
-        Add a job
-
-        :param job_metadata: `dict` of job metadata
-
-        :returns: `str` added job identifier
-        """
-
-        raise NotImplementedError()
 
     def update_job(self, job_id: str, update_dict: dict) -> bool:
         """
@@ -199,6 +227,20 @@ class BaseManager:
         process_id = p.metadata['id']
         current_status = JobStatus.accepted
 
+        now = datetime.utcnow()
+        job_status = JobStatusInfoInternal(
+            jobID=job_id,
+            status=current_status,
+            processID=process_id,
+            message="Job accepted and ready for execution",
+            created=now,
+            started=now,
+            finished=None,
+            updated=None,
+            progress=None,
+            location=None
+        )
+
         job_metadata = {
             'identifier': job_id,
             'process_id': process_id,
@@ -212,7 +254,7 @@ class BaseManager:
             'progress': 5
         }
 
-        self.add_job(job_metadata)
+        self.add_job(job_status)
 
         try:
             if self.output_dir is not None:

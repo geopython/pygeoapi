@@ -42,7 +42,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, IO, Union, List, Callable
+from typing import Any, IO, Union, List, Optional, Callable
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -839,3 +839,21 @@ class UrlPrefetcher:
         except Exception:  # noqa
             return CaseInsensitiveDict()
         return response.headers
+
+
+def parse_positive_int_parameter(
+        raw_value: Optional[str],
+        default_value: Optional[int] = None
+) -> Optional[int]:
+    """Parse a query string parameter which is supposed to be positive integer.
+
+    :param raw_value: the raw value
+    :default_value: a default value to be returned
+    """
+    try:
+        result = int(raw_value)
+        if result < 0:
+            result = default_value
+    except (TypeError, ValueError):
+        result = default_value
+    return result

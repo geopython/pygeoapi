@@ -46,7 +46,7 @@ from http import HTTPStatus
 import json
 import logging
 import re
-from typing import Any, Tuple, Union, Optional
+from typing import Any, Dict, List, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
@@ -63,17 +63,22 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.models.provider.base import TilesMetadataFormat
-from pygeoapi.plugin import (
-    InvalidPluginError,
-    load_plugin,
-    PLUGINS,
+from pygeoapi.models.processes import (
+    JobStatusInfoInternal,
+    JobStatusInfoRead,
+    Link
 )
+from pygeoapi.models.provider.base import TilesMetadataFormat
 from pygeoapi.process.base import (
     ProcessorExecuteError,
     ProcessorGenericError,
 )
 from pygeoapi.process.manager import get_manager
+from pygeoapi.plugin import (
+    InvalidPluginError,
+    load_plugin,
+    PLUGINS,
+)
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
@@ -85,8 +90,9 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
-                           get_provider_default, get_typed_value, JobStatus,
-                           json_serial, render_j2_template, str2bool,
+                           get_provider_default, get_typed_value,
+                           json_serial, parse_positive_int_parameter,
+                           render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
                            CrsTransformSpec, transform_bbox)
@@ -3390,16 +3396,44 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        if self.manager:
-            if job_id is None:
-                jobs = sorted(self.manager.get_jobs(),
-                              key=lambda k: k['job_start_datetime'],
-                              reverse=True)
-            else:
-                jobs = [self.manager.get_job(job_id)]
+        if job_id is None:
+            requested_status = request.params.get("status", "")
+            try:
+                status_filter = JobStatus(requested_status.lower())
+            except ValueError:
+                status_filter = None
+            limit = parse_positive_int_parameter(
+                request.params.get("limit"), default_value=10)
+            offset = parse_positive_int_parameter(
+                request.params.get("offset"), default_value=0)
+            total_jobs, total_filtered_jobs, jobs = self.manager.get_jobs(
+                type_=request.params.get("type"),
+                process_id=request.params.get("processID"),
+                status=status_filter,
+                date_time=request.params.get("datetime"),
+                min_duration_seconds=parse_positive_int_parameter(
+                    request.params.get("minDuration")),
+                max_duration_seconds=parse_positive_int_parameter(
+                    request.params.get("maxDuration")),
+                limit=limit,
+                offset=offset,
+            )
+            link_params = {
+                "type": None,
+                "processID": request.params.get("processID"),
+                "status": request.params.get("status"),
+                "datetime": request.params.get("datetime"),
+                "minDuration": request.params.get("minDuration"),
+                "maxDuration": request.params.get("maxDuration"),
+            }
+            link_params = {k: v for k, v in link_params if v is not None}
+            additional_response_links = _get_pagination_links(
+                len(jobs), limit, offset, total_filtered_jobs,
+                base_url=f"{self.base_url}/jobs",
+                querystring_params=link_params
+            )
         else:
-            LOGGER.debug('Process management not configured')
-            jobs = []
+            jobs = [self.manager.get_job(job_id)]
 
         serialized_jobs = {
             'jobs': [],
@@ -3415,46 +3449,50 @@ class API:
                 'title': 'Jobs list as JSON'
             }]
         }
-        for job_ in jobs:
-            job2 = {
-                'processID': job_['process_id'],
-                'jobID': job_['identifier'],
-                'status': job_['status'],
-                'message': job_['message'],
-                'progress': job_['progress'],
-                'parameters': job_.get('parameters'),
-                'job_start_datetime': job_['job_start_datetime'],
-                'job_end_datetime': job_['job_end_datetime']
-            }
+        for job_status in jobs:
+            job_read = _serialize_job_status(job_status)
+            serialized_jobs["jobs"].append(job_read.dict(by_alias=True))
 
-            # TODO: translate
-            if JobStatus[job_['status']] in (
-               JobStatus.successful, JobStatus.running, JobStatus.accepted):
-
-                job_result_url = f"{self.base_url}/jobs/{job_['identifier']}/results"  # noqa
-
-                job2['links'] = [{
-                    'href': f'{job_result_url}?f={F_HTML}',
-                    'rel': 'about',
-                    'type': FORMAT_TYPES[F_HTML],
-                    'title': f'results of job {job_id} as HTML'
-                }, {
-                    'href': f'{job_result_url}?f={F_JSON}',
-                    'rel': 'about',
-                    'type': FORMAT_TYPES[F_JSON],
-                    'title': f'results of job {job_id} as JSON'
-                }]
-
-                if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
-                                            FORMAT_TYPES[F_HTML]):
-                    job2['links'].append({
-                        'href': job_result_url,
-                        'rel': 'about',
-                        'type': job_['mimetype'],
-                        'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
-                    })
-
-            serialized_jobs['jobs'].append(job2)
+        # for job_ in jobs:
+        #     job2 = {
+        #         'processID': job_['process_id'],
+        #         'jobID': job_['identifier'],
+        #         'status': job_['status'],
+        #         'message': job_['message'],
+        #         'progress': job_['progress'],
+        #         'parameters': job_.get('parameters'),
+        #         'job_start_datetime': job_['job_start_datetime'],
+        #         'job_end_datetime': job_['job_end_datetime']
+        #     }
+        #
+        #     # TODO: translate
+        #     if JobStatus[job_['status']] in (
+        #        JobStatus.successful, JobStatus.running, JobStatus.accepted):
+        #
+        #         job_result_url = f"{self.base_url}/jobs/{job_['identifier']}/results"  # noqa
+        #
+        #         job2['links'] = [{
+        #             'href': f'{job_result_url}?f={F_HTML}',
+        #             'rel': 'about',
+        #             'type': FORMAT_TYPES[F_HTML],
+        #             'title': f'results of job {job_id} as HTML'
+        #         }, {
+        #             'href': f'{job_result_url}?f={F_JSON}',
+        #             'rel': 'about',
+        #             'type': FORMAT_TYPES[F_JSON],
+        #             'title': f'results of job {job_id} as JSON'
+        #         }]
+        #
+        #         if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
+        #                                     FORMAT_TYPES[F_HTML]):
+        #             job2['links'].append({
+        #                 'href': job_result_url,
+        #                 'rel': 'about',
+        #                 'type': job_['mimetype'],
+        #                 'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
+        #             })
+        #
+        #     serialized_jobs['jobs'].append(job2)
 
         if job_id is None:
             j2_template = 'jobs/index.html'
@@ -4312,3 +4350,99 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
+
+
+def _serialize_job_status(job_status: JobStatusInfoInternal):
+    result_related_statuses = (
+        JobStatus.successful,
+        JobStatus.running,
+        JobStatus.accepted
+    )
+    links = []
+    if job_status.status in result_related_statuses:
+        result_url = f"{self.base_url}/jobs/{job_status.jobID}/results"  # noqa
+        links.extend(
+            [
+                Link(
+                    type=FORMAT_TYPES[F_HTML],
+                    rel='about',
+                    title=f'results of job {job_status.job_id} as HTML',
+                    href=f'{result_url}?f={F_HTML}',
+                ),
+                Link(
+                    type=FORMAT_TYPES[F_JSON],
+                    rel='about',
+                    title=f'results of job {job_status.job_id} as JSON',
+                    href=f'{result_url}?f={F_JSON}',
+                ),
+            ]
+        )
+    return JobStatusInfoRead(
+        **job_status.dict(by_alias=True),
+        links=links
+    )
+
+
+def _get_pagination_links(
+        num_returned_records: int,
+        limit: int,
+        offset: int,
+        total_records: int,
+        base_url: str,
+        querystring_params: Optional[Dict[str, str]] = None,
+) -> List[Link]:
+    result = []
+    base_querystring = {
+        "limit": limit,
+        **(querystring_params if querystring_params is not None else {})
+    }
+    if offset + num_returned_records < total_records:
+        querystring = {
+            "offset": min(offset + limit, total_records - limit),  # FIXME
+            **base_querystring,
+        }
+        html_querystring = urllib.parse.urlencode({"f": F_HTML, **querystring})
+        json_querystring = urllib.parse.urlencode({"f": F_JSON, **querystring})
+        result.extend(
+            [
+                Link(
+                    href=f"{base_url}?{html_querystring}",
+                    type=FORMAT_TYPES[F_HTML],
+                    rel="next",
+                    title="Next page of job list, as HTML"
+                ),
+                Link(
+                    href=f"{base_url}?{json_querystring}",
+                    type=FORMAT_TYPES[F_JSON],
+                    rel="next",
+                    title="Next page of job list, as JSON"
+                ),
+            ]
+        )
+    if offset + num_returned_records > limit:
+        querystring = {
+            "offset": max(offset - limit, 0),
+            **base_querystring,
+        }
+        html_querystring = urllib.parse.urlencode({"f": F_HTML, **querystring})
+        json_querystring = urllib.parse.urlencode({"f": F_JSON, **querystring})
+        result.extend(
+            [
+                Link(
+                    href=f"{base_url}?{html_querystring}",
+                    type=FORMAT_TYPES[F_HTML],
+                    rel="prev",
+                    title="Previous page of job list, as HTML"
+                ),
+                Link(
+                    href=f"{base_url}?{json_querystring}",
+                    type=FORMAT_TYPES[F_JSON],
+                    rel="prev",
+                    title="Previous page of job list, as JSON"
+                )
+
+            ]
+        )
+    return result
+
+

@@ -33,15 +33,19 @@ except ModuleNotFoundError:
     # When on Windows, fcntl does not exist and file locking is automatic
     fcntl = None
 
+import functools
 import json
 import logging
+import operator
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, List, Optional, Tuple
 
+import pydantic
 import tinydb
 
+from pygeoapi.models.processes import JobStatusInfoInternal
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import JobStatus
+from pygeoapi.util import DATETIME_FORMAT, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,33 +90,123 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return True
 
-    def get_jobs(self, status: JobStatus = None) -> list:
+    def get_jobs(
+            self,
+            type_: Optional[str] = None,
+            process_id: Optional[str] = None,
+            status: Optional[JobStatus] = None,
+            date_time: Optional[str] = None,
+            min_duration_seconds: Optional[int] = None,
+            max_duration_seconds: Optional[int] = None,
+            limit: Optional[int] = 10,
+            offset: Optional[int] = 0,
+    ) -> Tuple[int, int, List[JobStatusInfoInternal]]:
         """
         Get jobs
 
+        :param type_: process type
+        :param process_id: identifier of the parent process of jobs
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
+        :param date_time: temporal interval that a job's `create` property
+                          must intersect
+        :param min_duration_seconds: minimum duration of jobs
+        :param max_duration_seconds: maximum duration of jobs
+        :param limit: number of jobs to return
+        :param offset: Offset for selecting which jobs to return
 
-        :returns: 'list` of jobs (identifier, status, process identifier)
+        :returns: a three-element tuple with the total number of jobs, the
+                  total number of jobs that match the filtering parameters
+                  and a list of job statuses
         """
 
         self._connect()
-        jobs_list = self.db.all()
+        JobSummary = tinydb.Query()
+        filters = []
+        if process_id is not None:
+            filters.append(JobSummary.process_id == process_id)
+        if status is not None:
+            filters.append(JobSummary.status == status.value)
+        else:
+            # According of OAPI - Processes spec, Requirement 75:
+            #
+            # > If the status parameter is not specified then only jobs that
+            # > are running (status: running) or have completed execution
+            # > (successful, failed or dismissed) SHALL be considered for
+            # > inclusion in the response.
+            filters.append(
+                JobSummary.status.any(
+                    [
+                        JobStatus.dismissed.value,
+                        JobStatus.failed.value,
+                        JobStatus.running.value,
+                        JobStatus.successful.value,
+                    ]
+                )
+            )
+        if date_time is not None:
+            pass
+        if min_duration_seconds is not None:
+            pass
+        if max_duration_seconds is not None:
+            pass
+        if len(filters) > 1:
+            all_filtered_jobs = self.db.search(
+                functools.reduce(operator.and_, filters))
+        else:
+            all_filtered_jobs = self.db.all()
+        db_jobs = sorted(
+            all_filtered_jobs,
+            key=lambda obj: obj.get("created"),
+            reverse=True
+        )[offset:offset+limit]
+
+        result = []
+        for db_job in db_jobs:
+            try:
+                job = JobStatusInfoInternal(**db_job)
+            except pydantic.ValidationError:
+                LOGGER.warning(
+                    f"Unable to parse db_job {db_job} - skipping...")
+            else:
+                result.append(job)
+        all_jobs = len(self.db)
         self.db.close()
+        return all_jobs, len(all_filtered_jobs), result
 
-        return jobs_list
-
-    def add_job(self, job_metadata: dict) -> str:
+    def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
         Add a job
 
-        :param job_metadata: `dict` of job metadata
+        :param job_status: job status
 
         :returns: identifier of added job
         """
 
         self._connect(mode='w')
-        doc_id = self.db.insert(job_metadata)
+        db_job = {
+            "created": (
+                job_status.created.strftime(DATETIME_FORMAT)
+                if job_status.created is not None else None
+            ),
+            "started": (
+                job_status.started.strftime(DATETIME_FORMAT)
+                if job_status.started is not None else None
+            ),
+            "finished": (
+                job_status.finished.strftime(DATETIME_FORMAT)
+                if job_status.finished is not None else None
+            ),
+            "updated": (
+                job_status.updated.strftime(DATETIME_FORMAT)
+                if job_status.updated is not None else None
+            ),
+            **job_status.dict(
+                by_alias=True,
+                exclude={"created", "started", "finished", "updated"}
+            )
+        }
+        doc_id = self.db.insert(db_job)
         self.db.close()
 
         return doc_id  # noqa
@@ -154,22 +248,24 @@ class TinyDBManager(BaseManager):
 
         return removed
 
-    def get_job(self, job_id: str) -> dict:
+    def get_job(self, job_id: str) -> Optional[JobStatusInfoInternal]:
         """
         Get a single job
 
         :param job_id: job identifier
 
-        :returns: `dict`  # `pygeoapi.process.manager.Job`
+        :returns: job status info
         """
 
         self._connect()
         query = tinydb.Query()
-        result = self.db.search(query.identifier == job_id)
-
-        result = result[0] if result else None
+        result = self.db.search(query["jobID"] == job_id)
+        if len(result) > 0:
+            job = JobStatusInfoInternal(**result[0])
+        else:
+            job = None
         self.db.close()
-        return result
+        return job
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """

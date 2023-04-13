@@ -29,10 +29,12 @@
 import json
 import logging
 import traceback
+from typing import Optional
 
 from pymongo import MongoClient
 
 from pygeoapi.process.manager.base import BaseManager
+from pygeoapi.util import JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +67,19 @@ class MongoDBManager(BaseManager):
                          exc_info=(traceback))
             return False
 
-    def get_jobs(self, status=None):
+    def get_jobs(
+            self,
+            type_: Optional[str] = None,
+            process_id: Optional[str] = None,
+            status: Optional[JobStatus] = None,
+            date_time: Optional[str] = None,
+            min_duration_seconds: Optional[int] = None,
+            max_duration_seconds: Optional[int] = None,
+            limit: Optional[int] = 10,
+            offset: Optional[int] = 0,
+    ):
+        # TODO: Implement filtering
+        # TODO: Implement returning total number of records and
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
@@ -75,7 +89,7 @@ class MongoDBManager(BaseManager):
             else:
                 jobs = list(collection.find({}))
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
-            return jobs
+            return 0, 0, jobs
         except Exception:
             LOGGER.error("JOBMANAGER - get_jobs error",
                          exc_info=(traceback))
