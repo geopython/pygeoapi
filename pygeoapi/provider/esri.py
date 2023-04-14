@@ -34,7 +34,7 @@ from requests import Session, codes
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderTypeError, ProviderQueryError)
-from pygeoapi.util import format_datetime
+from pygeoapi.util import format_datetime, crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,6 +106,7 @@ class ESRIServiceProvider(BaseProvider):
 
         return self.fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -163,6 +164,7 @@ class ESRIServiceProvider(BaseProvider):
 
         return fc
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Query ESRI by id

@@ -18,6 +18,8 @@ pygeoapi configuration contains the following core sections:
 - ``metadata``: server-wide metadata (contact, licensing, etc.)
 - ``resources``: dataset collections, processes and stac-collections offered by the server
 
+The full configuration schema with descriptions of all available properties can be found `here <https://github.com/geopython/pygeoapi/blob/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml>`_.
+
 .. note::
    `Standard YAML mechanisms <https://en.wikipedia.org/wiki/YAML#Advanced_components>`_ can be used (anchors, references, etc.) for reuse and compactness.
 
@@ -30,6 +32,7 @@ Reference
 ^^^^^^^^^^
 
 The ``server`` section provides directives on binding and high level tuning.
+Please find more information related to API design rules (the property at the bottom of the example below) :ref:`further down<API Design Rules>`.
 
 .. code-block:: yaml
 
@@ -60,6 +63,12 @@ The ``server`` section provides directives on binding and high level tuning.
         name: TinyDB  # plugin name (see pygeoapi.plugin for supported process_manager's)
         connection: /tmp/pygeoapi-process-manager.db  # connection info to store jobs (e.g. filepath)
         output_dir: /tmp/  # temporary file area for storing job results (files)
+
+    api_rules:  # optional API design rules to which pygeoapi should adhere
+        api_version: 1.2.3  # omit to use pygeoapi's software version
+        strict_slashes: true  # trailing slashes will not be allowed and result in a 404
+        url_prefix: 'v{api_major}'  # adds a /v1 prefix to all URL paths
+        version_header: X-API-Version  # add a response header of this name with the API version
 
 
 ``logging``
@@ -152,8 +161,8 @@ default.
               - observations
               - monitoring
           linked-data: # linked data configuration (see Linked Data section)
-              item_template: tests/data/base.jsonld 
-              context:  
+              item_template: tests/data/base.jsonld
+              context:
                   - datetime: https://schema.org/DateTime
                   - vocab: https://example.com/vocab#
                     stn_id: "vocab:stn_id"
@@ -186,6 +195,13 @@ default.
                 uri_field: uri # optional field corresponding to the Uniform Resource Identifier (see Linked Data section)
                 time_field: datetimestamp  # optional field corresponding to the temporal property of the dataset
                 title_field: foo # optional field of which property to display as title/label on HTML pages
+                crs: # optional: supported CRSs for parameters 'crs' and 'bbox-crs' (OGC OAPIF Part 2)
+                     # default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                    - http://www.opengis.net/def/crs/EPSG/0/4326
+                    - http://www.opengis.net/def/crs/EPSG/0/3857
+                    - http://www.opengis.net/def/crs/EPSG/0/28992
+                storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84 # optional CRS in which data is stored, default: as 'crs' field
+                storage_crs_coordinate_epoch: : 2017.23 # optional, if storage_crs is a dynamic coordinate reference system
                 format:  # optional default format
                     name: GeoJSON  # required: format name
                     mimetype: application/json  # required: format mimetype
@@ -194,6 +210,14 @@ default.
                 properties:  # optional: only return the following properties, in order
                     - stn_id
                     - value
+                # coordinate reference systems (CRS) section is optional
+                # default CRSs are http://www.opengis.net/def/crs/OGC/1.3/CRS84 (coordinates without height)
+                # and http://www.opengis.net/def/crs/OGC/1.3/CRS84h (coordinates with ellipsoidal height)
+                storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992 # CRS of the dataset to publish
+                crs: # supported coordinate reference systems (CRS) for 'crs' query parameter
+                    - http://www.opengis.net/def/crs/EPSG/0/28992
+                    - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                    - http://www.opengis.net/def/crs/EPSG/0/4326
 
       hello-world:  # name of process
           type: collection  # REQUIRED (collection, process, or stac-collection)
@@ -286,6 +310,58 @@ Examples:
    curl https://example.org/collections  # resource foo is not advertised
    curl https://example.org/openapi  # resource foo is not advertised
    curl https://example.org/collections/foo  # user can access resource normally
+
+
+API Design Rules
+----------------
+
+Some pygeoapi setups may wish to adhere to specific API design rules that apply at an organization.
+The ``api_rules`` object in the ``server`` section of the configuration can be used for this purpose.
+
+Note that the entire ``api_rules`` object is optional. No rules will be applied if the object is omitted.
+
+The following properties can be set:
+
+``api_version``
+^^^^^^^^^^^^^^^
+
+If specified, this property is a string that defines the semantic version number of the API.
+Note that this number should reflect the state of the *API data model* (request and response object structure, API endpoints, etc.)
+and does not necessarily correspond to the *software* version of pygeoapi. For example, the software could have been
+completely rewritten (which changes the software version number), but the API data model might still be the same as before.
+
+Unfortunately, pygeoapi currently does not offer a way to keep track of the API version.
+This means that you need to set (and maintain) your own version here or leave it empty or unset.
+In the latter case, the software version of pygeoapi will be used instead.
+
+``strict_slashes``
+^^^^^^^^^^^^^^^^^^
+
+Some API rules state that trailing slashes at the end of a URL are not allowed if they point to a specific resource item.
+In that case, you may wish to set this property to ``true``. Doing so will result in a ``404 Not Found`` if a user adds a ``/`` to the end of a URL.
+If omitted or ``false`` (default), it does not matter whether the user omits or adds the ``/`` to the end of the URL.
+
+``url_prefix``
+^^^^^^^^^^^^^^
+
+Set this property to include a prefix in the URL path (e.g. `https://base.com/<my_prefix>/endpoint`).
+Note that you do not need to include slashes (either at the start or the end) here: they will be added automatically.
+
+If you wish to include the API version number (depending on the `api_version`_ property) in the prefix, you can use the following variables:
+
+- ``{api_version}``: full semantic version number
+- ``{api_major}``: major version number
+- ``{api_minor}``: minor version number
+- ``{api_build}``: build number
+
+For example, if the API version is *1.2.3*, then a URL prefix template of ``v{api_major}`` will result in *v1* as the actual prefix.
+
+``version_header``
+^^^^^^^^^^^^^^^^^^
+
+Set this property to add a header to each pygeoapi response that includes the semantic API version (see `api_version`_).
+If omitted, no header will be added. Common names for this header are ``API-Version`` or ``X-API-Version``.
+Note that pygeoapi already adds a ``X-Powered-By`` header by default that includes the software version number.
 
 
 Validating the configuration
@@ -509,12 +585,12 @@ deployment flexibility, the path can be specified with string interpolation of e
 .. code-block:: yaml
 
     linked-data:
-      item_template: tests/data/base.jsonld 
+      item_template: tests/data/base.jsonld
       context:
         - datetime: https://schema.org/DateTime
 
 .. note::
-   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities 
+   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities
    of Jinja2 templates, see :ref:`html-templating`.
 
 Summary

@@ -29,13 +29,30 @@
 
 from datetime import datetime, date, time
 from decimal import Decimal
+from copy import deepcopy
 
 import pytest
+from pyproj.exceptions import CRSError
+from shapely.geometry import Point
 
 from pygeoapi import util
+from pygeoapi.api import __version__
 from pygeoapi.provider.base import ProviderTypeError
 
 from .util import get_test_file_path
+
+
+@pytest.fixture()
+def config():
+    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
+        return util.yaml_load(fh)
+
+
+@pytest.fixture()
+def config_with_rules() -> dict:
+    """ Returns a pygeoapi configuration with default API rules. """
+    with open(get_test_file_path('pygeoapi-test-config-apirules.yml')) as fh:
+        return util.yaml_load(fh)
 
 
 def test_get_typed_value():
@@ -49,13 +66,11 @@ def test_get_typed_value():
     assert isinstance(value, str)
 
 
-def test_yaml_load():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        d = util.yaml_load(fh)
-        assert isinstance(d, dict)
+def test_yaml_load(config):
+    assert isinstance(config, dict)
     with pytest.raises(FileNotFoundError):
         with open(get_test_file_path('404.yml')) as fh:
-            d = util.yaml_load(fh)
+            util.yaml_load(fh)
 
 
 def test_str2bool():
@@ -110,25 +125,19 @@ def test_path_basename():
     assert util.get_path_basename('/path/to/dir') == 'dir'
 
 
-def test_filter_dict_by_key_value():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        d = util.yaml_load(fh)
-
-    collections = util.filter_dict_by_key_value(d['resources'],
+def test_filter_dict_by_key_value(config):
+    collections = util.filter_dict_by_key_value(config['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 7
+    assert len(collections) == 8
 
-    notfound = util.filter_dict_by_key_value(d['resources'],
+    notfound = util.filter_dict_by_key_value(config['resources'],
                                              'type', 'foo')
 
     assert len(notfound) == 0
 
 
-def test_get_provider_by_type():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        d = util.yaml_load(fh)
-
-    p = util.get_provider_by_type(d['resources']['obs']['providers'],
+def test_get_provider_by_type(config):
+    p = util.get_provider_by_type(config['resources']['obs']['providers'],
                                   'feature')
 
     assert isinstance(p, dict)
@@ -136,26 +145,159 @@ def test_get_provider_by_type():
     assert p['name'] == 'CSV'
 
     with pytest.raises(ProviderTypeError):
-        p = util.get_provider_by_type(d['resources']['obs']['providers'],
+        p = util.get_provider_by_type(config['resources']['obs']['providers'],
                                       'something-else')
 
 
-def test_get_provider_default():
-    with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        d = util.yaml_load(fh)
-
-    pd = util.get_provider_default(d['resources']['obs']['providers'])
+def test_get_provider_default(config):
+    pd = util.get_provider_default(config['resources']['obs']['providers'])
 
     assert pd['type'] == 'feature'
     assert pd['name'] == 'CSV'
 
-    pd = util.get_provider_default(d['resources']['obs']['providers'])
+    pd = util.get_provider_default(config['resources']['obs']['providers'])
 
 
 def test_read_data():
     data = util.read_data(get_test_file_path('pygeoapi-test-config.yml'))
 
     assert isinstance(data, bytes)
+
+
+def test_url_join():
+    f = util.url_join
+    assert f('http://localhost:5000') == 'http://localhost:5000'
+    assert f('http://localhost:5000/') == 'http://localhost:5000'
+    assert f('http://localhost:5000', '') == 'http://localhost:5000'
+    assert f('http://localhost:5000/', '') == 'http://localhost:5000'
+    assert f('http://localhost:5000/', '/') == 'http://localhost:5000'
+    assert f('http://localhost:5000/api', '/') == 'http://localhost:5000/api'
+    assert f('http://localhost:5000/api', '/v0') == 'http://localhost:5000/api/v0'  # noqa
+    assert f('http://localhost:5000/api', '/v0/') == 'http://localhost:5000/api/v0'  # noqa
+    assert f('http://localhost:5000', 'api', 'v0') == 'http://localhost:5000/api/v0'  # noqa
+
+
+def test_get_base_url(config, config_with_rules):
+    assert util.get_base_url(config) == 'http://localhost:5000'
+    assert util.get_base_url(config_with_rules) == 'http://localhost:5000/api/v0'  # noqa
+
+
+def test_get_api_rules(config, config_with_rules):
+    # Test unset/default rules
+    rules = util.get_api_rules(config)
+    assert not rules.strict_slashes
+    assert not rules.url_prefix
+    assert rules.api_version == __version__
+    assert rules.version_header == ''
+    assert rules.get_url_prefix() == ''
+    assert rules.response_headers == {}
+
+    # Test configured rules
+    rules = util.get_api_rules(config_with_rules)
+    assert rules.strict_slashes
+    assert rules.url_prefix
+    assert rules.api_version == __version__
+    assert rules.version_header == 'X-API-Version'
+    assert rules.response_headers == {'X-API-Version': __version__}
+
+    # Test specific version override
+    config_changed = deepcopy(config_with_rules)
+    config_changed['server']['api_rules']['api_version'] = '1.2.3'
+    rules = util.get_api_rules(config_changed)
+    assert rules.api_version == '1.2.3'
+    assert rules.get_url_prefix() == 'v1'
+    assert rules.get_url_prefix('flask') == '/v1'
+    assert rules.get_url_prefix('starlette') == '/v1'
+    assert rules.get_url_prefix('django') == r'^v1/'
+
+    # Test prefix without version
+    config_changed = deepcopy(config_with_rules)
+    config_changed['server']['api_rules']['url_prefix'] = 'test'
+    rules = util.get_api_rules(config_changed)
+    assert rules.get_url_prefix() == 'test'
+    assert rules.get_url_prefix('flask') == '/test'
+    assert rules.get_url_prefix('starlette') == '/test'
+    assert rules.get_url_prefix('django') == r'^test/'
+
+
+def test_get_transform_from_crs():
+    crs_in = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/4258'
+    )
+    crs_out = util.get_crs_from_uri(
+        'http://www.opengis.net/def/crs/EPSG/0/25833'
+    )
+    transform_func = util.get_transform_from_crs(crs_in, crs_out)
+    p_in = Point((67.278972, 14.394493))
+    p_out = Point((473901.6105, 7462606.8762))
+    assert p_out.equals_exact(transform_func(p_in), 1e-3)
+
+
+def test_get_supported_crs_list():
+    DEFAULT_CRS_LIST = [
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84h'
+    ]
+    DUTCH_CRS = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+
+    # Make various combinations of configs
+    CONFIGS = \
+        [
+            dict(),
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/OGC/1.3/CRS84h']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     'http://www.opengis.net/def/crs/OGC/1.3/CRS84']},
+            {'crs': ['http://www.opengis.net/def/crs/EPSG/0/4326',
+                     DUTCH_CRS]},
+        ]
+    # Apply all configs to util function
+    for config in CONFIGS:
+        crs_list = util.get_supported_crs_list(config, DEFAULT_CRS_LIST)
+
+        # Whatever config: a default should be present
+        contains_default = False
+        for crs in crs_list:
+            if crs in DEFAULT_CRS_LIST:
+                contains_default = True
+        assert contains_default
+
+        # Extra CRSs supplied should also be present
+        if DUTCH_CRS in config:
+            assert DUTCH_CRS in crs_list
+
+
+def test_get_crs_from_uri():
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/not/a/valid/crs/uri')
+    with pytest.raises(CRSError):
+        util.get_crs_from_uri('http://www.opengis.net/def/crs/EPSG/0/0')
+    CRS_DICT = {
+        'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'OGC:CRS84',
+        'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
+        'http://www.opengis.net/def/crs/EPSG/0/28992': 'EPSG:28992'
+    }
+    for key in CRS_DICT:
+        crs_obj = util.get_crs_from_uri(key)
+        assert crs_obj.srs == CRS_DICT[key]
+
+
+def test_transform_bbox():
+    # Use rounded values as fractions may differ
+    result = [59742, 446645, 129005, 557074]
+
+    bbox = [4, 52, 5, 53]
+    from_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    to_crs = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+    bbox_trans = util.transform_bbox(bbox, from_crs, to_crs)
+    for n in range(4):
+        assert round(bbox_trans[n]) == result[n]
+
+    bbox = [52, 4, 53, 5]
+    from_crs = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    bbox_trans = util.transform_bbox(bbox, from_crs, to_crs)
+    for n in range(4):
+        assert round(bbox_trans[n]) == result[n]
 
 
 def test_prefetcher():

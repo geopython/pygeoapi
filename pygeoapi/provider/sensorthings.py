@@ -34,9 +34,10 @@ import os
 import logging
 from requests import Session
 
-from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
-                                    ProviderConnectionError)
-from pygeoapi.util import yaml_load, url_join, get_provider_default
+from pygeoapi.provider.base import (
+    BaseProvider, ProviderQueryError, ProviderConnectionError)
+from pygeoapi.util import (
+    yaml_load, url_join, get_provider_default, crs_transform, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class SensorThingsProvider(BaseProvider):
             # Read from pygeoapi config
             with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
                 CONFIG = yaml_load(fh)
-                self.rel_link = CONFIG['server']['url']
+                self.rel_link = get_base_url(CONFIG)
 
             for (name, rs) in CONFIG['resources'].items():
                 pvs = rs.get('providers')
@@ -166,6 +167,7 @@ class SensorThingsProvider(BaseProvider):
 
         return self.fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -191,6 +193,7 @@ class SensorThingsProvider(BaseProvider):
                           sortby=sortby, select_properties=select_properties,
                           skip_geometry=skip_geometry)
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Query STA by id

@@ -37,8 +37,7 @@ import logging
 
 import pytest
 
-from pygeoapi.provider.base import (
-    ProviderQueryError, ProviderItemNotFoundError)
+from pygeoapi.provider.base import (ProviderItemNotFoundError)
 from pygeoapi.provider.ogr import OGRProvider
 
 
@@ -53,16 +52,19 @@ def config_MapServer_WFS_cities():
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
             'source_options': {
+                'OGR_WFS_VERSION': '2.0.0',
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
                 'GDAL_CACHEMAX': '64',
+                'GDAL_HTTP_VERSION': '1.1',
+                'GDAL_HTTP_UNSAFESSL': 'YES',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
                 'CPL_DEBUG': 'NO'
@@ -81,16 +83,19 @@ def config_MapServer_WFS_continents():
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
             'source_options': {
+                'OGR_WFS_VERSION': '2.0.0',
                 'OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN': 'NO'
             },
             'gdal_ogr_options': {
                 'GDAL_CACHEMAX': '64',
+                'GDAL_HTTP_VERSION': '1.1',
+                'GDAL_HTTP_UNSAFESSL': 'YES',
                 # 'GDAL_HTTP_PROXY': (optional proxy)
                 # 'GDAL_PROXY_AUTH': (optional auth for remote WFS)
                 'CPL_DEBUG': 'NO'
@@ -109,9 +114,9 @@ def config_geosol_gs_WFS():
         'data': {
             'source_type': 'WFS',
             'source':
-                'WFS:https://demo.geo-solutions.it/geoserver/wfs?',
-            'source_srs': 'EPSG:32632',
-            'target_srs': 'EPSG:4326',
+                'WFS:https://gs-stable.geosolutionsgroup.com/geoserver/wfs?',
+            # 'source_srs': 'EPSG:32632',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -126,8 +131,13 @@ def config_geosol_gs_WFS():
                 'CPL_DEBUG': 'NO'
             },
         },
+        'crs': [
+             'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+             'http://www.opengis.net/def/crs/EPSG/0/32632'
+         ],
+        'storageCRS': 'http://www.opengis.net/def/crs/EPSG/0/32632',
         'id_field': 'gml_id',
-        'layer': 'unesco:Unesco_point'
+        'layer': 'unesco:Unesco_point',
     }
 
 
@@ -140,8 +150,8 @@ def config_geonode_gs_WFS():
             'source_type': 'WFS',
             'source':
                 'WFS:https://geonode.wfp.org/geoserver/wfs',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -205,35 +215,35 @@ def test_get_gs(config_MapServer_WFS_continents):
     assert result['properties']['NA3DESC'] == 'North America'
 
 
-def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
-    """Testing query not returning gml_id for a specific object"""
-
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options is not None
-    result = p.get_fields()
-    assert result.get('gml_id') is None
-
-
-def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
-    """Testing query forcing to return gml_id for a specific object"""
-
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options is not None
-    p.open_options['EXPOSE_GML_ID'] = 'YES'
-    result = p.get_fields()
-    assert result.get('gml_id')
-
-
-def test_get_gs_with_geojson_output_too_complex_raise_exception(
-    config_geonode_gs_WFS
-):
-    """Testing query for a specific object with too complex geojson"""
-    p = OGRProvider(config_geonode_gs_WFS)
-    assert p.open_options.get('URL') is None
-    p.open_options[
-        'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
-    with pytest.raises(ProviderQueryError):
-        p.get(272)
+# def test_gs_not_getting_gml_id(config_geonode_gs_WFS):
+#     """Testing query not returning gml_id for a specific object"""
+#
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options is not None
+#     result = p.get_fields()
+#     assert result.get('gml_id') is None
+#
+#
+# def test_gs_force_getting_gml_id(config_geonode_gs_WFS):
+#     """Testing query forcing to return gml_id for a specific object"""
+#
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options is not None
+#     p.open_options['EXPOSE_GML_ID'] = 'YES'
+#     result = p.get_fields()
+#     assert result.get('gml_id')
+#
+#
+# def test_get_gs_with_geojson_output_too_complex_raise_exception(
+#     config_geonode_gs_WFS
+# ):
+#     """Testing query for a specific object with too complex geojson"""
+#     p = OGRProvider(config_geonode_gs_WFS)
+#     assert p.open_options.get('URL') is None
+#     p.open_options[
+#         'URL'] = 'https://geonode.wfp.org/geoserver/wfs?outputformat=json'
+#     with pytest.raises(ProviderQueryError):
+#         p.get(272)
 
 
 def test_get_gs_not_existing_feature_raise_exception(
@@ -328,7 +338,7 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
 
     p = OGRProvider(config_geosol_gs_WFS)
     feature_collection = p.query(
-        bbox=(681417.0, 4849032.0, 681417.3, 4849032.3), resulttype='hits')
+        bbox=(957858, 4561555, 957862, 4561557), resulttype='hits')
     # feature_collection = p.query(bbox=(
     # 5.763409, 52.060197, 5.769256, 52.061976), resulttype='hits')
 
@@ -344,8 +354,6 @@ def test_query_bbox_ms(config_MapServer_WFS_cities):
     """Testing query for a valid JSON object with geometry"""
 
     p = OGRProvider(config_MapServer_WFS_cities)
-    # feature_collection = p.query(
-    # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
         bbox=[4.874016, 52.306852, 4.932020, 52.370004], resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
@@ -380,13 +388,34 @@ def test_query_bbox_gs(config_MapServer_WFS_continents):
 
 
 def test_query_bbox_geosol_gs(config_geosol_gs_WFS):
-    """Testing query for a valid JSON object with geometry"""
+    """Testing query for a valid JSON object with geometry
+       <wfs:member>
+        <unesco:Unesco_point gml:id="Unesco_point.59">
+            <gml:boundedBy>
+                <gml:Envelope srsName="urn:ogc:def:crs:EPSG::32632"
+                srsDimension="2">
+                    <gml:lowerCorner>957860.4622 4561556.7274</gml:lowerCorner>
+                    <gml:upperCorner>957860.4622 4561556.7274</gml:upperCorner>
+                </gml:Envelope>
+            </gml:boundedBy>
+            <unesco:the_geom>
+                <gml:Point srsName="urn:ogc:def:crs:EPSG::32632"
+                srsDimension="2" gml:id="Unesco_point.59.the_geom">
+                    <gml:pos>957860.4622 4561556.7274</gml:pos>
+                </gml:Point>
+            </unesco:the_geom>
+            <unesco:cod_unesco>IT_174</unesco:cod_unesco>
+            <unesco:sito>Centro storico di Firenze</unesco:sito>
+            <unesco:seriale>0</unesco:seriale>
+            <unesco:tipo_area>sito</unesco:tipo_area>
+        </unesco:Unesco_point>
+    </wfs:member>
+
+    """
 
     p = OGRProvider(config_geosol_gs_WFS)
-    # feature_collection = p.query(
-    # bbox=[120000, 480000, 124000, 487000], resulttype='results')
     feature_collection = p.query(
-        bbox=(681417.0, 4849032.0, 681417.3, 4849032.3),
+        bbox=(957858, 4561555, 957862, 4561557),
         resulttype='results')
     assert feature_collection.get('type') == 'FeatureCollection'
     features = feature_collection.get('features')

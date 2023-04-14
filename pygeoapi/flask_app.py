@@ -37,10 +37,8 @@ import click
 from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
-from pygeoapi.util import get_mimetype, yaml_load
+from pygeoapi.util import get_mimetype, yaml_load, get_api_rules
 
-
-CONFIG = None
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
     raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
@@ -48,14 +46,21 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
+API_RULES = get_api_rules(CONFIG)
+
 STATIC_FOLDER = 'static'
 if 'templates' in CONFIG['server']:
     STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
-APP.url_map.strict_slashes = False
+APP.url_map.strict_slashes = API_RULES.strict_slashes
 
-BLUEPRINT = Blueprint('pygeoapi', __name__, static_folder=STATIC_FOLDER)
+BLUEPRINT = Blueprint(
+    'pygeoapi',
+    __name__,
+    static_folder=STATIC_FOLDER,
+    url_prefix=API_RULES.get_url_prefix('flask')
+)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):

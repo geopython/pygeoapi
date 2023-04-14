@@ -41,7 +41,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
 from pygeoapi.models.cql import CQLModel, get_next_node
-from pygeoapi.util import get_envelope
+from pygeoapi.util import get_envelope, crs_transform
 
 
 LOGGER = logging.getLogger(__name__)
@@ -130,6 +130,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return fields_
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -345,6 +346,7 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Get ES document by id
@@ -359,7 +361,7 @@ class ElasticsearchProvider(BaseProvider):
             result = self.es.get(index=self.index_name, id=identifier)
             LOGGER.debug('Serializing feature')
             feature_ = self.esdoc2geojson(result)
-        except exceptions.NotFoundError as err:
+        except Exception as err:
             LOGGER.debug(f'Not found via ES id query: {err}')
             LOGGER.debug('Trying via a real query')
 
@@ -368,13 +370,14 @@ class ElasticsearchProvider(BaseProvider):
                     'bool': {
                         'filter': [{
                             'match_phrase': {
-                                'id': identifier
+                                '_id': identifier
                             }
                         }]
                     }
                 }
             }
 
+            LOGGER.debug(f'Query: {query}')
             try:
                 result = self.es.search(index=self.index_name, **query)
                 if len(result['hits']['hits']) == 0:
@@ -427,7 +430,7 @@ class ElasticsearchProvider(BaseProvider):
         identifier, json_data = self._load_and_prepare_item(
             item, identifier, raise_if_exists=False)
 
-        _ = self.es.index(index=self.index_name, id=identifier, **json_data)
+        _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
 
         return True
 

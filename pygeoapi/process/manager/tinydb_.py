@@ -27,7 +27,12 @@
 #
 # =================================================================
 
-import fcntl
+try:
+    import fcntl
+except ModuleNotFoundError:
+    # When on Windows, fcntl does not exist and file locking is automatic
+    fcntl = None
+
 import json
 import logging
 from pathlib import Path
@@ -65,7 +70,7 @@ class TinyDBManager(BaseManager):
 
         self.db = tinydb.TinyDB(self.connection)
 
-        if mode == 'w':
+        if mode == 'w' and fcntl is not None:
             fcntl.lockf(self.db.storage._handle, fcntl.LOCK_EX)
 
         return True
@@ -110,7 +115,7 @@ class TinyDBManager(BaseManager):
         doc_id = self.db.insert(job_metadata)
         self.db.close()
 
-        return doc_id
+        return doc_id  # noqa
 
     def update_job(self, job_id: str, update_dict: dict) -> bool:
         """
@@ -170,7 +175,7 @@ class TinyDBManager(BaseManager):
         """
         Get a job's status, and actual output of executing the process
 
-        :param jobid: job identifier
+        :param job_id: job identifier
 
         :returns: `tuple` of mimetype and raw output
         """

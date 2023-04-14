@@ -52,8 +52,8 @@ def config_vsicurl_csv():
         'data': {
             'source_type': 'CSV',
             'source': '/vsicurl/https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv', # noqa
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },

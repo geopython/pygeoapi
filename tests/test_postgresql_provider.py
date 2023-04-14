@@ -41,6 +41,7 @@
 import os
 import json
 import pytest
+import pyproj
 from http import HTTPStatus
 
 from pygeofilter.parsers.ecql import parse
@@ -55,11 +56,13 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 import pygeoapi.provider.postgresql as postgresql_provider_module
 
-from pygeoapi.util import yaml_load
+from pygeoapi.util import (yaml_load, geojson_to_geom,
+                           get_transform_from_crs, get_crs_from_uri)
 
 from .util import get_test_file_path, mock_request
 
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
 
 @pytest.fixture()
@@ -624,6 +627,149 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
     assert error_response['description'].startswith('Bad CQL string')
+
+
+def test_get_collection_items_postgresql_crs(pg_api_):
+    """Test the coordinates transformation implementation of
+    PostgreSQLProvider when using the crs parameter.
+    """
+    storage_crs = DEFAULT_CRS
+    crs_32735 = 'http://www.opengis.net/def/crs/EPSG/0/32735'
+
+    # Without CRS query parameter -> no coordinates transformation
+    req = mock_request({'bbox': '29.0,-2.85,29.05,-2.8'})
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'hot_osm_waterways',
+    )
+
+    assert code == HTTPStatus.OK
+
+    features_orig = json.loads(response)
+    assert rsp_headers['Content-Crs'] == f'<{DEFAULT_CRS}>'
+
+    # With CRS query parameter not resulting in coordinates transformation
+    # (i.e. 'crs' query parameter is the same as 'storage_crs')
+    req = mock_request({'crs': storage_crs, 'bbox': '29.0,-2.85,29.05,-2.8'})
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'hot_osm_waterways',
+    )
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+    features_storage_crs = json.loads(response)
+
+    # With CRS query parameter resulting in coordinates transformation
+    req = mock_request({'crs': crs_32735, 'bbox': '29.0,-2.85,29.05,-2.8'})
+    rsp_headers, code, response = pg_api_.get_collection_items(
+        req, 'hot_osm_waterways',
+    )
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Crs'] == f'<{crs_32735}>'
+
+    features_32735 = json.loads(response)
+
+    # Make sure that we compare the same features
+    assert (
+        sorted(f['id'] for f in features_orig['features'])
+        == sorted(f['id'] for f in features_storage_crs['features'])
+        == sorted(f['id'] for f in features_32735['features'])
+    )
+
+    # Without 'crs' query parameter or with 'crs' set to 'storage_crs', the
+    # geometries of the returned features should be the same
+    for feat_orig in features_orig['features']:
+        id_ = feat_orig['id']
+        for feat_storage_crs in features_storage_crs['features']:
+            if id_ == feat_storage_crs['id']:
+                assert feat_orig['geometry'] == feat_storage_crs['geometry']
+                break
+
+    transform_func = get_transform_from_crs(
+        get_crs_from_uri(DEFAULT_CRS),
+        pyproj.CRS.from_epsg(32735),
+        always_xy=False,
+    )
+    # Check that the coordinates of returned features were transformed
+    for feat_orig in features_orig['features']:
+        id_ = feat_orig['id']
+        geom_orig = geojson_to_geom(feat_orig['geometry'])
+        for feat_32735 in features_32735['features']:
+            if id_ == feat_32735['id']:
+                geom_32735 = geojson_to_geom(feat_32735['geometry'])
+
+                assert geom_32735.equals_exact(transform_func(geom_orig), 1)
+                break
+
+
+def test_get_collection_item_postgresql_crs(pg_api_):
+    """Test the coordinates transformation implementation of
+    PostgreSQLProvider when using the crs parameter.
+    """
+    storage_crs = DEFAULT_CRS
+    crs_32735 = 'http://www.opengis.net/def/crs/EPSG/0/32735'
+    # List of feature IDs located in UTM zone 35S
+    fid_list = [
+        '439338397',
+        '198190856',
+        '93063941',
+        '586449587',
+        '80827793',
+        '587350255',
+        '586994284',
+        '587960337',
+        '586449586',
+        '422440125',
+    ]
+    for fid in fid_list:
+        # Without CRS query parameter -> no coordinates transformation
+        req = mock_request({'f': 'json'})
+        rsp_headers, code, response = pg_api_.get_collection_item(
+            req, 'hot_osm_waterways', fid,
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{DEFAULT_CRS}>'
+
+        feat_orig = json.loads(response)
+        geom_orig = geojson_to_geom(feat_orig['geometry'])
+
+        # With CRS query parameter not resulting in coordinates transformation
+        # (i.e. 'crs' query parameter is the same as 'storage_crs')
+        req = mock_request({'f': 'json', 'crs': storage_crs})
+        rsp_headers, code, response = pg_api_.get_collection_item(
+            req, 'hot_osm_waterways', fid,
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
+
+        feat_storage_crs = json.loads(response)
+
+        # Without 'crs' query parameter or with 'crs' set to 'storage_crs', the
+        # geometries should be identical, when storage CRS is WGS84 lon,lat.
+        assert feat_orig['geometry'] == feat_storage_crs['geometry']
+
+        # With CRS query parameter resulting in coordinates transformation
+        req = mock_request({'f': 'json', 'crs': crs_32735})
+        rsp_headers, code, response = pg_api_.get_collection_item(
+            req, 'hot_osm_waterways', fid,
+        )
+
+        assert code == HTTPStatus.OK
+        assert rsp_headers['Content-Crs'] == f'<{crs_32735}>'
+
+        feat_32735 = json.loads(response)
+        geom_32735 = geojson_to_geom(feat_32735['geometry'])
+
+        transform_func = get_transform_from_crs(
+            get_crs_from_uri(DEFAULT_CRS),
+            pyproj.CRS.from_epsg(32735),
+            always_xy=False,
+        )
+        # Check that the coordinates of returned feature were transformed
+        assert geom_32735.equals_exact(transform_func(geom_orig), 1)
 
 
 def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):

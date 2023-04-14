@@ -135,6 +135,11 @@ resources:
             id_field: osm_id
             table: hotosm_bdi_waterways
             geom_field: foo_geom
+            crs:
+              - http://www.opengis.net/def/crs/EPSG/0/4326
+              - http://www.opengis.net/def/crs/EPSG/0/32735
+              - http://www.opengis.net/def/crs/EPSG/0/32736
+            storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
 
     dummy_buildings_centroid:
         type: collection

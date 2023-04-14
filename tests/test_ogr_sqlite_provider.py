@@ -53,8 +53,8 @@ def config_sqlite_4326():
             'source_type': 'SQLite',
             'source':
                 './tests/data/dutch_addresses_4326.sqlite',
-            'source_srs': 'EPSG:4326',
-            'target_srs': 'EPSG:4326',
+            # 'source_srs': 'EPSG:4326',
+            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },

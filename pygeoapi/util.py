@@ -30,38 +30,92 @@
 """Generic util functions used in the code"""
 
 import base64
-from typing import List
-from datetime import date, datetime, time
-from decimal import Decimal
-from enum import Enum
 import json
 import logging
 import mimetypes
 import os
-from pathlib import Path
 import re
-from typing import Any, IO, Union
-from urllib.request import urlopen
+import functools
+from functools import partial
+from dataclasses import dataclass
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
+from pathlib import Path
+from typing import Any, IO, Union, List, Callable
 from urllib.parse import urlparse
-
-from shapely.geometry import Polygon
+from urllib.request import urlopen
 
 import dateutil.parser
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from babel.support import Translations
+import shapely.ops
+from shapely.geometry import (
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Polygon,
+    Point,
+    shape as geojson_to_geom,
+    mapping as geom_to_geojson,
+)
 import yaml
+from babel.support import Translations
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import pyproj
+from pyproj.exceptions import CRSError
 from requests import Session
 from requests.structures import CaseInsensitiveDict
 
 from pygeoapi import __version__
 from pygeoapi import l10n
+from pygeoapi.models import config as config_models
 from pygeoapi.provider.base import ProviderTypeError
+
 
 LOGGER = logging.getLogger(__name__)
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+
+CRS_AUTHORITY = [
+    "AUTO",
+    "EPSG",
+    "OGC",
+]
+
+# Global to compile only once
+CRS_URI_PATTERN = re.compile(
+    (
+     rf"^http://www.opengis\.net/def/crs/"
+     rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+     rf"[\d|\.]+?/(?P<code>\w+?)$"
+    )
+)
+
+
+# Type for Shapely geometrical objects.
+GeomObject = Union[
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+]
+
+
+@dataclass
+class CrsTransformSpec:
+    source_crs_uri: str
+    source_crs_wkt: str
+    target_crs_uri: str
+    target_crs_wkt: str
+
 
 mimetypes.add_type('text/plain', '.yaml')
 mimetypes.add_type('text/plain', '.yml')
@@ -137,6 +191,23 @@ def yaml_load(fh: IO) -> dict:
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
+def get_api_rules(config: dict) -> config_models.APIRules:
+    """ Extracts the default API design rules from the given configuration.
+
+    :param config:  Current pygeoapi configuration (dictionary).
+    :returns:       An APIRules instance.
+    """
+    rules = config['server'].get('api_rules') or {}
+    rules.setdefault('api_version', __version__)
+    return config_models.APIRules.create(**rules)
+
+
+def get_base_url(config: dict) -> str:
+    """ Returns the full pygeoapi base URL. """
+    rules = get_api_rules(config)
+    return url_join(config['server']['url'], rules.get_url_prefix())
+
+
 def str2bool(value: Union[bool, str]) -> bool:
     """
     helper function to return Python boolean
@@ -172,8 +243,7 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial,
-                      indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent)
 
 
 def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:
@@ -493,7 +563,7 @@ class JobStatus(Enum):
 
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
-    helper function to read data (file or networrk)
+    helper function to read data (file or network)
     """
 
     LOGGER.debug(f'Attempting to read {path}')
@@ -508,7 +578,7 @@ def read_data(path: Union[Path, str]) -> Union[bytes, str]:
             return r.read()
 
 
-def url_join(*parts: list) -> str:
+def url_join(*parts: str) -> str:
     """
     helper function to join a URL from a number of parts/fragments.
     Implemented because urllib.parse.urljoin strips subpaths from
@@ -521,7 +591,7 @@ def url_join(*parts: list) -> str:
     :returns: str of resulting URL
     """
 
-    return '/'.join([p.strip().strip('/') for p in parts])
+    return '/'.join([p.strip().strip('/') for p in parts]).rstrip('/')
 
 
 def get_envelope(coords_list: List[List[float]]) -> list:
@@ -539,6 +609,202 @@ def get_envelope(coords_list: List[List[float]]) -> list:
     bounds = polygon.bounds
     return [[bounds[0], bounds[3]],
             [bounds[2], bounds[1]]]
+
+
+def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
+    """
+    Helper function to get a complete list of supported CRSs
+    from a (Provider) config dict. Result should always include
+    a default CRS according to OAPIF Part 2 OGC Standard.
+    This will be the default when no CRS list in config or
+    added when (partially) missing in config.
+
+    Author: @justb4
+
+    :param config: dictionary with or without a list of CRSs
+    :param default_crs_list: default CRS alternatives, first is default
+    :returns: list of supported CRSs
+    """
+    supported_crs_list = config.get('crs', list())
+    contains_default = False
+    for uri in supported_crs_list:
+        if uri in default_crs_list:
+            contains_default = True
+            break
+
+    # A default CRS is missing: add the first which is the default
+    if not contains_default:
+        supported_crs_list.append(default_crs_list[0])
+    return supported_crs_list
+
+
+def get_crs_from_uri(uri: str) -> pyproj.CRS:
+    """
+    Get a `pyproj.CRS` instance from a CRS URI.
+    Author: @MTachon
+
+    :param uri: Uniform resource identifier of the coordinate
+        reference system.
+    :type uri: str
+
+    :raises `CRSError`: Error raised if no CRS could be identified from the
+        URI.
+
+    :returns: `pyproj.CRS` instance matching the input URI.
+    :rtype: `pyproj.CRS`
+    """
+
+    try:
+        crs = pyproj.CRS.from_authority(*CRS_URI_PATTERN.search(uri).groups())
+    except CRSError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r} "
+            f"(Authority: {CRS_URI_PATTERN.search(uri).group('auth')!r}, "
+            f"Code: {CRS_URI_PATTERN.search(uri).group('code')!r})."
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    except AttributeError:
+        msg = (
+            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
+            "follow the format "
+            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' "
+            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
+        )
+        LOGGER.error(msg)
+        raise CRSError(msg)
+    else:
+        return crs
+
+
+def get_transform_from_crs(
+    crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
+) -> Callable[[GeomObject], GeomObject]:
+    """ Get transformation function from two `pyproj.CRS` instances.
+
+    Get function to transform the coordinates of a Shapely geometrical object
+    from one coordinate reference system to another.
+
+    :param crs_in: Coordinate Reference System of the input geometrical object.
+    :type crs_in: `pyproj.CRS`
+    :param crs_out: Coordinate Reference System of the output geometrical
+        object.
+    :type crs_out: `pyproj.CRS`
+    :param always_xy: should axis order be forced to x,y (lon, lat) even if CRS
+         declares y,x (lat,lon)
+    :type always_xy: `bool`
+
+    :returns: Function to transform the coordinates of a `GeomObject`.
+    :rtype: `callable`
+    """
+    crs_transform = pyproj.Transformer.from_crs(
+        crs_in, crs_out, always_xy=always_xy,
+    ).transform
+    return partial(shapely.ops.transform, crs_transform)
+
+
+def crs_transform(func):
+    """Decorator that transforms the geometry's/geometries' coordinates of a
+    Feature/FeatureCollection.
+
+    This function can be used to decorate another function which returns either
+    a Feature or a FeatureCollection (GeoJSON-like `dict`). For a
+    FeatureCollection, the Features are stored in a ´list´ available at the
+    'features' key of the returned `dict`. For each Feature, the geometry is
+    available at the 'geometry' key. The decorated function may take a
+    'crs_transform_spec' parameter, which accepts a `CrsTransformSpec` instance
+    as value. If the `CrsTransformSpec` instance represents a coordinates
+    transformation between two different CRSs, the coordinates of the
+    Feature's/FeatureCollection's geometry/geometries will be transformed
+    before returning the Feature/FeatureCollection. If the 'crs_transform_spec'
+    parameter is not given, passed `None` or passed a `CrsTransformSpec`
+    instance which does not represent a coordinates transformation, the
+    Feature/FeatureCollection is returned unchanged. This decorator can for
+    example be use to help supporting coordinates transformation of
+    Feature/FeatureCollection `dict` objects returned by the `get` and `query`
+    methods of (new or with no native support for transformations) providers of
+    type 'feature'.
+
+    :param func: Function to decorate.
+    :type func: `callable`
+
+    :returns: Decorated function.
+    :rtype: `callable`
+    """
+    @functools.wraps(func)
+    def get_geojsonf(*args, **kwargs):
+        crs_transform_spec = kwargs.get('crs_transform_spec')
+        result = func(*args, **kwargs)
+        if crs_transform_spec is None:
+            # No coordinates transformation for feature(s) returned by the
+            # decorated function.
+            LOGGER.debug('crs_transform: NOT applying coordinate transforms')
+            return result
+        # Create transformation function and transform the output feature(s)'
+        # coordinates before returning them.
+        transform_func = get_transform_from_crs(
+            pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
+            pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+        )
+
+        LOGGER.debug(f'crs_transform: transforming features CRS '
+                     f'from {crs_transform_spec.source_crs_uri} '
+                     f'to {crs_transform_spec.target_crs_uri}')
+
+        features = result.get('features')
+        # Decorated function returns a single Feature
+        if features is None:
+            # Transform the feature's coordinates
+            crs_transform_feature(result, transform_func)
+        # Decorated function returns a FeatureCollection
+        else:
+            # Transform all features' coordinates
+            for feature in features:
+                crs_transform_feature(feature, transform_func)
+        return result
+    return get_geojsonf
+
+
+def crs_transform_feature(feature, transform_func):
+    """Transform the coordinates of a Feature.
+
+    :param feature: Feature (GeoJSON-like `dict`) to transform.
+    :type feature: `dict`
+    :param transform_func: Function that transforms the coordinates of a
+        `GeomObject` instance.
+    :type transform_func: `callable`
+
+    :returns: None
+    """
+    json_geometry = feature.get('geometry')
+    if json_geometry is not None:
+        feature['geometry'] = geom_to_geojson(
+            transform_func(geojson_to_geom(json_geometry))
+        )
+
+
+def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
+    """
+    helper function to transform a bounding box (bbox) from
+    a source to a target CRS. CRSs in URI str format.
+    Uses pyproj Transformer.
+
+    :param bbox: list of coordinates in 'from_crs' projection
+    :param from_crs: CRS URI to transform from
+    :param to_crs: CRS URI to transform to
+    :raises `CRSError`: Error raised if no CRS could be identified from an
+        URI.
+
+    :returns: list of 4 or 6 coordinates
+    """
+
+    from_crs_obj = get_crs_from_uri(from_crs)
+    to_crs_obj = get_crs_from_uri(to_crs)
+    transform_func = pyproj.Transformer.from_crs(
+        from_crs_obj, to_crs_obj).transform
+    n_dims = len(bbox) // 2
+    return list(transform_func(*bbox[:n_dims]) + transform_func(
+        *bbox[n_dims:]))
 
 
 class UrlPrefetcher:

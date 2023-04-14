@@ -38,6 +38,7 @@ reference documentation on all aspects of the project.
    transactions
    plugins
    html-templating
+   crs
    cql
    language
    development

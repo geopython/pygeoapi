@@ -41,18 +41,19 @@ import click
 from jsonschema import validate as jsonschema_validate
 import yaml
 
-from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, to_json, yaml_load)
+                           filter_providers_by_type, to_json, yaml_load,
+                           get_api_rules, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
-    'oapif': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
+    'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
@@ -75,7 +76,8 @@ def get_ogc_schemas_location(server_config):
         if osl.startswith('http'):
             value = osl
         elif osl.startswith('/'):
-            value = os.path.join(server_config['url'], 'schemas')
+            base_url = get_base_url({'server': server_config})
+            value = f'{base_url}/schemas'
 
     return value
 
@@ -140,8 +142,11 @@ def get_oas_30(cfg):
     server_locales = l10n.get_locales(cfg)
     locale_ = server_locales[0]
 
+    api_rules = get_api_rules(cfg)
+
     osl = get_ogc_schemas_location(cfg['server'])
-    OPENAPI_YAML['oapif'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
+    OPENAPI_YAML['oapif-1'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
+    OPENAPI_YAML['oapif-2'] = os.path.join(osl, 'ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml') # noqa
 
     LOGGER.debug('setting up server info')
     oas = {
@@ -163,12 +168,12 @@ def get_oas_30(cfg):
             'name': cfg['metadata']['license']['name'],
             'url': cfg['metadata']['license']['url']
         },
-        'version': __version__
+        'version': api_rules.api_version
     }
     oas['info'] = info
 
     oas['servers'] = [{
-        'url': cfg['server']['url'],
+        'url': get_base_url(cfg),
         'description': l10n.translate(cfg['metadata']['identification']['description'], locale_)  # noqa
     }]
 
@@ -183,9 +188,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
-                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/LandingPage"},  # noqa
-                '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/LandingPage"},  # noqa
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
             }
         }
     }
@@ -215,7 +220,7 @@ def get_oas_30(cfg):
             ],
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
-                '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                 'default': {'$ref': '#/components/responses/default'}
             }
         }
@@ -232,9 +237,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
-                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/LandingPage"},  # noqa
-                '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/LandingPage"},  # noqa
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
             }
         }
     }
@@ -250,9 +255,9 @@ def get_oas_30(cfg):
                 {'$ref': '#/components/parameters/lang'}
             ],
             'responses': {
-                '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/LandingPage"},  # noqa
-                '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/LandingPage"},  # noqa
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
             }
         }
     }
@@ -340,7 +345,54 @@ def get_oas_30(cfg):
                     'default': False
                 }
             },
+            'crs': {
+                'name': 'crs',
+                'in': 'query',
+                'description': 'Indicates the coordinate reference system for the results.',  # noqa
+                'style': 'form',
+                'required': False,
+                'explode': False,
+                'schema': {
+                    'format': 'uri',
+                    'type': 'string'
+                }
+            },
+            'bbox': {
+                'name': 'bbox',
+                'in': 'query',
+                'description': 'Only features that have a geometry that intersects the bounding box are selected.'  # noqa
+                               'The bounding box is provided as four or six numbers, depending on whether the '  # noqa
+                               'coordinate reference system includes a vertical axis (height or depth).',  # noqa
+                'required': False,
+                'style': 'form',
+                'explode': False,
+                'schema': {
+                    'type': 'array',
+                    'minItems': 4,
+                    'maxItems': 6,
+                    'items': {
+                        'type': 'number'
+                    }
+                }
+            },
             'bbox-crs': {
+                'name': 'bbox-crs',
+                'in': 'query',
+                'description': 'Indicates the coordinate reference system for the given bbox coordinates.',  # noqa
+                'style': 'form',
+                'required': False,
+                'explode': False,
+                'schema': {
+                    'format': 'uri',
+                    'type': 'string'
+                }
+            },
+            # FIXME: This is not compatible with the bbox-crs definition in
+            #        OGCAPI Features Part 2!
+            #        We need to change the mapscript provider and
+            #        get_collection_map() method in the API!
+            #        So this is for de map-provider only.
+            'bbox-crs-epsg': {
                 'name': 'bbox-crs',
                 'in': 'query',
                 'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
@@ -472,10 +524,10 @@ def get_oas_30(cfg):
                     {'$ref': '#/components/parameters/lang'}
                 ],
                 'responses': {
-                    '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/Collection"},  # noqa
-                    '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                    '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                    '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                    '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Collection"},  # noqa
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                 }
             }
         }
@@ -510,8 +562,10 @@ def get_oas_30(cfg):
                     'parameters': [
                         items_f,
                         items_l,
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/bbox"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/limit"},  # noqa
+                        {'$ref': '#/components/parameters/bbox'},
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
+                        {'$ref': '#/components/parameters/crs'},  # noqa
+                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
                         coll_properties,
                         {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
                         {'$ref': '#/components/parameters/skipGeometry'},
@@ -519,10 +573,10 @@ def get_oas_30(cfg):
                         {'$ref': '#/components/parameters/offset'},
                     ],
                     'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/Features"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -546,8 +600,8 @@ def get_oas_30(cfg):
                     },
                     'responses': {
                         '201': {'description': 'Successful creation'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
 
@@ -577,16 +631,16 @@ def get_oas_30(cfg):
                         ],
                         'responses': {
                             '200': {'$ref': '#/components/responses/Queryables'},  # noqa
-                            '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                            '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                            '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"},  # noqa
+                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                            '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
                         }
                     }
                 }
 
             if p.time_field is not None:
                 paths[items_path]['get']['parameters'].append(
-                    {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/datetime"})  # noqa
+                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
 
             for field, type_ in p.fields.items():
 
@@ -633,15 +687,16 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'get{name.capitalize()}Feature',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/featureId"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
+                        {'$ref': '#/components/parameters/crs'},  # noqa
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
                     ],
                     'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/Feature"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Feature"},  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -667,7 +722,7 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'update{name.capitalize()}Features',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/featureId"}  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"}  # noqa
                     ],
                     'requestBody': {
                         'description': 'Updates item in collection',
@@ -680,8 +735,8 @@ def get_oas_30(cfg):
                     },
                     'responses': {
                         '204': {'description': 'Successful update'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
 
@@ -699,12 +754,12 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'delete{name.capitalize()}Features',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/featureId"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
                     ],
                     'responses': {
                         '200': {'description': 'Successful delete'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
 
@@ -727,14 +782,14 @@ def get_oas_30(cfg):
                     'parameters': [
                         items_f,
                         items_l,
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/bbox"},  # noqa
-                        {'$ref': '#/components/parameters/bbox-crs'}
+                        {'$ref': '#/components/parameters/bbox'},
+                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
                     ],
                     'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/Features"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -753,9 +808,9 @@ def get_oas_30(cfg):
                     ],
                     'responses': {
                         '200': {'$ref': f"{OPENAPI_YAML['oacov']}/schemas/cis_1.1/domainSet.yaml"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -774,9 +829,9 @@ def get_oas_30(cfg):
                     ],
                     'responses': {
                         '200': {'$ref': f"{OPENAPI_YAML['oacov']}/schemas/cis_1.1/rangeType.yaml"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -852,9 +907,9 @@ def get_oas_30(cfg):
                     ],
                     'responses': {
                         '200': {'$ref': '#/components/responses/Tiles'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -887,9 +942,9 @@ def get_oas_30(cfg):
                         }
                     ],
                     'responses': {
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"}  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
                 }
             }
@@ -937,7 +992,7 @@ def get_oas_30(cfg):
                         'operationId': eqe['op_id'],
                         'parameters': [
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{eqe['qt']}Coords.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/datetime"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
                             {'$ref': '#/components/parameters/f'}
@@ -976,8 +1031,8 @@ def get_oas_30(cfg):
                     'tags': [k],
                     'operationId': 'getMap',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/bbox"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/datetime"},  # noqa
+                        {'$ref': '#/components/parameters/bbox'},
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                         {
                             'name': 'width',
                             'in': 'query',
@@ -1012,7 +1067,7 @@ def get_oas_30(cfg):
                             'style': 'form',
                             'explode': False
                         },
-                        {'$ref': '#/components/parameters/bbox-crs'},
+                        {'$ref': '#/components/parameters/bbox-crs-epsg'},
                         map_f
                     ],
                     'responses': {
@@ -1022,14 +1077,14 @@ def get_oas_30(cfg):
                                 'application/json': {}
                             }
                         },
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif']}#/components/responses/ServerError"},  # noqa
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
                     }
                 }
             }
             if mp.time_field is not None:
                 paths[pth]['get']['parameters'].append(
-                    {'$ref': f"{OPENAPI_YAML['oapif']}#/components/parameters/datetime"})  # noqa
+                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
 
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],
@@ -1050,8 +1105,6 @@ def get_oas_30(cfg):
         }
 
     processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
-
-    has_manager = 'manager' in cfg['server']
 
     if processes:
         paths['/processes'] = {
@@ -1150,70 +1203,69 @@ def get_oas_30(cfg):
                 }
             }
 
-        if has_manager:
-            paths['/jobs'] = {
-                'get': {
-                    'summary': 'Retrieve jobs list',
-                    'description': 'Retrieve a list of jobs',
-                    'tags': ['server'],
-                    'operationId': 'getJobs',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}
-                    }
+        paths['/jobs'] = {
+            'get': {
+                'summary': 'Retrieve jobs list',
+                'description': 'Retrieve a list of jobs',
+                'tags': ['server'],
+                'operationId': 'getJobs',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
                 }
             }
+        }
 
-            paths['/jobs/{jobId}'] = {
-                'get': {
-                    'summary': 'Retrieve job details',
-                    'description': 'Retrieve job details',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path,
-                        {'$ref': '#/components/parameters/f'}
-                    ],
-                    'operationId': 'getJob',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
-                },
-                'delete': {
-                    'summary': 'Cancel / delete job',
-                    'description': 'Cancel / delete job',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path
-                    ],
-                    'operationId': 'deleteJob',
-                    'responses': {
-                        '204': {'$ref': '#/components/responses/204'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
-                },
-            }
+        paths['/jobs/{jobId}'] = {
+            'get': {
+                'summary': 'Retrieve job details',
+                'description': 'Retrieve job details',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJob',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
+                }
+            },
+            'delete': {
+                'summary': 'Cancel / delete job',
+                'description': 'Cancel / delete job',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path
+                ],
+                'operationId': 'deleteJob',
+                'responses': {
+                    '204': {'$ref': '#/components/responses/204'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
+                }
+            },
+        }
 
-            paths['/jobs/{jobId}/results'] = {
-                'get': {
-                    'summary': 'Retrieve job results',
-                    'description': 'Retrive job resiults',
-                    'tags': ['server'],
-                    'parameters': [
-                        name_in_path,
-                        {'$ref': '#/components/parameters/f'}
-                    ],
-                    'operationId': 'getJobResults',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}  # noqa
-                    }
+        paths['/jobs/{jobId}/results'] = {
+            'get': {
+                'summary': 'Retrieve job results',
+                'description': 'Retrive job resiults',
+                'tags': ['server'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJobResults',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}  # noqa
                 }
             }
+        }
 
     oas['paths'] = paths
 
