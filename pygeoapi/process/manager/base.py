@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-from datetime import datetime
+import datetime as dt
 import json
 import logging
 from multiprocessing import dummy
@@ -39,16 +39,12 @@ from pygeoapi.models.processes import (
     JobStatusInfoInternal,
     JobStatus,
 )
+from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
     BaseProcessor,
     ProcessorGenericError,
 )
-from pygeoapi.plugin import load_plugin
-from pygeoapi.util import (
-    DATETIME_FORMAT,
-    ProcessExecutionMode,
-    RequestedProcessExecutionMode,
-)
+from pygeoapi.util import DATETIME_FORMAT
 
 LOGGER = logging.getLogger(__name__)
 
@@ -78,15 +74,15 @@ class BaseManager:
 
     def get_jobs(
             self,
-            type_: Optional[str] = None,
-            process_id: Optional[str] = None,
-            status: Optional[JobStatus] = None,
+            type_: Optional[List[str]] = None,
+            process_id: Optional[List[str]] = None,
+            status: Optional[List[JobStatus]] = None,
             date_time: Optional[str] = None,
             min_duration_seconds: Optional[int] = None,
             max_duration_seconds: Optional[int] = None,
             limit: Optional[int] = 10,
             offset: Optional[int] = 0,
-    ) -> Tuple[int, int, List[JobStatusInfoInternal]]:
+    ) -> Tuple[int, List[JobStatusInfoInternal]]:
         """
         Get process jobs, optionally filtered by relevant parameters.
 
@@ -95,10 +91,10 @@ class BaseManager:
 
         https://docs.ogc.org/is/18-062r2/18-062r2.html#toc49
 
-        :param type_: process type
-        :param process_id: identifier of the parent process of jobs
-        :param status: job status (accepted, running, successful,
-                       failed, results) (default is all)
+        :param type_: process types to be returned
+        :param process_id: identifiers of the parent processes of jobs
+        :param status: job statuses (accepted, running, successful,
+                       failed, results)
         :param date_time: temporal interval that a job's `create` property
                           must intersect
         :param min_duration_seconds: minimum duration of jobs
@@ -106,9 +102,8 @@ class BaseManager:
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
-        :returns: a three-element tuple with the total number of jobs, the
-                  total number of jobs that match the filtering parameters
-                  and a list of job statuses
+        :returns: a two-element tuple with the total number of jobs that
+                  match the filtering parameters and a list of job statuses
         """
 
         raise NotImplementedError()
@@ -125,41 +120,40 @@ class BaseManager:
         raise NotImplementedError()
 
     def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
-        """Instantiate a process
+        """Instantiate a process.
 
-        :param process_id: identifier of the process, as defined in the
-                           pygeoapi configuration file
+        :param process_id: Identifier of the process
 
         :returns: instance of the process
         """
+
         try:
             process_conf = self.processes[process_id]
-        except KeyError as exc:
+        except KeyError as err:
             msg = 'Invalid process identifier'
             LOGGER.warning(msg)
-            raise ProcessorGenericError(msg) from exc
+            raise ProcessorGenericError(msg) from err
         else:
             return load_plugin('process', process_conf['processor'])
 
-    def update_job(self, job_id: str, update_dict: dict) -> bool:
+    def update_job(self, job_status: JobStatusInfoInternal) -> bool:
         """
         Updates a job
 
-        :param job_id: job identifier
-        :param update_dict: `dict` of property updates
+        :param job_status: property updates for the job status info
 
         :returns: `bool` of status result
         """
 
         raise NotImplementedError()
 
-    def get_job(self, job_id: str) -> dict:
+    def get_job(self, job_id: str) -> Optional[JobStatusInfoInternal]:
         """
         Get a job (!)
 
         :param job_id: job identifier
 
-        :returns: `dict` of job result
+        :returns: job status info
         """
 
         raise NotImplementedError()
@@ -227,34 +221,17 @@ class BaseManager:
         process_id = p.metadata['id']
         current_status = JobStatus.accepted
 
-        now = datetime.utcnow()
-        job_status = JobStatusInfoInternal(
+        now = dt.datetime.now(dt.timezone.utc)
+
+        self.add_job(JobStatusInfoInternal(
             jobID=job_id,
             status=current_status,
             processID=process_id,
             message="Job accepted and ready for execution",
             created=now,
             started=now,
-            finished=None,
-            updated=None,
-            progress=None,
-            location=None
-        )
-
-        job_metadata = {
-            'identifier': job_id,
-            'process_id': process_id,
-            'job_start_datetime': datetime.utcnow().strftime(
-                DATETIME_FORMAT),
-            'job_end_datetime': None,
-            'status': current_status.value,
-            'location': None,
-            'mimetype': None,
-            'message': 'Job accepted and ready for execution',
-            'progress': 5
-        }
-
-        self.add_job(job_status)
+            progress=5,
+        ))
 
         try:
             if self.output_dir is not None:
@@ -266,11 +243,14 @@ class BaseManager:
             current_status = JobStatus.running
             jfmt, outputs = p.execute(data_dict)
 
-            self.update_job(job_id, {
-                'status': current_status.value,
-                'message': 'Writing job output',
-                'progress': 95
-            })
+            self.update_job(
+                JobStatusInfoInternal(
+                    jobID=job_id,
+                    status=current_status,
+                    message="Writing job output",
+                    progress=95
+                )
+            )
 
             if self.output_dir is not None:
                 LOGGER.debug(f'writing output to {job_filename}')
@@ -287,17 +267,16 @@ class BaseManager:
 
             current_status = JobStatus.successful
 
-            job_update_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': str(job_filename),
-                'mimetype': jfmt,
-                'message': 'Job complete',
-                'progress': 100
-            }
-
-            self.update_job(job_id, job_update_metadata)
+            now = dt.datetime.now(dt.timezone.utc)
+            self.update_job(JobStatusInfoInternal(
+                jobID=job_id,
+                status=JobStatus.successful,
+                finished=now,
+                updated=now,
+                location=str(job_filename),
+                message="Job complete",
+                progress=100
+            ))
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -316,18 +295,15 @@ class BaseManager:
                 'description': 'Error updating job'
             }
             LOGGER.error(err)
-            job_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': None,
-                'mimetype': None,
-                'message': f'{code}: {outputs["description"]}'
-            }
-
             jfmt = 'application/json'
-
-            self.update_job(job_id, job_metadata)
+            now = dt.datetime.now(dt.timezone.utc)
+            self.update_job(JobStatusInfoInternal(
+                jobID=job_id,
+                finished=now,
+                updated=now,
+                status=current_status,
+                message=f"{code}: {outputs['description']}"
+            ))
 
         return jfmt, outputs, current_status
 

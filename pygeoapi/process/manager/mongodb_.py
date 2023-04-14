@@ -29,10 +29,12 @@
 import json
 import logging
 import traceback
-from typing import Optional
+from typing import List, Optional, Tuple
 
+import pydantic
 from pymongo import MongoClient
 
+from pygeoapi.models.processes import JobStatusInfoInternal
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -69,27 +71,47 @@ class MongoDBManager(BaseManager):
 
     def get_jobs(
             self,
-            type_: Optional[str] = None,
-            process_id: Optional[str] = None,
-            status: Optional[JobStatus] = None,
+            type_: Optional[List[str]] = None,
+            process_id: Optional[List[str]] = None,
+            status: Optional[List[JobStatus]] = None,
             date_time: Optional[str] = None,
             min_duration_seconds: Optional[int] = None,
             max_duration_seconds: Optional[int] = None,
             limit: Optional[int] = 10,
             offset: Optional[int] = 0,
-    ):
+    ) -> Tuple[int, List[JobStatusInfoInternal]]:
         # TODO: Implement filtering
+        # TODO: Implement limit
+        # TODO: Implement offset
+        # TODO: Implement sorting
         # TODO: Implement returning total number of records and
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
             if status is not None:
-                jobs = list(collection.find({}, {"status": status}))
+                db_jobs = list(collection.find({}, {"status": status[0]}))
             else:
-                jobs = list(collection.find({}))
+                # FIXME: According of OAPI - Processes spec, Requirement 75:
+                #
+                # > If the status parameter is not specified then only jobs that
+                # > are running (status: running) or have completed execution
+                # > (successful, failed or dismissed) SHALL be considered for
+                # > inclusion in the response.
+                db_jobs = list(collection.find({}))
+
+            result = []
+            for db_job in db_jobs:
+                try:
+                    job = JobStatusInfoInternal(**db_job)
+                except pydantic.ValidationError:
+                    LOGGER.warning(
+                        f"Unable to parse db_job {db_job} - skipping...")
+                else:
+                    result.append(job)
+
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
-            return 0, 0, jobs
+            return 0, result
         except Exception:
             LOGGER.error("JOBMANAGER - get_jobs error",
                          exc_info=(traceback))

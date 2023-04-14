@@ -53,6 +53,9 @@ LOGGER = logging.getLogger(__name__)
 class TinyDBManager(BaseManager):
     """TinyDB Manager"""
 
+    _JOB_ID = "jobID"
+    _JOB_SORT_KEY = "created"
+
     def __init__(self, manager_def: dict):
         """
         Initialize object
@@ -92,22 +95,22 @@ class TinyDBManager(BaseManager):
 
     def get_jobs(
             self,
-            type_: Optional[str] = None,
-            process_id: Optional[str] = None,
-            status: Optional[JobStatus] = None,
+            type_: Optional[List[str]] = None,
+            process_id: Optional[List[str]] = None,
+            status: Optional[List[JobStatus]] = None,
             date_time: Optional[str] = None,
             min_duration_seconds: Optional[int] = None,
             max_duration_seconds: Optional[int] = None,
             limit: Optional[int] = 10,
             offset: Optional[int] = 0,
-    ) -> Tuple[int, int, List[JobStatusInfoInternal]]:
+    ) -> Tuple[int, List[JobStatusInfoInternal]]:
         """
         Get jobs
 
-        :param type_: process type
-        :param process_id: identifier of the parent process of jobs
-        :param status: job status (accepted, running, successful,
-                       failed, results) (default is all)
+        :param type_: process types to be returned
+        :param process_id: identifiers of the parent processes of jobs
+        :param status: job statuses (accepted, running, successful,
+                       failed, results)
         :param date_time: temporal interval that a job's `create` property
                           must intersect
         :param min_duration_seconds: minimum duration of jobs
@@ -115,27 +118,26 @@ class TinyDBManager(BaseManager):
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
-        :returns: a three-element tuple with the total number of jobs, the
-                  total number of jobs that match the filtering parameters
-                  and a list of job statuses
+        :returns: a two-element tuple with the total number of jobs that
+                  match the filtering parameters and a list of job statuses
         """
 
         self._connect()
         JobSummary = tinydb.Query()
         filters = []
         if process_id is not None:
-            filters.append(JobSummary.process_id == process_id)
+            filters.append(JobSummary.process_id.one_of(process_id))
         if status is not None:
-            filters.append(JobSummary.status == status.value)
+            filters.append(JobSummary.status.one_of(status.value))
         else:
-            # According of OAPI - Processes spec, Requirement 75:
+            # According to OAPI - Processes spec, Requirement 75:
             #
             # > If the status parameter is not specified then only jobs that
             # > are running (status: running) or have completed execution
             # > (successful, failed or dismissed) SHALL be considered for
             # > inclusion in the response.
             filters.append(
-                JobSummary.status.any(
+                JobSummary.status.one_of(
                     [
                         JobStatus.dismissed.value,
                         JobStatus.failed.value,
@@ -144,20 +146,20 @@ class TinyDBManager(BaseManager):
                     ]
                 )
             )
-        if date_time is not None:
+        if date_time is not None:  # TODO: Implement this filter
             pass
-        if min_duration_seconds is not None:
+        if min_duration_seconds is not None:  # TODO: Implement this filter
             pass
-        if max_duration_seconds is not None:
+        if max_duration_seconds is not None:  # TODO: Implement this filter
             pass
-        if len(filters) > 1:
+        if len(filters) > 0:
             all_filtered_jobs = self.db.search(
                 functools.reduce(operator.and_, filters))
         else:
             all_filtered_jobs = self.db.all()
         db_jobs = sorted(
             all_filtered_jobs,
-            key=lambda obj: obj.get("created"),
+            key=lambda obj: obj.get(self._JOB_SORT_KEY) or "",
             reverse=True
         )[offset:offset+limit]
 
@@ -170,9 +172,8 @@ class TinyDBManager(BaseManager):
                     f"Unable to parse db_job {db_job} - skipping...")
             else:
                 result.append(job)
-        all_jobs = len(self.db)
         self.db.close()
-        return all_jobs, len(all_filtered_jobs), result
+        return len(all_filtered_jobs), result
 
     def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
@@ -211,20 +212,44 @@ class TinyDBManager(BaseManager):
 
         return doc_id  # noqa
 
-    def update_job(self, job_id: str, update_dict: dict) -> bool:
+    def update_job(
+            self,
+            job_status: JobStatusInfoInternal
+    ) -> bool:
         """
         Updates a job
 
-        :param job_id: job identifier
-        :param update_dict: `dict` of property updates
+        :param job_status: property updates for the job status info
 
         :returns: `bool` of status result
         """
 
         self._connect(mode='w')
-        self.db.update(update_dict, tinydb.where('identifier') == job_id)
+        temporal_properties = {
+            "created": job_status.created.strftime(
+                DATETIME_FORMAT) if job_status.created is not None else None,
+            "started": job_status.started.strftime(
+                DATETIME_FORMAT) if job_status.started is not None else None,
+            "finished": job_status.finished.strftime(
+                DATETIME_FORMAT) if job_status.finished is not None else None,
+            "updated": job_status.updated.strftime(
+                DATETIME_FORMAT) if job_status.updated is not None else None,
+        }
+        temporal_properties = {
+            k: v for k, v in temporal_properties.items() if v is not None}
+        db_job = {
+            **temporal_properties,
+            **job_status.dict(
+                by_alias=True,
+                exclude={*temporal_properties.keys()},
+                exclude_none=True
+            )
+        }
+        self.db.update(
+            db_job,
+            tinydb.where(self._JOB_ID) == job_status.job_id
+        )
         self.db.close()
-
         return True
 
     def delete_job(self, job_id: str) -> bool:
@@ -236,14 +261,13 @@ class TinyDBManager(BaseManager):
         :return `bool` of status result
         """
         # delete result file if present
-        job_result = self.get_job(job_id)
-        if job_result:
-            location = job_result.get('location')
-            if location and self.output_dir is not None:
-                Path(location).unlink()
+        job_status = self.get_job(job_id)
+        if job_status:
+            if job_status.location and self.output_dir is not None:
+                Path(job_status.location).unlink()
 
         self._connect(mode='w')
-        removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
+        removed = bool(self.db.remove(tinydb.where(self._JOB_ID) == job_id))
         self.db.close()
 
         return removed
@@ -259,7 +283,7 @@ class TinyDBManager(BaseManager):
 
         self._connect()
         query = tinydb.Query()
-        result = self.db.search(query["jobID"] == job_id)
+        result = self.db.search(query[self._JOB_ID] == job_id)
         if len(result) > 0:
             job = JobStatusInfoInternal(**result[0])
         else:
@@ -276,29 +300,18 @@ class TinyDBManager(BaseManager):
         :returns: `tuple` of mimetype and raw output
         """
 
-        job_result = self.get_job(job_id)
-        if not job_result:
-            # job does not exist
-            return None
-
-        location = job_result.get('location')
-        mimetype = job_result.get('mimetype')
-        job_status = JobStatus[job_result['status']]
-
-        if not job_status == JobStatus.successful:
-            # Job is incomplete
-            return (None,)
-        if not location:
+        job_status = self.get_job(job_id)
+        if job_status is None:  # job does not exist
+            result = None
+        elif job_status.status != JobStatus.successful:  # Job is incomplete
+            result = None
+        elif job_status.location is None:
             # Job data was not written for some reason
             # TODO log/raise exception?
-            return (None,)
+            result = None
         else:
-            location = Path(location)
-
-        with location.open('r', encoding='utf-8') as filehandler:
-            result = json.load(filehandler)
-
-        return mimetype, result
+            result = json.loads(Path(job_status.location).read_text())
+        return "application/json", result
 
     def __repr__(self):
         return f'<TinyDBManager> {self.name}'

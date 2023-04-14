@@ -66,6 +66,7 @@ from pygeoapi.models.cql import CQLModel
 from pygeoapi.models.processes import (
     JobStatusInfoInternal,
     JobStatusInfoRead,
+    JobList,
     Link
 )
 from pygeoapi.models.provider.base import TilesMetadataFormat
@@ -3379,6 +3380,52 @@ class API:
 
         return headers, HTTPStatus.OK, to_json(response, self.pretty_print)
 
+    def _filter_jobs(
+            self, request: Union[APIRequest, Any]
+    ) -> Tuple[List[JobStatusInfoInternal], List[Link]]:
+        requested_filters = {
+            "type": request.params.getlist("type"),
+            "processID": request.params.getlist("processID"),
+            "status": request.params.getlist("status"),
+            "datetime": request.params.get("datetime"),
+            "minDuration": request.params.get("minDuration"),
+            "maxDuration": request.params.get("maxDuration"),
+        }
+        requested_filters = {
+            k: v for k, v in requested_filters.items() if v is not None}
+        try:
+            status_filter = (
+                    [JobStatus(s) for s in requested_filters["status"]]
+                    or None
+            )
+        except ValueError:
+            LOGGER.warning(
+                f"Received invalid status: {requested_filters['status']!r}"
+            )
+            status_filter = None
+        limit = parse_positive_int_parameter(
+            request.params.get("limit"), default_value=10)
+        offset = parse_positive_int_parameter(
+            request.params.get("offset"), default_value=0)
+        total_filtered_jobs, jobs = self.manager.get_jobs(
+            type_=requested_filters.get("type") or None,
+            process_id=requested_filters.get("processID") or None,
+            status=status_filter,
+            date_time=requested_filters.get("datetime"),
+            min_duration_seconds=parse_positive_int_parameter(
+                requested_filters.get("minDuration")),
+            max_duration_seconds=parse_positive_int_parameter(
+                requested_filters.get("maxDuration")),
+            limit=limit,
+            offset=offset,
+        )
+        pagination_links = _get_pagination_links(
+            len(jobs), limit, offset, total_filtered_jobs,
+            base_url=f"{self.base_url}/jobs",
+            querystring_params=requested_filters
+        )
+        return jobs, pagination_links
+
     @gzip
     @pre_process
     def get_jobs(self, request: Union[APIRequest, Any],
@@ -3391,126 +3438,52 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
+        if request.is_valid():
+            response_links = []
+            for media_type, name in ((F_HTML, "HTML"), (F_JSON, "JSON")):
+                response_links.append(
+                    Link(
+                        href=f"{self.base_url}/jobs/?f={media_type}",
+                        type=FORMAT_TYPES[media_type],
+                        rel=request.get_linkrel(media_type),
+                        title=f'Job list as {name}'
+                    )
+                )
+            if job_id is not None:
+                jobs = [self.manager.get_job(job_id)]
+            else:
+                jobs, pagination_links = self._filter_jobs(request)
+                response_links.extend(pagination_links)
 
-        if not request.is_valid():
-            return self.get_format_exception(request)
-        headers = request.get_response_headers(SYSTEM_LOCALE,
-                                               **self.api_headers)
-        if job_id is None:
-            requested_status = request.params.get("status", "")
-            try:
-                status_filter = JobStatus(requested_status.lower())
-            except ValueError:
-                status_filter = None
-            limit = parse_positive_int_parameter(
-                request.params.get("limit"), default_value=10)
-            offset = parse_positive_int_parameter(
-                request.params.get("offset"), default_value=0)
-            total_jobs, total_filtered_jobs, jobs = self.manager.get_jobs(
-                type_=request.params.get("type"),
-                process_id=request.params.get("processID"),
-                status=status_filter,
-                date_time=request.params.get("datetime"),
-                min_duration_seconds=parse_positive_int_parameter(
-                    request.params.get("minDuration")),
-                max_duration_seconds=parse_positive_int_parameter(
-                    request.params.get("maxDuration")),
-                limit=limit,
-                offset=offset,
-            )
-            link_params = {
-                "type": None,
-                "processID": request.params.get("processID"),
-                "status": request.params.get("status"),
-                "datetime": request.params.get("datetime"),
-                "minDuration": request.params.get("minDuration"),
-                "maxDuration": request.params.get("maxDuration"),
-            }
-            link_params = {k: v for k, v in link_params if v is not None}
-            additional_response_links = _get_pagination_links(
-                len(jobs), limit, offset, total_filtered_jobs,
-                base_url=f"{self.base_url}/jobs",
-                querystring_params=link_params
-            )
+            job_reads = []
+            for job in jobs:
+                job_reads.append(_prepare_job_for_response(job, self.base_url))
+
+            response_contents = JobList(
+                jobs=job_reads, links=response_links).dict(by_alias=True)
+
+            if request.format == F_HTML:
+                j2_template = (
+                    'jobs/index.html' if job_id is None else 'jobs/job.html')
+                rendered_response = render_j2_template(
+                    self.tpl_config,
+                    j2_template,
+                    {
+                        "jobs": response_contents,
+                        "now": datetime.now(
+                            timezone.utc).strftime(DATETIME_FORMAT)
+                    },
+                    request.locale
+                )
+            else:
+                rendered_response = to_json(
+                    response_contents, self.pretty_print)
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            result = response_headers, HTTPStatus.OK, rendered_response
         else:
-            jobs = [self.manager.get_job(job_id)]
-
-        serialized_jobs = {
-            'jobs': [],
-            'links': [{
-                'href': f"{self.base_url}/jobs?f={F_HTML}",
-                'rel': request.get_linkrel(F_HTML),
-                'type': FORMAT_TYPES[F_HTML],
-                'title': 'Jobs list as HTML'
-            }, {
-                'href': f"{self.base_url}/jobs?f={F_JSON}",
-                'rel': request.get_linkrel(F_JSON),
-                'type': FORMAT_TYPES[F_JSON],
-                'title': 'Jobs list as JSON'
-            }]
-        }
-        for job_status in jobs:
-            job_read = _serialize_job_status(job_status)
-            serialized_jobs["jobs"].append(job_read.dict(by_alias=True))
-
-        # for job_ in jobs:
-        #     job2 = {
-        #         'processID': job_['process_id'],
-        #         'jobID': job_['identifier'],
-        #         'status': job_['status'],
-        #         'message': job_['message'],
-        #         'progress': job_['progress'],
-        #         'parameters': job_.get('parameters'),
-        #         'job_start_datetime': job_['job_start_datetime'],
-        #         'job_end_datetime': job_['job_end_datetime']
-        #     }
-        #
-        #     # TODO: translate
-        #     if JobStatus[job_['status']] in (
-        #        JobStatus.successful, JobStatus.running, JobStatus.accepted):
-        #
-        #         job_result_url = f"{self.base_url}/jobs/{job_['identifier']}/results"  # noqa
-        #
-        #         job2['links'] = [{
-        #             'href': f'{job_result_url}?f={F_HTML}',
-        #             'rel': 'about',
-        #             'type': FORMAT_TYPES[F_HTML],
-        #             'title': f'results of job {job_id} as HTML'
-        #         }, {
-        #             'href': f'{job_result_url}?f={F_JSON}',
-        #             'rel': 'about',
-        #             'type': FORMAT_TYPES[F_JSON],
-        #             'title': f'results of job {job_id} as JSON'
-        #         }]
-        #
-        #         if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
-        #                                     FORMAT_TYPES[F_HTML]):
-        #             job2['links'].append({
-        #                 'href': job_result_url,
-        #                 'rel': 'about',
-        #                 'type': job_['mimetype'],
-        #                 'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
-        #             })
-        #
-        #     serialized_jobs['jobs'].append(job2)
-
-        if job_id is None:
-            j2_template = 'jobs/index.html'
-        else:
-            serialized_jobs = serialized_jobs['jobs'][0]
-            j2_template = 'jobs/job.html'
-
-        if request.format == F_HTML:
-            data = {
-                'jobs': serialized_jobs,
-                'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
-            }
-            response = render_j2_template(self.tpl_config, j2_template, data,
-                                          request.locale)
-            return headers, HTTPStatus.OK, response
-
-        return headers, HTTPStatus.OK, to_json(serialized_jobs,
-                                               self.pretty_print)
+            result = self.get_format_exception(request)
+        return result
 
     @gzip
     @pre_process
@@ -4352,7 +4325,10 @@ def validate_subset(value: str) -> dict:
     return subsets
 
 
-def _serialize_job_status(job_status: JobStatusInfoInternal):
+def _prepare_job_for_response(
+        job_status: JobStatusInfoInternal,
+        base_url: str
+) -> JobStatusInfoRead:
     result_related_statuses = (
         JobStatus.successful,
         JobStatus.running,
@@ -4360,19 +4336,19 @@ def _serialize_job_status(job_status: JobStatusInfoInternal):
     )
     links = []
     if job_status.status in result_related_statuses:
-        result_url = f"{self.base_url}/jobs/{job_status.jobID}/results"  # noqa
+        result_url = f"{base_url}/jobs/{job_status.job_id}/results"  # noqa
         links.extend(
             [
                 Link(
                     type=FORMAT_TYPES[F_HTML],
                     rel='about',
-                    title=f'results of job {job_status.job_id} as HTML',
+                    title=f'Job results as HTML',
                     href=f'{result_url}?f={F_HTML}',
                 ),
                 Link(
                     type=FORMAT_TYPES[F_JSON],
                     rel='about',
-                    title=f'results of job {job_status.job_id} as JSON',
+                    title=f'Job results as JSON',
                     href=f'{result_url}?f={F_JSON}',
                 ),
             ]
@@ -4396,13 +4372,16 @@ def _get_pagination_links(
         "limit": limit,
         **(querystring_params if querystring_params is not None else {})
     }
+    LOGGER.debug(f"locals: {locals()}")
     if offset + num_returned_records < total_records:
         querystring = {
-            "offset": min(offset + limit, total_records - limit),  # FIXME
+            "offset": offset + limit,
             **base_querystring,
         }
-        html_querystring = urllib.parse.urlencode({"f": F_HTML, **querystring})
-        json_querystring = urllib.parse.urlencode({"f": F_JSON, **querystring})
+        html_querystring = urllib.parse.urlencode(
+            {"f": F_HTML, **querystring}, doseq=True)
+        json_querystring = urllib.parse.urlencode(
+            {"f": F_JSON, **querystring}, doseq=True)
         result.extend(
             [
                 Link(
@@ -4424,8 +4403,10 @@ def _get_pagination_links(
             "offset": max(offset - limit, 0),
             **base_querystring,
         }
-        html_querystring = urllib.parse.urlencode({"f": F_HTML, **querystring})
-        json_querystring = urllib.parse.urlencode({"f": F_JSON, **querystring})
+        html_querystring = urllib.parse.urlencode(
+            {"f": F_HTML, **querystring}, doseq=True)
+        json_querystring = urllib.parse.urlencode(
+            {"f": F_JSON, **querystring}, doseq=True)
         result.extend(
             [
                 Link(

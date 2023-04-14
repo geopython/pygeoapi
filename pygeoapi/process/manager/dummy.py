@@ -55,22 +55,22 @@ class DummyManager(BaseManager):
 
     def get_jobs(
             self,
-            type_: Optional[str] = None,
-            process_id: Optional[str] = None,
-            status: Optional[JobStatus] = None,
+            type_: Optional[List[str]] = None,
+            process_id: Optional[List[str]] = None,
+            status: Optional[List[JobStatus]] = None,
             date_time: Optional[str] = None,
             min_duration_seconds: Optional[int] = None,
             max_duration_seconds: Optional[int] = None,
             limit: Optional[int] = 10,
             offset: Optional[int] = 0,
-    ) -> Tuple[int, int, List[Dict]]:
+    ) -> Tuple[int, List[Dict]]:
         """
         Get process jobs, optionally filtered by status
 
-        :param type_: process type
-        :param process_id: identifier of the parent process of jobs
-        :param status: job status (accepted, running, successful,
-                       failed, results) (default is all)
+        :param type_: process types to be returned
+        :param process_id: identifiers of the parent processes of jobs
+        :param status: job statuses (accepted, running, successful,
+                       failed, results)
         :param date_time: temporal interval that a job's `create` property
                           must intersect
         :param min_duration_seconds: minimum duration of jobs
@@ -78,12 +78,11 @@ class DummyManager(BaseManager):
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
-        :returns: a three-element tuple with the total number of jobs, the
-                  total number of jobs that match the filtering parameters
-                  and a list of jobs
+        :returns: a two-element tuple with the total number of jobs that
+                  match the filtering parameters and a list of job statuses
         """
 
-        return 0, 0, []
+        return 0, []
 
     def execute_process(
             self,
