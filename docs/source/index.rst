@@ -7,6 +7,9 @@
 pygeoapi |release| documentation
 ==================================
 
+.. image:: https://zenodo.org/badge/121585259.svg
+   :target: https://zenodo.org/badge/latestdoi/121585259
+
 :Author: the pygeoapi team
 :Contact: pygeoapi at lists.osgeo.org
 :Release: |release|
