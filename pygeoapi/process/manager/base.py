@@ -36,8 +36,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
 from pygeoapi.models.processes import (
-    JobStatusInfoInternal,
+    Execution,
     JobStatus,
+    JobStatusInfoInternal,
+    ProcessOutputTransmissionMode,
+    ProcessResponseType,
 )
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
@@ -180,8 +183,12 @@ class BaseManager:
 
         raise NotImplementedError()
 
-    def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[str, None, JobStatus]:
+    def _execute_handler_async(
+            self,
+            processor: BaseProcessor,
+            job_id: str,
+            execution_request: Execution
+    ) -> JobStatus:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -192,18 +199,21 @@ class BaseManager:
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
 
-        :returns: tuple of None (i.e. initial response payload)
-                  and JobStatus.accepted (i.e. initial job status)
+        :returns: JobStatus.accepted (i.e. initial job status)
         """
         _process = dummy.Process(
             target=self._execute_handler_sync,
-            args=(p, job_id, data_dict)
+            args=(processor, job_id, execution_request)
         )
         _process.start()
-        return 'application/json', None, JobStatus.accepted
+        return JobStatus.accepted
 
-    def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
-                              data_dict: dict) -> Tuple[str, Any, JobStatus]:
+    def _execute_handler_sync(
+            self,
+            processor: BaseProcessor,
+            job_id: str,
+            execution_request: Execution
+    ) -> Tuple[JobStatus, Optional[Dict[str, Any]]]:
         """
         Synchronous execution handler
 
@@ -211,22 +221,23 @@ class BaseManager:
         will be written to disk
         output store. There is no clean-up of old process outputs.
 
-        :param p: `pygeoapi.process` object
+        :param processor: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
 
-        :returns: tuple of MIME type, response payload and status
+        :returns: A tuple of process status and a dict with output ids as
+                  keys and respective output results as values
         """
 
-        process_id = p.metadata['id']
+        process_id = processor.metadata['id']
         current_status = JobStatus.accepted
 
         now = dt.datetime.now(dt.timezone.utc)
 
         self.add_job(JobStatusInfoInternal(
             jobID=job_id,
-            status=current_status,
             processID=process_id,
+            status=current_status,
             message="Job accepted and ready for execution",
             created=now,
             started=now,
@@ -234,50 +245,8 @@ class BaseManager:
         ))
 
         try:
-            if self.output_dir is not None:
-                filename = f"{p.metadata['id']}-{job_id}"
-                job_filename = self.output_dir / filename
-            else:
-                job_filename = None
-
-            current_status = JobStatus.running
-            jfmt, outputs = p.execute(data_dict)
-
-            self.update_job(
-                JobStatusInfoInternal(
-                    jobID=job_id,
-                    status=current_status,
-                    message="Writing job output",
-                    progress=95
-                )
-            )
-
-            if self.output_dir is not None:
-                LOGGER.debug(f'writing output to {job_filename}')
-                if isinstance(outputs, dict):
-                    mode = 'w'
-                    data = json.dumps(outputs, sort_keys=True, indent=4)
-                    encoding = 'utf-8'
-                elif isinstance(outputs, bytes):
-                    mode = 'wb'
-                    data = outputs
-                    encoding = None
-                with job_filename.open(mode=mode, encoding=encoding) as fh:
-                    fh.write(data)
-
-            current_status = JobStatus.successful
-
-            now = dt.datetime.now(dt.timezone.utc)
-            self.update_job(JobStatusInfoInternal(
-                jobID=job_id,
-                status=JobStatus.successful,
-                finished=now,
-                updated=now,
-                location=str(job_filename),
-                message="Job complete",
-                progress=100
-            ))
-
+            current_status, execution_result = processor.execute(
+                job_id, execution_request)
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
@@ -295,7 +264,6 @@ class BaseManager:
                 'description': 'Error updating job'
             }
             LOGGER.error(err)
-            jfmt = 'application/json'
             now = dt.datetime.now(dt.timezone.utc)
             self.update_job(JobStatusInfoInternal(
                 jobID=job_id,
@@ -304,20 +272,20 @@ class BaseManager:
                 status=current_status,
                 message=f"{code}: {outputs['description']}"
             ))
-
-        return jfmt, outputs, current_status
+            execution_result = None
+        return current_status, execution_result
 
     def execute_process(
             self,
             process_id: str,
-            data_dict: Dict,
+            execution_request: Execution,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
         :param process_id: identifier of the process to be executed
-        :param data_dict: `dict` of data parameters
+        :param execution_request: execution request
         :param execution_mode: `str` optionally specifying sync or async
         processing.
 
@@ -326,44 +294,91 @@ class BaseManager:
                   response
         """
 
-        p = self.get_processor(process_id)
         job_id = str(uuid.uuid1())
-        if execution_mode == RequestedProcessExecutionMode.respond_async:
+        processor = self.get_processor(process_id)
+        chosen_execution_mode, additional_headers = self._select_execution_mode(
+            execution_mode, processor)
+        # as per OAProc, if the execution mode is sync:
+        #
+        #   - if response type is `raw`, and the transmission mode is
+        #     `reference`, then the response has no content, only links in the
+        #     headers
+        #
+        #  - if response type is `raw` and transmission mode is by `value`,
+        #    then the response has a media type of multipart/related (or the
+        #    media type of the output, in case there is only one)
+        #
+        #  - if the response type is `document`, then the media type of the
+        #    response is `application/json`
+        if chosen_execution_mode == ProcessExecutionMode.async_execute:
+            LOGGER.debug('Asynchronous execution')
+            current_status = self._execute_handler_async(processor, job_id, execution_request)
+            media_type = "application/json"
+        else:
+            LOGGER.debug('Synchronous execution')
+            current_status, execution_result = self._execute_handler_sync(p, job_id, execution_request)
+            if execution_request.type_ == ProcessResponseType.raw:
+                to_transmit_by_value = []
+                to_transmit_by_reference = []
+                for out_id, out_request in execution_request.outputs.items():
+                    transmit_by_value = (
+                            out_request.transmission_mode ==
+                            ProcessOutputTransmissionMode.VALUE
+                    )
+                    transmit_by_reference = (
+                            out_request.transmission_mode ==
+                            ProcessOutputTransmissionMode.REFERENCE
+                    )
+                    if transmit_by_value:
+                        to_transmit_by_value.append(out_id)
+                    elif transmit_by_reference:
+                        to_transmit_by_reference.append(out_id)
+                if len(to_transmit_by_value) == 1:
+                    # use whatever media type the respective output specifies
+                    media_type = None
+                    output_result_location = result.get(out_id)
+                    response_payload = Path(output_result_location)
+                elif len(to_transmit_by_value) > 1:
+                    media_type = "multipart/related"
+                else:
+                    # this means that len(to_transmit_by_value) == 0 and therefore
+                    # we do not need to set any media type
+                    media_type = None
+            else:  # response type is `document`
+                pass
+        # TODO: handler's response could also be allowed to include more HTTP
+        # headers
+        return job_id, media_type, current_status, execution_result, additional_headers
+    
+    def _select_execution_mode(self, requested: RequestedProcessExecutionMode, processor: BaseProcessor) -> Tuple[ProcessExecutionMode, Optional[Dict[str, str]]]:
+        """Select the execution mode to be employed"""
+        if requested == RequestedProcessExecutionMode.respond_async:
             # client wants async - do we support it?
             process_supports_async = (
-                ProcessExecutionMode.async_execute.value in p.metadata.get(
-                    'jobControlOptions', []
-                )
+                    ProcessExecutionMode.async_execute.value in 
+                    processor.process_metadata.jobControlOptions
             )
             if self.is_async and process_supports_async:
-                LOGGER.debug('Asynchronous execution')
-                handler = self._execute_handler_async
-                response_headers = {
-                    'Preference-Applied': (
-                        RequestedProcessExecutionMode.respond_async.value)
-                }
+                result = ProcessExecutionMode.async_execute
+                additional_headers = {
+                    'Preference-Applied': RequestedProcessExecutionMode.respond_async.value}
             else:
-                LOGGER.debug('Synchronous execution')
-                handler = self._execute_handler_sync
-                response_headers = {
-                    'Preference-Applied': (
-                        RequestedProcessExecutionMode.wait.value)
-                }
-        elif execution_mode == RequestedProcessExecutionMode.wait:
+                result = ProcessExecutionMode.sync_execute
+                additional_headers = {
+                    'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+        elif requested == RequestedProcessExecutionMode.wait:
             # client wants sync - pygeoapi implicitly supports sync mode
             LOGGER.debug('Synchronous execution')
-            handler = self._execute_handler_sync
-            response_headers = {
+            result = ProcessExecutionMode.sync_execute
+            additional_headers = {
                 'Preference-Applied': RequestedProcessExecutionMode.wait.value}
         else:  # client has no preference
             # according to OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')
-            handler = self._execute_handler_sync
-            response_headers = None
-        # TODO: handler's response could also be allowed to include more HTTP
-        # headers
-        mime_type, outputs, status = handler(p, job_id, data_dict)
-        return job_id, mime_type, outputs, status, response_headers
+            result = ProcessExecutionMode.sync_execute
+            additional_headers = {
+                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+        return result, additional_headers
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'

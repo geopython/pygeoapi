@@ -34,6 +34,7 @@ from copy import deepcopy
 
 from babel import Locale
 from babel import UnknownLocaleError as _UnknownLocaleError
+import pydantic
 from urllib import parse
 
 LOGGER = logging.getLogger(__name__)
@@ -283,6 +284,23 @@ def translate(value, language: Union[Locale, str]):
     # Find best language match and return value by its key
     out_locale = best_match(language, loc_items.keys())
     return value[loc_items[out_locale]]
+
+
+def translate_model(model: pydantic.BaseModel, locale_: Locale):
+    """Try to translate properties on the model object"""
+
+    translatable_properties = (
+        "title",
+        "description"
+    )
+    translated = {}
+    for translatable in translatable_properties:
+        candidates = getattr(model, translatable, {})
+        translated[translatable] = translate(candidates, locale_)
+    return model.__class__(
+        **model.dict(by_alias=True, exclude=set(translatable_properties)),
+        **translated
+    )
 
 
 def translate_struct(struct, locale_: Locale, is_config: bool = False):

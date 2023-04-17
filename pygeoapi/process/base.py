@@ -28,40 +28,37 @@
 # =================================================================
 
 import logging
-from typing import Any, Tuple
+from typing import Dict, Tuple
+
+from pygeoapi.models.processes import (
+    Execution,
+    JobStatus,
+    ProcessDescription,
+)
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
+    process_metadata: ProcessDescription
 
-    def __init__(self, processor_def: dict, process_metadata: dict):
-        """
-        Initialize object
-
-        :param processor_def: processor definition
-        :param process_metadata: process metadata `dict`
-
-        :returns: pygeoapi.processor.base.BaseProvider
-        """
-        self.name = processor_def['name']
-        self.metadata = process_metadata
-
-    def execute(self, data: dict) -> Tuple[str, Any]:
+    def execute(
+            self,
+            job_id: str,
+            execution_request: Execution
+    ) -> Tuple[JobStatus, Dict[str, str]]:
         """
         execute the process
 
-        :param data: Dict with the input data that the process needs in order
-                     to execute
-
-        :returns: tuple of MIME type and process response
+        :returns: tuple of job status and a dict with output ids as keys and
+                  location for persisted results as values
         """
 
         raise NotImplementedError()
 
     def __repr__(self):
-        return f'<BaseProcessor> {self.name}'
+        return f'<BaseProcessor> {self.process_metadata.id}'
 
 
 class ProcessorGenericError(Exception):

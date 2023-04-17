@@ -45,11 +45,13 @@ from gzip import compress
 from http import HTTPStatus
 import json
 import logging
+from pathlib import Path
 import re
 from typing import Any, Dict, List, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
+import pydantic
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
@@ -3224,6 +3226,23 @@ class API:
             return headers, HTTPStatus.BAD_REQUEST, to_json(
                 data, self.pretty_print)
 
+    def _get_processes(self, known_processes: Dict, limit: Optional[int] = None) -> List:
+        LOGGER.debug('Processing limit parameter')
+        if limit is None:
+            relevant = known_processes.keys()
+        elif limit > 0:
+            relevant = known_processes[:limit]
+        else:
+            LOGGER.warning(f"Invalid limit parameter: {limit!r}, ignoring it")
+            relevant = known_processes.keys()
+
+        processes = []
+        for process_id in relevant:
+            processor = load_plugin(
+                'process', known_processes[process_id]['processor'])
+            processes.append(processor)
+        return processes
+
     @gzip
     @pre_process
     @jsonldify
@@ -3239,146 +3258,82 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        processes = []
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-        headers = request.get_response_headers(**self.api_headers)
-        if process is not None:
-            if process not in self.manager.processes:
-                msg = 'Identifier not found'
-                return self.get_exception(
-                    HTTPStatus.NOT_FOUND, headers,
-                    request.format, 'NoSuchProcess', msg)
-
-        if len(self.manager.processes) > 0:
-            if process is not None:
-                relevant_processes = [process]
-            else:
-                LOGGER.debug('Processing limit parameter')
-                try:
-                    limit = int(request.params.get('limit'))
-
-                    if limit <= 0:
-                        msg = 'limit value should be strictly positive'
-                        return self.get_exception(
-                            HTTPStatus.BAD_REQUEST, headers, request.format,
-                            'InvalidParameterValue', msg)
-
-                    relevant_processes = [*self.manager.processes][:limit]
-                except TypeError:
-                    LOGGER.debug('returning all processes')
-                    relevant_processes = self.manager.processes.keys()
-                except ValueError:
-                    msg = 'limit value should be an integer'
-                    return self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', msg)
-
-            for key in relevant_processes:
-                p = self.manager.get_processor(key)
-                p2 = l10n.translate_struct(deepcopy(p.metadata),
-                                           request.locale)
+        if request.is_valid():
+            headers = request.get_response_headers(**self.api_headers)
+            if len(self.manager.processes) > 0:
                 if process is None:
-                    p2.pop('inputs')
-                    p2.pop('outputs')
-                    p2.pop('example')
-
-                p2['jobControlOptions'] = ['sync-execute']
-                if self.manager.is_async:
-                    p2['jobControlOptions'].append('async-execute')
-
-                p2['outputTransmission'] = ['value']
-                p2['links'] = p2.get('links', [])
-
-                jobs_url = f"{self.base_url}/jobs"
-                process_url = f"{self.base_url}/processes/{key}"
-
-                # TODO translation support
-                link = {
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': request.get_linkrel(F_JSON),
-                    'href': f'{process_url}?f={F_JSON}',
-                    'title': 'Process description as JSON',
-                    'hreflang': self.default_locale
-                }
-                p2['links'].append(link)
-
-                link = {
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': request.get_linkrel(F_HTML),
-                    'href': f'{process_url}?f={F_HTML}',
-                    'title': 'Process description as HTML',
-                    'hreflang': self.default_locale
-                }
-                p2['links'].append(link)
-
-                link = {
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-                    'href': f'{jobs_url}?f={F_HTML}',
-                    'title': 'jobs for this process as HTML',
-                    'hreflang': self.default_locale
-                }
-                p2['links'].append(link)
-
-                link = {
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-                    'href': f'{jobs_url}?f={F_JSON}',
-                    'title': 'jobs for this process as JSON',
-                    'hreflang': self.default_locale
-                }
-                p2['links'].append(link)
-
-                link = {
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/execute',
-                    'href': f'{process_url}/execution?f={F_JSON}',
-                    'title': 'Execution for this process as JSON',
-                    'hreflang': self.default_locale
-                }
-                p2['links'].append(link)
-
-                processes.append(p2)
-
-        if process is not None:
-            response = processes[0]
-        else:
-            process_url = f"{self.base_url}/processes"
-            response = {
-                'processes': processes,
-                'links': [{
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': request.get_linkrel(F_JSON),
-                    'title': 'This document as JSON',
-                    'href': f'{process_url}?f={F_JSON}'
-                }, {
-                    'type': FORMAT_TYPES[F_JSONLD],
-                    'rel': request.get_linkrel(F_JSONLD),
-                    'title': 'This document as RDF (JSON-LD)',
-                    'href': f'{process_url}?f={F_JSONLD}'
-                }, {
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': request.get_linkrel(F_HTML),
-                    'title': 'This document as HTML',
-                    'href': f'{process_url}?f={F_HTML}'
-                }]
-            }
-
-        if request.format == F_HTML:  # render
-            if process is not None:
-                response = render_j2_template(self.tpl_config,
-                                              'processes/process.html',
-                                              response, request.locale)
+                    relevant_processes = self._get_processes(
+                        self.manager.processes, request.params.get("limit"))
+                else:
+                    try:
+                        processor = load_plugin(
+                            "process", self.manager.processes[process]["processor"])
+                    except KeyError:
+                        # error, could not find process with that id
+                        relevant_processes = []
+                    else:
+                        relevant_processes = [processor]
+                process_descriptions = []
+                for processor in relevant_processes:
+                    process_description = l10n.translate_model(
+                        processor.process_metadata, request.locale)
+                    process_description.links.extend(
+                        _generate_process_description_links(
+                            request,
+                            processor.process_metadata.id,
+                            self.base_url,
+                            self.default_locale)
+                    )
+                    process_descriptions.append(process_description)
+                process_url = f"{self.base_url}/processes"
+                response_contents = process_models.ProcessList(
+                    processes=process_descriptions,
+                    links=[
+                        process_models.Link(
+                            type=FORMAT_TYPES[F_JSON],
+                            rel=request.get_linkrel(F_JSON),
+                            title="This document as JSON",
+                            href=f"{process_url}?f={F_JSON}"
+                        ),
+                        process_models.Link(
+                            type=FORMAT_TYPES[F_JSONLD],
+                            rel=request.get_linkrel(F_JSONLD),
+                            title="This document as RDF (JSON-LD)",
+                            href=f"{process_url}?f={F_JSONLD}"
+                        ),
+                        process_models.Link(
+                            type=FORMAT_TYPES[F_HTML],
+                            rel=request.get_linkrel(F_HTML),
+                            title="This document as HTML",
+                            href=f"{process_url}?f={F_HTML}"
+                        ),
+                    ]
+                ).dict(by_alias=True)
+                if request.format == F_HTML:
+                    j2_template = Path(
+                        "processes/index.html" if process is None
+                        else "processes/process.html"
+                    )
+                    rendered_response = render_j2_template(
+                        self.tpl_config, j2_template,
+                        response_contents, request.locale
+                    )
+                else:
+                    rendered_response = to_json(
+                        response_contents, self.pretty_print)
+                result = headers, HTTPStatus.OK, rendered_response
             else:
-                response = render_j2_template(self.tpl_config,
-                                              'processes/index.html', response,
-                                              request.locale)
+                rendered_response = render_j2_template(
+                    self.tpl_config,
+                    'processes/index.html', 
+                    response_contents,
+                    request.locale
+                )
+                result = headers, HTTPStatus.OK, rendered_response
 
-            return headers, HTTPStatus.OK, response
-
-        return headers, HTTPStatus.OK, to_json(response, self.pretty_print)
+        else:
+            result = self.get_format_exception(request)
+        return result
 
     def _filter_jobs(
             self, request: Union[APIRequest, Any]
@@ -3463,7 +3418,7 @@ class API:
                 jobs=job_reads, links=response_links).dict(by_alias=True)
 
             if request.format == F_HTML:
-                j2_template = (
+                j2_template = Path(
                     'jobs/index.html' if job_id is None else 'jobs/job.html')
                 rendered_response = render_j2_template(
                     self.tpl_config,
@@ -3498,93 +3453,82 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        if not request.is_valid():
-            return self.get_format_exception(request)
+        if request.is_valid():
+            # Responses are always in US English only
+            headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            if process_id in self.manager.processes:
+                try:
+                    payload = json.loads(request.data)
+                    execution_request = Execution(**payload)
+                except (
+                    json.decoder.JSONDecodeError, 
+                    TypeError, 
+                    pydantic.ValidationError
+                ) as err:
+                    # Input does not appear to be valid JSON
+                    LOGGER.error(err)
+                    result = self.get_exception(
+                        HTTPStatus.BAD_REQUEST, headers, request.format,
+                        'InvalidParameterValue', 'invalid request data')
+                else:
+                    try:
+                        execution_mode = RequestedProcessExecutionMode(
+                            request.headers.get('Prefer'))
+                    except ValueError:
+                        execution_mode = None
+                    try:
+                        execution_result = self.manager.execute_process(
+                            process_id, execution_request, execution_mode)
+                        job_id, mime_type, outputs, status = execution_result
+                    except InvalidPluginError as err:
+                        LOGGER.error(err)
+                        msg = 'Internal error'
+                        result = self.get_exception(
+                            HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                            request.format, 'NoApplicableCode', msg
+                        )
+                    except (ProcessorExecuteError, ProcessorGenericError) as err:
+                        LOGGER.error(err)
+                        result = self.get_exception(
+                            HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                            request.format, 'NoApplicableCode',
+                            'Processing error'
+                        )
+                    else:
+                        # as per OAPIP:
+                        # - if the execution mode is sync and the server
+                        #   creates a job, then the response shall include
+                        #   Link header with rel=monitor, pointing to the
+                        #   created job
+                        headers['Location'] = f"{self.base_url}/jobs/{job_id}"
+                        response = {}
+                        if status == JobStatus.failed:
+                            response = outputs
 
-        # Responses are always in US English only
-        headers = request.get_response_headers(SYSTEM_LOCALE,
-                                               **self.api_headers)
-        if process_id not in self.manager.processes:
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers,
-                request.format, 'NoSuchProcess', 'identifier not found')
+                        if data.get('response', 'raw') == 'raw':
+                            headers['Content-Type'] = mime_type
+                            response = outputs
+                        elif status not in (JobStatus.failed, JobStatus.accepted):
+                            response['outputs'] = [outputs]
 
-        data = request.data
-        if not data:
-            # TODO not all processes require input, e.g. time-dependent or
-            #      random value generators
-            msg = 'missing request data'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'MissingParameterValue', msg)
+                        if status == JobStatus.accepted:
+                            http_status = HTTPStatus.CREATED
+                        else:
+                            http_status = HTTPStatus.OK
 
-        try:
-            # Parse bytes data, if applicable
-            data = data.decode()
-            LOGGER.debug(data)
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input does not appear to be valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-
-        data_dict = data.get('inputs', {})
-        LOGGER.debug(data_dict)
-
-        try:
-            execution_mode = RequestedProcessExecutionMode(
-                request.headers.get('Prefer'))
-        except ValueError:
-            execution_mode = None
-        try:
-            LOGGER.debug('Executing process')
-            result = self.manager.execute_process(
-                process_id, data_dict, execution_mode=execution_mode)
-            job_id, mime_type, outputs, status, additional_headers = result
-            headers.update(additional_headers or {})
-            headers['Location'] = f"{self.base_url}/jobs/{job_id}"
-        except InvalidPluginError as err:
-            LOGGER.error(err)
-            msg = 'Internal error'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg
-            )
-        except (ProcessorExecuteError, ProcessorGenericError) as err:
-            LOGGER.error(err)
-            msg = 'Processing error'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
-
-        response = {}
-        if status == JobStatus.failed:
-            response = outputs
-
-        if data.get('response', 'raw') == 'raw':
-            headers['Content-Type'] = mime_type
-            response = outputs
-        elif status not in (JobStatus.failed, JobStatus.accepted):
-            response['outputs'] = [outputs]
-
-        if status == JobStatus.accepted:
-            http_status = HTTPStatus.CREATED
+                        if mime_type == 'application/json':
+                            response2 = to_json(response, self.pretty_print)
+                        else:
+                            response2 = response
+            else:
+                msg = 'identifier not found'
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, headers,
+                    request.format, 'NoSuchProcess', msg)
         else:
-            http_status = HTTPStatus.OK
-
-        if mime_type == 'application/json':
-            response2 = to_json(response, self.pretty_print)
-        else:
-            response2 = response
-
-        return headers, http_status, response2
+            result = self.get_format_exception(request)
+        return result
 
     @gzip
     @pre_process
@@ -4427,3 +4371,49 @@ def _get_pagination_links(
     return result
 
 
+def _generate_process_description_links(
+        request,
+        process_description_id: str,
+        base_url: str,
+        locale
+) -> List[process_models.Link]:
+    """Generate links for a process description"""
+    process_url = f"{base_url}/processes/{process_description_id}"
+    jobs_url = f"{base_url}/jobs"
+    return [
+        process_models.Link(
+            type=FORMAT_TYPES[F_JSON],
+            rel=request.get_linkrel(F_JSON),
+            href=f'{process_url}?f={F_JSON}',
+            title='Process description as JSON',
+            hreflang=locale,
+        ),
+        process_models.Link(
+            type=FORMAT_TYPES[F_HTML],
+            rel=request.get_linkrel(F_HTML),
+            href=f'{process_url}?f={F_HTML}',
+            title='Process description as HTML',
+            hreflang=locale
+        ),
+        process_models.Link(
+            type=FORMAT_TYPES[F_JSON],
+            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
+            href=f'{jobs_url}?f={F_JSON}',
+            title='jobs for this process as JSON',
+            hreflang=locale
+        ),
+        process_models.Link(
+            type=FORMAT_TYPES[F_HTML],
+            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
+            href=f'{jobs_url}?f={F_HTML}',
+            title='jobs for this process as HTML',
+            hreflang=locale
+        ),
+        process_models.Link(
+            type=FORMAT_TYPES[F_JSON],
+            rel='http://www.opengis.net/def/rel/ogc/1.0/execute',
+            href=f'{process_url}/execution?f={F_JSON}',
+            title='Execution for this process as JSON',
+            hreflang=locale
+        )
+    ]
