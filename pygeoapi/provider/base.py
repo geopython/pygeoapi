@@ -212,7 +212,6 @@ class BaseProvider:
         :returns: `tuple` of item identifier and item data/payload
         """
 
-        identifier2 = None
         msg = None
 
         LOGGER.debug('Loading data')
@@ -230,32 +229,27 @@ class BaseProvider:
             raise ProviderInvalidDataError(msg)
 
         LOGGER.debug('Detecting identifier')
-        if identifier is not None:
-            identifier2 = identifier
-        else:
-            try:
-                identifier2 = json_data['id']
-            except KeyError:
-                LOGGER.debug('Cannot find id; trying properties.identifier')
-                try:
-                    identifier2 = json_data['properties']['identifier']
-                except KeyError:
-                    LOGGER.debug('Cannot find properties.identifier')
-
-        if identifier2 is None and not accept_missing_identifier:
-            msg = 'Missing identifier (id or properties.identifier)'
-            LOGGER.error(msg)
-            raise ProviderInvalidDataError(msg)
+        if identifier is None:
+            identifier = json_data.get('id')
+        if identifier is None:
+            LOGGER.debug('Cannot find id; trying properties.identifier')
+            identifier = json_data.get('properties', dict()).get('identifier')
+        if identifier is None:
+            LOGGER.debug('Cannot find properties.identifier')
+            if not accept_missing_identifier:
+                msg = 'Missing identifier (id or properties.identifier)'
+                LOGGER.error(msg)
+                raise ProviderInvalidDataError(msg)
 
         if 'geometry' not in json_data or 'properties' not in json_data:
             msg = 'Missing core GeoJSON geometry or properties'
             LOGGER.error(msg)
             raise ProviderInvalidDataError(msg)
 
-        if identifier2 is not None and raise_if_exists:
+        if identifier is not None and raise_if_exists:
             LOGGER.debug('Querying database whether item exists')
             try:
-                _ = self.get(identifier2)
+                _ = self.get(identifier)
 
                 msg = 'record already exists'
                 LOGGER.error(msg)
@@ -263,7 +257,7 @@ class BaseProvider:
             except ProviderItemNotFoundError:
                 LOGGER.debug('record does not exist')
 
-        return identifier2, json_data
+        return identifier, json_data
 
     def __repr__(self):
         return f'<BaseProvider> {self.type}'
