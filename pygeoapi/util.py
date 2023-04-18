@@ -549,13 +549,13 @@ def get_provider_default(providers: list) -> dict:
 
 
 class ProcessExecutionMode(Enum):
-    sync_execute = "sync-execute"
-    async_execute = "async-execute"
+    sync_execute = 'sync-execute'
+    async_execute = 'async-execute'
 
 
 class RequestedProcessExecutionMode(Enum):
-    wait = "wait"
-    respond_async = "respond-async"
+    wait = 'wait'
+    respond_async = 'respond-async'
 
 
 class JobStatus(Enum):

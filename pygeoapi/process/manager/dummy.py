@@ -90,7 +90,7 @@ class DummyManager(BaseManager):
         response_headers = None
         if execution_mode is not None:
             response_headers = {
-                "Preference-Applied": RequestedProcessExecutionMode.wait.value}
+                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
             if execution_mode == RequestedProcessExecutionMode.respond_async:
                 LOGGER.debug('Dummy manager does not support asynchronous')
                 LOGGER.debug('Forcing synchronous execution')

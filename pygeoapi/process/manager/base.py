@@ -289,21 +289,21 @@ class BaseManager:
             # client wants async - do we support it?
             process_supports_async = (
                 ProcessExecutionMode.async_execute.value in p.metadata.get(
-                    "jobControlOptions", []
+                    'jobControlOptions', []
                 )
             )
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
                 response_headers = {
-                    "Preference-Applied": (
+                    'Preference-Applied': (
                         RequestedProcessExecutionMode.respond_async.value)
                 }
             else:
                 LOGGER.debug('Synchronous execution')
                 handler = self._execute_handler_sync
                 response_headers = {
-                    "Preference-Applied": (
+                    'Preference-Applied': (
                         RequestedProcessExecutionMode.wait.value)
                 }
         elif execution_mode == RequestedProcessExecutionMode.wait:
@@ -311,7 +311,7 @@ class BaseManager:
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
             response_headers = {
-                "Preference-Applied": RequestedProcessExecutionMode.wait.value}
+                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
         else:  # client has no preference
             # according to OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')

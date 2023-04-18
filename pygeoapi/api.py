@@ -3541,7 +3541,7 @@ class API:
 
         try:
             execution_mode = RequestedProcessExecutionMode(
-                request.headers.get("Prefer"))
+                request.headers.get('Prefer'))
         except ValueError:
             execution_mode = None
         try:
@@ -3550,7 +3550,7 @@ class API:
                 process, data_dict, execution_mode=execution_mode)
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
-            headers['Location'] = f"{self.base_url}/jobs/{job_id}"
+            headers['Location'] = f'{self.base_url}/jobs/{job_id}'
         except ProcessorExecuteError as err:
             LOGGER.error(err)
             msg = 'Processing error'
