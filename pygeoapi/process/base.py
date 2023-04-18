@@ -52,6 +52,9 @@ class BaseProcessor:
         """
         execute the process
 
+        :param data: Dict with the input data that the process needs in order
+                     to execute
+
         :returns: tuple of MIME type and process response
         """
 
