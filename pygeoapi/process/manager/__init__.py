@@ -44,8 +44,8 @@ def get_manager(config: Dict):
 
     :returns: The pygeoapi process manager object
     """
-    manager_conf = config.get("server", {}).get(
-        "manager",
+    manager_conf = config.get('server', {}).get(
+        'manager',
         {
             'name': 'Dummy',
             'connection': None,
@@ -53,10 +53,10 @@ def get_manager(config: Dict):
         }
     )
     processes_conf = {}
-    for id_, resource_conf in config.get("resources", {}).items():
-        if resource_conf.get("type") == "process":
+    for id_, resource_conf in config.get('resources', {}).items():
+        if resource_conf.get('type') == 'process':
             processes_conf[id_] = resource_conf
-    manager_conf["processes"] = processes_conf
-    if manager_conf.get("name") == "Dummy":
+    manager_conf['processes'] = processes_conf
+    if manager_conf.get('name') == 'Dummy':
         LOGGER.info('Starting dummy manager')
-    return load_plugin("process_manager", manager_conf)
+    return load_plugin('process_manager', manager_conf)
