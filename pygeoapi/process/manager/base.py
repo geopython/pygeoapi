@@ -67,7 +67,7 @@ class BaseManager:
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
         self.processes = {}
-        for id_, process_conf in manager_def.get("processes", {}).items():
+        for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
         if self.output_dir is not None:
@@ -96,11 +96,11 @@ class BaseManager:
         try:
             process_conf = self.processes[process_id]
         except KeyError as exc:
-            msg = "Invalid process identifier"
+            msg = 'Invalid process identifier'
             LOGGER.warning(msg)
             raise ProcessorGenericError(msg) from exc
         else:
-            return load_plugin("process", process_conf["processor"])
+            return load_plugin('process', process_conf['processor'])
 
     def add_job(self, job_metadata: dict) -> str:
         """
