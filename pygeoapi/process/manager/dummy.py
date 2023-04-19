@@ -29,12 +29,13 @@
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-import uuid
 
-from pygeoapi.process.base import BaseProcessor
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.models.processes import JobStatus
-from pygeoapi.util import RequestesProcessExecutionMode
+from pygeoapi.models.processes import (
+    Execution,
+    JobStatus,
+    RequestedProcessExecutionMode,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -87,44 +88,40 @@ class DummyManager(BaseManager):
     def execute_process(
             self,
             process_id: str,
-            data_dict: Dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
+            execution_request: Execution,
+            requested_execution_mode: Optional[
+                RequestedProcessExecutionMode] = None
+    ) -> Tuple[
+            str,
+            Optional[str],
+            JobStatus,
+            Any,
+            Optional[Dict[str, str]]
+    ]:
         """
-        Default process execution handler
+        Default process execution handler.
 
         :param process_id: identifier of the process to be executed
-        :param data_dict: `dict` of data parameters
-        :param execution_mode: requested execution mode
+        :param execution_request: execution request
+        :param requested_execution_mode: optionally specifying sync or
+                                         async processing.
 
-        :returns: tuple of job_id, MIME type, response payload, status and
-                  optionally additional HTTP headers to include in the
+        :returns: tuple of generated job_id, optional response media type,
+                  response payload, current job status and
+                  optionally additional HTTP headers to include in the final
                   response
         """
 
-        jfmt = 'application/json'
-
-        response_headers = None
-        if execution_mode is not None:
-            response_headers = {
-                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
-            if execution_mode == RequestedProcessExecutionMode.respond_async:
+        if requested_execution_mode is not None:
+            requested_async = (
+                    requested_execution_mode ==
+                    RequestedProcessExecutionMode.respond_async
+            )
+            if requested_async:
                 LOGGER.debug('Dummy manager does not support asynchronous')
                 LOGGER.debug('Forcing synchronous execution')
-
-        p = self.get_processor(process_id)
-        try:
-            jfmt, outputs = p.execute(data_dict)
-            current_status = JobStatus.successful
-        except Exception as err:
-            outputs = {
-                'code': 'InvalidParameterValue',
-                'description': 'Error updating job'
-            }
-            current_status = JobStatus.failed
-            LOGGER.error(err)
-        job_id = str(uuid.uuid1())
-        return job_id, jfmt, outputs, current_status, response_headers
+        return super().execute_process(
+            process_id, execution_request, RequestedProcessExecutionMode.wait)
 
     def __repr__(self):
         return f'<DummyManager> {self.name}'

@@ -547,29 +547,6 @@ def get_provider_default(providers: list) -> dict:
     return default
 
 
-class ProcessExecutionMode(Enum):
-    sync_execute = 'sync-execute'
-    async_execute = 'async-execute'
-
-
-class RequestedProcessExecutionMode(Enum):
-    wait = 'wait'
-    respond_async = 'respond-async'
-
-
-class JobStatus(Enum):
-    """
-    Enum for the job status options specified in the WPS 2.0 specification
-    """
-
-    #  From the specification
-    accepted = 'accepted'
-    running = 'running'
-    successful = 'successful'
-    failed = 'failed'
-    dismissed = 'dismissed'
-
-
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
     helper function to read data (file or network)

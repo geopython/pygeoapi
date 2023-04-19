@@ -28,10 +28,12 @@
 # =================================================================
 
 import logging
-from typing import Dict, Tuple
+from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 from pygeoapi.models.processes import (
     Execution,
+    ExecutionResultInternal,
     JobStatus,
     ProcessDescription,
 )
@@ -46,13 +48,19 @@ class BaseProcessor:
     def execute(
             self,
             job_id: str,
-            execution_request: Execution
-    ) -> Tuple[JobStatus, Dict[str, str]]:
+            execution_request: Execution,
+            results_storage_root: Path,
+    ) -> ExecutionResultInternal:
         """
         execute the process
 
-        :returns: tuple of job status and a dict with output ids as keys and
-                  location for persisted results as values
+        Processes are expected to handle persistence of their own results
+
+        :param job_id: identifier of the job
+        :param execution_request: execution parameters
+        :param results_storage_root: where to store processing outputs
+
+        :returns: execution results
         """
 
         raise NotImplementedError()

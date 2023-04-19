@@ -1,6 +1,6 @@
 import datetime as dt
 import enum
-from typing import Any, Dict, Literal, List, Optional, Union
+from typing import Any, Dict, Literal, List, Optional, Tuple, Union
 
 import pydantic
 
@@ -16,6 +16,16 @@ class JobStatus(enum.Enum):
     successful = 'successful'
     failed = 'failed'
     dismissed = 'dismissed'
+
+
+class ProcessExecutionMode(enum.Enum):
+    sync_execute = 'sync-execute'
+    async_execute = 'async-execute'
+
+
+class RequestedProcessExecutionMode(enum.Enum):
+    wait = 'wait'
+    respond_async = 'respond-async'
 
 
 class ProcessOutputTransmissionMode(enum.Enum):
@@ -307,6 +317,16 @@ class Execution(pydantic.BaseModel):
 
     class Config:
         use_enum_values = True
+
+
+class OutputExecutionResultInternal(pydantic.BaseModel):
+    location: str
+    media_type: str
+
+
+class ExecutionResultInternal(pydantic.BaseModel):
+    status: JobStatus
+    outputs: Optional[Dict[str, OutputExecutionResultInternal]] = None
 
 
 class JobList(pydantic.BaseModel):

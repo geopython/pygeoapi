@@ -37,10 +37,14 @@ import uuid
 
 from pygeoapi.models.processes import (
     Execution,
+    ExecutionResultInternal,
     JobStatus,
     JobStatusInfoInternal,
+    ProcessDescription,
     ProcessOutputTransmissionMode,
+    ProcessExecutionMode,
     ProcessResponseType,
+    RequestedProcessExecutionMode
 )
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
@@ -75,6 +79,17 @@ class BaseManager:
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
 
+    def get_process_descriptions(
+            self,
+            limit: Optional[int] = None,
+            offset: Optional[int] = 0
+    ) -> Tuple[int, List[ProcessDescription]]:
+        """Get processes"""
+        relevant = [
+            p.process_description for p in self.processes.values()
+        ][offset:limit]
+        return len(self.processes), relevant
+
     def get_jobs(
             self,
             type_: Optional[List[str]] = None,
@@ -90,7 +105,7 @@ class BaseManager:
         Get process jobs, optionally filtered by relevant parameters.
 
         The filtering parameters follow their respective definition in
-        OAPI - Processes spec, as per:
+        OAProc spec, as per:
 
         https://docs.ogc.org/is/18-062r2/18-062r2.html#toc49
 
@@ -223,22 +238,19 @@ class BaseManager:
 
         :param processor: `pygeoapi.process` object
         :param job_id: job identifier
-        :param data_dict: `dict` of data parameters
+        :param execution_request: execution parameters
 
         :returns: A tuple of process status and a dict with output ids as
                   keys and respective output results as values
         """
 
-        process_id = processor.metadata['id']
         current_status = JobStatus.accepted
-
         now = dt.datetime.now(dt.timezone.utc)
-
         self.add_job(JobStatusInfoInternal(
             jobID=job_id,
-            processID=process_id,
+            processID=processor.process_metadata.id,
             status=current_status,
-            message="Job accepted and ready for execution",
+            message='Job accepted and ready for execution',
             created=now,
             started=now,
             progress=5,
@@ -256,7 +268,6 @@ class BaseManager:
             # endpoint, even if the /result endpoint correctly returns the
             # failure information (i.e. what one might assume is a 200
             # response).
-
             current_status = JobStatus.failed
             code = 'InvalidParameterValue'
             outputs = {
@@ -279,93 +290,84 @@ class BaseManager:
             self,
             process_id: str,
             execution_request: Execution,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
+            requested_execution_mode: Optional[
+                RequestedProcessExecutionMode] = None
+    ) -> Tuple[
+        str,
+        Optional[str],
+        JobStatus,
+        Any,
+        Optional[Dict[str, str]]
+    ]:
         """
-        Default process execution handler
+        Default process execution handler.
 
         :param process_id: identifier of the process to be executed
         :param execution_request: execution request
-        :param execution_mode: `str` optionally specifying sync or async
-        processing.
+        :param requested_execution_mode: optionally specifying sync or
+                                         async processing.
 
-        :returns: tuple of job_id, MIME type, response payload, status and
+        :returns: tuple of generated job_id, optional response media type,
+                  response payload, current job status and
                   optionally additional HTTP headers to include in the final
                   response
         """
 
         job_id = str(uuid.uuid1())
         processor = self.get_processor(process_id)
-        chosen_execution_mode, additional_headers = self._select_execution_mode(
-            execution_mode, processor)
-        # as per OAProc, if the execution mode is sync:
-        #
-        #   - if response type is `raw`, and the transmission mode is
-        #     `reference`, then the response has no content, only links in the
-        #     headers
-        #
-        #  - if response type is `raw` and transmission mode is by `value`,
-        #    then the response has a media type of multipart/related (or the
-        #    media type of the output, in case there is only one)
-        #
-        #  - if the response type is `document`, then the media type of the
-        #    response is `application/json`
-        if chosen_execution_mode == ProcessExecutionMode.async_execute:
+        chosen_mode, additional_headers = self._select_execution_mode(
+            requested_execution_mode, processor)
+        if chosen_mode == ProcessExecutionMode.async_execute:
             LOGGER.debug('Asynchronous execution')
-            current_status = self._execute_handler_async(processor, job_id, execution_request)
+            current_status = self._execute_handler_async(
+                processor, job_id, execution_request)
+            execution_result = None
             media_type = "application/json"
         else:
             LOGGER.debug('Synchronous execution')
-            current_status, execution_result = self._execute_handler_sync(p, job_id, execution_request)
-            if execution_request.type_ == ProcessResponseType.raw:
-                to_transmit_by_value = []
-                to_transmit_by_reference = []
-                for out_id, out_request in execution_request.outputs.items():
-                    transmit_by_value = (
-                            out_request.transmission_mode ==
-                            ProcessOutputTransmissionMode.VALUE
-                    )
-                    transmit_by_reference = (
-                            out_request.transmission_mode ==
-                            ProcessOutputTransmissionMode.REFERENCE
-                    )
-                    if transmit_by_value:
-                        to_transmit_by_value.append(out_id)
-                    elif transmit_by_reference:
-                        to_transmit_by_reference.append(out_id)
-                if len(to_transmit_by_value) == 1:
-                    # use whatever media type the respective output specifies
-                    media_type = None
-                    output_result_location = result.get(out_id)
-                    response_payload = Path(output_result_location)
-                elif len(to_transmit_by_value) > 1:
-                    media_type = "multipart/related"
-                else:
-                    # this means that len(to_transmit_by_value) == 0 and therefore
-                    # we do not need to set any media type
-                    media_type = None
-            else:  # response type is `document`
-                pass
-        # TODO: handler's response could also be allowed to include more HTTP
-        # headers
-        return job_id, media_type, current_status, execution_result, additional_headers
-    
-    def _select_execution_mode(self, requested: RequestedProcessExecutionMode, processor: BaseProcessor) -> Tuple[ProcessExecutionMode, Optional[Dict[str, str]]]:
-        """Select the execution mode to be employed"""
+            current_status, execution_result = self._execute_handler_sync(
+                processor, job_id, execution_request)
+            media_type = _select_execution_media_type(
+                processor, execution_request, execution_result)
+        return (
+            job_id,
+            media_type,
+            current_status,
+            execution_result,
+            additional_headers
+        )
+
+    def _select_execution_mode(
+            self,
+            requested: RequestedProcessExecutionMode,
+            processor: BaseProcessor
+    ) -> Tuple[ProcessExecutionMode, Optional[Dict[str, str]]]:
+        """Select the execution mode to be employed
+
+        The execution mode to use depends on a number of factors:
+
+        - what mode, if any, was requested by the client?
+        - does the process support sync and async execution modes?
+        - does the process manager support sync and async modes?
+        """
         if requested == RequestedProcessExecutionMode.respond_async:
             # client wants async - do we support it?
             process_supports_async = (
                     ProcessExecutionMode.async_execute.value in 
-                    processor.process_metadata.jobControlOptions
+                    processor.process_metadata.job_control_options
             )
             if self.is_async and process_supports_async:
                 result = ProcessExecutionMode.async_execute
                 additional_headers = {
-                    'Preference-Applied': RequestedProcessExecutionMode.respond_async.value}
+                    'Preference-Applied': (
+                        RequestedProcessExecutionMode.respond_async.value)
+                }
             else:
                 result = ProcessExecutionMode.sync_execute
                 additional_headers = {
-                    'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+                    'Preference-Applied': (
+                        RequestedProcessExecutionMode.wait.value)
+                }
         elif requested == RequestedProcessExecutionMode.wait:
             # client wants sync - pygeoapi implicitly supports sync mode
             LOGGER.debug('Synchronous execution')
@@ -382,3 +384,49 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+def _select_execution_media_type(
+        processor: BaseProcessor,
+        execution_request: Execution,
+        execution_result: ExecutionResultInternal
+) -> Optional[str]:
+    """Select appropriate media type for execution response.
+
+    The response of an execution can have different media types depending on
+    the request and on the nature of the executed process.
+
+    - If the request includes a response type of `DOCUMENT`, then the media
+      type is for a JSON document
+    - If the request includes a response type of `RAW` then there are multiple
+      possibilities, depening on the number of outputs that have been generated
+      and on their requested transmission value
+    """
+    if execution_request.type_ == ProcessResponseType.raw:
+        if len(processor.process_metadata.outputs) == 1:
+            requested_meta = execution_request.outputs.items()[0]
+            requested_mode = requested_meta.transmission_mode
+            if requested_mode == ProcessOutputTransmissionMode.VALUE:
+                result = (
+                    execution_result.outputs.items()[0].media_type)
+            else:
+                result = None
+        elif len(processor.process_metadata.outputs) > 1:
+            # if there are multiple outputs, maybe use a multipart/related
+            # media type, depending on the transmission mode
+            for out_id, out_request in execution_request.outputs.items():
+                by_value = (
+                        out_request.transmission_mode ==
+                        ProcessOutputTransmissionMode.VALUE
+                )
+                if by_value:
+                    result = 'multipart/related'
+                    break
+            else:
+                result = None
+        else:
+            # the process does not specify any outputs?
+            raise RuntimeError
+    else:  # response type is `document`
+        result = 'application/json'
+    return result

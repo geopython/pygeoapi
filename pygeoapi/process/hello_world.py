@@ -33,6 +33,8 @@ from typing import Dict, Tuple
 
 from pygeoapi.models.processes import (
     Execution,
+    ExecutionResultInternal,
+    OutputExecutionResultInternal,
     JobStatus,
     Link,
     ProcessDescription,
@@ -132,8 +134,9 @@ class HelloWorldProcessor(BaseProcessor):
     def execute(
             self,
             job_id: str,
-            execution_request: Execution
-    ) -> Tuple[JobStatus, Dict[str, str]]:
+            execution_request: Execution,
+            results_storage_root: Path,
+    ) -> ExecutionResultInternal:
         inputs = execution_request.dict().get("inputs", {})
         name = inputs.get("name")
         if name is None:
@@ -141,13 +144,21 @@ class HelloWorldProcessor(BaseProcessor):
         message = inputs.get('message', '')
         echo_value = f'Hello {name}! {message}'.strip()
         echo_location = (
-                Path.home() / self.metadata["id"] / f"{job_id}-echo.txt")
+                results_storage_root / self.process_metadata.id /
+                f"{job_id}-echo.txt"
+        )
+        echo_location.parent.mkdir(parents=True, exist_ok=True)
         with echo_location.open(mode="w", encoding="utf-8") as fh:
             fh.write(echo_value)
-        result = {
-            "echo": str(echo_location)
-        }
-        return JobStatus.successful, result
+        return ExecutionResultInternal(
+            status=JobStatus.successful,
+            outputs={
+                "echo": OutputExecutionResultInternal(
+                    location=str(echo_location),
+                    media_type="text/plain"
+                ),
+            }
+        )
 
     def __repr__(self):
         return f'<HelloWorldProcessor> {self.process_metadata.id}'
