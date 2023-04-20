@@ -134,7 +134,9 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
-            if isinstance(query_params[self._coverage_properties['time_axis_label']], slice):
+            if (datetime_ is not None and 
+                isinstance(query_params[self._coverage_properties['time_axis_label']], slice)):
+                # separate query into spatial and temporal components
                 LOGGER.debug('Separating temporal query')
                 time_query = {self._coverage_properties['time_axis_label']: 
                               query_params[self._coverage_properties['time_axis_label']]}
