@@ -43,11 +43,12 @@ import pyproj
 from shapely.geometry import Point
 
 from pygeoapi.api import (
-    API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
-    validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
+    API, APIRequest, validate_bbox, validate_datetime,
+    validate_subset, __version__
 )
-from pygeoapi.util import (yaml_load, get_crs_from_uri,
-                           get_api_rules, get_base_url)
+from pygeoapi.util import (yaml_load, F_JSON, F_HTML, F_JSONLD,
+                           F_GZIP, FORMAT_TYPES,
+                           get_crs_from_uri, get_api_rules, get_base_url)
 
 from .util import (get_test_file_path, mock_request,
                    mock_flask, mock_starlette)

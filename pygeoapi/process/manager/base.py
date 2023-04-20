@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,8 +29,8 @@
 #
 # =================================================================
 
+from collections import OrderedDict
 import datetime as dt
-import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
@@ -51,13 +53,18 @@ from pygeoapi.process.base import (
     BaseProcessor,
     ProcessorGenericError,
 )
-from pygeoapi.util import DATETIME_FORMAT
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseManager:
     """generic Manager ABC"""
+
+    is_async: bool = False
+    connection: str
+    name: str
+    output_dir: Optional[Path]
+    processes: OrderedDict[str, Dict]
 
     def __init__(self, manager_def: dict):
         """
@@ -69,26 +76,44 @@ class BaseManager:
         """
 
         self.name = manager_def['name']
-        self.is_async = False
         self.connection = manager_def.get('connection')
-        self.output_dir = manager_def.get('output_dir')
-        self.processes = {}
+        out_dir = manager_def.get('output_dir')
+        self.output_dir = Path(out_dir) if out_dir is not None else None
+        self.processes = OrderedDict()
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
-
-        if self.output_dir is not None:
-            self.output_dir = Path(self.output_dir)
 
     def get_process_descriptions(
             self,
             limit: Optional[int] = None,
             offset: Optional[int] = 0
     ) -> Tuple[int, List[ProcessDescription]]:
-        """Get processes"""
-        relevant = [
-            p.process_description for p in self.processes.values()
-        ][offset:limit]
-        return len(self.processes), relevant
+        """Get process descriptions
+
+        :param limit: Maximum number of process descriptions to return
+        :param offset: Optional offset for selecting relevant process
+                       descriptions
+
+        :return: A two-element tuple with the total number of processes known
+                 to the manager and a list of process-related metadata.
+        """
+
+        right_bound = (
+            limit + offset if limit is not None else len(self.processes))
+        relevant_ = (
+            (i, conf) for i, conf in enumerate(self.processes.values())
+            if i <= offset and i < right_bound
+        )
+        descriptions = []
+        for _, conf in relevant_:
+            try:
+                processor = load_plugin("process", conf.get("processor"))
+            except ProcessorGenericError:
+                LOGGER.warning(f'Unable to load process {conf}, skipping...')
+            else:
+                descriptions.append(processor.process_metadata)
+        return len(self.processes), descriptions
+
 
     def get_jobs(
             self,
@@ -228,7 +253,7 @@ class BaseManager:
             processor: BaseProcessor,
             job_id: str,
             execution_request: Execution
-    ) -> Tuple[JobStatus, Optional[Dict[str, Any]]]:
+    ) -> ExecutionResultInternal:
         """
         Synchronous execution handler
 
@@ -255,10 +280,11 @@ class BaseManager:
             started=now,
             progress=5,
         ))
-
         try:
-            current_status, execution_result = processor.execute(
-                job_id, execution_request)
+            execution_result = processor.execute(
+                job_id, execution_request,
+                results_storage_root=self.output_dir
+            )
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
@@ -268,7 +294,7 @@ class BaseManager:
             # endpoint, even if the /result endpoint correctly returns the
             # failure information (i.e. what one might assume is a 200
             # response).
-            current_status = JobStatus.failed
+            execution_result = ExecutionResultInternal(status=JobStatus.failed)
             code = 'InvalidParameterValue'
             outputs = {
                 'code': code,
@@ -280,11 +306,10 @@ class BaseManager:
                 jobID=job_id,
                 finished=now,
                 updated=now,
-                status=current_status,
+                status=execution_result.status,
                 message=f"{code}: {outputs['description']}"
             ))
-            execution_result = None
-        return current_status, execution_result
+        return execution_result
 
     def execute_process(
             self,
@@ -294,9 +319,8 @@ class BaseManager:
                 RequestedProcessExecutionMode] = None
     ) -> Tuple[
         str,
-        Optional[str],
-        JobStatus,
-        Any,
+        ExecutionResultInternal,
+        ProcessExecutionMode,
         Optional[Dict[str, str]]
     ]:
         """
@@ -307,10 +331,9 @@ class BaseManager:
         :param requested_execution_mode: optionally specifying sync or
                                          async processing.
 
-        :returns: tuple of generated job_id, optional response media type,
-                  response payload, current job status and
-                  optionally additional HTTP headers to include in the final
-                  response
+        :returns: tuple of generated job_id, execution results,
+                  chosen execution mode and optionally additional HTTP headers
+                  to include in the final response
         """
 
         job_id = str(uuid.uuid1())
@@ -321,21 +344,12 @@ class BaseManager:
             LOGGER.debug('Asynchronous execution')
             current_status = self._execute_handler_async(
                 processor, job_id, execution_request)
-            execution_result = None
-            media_type = "application/json"
+            execution_result = ExecutionResultInternal(status=current_status)
         else:
             LOGGER.debug('Synchronous execution')
             current_status, execution_result = self._execute_handler_sync(
                 processor, job_id, execution_request)
-            media_type = _select_execution_media_type(
-                processor, execution_request, execution_result)
-        return (
-            job_id,
-            media_type,
-            current_status,
-            execution_result,
-            additional_headers
-        )
+        return job_id, execution_result, chosen_mode, additional_headers
 
     def _select_execution_mode(
             self,
@@ -384,49 +398,3 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
-
-
-def _select_execution_media_type(
-        processor: BaseProcessor,
-        execution_request: Execution,
-        execution_result: ExecutionResultInternal
-) -> Optional[str]:
-    """Select appropriate media type for execution response.
-
-    The response of an execution can have different media types depending on
-    the request and on the nature of the executed process.
-
-    - If the request includes a response type of `DOCUMENT`, then the media
-      type is for a JSON document
-    - If the request includes a response type of `RAW` then there are multiple
-      possibilities, depening on the number of outputs that have been generated
-      and on their requested transmission value
-    """
-    if execution_request.type_ == ProcessResponseType.raw:
-        if len(processor.process_metadata.outputs) == 1:
-            requested_meta = execution_request.outputs.items()[0]
-            requested_mode = requested_meta.transmission_mode
-            if requested_mode == ProcessOutputTransmissionMode.VALUE:
-                result = (
-                    execution_result.outputs.items()[0].media_type)
-            else:
-                result = None
-        elif len(processor.process_metadata.outputs) > 1:
-            # if there are multiple outputs, maybe use a multipart/related
-            # media type, depending on the transmission mode
-            for out_id, out_request in execution_request.outputs.items():
-                by_value = (
-                        out_request.transmission_mode ==
-                        ProcessOutputTransmissionMode.VALUE
-                )
-                if by_value:
-                    result = 'multipart/related'
-                    break
-            else:
-                result = None
-        else:
-            # the process does not specify any outputs?
-            raise RuntimeError
-    else:  # response type is `document`
-        result = 'application/json'
-    return result

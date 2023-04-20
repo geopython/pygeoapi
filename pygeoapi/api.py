@@ -39,7 +39,6 @@ Returns content from plugins and sets responses.
 """
 
 import asyncio
-from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime, timezone
 from functools import partial
@@ -53,7 +52,6 @@ from typing import Any, Dict, List, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
-import pydantic
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
@@ -67,20 +65,14 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.models.cql import CQLModel
+from pygeoapi.models import processes as process_models
 from pygeoapi.models.processes import (
-    Execution,
     JobStatus,
-    JobStatusInfoInternal,
-    JobStatusInfoRead,
-    JobList,
     Link,
-    ProcessDescription,
-    ProcessList,
-    RequestedProcessExecutionMode,
 )
 from pygeoapi.models.provider.base import TilesMetadataFormat
+from pygeoapi.process.api import ProcessApi
 from pygeoapi.process.base import (
-    ProcessorExecuteError,
     ProcessorGenericError,
 )
 from pygeoapi.process.manager import get_manager
@@ -96,7 +88,8 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
-from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
+from pygeoapi.util import (dategetter, CHARSET, DATETIME_FORMAT, UrlPrefetcher,
+                           F_JSON, F_HTML, F_JSONLD, F_GZIP, FORMAT_TYPES,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value,
                            json_serial, parse_positive_int_parameter,
@@ -114,22 +107,6 @@ HEADERS = {
     'X-Powered-By': f'pygeoapi {__version__}'
 }
 
-CHARSET = ['utf-8']
-F_JSON = 'json'
-F_HTML = 'html'
-F_JSONLD = 'jsonld'
-F_GZIP = 'gzip'
-F_PNG = 'png'
-F_MVT = 'mvt'
-
-#: Formats allowed for ?f= requests (order matters for complex MIME types)
-FORMAT_TYPES = OrderedDict((
-    (F_HTML, 'text/html'),
-    (F_JSONLD, 'application/ld+json'),
-    (F_JSON, 'application/json'),
-    (F_PNG, 'image/png'),
-    (F_MVT, 'application/vnd.mapbox-vector-tile')
-))
 
 #: Locale used for system responses (e.g. exceptions)
 SYSTEM_LOCALE = l10n.Locale('en', 'US')
@@ -686,7 +663,7 @@ class API:
         # Create config clone for HTML templating with modified base URL
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
-        self.manager = get_manager(self.config)
+        self.process_api = ProcessApi.from_main_api(self)
         LOGGER.info('Process manager plugin loaded')
 
     @gzip
@@ -3231,23 +3208,6 @@ class API:
             return headers, HTTPStatus.BAD_REQUEST, to_json(
                 data, self.pretty_print)
 
-    def _get_processes(self, known_processes: Dict, limit: Optional[int] = None) -> List:
-        LOGGER.debug('Processing limit parameter')
-        if limit is None:
-            relevant = known_processes.keys()
-        elif limit > 0:
-            relevant = known_processes[:limit]
-        else:
-            LOGGER.warning(f"Invalid limit parameter: {limit!r}, ignoring it")
-            relevant = known_processes.keys()
-
-        processes = []
-        for process_id in relevant:
-            processor = load_plugin(
-                'process', known_processes[process_id]['processor'])
-            processes.append(processor)
-        return processes
-
     @gzip
     @pre_process
     @jsonldify
@@ -3267,58 +3227,9 @@ class API:
         """
 
         if request.is_valid():
-            pagination_links = []
-            if len(self.manager.processes) > 0:
-                if process is None:
-                    relevant, pagination_links = self._filter_processes(request)
-                else:
-                    try:
-                        processor = self.manager.get_processor(process)
-                    except ProcessorGenericError:
-                        # error, could not find process with that id
-                        # TODO: raise an error to the client
-                        relevant = []
-                    else:
-                        relevant = [processor.process_metadata]
-            else:
-                relevant = []
-            process_descriptions = []
-            for description in relevant:
-                translated_description = l10n.translate_model(
-                    description, request.locale)
-                translated_description.links.extend(
-                    _generate_process_description_links(
-                        request,
-                        description.id,
-                        self.base_url,
-                        self.default_locale)
-                )
-                process_descriptions.append(translated_description)
-            process_url = f"{self.base_url}/processes"
-            response_contents = ProcessList(
-                processes=process_descriptions,
-                links=[
-                    Link(
-                        type=FORMAT_TYPES[F_JSON],
-                        rel=request.get_linkrel(F_JSON),
-                        title="This document as JSON",
-                        href=f"{process_url}?f={F_JSON}"
-                    ),
-                    Link(
-                        type=FORMAT_TYPES[F_JSONLD],
-                        rel=request.get_linkrel(F_JSONLD),
-                        title="This document as RDF (JSON-LD)",
-                        href=f"{process_url}?f={F_JSONLD}"
-                    ),
-                    Link(
-                        type=FORMAT_TYPES[F_HTML],
-                        rel=request.get_linkrel(F_HTML),
-                        title="This document as HTML",
-                        href=f"{process_url}?f={F_HTML}"
-                    ),
-                    *pagination_links
-                ]
-            ).dict(by_alias=True)
+            process_list = self.process_api.describe_processes(
+                request, process)
+            response_contents = process_list.dict(by_alias=True)
             if request.format == F_HTML:
                 j2_template = Path(
                     "processes/index.html" if process is None
@@ -3350,29 +3261,8 @@ class API:
         :returns: tuple of headers, status code, content
         """
         if request.is_valid():
-            response_links = []
-            for media_type, name in ((F_HTML, "HTML"), (F_JSON, "JSON")):
-                response_links.append(
-                    Link(
-                        href=f"{self.base_url}/jobs/?f={media_type}",
-                        type=FORMAT_TYPES[media_type],
-                        rel=request.get_linkrel(media_type),
-                        title=f'Job list as {name}'
-                    )
-                )
-            if job_id is not None:
-                jobs = [self.manager.get_job(job_id)]
-            else:
-                jobs, pagination_links = self._filter_jobs(request)
-                response_links.extend(pagination_links)
-
-            job_reads = []
-            for job in jobs:
-                job_reads.append(_prepare_job_for_response(job, self.base_url))
-
-            response_contents = JobList(
-                jobs=job_reads, links=response_links).dict(by_alias=True)
-
+            job_list = self.process_api.get_jobs(request, job_id)
+            response_contents = job_list.dict(by_alias=True)
             if request.format == F_HTML:
                 j2_template = Path(
                     'jobs/index.html' if job_id is None else 'jobs/job.html')
@@ -3411,69 +3301,21 @@ class API:
 
         if request.is_valid():
             # Responses are always in US English only
-            headers = request.get_response_headers(
-                SYSTEM_LOCALE, **self.api_headers)
-            if process_id in self.manager.processes:
-                try:
-                    payload = json.loads(request.data)
-                    execution_request = Execution(**payload)
-                except (
-                json.decoder.JSONDecodeError,
-                    TypeError, 
-                    pydantic.ValidationError
-                ) as err:
-                    LOGGER.error(err)
-                    result = self.get_exception(
-                        HTTPStatus.BAD_REQUEST, headers, request.format,
-                        'InvalidParameterValue', 'invalid request data')
-                else:
-                    try:
-                        execution_mode = RequestedProcessExecutionMode(
-                            request.headers.get('Prefer'))
-                    except ValueError:
-                        execution_mode = None
-                    try:
-                        execution_result = self.manager.execute_process(
-                            process_id, execution_request, execution_mode)
-                        job_id, mime_type, outputs, status = execution_result
-                    except (ProcessorExecuteError, ProcessorGenericError) as err:
-                        LOGGER.error(err)
-                        result = self.get_exception(
-                            HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                            request.format, 'NoApplicableCode',
-                            'Processing error'
-                        )
-                    else:
-                        # as per OAPIP:
-                        # - if the execution mode is sync and the server
-                        #   creates a job, then the response shall include
-                        #   Link header with rel=monitor, pointing to the
-                        #   created job
-                        headers['Location'] = f"{self.base_url}/jobs/{job_id}"
-                        response = {}
-                        if status == JobStatus.failed:
-                            response = outputs
-
-                        if data.get('response', 'raw') == 'raw':
-                            headers['Content-Type'] = mime_type
-                            response = outputs
-                        elif status not in (JobStatus.failed, JobStatus.accepted):
-                            response['outputs'] = [outputs]
-
-                        if status == JobStatus.accepted:
-                            http_status = HTTPStatus.CREATED
-                        else:
-                            http_status = HTTPStatus.OK
-
-                        if mime_type == 'application/json':
-                            response2 = to_json(response, self.pretty_print)
-                        else:
-                            response2 = response
+            try:
+                (
+                    status_code,
+                    payload,
+                    response_headers
+                ) = self.process_api.execute_process(
+                    process_id,
+                    request.headers,
+                    request.data,
+                    request.get_response_headers(SYSTEM_LOCALE, **self.api_headers)
+                )
+            except (RuntimeError, ProcessorGenericError) as err:
+                pass
             else:
-                msg =  'not found'
-                result = self.get_exception(
-                    HTTPStatus.NOT_FOUND, headers,
-                    request.format, 'NoSuchProcess', msg)
+                result = response_headers, status_code, payload
         else:
             result = self.get_format_exception(request)
         return result
@@ -4037,67 +3879,6 @@ class API:
 
         headers['Content-Crs'] = f'<{content_crs_uri}>'
 
-    def _filter_processes(
-            self, request: Union[APIRequest, Any]
-    ) -> Tuple[List[ProcessDescription], List[Link]]:
-        limit = parse_positive_int_parameter(
-            request.params.get("limit"))
-        offset = parse_positive_int_parameter(
-            request.params.get("offset"), default_value=0)
-        total_filtered, processes = self.manager.get_process_descriptions(
-            limit, offset)
-        pagination_links = _get_pagination_links(
-            len(processes), limit, offset, total_filtered,
-            base_url=f"{self.base_url}/processes",
-        )
-        return processes, pagination_links
-
-    def _filter_jobs(
-            self, request: Union[APIRequest, Any]
-    ) -> Tuple[List[JobStatusInfoInternal], List[Link]]:
-        requested_filters = {
-            "type": request.params.getlist("type"),
-            "processID": request.params.getlist("processID"),
-            "status": request.params.getlist("status"),
-            "datetime": request.params.get("datetime"),
-            "minDuration": request.params.get("minDuration"),
-            "maxDuration": request.params.get("maxDuration"),
-        }
-        requested_filters = {
-            k: v for k, v in requested_filters.items() if v is not None}
-        try:
-            status_filter = (
-                    [JobStatus(s) for s in requested_filters["status"]]
-                    or None
-            )
-        except ValueError:
-            LOGGER.warning(
-                f"Received invalid status: {requested_filters['status']!r}"
-            )
-            status_filter = None
-        limit = parse_positive_int_parameter(
-            request.params.get("limit"), default_value=10)
-        offset = parse_positive_int_parameter(
-            request.params.get("offset"), default_value=0)
-        total_filtered_jobs, jobs = self.manager.get_jobs(
-            type_=requested_filters.get("type") or None,
-            process_id=requested_filters.get("processID") or None,
-            status=status_filter,
-            date_time=requested_filters.get("datetime"),
-            min_duration_seconds=parse_positive_int_parameter(
-                requested_filters.get("minDuration")),
-            max_duration_seconds=parse_positive_int_parameter(
-                requested_filters.get("maxDuration")),
-            limit=limit,
-            offset=offset,
-        )
-        pagination_links = _get_pagination_links(
-            len(jobs), limit, offset, total_filtered_jobs,
-            base_url=f"{self.base_url}/jobs",
-            querystring_params=requested_filters
-        )
-        return jobs, pagination_links
-
 
 def validate_bbox(value=None) -> list:
     """
@@ -4278,40 +4059,6 @@ def validate_subset(value: str) -> dict:
     return subsets
 
 
-def _prepare_job_for_response(
-        job_status: JobStatusInfoInternal,
-        base_url: str
-) -> JobStatusInfoRead:
-    result_related_statuses = (
-        JobStatus.successful,
-        JobStatus.running,
-        JobStatus.accepted
-    )
-    links = []
-    if job_status.status in result_related_statuses:
-        result_url = f"{base_url}/jobs/{job_status.job_id}/results"  # noqa
-        links.extend(
-            [
-                Link(
-                    type=FORMAT_TYPES[F_HTML],
-                    rel='about',
-                    title=f'Job results as HTML',
-                    href=f'{result_url}?f={F_HTML}',
-                ),
-                Link(
-                    type=FORMAT_TYPES[F_JSON],
-                    rel='about',
-                    title=f'Job results as JSON',
-                    href=f'{result_url}?f={F_JSON}',
-                ),
-            ]
-        )
-    return JobStatusInfoRead(
-        **job_status.dict(by_alias=True),
-        links=links
-    )
-
-
 def _get_pagination_links(
         num_returned_records: int,
         limit: int,
@@ -4378,51 +4125,3 @@ def _get_pagination_links(
             ]
         )
     return result
-
-
-def _generate_process_description_links(
-        request,
-        process_description_id: str,
-        base_url: str,
-        locale
-) -> List[process_models.Link]:
-    """Generate links for a process description"""
-    process_url = f"{base_url}/processes/{process_description_id}"
-    jobs_url = f"{base_url}/jobs"
-    return [
-        process_models.Link(
-            type=FORMAT_TYPES[F_JSON],
-            rel=request.get_linkrel(F_JSON),
-            href=f'{process_url}?f={F_JSON}',
-            title='Process description as JSON',
-            hreflang=locale,
-        ),
-        process_models.Link(
-            type=FORMAT_TYPES[F_HTML],
-            rel=request.get_linkrel(F_HTML),
-            href=f'{process_url}?f={F_HTML}',
-            title='Process description as HTML',
-            hreflang=locale
-        ),
-        process_models.Link(
-            type=FORMAT_TYPES[F_JSON],
-            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
-            href=f'{jobs_url}?f={F_JSON}',
-            title='jobs for this process as JSON',
-            hreflang=locale
-        ),
-        process_models.Link(
-            type=FORMAT_TYPES[F_HTML],
-            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
-            href=f'{jobs_url}?f={F_HTML}',
-            title='jobs for this process as HTML',
-            hreflang=locale
-        ),
-        process_models.Link(
-            type=FORMAT_TYPES[F_JSON],
-            rel='http://www.opengis.net/def/rel/ogc/1.0/execute',
-            href=f'{process_url}/execution?f={F_JSON}',
-            title='Execution for this process as JSON',
-            hreflang=locale
-        )
-    ]

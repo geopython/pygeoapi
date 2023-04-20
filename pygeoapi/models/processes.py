@@ -93,6 +93,21 @@ class Link(pydantic.BaseModel):
     title: Optional[str] = None
     href_lang: Optional[str] = pydantic.Field(None, alias="hreflang")
 
+    def as_link_header(self) -> str:
+        result = f'<{self.href}>'
+        fields = (
+            'rel',
+            'title',
+            'type_',
+            'href_lang',
+        )
+        for field_name in fields:
+            value = getattr(self, field_name, None)
+            if value is not None:
+                fragment = f'{self.__fields__[field_name].alias}="{value}"'
+                result = '; '.join((result, fragment))
+        return result
+
 
 # this is a 'pydantification' of the schema.yml fragment, as shown
 # on the OAPI - Processes spec
@@ -327,6 +342,18 @@ class OutputExecutionResultInternal(pydantic.BaseModel):
 class ExecutionResultInternal(pydantic.BaseModel):
     status: JobStatus
     outputs: Optional[Dict[str, OutputExecutionResultInternal]] = None
+
+
+class ExecutionDocumentSingleOutput(pydantic.BaseModel):
+    __root__: Union[
+        ExecutionInputValueNoObject,
+        ExecutionQualifiedInputValue,
+        Link,
+    ]
+
+
+class ExecutionDocumentResult(pydantic.BaseModel):
+    __root__: Dict[str, ExecutionDocumentSingleOutput]
 
 
 class JobList(pydantic.BaseModel):
