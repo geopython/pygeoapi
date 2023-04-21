@@ -422,8 +422,7 @@ class BaseManager:
             # according to OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')
             result = ProcessExecutionMode.sync_execute
-            additional_headers = {
-                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+            additional_headers = {}
         return result, additional_headers
 
     def __repr__(self):
