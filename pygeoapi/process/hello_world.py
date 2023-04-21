@@ -27,16 +27,17 @@
 #
 # =================================================================
 
+import datetime as dt
 import logging
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Callable, Optional
 
+from pygeoapi.process import exceptions
 from pygeoapi.models.processes import (
-    Execution,
-    ExecutionResultInternal,
+    ExecuteRequest,
     OutputExecutionResultInternal,
     JobStatus,
-    Link,
+    JobStatusInfoInternal,
     ProcessDescription,
     ProcessInput,
     ProcessIOSchema,
@@ -45,8 +46,8 @@ from pygeoapi.models.processes import (
     ProcessOutput,
     ProcessOutputTransmissionMode,
 )
-from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
-
+from pygeoapi.models.base import Link
+from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -134,28 +135,56 @@ class HelloWorldProcessor(BaseProcessor):
     def execute(
             self,
             job_id: str,
-            execution_request: Execution,
+            execution_request: ExecuteRequest,
             results_storage_root: Path,
-    ) -> ExecutionResultInternal:
-        inputs = execution_request.dict().get("inputs", {})
-        name = inputs.get("name")
+            progress_reporter: Optional[
+                Callable[[JobStatusInfoInternal], bool]
+            ] = None
+    ) -> JobStatusInfoInternal:
+        """Execute a job based on this process.
+
+        Execution shall follow these steps:
+
+        1. Retrieve inputs from the info present in the ``execution_request``
+           parameter
+        2. Perform the work of the job, generating eventual outputs
+        3. Store the generated outputs somewhere under the provided
+           ``results_storage_root``
+        4. Optionally, if the processing is long, report updates using the
+           provided ``progress_reporter``
+        5. Finally, return information related to the execution status and
+           generated outputs
+
+        If there is an error during execution, be sure to raise the
+        ``JobFailedError`` exception.
+        """
+        inputs = execution_request.dict().get('inputs', {})
+        name = inputs.get('name')
         if name is None:
-            raise ProcessorExecuteError('Cannot process without a name')
+            raise exceptions.JobFailedError('Cannot process without a name')
         message = inputs.get('message', '')
         echo_value = f'Hello {name}! {message}'.strip()
         echo_location = (
                 results_storage_root / self.process_metadata.id /
-                f"{job_id}-echo.txt"
+                f'{job_id}-echo.txt'
         )
         echo_location.parent.mkdir(parents=True, exist_ok=True)
-        with echo_location.open(mode="w", encoding="utf-8") as fh:
+        with echo_location.open(mode='w', encoding='utf-8') as fh:
             fh.write(echo_value)
-        return ExecutionResultInternal(
+        now = dt.datetime.now(dt.timezone.utc)
+        return JobStatusInfoInternal(
+            jobID=job_id,
+            processID=self.process_metadata.id,
+            message='Process completed successfully',
+            progress=100,
+            updated=now,
+            finished=now,
             status=JobStatus.successful,
-            outputs={
-                "echo": OutputExecutionResultInternal(
+            requested_outputs=execution_request.outputs,
+            generated_outputs={
+                'echo': OutputExecutionResultInternal(
                     location=str(echo_location),
-                    media_type="text/plain"
+                    media_type='text/plain'
                 ),
             }
         )

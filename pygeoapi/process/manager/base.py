@@ -29,19 +29,27 @@
 #
 # =================================================================
 
+from base64 import urlsafe_b64encode
 from collections import OrderedDict
 import datetime as dt
+from email.mime.multipart import MIMEMultipart
+from email.mime.nonmultipart import MIMENonMultipart
+import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
+from pygeoapi.models.base import Link
 from pygeoapi.models.processes import (
-    Execution,
-    ExecutionResultInternal,
+    ExecutionOutput,
+    ExecuteRequest,
+    ExecutionDocumentResult,
+    ExecutionDocumentSingleOutput,
     JobStatus,
     JobStatusInfoInternal,
+    OutputExecutionResultInternal,
     ProcessDescription,
     ProcessOutputTransmissionMode,
     ProcessExecutionMode,
@@ -51,8 +59,8 @@ from pygeoapi.models.processes import (
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
     BaseProcessor,
-    ProcessorGenericError,
 )
+from pygeoapi.process import exceptions
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,12 +114,8 @@ class BaseManager:
         )
         descriptions = []
         for _, conf in relevant_:
-            try:
-                processor = load_plugin("process", conf.get("processor"))
-            except ProcessorGenericError:
-                LOGGER.warning(f'Unable to load process {conf}, skipping...')
-            else:
-                descriptions.append(processor.process_metadata)
+            processor = load_plugin("process", conf.get("processor"))
+            descriptions.append(processor.process_metadata)
         return len(self.processes), descriptions
 
 
@@ -145,6 +149,7 @@ class BaseManager:
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
+        :raise: JobError: if the job list cannot be retrieved
         :returns: a two-element tuple with the total number of jobs that
                   match the filtering parameters and a list of job statuses
         """
@@ -153,10 +158,11 @@ class BaseManager:
 
     def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
-        Add a job
+        Persist job details.
 
         :param job_status: job status info
 
+        :raise: JobError: if job cannot be persisted
         :returns: `str` added job identifier
         """
 
@@ -167,15 +173,15 @@ class BaseManager:
 
         :param process_id: Identifier of the process
 
+        :raise UnknownProcessError: if the process cannot be created
         :returns: instance of the process
         """
 
         try:
             process_conf = self.processes[process_id]
         except KeyError as err:
-            msg = 'Invalid process identifier'
-            LOGGER.warning(msg)
-            raise ProcessorGenericError(msg) from err
+            raise exceptions.UnknownProcessError(
+                'Invalid process identifier') from err
         else:
             return load_plugin('process', process_conf['processor'])
 
@@ -185,40 +191,68 @@ class BaseManager:
 
         :param job_status: property updates for the job status info
 
+        :raise JobError: if the job cannot be updated
         :returns: `bool` of status result
         """
 
         raise NotImplementedError()
 
-    def get_job(self, job_id: str) -> Optional[JobStatusInfoInternal]:
+    def get_job(self, job_id: str) -> JobStatusInfoInternal:
         """
         Get a job (!)
 
         :param job_id: job identifier
 
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be retrieved
         :returns: job status info
         """
 
         raise NotImplementedError()
 
-    def get_job_result(self, job_id: str) -> Tuple[str, Any]:
+    def get_execution_response(
+            self,
+            requested_response_type: ProcessResponseType,
+            requested_outputs: Dict[str, ExecutionOutput],
+            generated_outputs: Dict[str, OutputExecutionResultInternal],
+    ) -> Tuple[bytes, Optional[str], List[Link]]:
+        """Get the details for an execution response."""
+        media_type = None
+        payload = None
+        additional_headers = []
+        if len(generated_outputs) == 0:
+            LOGGER.info('there are no outputs to include in the response')
+        elif requested_response_type == ProcessResponseType.raw:
+            if len(generated_outputs) == 1:
+                payload, media_type, additional_headers = (
+                    _get_execution_response_single_output(
+                        tuple(requested_outputs.values())[0],
+                        tuple(generated_outputs.values())[0],
+                    )
+                )
+            else:
+                any_by_value = ProcessOutputTransmissionMode.VALUE in [
+                    out.transmission_mode for out in
+                    requested_outputs.values()
+                ]
+                media_type = 'multipart/related' if any_by_value else None
+                payload = _get_execution_response_multiple_outputs(
+                    requested_outputs, generated_outputs)
+        else:
+            media_type = 'application/json'
+            payload = _get_execution_response_document(
+                requested_outputs, generated_outputs)
+        return payload, media_type, additional_headers
+
+    def delete_job(self, job_id: str) -> JobStatusInfoInternal:
         """
-        Returns the actual output from a completed process
+        Deletes a job and associated results, if any.
 
         :param job_id: job identifier
 
-        :returns: `tuple` of mimetype and raw output
-        """
-
-        raise NotImplementedError()
-
-    def delete_job(self, job_id: str) -> bool:
-        """
-        Deletes a job and associated results/outputs
-
-        :param job_id: job identifier
-
-        :returns: `bool` of status result
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be deleted
+        :returns: job status info of the dismissed job
         """
 
         raise NotImplementedError()
@@ -227,8 +261,8 @@ class BaseManager:
             self,
             processor: BaseProcessor,
             job_id: str,
-            execution_request: Execution
-    ) -> JobStatus:
+            execution_request: ExecuteRequest
+    ) -> None:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -238,22 +272,19 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
-
-        :returns: JobStatus.accepted (i.e. initial job status)
         """
-        _process = dummy.Process(
+        process_ = dummy.Process(
             target=self._execute_handler_sync,
             args=(processor, job_id, execution_request)
         )
-        _process.start()
-        return JobStatus.accepted
+        process_.start()
 
     def _execute_handler_sync(
             self,
             processor: BaseProcessor,
             job_id: str,
-            execution_request: Execution
-    ) -> ExecutionResultInternal:
+            execution_request: ExecuteRequest
+    ) -> None:
         """
         Synchronous execution handler
 
@@ -265,62 +296,46 @@ class BaseManager:
         :param job_id: job identifier
         :param execution_request: execution parameters
 
-        :returns: A tuple of process status and a dict with output ids as
-                  keys and respective output results as values
+        :raise: JobFailedError: if there is a processing error
         """
 
-        current_status = JobStatus.accepted
-        now = dt.datetime.now(dt.timezone.utc)
-        self.add_job(JobStatusInfoInternal(
-            jobID=job_id,
-            processID=processor.process_metadata.id,
-            status=current_status,
-            message='Job accepted and ready for execution',
-            created=now,
-            started=now,
-            progress=5,
-        ))
         try:
             execution_result = processor.execute(
                 job_id, execution_request,
-                results_storage_root=self.output_dir
+                results_storage_root=self.output_dir,
+                progress_reporter=self.update_job
             )
-        except Exception as err:
-            # TODO assess correct exception type and description to help users
-            # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
-            # must still be able to be retrieved with their error message
-            # intact, and the correct HTTP error status at the /results
-            # endpoint, even if the /result endpoint correctly returns the
-            # failure information (i.e. what one might assume is a 200
-            # response).
-            execution_result = ExecutionResultInternal(status=JobStatus.failed)
-            code = 'InvalidParameterValue'
-            outputs = {
-                'code': code,
-                'description': 'Error updating job'
-            }
-            LOGGER.error(err)
+        except (exceptions.JobFailedError, Exception) as err:
             now = dt.datetime.now(dt.timezone.utc)
-            self.update_job(JobStatusInfoInternal(
+            status_info = JobStatusInfoInternal(
+                jobID=job_id,
+                finished=now,
+                updated=now,
+                status=JobStatus.failed,
+                message=f'Job failed - {str(err)}',
+            )
+            self.update_job(status_info)
+            raise
+        else:
+            now = dt.datetime.now(dt.timezone.utc)
+            status_info = JobStatusInfoInternal(
                 jobID=job_id,
                 finished=now,
                 updated=now,
                 status=execution_result.status,
-                message=f"{code}: {outputs['description']}"
-            ))
-        return execution_result
+                message="Process completed successfully",
+                generated_outputs=execution_result.generated_outputs,
+            )
+            self.update_job(status_info)
 
     def execute_process(
             self,
             process_id: str,
-            execution_request: Execution,
+            execution_request: ExecuteRequest,
             requested_execution_mode: Optional[
                 RequestedProcessExecutionMode] = None
     ) -> Tuple[
-        str,
-        ExecutionResultInternal,
-        ProcessExecutionMode,
+        JobStatusInfoInternal,
         Optional[Dict[str, str]]
     ]:
         """
@@ -331,25 +346,40 @@ class BaseManager:
         :param requested_execution_mode: optionally specifying sync or
                                          async processing.
 
-        :returns: tuple of generated job_id, execution results,
-                  chosen execution mode and optionally additional HTTP headers
-                  to include in the final response
+        :raise: UnknownProcessError: if the process_id is not known
+        :raise: JobFailedError: if there is an error processing the job
+        :raise: JobError: if there is an error persisting job details
+        :returns: tuple of job status info, and optionally additional HTTP
+                  headers to include in the final response.
         """
 
-        job_id = str(uuid.uuid1())
         processor = self.get_processor(process_id)
         chosen_mode, additional_headers = self._select_execution_mode(
             requested_execution_mode, processor)
+
+        now = dt.datetime.now(dt.timezone.utc)
+        job_id = str(uuid.uuid1())
+        status_info = JobStatusInfoInternal(
+            jobID=job_id,
+            processID=processor.process_metadata.id,
+            status=JobStatus.accepted,
+            message='Job accepted and ready for execution',
+            created=now,
+            started=now,
+            progress=5,
+            negotiated_execution_mode=ProcessExecutionMode.sync_execute,
+            requested_response_type=execution_request.response,
+            requested_outputs=execution_request.outputs,
+        )
+        self.add_job(status_info)
         if chosen_mode == ProcessExecutionMode.async_execute:
             LOGGER.debug('Asynchronous execution')
-            current_status = self._execute_handler_async(
-                processor, job_id, execution_request)
-            execution_result = ExecutionResultInternal(status=current_status)
+            self._execute_handler_async(processor, job_id, execution_request)
         else:
             LOGGER.debug('Synchronous execution')
-            current_status, execution_result = self._execute_handler_sync(
-                processor, job_id, execution_request)
-        return job_id, execution_result, chosen_mode, additional_headers
+            self._execute_handler_sync(processor, job_id, execution_request)
+        result_info = self.get_job(job_id)
+        return result_info, additional_headers
 
     def _select_execution_mode(
             self,
@@ -398,3 +428,116 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+def _get_execution_response_single_output(
+        requested_output: ExecutionOutput,
+        generated_output: OutputExecutionResultInternal,
+) -> Tuple[Optional[bytes], str, List]:
+    """Get process execution response for when there is a single process output
+
+    If there is a single execution output:
+    - If transmission is by value, return the output directly
+    - If transmission is by reference, include a link header
+      for where the output can be downloaded
+
+    :param requested_output: requested output parameters
+    :param generated_output: Generated output parameters
+    """
+    should_transmit_by_value = (
+            requested_output.transmission_mode ==
+            ProcessOutputTransmissionMode.VALUE
+    )
+    additional_headers = []
+    if should_transmit_by_value:
+        media_type = generated_output.media_type
+        payload = Path(generated_output.location).read_bytes()
+    else:
+        media_type = None
+        payload = None
+        additional_headers.append(
+            Link(href=None, rel=None, title=None).as_link_header()
+        )
+    return payload, media_type, additional_headers
+
+
+def _get_execution_response_multiple_outputs(
+        requested_outputs: Dict[str, ExecutionOutput],
+        generated_outputs: Dict[str, OutputExecutionResultInternal],
+) -> bytes:
+    """Generate an appropriate body for process execution HTTP responses
+
+    According to the OAProc spec (Requirement 31 -
+    /req/core/process-execute-sync-raw-mixed-multi),
+    if there are multiple outputs, then responses should have a media type
+    of `multipart/related` and, depending on the transmission mode, either
+    include the contents directly in the response, or include
+    links to them.
+    """
+    payload = MIMEMultipart("related")
+    for output_id, generated_output in generated_outputs.items():
+        requested = requested_outputs.get(output_id)
+        part = MIMENonMultipart(
+            *generated_output.media_type.split('/'), )
+        part.set_param('Type', generated_output.media_type)
+        part.add_header('Content-ID', output_id)
+        should_transmit_by_value = (
+                requested.transmission_mode ==
+                ProcessOutputTransmissionMode.VALUE
+        )
+        if should_transmit_by_value:
+            data_ = Path(generated_output.location).read_bytes()
+            part.set_payload(data_)
+            if payload.get_param("Type") is None:
+                # set the `Type` of the payload as the same media
+                # type of the first output
+                payload.set_param(
+                    "Type", generated_output.media_type)
+        else:
+            part.add_header('Content-Location', None)
+        payload.attach(part)
+    return payload.as_bytes()
+
+
+def _get_execution_response_document(
+        requested_outputs: Dict[str, ExecutionOutput],
+        generated_outputs: Dict[str, OutputExecutionResultInternal],
+) -> str:
+    """Prepare process execution response when the requested type is `document`
+
+    :param execution_request: The parameters that originated the execution
+    :param execution_result: Process execution results
+    """
+    output_results = {}
+    for out_id, requested_output in requested_outputs.items():
+        should_transmit_by_value = (
+                requested_output.transmission_mode ==
+                ProcessOutputTransmissionMode.VALUE
+        )
+        generated_output = generated_outputs.get(out_id)
+        if should_transmit_by_value:
+            # if the output's media type is text based we should be
+            # able to read the file as json.
+            # if the output's media type is not text based we should
+            # be able to base64 encode the file contents
+            output_data = Path(generated_output.location).read_bytes()
+            try:
+                parsed_output_data = json.loads(output_data)
+                out_result = (
+                    ExecutionDocumentSingleOutput(
+                        __root__=parsed_output_data)
+                )
+            except json.JSONDecodeError:
+                serialized_output_data = str(
+                    urlsafe_b64encode(output_data))
+                out_result = (
+                    ExecutionDocumentSingleOutput(
+                        __root__=serialized_output_data)
+                )
+        else:
+            out_result = ExecutionDocumentSingleOutput(
+                __root__=Link(href=None)
+            )
+        output_results[out_id] = out_result
+    result = ExecutionDocumentResult(__root__=output_results)
+    return result.json(by_alias=True, exclude_none=True)

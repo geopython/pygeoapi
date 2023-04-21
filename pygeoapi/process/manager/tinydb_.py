@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,39 +36,31 @@ except ModuleNotFoundError:
     fcntl = None
 
 import functools
-import json
 import logging
 import operator
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pydantic
 import tinydb
 
-from pygeoapi.models.processes import JobStatusInfoInternal
+from pygeoapi.process import exceptions
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import DATETIME_FORMAT, JobStatus
+from pygeoapi.models.processes import (
+    JobStatus,
+    JobStatusInfoInternal
+)
+from pygeoapi.util import DATETIME_FORMAT
 
 LOGGER = logging.getLogger(__name__)
 
 
 class TinyDBManager(BaseManager):
     """TinyDB Manager"""
+    is_async = True
 
     _JOB_ID = "jobID"
     _JOB_SORT_KEY = "created"
-
-    def __init__(self, manager_def: dict):
-        """
-        Initialize object
-
-        :param manager_def: manager definition
-
-        :returns: `pygeoapi.process.manager.base.BaseManager`
-        """
-
-        super().__init__(manager_def)
-        self.is_async = True
 
     def _connect(self, mode: str = 'r') -> bool:
         """
@@ -105,7 +99,12 @@ class TinyDBManager(BaseManager):
             offset: Optional[int] = 0,
     ) -> Tuple[int, List[JobStatusInfoInternal]]:
         """
-        Get jobs
+        Get process jobs, optionally filtered by relevant parameters.
+
+        The filtering parameters follow their respective definition in
+        OAProc spec, as per:
+
+        https://docs.ogc.org/is/18-062r2/18-062r2.html#toc49
 
         :param type_: process types to be returned
         :param process_id: identifiers of the parent processes of jobs
@@ -118,6 +117,7 @@ class TinyDBManager(BaseManager):
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
+        :raise: JobError: if the job list cannot be retrieved
         :returns: a two-element tuple with the total number of jobs that
                   match the filtering parameters and a list of job statuses
         """
@@ -175,38 +175,50 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return len(all_filtered_jobs), result
 
+    def _serialize_job_status_info(
+            self, job_status: JobStatusInfoInternal) -> Dict:
+        serialized_properties = {
+            'created': job_status.created.strftime(
+                DATETIME_FORMAT) if job_status.created is not None else None,
+            'started': job_status.started.strftime(
+                DATETIME_FORMAT) if job_status.started is not None else None,
+            'finished': job_status.finished.strftime(
+                DATETIME_FORMAT) if job_status.finished is not None else None,
+            'updated': job_status.updated.strftime(
+                DATETIME_FORMAT) if job_status.updated is not None else None,
+            'status': job_status.status.value,
+            'negotiated_execution_mode': (
+                job_status.negotiated_execution_mode.value if
+                job_status.negotiated_execution_mode is not None else None
+            ),
+            'requested_response_type': (
+                job_status.requested_response_type.value if
+                job_status.requested_response_type is not None else None
+            ),
+        }
+        serialized_properties = {
+            k: v for k, v in serialized_properties.items() if v is not None}
+        return {
+            **serialized_properties,
+            **job_status.dict(
+                by_alias=True,
+                exclude={*serialized_properties.keys()},
+                exclude_none=True
+            )
+        }
+
     def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
         Add a job
 
         :param job_status: job status
 
-        :returns: identifier of added job
+        :raise: JobError: if job cannot be persisted
+        :returns: `str` added job identifier
         """
 
         self._connect(mode='w')
-        db_job = {
-            "created": (
-                job_status.created.strftime(DATETIME_FORMAT)
-                if job_status.created is not None else None
-            ),
-            "started": (
-                job_status.started.strftime(DATETIME_FORMAT)
-                if job_status.started is not None else None
-            ),
-            "finished": (
-                job_status.finished.strftime(DATETIME_FORMAT)
-                if job_status.finished is not None else None
-            ),
-            "updated": (
-                job_status.updated.strftime(DATETIME_FORMAT)
-                if job_status.updated is not None else None
-            ),
-            **job_status.dict(
-                by_alias=True,
-                exclude={"created", "started", "finished", "updated"}
-            )
-        }
+        db_job = self._serialize_job_status_info(job_status)
         doc_id = self.db.insert(db_job)
         self.db.close()
 
@@ -221,30 +233,12 @@ class TinyDBManager(BaseManager):
 
         :param job_status: property updates for the job status info
 
+        :raise JobError: if the job cannot be updated
         :returns: `bool` of status result
         """
 
         self._connect(mode='w')
-        temporal_properties = {
-            "created": job_status.created.strftime(
-                DATETIME_FORMAT) if job_status.created is not None else None,
-            "started": job_status.started.strftime(
-                DATETIME_FORMAT) if job_status.started is not None else None,
-            "finished": job_status.finished.strftime(
-                DATETIME_FORMAT) if job_status.finished is not None else None,
-            "updated": job_status.updated.strftime(
-                DATETIME_FORMAT) if job_status.updated is not None else None,
-        }
-        temporal_properties = {
-            k: v for k, v in temporal_properties.items() if v is not None}
-        db_job = {
-            **temporal_properties,
-            **job_status.dict(
-                by_alias=True,
-                exclude={*temporal_properties.keys()},
-                exclude_none=True
-            )
-        }
+        db_job = self._serialize_job_status_info(job_status)
         self.db.update(
             db_job,
             tinydb.where(self._JOB_ID) == job_status.job_id
@@ -252,66 +246,51 @@ class TinyDBManager(BaseManager):
         self.db.close()
         return True
 
-    def delete_job(self, job_id: str) -> bool:
+    def delete_job(self, job_id: str) -> JobStatusInfoInternal:
         """
-        Deletes a job
+        Deletes a job and associated results, if any.
 
         :param job_id: job identifier
 
-        :return `bool` of status result
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be deleted
+        :returns: job status info of the dismissed job
         """
-        # delete result file if present
-        job_status = self.get_job(job_id)
-        if job_status:
-            if job_status.location and self.output_dir is not None:
-                Path(job_status.location).unlink()
 
+        job_status = self.get_job(job_id)
+        for generated_output_detail in job_status.generated_outputs.values():
+            # TODO: guard for deletion errors
+            Path(generated_output_detail.location).unlink(missing_ok=True)
         self._connect(mode='w')
-        removed = bool(self.db.remove(tinydb.where(self._JOB_ID) == job_id))
+        self.db.remove(tinydb.where(self._JOB_ID) == job_id)
         self.db.close()
 
-        return removed
+        return JobStatusInfoInternal(
+            **job_status.dict(by_alias=True, exclude_none=True),
+            status=JobStatus.dismissed,
+            message='Job dismissed successfully'
+        )
 
-    def get_job(self, job_id: str) -> Optional[JobStatusInfoInternal]:
+    def get_job(self, job_id: str) -> JobStatusInfoInternal:
         """
         Get a single job
 
         :param job_id: job identifier
 
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be retrieved
         :returns: job status info
         """
 
         self._connect()
         query = tinydb.Query()
         result = self.db.search(query[self._JOB_ID] == job_id)
+        self.db.close()
         if len(result) > 0:
             job = JobStatusInfoInternal(**result[0])
         else:
-            job = None
-        self.db.close()
+            raise exceptions.JobNotFoundError('Invalid job_id')
         return job
-
-    def get_job_result(self, job_id: str) -> Tuple[str, Any]:
-        """
-        Get a job's status, and actual output of executing the process
-
-        :param job_id: job identifier
-
-        :returns: `tuple` of mimetype and raw output
-        """
-
-        job_status = self.get_job(job_id)
-        if job_status is None:  # job does not exist
-            result = None
-        elif job_status.status != JobStatus.successful:  # Job is incomplete
-            result = None
-        elif job_status.location is None:
-            # Job data was not written for some reason
-            # TODO log/raise exception?
-            result = None
-        else:
-            result = json.loads(Path(job_status.location).read_text())
-        return "application/json", result
 
     def __repr__(self):
         return f'<TinyDBManager> {self.name}'

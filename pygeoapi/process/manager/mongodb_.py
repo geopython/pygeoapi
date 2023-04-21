@@ -34,17 +34,18 @@ from typing import List, Optional, Tuple
 import pydantic
 from pymongo import MongoClient
 
+from pygeoapi.process import exceptions
 from pygeoapi.models.processes import JobStatusInfoInternal
+from pygeoapi.models.processes import (
+    JobStatus,
+)
 from pygeoapi.process.manager.base import BaseManager
-from pygeoapi.util import JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
 
 class MongoDBManager(BaseManager):
-    def __init__(self, manager_def):
-        super().__init__(manager_def)
-        self.is_async = True
+    is_async = True
 
     def _connect(self):
         try:
@@ -112,50 +113,60 @@ class MongoDBManager(BaseManager):
 
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
             return 0, result
-        except Exception:
+        except Exception as err:
             LOGGER.error("JOBMANAGER - get_jobs error",
                          exc_info=(traceback))
-            return False
+            raise exceptions.JobError('Could not retrieve jobs') from err
 
-    def add_job(self, job_metadata):
+    def add_job(self, job_status: JobStatusInfoInternal):
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
-            doc_id = collection.insert_one(job_metadata)
+            doc_id = collection.insert_one(
+                job_status.dict(by_alias=True, exclude_none=True))
             LOGGER.info("JOBMANAGER - MongoDB job added")
             return doc_id
-        except Exception:
+        except Exception as err:
             LOGGER.error("JOBMANAGER - add_job error",
                          exc_info=(traceback))
-            return False
+            raise exceptions.JobError('Could not persist job details') from err
 
-    def update_job(self, job_id, update_dict):
+    def update_job(self, job_status: JobStatusInfoInternal):
+        job_status_info = self.get_job(job_status.job_id)
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
-            entry = collection.find_one({"identifier": job_id})
-            collection.update_one(entry, {"$set": update_dict})
+            entry = collection.find_one({"identifier": job_status_info.job_id})
+            collection.update_one(
+                entry,
+                {"$set": job_status.dict(by_alias=True, exclude_none=True)}
+            )
             LOGGER.info("JOBMANAGER - MongoDB job updated")
             return True
-        except Exception:
+        except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB update_job error",
                          exc_info=(traceback))
-            return False
+            raise exceptions.JobError('Could not update job') from err
 
     def delete_job(self, job_id):
+        job_status_info = self.get_job(job_id)
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
             collection.delete_one({"identifier": job_id})
             LOGGER.info("JOBMANAGER - MongoDB job deleted")
-            return True
-        except Exception:
+            return JobStatusInfoInternal(
+                **job_status_info.dict(by_alias=True, exclude_none=True),
+                status=JobStatus.dismissed,
+                message='Job dismissed successfully'
+            )
+        except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB delete_job error",
                          exc_info=(traceback))
-            return False
+            raise exceptions.JobError('Could not delete job') from err
 
     def get_job(self, job_id):
         try:
@@ -164,29 +175,12 @@ class MongoDBManager(BaseManager):
             collection = database.jobs
             entry = collection.find_one({"identifier": job_id})
             LOGGER.info("JOBMANAGER - MongoDB job queried")
-            return entry
-        except Exception:
+            return JobStatusInfoInternal(**entry)
+        except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB get_job error",
                          exc_info=(traceback))
-            return False
-
-    def get_job_result(self, job_id):
-        try:
-            self._connect()
-            database = self.db.job_manager_pygeoapi
-            collection = database.jobs
-            entry = collection.find_one({"identifier": job_id})
-            if entry["status"] != "successful":
-                LOGGER.info("JOBMANAGER - job not finished or failed")
-                return (None,)
-            with open(entry["location"], "r") as file:
-                data = json.load(file)
-            LOGGER.info("JOBMANAGER - MongoDB job result queried")
-            return entry["mimetype"], data
-        except Exception:
-            LOGGER.error("JOBMANAGER - MongoDB get_job_result error",
-                         exc_info=(traceback))
-            return False
+            raise exceptions.JobError(
+                f'Could not retrieve job {job_id} - {str(err)}') from err
 
     def __repr__(self):
         return f'<MongoDBManager> {self.name}'

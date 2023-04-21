@@ -41,10 +41,12 @@ from functools import partial
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
-from enum import Enum
 from pathlib import Path
-from typing import Any, IO, Union, List, Optional, Callable
-from urllib.parse import urlparse
+from typing import Any, Dict, IO, Union, List, Optional, Callable
+from urllib.parse import (
+    urlencode,
+    urlparse,
+)
 from urllib.request import urlopen
 
 import dateutil.parser
@@ -72,6 +74,7 @@ from requests.structures import CaseInsensitiveDict
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.models import config as config_models
+from pygeoapi.models.base import Link
 from pygeoapi.provider.base import ProviderTypeError
 
 
@@ -850,4 +853,89 @@ def parse_positive_int_parameter(
             result = default_value
     except (TypeError, ValueError):
         result = default_value
+    return result
+
+
+def get_pagination_links(
+        num_returned_records: int,
+        limit: int,
+        offset: int,
+        total_records: int,
+        base_url: str,
+        title_fragment: str,
+        querystring_params: Optional[Dict[str, str]] = None,
+) -> List[Link]:
+    """Produces a list of pagination-related links.
+
+    This function is useful for responses that show a list of records, as these
+    are likely to need to also supply pagination.
+
+    :param num_returned_records: how many records are being returned
+    :param limit: how many records shall be shown at a time
+    :param offset: when to start counting for those records to be shown
+    :param total_records: how many records are there in total
+    :param base_url: base URL for forming the pagination URLs
+    :param title_fragment: a fragment to add to link titles
+    :param querystring_params: A mapping with the query string parameters that
+                               are needed in order to produce valid pagination
+                               URLs
+
+    :return: a list of pagination-related links
+    """
+    result = []
+    base_querystring = {
+        'limit': limit,
+        **(querystring_params if querystring_params is not None else {})
+    }
+    if offset + num_returned_records < total_records:
+        querystring = {
+            'offset': offset + limit,
+            **base_querystring,
+        }
+        html_querystring = urlencode(
+            {'f': F_HTML, **querystring}, doseq=True)
+        json_querystring = urlencode(
+            {'f': F_JSON, **querystring}, doseq=True)
+        result.extend(
+            [
+                Link(
+                    href=f'{base_url}?{html_querystring}',
+                    type=FORMAT_TYPES[F_HTML],
+                    rel='next',
+                    title=f'Next page of {title_fragment}, as HTML'
+                ),
+                Link(
+                    href=f'{base_url}?{json_querystring}',
+                    type=FORMAT_TYPES[F_JSON],
+                    rel='next',
+                    title=f'Next page of {title_fragment}, as JSON'
+                ),
+            ]
+        )
+    if offset + num_returned_records > limit:
+        querystring = {
+            'offset': max(offset - limit, 0),
+            **base_querystring,
+        }
+        html_querystring = urlencode(
+            {'f': F_HTML, **querystring}, doseq=True)
+        json_querystring = urlencode(
+            {'f': F_JSON, **querystring}, doseq=True)
+        result.extend(
+            [
+                Link(
+                    href=f'{base_url}?{html_querystring}',
+                    type=FORMAT_TYPES[F_HTML],
+                    rel='prev',
+                    title=f'Previous page of {title_fragment}, as HTML'
+                ),
+                Link(
+                    href=f'{base_url}?{json_querystring}',
+                    type=FORMAT_TYPES[F_JSON],
+                    rel='prev',
+                    title=f'Previous page of {title_fragment}, as JSON'
+                )
+
+            ]
+        )
     return result

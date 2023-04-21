@@ -29,15 +29,10 @@
 """Utilities for dealing with the implementation of OGC API - Processes
 specification.
 """
-from base64 import urlsafe_b64encode
-from email.mime.multipart import MIMEMultipart
-from email.mime.nonmultipart import MIMENonMultipart
 from http import HTTPStatus
 import json
 import logging
-from pathlib import Path
 from typing import (
-    Any,
     Callable,
     Dict,
     List,
@@ -45,7 +40,6 @@ from typing import (
     MutableMapping,
     Optional,
     Tuple,
-    Union
 )
 import urllib.parse
 
@@ -53,33 +47,37 @@ from babel import Locale
 import pydantic
 from werkzeug.datastructures import ImmutableMultiDict
 
-from .. import l10n
-from ..models.processes import (
-    Execution,
-    ExecutionDocumentResult,
-    ExecutionDocumentSingleOutput,
-    ExecutionResultInternal,
+from pygeoapi import l10n
+from pygeoapi.models.processes import (
+    ExecuteRequest,
     JobList,
     JobStatus,
     JobStatusInfoInternal,
     JobStatusInfoRead,
-    Link,
     ProcessDescription,
     ProcessExecutionMode,
     ProcessList,
-    ProcessOutputTransmissionMode,
-    ProcessResponseType,
     RequestedProcessExecutionMode,
 )
-from ..process.base import ProcessorGenericError
-from ..process.manager import get_manager
-from ..process.manager.base import BaseManager
-from .. import util
+from pygeoapi.models.base import Link
+from pygeoapi.process import exceptions
+from pygeoapi.process.manager import get_manager
+from pygeoapi.process.manager.base import BaseManager
+from pygeoapi import util
 
 LOGGER = logging.getLogger(__name__)
 
 
 class ProcessApi:
+    """OGC API - Processes handler.
+
+    This handler sits behind the main pygeoapi API handler and provides
+    all job and process related features.
+
+    Note that methods on this class do not catch exceptions, as
+    it is expected that the main pygeoapi API handler will catch them and
+    generate appropriate responses from them.
+    """
     manager: BaseManager
     base_url: str
     default_locale: Locale
@@ -91,11 +89,14 @@ class ProcessApi:
         self.default_locale = default_locale
 
     @classmethod
-    def from_main_api(cls, api):
-        return cls(api.manager, api.base_url, api.default_locale)
-
-    @classmethod
     def from_config(cls, config: Dict):
+        """
+        Return an instance of this class from the main pygeoapi configuration.
+
+        :param config: pygeoapi configuration
+
+        :return: An instance of this class
+        """
         locales = l10n.get_locales(config)
         return cls(
             manager=get_manager(config),
@@ -109,7 +110,7 @@ class ProcessApi:
             process=None
     ) -> ProcessList:
         """
-        Provide processes metadata
+        Provide processes metadata.
 
         :param request: A request object
         :param process: process identifier, defaults to None to obtain
@@ -126,14 +127,8 @@ class ProcessApi:
                     raw_offset=request.params.get('offset')
                 )
             else:
-                try:
-                    processor = self.manager.get_processor(process)
-                except ProcessorGenericError:
-                    # error, could not find process with that id
-                    # TODO: raise an error to the client
-                    relevant = []
-                else:
-                    relevant = [processor.process_metadata]
+                processor = self.manager.get_processor(process)
+                relevant = [processor.process_metadata]
         else:
             relevant = []
         process_descriptions = []
@@ -180,7 +175,7 @@ class ProcessApi:
             request_headers: Mapping,
             request_payload: Optional[str],
             response_headers: MutableMapping,
-    ) -> Tuple[int, bytes, Dict[str, str]]:
+    ) -> Tuple[Dict[str, str], HTTPStatus, bytes]:
         """
         Execute process
 
@@ -189,68 +184,79 @@ class ProcessApi:
         :param response_headers: Already initialized response headers
         :param process_id: id of process to be executed
 
+        :raise InvalidJobParametersError: If the input parameters for the job
+                                          are not as expected
+        :raise: JobFailedError: if there is an error processing the job
         :returns: tuple of status code, response payload, HTTP headers
         """
 
         try:
             payload = json.loads(request_payload)
-            execution_request = Execution(**payload)
+            execution_request = ExecuteRequest(**payload)
         except (
                 json.JSONDecodeError,
                 TypeError,
                 pydantic.ValidationError
-        ) as err:
-            LOGGER.error(err)
-            raise RuntimeError("InvalidParameterValue")
+        ):
+            raise exceptions.InvalidJobParametersError("InvalidParameterValue")
         else:
             try:
                 execution_mode = RequestedProcessExecutionMode(
                     request_headers.get('Prefer'))
             except ValueError:
                 execution_mode = None
-            (
-                job_id,
-                execution_result,
-                chosen_execution_mode,
-                additional_headers
-            ) = self.manager.execute_process(
+            job_status_info, additional_headers = self.manager.execute_process(
                 process_id, execution_request, execution_mode)
-            if chosen_execution_mode == ProcessExecutionMode.sync_execute:
-                location_link = Link(href=f'{self.base_url}/jobs/{job_id}')
+            is_sync = (
+                    job_status_info.negotiated_execution_mode ==
+                    ProcessExecutionMode.sync_execute
+            )
+            if is_sync:
+                location_link = Link(
+                    href=f'{self.base_url}/jobs/{job_status_info.job_id}')
                 pass  # FIXME
                 # as per OAproc, if the execution mode is sync and the server
                 # creates a job, then the response shall include
                 # Link header with rel=monitor, pointing to the
                 # created job
 
-            payload, media_type, additional_headers = get_execution_response(
-                execution_request, execution_result)
-
+            (
+                payload,
+                media_type,
+                additional_headers
+            ) = self.manager.get_execution_response(
+                execution_request.response,
+                execution_request.outputs,
+                job_status_info.generated_outputs
+            )
+            response_headers.update(additional_headers)
             response_headers['Content-Type'] = media_type
-            if execution_result.status in (
+            if job_status_info.status in (
                     JobStatus.accepted,
                     JobStatus.running
             ):
                 http_status = HTTPStatus.CREATED
-            elif execution_result.status == JobStatus.successful:
+            elif job_status_info.status == JobStatus.successful:
                 http_status = HTTPStatus.OK
             else:
-                # we don't expect to ever reach this section, since processing
-                # errors must raise an exception to be handled at the outer
-                # layer
+                # We'll never get here, as processing errors are expected to
+                # raise an exception
                 raise RuntimeError(
-                    f"Unexpected job status: {execution_result.status!r}")
+                    f"Unexpected job status: {job_status_info.status!r}")
             return http_status, payload, response_headers
 
     def get_jobs(
             self,
-            request: Union[APIRequest, Any],
-            job_id=None
+            request_params: ImmutableMultiDict,
+            link_rel_getter: Callable,
+            job_id: Optional[str] = None
     ) -> JobList:
         """
         Get process jobs
 
-        :param request: A request object
+        :param request_params: Input parameters
+        :param link_rel_getter: A callable that provides appropriate `rel`
+                                values for generating response links
         :param job_id: id of job
 
         :returns: tuple of headers, status code, content
@@ -261,20 +267,80 @@ class ProcessApi:
                 Link(
                     href=f"{self.base_url}/jobs/?f={media_type}",
                     type=util.FORMAT_TYPES[media_type],
-                    rel=request.get_linkrel(media_type),
+                    rel=link_rel_getter(media_type),
                     title=f'Job list as {name}'
                 )
             )
         if job_id is not None:
             jobs = [self.manager.get_job(job_id)]
         else:
-            jobs, pagination_links = self._filter_jobs(request.params)
+            jobs, pagination_links = self._filter_jobs(request_params)
             response_links.extend(pagination_links)
 
         job_reads = []
         for job in jobs:
             job_reads.append(_prepare_job_for_response(job, self.base_url))
         return JobList(jobs=job_reads, links=response_links)
+
+    def get_job_result(
+            self, job_id: str) -> Tuple[bytes, Optional[str], List[Link]]:
+        """
+        Get result of job (instance of a process)
+
+        :param request: A request object
+        :param job_id: ID of job
+
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobNotReadyError: If job is not finished running yet
+        :raise JobFailedError: If job has failed
+        :returns: A three element tuple with payload, media type and any
+                  additional headers to include in the final response
+        """
+
+        job = self.manager.get_job(job_id)
+
+        if job.status == JobStatus.successful:
+            result = self.manager.get_execution_response(
+                job.requested_response_type,
+                job.requested_outputs,
+                job.generated_outputs,
+            )
+        else:
+            if job.status in (JobStatus.running, JobStatus.accepted):
+                raise exceptions.JobNotReadyError
+            elif job.status == JobStatus.failed:
+                raise exceptions.JobFailedError
+            else:
+                # we should never reach this, as the only other job status
+                # is `dismissed`, which has the effect of deleting the job
+                raise RuntimeError
+        return result
+
+    def delete_job(self, job_id) -> JobStatusInfoRead:
+        """Delete a job.
+
+        :param job_id: job identifier
+
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :returns: status info of the deleted job
+        """
+
+        status_info = self.manager.delete_job(job_id)
+        response = JobStatusInfoRead(
+            **status_info.dict(by_alias=True, exclude_none=True),
+            links=[
+                Link(
+                    href=(
+                        f'{self.base_url}/jobs?'
+                        f'processID={status_info.process_id}'
+                    ),
+                    rel='up',
+                    type=util.FORMAT_TYPES[util.F_JSON],
+                    title='Job list for the current process'
+                )
+            ]
+        )
+        return response
 
     def _filter_processes(
             self,
@@ -285,7 +351,7 @@ class ProcessApi:
         offset = util.parse_positive_int_parameter(raw_offset, default_value=0)
         total_filtered, processes = self.manager.get_process_descriptions(
             limit, offset)
-        pagination_links = _get_pagination_links(
+        pagination_links = util.get_pagination_links(
             len(processes), limit, offset, total_filtered,
             base_url=f"{self.base_url}/processes",
             title_fragment="process list"
@@ -331,227 +397,13 @@ class ProcessApi:
             limit=limit,
             offset=offset,
         )
-        pagination_links = _get_pagination_links(
+        pagination_links = util.get_pagination_links(
             len(jobs), limit, offset, total_filtered_jobs,
             base_url=f'{self.base_url}/jobs',
             title_fragment='job list',
             querystring_params=requested_filters
         )
         return jobs, pagination_links
-
-
-def _get_pagination_links(
-        num_returned_records: int,
-        limit: int,
-        offset: int,
-        total_records: int,
-        base_url: str,
-        title_fragment: str,
-        querystring_params: Optional[Dict[str, str]] = None,
-) -> List[Link]:
-    result = []
-    base_querystring = {
-        'limit': limit,
-        **(querystring_params if querystring_params is not None else {})
-    }
-    LOGGER.debug(f'locals: {locals()}')
-    if offset + num_returned_records < total_records:
-        querystring = {
-            'offset': offset + limit,
-            **base_querystring,
-        }
-        html_querystring = urllib.parse.urlencode(
-            {'f': util.F_HTML, **querystring}, doseq=True)
-        json_querystring = urllib.parse.urlencode(
-            {'f': util.F_JSON, **querystring}, doseq=True)
-        result.extend(
-            [
-                Link(
-                    href=f'{base_url}?{html_querystring}',
-                    type=util.FORMAT_TYPES[util.F_HTML],
-                    rel='next',
-                    title=f'Next page of {title_fragment}, as HTML'
-                ),
-                Link(
-                    href=f'{base_url}?{json_querystring}',
-                    type=util.FORMAT_TYPES[util.F_JSON],
-                    rel='next',
-                    title=f'Next page of {title_fragment}, as JSON'
-                ),
-            ]
-        )
-    if offset + num_returned_records > limit:
-        querystring = {
-            'offset': max(offset - limit, 0),
-            **base_querystring,
-        }
-        html_querystring = urllib.parse.urlencode(
-            {'f': util.F_HTML, **querystring}, doseq=True)
-        json_querystring = urllib.parse.urlencode(
-            {'f': util.F_JSON, **querystring}, doseq=True)
-        result.extend(
-            [
-                Link(
-                    href=f'{base_url}?{html_querystring}',
-                    type=util.FORMAT_TYPES[util.F_HTML],
-                    rel='prev',
-                    title=f'Previous page of {title_fragment}, as HTML'
-                ),
-                Link(
-                    href=f'{base_url}?{json_querystring}',
-                    type=util.FORMAT_TYPES[util.F_JSON],
-                    rel='prev',
-                    title=f'Previous page of {title_fragment}, as JSON'
-                )
-
-            ]
-        )
-    return result
-
-
-def get_execution_response(
-        execution_request: Execution,
-        execution_result: ExecutionResultInternal,
-) -> Tuple[bytes, Optional[str], List[Link]]:
-    media_type = None
-    payload = None
-    additional_headers = []
-    if len(execution_result.outputs) == 0:
-        LOGGER.info('there are no outputs to include in the response')
-    elif execution_request.response == ProcessResponseType.raw:
-        if len(execution_result.outputs) == 1:
-            payload, media_type, additional_headers = (
-                _get_execution_response_single_output(
-                    execution_request, execution_result)
-            )
-        else:
-            any_by_value = ProcessOutputTransmissionMode.VALUE in [
-                out.transmission_mode for out in
-                execution_request.outputs.values()
-            ]
-            media_type = 'multipart/related' if any_by_value else None
-            payload = _get_execution_response_multiple_outputs(
-                execution_request, execution_result)
-    else:
-        media_type = 'application/json'
-        payload = _get_execution_response_document(
-            execution_request, execution_result)
-    return payload, media_type, additional_headers
-
-
-def _get_execution_response_single_output(
-        execution_request: Execution,
-        execution_result: ExecutionResultInternal
-) -> Tuple[Optional[bytes], str, List]:
-    """Get process execution response for when there is a single process output
-
-    If there is a single execition output:
-    - If transmission is by value, return the output directly
-    - If transmission is by reference, include a link header
-      for where the output can be downloaded
-
-    :param execution_request: The parameters that originated the execution
-    :param execution_result: Execution results
-    """
-    out_id, requested_output = execution_request.outputs.items()[0]
-    should_transmit_by_value = (
-            requested_output.transmission_mode ==
-            ProcessOutputTransmissionMode.VALUE
-    )
-    generated_output = execution_result.outputs.items()[0]
-    additional_headers = []
-    if should_transmit_by_value:
-        media_type = generated_output.media_type
-        payload = Path(generated_output.location).read_bytes()
-    else:
-        media_type = None
-        payload = None
-        additional_headers.append(
-            Link(href=None, rel=None, title=None).as_link_header()
-        )
-    return payload, media_type, additional_headers
-
-
-def _get_execution_response_multiple_outputs(
-        execution_request: Execution,
-        execution_result: ExecutionResultInternal,
-) -> bytes:
-    """Generate an appropriate body for process execution HTTP responses
-
-    According to the OAProc spec (Requirement 31 -
-    /req/core/process-execute-sync-raw-mixed-multi),
-    if there are multiple outputs, then responses should have a media type
-    of `multipart/related` and, depending on the transmission mode, either
-    include the contents directly in the response, or include
-    links to them.
-    """
-    payload = MIMEMultipart("related")
-    for output_id, generated_output in execution_result.outputs.items():
-        requested = execution_request.outputs.get(output_id)
-        part = MIMENonMultipart(
-            *generated_output.media_type.split('/'), )
-        part.set_param('Type', generated_output.media_type)
-        part.add_header('Content-ID', output_id)
-        should_transmit_by_value = (
-                requested.transmission_mode ==
-                ProcessOutputTransmissionMode.VALUE
-        )
-        if should_transmit_by_value:
-            data_ = Path(generated_output.location).read_bytes()
-            part.set_payload(data_)
-            if payload.get_param("Type") is None:
-                # set the `Type` of the payload as the same media
-                # type of the first output
-                payload.set_param(
-                    "Type", generated_output.media_type)
-        else:
-            part.add_header('Content-Location', None)
-        payload.attach(part)
-    return payload.as_bytes()
-
-
-def _get_execution_response_document(
-        execution_request: Execution,
-        execution_result: ExecutionResultInternal
-) -> str:
-    """Prepare process execution response when the requested type is `document`
-
-    :param execution_request: The parameters that originated the execution
-    :param execution_result: Process execution results
-    """
-    output_results = {}
-    for out_id, requested_output in execution_request.outputs.items():
-        should_transmit_by_value = (
-                requested_output.transmission_mode ==
-                ProcessOutputTransmissionMode.VALUE
-        )
-        generated_output = execution_result.outputs.get(out_id)
-        if should_transmit_by_value:
-            # if the output's media type is text based we should be
-            # able to read the file as json.
-            # if the output's media type is not text based we should
-            # be able to base64 encode the file contents
-            output_data = Path(generated_output.location).read_bytes()
-            try:
-                parsed_output_data = json.loads(output_data)
-                out_result = (
-                    ExecutionDocumentSingleOutput(
-                        __root__=parsed_output_data)
-                )
-            except json.JSONDecodeError:
-                serialized_output_data = str(
-                    urlsafe_b64encode(output_data))
-                out_result = (
-                    ExecutionDocumentSingleOutput(
-                        __root__=serialized_output_data)
-                )
-        else:
-            out_result = ExecutionDocumentSingleOutput(
-                __root__=Link(href=None)
-            )
-        output_results[out_id] = out_result
-    result = ExecutionDocumentResult(__root__=output_results)
-    return result.json(by_alias=True, exclude_none=True)
 
 
 def _generate_process_description_links(

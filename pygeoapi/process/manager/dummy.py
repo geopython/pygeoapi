@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,8 +34,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.models.processes import (
-    Execution,
+    ExecuteRequest,
     JobStatus,
+    JobStatusInfoInternal,
+    ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
 
@@ -42,17 +46,6 @@ LOGGER = logging.getLogger(__name__)
 
 class DummyManager(BaseManager):
     """generic Manager ABC"""
-
-    def __init__(self, manager_def: dict):
-        """
-        Initialize object
-
-        :param manager_def: manager definition
-
-        :returns: `pygeoapi.process.manager.base.BaseManager`
-        """
-
-        super().__init__(manager_def)
 
     def get_jobs(
             self,
@@ -66,7 +59,12 @@ class DummyManager(BaseManager):
             offset: Optional[int] = 0,
     ) -> Tuple[int, List[Dict]]:
         """
-        Get process jobs, optionally filtered by status
+        Get process jobs, optionally filtered by relevant parameters.
+
+        The filtering parameters follow their respective definition in
+        OAProc spec, as per:
+
+        https://docs.ogc.org/is/18-062r2/18-062r2.html#toc49
 
         :param type_: process types to be returned
         :param process_id: identifiers of the parent processes of jobs
@@ -79,6 +77,7 @@ class DummyManager(BaseManager):
         :param limit: number of jobs to return
         :param offset: Offset for selecting which jobs to return
 
+        :raise: JobError: if the job list cannot be retrieved
         :returns: a two-element tuple with the total number of jobs that
                   match the filtering parameters and a list of job statuses
         """
@@ -88,15 +87,13 @@ class DummyManager(BaseManager):
     def execute_process(
             self,
             process_id: str,
-            execution_request: Execution,
+            execution_request: ExecuteRequest,
             requested_execution_mode: Optional[
                 RequestedProcessExecutionMode] = None
     ) -> Tuple[
-            str,
-            Optional[str],
-            JobStatus,
-            Any,
-            Optional[Dict[str, str]]
+        JobStatusInfoInternal,
+        ProcessExecutionMode,
+        Optional[Dict[str, str]]
     ]:
         """
         Default process execution handler.
@@ -106,20 +103,21 @@ class DummyManager(BaseManager):
         :param requested_execution_mode: optionally specifying sync or
                                          async processing.
 
-        :returns: tuple of generated job_id, optional response media type,
-                  response payload, current job status and
+        :raise: UnknownProcessError: if the process_id is not known
+        :raise: JobFailedError: if there is an error processing the job
+        :raise: JobError: if there is an error persisting job details
+        :returns: tuple of job status info, chosen execution mode and
                   optionally additional HTTP headers to include in the final
-                  response
+                  response.
         """
 
-        if requested_execution_mode is not None:
-            requested_async = (
-                    requested_execution_mode ==
-                    RequestedProcessExecutionMode.respond_async
-            )
-            if requested_async:
-                LOGGER.debug('Dummy manager does not support asynchronous')
-                LOGGER.debug('Forcing synchronous execution')
+        requested_async = (
+                requested_execution_mode ==
+                RequestedProcessExecutionMode.respond_async
+        )
+        if requested_async:
+            LOGGER.debug('Dummy manager does not support asynchronous')
+            LOGGER.debug('Forcing synchronous execution')
         return super().execute_process(
             process_id, execution_request, RequestedProcessExecutionMode.wait)
 

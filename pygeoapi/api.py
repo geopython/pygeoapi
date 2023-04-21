@@ -65,17 +65,15 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.models import processes as process_models
 from pygeoapi.models.processes import (
     JobStatus,
-    Link,
+    JobStatusInfoRead,
 )
+from pygeoapi.models.base import Link
 from pygeoapi.models.provider.base import TilesMetadataFormat
 from pygeoapi.process.api import ProcessApi
-from pygeoapi.process.base import (
-    ProcessorGenericError,
-)
-from pygeoapi.process.manager import get_manager
+from pygeoapi.process.exceptions import ProcessorGenericError
+from pygeoapi.process import exceptions as process_execeptions
 from pygeoapi.plugin import (
     load_plugin,
     PLUGINS,
@@ -663,8 +661,7 @@ class API:
         # Create config clone for HTML templating with modified base URL
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
-        self.process_api = ProcessApi.from_main_api(self)
-        LOGGER.info('Process manager plugin loaded')
+        self.process_api = ProcessApi.from_config(config)
 
     @gzip
     @pre_process
@@ -3261,27 +3258,38 @@ class API:
         :returns: tuple of headers, status code, content
         """
         if request.is_valid():
-            job_list = self.process_api.get_jobs(request, job_id)
-            response_contents = job_list.dict(by_alias=True)
-            if request.format == F_HTML:
-                j2_template = Path(
-                    'jobs/index.html' if job_id is None else 'jobs/job.html')
-                rendered_response = render_j2_template(
-                    self.tpl_config,
-                    j2_template,
-                    {
-                        "jobs": response_contents,
-                        "now": datetime.now(
-                            timezone.utc).strftime(DATETIME_FORMAT)
-                    },
-                    request.locale
-                )
-            else:
-                rendered_response = to_json(
-                    response_contents, self.pretty_print)
             response_headers = request.get_response_headers(
                 SYSTEM_LOCALE, **self.api_headers)
-            result = response_headers, HTTPStatus.OK, rendered_response
+            try:
+                job_list = self.process_api.get_jobs(
+                    request.params, request.get_linkrel, job_id=job_id)
+            except process_execeptions.JobError:
+                result = self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    response_headers,
+                    request.format,
+                    'NoApplicableCode',
+                    'Could not retrieve job list'
+                )
+            else:
+                response_contents = job_list.dict(by_alias=True)
+                if request.format == F_HTML:
+                    j2_template = Path(
+                        'jobs/index.html' if job_id is None else 'jobs/job.html')
+                    rendered_response = render_j2_template(
+                        self.tpl_config,
+                        j2_template,
+                        {
+                            "jobs": response_contents,
+                            "now": datetime.now(
+                                timezone.utc).strftime(DATETIME_FORMAT)
+                        },
+                        request.locale
+                    )
+                else:
+                    rendered_response = to_json(
+                        response_contents, self.pretty_print)
+                result = response_headers, HTTPStatus.OK, rendered_response
         else:
             result = self.get_format_exception(request)
         return result
@@ -3300,22 +3308,17 @@ class API:
         """
 
         if request.is_valid():
-            # Responses are always in US English only
             try:
-                (
-                    status_code,
-                    payload,
-                    response_headers
-                ) = self.process_api.execute_process(
+                result = self.process_api.execute_process(
                     process_id,
                     request.headers,
                     request.data,
-                    request.get_response_headers(SYSTEM_LOCALE, **self.api_headers)
+                    request.get_response_headers(
+                        SYSTEM_LOCALE, **self.api_headers)
                 )
             except (RuntimeError, ProcessorGenericError) as err:
-                pass
-            else:
-                result = response_headers, status_code, payload
+                # TODO: Improve error checking
+                result = self.get_exception()
         else:
             result = self.get_format_exception(request)
         return result
@@ -3333,96 +3336,77 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        if not request.is_valid():
-            return self.get_format_exception(request)
-        headers = request.get_response_headers(SYSTEM_LOCALE,
-                                               **self.api_headers)
-        job = self.manager.get_job(job_id)
-
-        if not job:
-            msg = 'job not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NoSuchJob', msg)
-
-        status = JobStatus[job['status']]
-
-        if status == JobStatus.running:
-            msg = 'job still running'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers,
-                request.format, 'ResultNotReady', msg)
-
-        elif status == JobStatus.accepted:
-            # NOTE: this case is not mentioned in the specification
-            msg = 'job accepted but not yet running'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers,
-                request.format, 'ResultNotReady', msg)
-
-        elif status == JobStatus.failed:
-            msg = 'job failed'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-
-        mimetype, job_output = self.manager.get_job_result(job_id)
-
-        if mimetype not in (None, FORMAT_TYPES[F_JSON]):
-            headers['Content-Type'] = mimetype
-            content = job_output
+        if request.is_valid():
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            try:
+                job_result = self.process_api.get_job_result(job_id)
+                payload, media_type, additional_headers = job_result
+                response_headers.update(additional_headers)
+                if media_type is None:
+                    response_headers.pop('Content-Type', None)
+                    rendered_response = payload
+                else:
+                    response_headers['Content-Type'] = media_type
+                    if media_type == FORMAT_TYPES[F_JSON]:
+                        if request.format == F_HTML:
+                            rendered_response = render_j2_template(
+                                self.config,
+                                'jobs/results/index.html',
+                                payload,
+                                request.locale
+                            )
+                        else:
+                            rendered_response = to_json(
+                                json.loads(payload), pretty=self.pretty_print)
+                    else:
+                        rendered_response = payload
+                result = response_headers, HTTPStatus.OK, rendered_response
+            except process_execeptions.JobNotFoundError:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, response_headers, request.format,
+                    'NoSuchJob', 'job not found'
+                )
+            except process_execeptions.JobNotReadyError:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, response_headers,
+                    request.format, 'ResultNotReady', 'job is not ready yet')
+            except process_execeptions.JobFailedError:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, response_headers, request.format,
+                    'InvalidParameterValue', 'job failed')
+                pass
         else:
-            if request.format == F_JSON:
-                content = json.dumps(job_output, sort_keys=True, indent=4,
-                                     default=json_serial)
-            else:
-                # HTML
-                data = {
-                    'job': {'id': job_id},
-                    'result': job_output
-                }
-                content = render_j2_template(
-                    self.config, 'jobs/results/index.html',
-                    data, request.locale)
+            result = self.get_format_exception(request)
+        return result
 
-        return headers, HTTPStatus.OK, content
-
-    def delete_job(self, job_id) -> Tuple[dict, int, str]:
+    def delete_job(
+            self, request: Union[APIRequest, Any], job_id: str
+    ) -> Tuple[dict, int, str]:
         """
-        Delete a process job
+        Delete a process job.
 
         :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        success = self.manager.delete_job(job_id)
-
-        if not success:
-            http_status = HTTPStatus.NOT_FOUND
-            response = {
-                'code': 'NoSuchJob',
-                'description': 'Job identifier not found'
-            }
+        response_headers = request.get_response_headers(
+            SYSTEM_LOCALE, **self.api_headers)
+        try:
+            job_status_info_read = self.process_api.delete_job(job_id)
+        except process_execeptions.JobNotFoundError:
+            result = self.get_exception(
+                HTTPStatus.NOT_FOUND, response_headers, request.format,
+                'NoSuchJob', 'job not found'
+            )
         else:
-            http_status = HTTPStatus.OK
-            jobs_url = f"{self.base_url}/jobs"
-
-            response = {
-                'jobID': job_id,
-                'status': JobStatus.dismissed.value,
-                'message': 'Job dismissed',
-                'progress': 100,
-                'links': [{
-                    'href': jobs_url,
-                    'rel': 'up',
-                    'type': FORMAT_TYPES[F_JSON],
-                    'title': 'The job list for the current process'
-                }]
-            }
-
-        LOGGER.info(response)
-        # TODO: this response does not have any headers
-        return {}, http_status, response
+            rendered_response = to_json(
+                job_status_info_read.dict(by_alias=True, exclude_none=True),
+                pretty=self.pretty_print
+            )
+            result = response_headers, HTTPStatus.OK, rendered_response
+        return result
 
     @gzip
     @pre_process
@@ -4057,71 +4041,3 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
-
-
-def _get_pagination_links(
-        num_returned_records: int,
-        limit: int,
-        offset: int,
-        total_records: int,
-        base_url: str,
-        querystring_params: Optional[Dict[str, str]] = None,
-) -> List[Link]:
-    result = []
-    base_querystring = {
-        "limit": limit,
-        **(querystring_params if querystring_params is not None else {})
-    }
-    LOGGER.debug(f"locals: {locals()}")
-    if offset + num_returned_records < total_records:
-        querystring = {
-            "offset": offset + limit,
-            **base_querystring,
-        }
-        html_querystring = urllib.parse.urlencode(
-            {"f": F_HTML, **querystring}, doseq=True)
-        json_querystring = urllib.parse.urlencode(
-            {"f": F_JSON, **querystring}, doseq=True)
-        result.extend(
-            [
-                Link(
-                    href=f"{base_url}?{html_querystring}",
-                    type=FORMAT_TYPES[F_HTML],
-                    rel="next",
-                    title="Next page of job list, as HTML"
-                ),
-                Link(
-                    href=f"{base_url}?{json_querystring}",
-                    type=FORMAT_TYPES[F_JSON],
-                    rel="next",
-                    title="Next page of job list, as JSON"
-                ),
-            ]
-        )
-    if offset + num_returned_records > limit:
-        querystring = {
-            "offset": max(offset - limit, 0),
-            **base_querystring,
-        }
-        html_querystring = urllib.parse.urlencode(
-            {"f": F_HTML, **querystring}, doseq=True)
-        json_querystring = urllib.parse.urlencode(
-            {"f": F_JSON, **querystring}, doseq=True)
-        result.extend(
-            [
-                Link(
-                    href=f"{base_url}?{html_querystring}",
-                    type=FORMAT_TYPES[F_HTML],
-                    rel="prev",
-                    title="Previous page of job list, as HTML"
-                ),
-                Link(
-                    href=f"{base_url}?{json_querystring}",
-                    type=FORMAT_TYPES[F_JSON],
-                    rel="prev",
-                    title="Previous page of job list, as JSON"
-                )
-
-            ]
-        )
-    return result

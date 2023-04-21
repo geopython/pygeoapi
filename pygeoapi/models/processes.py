@@ -1,8 +1,10 @@
 import datetime as dt
 import enum
-from typing import Any, Dict, Literal, List, Optional, Tuple, Union
+from typing import Any, Dict, Literal, List, Optional, Union
 
 import pydantic
+
+from pygeoapi.models.base import Link
 
 
 class JobStatus(enum.Enum):
@@ -84,29 +86,6 @@ class ProcessIOFormat(enum.Enum):
     GEOJSON_FEATURE_SHORT_CODE = "geojson-feature"
     GEOJSON_GEOMETRY_SHORT_CODE = "geojson-geometry"
     OGC_BBOX_SHORT_CODE = "ogc-bbox"
-
-
-class Link(pydantic.BaseModel):
-    href: str
-    type_: Optional[str] = pydantic.Field(None, alias="type")
-    rel: Optional[str] = None
-    title: Optional[str] = None
-    href_lang: Optional[str] = pydantic.Field(None, alias="hreflang")
-
-    def as_link_header(self) -> str:
-        result = f'<{self.href}>'
-        fields = (
-            'rel',
-            'title',
-            'type_',
-            'href_lang',
-        )
-        for field_name in fields:
-            value = getattr(self, field_name, None)
-            if value is not None:
-                fragment = f'{self.__fields__[field_name].alias}="{value}"'
-                result = '; '.join((result, fragment))
-        return result
 
 
 # this is a 'pydantification' of the schema.yml fragment, as shown
@@ -214,31 +193,6 @@ class ProcessDescription(ProcessSummary):
     example: Optional[dict]
 
 
-class JobStatusInfoBase(pydantic.BaseModel):
-    job_id: str = pydantic.Field(..., alias="jobID")
-    process_id: Optional[str] = pydantic.Field(None, alias="processID")
-    status: JobStatus
-    message: Optional[str] = None
-    created: Optional[dt.datetime] = None
-    started: Optional[dt.datetime] = None
-    finished: Optional[dt.datetime] = None
-    updated: Optional[dt.datetime] = None
-    progress: Optional[int] = pydantic.Field(None, ge=0, le=100)
-
-
-class JobStatusInfoInternal(JobStatusInfoBase):
-    location: Optional[str] = None
-
-
-class JobStatusInfoRead(JobStatusInfoBase):
-    """OAPI - Processes. Schema for a StatusInfo."""
-    type: Literal["process"] = "process"
-    links: Optional[List[Link]]
-
-    class Config:
-        use_enum_values = True
-
-
 class ExecutionInputBBox(pydantic.BaseModel):
     bbox: List[float] = pydantic.Field(..., min_items=4, max_items=4)
     crs: Optional[str] = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
@@ -307,7 +261,7 @@ class ExecutionSubscriber(pydantic.BaseModel):
     failed_uri: Optional[str] = pydantic.Field(None, alias="failedUri")
 
 
-class Execution(pydantic.BaseModel):
+class ExecuteRequest(pydantic.BaseModel):
     """Models the `execute.yml` schema defined in OAPIP."""
     inputs: Optional[
         Dict[
@@ -339,11 +293,6 @@ class OutputExecutionResultInternal(pydantic.BaseModel):
     media_type: str
 
 
-class ExecutionResultInternal(pydantic.BaseModel):
-    status: JobStatus
-    outputs: Optional[Dict[str, OutputExecutionResultInternal]] = None
-
-
 class ExecutionDocumentSingleOutput(pydantic.BaseModel):
     __root__: Union[
         ExecutionInputValueNoObject,
@@ -354,6 +303,35 @@ class ExecutionDocumentSingleOutput(pydantic.BaseModel):
 
 class ExecutionDocumentResult(pydantic.BaseModel):
     __root__: Dict[str, ExecutionDocumentSingleOutput]
+
+
+class JobStatusInfoBase(pydantic.BaseModel):
+    job_id: str = pydantic.Field(..., alias="jobID")
+    process_id: Optional[str] = pydantic.Field(None, alias="processID")
+    status: JobStatus
+    message: Optional[str] = None
+    created: Optional[dt.datetime] = None
+    started: Optional[dt.datetime] = None
+    finished: Optional[dt.datetime] = None
+    updated: Optional[dt.datetime] = None
+    progress: Optional[int] = pydantic.Field(None, ge=0, le=100)
+
+
+class JobStatusInfoInternal(JobStatusInfoBase):
+    negotiated_execution_mode: Optional[ProcessExecutionMode] = None
+    requested_response_type: Optional[ProcessResponseType] = None
+    requested_outputs: Optional[Dict[str, ExecutionOutput]] = None
+    generated_outputs: Optional[
+        Dict[str, OutputExecutionResultInternal]] = None
+
+
+class JobStatusInfoRead(JobStatusInfoBase):
+    """OAProc. Schema for a StatusInfo."""
+    type: Literal["process"] = "process"
+    links: Optional[List[Link]]
+
+    class Config:
+        use_enum_values = True
 
 
 class JobList(pydantic.BaseModel):
