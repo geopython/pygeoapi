@@ -128,7 +128,7 @@ class ProcessApi:
                 )
             else:
                 processor = self.manager.get_processor(process)
-                relevant = [processor.process_metadata]
+                relevant = [processor.process_description]
         else:
             relevant = []
         process_descriptions = []

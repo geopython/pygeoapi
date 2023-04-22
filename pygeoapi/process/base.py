@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,6 +29,7 @@
 #
 # =================================================================
 
+import abc
 import logging
 from pathlib import Path
 from typing import Callable, Dict, Optional
@@ -40,9 +43,8 @@ from pygeoapi.models.processes import (
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseProcessor:
+class BaseProcessor(abc.ABC):
     """generic Processor ABC. Processes are inherited from this class"""
-    process_metadata: ProcessDescription
 
     def __init__(self, processor_def: Dict):
         """Initialize processor.
@@ -55,6 +57,19 @@ class BaseProcessor:
         """
         ...
 
+    @property
+    @abc.abstractmethod
+    def process_description(self) -> ProcessDescription:
+        """Return process-related description.
+
+        Note that derived classes are free to implement this as either a
+        property function or, perhaps more simply, as a class variable. Look
+        at ``pygeoapi.process.hello_world.HelloWorldProcessor`` for an
+        example.
+        """
+        ...
+
+    @abc.abstractmethod
     def execute(
             self,
             job_id: str,
@@ -83,8 +98,7 @@ class BaseProcessor:
         :raise: JobFailedError: If there is an error during execution
         :returns: status info with relevant detail about the finished execution
         """
-
-        raise NotImplementedError()
+        ...
 
     def __repr__(self):
-        return f'<BaseProcessor> {self.process_metadata.id}'
+        return f'<BaseProcessor> {self.process_description.id}'

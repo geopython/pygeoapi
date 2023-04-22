@@ -29,6 +29,7 @@
 #
 # =================================================================
 
+import abc
 from base64 import urlsafe_b64encode
 from collections import OrderedDict
 import datetime as dt
@@ -65,7 +66,7 @@ from pygeoapi.process import exceptions
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseManager:
+class BaseManager(abc.ABC):
     """generic Manager ABC"""
 
     is_async: bool = False
@@ -91,34 +92,7 @@ class BaseManager:
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
-    def get_process_descriptions(
-            self,
-            limit: Optional[int] = None,
-            offset: Optional[int] = 0
-    ) -> Tuple[int, List[ProcessDescription]]:
-        """Get process descriptions
-
-        :param limit: Maximum number of process descriptions to return
-        :param offset: Optional offset for selecting relevant process
-                       descriptions
-
-        :return: A two-element tuple with the total number of processes known
-                 to the manager and a list of process-related metadata.
-        """
-
-        right_bound = (
-            limit + offset if limit is not None else len(self.processes))
-        relevant_ = (
-            (i, conf) for i, conf in enumerate(self.processes.values())
-            if i <= offset and i < right_bound
-        )
-        descriptions = []
-        for _, conf in relevant_:
-            processor = load_plugin("process", conf.get("processor"))
-            descriptions.append(processor.process_metadata)
-        return len(self.processes), descriptions
-
-
+    @abc.abstractmethod
     def get_jobs(
             self,
             type_: Optional[List[str]] = None,
@@ -153,20 +127,60 @@ class BaseManager:
         :returns: a two-element tuple with the total number of jobs that
                   match the filtering parameters and a list of job statuses
         """
+        ...
 
-        raise NotImplementedError()
-
-    def add_job(self, job_status: JobStatusInfoInternal) -> str:
+    @abc.abstractmethod
+    def get_job(self, job_id: str) -> JobStatusInfoInternal:
         """
-        Persist job details.
+        Get a job (!)
 
-        :param job_status: job status info
+        :param job_id: job identifier
 
-        :raise: JobError: if job cannot be persisted
-        :returns: `str` added job identifier
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be retrieved
+        :returns: job status info
+        """
+        ...
+
+    @abc.abstractmethod
+    def delete_job(self, job_id: str) -> JobStatusInfoInternal:
+        """
+        Deletes a job and associated results, if any.
+
+        :param job_id: job identifier
+
+        :raise JobNotFoundError: If job_id does not correspond to a known job
+        :raise JobError: If the job cannot be deleted
+        :returns: job status info of the dismissed job
+        """
+        ...
+
+    def get_process_descriptions(
+            self,
+            limit: Optional[int] = None,
+            offset: Optional[int] = 0
+    ) -> Tuple[int, List[ProcessDescription]]:
+        """Get process descriptions
+
+        :param limit: Maximum number of process descriptions to return
+        :param offset: Optional offset for selecting relevant process
+                       descriptions
+
+        :return: A two-element tuple with the total number of processes known
+                 to the manager and a list of process-related metadata.
         """
 
-        raise NotImplementedError()
+        right_bound = (
+            limit + offset if limit is not None else len(self.processes))
+        relevant_ = (
+            (i, conf) for i, conf in enumerate(self.processes.values())
+            if i <= offset and i < right_bound
+        )
+        descriptions = []
+        for _, conf in relevant_:
+            processor = load_plugin('process', conf.get('processor'))
+            descriptions.append(processor.process_description)
+        return len(self.processes), descriptions
 
     def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
         """Instantiate a process.
@@ -193,19 +207,6 @@ class BaseManager:
 
         :raise JobError: if the job cannot be updated
         :returns: `bool` of status result
-        """
-
-        raise NotImplementedError()
-
-    def get_job(self, job_id: str) -> JobStatusInfoInternal:
-        """
-        Get a job (!)
-
-        :param job_id: job identifier
-
-        :raise JobNotFoundError: If job_id does not correspond to a known job
-        :raise JobError: If the job cannot be retrieved
-        :returns: job status info
         """
 
         raise NotImplementedError()
@@ -244,18 +245,73 @@ class BaseManager:
                 requested_outputs, generated_outputs)
         return payload, media_type, additional_headers
 
-    def delete_job(self, job_id: str) -> JobStatusInfoInternal:
+    def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
-        Deletes a job and associated results, if any.
+        Persist job details.
 
-        :param job_id: job identifier
+        :param job_status: job status info
 
-        :raise JobNotFoundError: If job_id does not correspond to a known job
-        :raise JobError: If the job cannot be deleted
-        :returns: job status info of the dismissed job
+        Derived classes only need to supply an implementation of this method
+        if they are relying on the base class' `execute_process()` method.
+
+        :raise: JobError: if job cannot be persisted
+        :returns: `str` added job identifier
         """
 
         raise NotImplementedError()
+
+    def execute_process(
+            self,
+            process_id: str,
+            execution_request: ExecuteRequest,
+            requested_execution_mode: Optional[
+                RequestedProcessExecutionMode] = None
+    ) -> Tuple[
+        JobStatusInfoInternal,
+        Optional[Dict[str, str]]
+    ]:
+        """
+        Default process execution handler.
+
+        :param process_id: identifier of the process to be executed
+        :param execution_request: execution request
+        :param requested_execution_mode: optionally specifying sync or
+                                         async processing.
+
+        :raise: UnknownProcessError: if the process_id is not known
+        :raise: JobFailedError: if there is an error processing the job
+        :raise: JobError: if there is an error persisting job details
+        :returns: tuple of job status info, and optionally additional HTTP
+                  headers to include in the final response.
+        """
+
+        processor = self.get_processor(process_id)
+        chosen_mode, additional_headers = self._select_execution_mode(
+            requested_execution_mode, processor)
+
+        now = dt.datetime.now(dt.timezone.utc)
+        job_id = str(uuid.uuid1())
+        status_info = JobStatusInfoInternal(
+            jobID=job_id,
+            processID=processor.process_description.id,
+            status=JobStatus.accepted,
+            message='Job accepted and ready for execution',
+            created=now,
+            started=now,
+            progress=5,
+            negotiated_execution_mode=ProcessExecutionMode.sync_execute,
+            requested_response_type=execution_request.response,
+            requested_outputs=execution_request.outputs,
+        )
+        self.add_job(status_info)
+        if chosen_mode == ProcessExecutionMode.async_execute:
+            LOGGER.debug('Asynchronous execution')
+            self._execute_handler_async(processor, job_id, execution_request)
+        else:
+            LOGGER.debug('Synchronous execution')
+            self._execute_handler_sync(processor, job_id, execution_request)
+        result_info = self.get_job(job_id)
+        return result_info, additional_headers
 
     def _execute_handler_async(
             self,
@@ -328,59 +384,6 @@ class BaseManager:
             )
             self.update_job(status_info)
 
-    def execute_process(
-            self,
-            process_id: str,
-            execution_request: ExecuteRequest,
-            requested_execution_mode: Optional[
-                RequestedProcessExecutionMode] = None
-    ) -> Tuple[
-        JobStatusInfoInternal,
-        Optional[Dict[str, str]]
-    ]:
-        """
-        Default process execution handler.
-
-        :param process_id: identifier of the process to be executed
-        :param execution_request: execution request
-        :param requested_execution_mode: optionally specifying sync or
-                                         async processing.
-
-        :raise: UnknownProcessError: if the process_id is not known
-        :raise: JobFailedError: if there is an error processing the job
-        :raise: JobError: if there is an error persisting job details
-        :returns: tuple of job status info, and optionally additional HTTP
-                  headers to include in the final response.
-        """
-
-        processor = self.get_processor(process_id)
-        chosen_mode, additional_headers = self._select_execution_mode(
-            requested_execution_mode, processor)
-
-        now = dt.datetime.now(dt.timezone.utc)
-        job_id = str(uuid.uuid1())
-        status_info = JobStatusInfoInternal(
-            jobID=job_id,
-            processID=processor.process_metadata.id,
-            status=JobStatus.accepted,
-            message='Job accepted and ready for execution',
-            created=now,
-            started=now,
-            progress=5,
-            negotiated_execution_mode=ProcessExecutionMode.sync_execute,
-            requested_response_type=execution_request.response,
-            requested_outputs=execution_request.outputs,
-        )
-        self.add_job(status_info)
-        if chosen_mode == ProcessExecutionMode.async_execute:
-            LOGGER.debug('Asynchronous execution')
-            self._execute_handler_async(processor, job_id, execution_request)
-        else:
-            LOGGER.debug('Synchronous execution')
-            self._execute_handler_sync(processor, job_id, execution_request)
-        result_info = self.get_job(job_id)
-        return result_info, additional_headers
-
     def _select_execution_mode(
             self,
             requested: RequestedProcessExecutionMode,
@@ -398,7 +401,7 @@ class BaseManager:
             # client wants async - do we support it?
             process_supports_async = (
                     ProcessExecutionMode.async_execute.value in 
-                    processor.process_metadata.job_control_options
+                    processor.process_description.job_control_options
             )
             if self.is_async and process_supports_async:
                 result = ProcessExecutionMode.async_execute

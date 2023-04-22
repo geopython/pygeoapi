@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -55,7 +57,7 @@ LOGGER = logging.getLogger(__name__)
 class HelloWorldProcessor(BaseProcessor):
     """Hello World Processor example"""
 
-    process_metadata = ProcessDescription(
+    process_description = ProcessDescription(
         title={
             'en': 'Hello World',
             'fr': 'Bonjour le Monde'
@@ -160,12 +162,14 @@ class HelloWorldProcessor(BaseProcessor):
         """
         inputs = execution_request.dict().get('inputs', {})
         name = inputs.get('name')
-        if name is None:
+        try:
+            name = execution_request.inputs['name']
+        except KeyError:
             raise exceptions.JobFailedError('Cannot process without a name')
-        message = inputs.get('message', '')
+        message = execution_request.inputs.get('message', '')
         echo_value = f'Hello {name}! {message}'.strip()
         echo_location = (
-                results_storage_root / self.process_metadata.id /
+                results_storage_root / self.process_description.id /
                 f'{job_id}-echo.txt'
         )
         echo_location.parent.mkdir(parents=True, exist_ok=True)
@@ -174,7 +178,7 @@ class HelloWorldProcessor(BaseProcessor):
         now = dt.datetime.now(dt.timezone.utc)
         return JobStatusInfoInternal(
             jobID=job_id,
-            processID=self.process_metadata.id,
+            processID=self.process_description.id,
             message='Process completed successfully',
             progress=100,
             updated=now,
@@ -190,4 +194,4 @@ class HelloWorldProcessor(BaseProcessor):
         )
 
     def __repr__(self):
-        return f'<HelloWorldProcessor> {self.process_metadata.id}'
+        return f'<HelloWorldProcessor> {self.process_description.id}'
