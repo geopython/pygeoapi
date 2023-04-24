@@ -1,6 +1,5 @@
+import json
 from email import message_from_bytes
-from email.message import EmailMessage
-from email.message import Message
 from typing import Dict
 from unittest import mock
 
@@ -8,6 +7,7 @@ from pygeoapi.process import exceptions
 from pygeoapi.process.manager import get_manager
 from pygeoapi.process.manager import base
 from pygeoapi.models import processes
+from shapely.geometry import Point
 
 import pytest
 
@@ -230,3 +230,52 @@ def test_get_execution_response_multiple_outputs(
                 print(f'by_reference: {by_reference}')
                 if by_reference:
                     assert len(part.get_all('Content-Location', failobj=[])) > 0
+
+
+@pytest.mark.parametrize('requested_outputs, generated_outputs, output_contents, expected', [
+    pytest.param(
+        {
+            'fourth': processes.ExecutionOutput(
+                transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE)
+        },
+        {
+            'first': processes.OutputExecutionResultInternal(
+                location='dummy-first-location',
+                media_type='text/plain'
+            ),
+            'second': processes.OutputExecutionResultInternal(
+                location='dummy-second-location',
+                media_type='application/octet-stream'
+            ),
+            'third': processes.OutputExecutionResultInternal(
+                location='dummy-third-location',
+                media_type='application/json'
+            ),
+            'fourth': processes.OutputExecutionResultInternal(
+                location='dummy-fourth-location',
+                media_type='foo'
+            )
+        },
+        [
+            b'hi, this is a dummy text for output named first',
+            Point(0, 0).wkb,
+            bytes(json.dumps({'something': 'here'}), 'utf-8'),
+            b'hey, this is some bogus content, which will not be shown'
+        ],
+        (
+                '{'
+                '"first": "hi, this is a dummy text for output named first", '
+                '"second": "AQEAAAAAAAAAAAAAAAAAAAAAAAAA", '
+                '"third": {"value": {"something": "here"}}, '
+                '"fourth": {"href": "dummy-fourth-location", "type": "foo"}'
+                '}'
+        ),
+    )
+])
+def test_get_execution_response_document(
+        requested_outputs, generated_outputs, output_contents, expected):
+    with mock.patch('pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
+        mock_Path.return_value.read_bytes.side_effect = output_contents
+        result = base._get_execution_response_document(
+            requested_outputs, generated_outputs)
+        assert result == expected

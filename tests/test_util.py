@@ -316,3 +316,15 @@ def test_prefetcher():
     headers = prefetcher.get_headers(headers['location'])
     assert int(headers.get('content-length', 0)) == length
     assert headers.get('content-type') == 'image/png'
+
+
+@pytest.mark.parametrize('num_returned, limit, offset, total, base_url, title_fragment, params, expected', [
+    pytest.param(1, 10, 0, 1, 'something', 'fragment', None, []),
+])
+def test_get_pagination_links(
+        num_returned, limit, offset, total,
+        base_url, title_fragment, params, expected
+):
+    result = util.get_pagination_links(
+        num_returned, limit, offset, total, base_url, title_fragment, params)
+    assert result == expected
