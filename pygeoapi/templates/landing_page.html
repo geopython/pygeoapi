@@ -2,143 +2,153 @@
 {% block title %}{{ super() }} {% trans %}Home{% endtrans %} {% endblock %}
 {% block body %}
 
-<br/>
+<br />
 <section id="collections">
-<div class="row">
-  <div class="col-md-8 col-sm-12">
+  <div class="row">
+    <div class="col-md-8 col-sm-12">
 
-  <section id="identification">
-    <h1>{{ config['metadata']['identification']['title'] }}</h1>
-    <p>{{ config['metadata']['identification']['description'] }}</p>
+      <section id="identification">
+        <h1>{{ config['metadata']['identification']['title'] }}</h1>
+        <p>{{ config['metadata']['identification']['description'] }}</p>
 
-    <p>
-        {% for kw in config['metadata']['identification']['keywords'] %}
+        <p>
+          {% for kw in config['metadata']['identification']['keywords'] %}
           <span class="badge bg-primary text-bg-primary">{{ kw }}</span>
-        {% endfor %}
-    </p>
+          {% endfor %}
+        </p>
 
-    <div class="card bg-light mb-3">
-      <div class="card-body">
-        {% if config['metadata']['identification']['terms_of_service'] %}
-          <div class="row">
+        <div class="card bg-light mb-3">
+          <div class="card-body">
+            {% if config['metadata']['identification']['terms_of_service'] %}
+            <div class="row">
               <div class="col-sm-4">
                 {% trans %}Terms of service{% endtrans %}
               </div>
               <div class="col-sm-8">
                 {{ config['metadata']['identification']['terms_of_service'] | urlize() }}
               </div>
-          </div>
-        {% endif %}
-        {% if config['metadata']['license']['url'] %}
-          <div class="row">
+            </div>
+            {% endif %}
+            {% if config['metadata']['license']['url'] %}
+            <div class="row">
               <div class="col-sm-4">
                 {% trans %}License{% endtrans %}
               </div>
               <div class="col-sm-8">
-                  <a href="{{ config['metadata']['license']['url'] }}">
-                    {{ config['metadata']['license']['name'] or config['metadata']['license']['url'] }}</a>
+                <a href="{{ config['metadata']['license']['url'] }}">
+                  {{ config['metadata']['license']['name'] or config['metadata']['license']['url'] }}</a>
               </div>
+            </div>
+            {% endif %}
           </div>
-        {% endif %}
-      </div>
+        </div>
+      </section>
+      {% if data['collection'] %}
+      <section id="collections">
+        <h2>{% trans %}Collections{% endtrans %}</h2>
+        <p>
+          <a href="{{ config['server']['url'] }}/collections?f=html">{% trans %}View the collections in this service{% endtrans %}</a>
+        </p>
+      </section>
+      {% endif %}
+      {% if data['stac'] %}
+      <section id="collections">
+        <h2>{% trans %}SpatioTemporal Assets{% endtrans %}</h2>
+        <p>
+          <a href="{{ config['server']['url'] }}/stac?f=html">{% trans %}View the SpatioTemporal Assets in this
+            service{% endtrans %}</a>
+        </p>
+      </section>
+      {% endif %}
+      {% if data['processes'] %}
+      <section id="processes">
+        <h2>{% trans %}Processes{% endtrans %}</h2>
+        <p>
+          <a href="{{ config['server']['url'] }}/processes?f=html">{% trans %}View the processes in this service{%
+            endtrans %}</a>
+        </p>
+      </section>
+      <section id="jobs">
+        <h2>{% trans %}Jobs{% endtrans %}</h2>
+        <p>
+          <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
+        </p>
+      </section>
+      {% endif %}
+      <section id="openapi">
+        <h2>{% trans %}API Definition{% endtrans %}</h2>
+        <p>
+          {% trans %}Documentation{% endtrans %}: <a href="{{ config['server']['url'] }}/openapi?f=html">{% trans
+            %}Swagger UI{% endtrans %}</a> <a href="{{ config['server']['url'] }}/openapi?f=html&ui=redoc">{% trans
+            %}ReDoc{% endtrans %}</a>
+        </p>
+        <p>
+          <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
+        </p>
+      </section>
+      <section id="conformance">
+        <h2>{% trans %}Conformance{% endtrans %}</h2>
+        <p>
+          <a href="{{ config['server']['url'] }}/conformance?f=html">{% trans %}View the conformance classes of this
+            service{% endtrans %}</a>
+        </p>
+      </section>
     </div>
-  </section>
-  {% if data['collection'] %}
-  <section id="collections">
-    <h2>{% trans %}Collections{% endtrans %}</h2>
-    <p>
-      <a href="{{ config['server']['url'] }}/collections?f=html">{% trans %}View the collections in this service{% endtrans %}</a>
-    </p>
-  </section>
- {% if data['stac'] %}
-  <section id="collections">
-    <h2>{% trans %}SpatioTemporal Assets{% endtrans %}</h2>
-    <p>
-      <a href="{{ config['server']['url'] }}/stac?f=html">{% trans %}View the SpatioTemporal Assets in this service{% endtrans %}</a>
-    </p>
-  </section>
- {% endif %}
- {% if data['processes'] %}
-  <section id="processes">
-      <h2>{% trans %}Processes{% endtrans %}</h2>
-      <p>
-        <a href="{{ config['server']['url'] }}/processes?f=html">{% trans %}View the processes in this service{% endtrans %}</a>
-      </p>
-  </section>
-  <section id="jobs">
-      <h2>{% trans %}Jobs{% endtrans %}</h2>
-      <p>
-        <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
-      </p>
-  </section>
- {% endif %}
-  <section id="openapi">
-      <h2>{% trans %}API Definition{% endtrans %}</h2>
-      <p>
-        {% trans %}Documentation{% endtrans %}: <a href="{{ config['server']['url'] }}/openapi?f=html">{% trans %}Swagger UI{% endtrans %}</a> <a href="{{ config['server']['url'] }}/openapi?f=html&ui=redoc">{% trans %}ReDoc{% endtrans %}</a>
-      </p>
-      <p>
-        <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
-      </p>
-  </section>
-  <section id="conformance">
-      <h2>{% trans %}Conformance{% endtrans %}</h2>
-      <p>
-        <a href="{{ config['server']['url'] }}/conformance?f=html">{% trans %}View the conformance classes of this service{% endtrans %}</a>
-      </p>
-  </section>
-  </div>
-  <div class="col-md-4 col-sm-12">
-    <div class="card mb-3">
-      <div class="card-header">
-       <b>{% trans %}Provider{% endtrans %}</b>
+    <div class="col-md-4 col-sm-12">
+      <div class="card mb-3">
+        <div class="card-header">
+          <b>{% trans %}Provider{% endtrans %}</b>
+        </div>
+        <div class="card-body">
+          <b>{{ config['metadata']['provider']['name'] }}</b><br />
+          <a href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['url'] }}</a><br />
+        </div>
       </div>
-      <div class="card-body">
-        <b>{{ config['metadata']['provider']['name'] }}</b><br/>
-        <a href="{{ config['metadata']['provider']['url'] }}">{{ config['metadata']['provider']['url'] }}</a><br/>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
+      <div class="card">
+        <div class="card-header">
           <b>{% trans %}Contact point{% endtrans %}</b>
-      </div>
-      <div class="card-body">
-        <b>{% trans %}Address{% endtrans %}</b><br/>
-        <div class="section">
-          <span>{{ config['metadata']['contact']['address'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['city'] }}</span>,
-          <span>{{ config['metadata']['contact']['stateorprovince'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['postalcode'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['country'] }}</span>
         </div>
-        <div>
-          <b>{% trans %}Email{% endtrans %}</b><br/>
-          <span><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{ config['metadata']['contact']['email'] }}</a></span><br/>
-          {% if config['metadata']['contact']['phone'] %}
-            <b>{% trans %}Telephone{% endtrans %}</b><br/>
-            <span><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone'] }}</a></span><br/>
-          {% endif %}
-          {% if config['metadata']['contact']['fax'] %}
-            <b>{% trans %}Fax{% endtrans %}</b><br/>
-            <span><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax'] }}</a></span><br/>
-          {% endif %}
-          {% if config['metadata']['contact']['url'] %}
-            <b>{% trans %}Contact URL{% endtrans %}</b><br/>
-            <span><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url'] }}</a></span><br/>
-          {% endif %}
-          {% if config['metadata']['contact']['hours'] %}
-            <b>{% trans %}Hours{% endtrans %}</b><br/>
-            <span>{{ config['metadata']['contact']['hours'] }}</span><br/>
-          {% endif %}
-          {% if config['metadata']['contact']['instructions'] %}
-            <b>{% trans %}Contact instructions{% endtrans %}</b><br/>
+        <div class="card-body">
+          <b>{% trans %}Address{% endtrans %}</b><br />
+          <div class="section">
+            <span>{{ config['metadata']['contact']['address'] }}</span><br />
+            <span>{{ config['metadata']['contact']['city'] }}</span>,
+            <span>{{ config['metadata']['contact']['stateorprovince'] }}</span><br />
+            <span>{{ config['metadata']['contact']['postalcode'] }}</span><br />
+            <span>{{ config['metadata']['contact']['country'] }}</span>
+          </div>
+          <div>
+            <b>{% trans %}Email{% endtrans %}</b><br />
+            <span><a href="mailto:{{ config['metadata']['contact']['email'] }}">{{
+                config['metadata']['contact']['email'] }}</a></span><br />
+            {% if config['metadata']['contact']['phone'] %}
+            <b>{% trans %}Telephone{% endtrans %}</b><br />
+            <span><a href="tel:{{ config['metadata']['contact']['phone'] }}">{{ config['metadata']['contact']['phone']
+                }}</a></span><br />
+            {% endif %}
+            {% if config['metadata']['contact']['fax'] %}
+            <b>{% trans %}Fax{% endtrans %}</b><br />
+            <span><a href="tel:{{ config['metadata']['contact']['fax'] }}">{{ config['metadata']['contact']['fax']
+                }}</a></span><br />
+            {% endif %}
+            {% if config['metadata']['contact']['url'] %}
+            <b>{% trans %}Contact URL{% endtrans %}</b><br />
+            <span><a href="{{ config['metadata']['contact']['url'] }}">{{ config['metadata']['contact']['url']
+                }}</a></span><br />
+            {% endif %}
+            {% if config['metadata']['contact']['hours'] %}
+            <b>{% trans %}Hours{% endtrans %}</b><br />
+            <span>{{ config['metadata']['contact']['hours'] }}</span><br />
+            {% endif %}
+            {% if config['metadata']['contact']['instructions'] %}
+            <b>{% trans %}Contact instructions{% endtrans %}</b><br />
             <span>{{ config['metadata']['contact']['instructions'] }}</span>
-          {% endif %}
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
 </section>
 
