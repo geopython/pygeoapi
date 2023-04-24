@@ -342,7 +342,7 @@ def collection_map(collection_id, style_id=None):
 
 
 @BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<path:process_id>')
+@BLUEPRINT.route('/processes/<process_id>')
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -351,7 +351,11 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_processes(request, process_id))
+    if process_id is None:
+        result = get_response(api_.list_processes(request))
+    else:
+        result = get_response(api_.get_process(request, process_id))
+    return result
 
 
 @BLUEPRINT.route('/jobs')
@@ -367,15 +371,16 @@ def get_jobs(job_id=None):
     """
 
     if job_id is None:
-        return get_response(api_.get_jobs(request))
+        result = get_response(api_.list_jobs(request))
     else:
         if request.method == 'DELETE':  # dismiss job
-            return get_response(api_.delete_job(job_id))
+            result = get_response(api_.delete_job(request, job_id))
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            result = get_response(api_.get_jobs(request, job_id))
+    return result
 
 
-@BLUEPRINT.route('/processes/<path:process_id>/execution', methods=['POST'])
+@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
 def execute_process_jobs(process_id):
     """
     OGC API - Processes execution endpoint

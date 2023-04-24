@@ -340,10 +340,11 @@ async def get_processes(request: Request, process_id=None):
 
     :returns: Starlette HTTP Response
     """
-    if 'process_id' in request.path_params:
-        process_id = request.path_params['process_id']
-
-    return get_response(api_.describe_processes(request, process_id))
+    if process_id is None:
+        result = get_response(api_.list_processes(request))
+    else:
+        result = get_response(api_.get_process(request, process_id))
+    return result
 
 
 async def get_jobs(request: Request, job_id=None):
@@ -356,16 +357,13 @@ async def get_jobs(request: Request, job_id=None):
     :returns: Starlette HTTP Response
     """
 
-    if 'job_id' in request.path_params:
-        job_id = request.path_params['job_id']
-
     if job_id is None:  # list of submit job
-        return get_response(api_.get_jobs(request))
+        result = get_response(api_.list_jobs(request))
     else:  # get or delete job
         if request.method == 'DELETE':
-            return get_response(api_.delete_job(job_id))
+            return get_response(api_.delete_job(request, job_id))
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            return get_response(api_.get_job(request, job_id))
 
 
 async def execute_process_jobs(request: Request, process_id=None):

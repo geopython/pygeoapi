@@ -186,6 +186,9 @@ class ProcessSummary(pydantic.BaseModel):
         [ProcessOutputTransmissionMode.VALUE], alias="outputTransmission")
     links: Optional[List[Link]] = None
 
+    class Config:
+        use_enum_values = True
+
 
 class ProcessDescription(ProcessSummary):
     inputs: Dict[str, ProcessInput]

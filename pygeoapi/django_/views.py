@@ -364,10 +364,11 @@ def processes(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'describe_processes', process_id)
-    response = _to_django_response(*response_)
-
-    return response
+    if process_id is None:
+        response_ = _feed_response(request, 'list_processes')
+    else:
+        response_ = _feed_response(request, 'get_process', process_id)
+    return _to_django_response(*response_)
 
 
 def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
@@ -381,10 +382,13 @@ def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'get_jobs', job_id)
-    response = _to_django_response(*response_)
-
-    return response
+    if job_id is None:
+        response_ = _feed_response(request, 'list_jobs')
+    elif request.method == 'DELETE':
+        response_ = _feed_response(request, 'delete_job', job_id)
+    else:
+        response_ = _feed_response(request, 'get_job', job_id)
+    return _to_django_response(*response_)
 
 
 def job_results(request: HttpRequest,

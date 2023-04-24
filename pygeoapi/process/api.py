@@ -29,6 +29,7 @@
 """Utilities for dealing with the implementation of OGC API - Processes
 specification.
 """
+from itertools import product
 from http import HTTPStatus
 import json
 import logging
@@ -57,6 +58,7 @@ from pygeoapi.models.processes import (
     ProcessDescription,
     ProcessExecutionMode,
     ProcessList,
+    ProcessSummary,
     RequestedProcessExecutionMode,
 )
 from pygeoapi.models.base import Link
@@ -81,6 +83,7 @@ class ProcessApi:
     manager: BaseManager
     base_url: str
     default_locale: Locale
+    pagination_default_limit: int = 10
 
     def __init__(
             self, manager: BaseManager, base_url: str, default_locale: Locale):
@@ -102,6 +105,81 @@ class ProcessApi:
             manager=get_manager(config),
             base_url=util.get_base_url(config),
             default_locale=locales[0]
+        )
+
+    def get_process(
+            self,
+            process_id: str,
+            locale: Locale,
+            link_rel_getter: Callable,
+    ):
+        processor = self.manager.get_processor(process_id)
+        translated_description = l10n.translate_model(
+            processor.process_description, locale)
+        translated_description.links.extend(
+            _generate_process_description_links(
+                link_rel_getter,
+                translated_description.id,
+                self.base_url,
+                self.default_locale)
+        )
+        return translated_description
+
+    def list_processes(
+            self,
+            request_params: ImmutableMultiDict,
+            locale: Locale,
+            link_rel_getter: Callable,
+    ) -> ProcessList:
+        pagination_links = []
+        if len(self.manager.processes) > 0:
+            relevant, pagination_links = self._filter_processes(
+                raw_limit=request_params.get(
+                    'limit', self.pagination_default_limit),
+                raw_offset=request_params.get('offset')
+            )
+        else:
+            relevant = []
+        process_descriptions = []
+        for description in relevant:
+            translated_description = l10n.translate_model(
+                description, locale)
+            translated_description.links.extend(
+                _generate_process_description_links(
+                    link_rel_getter,
+                    description.id,
+                    self.base_url,
+                    self.default_locale)
+            )
+            summary = ProcessSummary(
+                **translated_description.dict(
+                    by_alias=True, exclude_none=True)
+            )
+            process_descriptions.append(summary)
+        process_url = f"{self.base_url}/processes"
+        return ProcessList(
+            processes=process_descriptions,
+            links=[
+                Link(
+                    type=util.FORMAT_TYPES[util.F_JSON],
+                    rel=link_rel_getter(util.F_JSON),
+                    title="This document as JSON",
+                    href=f"{process_url}?f={util.F_JSON}"
+                ),
+                Link(
+                    type=util.FORMAT_TYPES[util.F_JSONLD],
+                    rel=link_rel_getter(util.F_JSONLD),
+                    title="This document as RDF (JSON-LD)",
+                    href=f"{process_url}?f={util.F_JSONLD}"
+                ),
+                Link(
+                    type=util.FORMAT_TYPES[util.F_HTML],
+                    rel=link_rel_getter(util.F_HTML),
+                    title="This document as HTML",
+                    href=f"{process_url}?f={util.F_HTML}"
+                ),
+                *pagination_links
+            ]
         )
 
     def describe_processes(
@@ -245,11 +323,10 @@ class ProcessApi:
                     f"Unexpected job status: {job_status_info.status!r}")
             return http_status, payload, response_headers
 
-    def get_jobs(
+    def list_jobs(
             self,
             request_params: ImmutableMultiDict,
             link_rel_getter: Callable,
-            job_id: Optional[str] = None
     ) -> JobList:
         """
         Get process jobs
@@ -257,7 +334,6 @@ class ProcessApi:
         :param request_params: Input parameters
         :param link_rel_getter: A callable that provides appropriate `rel`
                                 values for generating response links
-        :param job_id: id of job
 
         :returns: tuple of headers, status code, content
         """
@@ -271,16 +347,67 @@ class ProcessApi:
                     title=f'Job list as {name}'
                 )
             )
-        if job_id is not None:
-            jobs = [self.manager.get_job(job_id)]
-        else:
-            jobs, pagination_links = self._filter_jobs(request_params)
-            response_links.extend(pagination_links)
-
+        jobs, pagination_links = self._filter_jobs(request_params)
+        response_links.extend(pagination_links)
         job_reads = []
         for job in jobs:
             job_reads.append(_prepare_job_for_response(job, self.base_url))
         return JobList(jobs=job_reads, links=response_links)
+
+    def get_job(
+            self,
+            job_id: str,
+            link_rel_getter: Callable,
+    ) -> JobStatusInfoRead:
+        """
+        Get job detail.
+
+        :param request_params: Input parameters
+        :param link_rel_getter: A callable that provides appropriate `rel`
+                                values for generating response links
+        :param job_id: id of job
+
+        :returns: tuple of headers, status code, content
+        """
+        job_status_info = self.manager.get_job(job_id)
+        return _prepare_job_for_response(job_status_info, self.base_url)
+
+    # def get_jobs(
+    #         self,
+    #         request_params: ImmutableMultiDict,
+    #         link_rel_getter: Callable,
+    #         job_id: Optional[str] = None
+    # ) -> JobList:
+    #     """
+    #     Get process jobs
+    #
+    #     :param request_params: Input parameters
+    #     :param link_rel_getter: A callable that provides appropriate `rel`
+    #                             values for generating response links
+    #     :param job_id: id of job
+    #
+    #     :returns: tuple of headers, status code, content
+    #     """
+    #     response_links = []
+    #     for media_type, name in ((util.F_HTML, "HTML"), (util.F_JSON, "JSON")):
+    #         response_links.append(
+    #             Link(
+    #                 href=f"{self.base_url}/jobs/?f={media_type}",
+    #                 type=util.FORMAT_TYPES[media_type],
+    #                 rel=link_rel_getter(media_type),
+    #                 title=f'Job list as {name}'
+    #             )
+    #         )
+    #     if job_id is not None:
+    #         jobs = [self.manager.get_job(job_id)]
+    #     else:
+    #         jobs, pagination_links = self._filter_jobs(request_params)
+    #         response_links.extend(pagination_links)
+    #
+    #     job_reads = []
+    #     for job in jobs:
+    #         job_reads.append(_prepare_job_for_response(job, self.base_url))
+    #     return JobList(jobs=job_reads, links=response_links)
 
     def get_job_result(
             self, job_id: str) -> Tuple[bytes, Optional[str], List[Link]]:
@@ -410,48 +537,43 @@ def _generate_process_description_links(
         link_rel_getter: Callable,
         process_description_id: str,
         base_url: str,
-        locale
+        locale: Locale
 ) -> List[Link]:
     """Generate links for a process description"""
     process_url = f"{base_url}/processes/{process_description_id}"
     jobs_url = f"{base_url}/jobs"
-    return [
-        Link(
-            type=util.FORMAT_TYPES[util.F_JSON],
-            rel=link_rel_getter(util.F_JSON),
-            href=f'{process_url}?f={util.F_JSON}',
-            title='Process description as JSON',
-            hreflang=locale,
-        ),
-        Link(
-            type=util.FORMAT_TYPES[util.F_HTML],
-            rel=link_rel_getter(util.F_HTML),
-            href=f'{process_url}?f={util.F_HTML}',
-            title='Process description as HTML',
-            hreflang=locale
-        ),
-        Link(
-            type=util.FORMAT_TYPES[util.F_JSON],
-            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
-            href=f'{jobs_url}?f={util.F_JSON}',
-            title='jobs for this process as JSON',
-            hreflang=locale
-        ),
-        Link(
-            type=util.FORMAT_TYPES[util.F_HTML],
-            rel='http://www.opengis.net/def/rel/ogc/1.0/job-list',
-            href=f'{jobs_url}?f={util.F_HTML}',
-            title='jobs for this process as HTML',
-            hreflang=locale
-        ),
+    media_types = (
+        (util.F_JSON, 'JSON'),
+        (util.F_HTML, 'HTML')
+    )
+    link_base_hrefs = (
+        (
+            (process_url, 'Process description as'),
+            (jobs_url, 'Jobs for this process as')
+        )
+    )
+    result = [
         Link(
             type=util.FORMAT_TYPES[util.F_JSON],
             rel='http://www.opengis.net/def/rel/ogc/1.0/execute',
             href=f'{process_url}/execution?f={util.F_JSON}',
             title='Execution for this process as JSON',
-            hreflang=locale
+            hreflang=locale.language
         )
     ]
+    for media_type, link_base in product(media_types, link_base_hrefs):
+        type_, title_suffix = media_type
+        base_url, title_prefix = link_base
+        result.append(
+            Link(
+                type=util.FORMAT_TYPES[type_],
+                rel=link_rel_getter(type_),
+                href=f'{base_url}?f={type_}',
+                title=f'{title_prefix} {title_suffix}',
+                hreflang=locale.language
+            )
+        )
+    return result
 
 
 def _prepare_job_for_response(

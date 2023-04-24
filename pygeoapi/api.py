@@ -65,14 +65,8 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.models.processes import (
-    JobStatus,
-    JobStatusInfoRead,
-)
-from pygeoapi.models.base import Link
 from pygeoapi.models.provider.base import TilesMetadataFormat
 from pygeoapi.process.api import ProcessApi
-from pygeoapi.process.exceptions import ProcessorGenericError
 from pygeoapi.process import exceptions as process_execeptions
 from pygeoapi.plugin import (
     load_plugin,
@@ -3208,32 +3202,23 @@ class API:
     @gzip
     @pre_process
     @jsonldify
-    def describe_processes(
-            self,
-            request: Union[APIRequest, Any],
-            process=None
-    ) -> Tuple[Dict, int, str]:
+    def list_processes(
+            self, request: Union[APIRequest, Any]) -> Tuple[Dict, int, str]:
         """
         Provide processes metadata
 
         :param request: A request object
-        :param process: process identifier, defaults to None to obtain
-                        information about all processes
 
         :returns: tuple of headers, status code, content
         """
-
         if request.is_valid():
-            process_list = self.process_api.describe_processes(
-                request, process)
-            response_contents = process_list.dict(by_alias=True)
+            process_list = self.process_api.list_processes(
+                request.params, request.locale, request.get_linkrel)
+            response_contents = process_list.dict(
+                by_alias=True, exclude_none=True)
             if request.format == F_HTML:
-                j2_template = Path(
-                    "processes/index.html" if process is None
-                    else "processes/process.html"
-                )
                 rendered_response = render_j2_template(
-                    self.tpl_config, j2_template,
+                    self.tpl_config, 'processes/index.html',
                     response_contents, request.locale
                 )
             else:
@@ -3241,6 +3226,136 @@ class API:
                     response_contents, self.pretty_print)
             headers = request.get_response_headers(**self.api_headers)
             result = headers, HTTPStatus.OK, rendered_response
+        else:
+            result = self.get_format_exception(request)
+        return result
+
+    @gzip
+    @pre_process
+    @jsonldify
+    def get_process(
+            self, request: Union[APIRequest, Any], process_id: str
+    ) -> Tuple[Dict, int, str]:
+        """
+        Provide processes metadata
+
+        :param request: A request object
+        :param process_id: process identifier
+
+        :returns: tuple of headers, status code, content
+        """
+        if request.is_valid():
+            process_description = self.process_api.get_process(
+                process_id, request.locale, request.get_linkrel)
+            response_contents = process_description.dict(
+                by_alias=True, exclude_none=True, exclude_defaults=True)
+            if request.format == F_HTML:
+                rendered_response = render_j2_template(
+                    self.tpl_config, "processes/process.html",
+                    response_contents, request.locale
+                )
+            else:
+                rendered_response = to_json(
+                    response_contents, self.pretty_print)
+            headers = request.get_response_headers(**self.api_headers)
+            result = headers, HTTPStatus.OK, rendered_response
+        else:
+            result = self.get_format_exception(request)
+        return result
+
+    @gzip
+    @pre_process
+    def list_jobs(
+            self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+        """
+        Get process jobs
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+        if request.is_valid():
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            try:
+                job_list = self.process_api.list_jobs(
+                    request.params, request.get_linkrel)
+            except process_execeptions.JobError:
+                result = self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    response_headers,
+                    request.format,
+                    'NoApplicableCode',
+                    'Could not retrieve job list'
+                )
+            else:
+                response_contents = job_list.dict(by_alias=True)
+                if request.format == F_HTML:
+                    rendered_response = render_j2_template(
+                        self.tpl_config,
+                        'jobs/index.html',
+                        {
+                            "jobs": response_contents,
+                            "now": datetime.now(
+                                timezone.utc).strftime(DATETIME_FORMAT)
+                        },
+                        request.locale
+                    )
+                else:
+                    rendered_response = to_json(
+                        response_contents, self.pretty_print)
+                result = response_headers, HTTPStatus.OK, rendered_response
+        else:
+            result = self.get_format_exception(request)
+        return result
+
+    @gzip
+    @pre_process
+    def get_job(
+            self,
+            request: Union[APIRequest, Any],
+            job_id: str
+    ) -> Tuple[dict, int, str]:
+        """
+        Get job details
+
+        :param request: A request object
+        :param job_id: id of job
+
+        :returns: tuple of headers, status code, content
+        """
+        if request.is_valid():
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            try:
+                job_detail = self.process_api.get_job(
+                    job_id, request.get_linkrel)
+            except process_execeptions.JobError:
+                result = self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    response_headers,
+                    request.format,
+                    'NoApplicableCode',
+                    'Could not retrieve job list'
+                )
+            else:
+                response_contents = job_detail.dict(
+                    by_alias=True, exclude_none=True)
+                if request.format == F_HTML:
+                    rendered_response = render_j2_template(
+                        self.tpl_config,
+                        'jobs/job.html',
+                        {
+                            "jobs": response_contents,
+                            "now": datetime.now(
+                                timezone.utc).strftime(DATETIME_FORMAT)
+                        },
+                        request.locale
+                    )
+                else:
+                    rendered_response = to_json(
+                        response_contents, self.pretty_print)
+                result = response_headers, HTTPStatus.OK, rendered_response
         else:
             result = self.get_format_exception(request)
         return result
@@ -3296,8 +3411,9 @@ class API:
 
     @gzip
     @pre_process
-    def execute_process(self, request: Union[APIRequest, Any],
-                        process_id) -> Tuple[dict, int, str]:
+    def execute_process(
+            self, request: Union[APIRequest, Any], process_id: str
+    ) -> Tuple[dict, int, str]:
         """
         Execute process
 
@@ -3308,6 +3424,8 @@ class API:
         """
 
         if request.is_valid():
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
             try:
                 result = self.process_api.execute_process(
                     process_id,
@@ -3316,9 +3434,16 @@ class API:
                     request.get_response_headers(
                         SYSTEM_LOCALE, **self.api_headers)
                 )
-            except (RuntimeError, ProcessorGenericError) as err:
-                # TODO: Improve error checking
-                result = self.get_exception()
+            except process_execeptions.InvalidJobParametersError as err:
+                result = self.get_exception(
+                    HTTPStatus.BAD_REQUEST, response_headers, request.format,
+                    'InvalidParameterValue', str(err)
+                )
+            except process_execeptions.JobFailedError as err:
+                result = self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, response_headers,
+                    request.format, 'InternalError', str(err)
+                )
         else:
             result = self.get_format_exception(request)
         return result

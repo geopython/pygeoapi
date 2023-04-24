@@ -48,6 +48,8 @@ from pygeoapi.models.processes import (
     ExecuteRequest,
     ExecutionDocumentResult,
     ExecutionDocumentSingleOutput,
+    ExecutionFormat,
+    ExecutionQualifiedInputValue,
     JobStatus,
     JobStatusInfoInternal,
     OutputExecutionResultInternal,
@@ -214,10 +216,11 @@ class BaseManager(abc.ABC):
     def get_execution_response(
             self,
             requested_response_type: ProcessResponseType,
-            requested_outputs: Dict[str, ExecutionOutput],
+            requested_outputs: Optional[Dict[str, ExecutionOutput]],
             generated_outputs: Dict[str, OutputExecutionResultInternal],
     ) -> Tuple[bytes, Optional[str], List[Link]]:
         """Get the details for an execution response."""
+        LOGGER.debug(f'locals: {locals()}')
         media_type = None
         payload = None
         additional_headers = []
@@ -225,9 +228,13 @@ class BaseManager(abc.ABC):
             LOGGER.info('there are no outputs to include in the response')
         elif requested_response_type == ProcessResponseType.raw:
             if len(generated_outputs) == 1:
+                if requested_outputs is not None:
+                    requested = list(requested_outputs.values())[0]
+                else:
+                    requested = None
                 payload, media_type, additional_headers = (
                     _get_execution_response_single_output(
-                        tuple(requested_outputs.values())[0],
+                        requested,
                         tuple(generated_outputs.values())[0],
                     )
                 )
@@ -439,7 +446,7 @@ class BaseManager(abc.ABC):
 
 
 def _get_execution_response_single_output(
-        requested_output: ExecutionOutput,
+        requested_output: Optional[ExecutionOutput],
         generated_output: OutputExecutionResultInternal,
 ) -> Tuple[Optional[bytes], Optional[str], List]:
     """Get process execution response for when there is a single process output
@@ -455,10 +462,13 @@ def _get_execution_response_single_output(
               payload, the media type and a list with any additional headers
               to be added to the response
     """
-    should_transmit_by_value = (
-            requested_output.transmission_mode ==
-            ProcessOutputTransmissionMode.VALUE.value
-    )
+    if requested_output is None:
+        should_transmit_by_value = True
+    else:
+        should_transmit_by_value = (
+                requested_output.transmission_mode ==
+                ProcessOutputTransmissionMode.VALUE.value
+        )
     additional_headers = []
     if should_transmit_by_value:
         media_type = generated_output.media_type
@@ -524,34 +534,52 @@ def _get_execution_response_document(
     :param execution_result: Process execution results
     """
     output_results = {}
-    for out_id, requested_output in requested_outputs.items():
-        should_transmit_by_value = (
-                requested_output.transmission_mode ==
-                ProcessOutputTransmissionMode.VALUE
-        )
-        generated_output = generated_outputs.get(out_id)
+    for out_id, generated_output in generated_outputs.items():
+        requested = requested_outputs.get(out_id)
+        if requested is None:
+            should_transmit_by_value = True
+        else:
+            should_transmit_by_value = (
+                    requested.transmission_mode ==
+                    ProcessOutputTransmissionMode.VALUE.value
+            )
+        print(f'Processing output {out_id}...')
         if should_transmit_by_value:
-            # if the output's media type is text based we should be
-            # able to read the file as json.
+            print(f'Transmitting by value')
             # if the output's media type is not text based we should
             # be able to base64 encode the file contents
             output_data = Path(generated_output.location).read_bytes()
-            try:
+            print(f'output_data: {output_data}, type: {type(output_data)}')
+
+            if 'json' in generated_output.media_type:
+                # TODO: is it a BBOX?
                 parsed_output_data = json.loads(output_data)
-                out_result = (
-                    ExecutionDocumentSingleOutput(
-                        __root__=parsed_output_data)
+                out_result = ExecutionDocumentSingleOutput(
+                    __root__=ExecutionQualifiedInputValue(
+                        value=parsed_output_data)
                 )
-            except json.JSONDecodeError:
-                serialized_output_data = str(
-                    urlsafe_b64encode(output_data))
-                out_result = (
-                    ExecutionDocumentSingleOutput(
-                        __root__=serialized_output_data)
+            elif 'xml' in generated_output.media_type:
+                out_result = ExecutionDocumentSingleOutput(
+                    __root__=ExecutionQualifiedInputValue(
+                        value=output_data,
+                        format_=ExecutionFormat(
+                            mediaType=generated_output.media_type)
+                    )
                 )
+            elif 'text' in generated_output.media_type:
+                out_result = ExecutionDocumentSingleOutput(
+                    __root__=output_data)
+            else:
+                serialized_output_data = urlsafe_b64encode(
+                    output_data).decode('utf-8')
+                out_result = ExecutionDocumentSingleOutput(
+                    __root__=serialized_output_data)
         else:
             out_result = ExecutionDocumentSingleOutput(
-                __root__=Link(href=None)
+                __root__=Link(
+                    href=generated_output.location,
+                    type=generated_output.media_type
+                )
             )
         output_results[out_id] = out_result
     result = ExecutionDocumentResult(__root__=output_results)

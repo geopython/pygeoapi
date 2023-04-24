@@ -125,7 +125,7 @@ class HelloWorldProcessor(BaseProcessor):
                 ),
                 schema=ProcessIOSchema(
                     type=ProcessIOType.OBJECT,
-                    contentMediaType="application/json"
+                    contentMediaType="text/plain"
                 )
             )
         },
@@ -160,8 +160,6 @@ class HelloWorldProcessor(BaseProcessor):
         If there is an error during execution, be sure to raise the
         ``JobFailedError`` exception.
         """
-        inputs = execution_request.dict().get('inputs', {})
-        name = inputs.get('name')
         try:
             name = execution_request.inputs['name']
         except KeyError:
