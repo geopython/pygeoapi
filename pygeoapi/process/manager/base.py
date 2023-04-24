@@ -39,7 +39,7 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, OrderedDict, Tuple
+from typing import Dict, List, Optional, OrderedDict, Tuple
 import uuid
 
 from pygeoapi.models.base import Link
@@ -405,7 +405,6 @@ class BaseManager(abc.ABC):
         - does the process manager support sync and async modes?
         """
         if requested == RequestedProcessExecutionMode.respond_async:
-            print("client wants async")
             # client wants async - do we support it?
             process_supports_async = (
                     ProcessExecutionMode.async_execute.value in
@@ -414,8 +413,6 @@ class BaseManager(abc.ABC):
                         processor.process_description.job_control_options
                     ]
             )
-            print(processor.process_description.job_control_options)
-            print(f"process supports async? {process_supports_async}")
             if self.is_async and process_supports_async:
                 result = ProcessExecutionMode.async_execute
                 additional_headers = {
@@ -543,13 +540,10 @@ def _get_execution_response_document(
                     requested.transmission_mode ==
                     ProcessOutputTransmissionMode.VALUE.value
             )
-        print(f'Processing output {out_id}...')
         if should_transmit_by_value:
-            print(f'Transmitting by value')
             # if the output's media type is not text based we should
             # be able to base64 encode the file contents
             output_data = Path(generated_output.location).read_bytes()
-            print(f'output_data: {output_data}, type: {type(output_data)}')
 
             if 'json' in generated_output.media_type:
                 # TODO: is it a BBOX?

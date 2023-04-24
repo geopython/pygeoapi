@@ -113,7 +113,8 @@ def test_get_processor_raises_exception(config):
             {'Preference-Applied': 'wait'}
         ),
         pytest.param(
-            False, False, processes.RequestedProcessExecutionMode.respond_async,
+            False, False,
+            processes.RequestedProcessExecutionMode.respond_async,
             processes.ProcessExecutionMode.sync_execute,
             {'Preference-Applied': 'wait'}
         ),
@@ -158,7 +159,7 @@ def test_select_execution_mode(
     ),
     pytest.param(
         processes.ExecutionOutput(
-            transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE),
+            transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE),  # noqa: E501
         processes.OutputExecutionResultInternal(
             location='dummy-location', media_type='dummy-media-type'),
         (None, None, ['<dummy-location>'])
@@ -166,9 +167,10 @@ def test_select_execution_mode(
 ])
 def test_get_execution_response_single_output(
         requested_output, generated_output, expected):
-    with mock.patch('pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
+    with mock.patch(
+            'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.return_value = 'dummy contents'
-        payload, media_type, headers = base._get_execution_response_single_output(
+        payload, media_type, headers = base._get_execution_response_single_output(  # noqa: E501
             requested_output, generated_output
         )
     assert payload == expected[0]
@@ -176,34 +178,37 @@ def test_get_execution_response_single_output(
     assert headers == expected[2]
 
 
-@pytest.mark.parametrize('requested_outputs, generated_outputs, expected_type', [
-    pytest.param(
-        {},
-        {
-            'first': processes.OutputExecutionResultInternal(
-                location='dummy1', media_type='text/plain'),
-            'second': processes.OutputExecutionResultInternal(
-                location='dummy2', media_type='text/plain')
-        },
-        'text/plain'
-    ),
-    pytest.param(
-        {
-            'first': processes.ExecutionOutput(
-                transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE)
-        },
-        {
-            'first': processes.OutputExecutionResultInternal(
-                location='dummy1', media_type='text/plain'),
-            'second': processes.OutputExecutionResultInternal(
-                location='dummy2', media_type='text/plain')
-        },
-        'text/plain'
-    ),
-])
+@pytest.mark.parametrize(
+    'requested_outputs, generated_outputs, expected_type', [
+        pytest.param(
+            {},
+            {
+                'first': processes.OutputExecutionResultInternal(
+                    location='dummy1', media_type='text/plain'),
+                'second': processes.OutputExecutionResultInternal(
+                    location='dummy2', media_type='text/plain')
+            },
+            'text/plain'
+        ),
+        pytest.param(
+            {
+                'first': processes.ExecutionOutput(
+                    transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE)  # noqa: E501
+            },
+            {
+                'first': processes.OutputExecutionResultInternal(
+                    location='dummy1', media_type='text/plain'),
+                'second': processes.OutputExecutionResultInternal(
+                    location='dummy2', media_type='text/plain')
+            },
+            'text/plain'
+        ),
+    ]
+)
 def test_get_execution_response_multiple_outputs(
         requested_outputs, generated_outputs, expected_type):
-    with mock.patch('pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
+    with mock.patch(
+            'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.side_effect = [
             'dummy1-content',
             'dummy2-content',
@@ -229,52 +234,55 @@ def test_get_execution_response_multiple_outputs(
                 )
                 print(f'by_reference: {by_reference}')
                 if by_reference:
-                    assert len(part.get_all('Content-Location', failobj=[])) > 0
+                    assert len(part.get_all('Content-Location', failobj=[])) > 0  # noqa: E501
 
 
-@pytest.mark.parametrize('requested_outputs, generated_outputs, output_contents, expected', [
-    pytest.param(
-        {
-            'fourth': processes.ExecutionOutput(
-                transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE)
-        },
-        {
-            'first': processes.OutputExecutionResultInternal(
-                location='dummy-first-location',
-                media_type='text/plain'
+@pytest.mark.parametrize(
+    'requested_outputs, generated_outputs, output_contents, expected',
+    [
+        pytest.param(
+            {
+                'fourth': processes.ExecutionOutput(
+                    transmissionMode=processes.ProcessOutputTransmissionMode.REFERENCE)  # noqa: E501
+            },
+            {
+                'first': processes.OutputExecutionResultInternal(
+                    location='dummy-first-location',
+                    media_type='text/plain'
+                ),
+                'second': processes.OutputExecutionResultInternal(
+                    location='dummy-second-location',
+                    media_type='application/octet-stream'
+                ),
+                'third': processes.OutputExecutionResultInternal(
+                    location='dummy-third-location',
+                    media_type='application/json'
+                ),
+                'fourth': processes.OutputExecutionResultInternal(
+                    location='dummy-fourth-location',
+                    media_type='foo'
+                )
+            },
+            [
+                b'hi, this is a dummy text for output named first',
+                Point(0, 0).wkb,
+                bytes(json.dumps({'something': 'here'}), 'utf-8'),
+                b'hey, this is some bogus content, which will not be shown'
+            ],
+            (
+                    '{'
+                    '"first": "hi, this is a dummy text for output named first", '  # noqa: E501
+                    '"second": "AQEAAAAAAAAAAAAAAAAAAAAAAAAA", '
+                    '"third": {"value": {"something": "here"}}, '
+                    '"fourth": {"href": "dummy-fourth-location", "type": "foo"}'  # noqa: E501
+                    '}'
             ),
-            'second': processes.OutputExecutionResultInternal(
-                location='dummy-second-location',
-                media_type='application/octet-stream'
-            ),
-            'third': processes.OutputExecutionResultInternal(
-                location='dummy-third-location',
-                media_type='application/json'
-            ),
-            'fourth': processes.OutputExecutionResultInternal(
-                location='dummy-fourth-location',
-                media_type='foo'
-            )
-        },
-        [
-            b'hi, this is a dummy text for output named first',
-            Point(0, 0).wkb,
-            bytes(json.dumps({'something': 'here'}), 'utf-8'),
-            b'hey, this is some bogus content, which will not be shown'
-        ],
-        (
-                '{'
-                '"first": "hi, this is a dummy text for output named first", '
-                '"second": "AQEAAAAAAAAAAAAAAAAAAAAAAAAA", '
-                '"third": {"value": {"something": "here"}}, '
-                '"fourth": {"href": "dummy-fourth-location", "type": "foo"}'
-                '}'
-        ),
-    )
-])
+        )
+    ])
 def test_get_execution_response_document(
         requested_outputs, generated_outputs, output_contents, expected):
-    with mock.patch('pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
+    with mock.patch(
+            'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.side_effect = output_contents
         result = base._get_execution_response_document(
             requested_outputs, generated_outputs)

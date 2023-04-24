@@ -57,8 +57,8 @@ class ProcessIOType(enum.Enum):
 
 class ProcessIOFormat(enum.Enum):
     # this is built from:
-    # - the jsonschema spec at: https://json-schema.org/draft/2020-12/json-schema-validation.html#name-defined-formats
-    # - the OAPI - Processes spec (table 13) at: https://docs.ogc.org/is/18-062r2/18-062r2.html#ogc_process_description
+    # - the jsonschema spec at: https://json-schema.org/draft/2020-12/json-schema-validation.html#name-defined-formats  # noqa: E501
+    # - the OAPI - Processes spec (table 13) at: https://docs.ogc.org/is/18-062r2/18-062r2.html#ogc_process_description  # noqa: E501
     DATE_TIME = "date-time"
     DATE = "date"
     TIME = "time"
@@ -75,13 +75,21 @@ class ProcessIOFormat(enum.Enum):
     JSON_POINTER = "json-pointer"
     RELATIVE_JSON_POINTER = "relative-json-pointer"
     REGEX = "regex"
-    # the below `binary` entry does not seem to be defined in the jsonschema spec
-    # nor in OAPI - Processes - but it is mentioned in OAPI - Processes spec as an example
+    # the below `binary` entry does not seem to be defined in the jsonschema spec  # noqa: E501
+    # nor in OAPI - Processes - but it is mentioned in OAPI - Processes spec as an example  # noqa: E501
     BINARY = "binary"
-    GEOJSON_FEATURE_COLLECTION_URI = "http://www.opengis.net/def/format/ogcapi-processes/0/geojson-feature-collection"
-    GEOJSON_FEATURE_URI = "http://www.opengis.net/def/format/ogcapi-processes/0/geojson-feature"
-    GEOJSON_GEOMETRY_URI = "http://www.opengis.net/def/format/ogcapi-processes/0/geojson-geometry"
-    OGC_BBOX_URI = "http://www.opengis.net/def/format/ogcapi-processes/0/ogc-bbox"
+    GEOJSON_FEATURE_COLLECTION_URI = (
+        "http://www.opengis.net/def/format/ogcapi-processes/0/"
+        "geojson-feature-collection"
+    )
+    GEOJSON_FEATURE_URI = (
+        "http://www.opengis.net/def/format/ogcapi-processes/0/geojson-feature")
+    GEOJSON_GEOMETRY_URI = (
+        "http://www.opengis.net/def/format/ogcapi-processes/0/"
+        "geojson-geometry"
+    )
+    OGC_BBOX_URI = (
+        "http://www.opengis.net/def/format/ogcapi-processes/0/ogc-bbox")
     GEOJSON_FEATURE_COLLECTION_SHORT_CODE = "geojson-feature-collection"
     GEOJSON_FEATURE_SHORT_CODE = "geojson-feature"
     GEOJSON_GEOMETRY_SHORT_CODE = "geojson-geometry"

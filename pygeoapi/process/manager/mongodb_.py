@@ -26,7 +26,6 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-import json
 import logging
 import traceback
 from typing import List, Optional, Tuple
@@ -95,10 +94,10 @@ class MongoDBManager(BaseManager):
             else:
                 # FIXME: According of OAPI - Processes spec, Requirement 75:
                 #
-                # > If the status parameter is not specified then only jobs that
-                # > are running (status: running) or have completed execution
-                # > (successful, failed or dismissed) SHALL be considered for
-                # > inclusion in the response.
+                # > If the status parameter is not specified then only jobs
+                # > that are running (status: running) or have completed
+                # > execution (successful, failed or dismissed) SHALL be
+                # > considered for inclusion in the response.
                 db_jobs = list(collection.find({}))
 
             result = []

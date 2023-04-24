@@ -46,9 +46,8 @@ from gzip import compress
 from http import HTTPStatus
 import json
 import logging
-from pathlib import Path
 import re
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import Any, Dict, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
@@ -84,7 +83,6 @@ from pygeoapi.util import (dategetter, CHARSET, DATETIME_FORMAT, UrlPrefetcher,
                            F_JSON, F_HTML, F_JSONLD, F_GZIP, FORMAT_TYPES,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value,
-                           json_serial, parse_positive_int_parameter,
                            render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
@@ -3345,55 +3343,6 @@ class API:
                     rendered_response = render_j2_template(
                         self.tpl_config,
                         'jobs/job.html',
-                        {
-                            "jobs": response_contents,
-                            "now": datetime.now(
-                                timezone.utc).strftime(DATETIME_FORMAT)
-                        },
-                        request.locale
-                    )
-                else:
-                    rendered_response = to_json(
-                        response_contents, self.pretty_print)
-                result = response_headers, HTTPStatus.OK, rendered_response
-        else:
-            result = self.get_format_exception(request)
-        return result
-
-    @gzip
-    @pre_process
-    def get_jobs(self, request: Union[APIRequest, Any],
-                 job_id=None) -> Tuple[dict, int, str]:
-        """
-        Get process jobs
-
-        :param request: A request object
-        :param job_id: id of job
-
-        :returns: tuple of headers, status code, content
-        """
-        if request.is_valid():
-            response_headers = request.get_response_headers(
-                SYSTEM_LOCALE, **self.api_headers)
-            try:
-                job_list = self.process_api.get_jobs(
-                    request.params, request.get_linkrel, job_id=job_id)
-            except process_execeptions.JobError:
-                result = self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                    response_headers,
-                    request.format,
-                    'NoApplicableCode',
-                    'Could not retrieve job list'
-                )
-            else:
-                response_contents = job_list.dict(by_alias=True)
-                if request.format == F_HTML:
-                    j2_template = Path(
-                        'jobs/index.html' if job_id is None else 'jobs/job.html')
-                    rendered_response = render_j2_template(
-                        self.tpl_config,
-                        j2_template,
                         {
                             "jobs": response_contents,
                             "now": datetime.now(

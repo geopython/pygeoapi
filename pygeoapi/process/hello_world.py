@@ -95,8 +95,8 @@ class HelloWorldProcessor(BaseProcessor):
             "name": ProcessInput(
                 title="Name",
                 description=(
-                    'The name of the person or entity that you wish to be echoed '
-                    'back as an output'
+                    'The name of the person or entity that you wish to be '
+                    'echoed back as an output'
                 ),
                 schema=ProcessIOSchema(
                     type=ProcessIOType.STRING),
@@ -120,8 +120,8 @@ class HelloWorldProcessor(BaseProcessor):
             "echo": ProcessOutput(
                 title="Hello world",
                 description=(
-                    'A "hello world" echo with the name and (optional) message '
-                    'submitted for processing'
+                    'A "hello world" echo with the name and (optional) '
+                    'message submitted for processing'
                 ),
                 schema=ProcessIOSchema(
                     type=ProcessIOType.OBJECT,

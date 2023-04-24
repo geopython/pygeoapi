@@ -42,7 +42,6 @@ from typing import (
     Optional,
     Tuple,
 )
-import urllib.parse
 
 from babel import Locale
 import pydantic
@@ -290,8 +289,8 @@ class ProcessApi:
                     ProcessExecutionMode.sync_execute
             )
             if is_sync:
-                location_link = Link(
-                    href=f'{self.base_url}/jobs/{job_status_info.job_id}')
+                # location_link = Link(
+                #     href=f'{self.base_url}/jobs/{job_status_info.job_id}')
                 pass  # FIXME
                 # as per OAproc, if the execution mode is sync and the server
                 # creates a job, then the response shall include
@@ -371,43 +370,6 @@ class ProcessApi:
         """
         job_status_info = self.manager.get_job(job_id)
         return _prepare_job_for_response(job_status_info, self.base_url)
-
-    # def get_jobs(
-    #         self,
-    #         request_params: ImmutableMultiDict,
-    #         link_rel_getter: Callable,
-    #         job_id: Optional[str] = None
-    # ) -> JobList:
-    #     """
-    #     Get process jobs
-    #
-    #     :param request_params: Input parameters
-    #     :param link_rel_getter: A callable that provides appropriate `rel`
-    #                             values for generating response links
-    #     :param job_id: id of job
-    #
-    #     :returns: tuple of headers, status code, content
-    #     """
-    #     response_links = []
-    #     for media_type, name in ((util.F_HTML, "HTML"), (util.F_JSON, "JSON")):
-    #         response_links.append(
-    #             Link(
-    #                 href=f"{self.base_url}/jobs/?f={media_type}",
-    #                 type=util.FORMAT_TYPES[media_type],
-    #                 rel=link_rel_getter(media_type),
-    #                 title=f'Job list as {name}'
-    #             )
-    #         )
-    #     if job_id is not None:
-    #         jobs = [self.manager.get_job(job_id)]
-    #     else:
-    #         jobs, pagination_links = self._filter_jobs(request_params)
-    #         response_links.extend(pagination_links)
-    #
-    #     job_reads = []
-    #     for job in jobs:
-    #         job_reads.append(_prepare_job_for_response(job, self.base_url))
-    #     return JobList(jobs=job_reads, links=response_links)
 
     def get_job_result(
             self, job_id: str) -> Tuple[bytes, Optional[str], List[Link]]:
@@ -593,13 +555,13 @@ def _prepare_job_for_response(
                 Link(
                     type=util.FORMAT_TYPES[util.F_HTML],
                     rel='about',
-                    title=f'Job results as HTML',
+                    title='Job results as HTML',
                     href=f'{result_url}?f={util.F_HTML}',
                 ),
                 Link(
                     type=util.FORMAT_TYPES[util.F_JSON],
                     rel='about',
-                    title=f'Job results as JSON',
+                    title='Job results as JSON',
                     href=f'{result_url}?f={util.F_JSON}',
                 ),
             ]

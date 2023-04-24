@@ -30,7 +30,7 @@
 # =================================================================
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.models.processes import (
