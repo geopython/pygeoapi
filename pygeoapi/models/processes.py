@@ -1,6 +1,6 @@
 import datetime as dt
 import enum
-from typing import Any, Dict, Literal, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 
@@ -165,7 +165,7 @@ class ProcessInput(ProcessOutput):
     keywords: Optional[List[str]] = None
     metadata: Optional[List[ProcessMetadata]] = None
     min_occurs: int = pydantic.Field(1, alias="minOccurs")
-    max_occurs: Optional[Union[int, Literal["unbounded"]]] = pydantic.Field(
+    max_occurs: Optional[Union[int, str]] = pydantic.Field(
         1, alias="maxOccurs")
     additional_parameters: Optional[AdditionalProcessIOParameters] = None
 
@@ -245,7 +245,7 @@ class ExecutionOutput(pydantic.BaseModel):
     transmission_mode: Optional[
         ProcessOutputTransmissionMode
     ] = pydantic.Field(
-        ProcessOutputTransmissionMode.VALUE,
+        ProcessOutputTransmissionMode.VALUE.value,
         alias="transmissionMode"
     )
 
@@ -327,7 +327,7 @@ class JobStatusInfoInternal(JobStatusInfoBase):
 
 class JobStatusInfoRead(JobStatusInfoBase):
     """OAProc. Schema for a StatusInfo."""
-    type: Literal["process"] = "process"
+    type: str = "process"
     links: Optional[List[Link]]
 
     class Config:

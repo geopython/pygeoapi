@@ -31,7 +31,7 @@
 
 import abc
 from base64 import urlsafe_b64encode
-from collections import OrderedDict
+import collections
 import datetime as dt
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
@@ -39,7 +39,7 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, OrderedDict, Tuple
 import uuid
 
 from pygeoapi.models.base import Link
@@ -75,7 +75,7 @@ class BaseManager(abc.ABC):
     output_dir: Optional[Path]
     processes: OrderedDict[str, Dict]
 
-    def __init__(self, manager_def: dict):
+    def __init__(self, manager_def: Dict):
         """
         Initialize object
 
@@ -88,7 +88,7 @@ class BaseManager(abc.ABC):
         self.connection = manager_def.get('connection')
         out_dir = manager_def.get('output_dir')
         self.output_dir = Path(out_dir) if out_dir is not None else None
-        self.processes = OrderedDict()
+        self.processes = collections.OrderedDict()
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
@@ -174,7 +174,7 @@ class BaseManager(abc.ABC):
             limit + offset if limit is not None else len(self.processes))
         relevant_ = (
             (i, conf) for i, conf in enumerate(self.processes.values())
-            if i <= offset and i < right_bound
+            if i >= offset and i < right_bound
         )
         descriptions = []
         for _, conf in relevant_:
@@ -386,9 +386,9 @@ class BaseManager(abc.ABC):
 
     def _select_execution_mode(
             self,
-            requested: RequestedProcessExecutionMode,
+            requested: Optional[RequestedProcessExecutionMode],
             processor: BaseProcessor
-    ) -> Tuple[ProcessExecutionMode, Optional[Dict[str, str]]]:
+    ) -> Tuple[ProcessExecutionMode, Dict[str, str]]:
         """Select the execution mode to be employed
 
         The execution mode to use depends on a number of factors:
@@ -398,11 +398,17 @@ class BaseManager(abc.ABC):
         - does the process manager support sync and async modes?
         """
         if requested == RequestedProcessExecutionMode.respond_async:
+            print("client wants async")
             # client wants async - do we support it?
             process_supports_async = (
-                    ProcessExecutionMode.async_execute.value in 
-                    processor.process_description.job_control_options
+                    ProcessExecutionMode.async_execute.value in
+                    [
+                        op.value for op in
+                        processor.process_description.job_control_options
+                    ]
             )
+            print(processor.process_description.job_control_options)
+            print(f"process supports async? {process_supports_async}")
             if self.is_async and process_supports_async:
                 result = ProcessExecutionMode.async_execute
                 additional_headers = {
@@ -435,7 +441,7 @@ class BaseManager(abc.ABC):
 def _get_execution_response_single_output(
         requested_output: ExecutionOutput,
         generated_output: OutputExecutionResultInternal,
-) -> Tuple[Optional[bytes], str, List]:
+) -> Tuple[Optional[bytes], Optional[str], List]:
     """Get process execution response for when there is a single process output
 
     If there is a single execution output:
@@ -445,10 +451,13 @@ def _get_execution_response_single_output(
 
     :param requested_output: requested output parameters
     :param generated_output: Generated output parameters
+    :returns: a three-element tuple with the already serialized response
+              payload, the media type and a list with any additional headers
+              to be added to the response
     """
     should_transmit_by_value = (
             requested_output.transmission_mode ==
-            ProcessOutputTransmissionMode.VALUE
+            ProcessOutputTransmissionMode.VALUE.value
     )
     additional_headers = []
     if should_transmit_by_value:
@@ -458,7 +467,7 @@ def _get_execution_response_single_output(
         media_type = None
         payload = None
         additional_headers.append(
-            Link(href=None, rel=None, title=None).as_link_header()
+            Link(href=generated_output.location).as_link_header()
         )
     return payload, media_type, additional_headers
 
@@ -466,6 +475,7 @@ def _get_execution_response_single_output(
 def _get_execution_response_multiple_outputs(
         requested_outputs: Dict[str, ExecutionOutput],
         generated_outputs: Dict[str, OutputExecutionResultInternal],
+        multipart_boundary: Optional[str] = None,
 ) -> bytes:
     """Generate an appropriate body for process execution HTTP responses
 
@@ -476,17 +486,20 @@ def _get_execution_response_multiple_outputs(
     include the contents directly in the response, or include
     links to them.
     """
-    payload = MIMEMultipart("related")
+    payload = MIMEMultipart("related", boundary=multipart_boundary)
     for output_id, generated_output in generated_outputs.items():
-        requested = requested_outputs.get(output_id)
         part = MIMENonMultipart(
             *generated_output.media_type.split('/'), )
         part.set_param('Type', generated_output.media_type)
         part.add_header('Content-ID', output_id)
-        should_transmit_by_value = (
-                requested.transmission_mode ==
-                ProcessOutputTransmissionMode.VALUE
-        )
+        requested = requested_outputs.get(output_id)
+        if requested is None:
+            should_transmit_by_value = True
+        else:
+            should_transmit_by_value = (
+                    requested.transmission_mode ==
+                    ProcessOutputTransmissionMode.VALUE.value
+            )
         if should_transmit_by_value:
             data_ = Path(generated_output.location).read_bytes()
             part.set_payload(data_)
@@ -496,7 +509,7 @@ def _get_execution_response_multiple_outputs(
                 payload.set_param(
                     "Type", generated_output.media_type)
         else:
-            part.add_header('Content-Location', None)
+            part.add_header('Content-Location', generated_output.location)
         payload.attach(part)
     return payload.as_bytes()
 

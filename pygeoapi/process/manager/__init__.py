@@ -33,11 +33,12 @@ import logging
 from typing import Dict
 
 from pygeoapi.plugin import load_plugin
+from pygeoapi.process.manager.base import BaseManager
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_manager(config: Dict):
+def get_manager(config: Dict) -> BaseManager:
     """Instantiate process manager from the supplied configuration.
 
     :param config: pygeoapi configuration

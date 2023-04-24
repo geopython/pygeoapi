@@ -43,6 +43,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pydantic
 import tinydb
+from tinydb.storages import MemoryStorage
 
 from pygeoapi.process import exceptions
 from pygeoapi.process.manager.base import BaseManager
@@ -69,7 +70,11 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of status of result
         """
 
-        self.db = tinydb.TinyDB(self.connection)
+        if self.connection is not None:
+            db = tinydb.TinyDB(self.connection)
+        else:
+            db = tinydb.TinyDB(storage=MemoryStorage)
+        self.db = db
 
         if mode == 'w' and fcntl is not None:
             fcntl.lockf(self.db.storage._handle, fcntl.LOCK_EX)
