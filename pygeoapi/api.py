@@ -124,6 +124,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
         'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
+        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables',
+        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
         'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
@@ -1010,14 +1012,14 @@ class API:
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
                 collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'queryables',
+                    'type': 'application/schema+json',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
                     'title': 'Queryables for this collection as JSON',
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'queryables',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
                     'title': 'Queryables for this collection as HTML',
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_HTML}'  # noqa
                 })
