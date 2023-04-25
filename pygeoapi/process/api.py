@@ -143,13 +143,15 @@ class ProcessApi:
         for description in relevant:
             translated_description = l10n.translate_model(
                 description, locale)
-            translated_description.links.extend(
+            existing_links = translated_description.links or []
+            existing_links.extend(
                 _generate_process_description_links(
                     link_rel_getter,
                     description.id,
                     self.base_url,
                     self.default_locale)
             )
+            translated_description.links = existing_links
             summary = ProcessSummary(
                 **translated_description.dict(
                     by_alias=True, exclude_none=True)
@@ -250,7 +252,7 @@ class ProcessApi:
             self,
             process_id: str,
             request_headers: Mapping,
-            request_payload: Optional[str],
+            request_payload: bytes,
             response_headers: MutableMapping,
     ) -> Tuple[Dict[str, str], HTTPStatus, bytes]:
         """
@@ -261,7 +263,10 @@ class ProcessApi:
         :param response_headers: Already initialized response headers
         :param process_id: id of process to be executed
 
-        :raise InvalidJobParametersError: If the input parameters for the job
+        :raise: UnknownProcessError: if the process id is invalid
+        :raise MissingJobParameterError: If the input parameters for the job
+                                         are missing
+        :raise InvalidJobParameterError: If the input parameters for the job
                                           are not as expected
         :raise: JobFailedError: if there is an error processing the job
         :returns: tuple of status code, response payload, HTTP headers
@@ -270,12 +275,12 @@ class ProcessApi:
         try:
             payload = json.loads(request_payload)
             execution_request = ExecuteRequest(**payload)
-        except (
-                json.JSONDecodeError,
-                TypeError,
-                pydantic.ValidationError
-        ):
-            raise exceptions.InvalidJobParametersError("InvalidParameterValue")
+        except json.JSONDecodeError as err:
+            raise exceptions.MissingJobParameterError(
+                'MissingParameterValue') from err
+        except pydantic.ValidationError as err:
+            raise exceptions.InvalidJobParameterError(
+                "InvalidParameterValue") from err
         else:
             try:
                 execution_mode = RequestedProcessExecutionMode(
@@ -320,7 +325,7 @@ class ProcessApi:
                 # raise an exception
                 raise RuntimeError(
                     f"Unexpected job status: {job_status_info.status!r}")
-            return http_status, payload, response_headers
+            return response_headers, http_status, payload
 
     def list_jobs(
             self,

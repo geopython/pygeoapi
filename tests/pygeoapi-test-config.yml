@@ -375,7 +375,7 @@ resources:
         processor:
             name: HelloWorld
 
-    pygeometa-metadata-validate:
+    greeter:
         type: process
         processor:
-            name: pygeometa.pygeoapi_plugin.PygeometaMetadataValidateProcessor
+            name: pygeoapi.process.hello_world.GreeterProcessor

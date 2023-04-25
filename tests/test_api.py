@@ -1544,32 +1544,34 @@ def test_get_collection_tiles(config, api_):
     assert len(content['tilesets']) > 0
 
 
-def test_describe_processes(config, api_):
-    req = mock_request({'limit': 1})
+@pytest.mark.parametrize(
+    'limit, expected_len_processes, expected_len_links', [
+        pytest.param(1, 1, 5),
+        pytest.param(None, 2, 3),
+    ]
+)
+def test_list_processes(
+        config, api_, limit, expected_len_processes, expected_len_links):
+    req = mock_request({'limit': limit} if limit is not None else {})
     # Test for description of single processes
-    rsp_headers, code, response = api_.describe_processes(req)
+    rsp_headers, code, response = api_.list_processes(req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
-    assert len(data['processes']) == 1
-    assert len(data['links']) == 3
+    assert len(data['processes']) == expected_len_processes
+    assert len(data['links']) == expected_len_links
 
+
+def test_get_process(config, api_):
     req = mock_request()
 
     # Test for undefined process
-    rsp_headers, code, response = api_.describe_processes(req, 'foo')
+    rsp_headers, code, response = api_.get_process(req, 'foo')
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
 
-    # Test for description of all processes
-    rsp_headers, code, response = api_.describe_processes(req)
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert len(data['processes']) == 2
-    assert len(data['links']) == 3
-
     # Test for particular, defined process
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     process = json.loads(response)
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
@@ -1587,7 +1589,7 @@ def test_describe_processes(config, api_):
 
     # Check HTML response when requested in headers
     req = mock_request(HTTP_ACCEPT='text/html')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: return default from YAML
@@ -1595,14 +1597,14 @@ def test_describe_processes(config, api_):
 
     # Check JSON response when requested in headers
     req = mock_request(HTTP_ACCEPT='application/json')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check HTML response when requested with query parameter
     req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: return default from YAML
@@ -1610,14 +1612,14 @@ def test_describe_processes(config, api_):
 
     # Check JSON response when requested with query parameter
     req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested with French language parameter
     req = mock_request({'lang': 'fr'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'fr-CA'
@@ -1626,25 +1628,71 @@ def test_describe_processes(config, api_):
 
     # Check JSON response when language requested in headers
     req = mock_request(HTTP_ACCEPT_LANGUAGE='fr')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = api_.get_process(req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'fr-CA'
 
     # Test for undefined process
     req = mock_request()
-    rsp_headers, code, response = api_.describe_processes(req, 'goodbye-world')
+    rsp_headers, code, response = api_.get_process(req, 'goodbye-world')
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
 
+@pytest.mark.parametrize(
+    'process_id, payload, expected_status_code, expected_error_code',
+    [
+        pytest.param(
+            'hello-world', '',
+            HTTPStatus.BAD_REQUEST, 'MissingParameterValue'
+        ),
+        pytest.param(
+            'foo', {'inputs': {'name': 'test'}},
+            HTTPStatus.NOT_FOUND, 'NoSuchProcess'
+        ),
+    ]
+)
+def test_execute_process_invalid_parameters(
+        config, api_, process_id, payload,
+        expected_status_code, expected_error_code
+):
+    req = mock_request(data=payload)
+    rsp_headers, code, response = api_.execute_process(req, process_id)
+    assert rsp_headers['Content-Language'] == 'en-US'
+    assert code == expected_status_code
+    assert 'Location' not in rsp_headers
+    data = json.loads(response)
+    assert data['code'] == expected_error_code
+
+
+@pytest.mark.parametrize('payload', [
+    pytest.param(
+        {
+            'inputs': {'name': 'Test'},
+            'response': 'document'
+        }
+    )
+])
+def test_execute_process_document_response(config, api_, payload):
+    req = mock_request(data=payload)
+    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    data = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert 'Location' in rsp_headers
+    assert len(data.keys()) == 2
+    assert data['id'] == 'echo'
+    assert data['value'] == 'Hello Test!'
+
+
 def test_execute_process(config, api_):
     req_body_0 = {
         'inputs': {
             'name': 'Test'
-        }
+        },
+        'response': 'document',
     }
     req_body_1 = {
         'inputs': {
@@ -1679,23 +1727,7 @@ def test_execute_process(config, api_):
 
     cleanup_jobs = set()
 
-    # Test posting empty payload to existing process
-    req = mock_request(data='')
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-    assert rsp_headers['Content-Language'] == 'en-US'
-
-    data = json.loads(response)
-    assert code == HTTPStatus.BAD_REQUEST
-    assert 'Location' not in rsp_headers
-    assert data['code'] == 'MissingParameterValue'
-
     req = mock_request(data=req_body_0)
-    rsp_headers, code, response = api_.execute_process(req, 'foo')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.NOT_FOUND
-    assert 'Location' not in rsp_headers
-    assert data['code'] == 'NoSuchProcess'
 
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
 

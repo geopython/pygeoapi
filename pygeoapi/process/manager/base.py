@@ -522,17 +522,18 @@ def _get_execution_response_multiple_outputs(
 
 
 def _get_execution_response_document(
-        requested_outputs: Dict[str, ExecutionOutput],
+        requested_outputs: Optional[Dict[str, ExecutionOutput]],
         generated_outputs: Dict[str, OutputExecutionResultInternal],
 ) -> str:
     """Prepare process execution response when the requested type is `document`
 
-    :param execution_request: The parameters that originated the execution
-    :param execution_result: Process execution results
+    :param requested_outputs: Optional explicit configuration for the process
+                              outputs, as requested by the client
+    :param generated_outputs: Outputs generated during process execution
     """
     output_results = {}
     for out_id, generated_output in generated_outputs.items():
-        requested = requested_outputs.get(out_id)
+        requested = (requested_outputs or {}).get(out_id)
         if requested is None:
             should_transmit_by_value = True
         else:

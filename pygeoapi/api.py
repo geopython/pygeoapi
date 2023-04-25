@@ -3243,20 +3243,30 @@ class API:
         :returns: tuple of headers, status code, content
         """
         if request.is_valid():
-            process_description = self.process_api.get_process(
-                process_id, request.locale, request.get_linkrel)
-            response_contents = process_description.dict(
-                by_alias=True, exclude_none=True, exclude_defaults=True)
-            if request.format == F_HTML:
-                rendered_response = render_j2_template(
-                    self.tpl_config, "processes/process.html",
-                    response_contents, request.locale
+            response_headers = request.get_response_headers(**self.api_headers)
+            try:
+                process_description = self.process_api.get_process(
+                    process_id, request.locale, request.get_linkrel)
+            except process_execeptions.UnknownProcessError as err:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND,
+                    response_headers,
+                    request.format,
+                    'NoSuchProcess',
+                    'Invalid process id'
                 )
             else:
-                rendered_response = to_json(
-                    response_contents, self.pretty_print)
-            headers = request.get_response_headers(**self.api_headers)
-            result = headers, HTTPStatus.OK, rendered_response
+                response_contents = process_description.dict(
+                    by_alias=True, exclude_none=True, exclude_defaults=True)
+                if request.format == F_HTML:
+                    rendered_response = render_j2_template(
+                        self.tpl_config, "processes/process.html",
+                        response_contents, request.locale
+                    )
+                else:
+                    rendered_response = to_json(
+                        response_contents, self.pretty_print)
+                result = response_headers, HTTPStatus.OK, rendered_response
         else:
             result = self.get_format_exception(request)
         return result
@@ -3383,7 +3393,17 @@ class API:
                     request.get_response_headers(
                         SYSTEM_LOCALE, **self.api_headers)
                 )
-            except process_execeptions.InvalidJobParametersError as err:
+            except process_execeptions.UnknownProcessError as err:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, response_headers, request.format,
+                    'NoSuchProcess', str(err)
+                )
+            except process_execeptions.MissingJobParameterError as err:
+                result = self.get_exception(
+                    HTTPStatus.BAD_REQUEST, response_headers, request.format,
+                    'MissingParameterValue', str(err)
+                )
+            except process_execeptions.InvalidJobParameterError as err:
                 result = self.get_exception(
                     HTTPStatus.BAD_REQUEST, response_headers, request.format,
                     'InvalidParameterValue', str(err)

@@ -96,6 +96,9 @@ class BaseProcessor(abc.ABC):
                                   execution progress
 
         :raise: JobFailedError: If there is an error during execution
+        :raise: MissingJobParameterError: If a mandatory parameter is missing
+        :raise: InvalidJobParameterError: If a parameter is invalid
+        :raise: JobFailedError: If there is an error during execution
         :returns: status info with relevant detail about the finished execution
         """
         ...

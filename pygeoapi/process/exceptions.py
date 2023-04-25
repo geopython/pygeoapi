@@ -30,7 +30,11 @@ class JobError(Exception):
     ...
 
 
-class InvalidJobParametersError(JobError):
+class MissingJobParameterError(JobError):
+    ...
+
+
+class InvalidJobParameterError(JobError):
     ...
 
 

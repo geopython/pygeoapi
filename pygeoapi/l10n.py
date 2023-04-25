@@ -27,10 +27,10 @@
 #
 # =================================================================
 
-import logging
-from typing import Union
 from collections import OrderedDict
 from copy import deepcopy
+import logging
+from typing import Mapping, Union
 
 from babel import Locale
 from babel import UnknownLocaleError as _UnknownLocaleError
@@ -296,7 +296,10 @@ def translate_model(model: pydantic.BaseModel, locale_: Locale):
     translated = {}
     for translatable in translatable_properties:
         candidates = getattr(model, translatable, {})
-        translated[translatable] = translate(candidates, locale_)
+        if isinstance(candidates, Mapping):
+            translated[translatable] = translate(candidates, locale_)
+        else:
+            translated[translatable] = candidates
     return model.__class__(
         **model.dict(by_alias=True, exclude=set(translatable_properties)),
         **translated

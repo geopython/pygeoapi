@@ -32,7 +32,6 @@
 import logging
 from typing import Dict, List, Optional, Tuple
 
-from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.models.processes import (
     ExecuteRequest,
     JobStatus,
@@ -40,6 +39,8 @@ from pygeoapi.models.processes import (
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
+from pygeoapi.process import exceptions
+from pygeoapi.process.manager.base import BaseManager
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +84,12 @@ class DummyManager(BaseManager):
         """
 
         return 0, []
+
+    def get_job(self, job_id: str) -> JobStatusInfoInternal:
+        raise exceptions.JobNotFoundError()
+
+    def delete_job(self, job_id: str) -> JobStatusInfoInternal:
+        raise exceptions.JobNotFoundError()
 
     def execute_process(
             self,

@@ -32,6 +32,7 @@
 import datetime as dt
 import logging
 from pathlib import Path
+from random import choice
 from typing import Callable, Optional
 
 from pygeoapi.process import exceptions
@@ -124,7 +125,7 @@ class HelloWorldProcessor(BaseProcessor):
                     'message submitted for processing'
                 ),
                 schema=ProcessIOSchema(
-                    type=ProcessIOType.OBJECT,
+                    type=ProcessIOType.STRING,
                     contentMediaType="text/plain"
                 )
             )
@@ -163,7 +164,8 @@ class HelloWorldProcessor(BaseProcessor):
         try:
             name = execution_request.inputs['name']
         except KeyError:
-            raise exceptions.JobFailedError('Cannot process without a name')
+            raise exceptions.MissingJobParameterError(
+                'Cannot process without a name')
         message = execution_request.inputs.get('message', '')
         echo_value = f'Hello {name}! {message}'.strip()
         echo_location = (
@@ -193,3 +195,103 @@ class HelloWorldProcessor(BaseProcessor):
 
     def __repr__(self):
         return f'<HelloWorldProcessor> {self.process_description.id}'
+
+
+class GreeterProcessor(BaseProcessor):
+    process_description = ProcessDescription(
+        # title and description can be simple strings, if no translation is needed  # noqa E501
+        title='Greeter',
+        description=(
+            'An example process that takes a number as input, and echoes as '
+            'many greetings back as output. Intended to demonstrate a simple '
+            'process with a single input.'
+        ),
+        keywords=[
+            'greeter',
+            'example',
+        ],
+        version="0.1.0",
+        id="greeter",
+        jobControlOptions=[
+            ProcessJobControlOption.SYNC_EXECUTE,
+            ProcessJobControlOption.ASYNC_EXECUTE,
+        ],
+        outputTransmission=[ProcessOutputTransmissionMode.VALUE],
+        inputs={
+            "num_greetings": ProcessInput(
+                title="Number of greetings",
+                description='How many greetings to generate',
+                schema=ProcessIOSchema(
+                    type=ProcessIOType.INTEGER),
+            ),
+        },
+        outputs={
+            "greetings": ProcessOutput(
+                title="Greetings",
+                description=(
+                    'A string with the generated greetings, comma separated'
+                ),
+                schema=ProcessIOSchema(
+                    type=ProcessIOType.STRING,
+                    contentMediaType="text/plain"
+                )
+            )
+        },
+        example={
+            "inputs": {"num_greetings": 3}
+        }
+    )
+
+    def execute(
+            self,
+            job_id: str,
+            execution_request: ExecuteRequest,
+            results_storage_root: Path,
+            progress_reporter: Optional[
+                Callable[[JobStatusInfoInternal], bool]
+            ] = None
+    ) -> JobStatusInfoInternal:
+        try:
+            num_greetings = int(execution_request.inputs.get('num_greetings'))
+            if num_greetings <= 0:
+                raise RuntimeError()
+        except (RuntimeError, TypeError, ValueError) as err:
+            raise exceptions.InvalidJobParameterError(
+                'Cannot parse num_greetings to a positive integer') from err
+        else:
+            candidate_greetings = (
+                'Hello!',
+                'Hi',
+                'Wazzaaap',
+                'Cheers',
+                "'Sup?",
+                'Greetings earthling',
+            )
+            chosen = []
+            for i in range(num_greetings):
+                chosen.append(choice(candidate_greetings))
+            greetings = ', '.join(chosen)
+            greetings_location = (
+                    results_storage_root / self.process_description.id /
+                    f'{job_id}-greetings.txt'
+            )
+            greetings_location.parent.mkdir(parents=True, exist_ok=True)
+            with greetings_location.open(mode='w', encoding='utf-8') as fh:
+                fh.write(greetings)
+            now = dt.datetime.now(dt.timezone.utc)
+            return JobStatusInfoInternal(
+                jobID=job_id,
+                processID=self.process_description.id,
+                message='Process completed successfully',
+                progress=100,
+                updated=now,
+                finished=now,
+                status=JobStatus.successful,
+                requested_outputs=execution_request.outputs,
+                generated_outputs={
+                    'echo': OutputExecutionResultInternal(
+                        location=str(greetings_location),
+                        media_type='text/plain'
+                    ),
+                }
+            )
