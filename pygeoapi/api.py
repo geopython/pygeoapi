@@ -762,6 +762,7 @@ class API:
 
             fcm['processes'] = False
             fcm['stac'] = False
+            fcm['collection'] = False
 
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'process'):
@@ -770,6 +771,10 @@ class API:
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
+
+            if filter_dict_by_key_value(self.config['resources'],
+                                        'type', 'collection'):
+                fcm['collection'] = True
 
             content = render_j2_template(self.tpl_config, 'landing_page.html',
                                          fcm, request.locale)
