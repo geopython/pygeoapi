@@ -32,7 +32,8 @@ Reference
 ^^^^^^^^^^
 
 The ``server`` section provides directives on binding and high level tuning.
-Please find more information related to API design rules (the property at the bottom of the example below) :ref:`further down<API Design Rules>`.
+
+For more information related to API design rules (the ``api_rules`` property in the example below) see :ref:`API Design Rules`.
 
 .. code-block:: yaml
 
@@ -311,6 +312,8 @@ Examples:
    curl https://example.org/openapi  # resource foo is not advertised
    curl https://example.org/collections/foo  # user can access resource normally
 
+
+.. _API Design Rules:
 
 API Design Rules
 ----------------
