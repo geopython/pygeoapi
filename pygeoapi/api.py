@@ -5,7 +5,7 @@
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
-#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli

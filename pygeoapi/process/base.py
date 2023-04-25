@@ -1,7 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
-#          Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2023 Ricardo Garcia Silva

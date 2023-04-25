@@ -1,6 +1,6 @@
 # =================================================================
 #
-# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@gmail.com>
+# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
