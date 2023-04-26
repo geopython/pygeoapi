@@ -16,8 +16,11 @@ pygeoapi itself implements numerous formats, data providers and the process func
 The pygeoapi architecture supports the following subsystems:
 
 * data providers
+
 * output formats
+
 * processes
+
 * process manager
 
 The core pygeoapi plugin registry can be found in ``pygeoapi.plugin.PLUGINS``.
@@ -51,7 +54,7 @@ The following methods are options to connect a plugin to pygeoapi:
 * Install this Python package onto your system (``python3 setup.py install``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
 * Specify the main plugin class as the ``name`` of the relevant type in the
-pygeoapi configuration. For example, for a new vector data provider:
+  pygeoapi configuration. For example, for a new vector data provider:
 
 .. code-block:: yaml
 

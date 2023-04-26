@@ -54,8 +54,10 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-MOCK_MODULES = ['osgeo', 'psycopg2', 'psycopg2.sql', 'psycopg2.extras',
-                'elasticsearch', 'elasticsearch.client.indices']
+# Avoid warning when building the documentation by mocking libraries
+MOCK_MODULES = ['osgeo', 'psycopg2', 'psycopg2.sql', 'psycopg2.extras', 'geoalchemy2',
+                'elasticsearch', 'elasticsearch.client.indices', 'elasticsearch_dsl', 
+                'geoalchemy2.functions', 'geoalchemy2.shape']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 PYGEOAPI_HOME = os.path.abspath('../..')
@@ -116,7 +118,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'en'
+language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
