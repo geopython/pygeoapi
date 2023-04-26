@@ -1131,7 +1131,8 @@ def get_oas_30(cfg):
                 continue
             name = l10n.translate(k, locale_)
             p = process_manager.get_processor(k)
-            md_desc = l10n.translate(p.process_description.description, locale_)
+            md_desc = l10n.translate(
+                p.process_description.description, locale_)
 
             process_name_path = f'/processes/{name}'
             tag = {
@@ -1143,7 +1144,8 @@ def get_oas_30(cfg):
                 translated_link = l10n.translate(
                     link.dict(by_alias=True, exclude_none=True), locale_)
                 if translated_link['type'] == 'information':
-                    tag['externalDocs']['description'] = translated_link['type']
+                    tag['externalDocs']['description'] = translated_link[
+                        'type']
                     tag['externalDocs']['url'] = translated_link['url']
                     break
             if len(tag['externalDocs']) == 0:
