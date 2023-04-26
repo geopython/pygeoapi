@@ -162,7 +162,7 @@ This integration can be seen in the provided example Django project. Refer to `e
 for the integration of pygeoapi with an already exising Django application.
 
 Hot-reloading
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 The ``pygeoapi serve`` uses the current pygeoapi installation. If the installation was performed using the setup command 
 provided in the :ref:`install` section (``python3 setup.py install``), changes made to the codebase of pygeoapi are not going to be 
