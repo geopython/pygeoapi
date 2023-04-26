@@ -1131,18 +1131,20 @@ def get_oas_30(cfg):
                 continue
             name = l10n.translate(k, locale_)
             p = process_manager.get_processor(k)
+            md_desc = l10n.translate(p.process_description.description, locale_)
 
-            md_desc = l10n.translate(p.metadata['description'], locale_)
             process_name_path = f'/processes/{name}'
             tag = {
                 'name': name,
                 'description': md_desc,  # noqa
                 'externalDocs': {}
             }
-            for link in l10n.translate(p.metadata['links'], locale_):
-                if link['type'] == 'information':
-                    tag['externalDocs']['description'] = link['type']
-                    tag['externalDocs']['url'] = link['url']
+            for link in p.process_description.links or []:
+                translated_link = l10n.translate(
+                    link.dict(by_alias=True, exclude_none=True), locale_)
+                if translated_link['type'] == 'information':
+                    tag['externalDocs']['description'] = translated_link['type']
+                    tag['externalDocs']['url'] = translated_link['url']
                     break
             if len(tag['externalDocs']) == 0:
                 del tag['externalDocs']
@@ -1167,7 +1169,7 @@ def get_oas_30(cfg):
 
             paths[f'{process_name_path}/execution'] = {
                 'post': {
-                    'summary': f"Process {l10n.translate(p.metadata['title'], locale_)} execution",  # noqa
+                    'summary': f"Process {l10n.translate(p.process_description.title, locale_)} execution",  # noqa
                     'description': md_desc,
                     'tags': [name],
                     'operationId': f'execute{name.capitalize()}Job',
@@ -1191,8 +1193,8 @@ def get_oas_30(cfg):
                     }
                 }
             }
-            if 'example' in p.metadata:
-                paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+            if p.process_description.example is not None:
+                paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.process_description.example  # noqa
 
             name_in_path = {
                 'name': 'jobId',
