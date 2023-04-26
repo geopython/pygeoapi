@@ -38,7 +38,6 @@ from typing import (
     Dict,
     List,
     Mapping,
-    MutableMapping,
     Optional,
     Tuple,
     Union,
@@ -583,6 +582,7 @@ def _prepare_job_for_response(
         links=links
     )
 
+
 def _combine_response_headers(
         response_headers: Dict[str, Union[str, List[str]]],
         additional: List[Tuple[str, str]]
@@ -592,7 +592,8 @@ def _combine_response_headers(
         if existing_header is None:
             response_headers[additional_header_name] = content
         elif isinstance(existing_header, str):
-            response_headers[additional_header_name] = [existing_header, content]
+            response_headers[additional_header_name] = [
+                existing_header, content]
         else:  # it is a list already
             response_headers[additional_header_name].append(content)
     return response_headers

@@ -3247,7 +3247,7 @@ class API:
             try:
                 process_description = self.process_api.get_process(
                     process_id, request.locale, request.get_linkrel)
-            except process_execeptions.UnknownProcessError as err:
+            except process_execeptions.UnknownProcessError:
                 result = self.get_exception(
                     HTTPStatus.NOT_FOUND,
                     response_headers,
@@ -3499,7 +3499,8 @@ class API:
                 )
             else:
                 rendered_response = to_json(
-                    job_status_info_read.dict(by_alias=True, exclude_none=True),
+                    job_status_info_read.dict(
+                        by_alias=True, exclude_none=True),
                     pretty=self.pretty_print
                 )
                 result = response_headers, HTTPStatus.OK, rendered_response
