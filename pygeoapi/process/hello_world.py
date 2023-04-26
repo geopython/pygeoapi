@@ -30,6 +30,7 @@
 # =================================================================
 
 import datetime as dt
+import json
 import logging
 from pathlib import Path
 from random import choice
@@ -231,11 +232,12 @@ class GreeterProcessor(BaseProcessor):
             "greetings": ProcessOutput(
                 title="Greetings",
                 description=(
-                    'A string with the generated greetings, comma separated'
+                    'A JSON document with the "greetings" property, which is '
+                    'a list with the generated greeting messages.'
                 ),
                 schema=ProcessIOSchema(
-                    type=ProcessIOType.STRING,
-                    contentMediaType="text/plain"
+                    type=ProcessIOType.OBJECT,
+                    contentMediaType="application/json"
                 )
             )
         },
@@ -273,10 +275,10 @@ class GreeterProcessor(BaseProcessor):
             chosen = []
             for i in range(num_greetings):
                 chosen.append(choice(candidate_greetings))
-            greetings = ', '.join(chosen)
+            greetings = json.dumps({'greetings': chosen})
             greetings_location = (
                     results_storage_root / self.process_description.id /
-                    f'{job_id}-greetings.txt'
+                    f'{job_id}-greetings.json'
             )
             greetings_location.parent.mkdir(parents=True, exist_ok=True)
             with greetings_location.open(mode='w', encoding='utf-8') as fh:
@@ -294,7 +296,10 @@ class GreeterProcessor(BaseProcessor):
                 generated_outputs={
                     'echo': OutputExecutionResultInternal(
                         location=str(greetings_location),
-                        media_type='text/plain'
+                        media_type=(
+                            self.process_description.outputs[
+                                'greetings'].schema_.content_media_type
+                        )
                     ),
                 }
             )

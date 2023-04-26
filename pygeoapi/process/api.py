@@ -115,13 +115,15 @@ class ProcessApi:
         processor = self.manager.get_processor(process_id)
         translated_description = l10n.translate_model(
             processor.process_description, locale)
-        translated_description.links.extend(
+        links = translated_description.links or []
+        links.extend(
             _generate_process_description_links(
                 link_rel_getter,
                 translated_description.id,
                 self.base_url,
                 self.default_locale)
         )
+        translated_description.links = links
         return translated_description
 
     def list_processes(

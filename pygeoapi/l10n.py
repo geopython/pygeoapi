@@ -286,7 +286,8 @@ def translate(value, language: Union[Locale, str]):
     return value[loc_items[out_locale]]
 
 
-def translate_model(model: pydantic.BaseModel, locale_: Locale):
+def translate_model(
+        model: pydantic.BaseModel, locale_: Locale) -> pydantic.BaseModel:
     """Try to translate properties on the model object"""
 
     translatable_properties = (

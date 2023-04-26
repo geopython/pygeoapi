@@ -9,17 +9,52 @@ fashion (inputs, outputs).
 pygeoapi implements OGC API - Processes functionality by providing a plugin architecture, thereby
 allowing developers to implement custom processing workflows in Python.
 
-A `sample`_ ``hello-world`` process is provided with the pygeoapi default configuration.
+Two `sample`_ processes process are provided with the pygeoapi default configuration:
+
+* ``HelloWorldProcessor`` - A simple process that takes one mandatory ``name`` input and an additional optional
+  ``message`` input and produces an ``echo`` output, which is a string with a greeting that includes the provided
+  name and message. The output is of type ``text/plain``.
+
+* ``GreeterProcessor`` - A simple process that takes one mandatory ``num_greetings`` input and produces a ``greetings``
+  output, which is a JSON object with a single ``greetings`` property - this property is a list of generated greetings.
+  The output is of type ``application/json``.
+
 
 Configuration
 -------------
 
+Processes are configured as normal resources in the pygeoapi configuration file. Their configuration follows the
+following pattern:
+
 .. code-block:: yaml
 
-   processes:
-       hello-world:
+   resources:
+       <process-id>:
            processor:
-               name: HelloWorld
+               name: <process-name | process-dotted-path>
+
+Where ``<process-id>`` is replaced by the process identifier and ``processor.name`` and either be:
+
+1. the process name, if it is known to pygeoapi, _i.e._ if this process is part of pygeoapi core
+2. the process dotted path, for processes that are part of third-party Python packages which have already been installed
+
+For example, this is the relevant configuration snippet that is included in pygeoapi's ``pygeoapi-config.yml``:
+
+.. code-block:: yaml
+
+   resources:
+     hello-world:
+       type: process
+       processor:
+         name: HelloWorld
+     greeter:
+       type: process
+       processor:
+         name: pygeoapi.process.hello_world.GreeterProcessor
+
+
+These two sample processes specify a different ``processor.name``, in order to demo both options mentioned above
+
 
 Asynchronous support
 --------------------
@@ -51,7 +86,7 @@ can be requested by including the ``Prefer: respond-async`` HTTP header in the r
 
 MongoDB
 --------------------
-As an alternative to the default a manager employing `MongoDB`_ can be used. 
+As an alternative to the default, pygeoapi also ships with a manager powered by `MongoDB`_.
 The connection to an installed `MongoDB`_ instance must be provided in the configuration.
 `MongoDB`_ uses the localhost and port 27017 by default. Jobs are stored in a collection named
 job_manager_pygeoapi.
@@ -111,5 +146,5 @@ Processing examples
 .. todo:: add more examples once OAProc implementation is complete
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
-.. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
+.. _`hello-world`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
 .. _`TinyDB`: https://tinydb.readthedocs.io/en/latest

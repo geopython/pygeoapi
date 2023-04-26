@@ -302,3 +302,8 @@ resources:
         type: process
         processor:
             name: HelloWorld
+
+    greeter:
+      type: process
+      processor:
+        name: pygeoapi.process.hello_world.GreeterProcessor

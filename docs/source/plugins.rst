@@ -311,9 +311,40 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
 Processing plugins
 ------------------
 
-Processing plugins are following the OGC API - Processes development.  Given that the specification is
-under development, the implementation in ``pygeoapi/process/hello_world.py`` provides a suitable example
-for the time being.
+Processing plugins are following the OGC API - Processes development. Pygeoapi ships with sample processes, which can
+be used as examples for study and implementantion of your own custom processes.
+
+Processing plugins are defined as derived classes from ``pygeoapi.process.base.BaseProcessor``. This is an abstract
+base class that specifies two abstract methods:
+
+* ``process_metadata`` - This can actually be specified as a property or as a class variable. It must return an instance
+  of ``pygeoapi.models.processes.ProcessDescription``
+
+* ``execute()`` - This is the main method, that performs the actual workload. It must accept the following parameters:
+
+  * ``job_id`` - A string with the execution job identifier
+  * ``execution_request`` - An instance of ``pygeoapi.models.processes.ExecuteRequest`` that encapsulates information
+    about the execution request, like the provided inputs, etc.
+  * ``results_storage_root`` - A base path that can be used by the process to build subpaths to store its outputs on
+    disk
+  * ``progress_reporter`` - A callable which can be used by long-running processes to report execution progress.
+
+  This method must return an instance of ``pygeoapi.models.processes.JobStatusInfoInternal`` which shall specify
+  relevant details about the execution job, such as status and generated outputs.
+
+The usual flow for a custom process's ``execute()`` method is:
+
+1. Retrieve required input data from its ``execution_request`` parameter
+2. Perform the work of the job, generating eventual outputs.
+3. Store the generated outputs somewhere under the provided
+   ``results_storage_root``
+4. Optionally, if the processing is long, report updates using the
+   provided ``progress_reporter``
+5. Finally, return information related to the execution status and
+   generated outputs
+
+If there is an error during execution, be sure to raise the
+``pygeoapi.process.execptions.JobError`` exception or one of its derived exceptions.
 
 
 Featured plugins

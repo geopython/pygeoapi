@@ -376,7 +376,7 @@ def get_jobs(job_id=None):
         if request.method == 'DELETE':  # dismiss job
             result = get_response(api_.delete_job(request, job_id))
         else:  # Return status of a specific job
-            result = get_response(api_.get_jobs(request, job_id))
+            result = get_response(api_.get_job(request, job_id))
     return result
 
 
