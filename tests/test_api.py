@@ -36,6 +36,7 @@ import logging
 import time
 import gzip
 from http import HTTPStatus
+import re
 
 from pyld import jsonld
 import pytest
@@ -1646,12 +1647,34 @@ def test_get_process(config, api_):
     'process_id, payload, expected_status_code, expected_error_code',
     [
         pytest.param(
-            'hello-world', '',
-            HTTPStatus.BAD_REQUEST, 'MissingParameterValue'
+            'hello-world',
+            '',
+            HTTPStatus.BAD_REQUEST,
+            'MissingParameterValue'
         ),
         pytest.param(
-            'foo', {'inputs': {'name': 'test'}},
-            HTTPStatus.NOT_FOUND, 'NoSuchProcess'
+            'foo',
+            {'inputs': {'name': 'test'}},
+            HTTPStatus.NOT_FOUND,
+            'NoSuchProcess'
+        ),
+        pytest.param(
+            'hello-world',
+            {'inputs': {'foo': 'Tèst'}},
+            HTTPStatus.BAD_REQUEST,
+            'MissingParameterValue',
+        ),
+        pytest.param(
+            'hello-world',
+            {'inputs': {}},
+            HTTPStatus.BAD_REQUEST,
+            'MissingParameterValue',
+        ),
+        pytest.param(
+            'hello-world',
+            {'inputs': {'name': None}},
+            HTTPStatus.BAD_REQUEST,
+            'InvalidParameterValue',
         ),
     ]
 )
@@ -1668,231 +1691,142 @@ def test_execute_process_invalid_parameters(
     assert data['code'] == expected_error_code
 
 
-@pytest.mark.parametrize('payload', [
+@pytest.mark.parametrize('payload, expected_status, expected_payload', [
     pytest.param(
         {
             'inputs': {'name': 'Test'},
             'response': 'document'
-        }
-    )
+        },
+        HTTPStatus.OK,
+        '{"echo": "Hello Test!"}'
+    ),
+    pytest.param(
+        {
+            'inputs': {'name': 'Tést'},
+            'response': 'document'
+        },
+        HTTPStatus.OK,
+        '{"echo": "Hello Tést!"}'
+    ),
+    pytest.param(
+        {
+            'inputs': {
+                'name': 'Tést',
+                'message': 'This is a test.'
+            },
+            'response': 'document'
+        },
+        HTTPStatus.OK,
+        '{"echo": "Hello Tést! This is a test."}'
+    ),
+    pytest.param(
+        {
+            'inputs': {'name': 'Test'},
+            'response': 'document'
+        },
+        HTTPStatus.OK,
+        '{"echo": "Hello Test!"}'
+    ),
 ])
-def test_execute_process_document_response(config, api_, payload):
+def test_execute_process_document_response(
+        config, api_, payload, expected_status, expected_payload):
     req = mock_request(data=payload)
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert len(data.keys()) == 2
-    assert data['id'] == 'echo'
-    assert data['value'] == 'Hello Test!'
+    print(f"response: {response}")
+    assert code == expected_status
+    assert 'Link' in rsp_headers
+    assert response == expected_payload
 
 
-def test_execute_process(config, api_):
-    req_body_0 = {
-        'inputs': {
-            'name': 'Test'
+@pytest.mark.parametrize('payload, expected_status', [
+    pytest.param(
+        {
+            'inputs': {'name': 'Test'},
+            'response': 'document'
         },
-        'response': 'document',
-    }
-    req_body_1 = {
-        'inputs': {
-            'name': 'Test'
-        },
-        'response': 'document'
-    }
-    req_body_2 = {
-        'inputs': {
-            'name': 'Tést'
-        }
-    }
-    req_body_3 = {
-        'inputs': {
-            'name': 'Tést',
-            'message': 'This is a test.'
-        }
-    }
-    req_body_4 = {
-        'inputs': {
-            'foo': 'Tést'
-        }
-    }
-    req_body_5 = {
-        'inputs': {}
-    }
-    req_body_6 = {
-        'inputs': {
-            'name': None
-        }
-    }
-
-    cleanup_jobs = set()
-
-    req = mock_request(data=req_body_0)
-
+        HTTPStatus.CREATED,
+    ),
+])
+def test_execute_process_document_async(
+        config, api_, payload, expected_status):
+    req = mock_request(data=payload, HTTP_Prefer='respond-async')
     rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
+    print(f"response_code: {code}")
+    print(f"response_headers: {rsp_headers}")
+    print(f"response: {response}")
+    assert code == expected_status
+    assert 'Location' in rsp_headers
     data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-
-    assert len(data.keys()) == 2
-    assert data['id'] == 'echo'
-    assert data['value'] == 'Hello Test!'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_1)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-
-    assert len(data.keys()) == 1
-    assert data['outputs'][0]['id'] == 'echo'
-    assert data['outputs'][0]['value'] == 'Hello Test!'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_2)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['value'] == 'Hello Tést!'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_3)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['value'] == 'Hello Tést! This is a test.'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_4)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_5)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_6)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_0)
-    rsp_headers, code, response = api_.execute_process(req, 'goodbye-world')
-
-    response = json.loads(response)
-    assert code == HTTPStatus.NOT_FOUND
-    assert 'Location' not in rsp_headers
-    assert response['code'] == 'NoSuchProcess'
-
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    response = json.loads(response)
-    assert code == HTTPStatus.OK
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_1, HTTP_Prefer='respond-async')
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
-    assert 'Location' in rsp_headers
-    response = json.loads(response)
-    assert isinstance(response, dict)
-    assert code == HTTPStatus.CREATED
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    # Cleanup
-    time.sleep(2)  # Allow time for any outstanding async jobs
-    for _, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_job(job_id)
-        assert code == HTTPStatus.OK
+    assert isinstance(data, dict)
+    assert data.get('jobID') is not None
+    assert data.get('processID') is not None
+    assert data.get('status') == 'accepted'
 
 
-def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job('does-not-exist')
-
+def test_delete_job_non_existent(api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.delete_job(req, 'does-not-exist')
     assert code == HTTPStatus.NOT_FOUND
 
-    req_body_sync = {
-        'inputs': {
-            'name': 'Sync Test Deletion'
-        }
-    }
 
-    req_body_async = {
-        'inputs': {
-            'name': 'Async Test Deletion'
-        }
-    }
-
-    req = mock_request(data=req_body_sync)
+@pytest.mark.parametrize('headers, payload, check_response_header', [
+    pytest.param(
+        None,
+        {'inputs': {'name': 'Sync test deletion'}},
+        'Link',
+    ),
+    pytest.param(
+        {'HTTP_Prefer': 'respond-async'},
+        {'inputs': {'name': 'Async test deletion'}},
+        'Location'
+    ),
+])
+def test_delete_job(api_, headers, payload, check_response_header):
+    # create the job
+    req = mock_request(
+        data=payload, **headers if headers is not None else {})
     rsp_headers, code, response = api_.execute_process(
         req, 'hello-world')
 
-    data = json.loads(response)
-    assert code == HTTPStatus.OK
-    assert 'Location' in rsp_headers
-    assert data['value'] == 'Hello Sync Test Deletion!'
+    print(f'response: {response}')
+    print(f'response headers: {rsp_headers}')
 
-    job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
+    if 'respond-async' in (headers.values() if headers else []):
+        # wait a bit in order to allow the generation of any inputs (for
+        # async processes)
+        time.sleep(2)
 
-    assert code == HTTPStatus.OK
+    # now ask for it to be deleted
+    job_id = re.search(
+        r'http://localhost:5000/jobs/(?P<job_id>[0-9a-z\-]+)',
+        rsp_headers[check_response_header]
+    ).groupdict()['job_id']
+    rsp_headers, deletion_code, deletion_response = api_.delete_job(
+        mock_request(), job_id)
+    assert deletion_code == HTTPStatus.OK
+    deletion_data = json.loads(deletion_response)
+    assert deletion_data['jobID'] == job_id
+    assert deletion_data['status'] == 'dismissed'
 
-    rsp_headers, code, response = api_.delete_job(job_id)
+    # double check that it is not there anymore
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request(data=req_body_async, HTTP_Prefer='respond-async')
-    rsp_headers, code, response = api_.execute_process(
-        req, 'hello-world')
-
-    assert code == HTTPStatus.CREATED
-    assert 'Location' in rsp_headers
-
-    time.sleep(2)  # Allow time for async execution to complete
-    job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
-    assert code == HTTPStatus.OK
-
-    rsp_headers, code, response = api_.delete_job(job_id)
-    assert code == HTTPStatus.NOT_FOUND
+    # async_req = mock_request(
+    #     data={'inputs': {'name': 'Async test deletion demo'}},
+    #     HTTP_Prefer='respond-async'
+    # )
+    # rsp_headers, code, response = api_.execute_process(
+    #     async_req, 'hello-world')
+    # time.sleep(2)  # Allow time for async execution to complete
+    # job_id = response.json()['jobID']
+    # rsp_headers, code, response = api_.delete_job(job_id)
+    # assert code == HTTPStatus.OK
+    # deletion_data = response.json()
+    # assert deletion_data['status'] == 'dismissed'
+    # assert deletion_data['jobID'] == job_id
+    # rsp_headers, code, response = api_.delete_job(job_id)
+    # assert code == HTTPStatus.NOT_FOUND
 
 
 def test_get_collection_edr_query(config, api_):

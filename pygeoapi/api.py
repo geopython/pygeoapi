@@ -3390,8 +3390,7 @@ class API:
                     process_id,
                     request.headers,
                     request.data,
-                    request.get_response_headers(
-                        SYSTEM_LOCALE, **self.api_headers)
+                    response_headers,
                 )
             except process_execeptions.UnknownProcessError as err:
                 result = self.get_exception(
@@ -3419,8 +3418,9 @@ class API:
 
     @gzip
     @pre_process
-    def get_job_result(self, request: Union[APIRequest, Any],
-                       job_id) -> Tuple[dict, int, str]:
+    def get_job_result(
+            self, request: Union[APIRequest, Any], job_id: str,
+    ) -> Tuple[dict, int, str]:
         """
         Get result of job (instance of a process)
 
@@ -3474,32 +3474,37 @@ class API:
             result = self.get_format_exception(request)
         return result
 
+    @pre_process
     def delete_job(
             self, request: Union[APIRequest, Any], job_id: str
     ) -> Tuple[dict, int, str]:
         """
         Delete a process job.
 
+        :param request: A request object
         :param job_id: job identifier
 
         :returns: tuple of headers, status code, content
         """
 
-        response_headers = request.get_response_headers(
-            SYSTEM_LOCALE, **self.api_headers)
-        try:
-            job_status_info_read = self.process_api.delete_job(job_id)
-        except process_execeptions.JobNotFoundError:
-            result = self.get_exception(
-                HTTPStatus.NOT_FOUND, response_headers, request.format,
-                'NoSuchJob', 'job not found'
-            )
+        if request.is_valid():
+            response_headers = request.get_response_headers(
+                SYSTEM_LOCALE, **self.api_headers)
+            try:
+                job_status_info_read = self.process_api.delete_job(job_id)
+            except process_execeptions.JobNotFoundError:
+                result = self.get_exception(
+                    HTTPStatus.NOT_FOUND, response_headers, request.format,
+                    'NoSuchJob', 'job not found'
+                )
+            else:
+                rendered_response = to_json(
+                    job_status_info_read.dict(by_alias=True, exclude_none=True),
+                    pretty=self.pretty_print
+                )
+                result = response_headers, HTTPStatus.OK, rendered_response
         else:
-            rendered_response = to_json(
-                job_status_info_read.dict(by_alias=True, exclude_none=True),
-                pretty=self.pretty_print
-            )
-            result = response_headers, HTTPStatus.OK, rendered_response
+            result = self.get_format_exception(request)
         return result
 
     @gzip

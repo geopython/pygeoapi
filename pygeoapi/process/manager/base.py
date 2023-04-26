@@ -52,6 +52,7 @@ from pygeoapi.models.processes import (
     ExecutionQualifiedInputValue,
     JobStatus,
     JobStatusInfoInternal,
+    JobStatusInfoRead,
     OutputExecutionResultInternal,
     ProcessDescription,
     ProcessOutputTransmissionMode,
@@ -76,6 +77,7 @@ class BaseManager(abc.ABC):
     name: str
     output_dir: Optional[Path]
     processes: OrderedDict[str, Dict]
+    supports_job_creation: bool = True
 
     def __init__(self, manager_def: Dict):
         """
@@ -157,6 +159,55 @@ class BaseManager(abc.ABC):
         """
         ...
 
+    @staticmethod
+    def get_execution_response(
+            job_status: JobStatusInfoInternal,
+    ) -> Tuple[bytes, Optional[str], List[Tuple[str, str]]]:
+        """Get details for an execution response.
+
+        :param job_status: Details about the job.
+
+        :return: A Three-element tuple with the response payload, an optional
+                 media type for the response and a list with any additional
+                 headers to be included in the final response
+        """
+        additional_headers = []
+        if job_status.generated_outputs is None:
+            media_type = 'application/json'
+            payload = JobStatusInfoRead(
+                **job_status.dict(by_alias=True, exclude_none=True)
+            ).json(by_alias=True, exclude_none=True)
+        elif job_status.requested_response_type == ProcessResponseType.raw:
+            if len(job_status.generated_outputs) == 1:
+                if job_status.requested_outputs is not None:
+                    requested = list(
+                        job_status.requested_outputs.values())[0]
+                else:
+                    requested = None
+                payload, media_type, additional_headers = (
+                    _get_execution_response_single_output(
+                        requested,
+                        tuple(job_status.generated_outputs.values())[0],
+                    )
+                )
+            else:
+                any_by_value = ProcessOutputTransmissionMode.VALUE in [
+                    out.transmission_mode for out in
+                    job_status.requested_outputs.values()
+                ]
+                media_type = 'multipart/related' if any_by_value else None
+                payload = _get_execution_response_multiple_outputs(
+                    job_status.requested_outputs,
+                    job_status.generated_outputs
+                )
+        else:
+            media_type = 'application/json'
+            payload = _get_execution_response_document(
+                job_status.requested_outputs,
+                job_status.generated_outputs
+            )
+        return payload, media_type, additional_headers
+
     def get_process_descriptions(
             self,
             limit: Optional[int] = None,
@@ -213,45 +264,6 @@ class BaseManager(abc.ABC):
 
         raise NotImplementedError()
 
-    def get_execution_response(
-            self,
-            requested_response_type: ProcessResponseType,
-            requested_outputs: Optional[Dict[str, ExecutionOutput]],
-            generated_outputs: Dict[str, OutputExecutionResultInternal],
-    ) -> Tuple[bytes, Optional[str], List[Link]]:
-        """Get the details for an execution response."""
-        LOGGER.debug(f'locals: {locals()}')
-        media_type = None
-        payload = None
-        additional_headers = []
-        if len(generated_outputs) == 0:
-            LOGGER.info('there are no outputs to include in the response')
-        elif requested_response_type == ProcessResponseType.raw:
-            if len(generated_outputs) == 1:
-                if requested_outputs is not None:
-                    requested = list(requested_outputs.values())[0]
-                else:
-                    requested = None
-                payload, media_type, additional_headers = (
-                    _get_execution_response_single_output(
-                        requested,
-                        tuple(generated_outputs.values())[0],
-                    )
-                )
-            else:
-                any_by_value = ProcessOutputTransmissionMode.VALUE in [
-                    out.transmission_mode for out in
-                    requested_outputs.values()
-                ]
-                media_type = 'multipart/related' if any_by_value else None
-                payload = _get_execution_response_multiple_outputs(
-                    requested_outputs, generated_outputs)
-        else:
-            media_type = 'application/json'
-            payload = _get_execution_response_document(
-                requested_outputs, generated_outputs)
-        return payload, media_type, additional_headers
-
     def add_job(self, job_status: JobStatusInfoInternal) -> str:
         """
         Persist job details.
@@ -306,7 +318,7 @@ class BaseManager(abc.ABC):
             created=now,
             started=now,
             progress=5,
-            negotiated_execution_mode=ProcessExecutionMode.sync_execute,
+            negotiated_execution_mode=chosen_mode,
             requested_response_type=execution_request.response,
             requested_outputs=execution_request.outputs,
         )
@@ -408,10 +420,7 @@ class BaseManager(abc.ABC):
             # client wants async - do we support it?
             process_supports_async = (
                     ProcessExecutionMode.async_execute.value in
-                    [
-                        op.value for op in
-                        processor.process_description.job_control_options
-                    ]
+                    processor.process_description.job_control_options
             )
             if self.is_async and process_supports_async:
                 result = ProcessExecutionMode.async_execute
@@ -445,7 +454,7 @@ class BaseManager(abc.ABC):
 def _get_execution_response_single_output(
         requested_output: Optional[ExecutionOutput],
         generated_output: OutputExecutionResultInternal,
-) -> Tuple[Optional[bytes], Optional[str], List]:
+) -> Tuple[Optional[bytes], Optional[str], List[Tuple[str, str]]]:
     """Get process execution response for when there is a single process output
 
     If there is a single execution output:
@@ -474,7 +483,7 @@ def _get_execution_response_single_output(
         media_type = None
         payload = None
         additional_headers.append(
-            Link(href=generated_output.location).as_link_header()
+            ('Link', Link(href=generated_output.location).as_link_header())
         )
     return payload, media_type, additional_headers
 
@@ -563,7 +572,7 @@ def _get_execution_response_document(
                 )
             elif 'text' in generated_output.media_type:
                 out_result = ExecutionDocumentSingleOutput(
-                    __root__=output_data)
+                    __root__=output_data.decode('utf-8'))
             else:
                 serialized_output_data = urlsafe_b64encode(
                     output_data).decode('utf-8')
@@ -578,4 +587,4 @@ def _get_execution_response_document(
             )
         output_results[out_id] = out_result
     result = ExecutionDocumentResult(__root__=output_results)
-    return result.json(by_alias=True, exclude_none=True)
+    return result.json(by_alias=True, exclude_none=True, ensure_ascii=False)

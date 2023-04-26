@@ -162,11 +162,13 @@ class HelloWorldProcessor(BaseProcessor):
         ``JobFailedError`` exception.
         """
         try:
-            name = execution_request.inputs['name']
+            name = execution_request.inputs['name'].__root__
         except KeyError:
             raise exceptions.MissingJobParameterError(
                 'Cannot process without a name')
-        message = execution_request.inputs.get('message', '')
+
+        msg = execution_request.inputs.get('message')
+        message = msg.__root__ if msg is not None else ''
         echo_value = f'Hello {name}! {message}'.strip()
         echo_location = (
                 results_storage_root / self.process_description.id /
@@ -252,7 +254,8 @@ class GreeterProcessor(BaseProcessor):
             ] = None
     ) -> JobStatusInfoInternal:
         try:
-            num_greetings = int(execution_request.inputs.get('num_greetings'))
+            num_greetings = int(
+                execution_request.inputs.get('num_greetings').__root__)
             if num_greetings <= 0:
                 raise RuntimeError()
         except (RuntimeError, TypeError, ValueError) as err:

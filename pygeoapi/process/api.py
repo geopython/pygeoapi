@@ -41,6 +41,7 @@ from typing import (
     MutableMapping,
     Optional,
     Tuple,
+    Union,
 )
 
 from babel import Locale
@@ -253,7 +254,7 @@ class ProcessApi:
             process_id: str,
             request_headers: Mapping,
             request_payload: bytes,
-            response_headers: MutableMapping,
+            response_headers: Dict[str, Union[str, List[str]]],
     ) -> Tuple[Dict[str, str], HTTPStatus, bytes]:
         """
         Execute process
@@ -294,24 +295,29 @@ class ProcessApi:
                     ProcessExecutionMode.sync_execute
             )
             if is_sync:
-                # location_link = Link(
-                #     href=f'{self.base_url}/jobs/{job_status_info.job_id}')
-                pass  # FIXME
-                # as per OAproc, if the execution mode is sync and the server
-                # creates a job, then the response shall include
-                # Link header with rel=monitor, pointing to the
+                # as per OAproc, requirement 33, if the execution mode is
+                # sync and the server creates a job, then the response shall
+                # include a `Link` header with rel=monitor, pointing to the
                 # created job
+                if self.manager.supports_job_creation:
+                    response_headers['Link'] = Link(
+                        href=f'{self.base_url}/jobs/{job_status_info.job_id}',
+                        rel='monitor'
+                    ).as_link_header()
+            else:
+                # as per OAProc, requirement 34, when the execution mode is
+                # async, the response shall include a `Location` header, with
+                # a link to the newly created job
+                response_headers['Location'] = (
+                    f'{self.base_url}/jobs/{job_status_info.job_id}')
 
             (
                 payload,
                 media_type,
                 additional_headers
-            ) = self.manager.get_execution_response(
-                execution_request.response,
-                execution_request.outputs,
-                job_status_info.generated_outputs
-            )
-            response_headers.update(additional_headers)
+            ) = self.manager.get_execution_response(job_status_info)
+            response_headers = _combine_response_headers(
+                response_headers, additional_headers)
             response_headers['Content-Type'] = media_type
             if job_status_info.status in (
                     JobStatus.accepted,
@@ -394,11 +400,12 @@ class ProcessApi:
         job = self.manager.get_job(job_id)
 
         if job.status == JobStatus.successful:
-            result = self.manager.get_execution_response(
-                job.requested_response_type,
-                job.requested_outputs,
-                job.generated_outputs,
-            )
+            # result = self.manager.get_execution_response(
+            #     job.requested_response_type,
+            #     job.requested_outputs,
+            #     job.generated_outputs,
+            # )
+            result = self.manager.get_execution_response(job)
         else:
             if job.status in (JobStatus.running, JobStatus.accepted):
                 raise exceptions.JobNotReadyError
@@ -575,3 +582,17 @@ def _prepare_job_for_response(
         **job_status.dict(by_alias=True),
         links=links
     )
+
+def _combine_response_headers(
+        response_headers: Dict[str, Union[str, List[str]]],
+        additional: List[Tuple[str, str]]
+) -> Dict[str, Union[str, List[str]]]:
+    for additional_header_name, content in additional:
+        existing_header = response_headers.get(additional_header_name)
+        if existing_header is None:
+            response_headers[additional_header_name] = content
+        elif isinstance(existing_header, str):
+            response_headers[additional_header_name] = [existing_header, content]
+        else:  # it is a list already
+            response_headers[additional_header_name].append(content)
+    return response_headers

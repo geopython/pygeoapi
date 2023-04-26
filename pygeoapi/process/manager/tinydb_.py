@@ -48,8 +48,12 @@ from tinydb.storages import MemoryStorage
 from pygeoapi.process import exceptions
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.models.processes import (
+    ExecuteRequest,
     JobStatus,
-    JobStatusInfoInternal
+    JobStatusInfoInternal,
+    Link,
+    ProcessExecutionMode,
+    RequestedProcessExecutionMode,
 )
 from pygeoapi.util import DATETIME_FORMAT
 
@@ -263,15 +267,21 @@ class TinyDBManager(BaseManager):
         """
 
         job_status = self.get_job(job_id)
-        for generated_output_detail in job_status.generated_outputs.values():
-            # TODO: guard for deletion errors
-            Path(generated_output_detail.location).unlink(missing_ok=True)
+        if job_status.generated_outputs is not None:
+            for generated_output_detail in job_status.generated_outputs.values():
+                # TODO: guard for deletion errors
+                # TODO: use the `missing_ok=True` argument when pygeoapi requires Python >= 3.8  # noqa: E501
+                Path(generated_output_detail.location).unlink()
         self._connect(mode='w')
         self.db.remove(tinydb.where(self._JOB_ID) == job_id)
         self.db.close()
 
         return JobStatusInfoInternal(
-            **job_status.dict(by_alias=True, exclude_none=True),
+            **job_status.dict(
+                by_alias=True,
+                exclude_none=True,
+                exclude={'message', 'status'}
+            ),
             status=JobStatus.dismissed,
             message='Job dismissed successfully'
         )

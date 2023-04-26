@@ -48,6 +48,8 @@ LOGGER = logging.getLogger(__name__)
 class DummyManager(BaseManager):
     """generic Manager ABC"""
 
+    supports_job_creation = False
+
     def get_jobs(
             self,
             type_: Optional[List[str]] = None,
