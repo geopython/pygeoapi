@@ -54,8 +54,12 @@ class Mock(MagicMock):
         return MagicMock()
 
 
+# Avoid warning when building the documentation by mocking libraries
 MOCK_MODULES = ['osgeo', 'psycopg2', 'psycopg2.sql', 'psycopg2.extras',
-                'elasticsearch', 'elasticsearch.client.indices']
+                'geoalchemy2', 'elasticsearch',
+                'elasticsearch.client.indices',
+                'elasticsearch_dsl', 'geoalchemy2.functions',
+                'geoalchemy2.shape']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 PYGEOAPI_HOME = os.path.abspath('../..')
