@@ -15,7 +15,7 @@ Install the dependencies necessary for building the documentation using the foll
 
 .. code-block:: bash
 
-   pip3 install -r docs/requirements-docs.txt
+   pip3 install -r docs/requirements.txt
 
 After installing the requirements, build the documentation using the ``sphinx-build`` command:
 
