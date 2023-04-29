@@ -1,5 +1,6 @@
 Babel
 click>7,<=8
+importlib_metadata
 Flask
 jinja2==3.0.3
 jsonschema

@@ -30,14 +30,45 @@
 __version__ = '0.15.dev0'
 
 import click
+try:
+    # importlib.metadata is part of Python's standard library from 3.8
+    from importlib.metadata import entry_points
+except ImportError:
+    from importlib_metadata import entry_points
 from pygeoapi.config import config
 from pygeoapi.openapi import openapi
+
+
+def _find_plugins():
+    """
+    A decorator to Find pygeoapi CLI plugins provided by third-party packages.
+
+    pygeoapi plugins can hook into the pygeoapi CLI by providing their CLI
+    functions and then using an entry_point named 'pygeoapi'.
+    """
+
+    def decorator(click_group):
+        for entry_point in entry_points(group="pygeoapi"):
+            try:
+                click_group.add_command(entry_point.load())
+            except Exception as err:
+                print(err)
+        return click_group
+
+    return decorator
 
 
 @click.group()
 @click.version_option(version=__version__)
 def cli():
     pass
+
+
+@_find_plugins()
+@cli.group()
+def plugins():
+    """Additional commands provided by third-party pygeoapi plugins"""
+    ...
 
 
 @cli.command()

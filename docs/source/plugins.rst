@@ -66,6 +66,56 @@ The following methods are options to connect a plugin to pygeoapi:
          id_field: stn_id
 
 
+Specifying custom pygeoapi CLI commands
++++++++++++++++++++++++++++++++++++++++
+
+Third-party plugins may also provide custom CLI commands. This can be done by means of two additional steps:
+
+1. Create your CLI commands using click
+2. In your plugin's ``setup.py`` or ``pyproject.toml`` file, specify an entrypoint for the ``pygeoapi`` group
+   pointing to your click CLI command or group.
+
+As a simple example, lets imagine you develop a plugin named ``myplugin``, which has a ``cli.py`` module with
+the following contents:
+
+.. code-block:: python
+
+   # module: myplugin.cli
+   import click
+
+   @click.command(name="super-command")
+   def my_cli_command():
+       print("Hello, this is my custom pygeoapi CLI command!")
+
+
+Then, in your plugin's ``setup.py`` file, specify the entrypoints section:
+
+.. code-block:: python
+
+   # file: setup.py
+   entry_points={
+       'pygeoapi': ['my-plugin = myplugin.cli:my_cli_command']
+   }
+
+Alternatively, if using a ``pyproject.toml`` file instead:
+
+.. code-block:: python
+
+   # file: pyproject.toml
+   # Noter that this example uses poetry, other Python projects may differ in
+   # how they expect entry_points to be specified
+   [tool.poetry.plugins."pygeoapi"]
+   my-plugin = 'myplugin.cli:my_cli_command'
+
+
+After having installed this plugin, you should now be able to call the CLI command by running:
+
+.. code-block:: sh
+
+   $ pygeoapi plugins super-command
+   Hello, this is my custom pygeoapi CLI command!
+
+
 .. note::  The United States Geological Survey has created a Cookiecutter project for creating pygeoapi plugins. See the `pygeoapi-plugin-cookiecutter`_ project to get started.
 
 **Option 2**: Update in core pygeoapi:
