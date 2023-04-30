@@ -62,7 +62,7 @@ class XarrayProvider(BaseProvider):
             if provider_def['data'].endswith('.zarr'):
                 open_func = xarray.open_zarr
             else:
-                if '*' in self.data
+                if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
                     open_func = xarray.open_mfdataset
                 else:
