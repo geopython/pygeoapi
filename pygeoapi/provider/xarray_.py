@@ -35,7 +35,6 @@ import tempfile
 import zipfile
 
 import xarray
-import s3fs
 import fsspec
 import numpy as np
 
@@ -650,10 +649,3 @@ def _convert_float32_to_float64(data):
             data[var_name].attrs = og_attrs
 
     return data
-
-
-def _s3open(data):
-    fs = s3fs.S3FileSystem(anon=True,
-                           default_fill_cache=False,
-                           config_kwargs={'max_pool_connections': 20})
-    return s3fs.S3Map(data, s3=fs)
