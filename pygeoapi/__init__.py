@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
