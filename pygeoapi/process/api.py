@@ -401,11 +401,6 @@ class ProcessApi:
         job = self.manager.get_job(job_id)
 
         if job.status == JobStatus.successful:
-            # result = self.manager.get_execution_response(
-            #     job.requested_response_type,
-            #     job.requested_outputs,
-            #     job.generated_outputs,
-            # )
             result = self.manager.get_execution_response(job)
         else:
             if job.status in (JobStatus.running, JobStatus.accepted):

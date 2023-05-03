@@ -188,6 +188,7 @@ class BaseManager(abc.ABC):
                     self._get_execution_response_single_output(
                         requested,
                         tuple(job_status.generated_outputs.values())[0],
+                        job_status.process_id,
                     )
                 )
             else:
@@ -198,13 +199,15 @@ class BaseManager(abc.ABC):
                 media_type = 'multipart/related' if any_by_value else None
                 payload = self._get_execution_response_multiple_outputs(
                     job_status.requested_outputs,
-                    job_status.generated_outputs
+                    job_status.generated_outputs,
+                    job_status.process_id,
                 )
         else:
             media_type = 'application/json'
             payload = self._get_execution_response_document(
                 job_status.requested_outputs,
-                job_status.generated_outputs
+                job_status.generated_outputs,
+                job_status.process_id,
             )
         return payload, media_type, additional_headers
 
@@ -212,6 +215,7 @@ class BaseManager(abc.ABC):
             self,
             requested_output: Optional[ExecutionOutput],
             generated_output: OutputExecutionResultInternal,
+            process_id: str,
     ) -> Tuple[Optional[bytes], Optional[str], List[Tuple[str, str]]]:
         """
         Get execution response for when there is a single process output.
@@ -237,9 +241,10 @@ class BaseManager(abc.ABC):
         additional_headers = []
         if should_transmit_by_value:
             media_type = generated_output.media_type
-            payload = self.get_output_data_raw(generated_output)
+            payload = self.get_output_data_raw(generated_output, process_id)
         else:
-            link_href = self.get_output_data_link_href(generated_output)
+            link_href = self.get_output_data_link_href(
+                generated_output, process_id)
             media_type = None
             payload = None
             additional_headers.append(
@@ -251,6 +256,7 @@ class BaseManager(abc.ABC):
             self,
             requested_outputs: Dict[str, ExecutionOutput],
             generated_outputs: Dict[str, OutputExecutionResultInternal],
+            process_id: str,
             multipart_boundary: Optional[str] = None,
     ) -> bytes:
         """Generate an appropriate body for process execution HTTP responses
@@ -277,7 +283,7 @@ class BaseManager(abc.ABC):
                         ProcessOutputTransmissionMode.VALUE.value
                 )
             if should_transmit_by_value:
-                data_ = self.get_output_data_raw(generated_output)
+                data_ = self.get_output_data_raw(generated_output, process_id)
                 part.set_payload(data_)
                 if payload.get_param("Type") is None:
                     # set the `Type` of the payload as the same media
@@ -285,7 +291,8 @@ class BaseManager(abc.ABC):
                     payload.set_param(
                         "Type", generated_output.media_type)
             else:
-                link_href = self.get_output_data_link_href(generated_output)
+                link_href = self.get_output_data_link_href(
+                    generated_output, process_id)
                 part.add_header('Content-Location', link_href)
             payload.attach(part)
         return payload.as_bytes()
@@ -294,6 +301,7 @@ class BaseManager(abc.ABC):
             self,
             requested_outputs: Optional[Dict[str, ExecutionOutput]],
             generated_outputs: Dict[str, OutputExecutionResultInternal],
+            process_id: str
     ) -> str:
         """Prepare execution response when the requested type is `document`.
 
@@ -314,7 +322,8 @@ class BaseManager(abc.ABC):
             if should_transmit_by_value:
                 # if the output's media type is not text based we should
                 # be able to base64 encode the file contents
-                output_data = self.get_output_data_raw(generated_output)
+                output_data = self.get_output_data_raw(
+                    generated_output, process_id)
 
                 if 'json' in generated_output.media_type:
                     # TODO: is it a BBOX?
@@ -340,7 +349,8 @@ class BaseManager(abc.ABC):
                     out_result = ExecutionDocumentSingleOutput(
                         __root__=serialized_output_data)
             else:
-                link_href = self.get_output_data_link_href(generated_output)
+                link_href = self.get_output_data_link_href(
+                    generated_output, process_id)
                 out_result = ExecutionDocumentSingleOutput(
                     __root__=Link(
                         href=link_href,
@@ -353,16 +363,32 @@ class BaseManager(abc.ABC):
             by_alias=True, exclude_none=True, ensure_ascii=False)
 
     def get_output_data_raw(
-            self, generated_output: OutputExecutionResultInternal) -> bytes:
+            self,
+            generated_output: OutputExecutionResultInternal,
+            process_id: str
+    ) -> bytes:
         """
         Get an output's raw data, for when it needs to be transmitted by value
+
+        :param generated_output: Details about the generated output,
+                                 including its location
+        :param process_id: Identifier of the processor used to generate the
+                           output
         """
         return Path(generated_output.location).read_bytes()
 
     def get_output_data_link_href(
-            self, generated_output: OutputExecutionResultInternal) -> str:
+            self,
+            generated_output: OutputExecutionResultInternal,
+            process_id: str
+    ) -> str:
         """
         Get output link href, for when it needs to be transmitted by reference
+
+        :param generated_output: Details about the generated output,
+                                 including its location
+        :param process_id: Identifier of the processor used to generate the
+                           output
         """
         return generated_output.location
 

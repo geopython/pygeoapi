@@ -172,7 +172,7 @@ def test_get_execution_response_single_output(
             'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.return_value = 'dummy contents'
         payload, media_type, headers = manager._get_execution_response_single_output(  # noqa: E501
-            requested_output, generated_output
+            requested_output, generated_output, 'hello-world'
         )
     assert payload == expected[0]
     assert media_type == expected[1]
@@ -216,7 +216,7 @@ def test_get_execution_response_multiple_outputs(
             'dummy2-content',
         ]
         result = manager._get_execution_response_multiple_outputs(
-            requested_outputs, generated_outputs,
+            requested_outputs, generated_outputs, 'hello-world',
             multipart_boundary='***123***'
         )
         message = message_from_bytes(result)
@@ -290,5 +290,5 @@ def test_get_execution_response_document(
             'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.side_effect = output_contents
         result = manager._get_execution_response_document(
-            requested_outputs, generated_outputs)
+            requested_outputs, generated_outputs, 'hello-world')
         assert result == expected
