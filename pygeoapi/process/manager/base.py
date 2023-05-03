@@ -159,8 +159,8 @@ class BaseManager(abc.ABC):
         """
         ...
 
-    @staticmethod
     def get_execution_response(
+            self,
             job_status: JobStatusInfoInternal,
     ) -> Tuple[bytes, Optional[str], List[Tuple[str, str]]]:
         """Get details for an execution response.
@@ -185,7 +185,7 @@ class BaseManager(abc.ABC):
                 else:
                     requested = None
                 payload, media_type, additional_headers = (
-                    _get_execution_response_single_output(
+                    self._get_execution_response_single_output(
                         requested,
                         tuple(job_status.generated_outputs.values())[0],
                     )
@@ -196,17 +196,175 @@ class BaseManager(abc.ABC):
                     job_status.requested_outputs.values()
                 ]
                 media_type = 'multipart/related' if any_by_value else None
-                payload = _get_execution_response_multiple_outputs(
+                payload = self._get_execution_response_multiple_outputs(
                     job_status.requested_outputs,
                     job_status.generated_outputs
                 )
         else:
             media_type = 'application/json'
-            payload = _get_execution_response_document(
+            payload = self._get_execution_response_document(
                 job_status.requested_outputs,
                 job_status.generated_outputs
             )
         return payload, media_type, additional_headers
+
+    def _get_execution_response_single_output(
+            self,
+            requested_output: Optional[ExecutionOutput],
+            generated_output: OutputExecutionResultInternal,
+    ) -> Tuple[Optional[bytes], Optional[str], List[Tuple[str, str]]]:
+        """
+        Get execution response for when there is a single process output.
+
+        If there is a single execution output:
+        - If transmission is by value, return the output directly
+        - If transmission is by reference, include a link header
+          for where the output can be downloaded
+
+        :param requested_output: requested output parameters
+        :param generated_output: Generated output parameters
+        :returns: a three-element tuple with the already serialized response
+                  payload, the media type and a list with any additional
+                  headers to be added to the response
+        """
+        if requested_output is None:
+            should_transmit_by_value = True
+        else:
+            should_transmit_by_value = (
+                    requested_output.transmission_mode ==
+                    ProcessOutputTransmissionMode.VALUE.value
+            )
+        additional_headers = []
+        if should_transmit_by_value:
+            media_type = generated_output.media_type
+            payload = self.get_output_data_raw(generated_output)
+        else:
+            link_href = self.get_output_data_link_href(generated_output)
+            media_type = None
+            payload = None
+            additional_headers.append(
+                ('Link', Link(href=link_href).as_link_header())
+            )
+        return payload, media_type, additional_headers
+
+    def _get_execution_response_multiple_outputs(
+            self,
+            requested_outputs: Dict[str, ExecutionOutput],
+            generated_outputs: Dict[str, OutputExecutionResultInternal],
+            multipart_boundary: Optional[str] = None,
+    ) -> bytes:
+        """Generate an appropriate body for process execution HTTP responses
+
+        According to the OAProc spec (Requirement 31 -
+        /req/core/process-execute-sync-raw-mixed-multi),
+        if there are multiple outputs, then responses should have a media type
+        of `multipart/related` and, depending on the transmission mode, either
+        include the contents directly in the response, or include
+        links to them.
+        """
+        payload = MIMEMultipart("related", boundary=multipart_boundary)
+        for output_id, generated_output in generated_outputs.items():
+            part = MIMENonMultipart(
+                *generated_output.media_type.split('/'), )
+            part.set_param('Type', generated_output.media_type)
+            part.add_header('Content-ID', output_id)
+            requested = requested_outputs.get(output_id)
+            if requested is None:
+                should_transmit_by_value = True
+            else:
+                should_transmit_by_value = (
+                        requested.transmission_mode ==
+                        ProcessOutputTransmissionMode.VALUE.value
+                )
+            if should_transmit_by_value:
+                data_ = self.get_output_data_raw(generated_output)
+                part.set_payload(data_)
+                if payload.get_param("Type") is None:
+                    # set the `Type` of the payload as the same media
+                    # type of the first output
+                    payload.set_param(
+                        "Type", generated_output.media_type)
+            else:
+                link_href = self.get_output_data_link_href(generated_output)
+                part.add_header('Content-Location', link_href)
+            payload.attach(part)
+        return payload.as_bytes()
+
+    def _get_execution_response_document(
+            self,
+            requested_outputs: Optional[Dict[str, ExecutionOutput]],
+            generated_outputs: Dict[str, OutputExecutionResultInternal],
+    ) -> str:
+        """Prepare execution response when the requested type is `document`.
+
+        :param requested_outputs: Optional explicit configuration for the
+                                  process outputs, as requested by the client
+        :param generated_outputs: Outputs generated during process execution
+        """
+        output_results = {}
+        for out_id, generated_output in generated_outputs.items():
+            requested = (requested_outputs or {}).get(out_id)
+            if requested is None:
+                should_transmit_by_value = True
+            else:
+                should_transmit_by_value = (
+                        requested.transmission_mode ==
+                        ProcessOutputTransmissionMode.VALUE.value
+                )
+            if should_transmit_by_value:
+                # if the output's media type is not text based we should
+                # be able to base64 encode the file contents
+                output_data = self.get_output_data_raw(generated_output)
+
+                if 'json' in generated_output.media_type:
+                    # TODO: is it a BBOX?
+                    parsed_output_data = json.loads(output_data)
+                    out_result = ExecutionDocumentSingleOutput(
+                        __root__=ExecutionQualifiedInputValue(
+                            value=parsed_output_data)
+                    )
+                elif 'xml' in generated_output.media_type:
+                    out_result = ExecutionDocumentSingleOutput(
+                        __root__=ExecutionQualifiedInputValue(
+                            value=output_data,
+                            format_=ExecutionFormat(
+                                mediaType=generated_output.media_type)
+                        )
+                    )
+                elif 'text' in generated_output.media_type:
+                    out_result = ExecutionDocumentSingleOutput(
+                        __root__=output_data.decode('utf-8'))
+                else:
+                    serialized_output_data = urlsafe_b64encode(
+                        output_data).decode('utf-8')
+                    out_result = ExecutionDocumentSingleOutput(
+                        __root__=serialized_output_data)
+            else:
+                link_href = self.get_output_data_link_href(generated_output)
+                out_result = ExecutionDocumentSingleOutput(
+                    __root__=Link(
+                        href=link_href,
+                        type=generated_output.media_type
+                    )
+                )
+            output_results[out_id] = out_result
+        result = ExecutionDocumentResult(__root__=output_results)
+        return result.json(
+            by_alias=True, exclude_none=True, ensure_ascii=False)
+
+    def get_output_data_raw(
+            self, generated_output: OutputExecutionResultInternal) -> bytes:
+        """
+        Get an output's raw data, for when it needs to be transmitted by value
+        """
+        return Path(generated_output.location).read_bytes()
+
+    def get_output_data_link_href(
+            self, generated_output: OutputExecutionResultInternal) -> str:
+        """
+        Get output link href, for when it needs to be transmitted by reference
+        """
+        return generated_output.location
 
     def get_process_descriptions(
             self,
@@ -449,142 +607,3 @@ class BaseManager(abc.ABC):
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
-
-
-def _get_execution_response_single_output(
-        requested_output: Optional[ExecutionOutput],
-        generated_output: OutputExecutionResultInternal,
-) -> Tuple[Optional[bytes], Optional[str], List[Tuple[str, str]]]:
-    """Get process execution response for when there is a single process output
-
-    If there is a single execution output:
-    - If transmission is by value, return the output directly
-    - If transmission is by reference, include a link header
-      for where the output can be downloaded
-
-    :param requested_output: requested output parameters
-    :param generated_output: Generated output parameters
-    :returns: a three-element tuple with the already serialized response
-              payload, the media type and a list with any additional headers
-              to be added to the response
-    """
-    if requested_output is None:
-        should_transmit_by_value = True
-    else:
-        should_transmit_by_value = (
-                requested_output.transmission_mode ==
-                ProcessOutputTransmissionMode.VALUE.value
-        )
-    additional_headers = []
-    if should_transmit_by_value:
-        media_type = generated_output.media_type
-        payload = Path(generated_output.location).read_bytes()
-    else:
-        media_type = None
-        payload = None
-        additional_headers.append(
-            ('Link', Link(href=generated_output.location).as_link_header())
-        )
-    return payload, media_type, additional_headers
-
-
-def _get_execution_response_multiple_outputs(
-        requested_outputs: Dict[str, ExecutionOutput],
-        generated_outputs: Dict[str, OutputExecutionResultInternal],
-        multipart_boundary: Optional[str] = None,
-) -> bytes:
-    """Generate an appropriate body for process execution HTTP responses
-
-    According to the OAProc spec (Requirement 31 -
-    /req/core/process-execute-sync-raw-mixed-multi),
-    if there are multiple outputs, then responses should have a media type
-    of `multipart/related` and, depending on the transmission mode, either
-    include the contents directly in the response, or include
-    links to them.
-    """
-    payload = MIMEMultipart("related", boundary=multipart_boundary)
-    for output_id, generated_output in generated_outputs.items():
-        part = MIMENonMultipart(
-            *generated_output.media_type.split('/'), )
-        part.set_param('Type', generated_output.media_type)
-        part.add_header('Content-ID', output_id)
-        requested = requested_outputs.get(output_id)
-        if requested is None:
-            should_transmit_by_value = True
-        else:
-            should_transmit_by_value = (
-                    requested.transmission_mode ==
-                    ProcessOutputTransmissionMode.VALUE.value
-            )
-        if should_transmit_by_value:
-            data_ = Path(generated_output.location).read_bytes()
-            part.set_payload(data_)
-            if payload.get_param("Type") is None:
-                # set the `Type` of the payload as the same media
-                # type of the first output
-                payload.set_param(
-                    "Type", generated_output.media_type)
-        else:
-            part.add_header('Content-Location', generated_output.location)
-        payload.attach(part)
-    return payload.as_bytes()
-
-
-def _get_execution_response_document(
-        requested_outputs: Optional[Dict[str, ExecutionOutput]],
-        generated_outputs: Dict[str, OutputExecutionResultInternal],
-) -> str:
-    """Prepare process execution response when the requested type is `document`
-
-    :param requested_outputs: Optional explicit configuration for the process
-                              outputs, as requested by the client
-    :param generated_outputs: Outputs generated during process execution
-    """
-    output_results = {}
-    for out_id, generated_output in generated_outputs.items():
-        requested = (requested_outputs or {}).get(out_id)
-        if requested is None:
-            should_transmit_by_value = True
-        else:
-            should_transmit_by_value = (
-                    requested.transmission_mode ==
-                    ProcessOutputTransmissionMode.VALUE.value
-            )
-        if should_transmit_by_value:
-            # if the output's media type is not text based we should
-            # be able to base64 encode the file contents
-            output_data = Path(generated_output.location).read_bytes()
-
-            if 'json' in generated_output.media_type:
-                # TODO: is it a BBOX?
-                parsed_output_data = json.loads(output_data)
-                out_result = ExecutionDocumentSingleOutput(
-                    __root__=ExecutionQualifiedInputValue(
-                        value=parsed_output_data)
-                )
-            elif 'xml' in generated_output.media_type:
-                out_result = ExecutionDocumentSingleOutput(
-                    __root__=ExecutionQualifiedInputValue(
-                        value=output_data,
-                        format_=ExecutionFormat(
-                            mediaType=generated_output.media_type)
-                    )
-                )
-            elif 'text' in generated_output.media_type:
-                out_result = ExecutionDocumentSingleOutput(
-                    __root__=output_data.decode('utf-8'))
-            else:
-                serialized_output_data = urlsafe_b64encode(
-                    output_data).decode('utf-8')
-                out_result = ExecutionDocumentSingleOutput(
-                    __root__=serialized_output_data)
-        else:
-            out_result = ExecutionDocumentSingleOutput(
-                __root__=Link(
-                    href=generated_output.location,
-                    type=generated_output.media_type
-                )
-            )
-        output_results[out_id] = out_result
-    result = ExecutionDocumentResult(__root__=output_results)
-    return result.json(by_alias=True, exclude_none=True, ensure_ascii=False)

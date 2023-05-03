@@ -166,11 +166,12 @@ def test_select_execution_mode(
     ),
 ])
 def test_get_execution_response_single_output(
-        requested_output, generated_output, expected):
+        config, requested_output, generated_output, expected):
+    manager = get_manager(config)
     with mock.patch(
             'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.return_value = 'dummy contents'
-        payload, media_type, headers = base._get_execution_response_single_output(  # noqa: E501
+        payload, media_type, headers = manager._get_execution_response_single_output(  # noqa: E501
             requested_output, generated_output
         )
     assert payload == expected[0]
@@ -206,14 +207,15 @@ def test_get_execution_response_single_output(
     ]
 )
 def test_get_execution_response_multiple_outputs(
-        requested_outputs, generated_outputs, expected_type):
+        config, requested_outputs, generated_outputs, expected_type):
+    manager = get_manager(config)
     with mock.patch(
             'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.side_effect = [
             'dummy1-content',
             'dummy2-content',
         ]
-        result = base._get_execution_response_multiple_outputs(
+        result = manager._get_execution_response_multiple_outputs(
             requested_outputs, generated_outputs,
             multipart_boundary='***123***'
         )
@@ -280,10 +282,13 @@ def test_get_execution_response_multiple_outputs(
         )
     ])
 def test_get_execution_response_document(
-        requested_outputs, generated_outputs, output_contents, expected):
+        config, requested_outputs, generated_outputs,
+        output_contents, expected
+):
+    manager = get_manager(config)
     with mock.patch(
             'pygeoapi.process.manager.base.Path', autospec=True) as mock_Path:
         mock_Path.return_value.read_bytes.side_effect = output_contents
-        result = base._get_execution_response_document(
+        result = manager._get_execution_response_document(
             requested_outputs, generated_outputs)
         assert result == expected
