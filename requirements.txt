@@ -1,7 +1,7 @@
 Babel
-click>7,<=8
+click
 Flask
-jinja2==3.0.3
+jinja2
 jsonschema
 pydantic
 pygeofilter
