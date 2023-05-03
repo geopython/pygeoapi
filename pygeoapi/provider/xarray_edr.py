@@ -124,7 +124,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                     LOGGER.debug('Reversing slicing from high to low')
                     query_params[self._coverage_properties['time_axis_label']] = slice(end, begin)
             else:
-                query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
+                query_params[self._coverage_properties['time_axis_label']] = np.datetime64(datetime_)  # noqa
 
         LOGGER.debug(f'query parameters: {query_params}')
 
