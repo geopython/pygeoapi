@@ -1704,12 +1704,13 @@ class API:
         if 'numberMatched' in content:
             if content['numberMatched'] > (limit + offset):
                 next_ = offset + limit
+                next_href = f'{uri}?offset={next_}{serialized_query_params}'
                 content['links'].append(
                     {
                         'type': 'application/geo+json',
                         'rel': 'next',
                         'title': 'items (next)',
-                        'href': f'{uri}?offset={next_}{serialized_query_params}'
+                        'href': next_href
                     })
 
         content['links'].append(
