@@ -1,6 +1,7 @@
 Babel
 click
 Flask
+importlib_metadata
 jinja2
 jsonschema
 pydantic
