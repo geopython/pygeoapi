@@ -69,7 +69,6 @@ class XarrayProvider(BaseProvider):
                     open_func = xarray.open_dataset
 
             self._data = open_func(self.data)
-            self._data = _convert_float32_to_float64(self._data)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -393,6 +392,9 @@ class XarrayProvider(BaseProvider):
 
             cj['parameters'][pm['id']] = parameter
 
+        data = data.fillna(None)
+        data = _convert_float32_to_float64(data)
+
         try:
             for key in cj['parameters'].keys():
                 cj['ranges'][key] = {
@@ -405,8 +407,6 @@ class XarrayProvider(BaseProvider):
                               metadata['width'],
                               metadata['time_steps']]
                 }
-
-                data = data.fillna(None)
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
         except IndexError as err:
             LOGGER.warning(err)
