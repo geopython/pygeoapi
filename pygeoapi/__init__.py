@@ -43,7 +43,7 @@ from pygeoapi.openapi import openapi
 
 def _find_plugins():
     """
-    A decorator to Find pygeoapi CLI plugins provided by third-party packages.
+    A decorator to find pygeoapi CLI plugins provided by third-party packages.
 
     pygeoapi plugins can hook into the pygeoapi CLI by providing their CLI
     functions and then using an entry_point named 'pygeoapi'.
@@ -70,7 +70,7 @@ def cli():
 @cli.group()
 def plugins():
     """Additional commands provided by third-party pygeoapi plugins"""
-    ...
+    pass
 
 
 @cli.command()
