@@ -50,7 +50,20 @@ def _find_plugins():
     """
 
     def decorator(click_group):
-        for entry_point in entry_points(group="pygeoapi"):
+        try:
+            found_entrypoints = entry_points(group="pygeoapi")
+        except TypeError:
+            # earlier versions of importlib_metadata did not have the
+            # `group` kwarg. More detail:
+            #
+            # https://github.com/geopython/pygeoapi/issues/1241#issuecomment-1536128897  # noqa: E501
+            for group, entries in entry_points().items():
+                if group == "pygeoapi":
+                    found_entrypoints = entries
+                    break
+            else:
+                found_entrypoints = []
+        for entry_point in found_entrypoints:
             try:
                 click_group.add_command(entry_point.load())
             except Exception as err:
