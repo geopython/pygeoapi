@@ -27,19 +27,12 @@
 #
 # =================================================================
 
-from numpy import float64, int64
-import sys
-from pathlib import Path
-path_root = Path(__file__).parents[1]
-sys.path.append(str(path_root))
-
 import pytest
 from shapely.geometry import Point
 
 from pygeoapi.provider.xarray_edr import XarrayEDRProvider
-from pygeoapi.util import json_serial
 
-from tests.util import get_test_file_path
+from .util import get_test_file_path
 
 path = get_test_file_path(
     'data/analysed_sst.zarr')
@@ -50,6 +43,7 @@ bounded = '2005-12-09T09:00:00Z/2005-12-12T09:00:00.000000000'
 unbounded_start = '../2005-12-12T09:00:00.000000000'
 unbounded_end = '2005-12-09T09:00:00Z/..'
 no_time = None
+
 
 @pytest.fixture()
 def config():
@@ -62,6 +56,7 @@ def config():
              'mimetype': 'application/zip'
         }
     }
+
 
 @pytest.fixture()
 def query_parameters():
@@ -77,6 +72,7 @@ def query_parameters():
         'within_units': None,
         'limit': 10
         }
+
 
 def test_single_time_query(config, query_parameters):
     p = XarrayEDRProvider(config)
@@ -113,6 +109,7 @@ def test_unbounded_end_time_query(config, query_parameters):
     assert isinstance(data, dict)
     assert len(data['ranges']['analysed_sst']['values']) == 24
 
+
 def test_no_time_query(config, query_parameters):
     p = XarrayEDRProvider(config)
     query_parameters['datetime_'] = no_time
@@ -120,5 +117,5 @@ def test_no_time_query(config, query_parameters):
 
     assert isinstance(data, dict)
     assert len(data['ranges']['analysed_sst']['values']) == 32
-    assert data['domain']['axes']['time']['start'] == "2005-12-01T09:00:00.000000000"
-    assert data['domain']['axes']['time']['stop'] == "2006-01-01T09:00:00.000000000"
+    assert data['domain']['axes']['time']['start'] == "2005-12-01T09:00:00.000000000" # noqa
+    assert data['domain']['axes']['time']['stop'] == "2006-01-01T09:00:00.000000000" # noqa
