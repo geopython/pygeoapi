@@ -210,7 +210,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         height = data.dims[self.y_field]
         width = data.dims[self.x_field]
-        time, time_steps =  self._parse_time_metadata(data, kwargs)
+        time, time_steps = self._parse_time_metadata(data, kwargs)
 
         out_meta = {
             'bbox': [
