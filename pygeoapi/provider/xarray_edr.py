@@ -118,16 +118,17 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             else:
                 data = self._data
             if (datetime_ is not None and
-                isinstance(query_params[self.time_field], slice)):
+                isinstance(query_params[self.time_field], slice)): # noqa
                 # separate query into spatial and temporal components
                 LOGGER.debug('Separating temporal query')
                 time_query = {self.time_field:
                               query_params[self.time_field]}
                 remaining_query = {key: val for key,
-                                   val in query_params.items() 
+                                   val in query_params.items()
                                    if key != self.time_field}
-                data = data.sel(time_query).sel(remaining_query, method='nearest')
-            else:   
+                data = data.sel(time_query).sel(remaining_query,
+                                                method='nearest')
+            else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
             raise ProviderNoDataError()
@@ -140,7 +141,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             width = data.dims[self.x_field]
         except KeyError:
             width = 1
-        time, time_steps =  self._parse_time_metadata(data, kwargs)
+        time, time_steps = self._parse_time_metadata(data, kwargs)
 
         bbox = wkt.bounds
         out_meta = {
@@ -261,9 +262,9 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         if time.size == 0:
             raise ProviderNoDataError()
         else:
-            begin = _to_datetime_string(data.coords[self.time_field].values.min())
-            end = _to_datetime_string(data.coords[self.time_field].values.max())
-        return [begin, end]
+            start = _to_datetime_string(data[self.time_field].values.min())
+            end = _to_datetime_string(data[self.time_field].values.max())
+        return [start, end]
 
     def _parse_time_metadata(self, data, kwargs):
         """
