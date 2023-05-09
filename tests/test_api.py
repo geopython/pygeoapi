@@ -1943,7 +1943,7 @@ def test_get_collection_edr_query(config, api_):
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
-    time_dict = data['domain']['axes']['time']
+    time_dict = data['domain']['axes']['TIME']
 
     assert time_dict['start'] == '2000-02-15T16:29:05.999999999'
     assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
@@ -1959,7 +1959,7 @@ def test_get_collection_edr_query(config, api_):
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
-    time_dict = data['domain']['axes']['time']
+    time_dict = data['domain']['axes']['TIME']
 
     assert time_dict['start'] == '2000-01-16T06:00:00.000000000'
     assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
@@ -1975,7 +1975,7 @@ def test_get_collection_edr_query(config, api_):
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
-    time_dict = data['domain']['axes']['time']
+    time_dict = data['domain']['axes']['TIME']
 
     assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
     assert time_dict['stop'] == '2000-12-16T01:20:05.999999996'
