@@ -1939,7 +1939,7 @@ def test_get_collection_edr_query(config, api_):
         'datetime': '2000-01-17/2000-06-16'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
-    req, 'icoads-sst', None, 'position')
+        req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -1955,7 +1955,7 @@ def test_get_collection_edr_query(config, api_):
         'datetime': '../2000-06-16'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
-    req, 'icoads-sst', None, 'position')
+        req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -1971,14 +1971,14 @@ def test_get_collection_edr_query(config, api_):
         'datetime': '2000-06-16/..'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
-    req, 'icoads-sst', None, 'position')
+        req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
     time_dict = data['domain']['axes']['time']
 
     assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
-    assert time_dict['stop'] =='2000-12-16T01:20:05.999999996'
+    assert time_dict['stop'] == '2000-12-16T01:20:05.999999996'
     assert time_dict['num'] == 7
 
     # some data
