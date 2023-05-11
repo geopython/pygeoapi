@@ -242,15 +242,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 begin = self._data[self.time_field].min().values
             elif end == '..':
                 end = self._data[self.time_field].max().values
-            begin = np.datetime64(begin)
-            end = np.datetime64(end)
-            if begin < end:
+            if np.datetime64(begin) < np.datetime64(end):
                 return slice(begin, end)
             else:
                 LOGGER.debug('Reversing slicing from high to low')
                 return slice(end, begin)
         else:
-            return np.datetime64(datetime_)
+            return datetime_
 
     def _get_time_range(self, data):
         """
@@ -282,3 +280,4 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         except KeyError:
             time_steps = kwargs.get('limit')
         return time, time_steps
+    

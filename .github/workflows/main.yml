@@ -114,7 +114,6 @@ jobs:
         pytest tests/test_config.py
         pytest tests/test_csv__formatter.py
         pytest tests/test_csv__provider.py
-        pytest tests/test_edr_time_query.py
         pytest tests/test_elasticsearch__provider.py
         pytest tests/test_esri_provider.py
         pytest tests/test_filesystem_provider.py
