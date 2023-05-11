@@ -280,4 +280,3 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         except KeyError:
             time_steps = kwargs.get('limit')
         return time, time_steps
-    
