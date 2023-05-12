@@ -1933,6 +1933,15 @@ def test_get_collection_edr_query(config, api_):
     assert len(data['parameters'].keys()) == 1
     assert list(data['parameters'].keys())[0] == 'SST'
 
+    # Zulu time zone
+    req = mock_request({
+        'coords': 'POINT(11 11)',
+        'datetime': '2000-01-17T00:00:00Z/2000-06-16T23:00:00Z'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+
     # bounded date range
     req = mock_request({
         'coords': 'POINT(11 11)',

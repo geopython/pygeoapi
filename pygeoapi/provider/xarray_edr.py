@@ -236,6 +236,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         :param datetime_: temporal (datestamp or extent)
         :returns: xarray datetime query
         """
+        datetime_ = datetime_.rstrip('Z').replace('Z/', '/')
         if '/' in datetime_:
             begin, end = datetime_.split('/')
             if begin == '..':
