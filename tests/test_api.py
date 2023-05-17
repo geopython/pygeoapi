@@ -1952,7 +1952,6 @@ def test_get_collection_edr_query(config, api_):
     # S3 EDR
     req = mock_request({
         'coords': 'POINT(-100 40)',
-        'datetime': '1981-12-31T00:00:00',
         'parameter-name': 'GWETROOT'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
