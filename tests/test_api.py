@@ -2006,6 +2006,16 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
+    # S3 EDR
+    req = mock_request({
+        'coords': 'POINT(-100 40)',
+        'datetime': '1981-12-31T00:00:00',
+        'parameter-name': 'GWETROOT'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'nasa-power', None, 'position')
+    assert code == HTTPStatus.OK
+
     # position no coords
     req = mock_request({
         'datetime': '2000-01-17'
