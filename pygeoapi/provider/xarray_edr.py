@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+
 import numpy as np
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
@@ -233,7 +234,9 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
     def _make_datetime(self, datetime_):
         """
         Make xarray datetime query
+
         :param datetime_: temporal (datestamp or extent)
+
         :returns: xarray datetime query
         """
         datetime_ = datetime_.rstrip('Z').replace('Z/', '/')
@@ -241,7 +244,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             begin, end = datetime_.split('/')
             if begin == '..':
                 begin = self._data[self.time_field].min().values
-            elif end == '..':
+            if end == '..':
                 end = self._data[self.time_field].max().values
             if np.datetime64(begin) < np.datetime64(end):
                 return slice(begin, end)
@@ -254,7 +257,9 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
     def _get_time_range(self, data):
         """
         Make xarray dataset temporal extent
+
         :param data: xarray dataset
+
         :returns: list of temporal extent
         """
         time = data.coords[self.time_field]
@@ -268,8 +273,10 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
     def _parse_time_metadata(self, data, kwargs):
         """
         Parse time information for output metadata.
+
         :param data: xarray dataset
         :param kwargs: dictionary
+
         :returns: list of temporal extent, number of timesteps
         """
         try:
