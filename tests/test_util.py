@@ -128,7 +128,7 @@ def test_path_basename():
 def test_filter_dict_by_key_value(config):
     collections = util.filter_dict_by_key_value(config['resources'],
                                                 'type', 'collection')
-    assert len(collections) == 8
+    assert len(collections) == 9
 
     notfound = util.filter_dict_by_key_value(config['resources'],
                                              'type', 'foo')

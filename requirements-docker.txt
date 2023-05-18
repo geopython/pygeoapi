@@ -4,3 +4,4 @@ pygeofilter[backend-sqlalchemy]
 pygeoif
 pygeometa
 sodapy
+s3fs
