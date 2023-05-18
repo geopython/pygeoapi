@@ -67,7 +67,7 @@ The following methods are options to connect a plugin to pygeoapi:
 
 
 Specifying custom pygeoapi CLI commands
-+++++++++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Third-party plugins may also provide custom CLI commands. This can be done by means of two additional steps:
 
@@ -143,11 +143,6 @@ The pygeoapi process manager may also be customized. Similarly to the provider p
 configuration's ``server.manager.name`` to indicate either the dotted path to the python package and the relevant
 manager class (*i.e.* similar to option 1 above) or the name of a known core pygeoapi plugin (*i.e.*, similar to
 option 2 above).
-
-
-
-
-
 
 Example: custom pygeoapi vector data provider
 ---------------------------------------------
