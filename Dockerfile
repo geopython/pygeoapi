@@ -102,7 +102,6 @@ ENV TZ=${TZ} \
     ${ADD_DEB_PACKAGES}"
 
 WORKDIR /pygeoapi
-ADD . /pygeoapi
 
 # Install operating system dependencies
 RUN \
@@ -120,22 +119,27 @@ RUN \
     && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
     && rm -f ./SCHEMAS_OPENGIS_NET.zip \
 
-    # Install remaining pygeoapi deps
-    && pip3 install -r requirements-docker.txt \
-    && pip3 install -r requirements-admin.txt \
-
-    # Install pygeoapi
-    && pip3 install -e . \
-
-    # Set default config and entrypoint for Docker Image
-    && cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
-    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh  \
-
     # Cleanup TODO: remove unused Locales and TZs
     && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
     && apt-get clean \
     && apt autoremove -y  \
     && rm -rf /var/lib/apt/lists/*
+
+ADD requirements-docker.txt requirements-admin.txt /pygeoapi/
+# Install remaining pygeoapi deps
+RUN pip3 install -r requirements-docker.txt \
+    && pip3 install -r requirements-admin.txt
+
+
+ADD . /pygeoapi
+
+ # Install pygeoapi
+RUN pip3 install -e . 
+
+RUN \ 
+    # Set default config and entrypoint for Docker Image
+    cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh 
 
 ENTRYPOINT ["/entrypoint.sh"]
 
