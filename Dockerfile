@@ -9,6 +9,7 @@
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2021 Angelos Tzotsos
+# Copyright (c) 2023 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy 
+FROM ubuntu:jammy-20230425
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -106,7 +107,6 @@ ADD . /pygeoapi
 # Install operating system dependencies
 RUN \
     apt-get update -y \
-    && apt-get upgrade -y \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"  \
