@@ -127,14 +127,14 @@ RUN \
 
 ADD requirements-docker.txt requirements-admin.txt /pygeoapi/
 # Install remaining pygeoapi deps
-RUN pip3 install -r requirements-docker.txt \
-    && pip3 install -r requirements-admin.txt
+RUN python3 -m pip install -r requirements-docker.txt \
+    && python3 -m pip install -r requirements-admin.txt
 
 
 ADD . /pygeoapi
 
  # Install pygeoapi
-RUN pip3 install -e . 
+RUN python3 -m pip install -e . 
 
 RUN \ 
     # Set default config and entrypoint for Docker Image
