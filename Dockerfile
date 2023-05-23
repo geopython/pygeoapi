@@ -120,6 +120,9 @@ RUN \
     && rm -f ./SCHEMAS_OPENGIS_NET.zip \
 
     # Cleanup TODO: remove unused Locales and TZs
+    # NOTE: this tries to remove gcc, but the actual package gcc-11 can't be
+    #       removed because python3-scipy depends on python3-pythran which
+    #       depends on g++
     && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
     && apt-get clean \
     && apt autoremove -y  \
