@@ -342,7 +342,7 @@ def collection_map(collection_id, style_id=None):
 
 
 @BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<path:process_id>')
+@BLUEPRINT.route('/processes/<process_id>')
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -375,7 +375,7 @@ def get_jobs(job_id=None):
             return get_response(api_.get_jobs(request, job_id))
 
 
-@BLUEPRINT.route('/processes/<path:process_id>/execution', methods=['POST'])
+@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
 def execute_process_jobs(process_id):
     """
     OGC API - Processes execution endpoint
