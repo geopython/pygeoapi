@@ -27,12 +27,6 @@
 #
 # =================================================================
 
-# TODO - implement SQL string composition like psycopg2.sql.SQL
-#           (https://www.psycopg.org/docs/sql.html)
-#      - Support for parameters crs and bbox-crs (should overwrite
-#           source-crs and target-crs configuration)
-#      - Use of the correct CRS parameter as URL?! Translation to SRID
-
 import logging
 import json
 import oracledb
@@ -77,7 +71,7 @@ class DatabaseConnection:
         :returns: DatabaseConnection
         """
 
-        self.conn_dic = conn_dic
+        self.conn_dict = conn_dic
         self.table = table
         self.context = context
         self.columns = (
@@ -89,110 +83,100 @@ class DatabaseConnection:
 
     def __enter__(self):
         try:
-            if (
-                "init_oracle_client" in self.conn_dic
-                and self.conn_dic["init_oracle_client"] == True
-            ):
+            if self.conn_dict.get("init_oracle_client", False):
                 oracledb.init_oracle_client()
 
             # Connect with tnsnames.ora entry and Login with Oracle Wallet
-            if (
-                "external_auth" in self.conn_dic
-                and self.conn_dic["external_auth"] == "wallet"
-            ):
+            if self.conn_dict.get("external_auth") == "wallet":
                 LOGGER.debug(
                     "Oracle connect with tnsnames.ora entry \
                     and login with Oracle Wallet"
                 )
 
-                if "tns_name" not in self.conn_dic:
+                if "tns_name" not in self.conn_dict:
                     raise Exception("tns_name must be set for external authentication!")
 
-                dsn = self.conn_dic["tns_name"]
+                dsn = self.conn_dict["tns_name"]
 
             # Connect with SERVICE_NAME
-            if "service_name" in self.conn_dic:
+            if "service_name" in self.conn_dict:
                 LOGGER.debug(
-                    "Oracle connect with service_name: " + self.conn_dic["service_name"]
+                    f"Oracle connect with service_name: {self.conn_dict['service_name']}"
                 )
 
-                if "host" not in self.conn_dic:
+                if "host" not in self.conn_dict:
                     raise Exception(
                         "Host must be set for connection with service_name!"
                     )
 
                 dsn = oracledb.makedsn(
-                    self.conn_dic["host"],
-                    self.conn_dic["port"] or 1521,
-                    service_name=self.conn_dic["service_name"],
+                    self.conn_dict["host"],
+                    self.conn_dict.get("port", 1521),
+                    service_name=self.conn_dict["service_name"],
                 )
 
             # Connect with SID
-            elif "sid" in self.conn_dic:
-                LOGGER.debug("Oracle connect with sid: " + self.conn_dic["sid"])
+            elif "sid" in self.conn_dict:
+                LOGGER.debug(f"Oracle connect with sid: {self.conn_dict['sid']}")
 
-                if "host" not in self.conn_dic:
+                if "host" not in self.conn_dict:
                     raise Exception("Host must be set for connection with sid!")
 
                 dsn = oracledb.makedsn(
-                    self.conn_dic["host"],
-                    self.conn_dic["port"] or 1521,
-                    sid=self.conn_dic["sid"],
+                    self.conn_dict["host"],
+                    self.conn_dict.get("port", 1521),
+                    sid=self.conn_dict["sid"],
                 )
 
             # Connect with tnsnames.ora entry
-            elif "tns_name" in self.conn_dic:
+            elif "tns_name" in self.conn_dict:
                 LOGGER.debug(
-                    "Oracle connect with tns_name: " + self.conn_dic["tns_name"]
+                    f"Oracle connect with tns_name: {self.conn_dict['tns_name']}"
                 )
-                dsn = self.conn_dic["tns_name"]
+                dsn = self.conn_dict["tns_name"]
 
             else:
                 raise ProviderConnectionError(
                     "One of service_name, sid or tns_name must be specified!"
                 )
 
-            LOGGER.debug("Oracle DSN string: " + dsn)
+            LOGGER.debug(f"Oracle DSN string: {dsn}")
 
             # Connect with tnsnames.ora entry and Login with Oracle Wallet
-            if (
-                "external_auth" in self.conn_dic
-                and self.conn_dic["external_auth"] == "wallet"
-            ):
+            if self.conn_dict.get("external_auth") == "wallet":
                 self.conn = oracledb.connect(externalauth=True, dsn=dsn)
 
             # Connect with tnsnames.ora entry, TNS_ADMIN is set via configuration
-            if "tns_admin" in self.conn_dic:
+            if "tns_admin" in self.conn_dict:
                 self.conn = oracledb.connect(
-                    user=self.conn_dic["user"],
-                    password=self.conn_dic["password"],
+                    user=self.conn_dict["user"],
+                    password=self.conn_dict["password"],
                     dsn=dsn,
-                    config_dir=self.conn_dic["tns_admin"],
+                    config_dir=self.conn_dict["tns_admin"],
                 )
 
             # Connect with user / password via dsn string
-            # When dsn is a TNS name, the environment variable TNS_ADMIN must be set (Path to tnsnames.ora file)
+            # When dsn is a TNS name, the environment variable TNS_ADMIN must
+            # be set (Path to tnsnames.ora file)
             else:
                 self.conn = oracledb.connect(
-                    user=self.conn_dic["user"],
-                    password=self.conn_dic["password"],
+                    user=self.conn_dict["user"],
+                    password=self.conn_dict["password"],
                     dsn=dsn,
                 )
 
         except oracledb.DatabaseError as e:
-            LOGGER.error(
-                "Couldn't connect to Oracle using:{}".format(str(self.conn_dic))
-            )
+            LOGGER.error(f"Couldn't connect to Oracle using:{str(self.conn_dict)}")
             LOGGER.error(e)
             raise ProviderConnectionError(e)
 
         # Check if table name has schema inside
-        dot_pos = self.table.find(".")
-        if dot_pos > 0:
-            schema = self.table[0:dot_pos]
-            table = self.table[dot_pos + 1 :]
+        table_parts = self.table.split(".")
+        if len(table_parts) == 2:
+            schema = table_parts[0]
+            table = table_parts[1]
         else:
-            schema = self.conn_dic["user"]
+            schema = self.conn_dict["user"]
             table = self.table
 
         LOGGER.debug("Schema: " + schema)
@@ -250,41 +234,23 @@ class OracleProvider(BaseProvider):
         self.table = provider_def["table"]
         self.id_field = provider_def["id_field"]
         self.conn_dic = provider_def["data"]
-        self.geom = provider_def.get("geom_field", "geom")
+        self.geom = provider_def["geom_field"]
         self.properties = [item.lower() for item in self.properties]
 
-        if "sql_manipulator" in provider_def:
-            self.sql_manipulator = provider_def["sql_manipulator"]
-        else:
-            self.sql_manipulator = None
-        if "sql_manipulator_options" in provider_def:
-            self.sql_manipulator_options = provider_def["sql_manipulator_options"]
-        else:
-            self.sql_manipulator = None
-        if "mandatory_properties" in provider_def:
-            self.mandatory_properties = provider_def["mandatory_properties"]
-        else:
-            self.mandatory_properties = None
-        if "source_crs" in provider_def:
-            self.source_crs = provider_def["source_crs"]
-        else:
-            self.source_crs = 4326
-        if "target_crs" in provider_def:
-            self.target_crs = provider_def["target_crs"]
-        else:
-            self.target_crs = 4326
-        if "sdo_mask" in provider_def:
-            self.sdo_mask = provider_def["sdo_mask"]
-        else:
-            self.sdo_mask = "anyinteraction"
+        self.sql_manipulator = provider_def.get("sql_manipulator")
+        self.sql_manipulator_options = provider_def.get("sql_manipulator_options")
+        self.mandatory_properties = provider_def.get("mandatory_properties")
+        self.source_crs = provider_def.get("source_crs", 4326)
+        self.target_crs = provider_def.get("target_crs", 4326)
+        self.sdo_mask = provider_def.get("sdo_mask", "anyinteraction")
 
         LOGGER.debug("Setting Oracle properties:")
-        LOGGER.debug("Name:{}".format(self.name))
-        LOGGER.debug("ID_field:{}".format(self.id_field))
-        LOGGER.debug("Table:{}".format(self.table))
-        LOGGER.debug("source_crs: {}".format(self.source_crs))
-        LOGGER.debug("target_crs: {}".format(self.target_crs))
-        LOGGER.debug("sdo_mask: {}".format(self.sdo_mask))
+        LOGGER.debug(f"Name:{self.name}")
+        LOGGER.debug(f"ID_field:{self.id_field}")
+        LOGGER.debug(f"Table:{self.table}")
+        LOGGER.debug(f"source_crs: {self.source_crs}")
+        LOGGER.debug(f"target_crs: {self.target_crs}")
+        LOGGER.debug(f"sdo_mask: {self.sdo_mask}")
 
         self.get_fields()
 
@@ -303,9 +269,7 @@ class OracleProvider(BaseProvider):
                 self.fields = db.fields
         return self.fields
 
-    def __get_where_clauses(
-        self, properties, bbox, bbox_crs, sdo_mask="anyinteraction"
-    ):
+    def _get_where_clauses(self, properties, bbox, bbox_crs, sdo_mask="anyinteraction"):
         """
         Generarates WHERE conditions to be implemented in query.
         Private method mainly associated with query method
@@ -321,9 +285,7 @@ class OracleProvider(BaseProvider):
         where_conditions = []
 
         if properties:
-            property_clauses = [
-                "{} = :{}".format(key, key) for key, value in properties
-            ]
+            property_clauses = [f"{key} = :{key}" for key, value in properties]
             where_conditions += property_clauses
             where_dict["properties"] = dict(properties)
 
@@ -343,15 +305,13 @@ class OracleProvider(BaseProvider):
 
             bbox_dict[
                 "clause"
-            ] = "sdo_relate({}, \
-                                              mdsys.sdo_geometry(2003, \
-                                                                 :srid, \
-                                                                 NULL, \
-                                                                 mdsys.sdo_elem_info_array(1, 1003, 3), \
-                                              mdsys.sdo_ordinate_array(:minx, :miny, :maxx, :maxy)), \
-                                              :sdo_mask) = 'TRUE'".format(
-                self.geom
-            )
+            ] = f"sdo_relate({self.geom}, \
+                             mdsys.sdo_geometry(2003, \
+                                                :srid, \
+                                                NULL, \
+                                                mdsys.sdo_elem_info_array(1, 1003, 3), \
+                             mdsys.sdo_ordinate_array(:minx, :miny, :maxx, :maxy)), \
+                             :sdo_mask) = 'TRUE'"
 
             where_conditions.append(bbox_dict["clause"])
             where_dict["properties"].update(bbox_dict["properties"])
@@ -363,7 +323,7 @@ class OracleProvider(BaseProvider):
 
         return where_dict
 
-    def __get_orderby(self, sortby):
+    def _get_orderby(self, sortby):
         """
         Private function: Get ORDER BY clause
 
@@ -371,11 +331,19 @@ class OracleProvider(BaseProvider):
 
         :returns: STA $orderby string
         """
-        ret = []
-        _map = {"+": "ASC", "-": "DESC"}
-        for _ in sortby:
-            ret.append(f"{_['property']} {_map[_['order']]}")
+        sort_map = {"+": "ASC", "-": "DESC"}
+        ret = [f"{sort['property']} {sort_map[sort['order']]}" for sort in sortby]
+
         return f"ORDER BY {','.join(ret)}"
+
+    def _output_type_handler(self, cursor, name, default_type, size, precision, scale):
+        """
+        Output type handler for Oracle LOB datatypes
+        """
+        if default_type == oracledb.DB_TYPE_CLOB:
+            return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
+        if default_type == oracledb.DB_TYPE_BLOB:
+            return cursor.var(oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize)
 
     def query(
         self,
@@ -411,20 +379,18 @@ class OracleProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        LOGGER.debug("!!!!!!!!!!!!!!!!!! Query start !!!!!!!!!!!!!!!!!!!!")
-
         # Check mandatory filter properties
         property_dict = dict(properties)
         if self.mandatory_properties:
             for mand_col in self.mandatory_properties:
                 if mand_col == "bbox" and not bbox:
                     raise ProviderQueryError(
-                        "Missing mandatory filter property: " + mand_col
+                        f"Missing mandatory filter property: {mand_col}"
                     )
                 else:
                     if mand_col not in property_dict:
                         raise ProviderQueryError(
-                            "Missing mandatory filter property: " + mand_col
+                            f"Missing mandatory filter property: {mand_col}"
                         )
 
         if resulttype == "hits":
@@ -433,7 +399,7 @@ class OracleProvider(BaseProvider):
             ) as db:
                 cursor = db.conn.cursor()
 
-                where_dict = self.__get_where_clauses(
+                where_dict = self._get_where_clauses(
                     properties=properties,
                     bbox=bbox,
                     bbox_crs=self.source_crs,
@@ -441,35 +407,24 @@ class OracleProvider(BaseProvider):
                 )
 
                 # Not dangerous to use self.table as substitution, because of getFields ...
-                sql_query = "SELECT COUNT(1) AS hits FROM {} {}".format(
-                    self.table, where_dict["clause"]
+                sql_query = (
+                    f"SELECT COUNT(1) AS hits FROM {self.table} {where_dict['clause']}"
                 )
                 try:
                     cursor.execute(sql_query, where_dict["properties"])
-                except Exception as err:
-                    LOGGER.error(
-                        "Error executing sql_query: {}: {}".format(sql_query, err)
-                    )
+                except oracledb.Error as err:
+                    LOGGER.error(f"Error executing sql_query: {sql_query}: {err}")
                     raise ProviderQueryError()
 
                 hits = cursor.fetchone()[0]
-                LOGGER.debug("hits: " + str(hits))
+                LOGGER.debug(f"hits: {str(hits)}")
 
-            return self.__response_feature_hits(hits)
+            return self._response_feature_hits(hits)
 
         with DatabaseConnection(
             self.conn_dic, self.table, properties=self.properties
         ) as db:
-            # Output type handler for Oracle LOB datatypes
-            def output_type_handler(cursor, name, default_type, size, precision, scale):
-                if default_type == oracledb.DB_TYPE_CLOB:
-                    return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
-                if default_type == oracledb.DB_TYPE_BLOB:
-                    return cursor.var(
-                        oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize
-                    )
-
-            db.conn.outputtypehandler = output_type_handler
+            db.conn.outputtypehandler = self._output_type_handler
 
             cursor = db.conn.cursor()
 
@@ -482,7 +437,7 @@ class OracleProvider(BaseProvider):
                 else ", ".join([p for p in select_properties])
             )
 
-            where_dict = self.__get_where_clauses(
+            where_dict = self._get_where_clauses(
                 properties=properties,
                 bbox=bbox,
                 bbox_crs=self.source_crs,
@@ -499,29 +454,28 @@ class OracleProvider(BaseProvider):
                 and self.target_crs
                 and self.target_crs != self.source_crs
             ):
-                geom = ", sdo_cs.transform(t1.{}, :target_srid).get_geojson() AS geometry ".format(
-                    self.geom
-                )
+                geom = f", sdo_cs.transform(t1.{self.geom}, :target_srid).get_geojson() AS geometry "
                 where_dict["properties"].update({"target_srid": int(self.target_crs)})
             else:
-                geom = ", t1.{}.get_geojson() AS geometry ".format(self.geom)
+                geom = f", t1.{self.geom}.get_geojson() AS geometry "
 
-            orderby = self.__get_orderby(sortby) if sortby else ""
+            orderby = self._get_orderby(sortby) if sortby else ""
 
             # Create paging and add placeholders for the
             # SQL manipulation class
             paging_bind = {}
             if limit > 0:
-                sql_query = "SELECT #HINTS# {} {} FROM {} t1 #JOIN# {} #WHERE# {} OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY".format(
-                    props, geom, self.table, where_dict["clause"], orderby
-                )
+                sql_query = f"SELECT #HINTS# {props} {geom} \
+                                FROM {self.table} t1 #JOIN# \
+                                {where_dict['clause']} #WHERE# \
+                                {orderby} \
+                                OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY"
                 paging_bind = {"offset": offset, "limit": limit}
             else:
-                sql_query = (
-                    "SELECT #HINTS# {} {} FROM {} t1 #JOIN# {} #WHERE# {}".format(
-                        props, geom, self.table, where_dict["clause"], orderby
-                    )
-                )
+                sql_query = f"SELECT #HINTS# {props} {geom} \
+                        FROM {self.table} t1 #JOIN# \
+                        {where_dict['clause']} #WHERE# \
+                        {orderby}"
 
             # Create dictionary for sql bind variables
             bind_variables = where_dict["properties"] | paging_bind
@@ -529,7 +483,7 @@ class OracleProvider(BaseProvider):
             # SQL manipulation plugin
             if self.sql_manipulator:
                 LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = factory(self.sql_manipulator)
+                manipulation_class = _factory(self.sql_manipulator)
                 sql_query, bind_variables = manipulation_class.process(
                     db,
                     sql_query,
@@ -546,13 +500,13 @@ class OracleProvider(BaseProvider):
             sql_query = sql_query.replace("#JOIN#", "")
             sql_query = sql_query.replace("#WHERE#", "")
 
-            LOGGER.debug("SQL Query: {}".format(sql_query))
-            LOGGER.debug("Bind variables: {}".format(bind_variables))
+            LOGGER.debug(f"SQL Query: {sql_query}")
+            LOGGER.debug(f"Bind variables: {bind_variables}")
 
             try:
                 cursor.execute(sql_query, bind_variables)
-            except Exception as err:
-                LOGGER.error("Error executing sql_query: {}".format(sql_query))
+            except oracledb.Error as err:
+                LOGGER.error(f"Error executing sql_query: {sql_query}")
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
@@ -563,11 +517,8 @@ class OracleProvider(BaseProvider):
             row_data = cursor.fetchall()
 
             # Generate feature JSON
-            feature_collection = {"type": "FeatureCollection", "features": []}
-            for rd in row_data:
-                feature = self.__response_feature(rd)
-
-                feature_collection["features"].append(feature)
+            features = [self._response_feature(rd) for rd in row_data]
+            feature_collection = {"type": "FeatureCollection", "features": features}
 
             return feature_collection
 
@@ -579,24 +530,23 @@ class OracleProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = "SELECT {} AS id FROM {} WHERE ROWNUM = 1 AND {} < :{} ORDER BY {} DESC".format(
-            self.id_field,
-            self.table,
-            self.id_field,
-            self.id_field,
-            self.id_field,
-        )
+        sql = f"SELECT {self.id_field} AS id \
+                  FROM {self.table} \
+                 WHERE ROWNUM = 1 \
+                   AND {self.id_field} < :{self.id_field} \
+                 ORDER BY {self.id_field} DESC"
 
         bind_variables = {self.id_field: identifier}
 
-        LOGGER.debug("SQL Query: {}".format(sql))
-        LOGGER.debug("Bind variables: {}".format(str(bind_variables)))
+        LOGGER.debug(f"SQL Query: {sql}")
+        LOGGER.debug(f"Bind variables: {str(bind_variables)}")
 
         cursor.execute(sql, bind_variables)
 
         item = cursor.fetchall()
-        id_ = item[0][0] if item else None
-        return id_
+        id = item[0][0] if item else None
+
+        return id
 
     def get_next(self, cursor, identifier):
         """
@@ -606,18 +556,23 @@ class OracleProvider(BaseProvider):
 
         :returns: feature id
         """
-        sql = "SELECT {} AS id FROM {} WHERE ROWNUM = 1 AND {}>:{} ORDER BY {}".format(
-            self.id_field,
-            self.table,
-            self.id_field,
-            self.id_field,
-            self.id_field,
-        )
-        LOGGER.debug("SQL Query: {}".format(sql))
-        cursor.execute(sql, {self.id_field: identifier})
+        sql = f"SELECT {self.id_field} AS id \
+                  FROM {self.table} \
+                 WHERE ROWNUM = 1 \
+                   AND {self.id_field} > :{self.id_field} \
+                 ORDER BY {self.id_field} ASC"
+
+        bind_variables = {self.id_field: identifier}
+
+        LOGGER.debug(f"SQL Query: {sql}")
+        LOGGER.debug(f"Bind variables: {str(bind_variables)}")
+
+        cursor.execute(sql, bind_variables)
+
         item = cursor.fetchall()
-        id_ = item[0][0] if item else None
-        return id_
+        id = item[0][0] if item else None
+
+        return id
 
     def get(self, identifier, **kwargs):
         """
@@ -629,45 +584,31 @@ class OracleProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        LOGGER.debug("Get item from Oracle")
         with DatabaseConnection(
             self.conn_dic, self.table, properties=self.properties
         ) as db:
-            # Output type handler for Oracle LOB datatypes
-            def output_type_handler(cursor, name, default_type, size, precision, scale):
-                if default_type == oracledb.DB_TYPE_CLOB:
-                    return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
-                if default_type == oracledb.DB_TYPE_BLOB:
-                    return cursor.var(
-                        oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize
-                    )
-
-            db.conn.outputtypehandler = output_type_handler
+            db.conn.outputtypehandler = self._output_type_handler
 
             cursor = db.conn.cursor()
 
             crs_dict = {}
             if self.target_crs and self.target_crs != self.source_crs:
-                geom_sql = ", sdo_cs.transform(t1.{}, :target_srid).get_geojson() AS geometry ".format(
-                    self.geom
-                )
+                geom_sql = f", sdo_cs.transform(t1.{self.geom}, :target_srid).get_geojson() AS geometry "
                 crs_dict = {"target_srid": int(self.target_crs)}
             else:
-                geom_sql = ", t1.{}.get_geojson() AS geometry ".format(self.geom)
+                geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
 
-            sql_query = "SELECT {} {} \
-                           FROM {} t1 \
-                          WHERE {} = :{}".format(
-                db.columns, geom_sql, self.table, self.id_field, self.id_field
-            )
+            sql_query = f"SELECT {db.columns} {geom_sql} \
+                            FROM {self.table} t1 \
+                           WHERE {self.id_field} = :{self.id_field}"
 
-            LOGGER.debug("SQL Query: {}".format(sql_query))
-            LOGGER.debug("Identifier: {}".format(identifier))
+            LOGGER.debug(f"SQL Query: {sql_query}")
+            LOGGER.debug(f"Identifier: {identifier}")
 
             try:
                 cursor.execute(sql_query, {self.id_field: identifier} | crs_dict)
-            except Exception as err:
-                LOGGER.error("Error executing sql_query: {}".format(sql_query))
+            except oracledb.Error as err:
+                LOGGER.error(f"Error executing sql_query: {sql_query}")
                 LOGGER.error(err)
                 raise ProviderQueryError()
 
@@ -680,7 +621,7 @@ class OracleProvider(BaseProvider):
             row_data = None
             if results:
                 row_data = results[0]
-            feature = self.__response_feature(row_data)
+            feature = self._response_feature(row_data)
 
             if feature:
                 previous_id = self.get_previous(cursor, identifier)
@@ -691,11 +632,11 @@ class OracleProvider(BaseProvider):
                     feature["next"] = self.get_next(cursor, identifier)
                 return feature
             else:
-                err = "item {} not found".format(identifier)
+                err = f"item identifier {identifier} not found"
                 LOGGER.error(err)
                 raise ProviderItemNotFoundError(err)
 
-    def __response_feature(self, row_data):
+    def _response_feature(self, row_data):
         """
         Assembles GeoJSON output from DB query
 
@@ -720,7 +661,7 @@ class OracleProvider(BaseProvider):
         else:
             return None
 
-    def __response_feature_hits(self, hits):
+    def _response_feature_hits(self, hits):
         """Assembles GeoJSON/Feature number
         e.g: http://localhost:5000/collections/lakes/items?resulttype=hits
 
@@ -733,7 +674,7 @@ class OracleProvider(BaseProvider):
         return feature_collection
 
 
-def factory(module_class_string, super_cls: type = None, **kwargs):
+def _factory(module_class_string, super_cls: type = None, **kwargs):
     """
     Factory function for class instances.
     Used for dynamic loading of the SQL manipulation class.

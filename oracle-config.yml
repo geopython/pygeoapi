@@ -55,7 +55,7 @@ server:
     # ogc_schemas_location: /opt/schemas.opengis.net
     
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:

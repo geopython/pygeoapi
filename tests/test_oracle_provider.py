@@ -31,39 +31,31 @@
 # Create testdata: SQLPLUS SYS@DBNAME AS SYSDBA @./data/oracle_lakes.sql
 
 import os
-import json
 import pytest
-from http import HTTPStatus
-
-from pygeoapi.api import API
-
-from pygeoapi.provider.base import (
-    ProviderConnectionError,
-    ProviderItemNotFoundError,
-    ProviderQueryError
-)
 from pygeoapi.provider.oracle import OracleProvider
 
-USERNAME = os.environ.get('PYGEOAPI_ORACLE_USER', 'geo_test')
-PASSWORD = os.environ.get('PYGEOAPI_ORACLE_PASSWD', 'geo_test')
-SERVICE_NAME=os.environ.get('PYGEOAPI_ORACLE_SERVICE_NAME', 'XEPDB1')
-HOST = os.environ.get('PYGEOAPI_ORACLE_HOST', '127.0.0.1')
-PORT = os.environ.get('PYGEOAPI_ORACLE_PORT', '1521')
+USERNAME = os.environ.get("PYGEOAPI_ORACLE_USER", "geo_test")
+PASSWORD = os.environ.get("PYGEOAPI_ORACLE_PASSWD", "geo_test")
+SERVICE_NAME = os.environ.get("PYGEOAPI_ORACLE_SERVICE_NAME", "XEPDB1")
+HOST = os.environ.get("PYGEOAPI_ORACLE_HOST", "127.0.0.1")
+PORT = os.environ.get("PYGEOAPI_ORACLE_PORT", "1521")
+
 
 @pytest.fixture()
 def config():
     return {
-        'name': 'Oracle',
-        'type': 'feature',
-        'data': {'host': HOST,
-                 'port': PORT,
-                 'service_name': SERVICE_NAME,
-                 'user': USERNAME,
-                 'password': PASSWORD
-                 },
-        'id_field': 'id',
-        'table': 'lakes',
-        'geom_field': 'geometry'
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes",
+        "geom_field": "geometry",
     }
 
 
@@ -71,11 +63,11 @@ def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = OracleProvider(config)
     feature_collection = p.query()
-    assert feature_collection.get('type') == 'FeatureCollection'
-    features = feature_collection.get('features')
+    assert feature_collection.get("type") == "FeatureCollection"
+    features = feature_collection.get("features")
     assert features is not None
     feature = features[0]
-    properties = feature.get('properties')
+    properties = feature.get("properties")
     assert properties is not None
-    geometry = feature.get('geometry')
+    geometry = feature.get("geometry")
     assert geometry is not None
