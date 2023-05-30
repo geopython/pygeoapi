@@ -395,7 +395,7 @@ class OracleProvider(BaseProvider):
     ):
         """
         Query Oracle for all the content.
-        
+
         :param offset: starting record to return (default 0)
         :param limit: number of records to return (default 10)
         :param resulttype: return results or hit limit (default results)
@@ -441,7 +441,7 @@ class OracleProvider(BaseProvider):
                     sdo_mask=self.sdo_mask,
                 )
 
-                # Not dangerous to use self.table as substitution, 
+                # Not dangerous to use self.table as substitution,
                 # because of getFields ...
                 sql_query = f"SELECT COUNT(1) AS hits \
                                 FROM {self.table} \
