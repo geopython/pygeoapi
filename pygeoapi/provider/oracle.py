@@ -75,7 +75,7 @@ class DatabaseConnection:
         self.table = table
         self.context = context
         self.columns = (
-            None  # Comma sepparated string with column names (for SQL queries)
+            None  # Comma sepparated string with column names (for SQL query)
         )
         self.properties = [item.lower() for item in properties]
         self.fields = {}  # Dict of columns. Key is col name, value is type
@@ -327,9 +327,11 @@ class OracleProvider(BaseProvider):
                              mdsys.sdo_geometry(2003, \
                                                 :srid, \
                                                 NULL, \
-                                                mdsys.sdo_elem_info_array(1, \
-                                                                          1003, \
-                                                                          3), \
+                                                mdsys.sdo_elem_info_array(\
+                                                    1, \
+                                                    1003, \
+                                                    3\
+                                                ), \
                              mdsys.sdo_ordinate_array(:minx, \
                                                       :miny, \
                                                       :maxx, \
@@ -493,7 +495,8 @@ class OracleProvider(BaseProvider):
                 and self.target_crs != self.source_crs
             ):
                 geom = f", sdo_cs.transform(t1.{self.geom}, \
-                                            :target_srid).get_geojson() AS geometry "
+                                            :target_srid).get_geojson() \
+                            AS geometry "
                 where_dict["properties"].update(
                     {"target_srid": int(self.target_crs)}
                 )
@@ -507,10 +510,10 @@ class OracleProvider(BaseProvider):
             paging_bind = {}
             if limit > 0:
                 sql_query = f"SELECT #HINTS# {props} {geom} \
-                                FROM {self.table} t1 #JOIN# \
-                                {where_dict['clause']} #WHERE# \
-                                {orderby} \
-                                OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY"
+                              FROM {self.table} t1 #JOIN# \
+                              {where_dict['clause']} #WHERE# \
+                              {orderby} \
+                              OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY"
                 paging_bind = {"offset": offset, "limit": limit}
             else:
                 sql_query = f"SELECT #HINTS# {props} {geom} \
@@ -638,7 +641,8 @@ class OracleProvider(BaseProvider):
             crs_dict = {}
             if self.target_crs and self.target_crs != self.source_crs:
                 geom_sql = f", sdo_cs.transform(t1.{self.geom}, \
-                                                :target_srid).get_geojson() AS geometry "
+                                                :target_srid).get_geojson() \
+                                AS geometry "
                 crs_dict = {"target_srid": int(self.target_crs)}
             else:
                 geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
