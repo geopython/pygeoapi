@@ -91,8 +91,6 @@ ENV TZ=${TZ} \
     tzdata \
     gunicorn \
     python3-dateutil \
-    python3-flask \
-    python3-flask-cors \
     python3-gevent \
     python3-greenlet \
     python3-pip \
