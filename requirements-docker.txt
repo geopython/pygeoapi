@@ -5,3 +5,5 @@ pygeoif
 pygeometa
 sodapy
 s3fs
+Flask>=2.2.0
+Flask-Cors
