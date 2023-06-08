@@ -48,9 +48,12 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def execute(self) -> Tuple[str, Any]:
+    def execute(self, data: dict) -> Tuple[str, Any]:
         """
         execute the process
+
+        :param data: Dict with the input data that the process needs in order
+                     to execute
 
         :returns: tuple of MIME type and process response
         """

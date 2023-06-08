@@ -91,9 +91,11 @@ jobs:
         pip3 install -r requirements-starlette.txt
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
+        pip3 install -r docs/requirements.txt
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
         pip3 install --upgrade numpy "sqlalchemy<2"
+        pip3 install --upgrade flake8
         pip3 install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
         #pip3 install --upgrade rasterio==1.1.8
     - name: setup test data ⚙️

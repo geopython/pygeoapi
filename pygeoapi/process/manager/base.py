@@ -32,11 +32,16 @@ import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple, Optional
 import uuid
 
+from pygeoapi.util import (
+    DATETIME_FORMAT,
+    JobStatus,
+    ProcessExecutionMode,
+    RequestedProcessExecutionMode,
+)
 from pygeoapi.process.base import BaseProcessor
-from pygeoapi.util import DATETIME_FORMAT, JobStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -262,28 +267,60 @@ class BaseManager:
 
     def execute_process(
             self,
-            p,
-            data_dict,
-            is_async=False
-    ) -> Tuple[str, str, Any, JobStatus]:
+            p: BaseProcessor,
+            data_dict: dict,
+            execution_mode: Optional[RequestedProcessExecutionMode] = None
+    ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
         :param p: `pygeoapi.process` object
         :param data_dict: `dict` of data parameters
-        :param is_async: `bool` specifying sync or async processing.
+        :param execution_mode: `str` optionally specifying sync or async
+        processing.
 
-        :returns: tuple of job_id, MIME type, response payload and status
+        :returns: tuple of job_id, MIME type, response payload, status and
+                  optionally additional HTTP headers to include in the final
+                  response
         """
 
         job_id = str(uuid.uuid1())
-        if not is_async:
+        if execution_mode == RequestedProcessExecutionMode.respond_async:
+            # client wants async - do we support it?
+            process_supports_async = (
+                ProcessExecutionMode.async_execute.value in p.metadata.get(
+                    'jobControlOptions', []
+                )
+            )
+            if self.is_async and process_supports_async:
+                LOGGER.debug('Asynchronous execution')
+                handler = self._execute_handler_async
+                response_headers = {
+                    'Preference-Applied': (
+                        RequestedProcessExecutionMode.respond_async.value)
+                }
+            else:
+                LOGGER.debug('Synchronous execution')
+                handler = self._execute_handler_sync
+                response_headers = {
+                    'Preference-Applied': (
+                        RequestedProcessExecutionMode.wait.value)
+                }
+        elif execution_mode == RequestedProcessExecutionMode.wait:
+            # client wants sync - pygeoapi implicitly supports sync mode
             LOGGER.debug('Synchronous execution')
-            result = self._execute_handler_sync(p, job_id, data_dict)
-        else:
-            LOGGER.debug('Asynchronous execution')
-            result = self._execute_handler_async(p, job_id, data_dict)
-        return (job_id, *result)
+            handler = self._execute_handler_sync
+            response_headers = {
+                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+        else:  # client has no preference
+            # according to OAPI - Processes spec we ought to respond with sync
+            LOGGER.debug('Synchronous execution')
+            handler = self._execute_handler_sync
+            response_headers = None
+        # TODO: handler's response could also be allowed to include more HTTP
+        # headers
+        mime_type, outputs, status = handler(p, job_id, data_dict)
+        return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
