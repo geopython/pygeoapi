@@ -4,3 +4,5 @@ pygeofilter[backend-sqlalchemy]
 pygeoif
 pygeometa
 sodapy
+Flask>=2.2.0
+Flask-Cors

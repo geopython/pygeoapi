@@ -1,10 +1,10 @@
 .. _ogcapi-tiles:
 
-Publishing map tiles to OGC API - Tiles
+Publishing tiles to OGC API - Tiles
 =======================================
 
 `OGC API - Tiles`_ provides access to geospatial data in the form of tiles
-(map, vector, etc.).
+(map, vector, coverage, etc.).
 
 pygeoapi can publish tiles from local or remote data sources (including cloud
 object storage or a tile service). To integrate tiles from a local data source, it is assumed

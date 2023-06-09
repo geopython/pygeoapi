@@ -74,7 +74,8 @@ from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     ProviderTileQueryError,
                                     ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.util import (dategetter, DATETIME_FORMAT, UrlPrefetcher,
+from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
+                           DATETIME_FORMAT, UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
@@ -123,6 +124,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
         'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
+        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables',
+        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
         'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
     ],
     'coverage': [
@@ -761,6 +764,7 @@ class API:
 
             fcm['processes'] = False
             fcm['stac'] = False
+            fcm['collection'] = False
 
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'process'):
@@ -769,6 +773,10 @@ class API:
             if filter_dict_by_key_value(self.config['resources'],
                                         'type', 'stac-collection'):
                 fcm['stac'] = True
+
+            if filter_dict_by_key_value(self.config['resources'],
+                                        'type', 'collection'):
+                fcm['collection'] = True
 
             content = render_j2_template(self.tpl_config, 'landing_page.html',
                                          fcm, request.locale)
@@ -1009,14 +1017,14 @@ class API:
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
                 collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'queryables',
+                    'type': 'application/schema+json',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
                     'title': 'Queryables for this collection as JSON',
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'queryables',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
                     'title': 'Queryables for this collection as HTML',
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_HTML}'  # noqa
                 })
@@ -3506,12 +3514,6 @@ class API:
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
-        if not self.manager:
-            msg = 'Process manager is undefined'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
-
         process = load_plugin('process',
                               processes_config[process_id]['processor'])
 
@@ -3544,19 +3546,19 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
-        is_async = data.get('mode', 'auto') == 'async'
-        if is_async:
-            LOGGER.debug('Asynchronous request mode detected')
-
-        if is_async and not self.manager.is_async:
-            LOGGER.debug('async manager not configured/enabled')
-            is_async = False
-
+        try:
+            execution_mode = RequestedProcessExecutionMode(
+                request.headers.get('Prefer', request.headers.get('prefer'))
+            )
+        except ValueError:
+            execution_mode = None
         try:
             LOGGER.debug('Executing process')
-            job_id, mime_type, outputs, status = self.manager.execute_process(
-                process, data_dict, is_async)
-            headers['Location'] = f"{self.base_url}/jobs/{job_id}"
+            result = self.manager.execute_process(
+                process, data_dict, execution_mode=execution_mode)
+            job_id, mime_type, outputs, status, additional_headers = result
+            headers.update(additional_headers or {})
+            headers['Location'] = f'{self.base_url}/jobs/{job_id}'
         except ProcessorExecuteError as err:
             LOGGER.error(err)
             msg = 'Processing error'
@@ -3571,11 +3573,10 @@ class API:
         if data.get('response', 'raw') == 'raw':
             headers['Content-Type'] = mime_type
             response = outputs
-
-        elif status != JobStatus.failed and not is_async:
+        elif status not in (JobStatus.failed, JobStatus.accepted):
             response['outputs'] = [outputs]
 
-        if is_async:
+        if status == JobStatus.accepted:
             http_status = HTTPStatus.CREATED
         else:
             http_status = HTTPStatus.OK
