@@ -16,8 +16,11 @@ pygeoapi itself implements numerous formats, data providers and the process func
 The pygeoapi architecture supports the following subsystems:
 
 * data providers
+
 * output formats
+
 * processes
+
 * process manager
 
 The core pygeoapi plugin registry can be found in ``pygeoapi.plugin.PLUGINS``.
@@ -51,7 +54,7 @@ The following methods are options to connect a plugin to pygeoapi:
 * Install this Python package onto your system (``python3 setup.py install``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
 * Specify the main plugin class as the ``name`` of the relevant type in the
-pygeoapi configuration. For example, for a new vector data provider:
+  pygeoapi configuration. For example, for a new vector data provider:
 
 .. code-block:: yaml
 
@@ -61,6 +64,56 @@ pygeoapi configuration. For example, for a new vector data provider:
          name: mycooldatapackage.mycoolvectordata.MyCoolVectorDataProvider
          data: /path/to/file
          id_field: stn_id
+
+
+Specifying custom pygeoapi CLI commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Third-party plugins may also provide custom CLI commands. This can be done by means of two additional steps:
+
+1. Create your CLI commands using click
+2. In your plugin's ``setup.py`` or ``pyproject.toml`` file, specify an entrypoint for the ``pygeoapi`` group
+   pointing to your click CLI command or group.
+
+As a simple example, lets imagine you develop a plugin named ``myplugin``, which has a ``cli.py`` module with
+the following contents:
+
+.. code-block:: python
+
+   # module: myplugin.cli
+   import click
+
+   @click.command(name="super-command")
+   def my_cli_command():
+       print("Hello, this is my custom pygeoapi CLI command!")
+
+
+Then, in your plugin's ``setup.py`` file, specify the entrypoints section:
+
+.. code-block:: python
+
+   # file: setup.py
+   entry_points={
+       'pygeoapi': ['my-plugin = myplugin.cli:my_cli_command']
+   }
+
+Alternatively, if using a ``pyproject.toml`` file instead:
+
+.. code-block:: python
+
+   # file: pyproject.toml
+   # Noter that this example uses poetry, other Python projects may differ in
+   # how they expect entry_points to be specified
+   [tool.poetry.plugins."pygeoapi"]
+   my-plugin = 'myplugin.cli:my_cli_command'
+
+
+After having installed this plugin, you should now be able to call the CLI command by running:
+
+.. code-block:: sh
+
+   $ pygeoapi plugins super-command
+   Hello, this is my custom pygeoapi CLI command!
 
 
 .. note::  The United States Geological Survey has created a Cookiecutter project for creating pygeoapi plugins. See the `pygeoapi-plugin-cookiecutter`_ project to get started.
@@ -90,11 +143,6 @@ The pygeoapi process manager may also be customized. Similarly to the provider p
 configuration's ``server.manager.name`` to indicate either the dotted path to the python package and the relevant
 manager class (*i.e.* similar to option 1 above) or the name of a known core pygeoapi plugin (*i.e.*, similar to
 option 2 above).
-
-
-
-
-
 
 Example: custom pygeoapi vector data provider
 ---------------------------------------------

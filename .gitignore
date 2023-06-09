@@ -115,6 +115,7 @@ ENV/
 
 .DS_Store
 examples/django/sample_project/db.sqlite3
+pygeoapi/db.sqlite3
 
 # Backup files
 *~

@@ -30,6 +30,23 @@
           <div id="collection-map"></div>
         </div>
       </div>
+
+      {% set ns = namespace(header_printed=false) %}
+      {% for link in data['links'] %}
+          {% if link['rel'] == 'license' %}
+          {% if not ns.header_printed %}
+          <h3>{% trans %}License{% endtrans %}</h3>
+          {% set ns.header_printed = true %}
+          {% endif %}
+          <ul>
+            <li>
+              <div>
+                <a title="{{ link['title'] }}" href="{{ link['href'] }}">{{ link['title'] or link['href'] }}<a>
+            </li>
+          </ul>
+          {% endif %}
+      {% endfor %}
+
       {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
       <h3>{% trans %}Browse{% endtrans %}</h3>
       <ul>

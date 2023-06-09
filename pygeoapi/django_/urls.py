@@ -50,7 +50,7 @@ Including another URLconf
 """
 
 from django.urls import (
-    path,
+    path
 )
 from django.conf import settings
 from django.conf.urls import include
@@ -243,9 +243,7 @@ if url_route_prefix:
 
 # Add static URL and optionally add prefix (note: do NOT use django style here)
 url_static_prefix = settings.API_RULES.get_url_prefix()
-urlpatterns.append(
-    static(
-        f"{url_static_prefix}{settings.STATIC_URL}",
-        document_root=settings.STATIC_ROOT
-    )
+urlpatterns += static(
+    f"{url_static_prefix}{settings.STATIC_URL}",
+    document_root=settings.STATIC_ROOT
 )

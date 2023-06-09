@@ -50,6 +50,7 @@ PROCESS_METADATA = {
               'renvoie en sortie. Destiné à démontrer un processus '
               'simple avec une seule entrée littérale.',
     },
+    'jobControlOptions': ['sync-execute', 'async-execute'],
     'keywords': ['hello world', 'example', 'echo'],
     'links': [{
         'type': 'text/html',
