@@ -249,9 +249,13 @@ class SensorThingsProvider(BaseProvider):
 
         # Make features
         response = self._get_response(url=self._url, params=params)
-        v = response.get('value')
+
+        matched = response.get('@iot.count')
+        if matched:
+            fc['numberMatched'] = matched
 
         # Query if values are less than expected
+        v = response.get('value')
         while len(v) < limit:
             try:
                 LOGGER.debug('Fetching next set of values')

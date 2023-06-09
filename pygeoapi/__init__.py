@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,16 +29,60 @@
 #
 # =================================================================
 
-__version__ = '0.15.dev0'
+__version__ = '0.16.dev0'
 
 import click
+try:
+    # importlib.metadata is part of Python's standard library from 3.8
+    from importlib.metadata import entry_points
+except ImportError:
+    from importlib_metadata import entry_points
 from pygeoapi.config import config
 from pygeoapi.openapi import openapi
+
+
+def _find_plugins():
+    """
+    A decorator to find pygeoapi CLI plugins provided by third-party packages.
+
+    pygeoapi plugins can hook into the pygeoapi CLI by providing their CLI
+    functions and then using an entry_point named 'pygeoapi'.
+    """
+
+    def decorator(click_group):
+        try:
+            found_entrypoints = entry_points(group="pygeoapi")
+        except TypeError:
+            # earlier versions of importlib_metadata did not have the
+            # `group` kwarg. More detail:
+            #
+            # https://github.com/geopython/pygeoapi/issues/1241#issuecomment-1536128897  # noqa: E501
+            for group, entries in entry_points().items():
+                if group == "pygeoapi":
+                    found_entrypoints = entries
+                    break
+            else:
+                found_entrypoints = []
+        for entry_point in found_entrypoints:
+            try:
+                click_group.add_command(entry_point.load())
+            except Exception as err:
+                print(err)
+        return click_group
+
+    return decorator
 
 
 @click.group()
 @click.version_option(version=__version__)
 def cli():
+    pass
+
+
+@_find_plugins()
+@cli.group()
+def plugins():
+    """Additional commands provided by third-party pygeoapi plugins"""
     pass
 
 

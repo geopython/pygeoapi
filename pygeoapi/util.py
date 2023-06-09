@@ -241,7 +241,8 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial, indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent,
+                      separators=(',', ':'))
 
 
 def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:
@@ -410,9 +411,8 @@ def render_j2_template(config: dict, template: Path,
         LOGGER.debug(f'using default templates: {TEMPLATES}')
 
     env = Environment(loader=FileSystemLoader(template_paths),
-                      extensions=['jinja2.ext.i18n',
-                                  'jinja2.ext.autoescape'],
-                      autoescape=select_autoescape(['html', 'xml']))
+                      extensions=['jinja2.ext.i18n'],
+                      autoescape=select_autoescape())
 
     env.filters['to_json'] = to_json
     env.filters['format_datetime'] = format_datetime
@@ -544,6 +544,16 @@ def get_provider_default(providers: list) -> dict:
 
     LOGGER.debug(f"Default provider: {default['type']}")
     return default
+
+
+class ProcessExecutionMode(Enum):
+    sync_execute = 'sync-execute'
+    async_execute = 'async-execute'
+
+
+class RequestedProcessExecutionMode(Enum):
+    wait = 'wait'
+    respond_async = 'respond-async'
 
 
 class JobStatus(Enum):
