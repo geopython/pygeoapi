@@ -219,7 +219,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Slave Lake', 
+  VALUES (0, 'Great Slave Lake',
     'https://en.wikipedia.org/wiki/Great_Slave_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -932,7 +932,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Tanganyika', 
+  VALUES (0, 'Lake Tanganyika',
     'https://en.wikipedia.org/wiki/Lake_Tanganyika',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -1313,7 +1313,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Okeechobee', 
+  VALUES (0, 'Lake Okeechobee',
     'https://en.wikipedia.org/wiki/Lake_Okeechobee',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -1353,7 +1353,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lago de Nicaragua', 
+  VALUES (0, 'Lago de Nicaragua',
     'https://en.wikipedia.org/wiki/Lake_Nicaragua',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -1531,7 +1531,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Winnipegosis', 
+  VALUES (0, 'Lake Winnipegosis',
     'https://en.wikipedia.org/wiki/Lake_Winnipegosis',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -1738,7 +1738,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Salt Lake', 
+  VALUES (0, 'Great Salt Lake',
     'https://en.wikipedia.org/wiki/Great_Salt_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
@@ -1794,7 +1794,7 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Bear Lake', 
+  VALUES (0, 'Great Bear Lake',
     'https://en.wikipedia.org/wiki/Great_Bear_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
