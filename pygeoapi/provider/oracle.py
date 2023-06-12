@@ -522,7 +522,7 @@ class OracleProvider(BaseProvider):
                         {orderby}"
 
             # Create dictionary for sql bind variables
-            bind_variables = where_dict["properties"] | paging_bind
+            bind_variables = {**where_dict["properties"], **paging_bind}
 
             # SQL manipulation plugin
             if self.sql_manipulator:
@@ -656,7 +656,7 @@ class OracleProvider(BaseProvider):
 
             try:
                 cursor.execute(
-                    sql_query, {self.id_field: identifier} | crs_dict
+                    sql_query, {self.id_field: identifier, **crs_dict}
                 )
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
