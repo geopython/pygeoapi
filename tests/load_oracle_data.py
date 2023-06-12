@@ -1,208 +1,168 @@
--- select lakes.geometry.get_geojson() from geo_test.lakes lakes;
-/*
-DECLARE
-    v_sql VARCHAR2(1024 CHAR);
-BEGIN
-    v_sql := 'DROP USER geo_test CASCADE';
-    EXECUTE IMMEDIATE v_sql;
-EXCEPTION WHEN OTHERS
-THEN
-    NULL;
-END;
-/
---*/
-CREATE USER geo_test 
-    IDENTIFIED BY geo_test
-    QUOTA UNLIMITED ON USERS
-;
+import oracledb
 
-GRANT CONNECT, RESOURCE TO geo_test;
+oracle_user = "geo_test"
+oracle_pwd = "geo_test"
+oracle_tns = "XEPDB1"
 
+dsn = oracledb.makedsn(
+    "127.0.0.1",
+    1521,
+    service_name=oracle_tns
+)
+
+conn = oracledb.connect(
+    user=oracle_user,
+    password=oracle_pwd,
+    dsn=dsn
+)
+
+cur = conn.cursor()
+
+sql = """
 CREATE TABLE geo_test.lakes (
     id          NUMBER GENERATED AS IDENTITY PRIMARY KEY,
     scalarank   NUMBER,
     name        VARCHAR2(255 CHAR),
     wiki_link   VARCHAR2(1024 CHAR),
     geometry    MDSYS.SDO_GEOMETRY
-);
+)
+"""
 
-CREATE OR REPLACE VIEW geo_test.vw_lakes
-AS
-SELECT id,
-       scalarank,
-       name,
-       wiki_link,
-       geometry
-  FROM geo_test.lakes
-;
+cur.execute(sql)
 
-INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
+sql = """
+INSERT INTO lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Baikal', 'https://en.wikipedia.org/wiki/Lake_Baikal',
     SDO_GEOMETRY(
-    2003,  -- two-dimensional polygon
+    2003,
     4326,
     NULL,
-    SDO_ELEM_INFO_ARRAY(1,1003,1), -- one polygon (exterior polygon ring)
+    SDO_ELEM_INFO_ARRAY(1,1003,1),
     SDO_ORDINATE_ARRAY(
-    --
       106.57998579307912,
       52.79998159444554
     ,
-    --
       106.53998823448521,
       52.93999888774037
     ,
-    --
       107.0800069519353,
       53.18001007751998
     ,
-    --
       107.2999935242018,
       53.37999787048953
     ,
-    --
       107.59997521365611,
       53.51998932556822
     ,
-    --
       108.03994835818912,
       53.859968573616456
     ,
-    --
       108.37997928266967,
       54.25999583598784
     ,
-    --
       109.05270307824526,
       55.027597561251326
     ,
-    --
       109.19346967980832,
       55.53560272889659
     ,
-    --
       109.50699059452313,
       55.73091380474372
     ,
-    --
       109.92980716353523,
       55.7129562445223
     ,
-    --
       109.70000206913326,
       54.980003567110515
     ,
-    --
       109.66000451053935,
       54.71999359803395
     ,
-    --
       109.47996382043448,
       54.33999095317566
     ,
-    --
       109.31997358605884,
       53.81999685323869
     ,
-    --
       109.22003136600637,
       53.619983222052994
     ,
-    --
       108.99999311730755,
       53.78002513286093
     ,
-    --
       108.60001753136845,
       53.4399942083804
     ,
-    --
       108.800005324338,
       53.37999787048953
     ,
-    --
       108.76000776574409,
       53.200008856816936
     ,
-    --
       108.45997439985749,
       53.14001251892607
     ,
-    --
       108.17999148970011,
       52.79998159444554
     ,
-    --
       107.79996300662566,
       52.579995022179034
     ,
-    --
       107.31999230349876,
       52.42000478780339
     ,
-    --
       106.64003380740229,
       52.32001089131862
     ,
-    --
       106.1000150899522,
       52.03997630472897
     ,
-    --
       105.740037062607,
       51.759993394571595
     ,
-    --
       105.24001590375084,
       51.52000804300813
     ,
-    --
       104.81998986208251,
       51.46001170511727
     ,
-    --
       104.30002160036167,
       51.50000926371118
     ,
-    --
       103.7600028829116,
       51.60000316019595
     ,
-    --
       103.6200114278329,
       51.73999461527464
     ,
-    --
       103.85999677939637,
       51.85998729105637
     ,
-    --
       104.39996382041414,
       51.85998729105637
     ,
-    --
       105.05997521364597,
       52.0000045843512
     ,
-    --
       105.4800012553143,
       52.28001333272471
     ,
-    --
       105.98002241417046,
       52.51999868428817
     ,
-    --
       106.26000532432784,
       52.619992580772944
     ,
-    --
       106.57998579307912,
       52.79998159444554
     )
   )
-  );
+)
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Winnipeg', 'https://en.wikipedia.org/wiki/Lake_Winnipeg',
     SDO_GEOMETRY(
@@ -260,8 +220,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
         53.92978343364277
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Great Slave Lake', 'https://en.wikipedia.org/wiki/Great_Slave_Lake',
     SDO_GEOMETRY(
@@ -371,8 +335,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  61.9723932969562
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'L. Ontario', 'https://en.wikipedia.org/wiki/Lake_Ontario',
     SDO_GEOMETRY(
@@ -450,8 +418,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  43.25410431576152
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'L. Erie', 'https://en.wikipedia.org/wiki/Lake_Erie',
     SDO_GEOMETRY(
@@ -538,8 +510,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Superior', 'https://en.wikipedia.org/wiki/Lake_Superior',
     SDO_GEOMETRY(
@@ -672,8 +648,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  48.00998973244721
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Victoria', 'https://en.wikipedia.org/wiki/Lake_Victoria',
     SDO_GEOMETRY(
@@ -759,8 +739,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  0.128157863766091
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Ladoga', 'https://en.wikipedia.org/wiki/Lake_Ladoga',
     SDO_GEOMETRY(
@@ -830,8 +814,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  61.22608226179696
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Balkhash', 'https://en.wikipedia.org/wiki/Lake_Balkhash',
     SDO_GEOMETRY(
@@ -945,8 +933,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  46.748619696634876
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Tanganyika', 'https://en.wikipedia.org/wiki/Lake_Tanganyika',
     SDO_GEOMETRY(
@@ -1044,8 +1036,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  -8.578339125201033
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Malawi', 'https://en.wikipedia.org/wiki/Lake_Malawi',
     SDO_GEOMETRY(
@@ -1135,8 +1131,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  -14.277474460510291
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Aral Sea', 'https://en.wikipedia.org/wiki/Aral_Sea',
     SDO_GEOMETRY(
@@ -1242,10 +1242,14 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  44.264636949229114
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Vänern', 'https://en.wikipedia.org/wiki/V%C3%A4nern',
+  VALUES (0, 'VÃ¤nern', 'https://en.wikipedia.org/wiki/V%C3%A4nern',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1309,8 +1313,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  59.20491364199721
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Okeechobee', 'https://en.wikipedia.org/wiki/Lake_Okeechobee',
     SDO_GEOMETRY(
@@ -1344,8 +1352,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  26.788959458924822
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lago de Nicaragua', 'https://en.wikipedia.org/wiki/Lake_Nicaragua',
     SDO_GEOMETRY(
@@ -1387,8 +1399,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  11.147898667846633
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Tana', 'https://en.wikipedia.org/wiki/Lake_Tana',
     SDO_GEOMETRY(
@@ -1430,8 +1446,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  11.850594794151519
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lago Titicaca', 'https://en.wikipedia.org/wiki/Lake_Titicaca',
     SDO_GEOMETRY(
@@ -1509,8 +1529,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  -16.126198825752063
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Winnipegosis', 'https://en.wikipedia.org/wiki/Lake_Winnipegosis',
     SDO_GEOMETRY(
@@ -1600,8 +1624,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  53.1258531764781
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Onega', 'https://en.wikipedia.org/wiki/Lake_Onega',
     SDO_GEOMETRY(
@@ -1707,8 +1735,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  62.2802298041189
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Great Salt Lake', 'https://en.wikipedia.org/wiki/Great_Salt_Lake',
     SDO_GEOMETRY(
@@ -1758,8 +1790,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  41.34124949804567
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Great Bear Lake', 'https://en.wikipedia.org/wiki/Great_Bear_Lake',
     SDO_GEOMETRY(
@@ -1869,8 +1905,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  66.22368419052789
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Athabasca', 'https://en.wikipedia.org/wiki/Lake_Athabasca',
     SDO_GEOMETRY(
@@ -1916,8 +1956,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  59.03763703066841
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Reindeer Lake', 'https://en.wikipedia.org/wiki/Reindeer_Lake',
     SDO_GEOMETRY(
@@ -1987,8 +2031,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  58.01403025983099
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Huron', 'https://en.wikipedia.org/wiki/Lake_Huron',
     SDO_GEOMETRY(
@@ -2126,8 +2174,12 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  45.590137437515665
     )
   )
-  );
+  )
+"""
 
+cur.execute(sql)
+
+sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
   VALUES (0, 'Lake Michigan', 'https://en.wikipedia.org/wiki/Lake_Michigan',
     SDO_GEOMETRY(
@@ -2265,59 +2317,9 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
 		  46.03000722918408
     )
   )
-  );
-
-/*
-INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, '', '',
-    SDO_GEOMETRY(
-    2003,  -- two-dimensional polygon
-    NULL,
-    NULL,
-    SDO_ELEM_INFO_ARRAY(1,1003,1), -- one polygon (exterior polygon ring)
-    SDO_ORDINATE_ARRAY(
-    
-    )
   )
-  );
-*/
+"""
 
-GRANT INHERIT PRIVILEGES ON USER SYS TO MDSYS;
+cur.execute(sql)
 
-DECLARE
-    v_cnt NUMBER;
-BEGIN
-    SELECT COUNT(*)
-      INTO v_cnt
-      FROM MDSYS.SDO_GEOM_METADATA_TABLE
-     WHERE sdo_table_name = 'LAKES'
-       AND sdo_column_name = 'GEOMETRY'
-       AND sdo_owner = 'GEO_TEST'
-    ;
-    IF v_cnt = 0
-    THEN
-        INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE (sdo_owner, sdo_table_name, sdo_column_name, sdo_diminfo, sdo_srid)
-         VALUES ('GEO_TEST', 'LAKES','GEOMETRY',MDSYS.SDO_DIM_ARRAY(),4326);
-    END IF;
-    
-    UPDATE MDSYS.SDO_GEOM_METADATA_TABLE
-       SET sdo_diminfo = ( SELECT MDSYS.SDO_DIM_ARRAY(
-                                        MDSYS.SDO_DIM_ELEMENT('X', minx, maxx, 0.05),
-                                        MDSYS.SDO_DIM_ELEMENT('Y', miny, maxy, 0.05)) AS diminfo                      
-                             FROM ( SELECT TRUNC( MIN( v.x ) - 1,0) AS minx,
-                                           ROUND( MAX( v.x ) + 1,0) AS maxx,
-                                           TRUNC( MIN( v.y ) - 1,0) AS miny,
-                                           ROUND( MAX( v.y ) + 1,0) AS maxy
-                                      FROM (SELECT SDO_AGGR_MBR(a.geometry) AS mbr
-                                              FROM geo_test.LAKES a) b,
-                                                   TABLE(mdsys.sdo_util.getvertices(b.mbr)) v                            )
-                         )
-         , sdo_srid = 4326
-     WHERE sdo_table_name = 'LAKES'
-       AND sdo_column_name = 'GEOMETRY'
-       AND sdo_owner = 'GEO_TEST'
-    ;
-END;
-/
-
-COMMIT;
+conn.commit()
