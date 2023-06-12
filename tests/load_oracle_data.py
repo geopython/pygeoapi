@@ -219,7 +219,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Slave Lake', 'https://en.wikipedia.org/wiki/Great_Slave_Lake',
+  VALUES (0, 'Great Slave Lake', 
+    'https://en.wikipedia.org/wiki/Great_Slave_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -499,7 +500,6 @@ INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
         --
           -83.12001135937246,
           42.08001577409016
-        
     )
   )
   )
@@ -932,7 +932,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Tanganyika', 'https://en.wikipedia.org/wiki/Lake_Tanganyika',
+  VALUES (0, 'Lake Tanganyika', 
+    'https://en.wikipedia.org/wiki/Lake_Tanganyika',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1312,7 +1313,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Okeechobee', 'https://en.wikipedia.org/wiki/Lake_Okeechobee',
+  VALUES (0, 'Lake Okeechobee', 
+    'https://en.wikipedia.org/wiki/Lake_Okeechobee',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1351,7 +1353,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lago de Nicaragua', 'https://en.wikipedia.org/wiki/Lake_Nicaragua',
+  VALUES (0, 'Lago de Nicaragua', 
+    'https://en.wikipedia.org/wiki/Lake_Nicaragua',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1528,7 +1531,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Lake Winnipegosis', 'https://en.wikipedia.org/wiki/Lake_Winnipegosis',
+  VALUES (0, 'Lake Winnipegosis', 
+    'https://en.wikipedia.org/wiki/Lake_Winnipegosis',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1734,7 +1738,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Salt Lake', 'https://en.wikipedia.org/wiki/Great_Salt_Lake',
+  VALUES (0, 'Great Salt Lake', 
+    'https://en.wikipedia.org/wiki/Great_Salt_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
@@ -1789,7 +1794,8 @@ cur.execute(sql)
 
 sql = """
 INSERT INTO geo_test.lakes (scalarank, name, wiki_link, geometry)
-  VALUES (0, 'Great Bear Lake', 'https://en.wikipedia.org/wiki/Great_Bear_Lake',
+  VALUES (0, 'Great Bear Lake', 
+    'https://en.wikipedia.org/wiki/Great_Bear_Lake',
     SDO_GEOMETRY(
     2003,  -- two-dimensional polygon
     4326,
