@@ -142,7 +142,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
     ],
     'tile': [
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core'
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt'
     ],
     'record': [
         'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
