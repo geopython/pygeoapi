@@ -1131,6 +1131,13 @@ class API:
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
+                p = load_plugin('provider', tile)
+            except ProviderConnectionError:
+                msg = 'connection error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    headers, request.format,
+                    'NoApplicableCode', msg)
             except ProviderTypeError:
                 tile = None
 
@@ -1139,13 +1146,13 @@ class API:
                 LOGGER.debug('Adding tile links')
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'tiles',
+                    'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
                     'title': 'Tiles as JSON',
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'tiles',
+                    'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
                     'title': 'Tiles as HTML',
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_HTML}'  # noqa
                 })

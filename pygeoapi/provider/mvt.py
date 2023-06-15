@@ -60,6 +60,9 @@ class MVTProvider(BaseTileProvider):
         """
 
         super().__init__(provider_def)
+
+        self.tile_type = 'vector'
+
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
