@@ -54,3 +54,12 @@ CREATE TABLE IF NOT EXISTS dummy.naming_conflicts_table(
     referred_table INTEGER,
     FOREIGN KEY(referred_table) REFERENCES dummy.referred_table(id)
 );
+
+
+-- Table for testing transactions
+
+CREATE TABLE IF NOT EXISTS dummy.capital_cities(
+    gid serial PRIMARY KEY,
+    name TEXT,
+    loc geometry(POINT, 4326),
+);
