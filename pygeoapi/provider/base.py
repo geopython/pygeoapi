@@ -230,10 +230,12 @@ class BaseProvider:
 
         LOGGER.debug('Detecting identifier')
         if identifier is None:
-            identifier = json_data.get('id')
+            identifier = json_data.pop('id', None)
         if identifier is None:
             LOGGER.debug('Cannot find id; trying properties.identifier')
-            identifier = json_data.get('properties', dict()).get('identifier')
+            identifier = json_data.get(
+                'properties', dict(),
+            ).pop('identifier', None)
         if identifier is None:
             LOGGER.debug('Cannot find properties.identifier')
             if not accept_missing_identifier:
