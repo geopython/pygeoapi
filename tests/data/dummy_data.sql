@@ -61,5 +61,5 @@ CREATE TABLE IF NOT EXISTS dummy.naming_conflicts_table(
 CREATE TABLE IF NOT EXISTS dummy.capital_cities(
     gid serial PRIMARY KEY,
     name TEXT,
-    loc geometry(POINT, 4326),
+    loc geometry(POINT, 4326)
 );
