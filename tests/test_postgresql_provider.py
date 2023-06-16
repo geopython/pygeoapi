@@ -43,6 +43,7 @@ import json
 import pytest
 import pyproj
 from http import HTTPStatus
+from urllib.request import urlopen
 
 from pygeofilter.parsers.ecql import parse
 
@@ -730,3 +731,126 @@ def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
     assert code == HTTPStatus.OK
     features = json.loads(response).get('features')
     assert len(features) == 0
+
+
+def test_manage_collection_items_postgresql_create(pg_api_):
+    """
+    Test item creation with the PostgreSQLProvider.
+    """
+    # Feature to create
+    feature_orig = {
+        'type': 'Feature',
+        'id': 1,
+        'geometry': {'type': 'Point', 'coordinates': [59.913333, 10.738889]},
+        'properties': {'name': 'Oslo'},
+    }
+    # POST new feature to collection and test that the item creation was
+    # successful
+    req = mock_request(data=feature_orig)
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'create', 'capital_cities')
+
+    assert code == HTTPStatus.CREATED
+
+    feature_uri = rsp_headers['Location']
+    r = urlopen(f'{feature_uri}?f=json')
+
+    assert r.code == HTTPStatus.OK
+
+    feature_created = json.loads(r.read())
+
+    # Test that created feature is identical to the original feature
+    for k in ('type', 'properties'):
+        assert feature_created[k] == feature_orig[k]
+
+    assert hasattr(feature_created, 'id')
+
+    geom_orig = geojson_to_geom(feature_orig['geometry'])
+    geom_created = geojson_to_geom(feature_created['geometry'])
+
+    assert geom_orig.equals_exact(geom_created, 1e-4)
+
+    # Test a few create requests that raise errors
+    # Request without data
+    req = mock_request()
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'create', 'capital_cities')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Requests with invalid/incorrect GeoJSON features
+    bad_geojson_features = [
+        {
+         'geometry': {'type': 'Point', 'coordinates': [59.913333, 10.738889]},
+         'properties': {'name': 'Oslo'},
+        },
+        {
+         'type': 'Feature',
+         'properties': {'name': 'Oslo'},
+        },
+        {
+         'type': 'Feature',
+         'geometry': {'type': 'Point', 'coordinates': [59.913333, 10.738889]},
+        },
+        {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': [
+                    [
+                     [100.0, 0.0],
+                     [101.0, 0.0],
+                     [101.0, 1.0],
+                     [100.0, 1.0],
+                     [100.0, 0.0],
+                    ],
+                ],
+            },
+            'properties': {'name': 'Oslo'},
+        },
+        {
+         'type': 'Feature',
+         'geometry': {'type': 'Point', 'coordinates': [59.913333, 10.738889]},
+         'properties': {'name': 'Oslo', 'wrong_attr': 3},
+        },
+    ]
+    for f in bad_geojson_features:
+        req = mock_request(data=f)
+        rsp_headers, code, _ = pg_api_.manage_collection_item(
+            req, 'create', 'capital_cities')
+        assert code in (
+            HTTPStatus.BAD_REQUEST, HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
+
+    # Test that the coordinates of the created feature are correctly
+    # transformed
+    feature_32631 = {
+        'type': 'Feature',
+        'geometry': {'type': 'Point', 'coordinates': [452484, 5411725]},
+        'properties': {'name': 'Paris'},
+    }
+    crs_uri_32631 = 'http://www.opengis.net/def/crs/EPSG/0/32631'
+    req = mock_request(
+        {'Content-Crs': f'<{crs_uri_32631}>'}, data=feature_32631,
+    )
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'create', 'capital_cities')
+
+    assert code == HTTPStatus.CREATED
+
+    feature_uri = rsp_headers['Location']
+    r = urlopen(f'{feature_uri}?f=json')
+
+    assert r.code == HTTPStatus.OK
+
+    feature_created_4326 = json.loads(r.read())
+    geom_orig = geojson_to_geom(feature_32631['geometry'])
+    geom_created = geojson_to_geom(feature_created_4326['geometry'])
+    storage_crs_uri = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    transform_func = get_transform_from_crs(
+        get_crs_from_uri(crs_uri_32631),
+        get_crs_from_uri(storage_crs_uri),
+        always_xy=False,
+    )
+
+    assert transform_func(geom_orig).equals_exact(geom_created, 1e-4)
