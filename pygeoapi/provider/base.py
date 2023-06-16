@@ -228,6 +228,15 @@ class BaseProvider:
         if msg is not None:
             raise ProviderInvalidDataError(msg)
 
+        LOGGER.debug('Check that the item is of "Feature" type')
+        if json_data.pop('type', None) != 'Feature':
+            msg = (
+                'Incorrect feature GeoJSON representation, missing "type" '
+                'member'
+            )
+            LOGGER.error(msg)
+            raise ProviderInvalidDataError(msg)
+
         LOGGER.debug('Detecting identifier')
         if identifier is None:
             identifier = json_data.pop('id', None)
