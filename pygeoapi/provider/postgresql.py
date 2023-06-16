@@ -56,8 +56,12 @@ from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
-import shapely
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from shapely.geometry import (
+    mapping as geom_to_geojson, shape as geojson_to_geom,
+)
+from sqlalchemy import (
+    create_engine, MetaData, PrimaryKeyConstraint, asc, desc, text,
+)
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
@@ -243,12 +247,41 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature
 
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
+        """
+        identifier, json_data = self._load_and_prepare_item(
+            item, accept_missing_identifier=self._has_default_identifier(),
+            )
+        if identifier is not None and not self._has_default_identifier:
+            json_data[self.id_field] = identifier
+        json_geometry = json_data.pop('geometry')
+        if json_geometry is not None:
+            json_data[self.geom] = geojson_to_geom(json_geometry).wkt
+        else:
+            json_data[self.geom] = None
+        properties = json_data.pop('properties')
+        if properties is not None:
+            for k, v in properties.items():
+                json_data[k] = v
+        db_obj_mapping = self.table_model(**json_data)
+        with Session(self._engine) as session:
+            session.add(db_obj_mapping)
+            session.commit()
+        return identifier
+
     def _store_db_parameters(self, parameters):
         self.db_user = parameters.get('user')
         self.db_host = parameters.get('host')
         self.db_port = parameters.get('port', 5432)
         self.db_name = parameters.get('dbname')
         self.db_search_path = parameters.get('search_path', ['public'])
+        self.schema = self.db_search_path[0]
         self._db_password = parameters.get('password')
 
     def _get_engine_and_table_model(self):
@@ -300,14 +333,13 @@ class PostgreSQLProvider(BaseProvider):
 
         # Look for table in the first schema in the search path
         try:
-            schema = self.db_search_path[0]
-            metadata.reflect(schema=schema, only=[self.table], views=True)
+            metadata.reflect(schema=self.schema, only=[self.table], views=True)
         except OperationalError:
             msg = (f"Could not connect to {repr(engine.url)} "
                    "(password hidden).")
             raise ProviderConnectionError(msg)
         except InvalidRequestError:
-            msg = (f"Table '{self.table}' not found in schema '{schema}' "
+            msg = (f"Table '{self.table}' not found in schema '{self.schema}' "
                    f"on {repr(engine.url)}.")
             raise ProviderQueryError(msg)
 
@@ -315,14 +347,14 @@ class PostgreSQLProvider(BaseProvider):
         # It is necessary to add the primary key constraint because SQLAlchemy
         # requires it to reflect the table, but a view in a PostgreSQL database
         # does not have a primary key defined.
-        sqlalchemy_table_def = metadata.tables[f'{schema}.{self.table}']
+        sqlalchemy_table_def = metadata.tables[f'{self.schema}.{self.table}']
         try:
             sqlalchemy_table_def.append_constraint(
                 PrimaryKeyConstraint(self.id_field)
             )
         except KeyError:
             msg = (f"No such id_field column ({self.id_field}) on "
-                   f"{schema}.{self.table}.")
+                   f"{self.schema}.{self.table}.")
             raise ProviderQueryError(msg)
 
         Base = automap_base(metadata=metadata)
@@ -368,7 +400,7 @@ class PostgreSQLProvider(BaseProvider):
             shapely_geom = to_shape(wkb_geom)
             if crs_transform_out is not None:
                 shapely_geom = crs_transform_out(shapely_geom)
-            geojson_geom = shapely.geometry.mapping(shapely_geom)
+            geojson_geom = geom_to_geojson(shapely_geom)
             feature['geometry'] = geojson_geom
         else:
             feature['geometry'] = None
@@ -462,3 +494,15 @@ class PostgreSQLProvider(BaseProvider):
         else:
             crs_transform = None
         return crs_transform
+
+    def _has_default_identifier(self):
+        with Session(self._engine) as session:
+            stmt = text(
+                'SELECT atthasdef FROM pg_attribute '
+                'WHERE attrelid = CAST(:schema_table AS regclass) '
+                'AND attname = :id_field;'
+            ).bindparams(
+                schema_table=f"{self.schema}.{self.table}",
+                id_field=self.id_field,
+            )
+            return session.scalars(stmt).one()
