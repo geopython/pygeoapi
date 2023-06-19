@@ -247,8 +247,6 @@ class TinyDBCatalogueProvider(BaseProvider):
         Adds an item to the TinyDB repository
 
         :param item: item data
-        :param crs_transform_func: `callable` to transform the coordinates of
-            the item's geometry, optional
 
         :returns: identifier of newly created item
         """

@@ -261,7 +261,6 @@ class PostgreSQLProvider(BaseProvider):
         identifier, json_data = self._load_and_prepare_item(
             item,
             accept_missing_identifier=self._has_default_identifier(),
-            crs_transform_func=crs_transform_func,
         )
         if identifier is not None and not self._has_default_identifier:
             json_data[self.id_field] = identifier

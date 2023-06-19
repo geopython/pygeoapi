@@ -408,7 +408,6 @@ class ElasticsearchProvider(BaseProvider):
         identifier, json_data = self._load_and_prepare_item(
             'create',
             item, accept_missing_identifier=True,
-            crs_transform_func=crs_transform_func,
         )
         if identifier is None:
             # If there is no incoming identifier, allocate a random one
@@ -435,8 +434,7 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug(f'Replacing item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
-            'replace',
-            item, identifier, crs_transform_func=crs_transform_func,
+            'replace', item, identifier,
         )
         if crs_transform_func is not None:
             crs_transform_feature(json_data, crs_transform_func)
@@ -454,10 +452,7 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug(f'Updating item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
-            'update',
-            item,
-            identifier,
-            crs_transform_func=crs_transform_func,
+            'update', item, identifier,
         )
         if crs_transform_func is not None:
             crs_transform_feature(json_data, crs_transform_func)
