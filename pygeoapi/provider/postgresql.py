@@ -259,6 +259,7 @@ class PostgreSQLProvider(BaseProvider):
         :returns: identifier of created item
         """
         identifier, json_data = self._load_and_prepare_item(
+            'create',
             item,
             accept_missing_identifier=self._has_default_identifier(),
         )
