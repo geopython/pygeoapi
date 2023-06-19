@@ -241,17 +241,22 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return record
 
-    def create(self, item):
+    def create(self, item, **kwargs):
         """
         Adds an item to the TinyDB repository
 
         :param item: item data
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
 
         :returns: identifier of newly created item
         """
 
         identifier, json_data = self._load_and_prepare_item(
-            item, accept_missing_identifier=True)
+            'create',
+            item,
+            accept_missing_identifier=True,
+        )
         if identifier is None:
             # If there is no incoming identifier, allocate a random one
             identifier = str(uuid.uuid4())
@@ -273,22 +278,33 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return identifier
 
-    def update(self, identifier, item):
+    def replace(self, identifier, item, **kwargs):
+        """
+        Replaces an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of new item replacing existing item
+        """
+
+        LOGGER.debug(f'Updating item {identifier}')
+        identifier, json_data = self._load_and_prepare_item(
+            'update', item, identifier,
+        )
+        self.db.update(json_data, where('id') == identifier)
+
+    def update(self, identifier, item, **kwargs):
         """
         Updates an existing item
 
         :param identifier: feature id
         :param item: `dict` of partial or full item
-
-        :returns: `bool` of update result
         """
 
         LOGGER.debug(f'Updating item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
-            item, identifier, raise_if_exists=False)
+            'update', item, identifier,
+        )
         self.db.update(json_data, where('id') == identifier)
-
-        return True
 
     def delete(self, identifier):
         """

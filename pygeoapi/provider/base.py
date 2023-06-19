@@ -30,6 +30,10 @@
 import json
 import logging
 from enum import Enum
+from typing import Literal
+
+from pygeoapi.util import crs_transform_feature
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -194,20 +198,22 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def _load_and_prepare_item(self, item, identifier=None,
-                               accept_missing_identifier=False,
-                               raise_if_exists=True):
+    def _load_and_prepare_item(
+        self, action: Literal['create', 'replace', 'update'], item,
+        identifier=None, accept_missing_identifier=False,
+        crs_transform_func=None,
+    ):
         """
         Helper function to load a record, detect its idenfier and prepare
         a record item
 
+        :param action: an action among 'create', 'replace', 'update'
         :param item: `str` of incoming item data
         :param identifier: `str` of item identifier (optional)
         :param accept_missing_identifier: `bool` of whether a missing
-                                          identifier in item is valid
-                                          (typically for a create() method)
-        :param raise_if_exists: `bool` of whether to check if record
-                                 already exists
+            identifier in item is valid (typically for a create() method)
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
 
         :returns: `tuple` of item identifier and item data/payload
         """
@@ -228,15 +234,6 @@ class BaseProvider:
         if msg is not None:
             raise ProviderInvalidDataError(msg)
 
-        LOGGER.debug('Check that the item is of "Feature" type')
-        if json_data.pop('type', None) != 'Feature':
-            msg = (
-                'Incorrect feature GeoJSON representation, missing "type" '
-                'member'
-            )
-            LOGGER.error(msg)
-            raise ProviderInvalidDataError(msg)
-
         LOGGER.debug('Detecting identifier')
         if identifier is None:
             identifier = json_data.pop('id', None)
@@ -252,12 +249,25 @@ class BaseProvider:
                 LOGGER.error(msg)
                 raise ProviderInvalidDataError(msg)
 
-        if 'geometry' not in json_data or 'properties' not in json_data:
-            msg = 'Missing core GeoJSON geometry or properties'
-            LOGGER.error(msg)
-            raise ProviderInvalidDataError(msg)
+        if action != 'update':
+            LOGGER.debug('Check that the item is of "Feature" type')
+            if json_data.pop('type', None) != 'Feature':
+                msg = (
+                    'Incorrect feature GeoJSON representation, missing "type" '
+                    'member'
+                )
+                LOGGER.error(msg)
+                raise ProviderInvalidDataError(msg)
+            LOGGER.debug(
+                'Check the presence of "geometry" and "properties" GeoJSON '
+                'members'
+            )
+            if 'geometry' not in json_data or 'properties' not in json_data:
+                msg = 'Missing core GeoJSON geometry or properties'
+                LOGGER.error(msg)
+                raise ProviderInvalidDataError(msg)
 
-        if identifier is not None and raise_if_exists:
+        if identifier is not None and action == 'create':
             LOGGER.debug('Querying database whether item exists')
             try:
                 _ = self.get(identifier)
@@ -267,6 +277,9 @@ class BaseProvider:
                 raise ProviderInvalidDataError(msg)
             except ProviderItemNotFoundError:
                 LOGGER.debug('record does not exist')
+
+        if crs_transform_func is not None:
+            crs_transform_feature(json_data, crs_transform_func)
 
         return identifier, json_data
 

@@ -251,9 +251,13 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
         return get_response(
             api_.manage_collection_item(request, 'delete',
                                         collection_id, item_id))
-    elif request.method == 'PUT':
+    elif request.method == 'PATCH':
         return get_response(
             api_.manage_collection_item(request, 'update',
+                                        collection_id, item_id))
+    elif request.method == 'PUT':
+        return get_response(
+            api_.manage_collection_item(request, 'replace',
                                         collection_id, item_id))
     elif request.method == 'OPTIONS':
         return get_response(

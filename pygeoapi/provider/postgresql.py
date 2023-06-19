@@ -52,7 +52,7 @@ import logging
 
 from copy import deepcopy
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.functions import ST_MakeEnvelope, Find_SRID
 from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
@@ -111,6 +111,7 @@ class PostgreSQLProvider(BaseProvider):
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.fields = self.get_fields()
+        self.srid = self._get_srid()
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -247,22 +248,28 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature
 
-    def create(self, item):
+    def create(self, item, crs_transform_func=None):
         """
         Create a new item
 
         :param item: `dict` of new item
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
 
         :returns: identifier of created item
         """
         identifier, json_data = self._load_and_prepare_item(
-            item, accept_missing_identifier=self._has_default_identifier(),
-            )
+            item,
+            accept_missing_identifier=self._has_default_identifier(),
+            crs_transform_func=crs_transform_func,
+        )
         if identifier is not None and not self._has_default_identifier:
             json_data[self.id_field] = identifier
         json_geometry = json_data.pop('geometry')
         if json_geometry is not None:
-            json_data[self.geom] = geojson_to_geom(json_geometry).wkt
+            json_data[self.geom] = (
+                f'SRID={self.srid};{geojson_to_geom(json_geometry).wkt}'
+            )
         else:
             json_data[self.geom] = None
         properties = json_data.pop('properties')
@@ -382,6 +389,16 @@ class PostgreSQLProvider(BaseProvider):
             )
             return newname
         return name
+
+    def _get_srid(self):
+        """Get the spatial reference identifier for the geometry/geography
+        column of the published table.
+        """
+        LOGGER.debug('Get SRID of geometry/geography column')
+        with Session(self._engine) as session:
+            return session.scalar(
+                Find_SRID(getattr(self.table_model, self.geom))
+            )
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
         feature = {
@@ -505,4 +522,4 @@ class PostgreSQLProvider(BaseProvider):
                 schema_table=f"{self.schema}.{self.table}",
                 id_field=self.id_field,
             )
-            return session.scalars(stmt).one()
+            return session.scalar(stmt)

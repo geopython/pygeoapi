@@ -394,17 +394,22 @@ class ElasticsearchProvider(BaseProvider):
 
         return feature_
 
-    def create(self, item):
+    def create(self, item, crs_transform_func=None):
         """
         Create a new item
 
         :param item: `dict` of new item
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
 
         :returns: identifier of created item
         """
 
         identifier, json_data = self._load_and_prepare_item(
-            item, accept_missing_identifier=True)
+            'create',
+            item, accept_missing_identifier=True,
+            crs_transform_func=crs_transform_func,
+        )
         if identifier is None:
             # If there is no incoming identifier, allocate a random one
             identifier = str(uuid.uuid4())
@@ -416,23 +421,41 @@ class ElasticsearchProvider(BaseProvider):
 
         return identifier
 
-    def update(self, identifier, item):
+    def replace(self, identifier, item, crs_transform_func=None):
+        """
+        Replaces an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of new item replacing existing item
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
+        """
+
+        LOGGER.debug(f'Replacing item {identifier}')
+        identifier, json_data = self._load_and_prepare_item(
+            'replace',
+            item, identifier, crs_transform_func=crs_transform_func,
+        )
+        _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
+
+    def update(self, identifier, item, crs_transform_func=None):
         """
         Updates an existing item
 
         :param identifier: feature id
         :param item: `dict` of partial or full item
-
-        :returns: `bool` of update result
+        :param crs_transform_func: `callable` to transform the coordinates of
+            the item's geometry, optional
         """
 
         LOGGER.debug(f'Updating item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
-            item, identifier, raise_if_exists=False)
-
+            'update',
+            item,
+            identifier,
+            crs_transform_func=crs_transform_func,
+        )
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
-
-        return True
 
     def delete(self, identifier):
         """

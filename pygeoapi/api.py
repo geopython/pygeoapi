@@ -81,7 +81,8 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
+                           get_transform_from_crs, CrsTransformSpec,
+                           transform_bbox)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -2094,7 +2095,8 @@ class API:
         Adds an item to a collection
 
         :param request: A request object
-        :param action: an action among 'create', 'update', 'delete', 'options'
+        :param action: an action among 'create', 'replace', 'update', 'delete',
+            'options'
         :param dataset: dataset name
 
         :returns: tuple of headers, status code, content
@@ -2150,17 +2152,44 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        if action in ['create', 'update'] and not request.data:
-            msg = 'No data found'
-            LOGGER.error(msg)
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
+        crs_transform_func = None
+        if action in ('create', 'replace', 'update'):
+            if not request.data:
+                msg = 'No data found'
+                LOGGER.error(msg)
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+
+            LOGGER.debug('Processing Content-Crs header')
+            content_crs_uri = request.headers.get('Content-Crs', DEFAULT_CRS)
+            supported_crs_list = get_supported_crs_list(
+                provider_def, DEFAULT_CRS_LIST,
+            )
+            if content_crs_uri not in supported_crs_list:
+                msg = (
+                    f'Content-Crs {content_crs_uri} not supported for this '
+                    'collection'
+                )
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'NoApplicableCode', msg)
+            storage_crs_uri = provider_def.get(
+                'storage_crs', DEFAULT_STORAGE_CRS,
+            )
+            if content_crs_uri != storage_crs_uri:
+                content_crs = get_crs_from_uri(content_crs_uri)
+                storage_crs = get_crs_from_uri(storage_crs_uri)
+                crs_transform_func = get_transform_from_crs(
+                    content_crs, storage_crs, geom_objects=False,
+                )
 
         if action == 'create':
             LOGGER.debug('Creating item')
             try:
-                identifier = p.create(request.data)
+                identifier = p.create(
+                    request.data, crs_transform_func=crs_transform_func,
+                )
             except (ProviderInvalidDataError, TypeError) as err:
                 msg = str(err)
                 return self.get_exception(
@@ -2171,10 +2200,30 @@ class API:
 
             return headers, HTTPStatus.CREATED, ''
 
+        if action == 'replace':
+            LOGGER.debug('Replacing item')
+            try:
+                p.replace(
+                    identifier,
+                    request.data,
+                    crs_transform_func=crs_transform_func,
+                )
+            except (ProviderInvalidDataError, TypeError) as err:
+                msg = str(err)
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'InvalidParameterValue', msg)
+
+            return headers, HTTPStatus.NO_CONTENT, ''
+
         if action == 'update':
             LOGGER.debug('Updating item')
             try:
-                _ = p.update(identifier, request.data)
+                p.update(
+                    identifier,
+                    request.data,
+                    crs_transform_func=crs_transform_func,
+                )
             except (ProviderInvalidDataError, TypeError) as err:
                 msg = str(err)
                 return self.get_exception(
