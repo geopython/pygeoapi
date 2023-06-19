@@ -45,6 +45,8 @@ import pyproj
 from http import HTTPStatus
 from urllib.request import urlopen
 
+from shapely.geometry import shape as geojson_to_geom
+
 from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
@@ -57,8 +59,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.postgresql import PostgreSQLProvider
 import pygeoapi.provider.postgresql as postgresql_provider_module
 
-from pygeoapi.util import (yaml_load, geojson_to_geom,
-                           get_transform_from_crs, get_crs_from_uri)
+from pygeoapi.util import (yaml_load, get_transform_from_crs, get_crs_from_uri)
 
 from .util import get_test_file_path, mock_request
 
