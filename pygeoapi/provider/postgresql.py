@@ -399,7 +399,7 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Get SRID of geometry/geography column')
         with Session(self._engine) as session:
             return session.scalar(
-                Find_SRID(getattr(self.table_model, self.geom))
+                Find_SRID(self.schema, self.table, self.geom)
             )
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
