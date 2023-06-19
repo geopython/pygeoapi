@@ -38,6 +38,7 @@ from tinydb import TinyDB, Query, where
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
 
+
 LOGGER = logging.getLogger(__name__)
 
 

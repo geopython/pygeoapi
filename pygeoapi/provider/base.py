@@ -31,8 +31,6 @@ import json
 import logging
 from enum import Enum
 
-from pygeoapi.util import crs_transform_feature
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -199,7 +197,6 @@ class BaseProvider:
 
     def _load_and_prepare_item(
         self, action, item, identifier=None, accept_missing_identifier=False,
-        crs_transform_func=None,
     ):
         """
         Helper function to load a record, detect its idenfier and prepare
@@ -210,8 +207,6 @@ class BaseProvider:
         :param identifier: `str` of item identifier (optional)
         :param accept_missing_identifier: `bool` of whether a missing
             identifier in item is valid (typically for a create() method)
-        :param crs_transform_func: `callable` to transform the coordinates of
-            the item's geometry, optional
 
         :returns: `tuple` of item identifier and item data/payload
         """
@@ -275,9 +270,6 @@ class BaseProvider:
                 raise ProviderInvalidDataError(msg)
             except ProviderItemNotFoundError:
                 LOGGER.debug('record does not exist')
-
-        if crs_transform_func is not None:
-            crs_transform_feature(json_data, crs_transform_func)
 
         return identifier, json_data
 

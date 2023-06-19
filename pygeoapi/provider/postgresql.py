@@ -70,7 +70,7 @@ from sqlalchemy.sql.expression import and_
 
 from pygeoapi.provider.base import BaseProvider, \
     ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
-from pygeoapi.util import get_transform_from_crs
+from pygeoapi.util import get_transform_from_crs, crs_transform_feature
 
 
 _ENGINE_STORE = {}
@@ -265,6 +265,8 @@ class PostgreSQLProvider(BaseProvider):
         )
         if identifier is not None and not self._has_default_identifier:
             json_data[self.id_field] = identifier
+        if crs_transform_func is not None:
+            crs_transform_feature(json_data, crs_transform_func)
         json_geometry = json_data.pop('geometry')
         if json_geometry is not None:
             json_data[self.geom] = (

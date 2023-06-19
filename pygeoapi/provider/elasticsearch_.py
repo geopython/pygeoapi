@@ -41,7 +41,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
 from pygeoapi.models.cql import CQLModel, get_next_node
-from pygeoapi.util import get_envelope, crs_transform
+from pygeoapi.util import get_envelope, crs_transform, crs_transform_feature
 
 
 LOGGER = logging.getLogger(__name__)
@@ -414,6 +414,8 @@ class ElasticsearchProvider(BaseProvider):
             # If there is no incoming identifier, allocate a random one
             identifier = str(uuid.uuid4())
             json_data["id"] = identifier
+        if crs_transform_func is not None:
+            crs_transform_feature(json_data, crs_transform_func)
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
@@ -436,6 +438,8 @@ class ElasticsearchProvider(BaseProvider):
             'replace',
             item, identifier, crs_transform_func=crs_transform_func,
         )
+        if crs_transform_func is not None:
+            crs_transform_feature(json_data, crs_transform_func)
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
 
     def update(self, identifier, item, crs_transform_func=None):
@@ -455,6 +459,8 @@ class ElasticsearchProvider(BaseProvider):
             identifier,
             crs_transform_func=crs_transform_func,
         )
+        if crs_transform_func is not None:
+            crs_transform_feature(json_data, crs_transform_func)
         _ = self.es.index(index=self.index_name, id=identifier, body=json_data)
 
     def delete(self, identifier):
