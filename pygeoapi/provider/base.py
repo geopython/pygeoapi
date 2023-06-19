@@ -30,7 +30,6 @@
 import json
 import logging
 from enum import Enum
-from typing import Literal
 
 from pygeoapi.util import crs_transform_feature
 
@@ -199,8 +198,7 @@ class BaseProvider:
         raise NotImplementedError()
 
     def _load_and_prepare_item(
-        self, action: Literal['create', 'replace', 'update'], item,
-        identifier=None, accept_missing_identifier=False,
+        self, action, item, identifier=None, accept_missing_identifier=False,
         crs_transform_func=None,
     ):
         """
