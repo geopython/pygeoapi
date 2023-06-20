@@ -753,6 +753,12 @@ def test_manage_collection_items_postgresql_create(pg_api_):
 
     assert code == HTTPStatus.CREATED
 
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = pg_api_.get_collection_item(
+        req, 'capital_cities', 1,
+    )
+    assert code == HTTPStatus.OK
+
     feature_uri = rsp_headers['Location']
     r = requests.get(f'{feature_uri}?f=json', verify=False)
 
