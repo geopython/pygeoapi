@@ -63,13 +63,15 @@ from sqlalchemy import (
     create_engine, MetaData, PrimaryKeyConstraint, asc, desc, text,
 )
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import InvalidRequestError, OperationalError
+from sqlalchemy.exc import InvalidRequestError, OperationalError, DataError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
-from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
+from pygeoapi.provider.base import (
+    BaseProvider, ProviderConnectionError, ProviderQueryError,
+    ProviderItemNotFoundError, ProviderInvalidDataError
+)
 from pygeoapi.util import get_transform_from_crs, crs_transform_feature
 
 
@@ -279,11 +281,15 @@ class PostgreSQLProvider(BaseProvider):
             for k, v in properties.items():
                 json_data[k] = v
         db_obj_mapping = self.table_model(**json_data)
-        with Session(self._engine) as session:
-            session.add(db_obj_mapping)
-            session.commit()
-            session.refresh(db_obj_mapping)
-            identifier = getattr(db_obj_mapping, self.id_field)
+        try:
+            with Session(self._engine) as session:
+                session.add(db_obj_mapping)
+                session.commit()
+                session.refresh(db_obj_mapping)
+                identifier = getattr(db_obj_mapping, self.id_field)
+        except DataError as err:
+            LOGGER.error(err)
+            raise ProviderInvalidDataError('Invalid data')
         return identifier
 
     def _store_db_parameters(self, parameters):
