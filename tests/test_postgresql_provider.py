@@ -43,8 +43,8 @@ import json
 import pytest
 import pyproj
 from http import HTTPStatus
+from urllib.parse import urlparse
 
-import requests
 from shapely.geometry import shape as geojson_to_geom
 
 from pygeofilter.parsers.ecql import parse
@@ -754,20 +754,15 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     assert code == HTTPStatus.CREATED
 
     feature_uri = rsp_headers['Location']
-
+    fid = urlparse(feature_uri).path.rsplit('/', 1)[-1]
     req = mock_request({'f': 'json'})
     rsp_headers, code, response = pg_api_.get_collection_item(
-        req, 'capital_cities', 1,
+        req, 'capital_cities', fid,
     )
+
     assert code == HTTPStatus.OK
 
     feature_created = json.loads(response)
-    # r = requests.get(f'{feature_uri}?f=json', verify=False)
-
-    # assert r.status_code == HTTPStatus.OK
-
-    # feature_created = r.json()
-
     # Test that created feature is identical to the original feature
     for k in ('type', 'properties'):
         assert feature_created[k] == feature_orig[k]
@@ -848,11 +843,15 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     assert code == HTTPStatus.CREATED
 
     feature_uri = rsp_headers['Location']
-    r = requests.get(f'{feature_uri}?f=json')
+    fid = urlparse(feature_uri).path.rsplit('/', 1)[-1]
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = pg_api_.get_collection_item(
+        req, 'capital_cities', fid,
+    )
 
-    assert r.status_code == HTTPStatus.OK
+    assert code == HTTPStatus.OK
 
-    feature_created_4326 = r.json()
+    feature_created_4326 = json.loads(response)
     geom_orig = geojson_to_geom(feature_32631['geometry'])
     geom_created = geojson_to_geom(feature_created_4326['geometry'])
     storage_crs_uri = 'http://www.opengis.net/def/crs/EPSG/0/4326'
