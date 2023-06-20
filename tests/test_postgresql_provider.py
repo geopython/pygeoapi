@@ -754,8 +754,7 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     assert code == HTTPStatus.CREATED
 
     feature_uri = rsp_headers['Location']
-    print(feature_uri)
-    r = requests.get(f'{feature_uri}?f=json')
+    r = requests.get(f'{feature_uri}?f=json', verify=False)
 
     assert r.status_code == HTTPStatus.OK
 
