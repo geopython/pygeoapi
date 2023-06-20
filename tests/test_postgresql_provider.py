@@ -772,7 +772,7 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     for k in ('type', 'properties'):
         assert feature_created[k] == feature_orig[k]
 
-    assert hasattr(feature_created, 'id')
+    assert 'id' in feature_created.keys()
 
     geom_orig = geojson_to_geom(feature_orig['geometry'])
     geom_created = geojson_to_geom(feature_created['geometry'])
