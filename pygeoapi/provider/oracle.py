@@ -699,8 +699,11 @@ class OracleProvider(BaseProvider):
         if row_data:
             feature = {"type": "Feature"}
 
-            if row_data["GEOMETRY"]:
+            if row_data.get("GEOMETRY"):
                 feature["geometry"] = json.loads(row_data["GEOMETRY"])
+            else:
+                feature["geometry"] = None
+            
             feature["properties"] = {
                 key.lower(): value
                 for (key, value) in row_data.items()
