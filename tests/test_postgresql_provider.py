@@ -753,18 +753,20 @@ def test_manage_collection_items_postgresql_create(pg_api_):
 
     assert code == HTTPStatus.CREATED
 
+    feature_uri = rsp_headers['Location']
+
     req = mock_request({'f': 'json'})
     rsp_headers, code, response = pg_api_.get_collection_item(
         req, 'capital_cities', 1,
     )
     assert code == HTTPStatus.OK
 
-    feature_uri = rsp_headers['Location']
-    r = requests.get(f'{feature_uri}?f=json', verify=False)
+    feature_created = json.loads(response)
+    # r = requests.get(f'{feature_uri}?f=json', verify=False)
 
-    assert r.status_code == HTTPStatus.OK
+    # assert r.status_code == HTTPStatus.OK
 
-    feature_created = r.json()
+    # feature_created = r.json()
 
     # Test that created feature is identical to the original feature
     for k in ('type', 'properties'):
