@@ -282,6 +282,8 @@ class PostgreSQLProvider(BaseProvider):
         with Session(self._engine) as session:
             session.add(db_obj_mapping)
             session.commit()
+            session.refresh(db_obj_mapping)
+            identifier = getattr(db_obj_mapping, self.id_field)
         return identifier
 
     def _store_db_parameters(self, parameters):
