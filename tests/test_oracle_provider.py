@@ -28,7 +28,7 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
-# Create testdata: SQLPLUS SYS@DBNAME AS SYSDBA @./data/oracle_lakes.sql
+# Create testdata: python3 load_oracle_data.py
 
 import os
 import pytest
@@ -39,6 +39,33 @@ PASSWORD = os.environ.get("PYGEOAPI_ORACLE_PASSWD", "geo_test")
 SERVICE_NAME = os.environ.get("PYGEOAPI_ORACLE_SERVICE_NAME", "XEPDB1")
 HOST = os.environ.get("PYGEOAPI_ORACLE_HOST", "127.0.0.1")
 PORT = os.environ.get("PYGEOAPI_ORACLE_PORT", "1521")
+
+
+class SqlManipulator:
+    def process(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        bbox,
+        source_crs,
+        properties,
+    ):
+        sql = "ID = 10 AND :foo != :bar"
+
+        if sql_query.find(" WHERE ") == -1:
+            sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
+        else:
+            sql_query = sql_query.replace("#WHERE#", f" AND {sql}")
+
+        bind_variables = {
+            **bind_variables,
+            "foo": "foo",
+            "bar": sql_manipulator_options.get("foo"),
+        }
+
+        return sql_query, bind_variables
 
 
 @pytest.fixture()
@@ -59,8 +86,28 @@ def config():
     }
 
 
+@pytest.fixture()
+def config_manipulator():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes",
+        "geom_field": "geometry",
+        "sql_manipulator": "tests.test_oracle_provider.SqlManipulator",
+        "sql_manipulator_options": {"foo": "bar"},
+    }
+
+
 def test_query(config):
-    """Testing query for a valid JSON object with geometry"""
+    """Test query for a valid JSON object with geometry"""
     p = OracleProvider(config)
     feature_collection = p.query()
     assert feature_collection.get("type") == "FeatureCollection"
@@ -71,3 +118,89 @@ def test_query(config):
     assert properties is not None
     geometry = feature.get("geometry")
     assert geometry is not None
+
+
+def test_sql_manipulator(config_manipulator):
+    """Test SQL manipulator"""
+    p = OracleProvider(config_manipulator)
+    feature_collection = p.query()
+    features = feature_collection.get("features")
+
+    assert len(features) == 1
+    assert features[0].get("id") == 10
+
+
+def test_get_fields(config):
+    """Test get_fields"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "scalarank": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config)
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields
+
+
+def test_query_with_property_filter(config):
+    """Test query valid features when filtering by property"""
+    p = OracleProvider(config)
+    feature_collection = p.query(properties=[("name", "Aral Sea")])
+    features = feature_collection.get("features")
+
+    assert len(features) == 1
+    assert features[0].get("id") == 12
+
+
+def test_query_bbox(config):
+    """Test query with a specified bounding box"""
+    p = OracleProvider(config)
+    feature_collection = p.query(bbox=[50, 40, 60, 50])
+    features = feature_collection.get("features")
+
+    assert len(features) == 1
+    assert features[0]["properties"]["name"] == "Aral Sea"
+
+
+def test_query_sortby(config):
+    """Test query with sorting"""
+    p = OracleProvider(config)
+    up = p.query(sortby=[{"property": "id", "order": "+"}])
+    assert up["features"][0]["id"] == 1
+    down = p.query(sortby=[{"property": "id", "order": "-"}])
+    assert down["features"][0]["id"] == 25
+
+    name = p.query(sortby=[{"property": "name", "order": "+"}])
+    assert name["features"][0]["properties"]["name"] == "Aral Sea"
+    name = p.query(sortby=[{"property": "name", "order": "-"}])
+    assert name["features"][0]["properties"]["name"] == "Vänern"
+
+
+def test_query_skip_geometry(config):
+    """Test query without geometry"""
+    p = OracleProvider(config)
+    result = p.query(skip_geometry=True)
+    feature = result["features"][0]
+
+    assert feature.get("geometry") is None
+
+
+def test_query_hits(config):
+    """Test query number of hits"""
+    p = OracleProvider(config)
+    result = p.query(bbox=[0, 0, 70, 60], resulttype="hits")
+
+    assert result.get("numberMatched") == 5
+
+
+def test_get(config):
+    """Test simple get"""
+    p = OracleProvider(config)
+    result = p.get(5)
+
+    assert result.get("id") == 5
+    assert result.get("prev") == 4
+    assert result.get("next") == 6
