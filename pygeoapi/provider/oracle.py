@@ -740,7 +740,9 @@ class OracleProvider(BaseProvider):
             columns_str = ", ".join([col for col in columns])
             values_str = ", ".join([f":{col}" for col in columns])
 
-            sql_query = f"INSERT INTO {self.table} ({columns_str}, {self.geom}) \
+            sql_query = f"INSERT INTO {self.table} (\
+                            {columns_str}, \
+                            {self.geom}) \
                           VALUES ({values_str}, :in_geometry) \
                           RETURNING {self.id_field} INTO :out_id"
             out_id = cursor.var(int)
