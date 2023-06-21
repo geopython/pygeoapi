@@ -42,7 +42,7 @@ PORT = os.environ.get("PYGEOAPI_ORACLE_PORT", "1521")
 
 
 class SqlManipulator:
-    def process(
+    def process_query(
         self,
         db,
         sql_query,
@@ -67,6 +67,37 @@ class SqlManipulator:
 
         return sql_query, bind_variables
 
+    def process_create(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        request_data,
+    ):
+        return sql_query, bind_variables
+
+    def process_update(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        identifier,
+        request_data,
+    ):
+        return sql_query, bind_variables
+
+    def process_delete(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        identifier,
+    ):
+        return sql_query, bind_variables
+
 
 @pytest.fixture()
 def config():
@@ -83,6 +114,7 @@ def config():
         "id_field": "id",
         "table": "lakes",
         "geom_field": "geometry",
+        "editable": True,
     }
 
 
@@ -103,6 +135,30 @@ def config_manipulator():
         "geom_field": "geometry",
         "sql_manipulator": "tests.test_oracle_provider.SqlManipulator",
         "sql_manipulator_options": {"foo": "bar"},
+        "editable": True,
+    }
+
+
+@pytest.fixture()
+def create_geojson():
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [9.012050, 47.841512],
+                    [9.803470, 47.526461],
+                    [9.476940, 47.459178],
+                    [8.918151, 47.693253],
+                    [9.012050, 47.841512],
+                ]
+            ],
+        },
+        "properties": {
+            "name": "Lake Constance",
+            "wiki_link": "https://en.wikipedia.org/wiki/Lake_Constance",
+        },
     }
 
 
@@ -134,7 +190,8 @@ def test_get_fields(config):
     """Test get_fields"""
     expected_fields = {
         "id": {"type": "NUMBER"},
-        "scalarank": {"type": "NUMBER"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
         "name": {"type": "VARCHAR2"},
         "wiki_link": {"type": "VARCHAR2"},
     }
@@ -204,3 +261,10 @@ def test_get(config):
     assert result.get("id") == 5
     assert result.get("prev") == 4
     assert result.get("next") == 6
+
+def test_create(config, create_geojson):
+    """Test create"""
+    p = OracleProvider(config)
+    result = p.create(create_geojson)
+
+    assert result == 26
