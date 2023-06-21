@@ -305,7 +305,7 @@ def test_update(config, update_geojson):
     identifier = 26
     result = p.update(identifier, update_geojson)
 
-    assert result == True
+    assert result
 
     data = p.get(identifier)
 
