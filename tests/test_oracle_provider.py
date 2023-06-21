@@ -158,7 +158,35 @@ def create_geojson():
         "properties": {
             "name": "Lake Constance",
             "wiki_link": "https://en.wikipedia.org/wiki/Lake_Constance",
+            "foo": "bar",
         },
+    }
+
+
+@pytest.fixture()
+def update_geojson():
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [9.012050, 47.841512],
+                    [9.803470, 47.526461],
+                    [9.476940, 47.459178],
+                    [8.918151, 47.693253],
+                    [9.012050, 47.841512],
+                ]
+            ],
+        },
+        "properties": {
+            "name": "Lake Constance",
+            "wiki_link": "https://en.wikipedia.org/wiki/Lake_Constance",
+            "foo": "bar",
+            "area": 536000,
+            "volume": 48000,
+        },
+        "id": 26,
     }
 
 
@@ -269,3 +297,23 @@ def test_create(config, create_geojson):
     result = p.create(create_geojson)
 
     assert result == 26
+
+
+def test_update(config, update_geojson):
+    """Test update"""
+    p = OracleProvider(config)
+    identifier = 26
+    result = p.update(identifier, update_geojson)
+
+    assert result == True
+
+    data = p.get(identifier)
+
+    print(data)
+
+    assert data.get("properties").get("area") == 536000
+    assert data.get("properties").get("volume") == 48000
+
+
+# TODO: Test update mit gefilterter propertie Liste
+#       Spalte darf dann nicht upgedateted werden!

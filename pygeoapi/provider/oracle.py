@@ -737,6 +737,28 @@ class OracleProvider(BaseProvider):
 
             columns = [*request_data.get("properties")]
 
+            # Filter properties to get only columns who are
+            # in the column list
+            columns = [
+                col
+                for col in columns
+                if col.lower() in [field.lower() for field in self.fields]
+            ]
+
+            # Flter function to get only properties who are
+            # in the column list
+            def filter_binds(pair):
+                key, value = pair
+                if key.lower() in [field.lower() for field in self.fields]:
+                    return True
+                else:
+                    return False
+
+            # Filter bind variables
+            bind_variables = dict(
+                filter(filter_binds, request_data.get("properties").items())
+            )
+
             columns_str = ", ".join([col for col in columns])
             values_str = ", ".join([f":{col}" for col in columns])
 
@@ -745,12 +767,17 @@ class OracleProvider(BaseProvider):
                             {self.geom}) \
                           VALUES ({values_str}, :in_geometry) \
                           RETURNING {self.id_field} INTO :out_id"
+
+            # Out bind variable for the id of the created row
             out_id = cursor.var(int)
+
+            # Bind variable for the SDO_GEOMETRY type
             in_geometry = self._get_sdo_from_geojson_geometry(
                 db.conn, request_data.get("geometry").get("coordinates")[0]
             )
+
             bind_variables = {
-                **request_data.get("properties"),
+                **bind_variables,
                 "out_id": out_id,
                 "in_geometry": in_geometry,
             }
@@ -768,7 +795,7 @@ class OracleProvider(BaseProvider):
                 )
 
             # Clean up placeholders that aren't used by the
-            # manipulation class.
+            # manipulation plugin.
             sql_query = sql_query.replace("#HINTS#", "")
             sql_query = sql_query.replace("#JOIN#", "")
             sql_query = sql_query.replace("#WHERE#", "")
@@ -782,6 +809,9 @@ class OracleProvider(BaseProvider):
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
                 LOGGER.error(err)
+
+                db.conn.rollback()
+
                 raise ProviderQueryError()
 
             identifier = out_id.getvalue()
@@ -791,6 +821,67 @@ class OracleProvider(BaseProvider):
     def update(self, identifier, request_data):
         LOGGER.debug(f"Identifier: {identifier}")
         LOGGER.debug(f"Request data: {str(request_data)}")
+
+        with DatabaseConnection(
+            self.conn_dic, self.table, properties=self.properties
+        ) as db:
+            cursor = db.conn.cursor()
+
+            columns = [*request_data.get("properties")]
+
+            # Filter properties to get only columns who are
+            # in the column list
+            columns = [
+                col
+                for col in columns
+                if col.lower() in [field.lower() for field in self.fields]
+            ]
+
+            # Flter function to get only properties who are
+            # in the column list
+            def filter_binds(pair):
+                key, value = pair
+                if key.lower() in [field.lower() for field in self.fields]:
+                    return True
+                else:
+                    return False
+
+            # Filter bind variables
+            bind_variables = dict(
+                filter(filter_binds, request_data.get("properties").items())
+            )
+
+            set_str = ", ".join([f" {col} = :{col}" for col in columns])
+
+            sql_query = f"UPDATE {self.table} \
+                             SET {set_str} \
+                               , {self.geom} = :in_geometry \
+                           WHERE {self.id_field} = :in_id"
+
+            # Bind variable for the SDO_GEOMETRY type
+            in_geometry = self._get_sdo_from_geojson_geometry(
+                db.conn, request_data.get("geometry").get("coordinates")[0]
+            )
+
+            bind_variables = {
+                **bind_variables,
+                "in_id": identifier,
+                "in_geometry": in_geometry,
+            }
+
+            LOGGER.debug(sql_query)
+            LOGGER.debug(bind_variables)
+
+            try:
+                cursor.execute(sql_query, bind_variables)
+                db.conn.commit()
+            except oracledb.Error as err:
+                LOGGER.error(f"Error executing sql_query: {sql_query}")
+                LOGGER.error(err)
+
+                db.conn.rollback()
+
+                raise ProviderQueryError()
 
         return True
 
