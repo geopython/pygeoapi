@@ -744,11 +744,13 @@ class OracleProvider(BaseProvider):
                           VALUES ({values_str}, :in_geometry) \
                           RETURNING {self.id_field} INTO :out_id"
             out_id = cursor.var(int)
-            in_geometry = self._get_sdo_from_geojson_geometry(db.conn, request_data.get("geometry").get("coordinates")[0])
+            in_geometry = self._get_sdo_from_geojson_geometry(
+                db.conn, request_data.get("geometry").get("coordinates")[0]
+            )
             bind_variables = {
                 **request_data.get("properties"),
                 "out_id": out_id,
-                "in_geometry": in_geometry
+                "in_geometry": in_geometry,
             }
 
             # SQL manipulation plugin

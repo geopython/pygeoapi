@@ -262,6 +262,7 @@ def test_get(config):
     assert result.get("prev") == 4
     assert result.get("next") == 6
 
+
 def test_create(config, create_geojson):
     """Test create"""
     p = OracleProvider(config)
