@@ -62,9 +62,6 @@ services:
     ports:
       - 9300:9300
       - 9200:9200
-    environment:
-      # Enabling compatibility mode in ES
-      # https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/migration.html#migration-compat-mode
     volumes:
       - elastic_search_data:/usr/share/elasticsearch/data
 
