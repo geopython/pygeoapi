@@ -834,9 +834,8 @@ def test_manage_collection_items_postgresql_create(pg_api_):
         'properties': {'name': 'Paris'},
     }
     crs_uri_32631 = 'http://www.opengis.net/def/crs/EPSG/0/32631'
-    req = mock_request(
-        {'Content-Crs': f'<{crs_uri_32631}>'}, data=feature_32631,
-    )
+    headers = {'Content-Crs': crs_uri_32631}
+    req = mock_request(data=feature_32631, **headers)
     rsp_headers, code, _ = pg_api_.manage_collection_item(
         req, 'create', 'capital_cities')
 
@@ -844,7 +843,8 @@ def test_manage_collection_items_postgresql_create(pg_api_):
 
     feature_uri = rsp_headers['Location']
     fid = urlparse(feature_uri).path.rsplit('/', 1)[-1]
-    req = mock_request({'f': 'json'})
+    storage_crs_uri = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+    req = mock_request({'crs': storage_crs_uri, 'f': 'json'})
     rsp_headers, code, response = pg_api_.get_collection_item(
         req, 'capital_cities', fid,
     )
@@ -854,7 +854,6 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     feature_created_4326 = json.loads(response)
     geom_orig = geojson_to_geom(feature_32631['geometry'])
     geom_created = geojson_to_geom(feature_created_4326['geometry'])
-    storage_crs_uri = 'http://www.opengis.net/def/crs/EPSG/0/4326'
     transform_func = get_transform_from_crs(
         get_crs_from_uri(crs_uri_32631),
         get_crs_from_uri(storage_crs_uri),
