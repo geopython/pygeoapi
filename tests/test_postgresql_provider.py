@@ -834,7 +834,7 @@ def test_manage_collection_items_postgresql_create(pg_api_):
         'properties': {'name': 'Paris'},
     }
     crs_uri_32631 = 'http://www.opengis.net/def/crs/EPSG/0/32631'
-    headers = {'Content-Crs': crs_uri_32631}
+    headers = {'HTTP_CONTENT_CRS': crs_uri_32631}
     req = mock_request(data=feature_32631, **headers)
     rsp_headers, code, _ = pg_api_.manage_collection_item(
         req, 'create', 'capital_cities')
