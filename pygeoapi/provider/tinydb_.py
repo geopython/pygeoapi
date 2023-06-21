@@ -259,7 +259,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         if identifier is None:
             # If there is no incoming identifier, allocate a random one
             identifier = str(uuid.uuid4())
-            json_data["id"] = identifier
+        json_data["id"] = identifier
 
         try:
             json_data['properties']['_metadata-anytext'] = ''.join([
@@ -285,9 +285,9 @@ class TinyDBCatalogueProvider(BaseProvider):
         :param item: `dict` of new item replacing existing item
         """
 
-        LOGGER.debug(f'Updating item {identifier}')
+        LOGGER.debug(f'Replacing item {identifier}')
         identifier, json_data = self._load_and_prepare_item(
-            'update', item, identifier,
+            'replace', item, identifier,
         )
         self.db.update(json_data, where('id') == identifier)
 

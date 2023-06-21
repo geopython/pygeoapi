@@ -172,26 +172,43 @@ def test_transactions_create(config, data):
 
     p = TinyDBCatalogueProvider(config)
 
-    new_id = p.create(data)
-    assert new_id == 123
+    record_id = p.create(data)
 
-    assert p.update(123, data)
+    assert record_id == 123
 
-    assert p.delete(123)
+    data_record = json.loads(data)
+    data_record['properties']['title'] = 'updated test item'
+    p.update(record_id, json.dumps(data_record))
+    updated_data_record = p.get(record_id)
+
+    assert updated_data_record['properties']['title'] == 'updated test item'
+
+    p.delete(record_id)
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(record_id)
 
 
 def test_transactions_create_no_id(config, data_no_id):
     """Testing transactional capabilities with incoming feature without ID"""
 
     p = TinyDBCatalogueProvider(config)
+    record_id = p.create(data_no_id)
 
-    new_id = p.create(data_no_id)
-    assert new_id is not None
+    assert record_id is not None
 
-    data_got = p.get(new_id)
-    assert data_got['id'] == new_id
-    assert data_got['geometry'] == json.loads(data_no_id)['geometry']
+    data_record = p.get(record_id)
 
-    assert p.update(new_id, json.dumps(data_got))
+    assert data_record['id'] == record_id
+    assert data_record['geometry'] == json.loads(data_no_id)['geometry']
 
-    assert p.delete(new_id)
+    data_record['properties']['title'] = 'updated test item'
+    p.update(record_id, json.dumps(data_record))
+    updated_data_record = p.get(record_id)
+
+    assert updated_data_record['properties']['title'] == 'updated test item'
+
+    p.delete(record_id)
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get(record_id)
