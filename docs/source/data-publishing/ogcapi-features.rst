@@ -260,6 +260,91 @@ MongoDB
          data: mongodb://localhost:27017/testdb
          collection: testplaces
 
+.. _Oracle:
+
+Oracle
+^^^^^^
+
+.. note::
+  Requires Python package oracledb
+
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521 # defaults to 1521 if not provided
+            service_name: XEPDB1
+            # sid: XEPDB1
+            user: geo_test
+            password: geo_test
+            # external_auth: wallet
+            # tns_name: XEPDB1
+            # tns_admin /opt/oracle/client/network/admin 
+            # init_oracle_client: True
+
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        # sql_manipulator: tests.test_oracle_provider.SqlManipulator
+        # sql_manipulator_options:
+        #     foo: bar
+        # mandatory_properties:
+        # - bbox
+        # source_crs: 31287 # defaults to 4326 if not provided
+        # target_crs: 31287 # defaults to 4326 if not provided
+
+The provider supports connection over host and port with SID or SERVICE_NAME. For TNS naming, the system 
+environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
+
+The providers supports external authentication. At the moment only wallet authentication is implemented.
+
+Sometimes it is necessary to use the Oracle client for the connection. In this case init_oracle_client must be set to True.
+
+The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
+useful e.g. for authorization at row level or manipulation of the explain plan with hints. For this, the SQL 
+statement has three different placeholders which could be replaced: #HINTS#, #WHERE# and #JOIN#.
+
+.. code-block:: sql
+
+  SELECT #HINTS# t1.id, ...
+    FROM table t1 #JOIN# 
+    #WHERE#
+    ORDER BY t1.id ASC
+    OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
+
+Example SQL Manipulator
+"""""""""""""""""""""""
+.. code-block:: python
+
+  class SqlManipulator:
+    def process(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        bbox,
+        source_crs,
+        properties,
+    ):
+        sql = "ID = 10 AND :foo != :bar"
+
+        if sql_query.find(" WHERE ") == -1:
+            sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
+        else:
+            sql_query = sql_query.replace("#WHERE#", f" AND {sql}")
+
+        bind_variables = {
+            **bind_variables,
+            "foo": "foo",
+            "bar": sql_manipulator_options.get("foo"),
+        }
+
+        return sql_query, bind_variables
 
 .. _PostgreSQL:
 
