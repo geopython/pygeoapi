@@ -395,3 +395,7 @@ def get_manager(config: Dict) -> BaseManager:
     if manager_conf.get('name') == 'Dummy':
         LOGGER.info('Starting dummy manager')
     return load_plugin('process_manager', manager_conf)
+
+
+class UnknownProcessError(Exception):
+    pass
