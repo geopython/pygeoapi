@@ -3285,9 +3285,7 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin(
-                    'process', self.manager.processes[key]['processor'])
-
+                p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
 
@@ -3514,8 +3512,7 @@ class API:
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
-        process = load_plugin('process',
-                              self.manager.processes[process_id]['processor'])
+        process = self.manager.get_processor(process_id)
 
         data = request.data
         if not data:

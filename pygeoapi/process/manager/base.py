@@ -80,6 +80,23 @@ class BaseManager:
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
+    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+        """Instantiate a processor.
+
+        :param process_id: Identifier of the process
+
+        :raise UnknownProcessError: if the processor cannot be created
+        :returns: instance of the processor
+        """
+
+        try:
+            process_conf = self.processes[process_id]
+        except KeyError as err:
+            raise UnknownProcessError(
+                'Invalid process identifier') from err
+        else:
+            return load_plugin('process', process_conf['processor'])
+
     def get_jobs(self, status: JobStatus = None) -> list:
         """
         Get process jobs, optionally filtered by status
@@ -338,6 +355,10 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+class UnknownProcessError(Exception):
+    pass
 
 
 def get_manager(config: Dict) -> BaseManager:
