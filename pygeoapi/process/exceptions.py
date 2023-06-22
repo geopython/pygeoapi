@@ -1,7 +1,9 @@
 # =================================================================
 #
-# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
+# Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
@@ -26,48 +28,21 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-from typing import Dict
 
-import pytest
-
-from pygeoapi.process.manager.base import get_manager
-from pygeoapi.process import exceptions
+"""Custom exceptions for pygeoapi processes"""
 
 
-@pytest.fixture()
-def config() -> Dict:
-    return {
-        'server': {
-            'manager': {
-                'name': 'TinyDB',
-                'output_dir': '/tmp',
-            }
-        },
-        'resources': {
-            'hello-world': {
-                'type': 'process',
-                'processor': {
-                    'name': 'HelloWorld'
-                }
-            }
-        }
-    }
+class JobError(Exception):
+    pass
 
 
-def test_get_manager(config):
-    manager = get_manager(config)
-    assert manager.name == config['server']['manager']['name']
-    assert 'hello-world' in manager.processes
+class JobNotFoundError(JobError):
+    pass
 
 
-def test_get_processor(config):
-    manager = get_manager(config)
-    process_id = 'hello-world'
-    processor = manager.get_processor(process_id)
-    assert processor.metadata["id"] == process_id
+class ProcessError(Exception):
+    pass
 
 
-def test_get_processor_raises_exception(config):
-    manager = get_manager(config)
-    with pytest.raises(expected_exception=exceptions.UnknownProcessError):
-        manager.get_processor('foo')
+class UnknownProcessError(ProcessError):
+    pass

@@ -37,6 +37,7 @@ from typing import Any, Tuple
 import tinydb
 from filelock import FileLock
 
+from pygeoapi.process import exceptions
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -147,15 +148,21 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
         query = tinydb.Query()
         with self._db() as db:
-            result = db.search(query.identifier == job_id)
-
-        result = result[0] if result else None
-        return result
+            found = db.search(query.identifier == job_id)
+        if found is not None:
+            try:
+                return found[0]
+            except IndexError:
+                raise exceptions.JobNotFoundError()
+        else:
+            raise exceptions.JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """

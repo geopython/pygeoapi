@@ -39,6 +39,7 @@ from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
 from pygeoapi.plugin import load_plugin
+from pygeoapi.process import exceptions
 from pygeoapi.process.base import BaseProcessor
 from pygeoapi.util import (
     DATETIME_FORMAT,
@@ -92,7 +93,7 @@ class BaseManager:
         try:
             process_conf = self.processes[process_id]
         except KeyError as err:
-            raise UnknownProcessError(
+            raise exceptions.UnknownProcessError(
                 'Invalid process identifier') from err
         else:
             return load_plugin('process', process_conf['processor'])
@@ -138,10 +139,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict` of job result
         """
 
-        raise NotImplementedError()
+        raise exceptions.JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """

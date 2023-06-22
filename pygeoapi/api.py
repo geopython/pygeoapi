@@ -64,6 +64,7 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
+from pygeoapi.process import exceptions
 from pygeoapi.process.base import ProcessorExecuteError
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
@@ -3412,7 +3413,12 @@ class API:
                           key=lambda k: k['job_start_datetime'],
                           reverse=True)
         else:
-            jobs = [self.manager.get_job(job_id)]
+            try:
+                jobs = [self.manager.get_job(job_id)]
+            except exceptions.JobNotFoundError:
+                return self.get_exception(
+                    HTTPStatus.NOT_FOUND, headers, request.format,
+                    'InvalidParameterValue', job_id)
 
         serialized_jobs = {
             'jobs': [],
