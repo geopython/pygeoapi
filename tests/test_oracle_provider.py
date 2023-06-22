@@ -140,6 +140,26 @@ def config_manipulator():
 
 
 @pytest.fixture()
+def config_properties():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes",
+        "geom_field": "geometry",
+        "editable": True,
+        "properties": ["id", "name", "wiki_link"],
+    }
+
+
+@pytest.fixture()
 def create_geojson():
     return {
         "type": "Feature",
@@ -230,6 +250,22 @@ def test_get_fields(config):
     assert provider.fields == expected_fields
 
 
+def test_get_fields_properties(config_properties):
+    """Test get_fields"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config_properties)
+    provided_fields = provider.get_fields()
+    print(provided_fields)
+
+    assert provided_fields == expected_fields
+    assert provider.fields == expected_fields
+
+
 def test_query_with_property_filter(config):
     """Test query valid features when filtering by property"""
     p = OracleProvider(config)
@@ -315,5 +351,38 @@ def test_update(config, update_geojson):
     assert data.get("properties").get("volume") == 48000
 
 
-# TODO: Test update mit gefilterter propertie Liste
-#       Spalte darf dann nicht upgedateted werden!
+def test_update_properties(config_properties, config, update_geojson):
+    """
+    Test update with filtered columnlist in configuration
+    In this case, the columns area and volume cannot be updated!
+    """
+    p = OracleProvider(config_properties)
+    identifier = 26
+
+    update_geojson["properties"]["area"] = 4711
+    update_geojson["properties"]["volume"] = 4711
+
+    result = p.update(identifier, update_geojson)
+
+    assert result
+
+    p2 = OracleProvider(config)
+    data = p2.get(identifier)
+
+    print(data)
+
+    assert data.get("properties").get("area") == 536000
+    assert data.get("properties").get("volume") == 48000
+
+
+def test_delete(config):
+    """Simple test for delete"""
+    p = OracleProvider(config)
+    identifier = 26
+
+    result = p.delete(identifier)
+
+    assert result
+
+    down = p.query(sortby=[{"property": "id", "order": "-"}])
+    assert down["features"][0]["id"] == 25

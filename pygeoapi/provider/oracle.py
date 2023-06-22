@@ -848,7 +848,10 @@ class OracleProvider(BaseProvider):
 
             # Filter bind variables
             bind_variables = dict(
-                filter(filter_binds, request_data.get("properties").items())
+                filter(
+                    filter_binds,
+                    request_data.get("properties").items(),
+                )
             )
 
             set_str = ", ".join([f" {col} = :{col}" for col in columns])
@@ -869,6 +872,19 @@ class OracleProvider(BaseProvider):
                 "in_geometry": in_geometry,
             }
 
+            # SQL manipulation plugin
+            if self.sql_manipulator:
+                LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
+                manipulation_class = _factory(self.sql_manipulator)
+                sql_query, bind_variables = manipulation_class.process_update(
+                    db,
+                    sql_query,
+                    bind_variables,
+                    self.sql_manipulator_options,
+                    identifier,
+                    request_data,
+                )
+
             LOGGER.debug(sql_query)
             LOGGER.debug(bind_variables)
 
@@ -888,21 +904,66 @@ class OracleProvider(BaseProvider):
     def delete(self, identifier):
         LOGGER.debug(f"Identifier: {identifier}")
 
+        with DatabaseConnection(
+            self.conn_dic, self.table, properties=self.properties
+        ) as db:
+            cursor = db.conn.cursor()
+
+            sql_query = f"DELETE FROM {self.table} \
+                           WHERE {self.id_field} = :in_id"
+
+            bind_variables = {
+                "in_id": identifier,
+            }
+
+            # SQL manipulation plugin
+            if self.sql_manipulator:
+                LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
+                manipulation_class = _factory(self.sql_manipulator)
+                sql_query, bind_variables = manipulation_class.process_delete(
+                    db,
+                    sql_query,
+                    bind_variables,
+                    self.sql_manipulator_options,
+                    identifier,
+                )
+
+            LOGGER.debug(sql_query)
+            LOGGER.debug(bind_variables)
+
+            try:
+                cursor.execute(sql_query, bind_variables)
+                db.conn.commit()
+            except oracledb.Error as err:
+                LOGGER.error(f"Error executing sql_query: {sql_query}")
+                LOGGER.error(err)
+
+                db.conn.rollback()
+
+                raise ProviderQueryError()
+
         return True
 
-    def _get_sdo_from_geojson_geometry(self, conn, geometry):
+    def _get_sdo_from_geojson_geometry(self, conn, geometry, srid=4326):
+        """
+        Get an filled Python object for Oracle Type SDO_GEOMETRY.
+
+        :param conn: oracledb connection instance
+        :param geometry: Ordinate Array from Geojson
+        :param srid: SRID defaults to 4326 when not provided
+        :return Python object instance:
+        """
         gtype = 2003
         elemInfo = [1, 1003, 1]
-        srid = 4326
 
-        # Get Oracle type information
+        # Get Oracle types
         obj_type = conn.gettype("MDSYS.SDO_GEOMETRY")
         element_info_type_obj = conn.gettype("MDSYS.SDO_ELEM_INFO_ARRAY")
         ordinate_type_obj = conn.gettype("MDSYS.SDO_ORDINATE_ARRAY")
 
         obj = obj_type.newobject()
         obj.SDO_GTYPE = gtype
-        obj.SDO_SRID = srid
+        obj.SDO_SRID = srid or 4326
         obj.SDO_ELEM_INFO = element_info_type_obj.newobject()
         obj.SDO_ELEM_INFO.extend(elemInfo)
         obj.SDO_ORDINATES = ordinate_type_obj.newobject()
