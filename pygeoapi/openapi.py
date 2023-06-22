@@ -2,9 +2,11 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -42,8 +44,9 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import l10n
-from pygeoapi.plugin import load_plugin
 from pygeoapi.models.openapi import OAPIFormat
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.manager import get_manager
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
                            filter_providers_by_type, to_json, yaml_load,
@@ -1104,9 +1107,9 @@ def get_oas_30(cfg):
             }
         }
 
-    processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
+    process_manager = get_manager(cfg)
 
-    if processes:
+    if len(process_manager.processes) > 0:
         paths['/processes'] = {
             'get': {
                 'summary': 'Processes',
@@ -1124,7 +1127,7 @@ def get_oas_30(cfg):
         }
         LOGGER.debug('setting up processes')
 
-        for k, v in processes.items():
+        for k, v in process_manager.processes.items():
             if k.startswith('_'):
                 LOGGER.debug(f'Skipping hidden layer: {k}')
                 continue

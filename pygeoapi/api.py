@@ -5,10 +5,12 @@
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -63,6 +65,7 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.manager import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -671,19 +674,7 @@ class API:
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
 
-        # TODO: add as decorator
-        if 'manager' in self.config['server']:
-            manager_def = self.config['server']['manager']
-        else:
-            LOGGER.info('No process manager defined; starting dummy manager')
-            manager_def = {
-                'name': 'Dummy',
-                'connection': None,
-                'output_dir': None
-            }
-
-        LOGGER.debug(f"Loading process manager {manager_def['name']}")
-        self.manager = load_plugin('process_manager', manager_def)
+        self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
     @gzip
@@ -3414,16 +3405,12 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        if self.manager:
-            if job_id is None:
-                jobs = sorted(self.manager.get_jobs(),
-                              key=lambda k: k['job_start_datetime'],
-                              reverse=True)
-            else:
-                jobs = [self.manager.get_job(job_id)]
+        if job_id is None:
+            jobs = sorted(self.manager.get_jobs(),
+                          key=lambda k: k['job_start_datetime'],
+                          reverse=True)
         else:
-            LOGGER.debug('Process management not configured')
-            jobs = []
+            jobs = [self.manager.get_job(job_id)]
 
         serialized_jobs = {
             'jobs': [],

@@ -27,12 +27,13 @@
 #
 # =================================================================
 
+import collections
 from datetime import datetime
 import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
 from pygeoapi.util import (
@@ -48,6 +49,7 @@ LOGGER = logging.getLogger(__name__)
 
 class BaseManager:
     """generic Manager ABC"""
+    processes: OrderedDict[str, Dict]
 
     def __init__(self, manager_def: dict):
         """
@@ -65,6 +67,15 @@ class BaseManager:
 
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
+
+        # Note: There are two different things named OrderedDict here - one
+        # is coming from typing.OrderedDict (type annotation), the other is
+        # coming from collections.OrderedDict (actual type we want to use here)
+        # - this will not be needed anymore when pygeoapi moves to requiring
+        # Python 3.9 as the minimum supported Python version
+        self.processes = collections.OrderedDict()
+        for id_, process_conf in manager_def.get('processes', {}).items():
+            self.processes[id_] = dict(process_conf)
 
     def get_jobs(self, status: JobStatus = None) -> list:
         """
