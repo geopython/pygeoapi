@@ -3246,17 +3246,15 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
 
         if process is not None:
-            if process not in processes_config.keys() or not processes_config:
+            if process not in self.manager.processes.keys():
                 msg = 'Identifier not found'
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers,
                     request.format, 'NoSuchProcess', msg)
 
-        if processes_config:
+        if len(self.manager.processes) > 0:
             if process is not None:
                 relevant_processes = [process]
             else:
@@ -3270,10 +3268,10 @@ class API:
                             HTTPStatus.BAD_REQUEST, headers, request.format,
                             'InvalidParameterValue', msg)
 
-                    relevant_processes = [*processes_config][:limit]
+                    relevant_processes = list(self.manager.processes)[:limit]
                 except TypeError:
                     LOGGER.debug('returning all processes')
-                    relevant_processes = processes_config.keys()
+                    relevant_processes = self.manager.processes.keys()
                 except ValueError:
                     msg = 'limit value should be an integer'
                     return self.get_exception(
@@ -3281,8 +3279,8 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin('process',
-                                processes_config[key]['processor'])
+                p = load_plugin(
+                    'process', self.manager.processes[key]['processor'])
 
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
@@ -3504,17 +3502,14 @@ class API:
         # Responses are always in US English only
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        processes_config = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process'
-        )
-        if process_id not in processes_config:
+        if process_id not in self.manager.processes:
             msg = 'identifier not found'
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
         process = load_plugin('process',
-                              processes_config[process_id]['processor'])
+                              self.manager.processes[process_id]['processor'])
 
         data = request.data
         if not data:
