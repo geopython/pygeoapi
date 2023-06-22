@@ -99,7 +99,7 @@ class ElasticsearchProvider(BaseProvider):
         """
 
         fields_ = {}
-        ii = self.es.indices.get(index=self.index_name)
+        ii = self.es.indices.get(index=self.index_name, allow_no_indices=False)
 
         LOGGER.debug(f'Response: {ii}')
         try:

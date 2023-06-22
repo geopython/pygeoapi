@@ -617,7 +617,7 @@ def serve(ctx, server=None, debug=False):
     if debug:
         log_level = 'debug'
     uvicorn.run(
-        "pygeoapi.starlette_app:app",
+        "pygeoapi.starlette_app:APP",
         reload=True,
         log_level=log_level,
         loop='asyncio',
