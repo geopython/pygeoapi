@@ -75,6 +75,8 @@ class SqlManipulator:
         sql_manipulator_options,
         request_data,
     ):
+        bind_variables["name"] = "overwritten"
+
         return sql_query, bind_variables
 
     def process_update(
@@ -86,6 +88,9 @@ class SqlManipulator:
         identifier,
         request_data,
     ):
+        bind_variables["area"] = 42
+        bind_variables["volume"] = 42
+
         return sql_query, bind_variables
 
     def process_delete(
@@ -96,6 +101,8 @@ class SqlManipulator:
         sql_manipulator_options,
         identifier,
     ):
+        sql_query = f"{sql_query} AND 'auth' = 'you arent allowed'"
+
         return sql_query, bind_variables
 
 
@@ -328,7 +335,7 @@ def test_get(config):
 
 
 def test_create(config, create_geojson):
-    """Test create"""
+    """Test simple create"""
     p = OracleProvider(config)
     result = p.create(create_geojson)
 
@@ -336,7 +343,7 @@ def test_create(config, create_geojson):
 
 
 def test_update(config, update_geojson):
-    """Test update"""
+    """Test simple update"""
     p = OracleProvider(config)
     identifier = 26
     result = p.update(identifier, update_geojson)
@@ -354,13 +361,13 @@ def test_update(config, update_geojson):
 def test_update_properties(config_properties, config, update_geojson):
     """
     Test update with filtered columnlist in configuration
-    In this case, the columns area and volume cannot be updated!
+    In this case, the columns area and volume shouldn't be updated!
     """
     p = OracleProvider(config_properties)
     identifier = 26
 
-    update_geojson["properties"]["area"] = 4711
-    update_geojson["properties"]["volume"] = 4711
+    update_geojson["properties"]["area"] = 42
+    update_geojson["properties"]["volume"] = 42
 
     result = p.update(identifier, update_geojson)
 
@@ -369,14 +376,12 @@ def test_update_properties(config_properties, config, update_geojson):
     p2 = OracleProvider(config)
     data = p2.get(identifier)
 
-    print(data)
-
     assert data.get("properties").get("area") == 536000
     assert data.get("properties").get("volume") == 48000
 
 
 def test_delete(config):
-    """Simple test for delete"""
+    """Test simple delete"""
     p = OracleProvider(config)
     identifier = 26
 
@@ -386,3 +391,59 @@ def test_delete(config):
 
     down = p.query(sortby=[{"property": "id", "order": "-"}])
     assert down["features"][0]["id"] == 25
+
+
+def test_create_sql_manipulator(config_manipulator, create_geojson):
+    """
+    Test create with SQL Manipulator call.
+    Field name should be overwritten with the string "overwritten"
+    """
+    expected_identifier = 27
+
+    p = OracleProvider(config_manipulator)
+    result = p.create(create_geojson)
+
+    assert result == expected_identifier
+
+    data = p.get(expected_identifier)
+
+    assert data.get("properties").get("name") == "overwritten"
+
+
+def test_update_sql_manipulator(config_manipulator, update_geojson):
+    """
+    Test update with SQL Manipulator call
+    Field names area and volume should be overwritten with the answer to
+    life the universe and everything
+    """
+    identifier = 27
+
+    p = OracleProvider(config_manipulator)
+    result = p.update(identifier, update_geojson)
+
+    assert result
+
+    data = p.get(identifier)
+
+    assert data.get("properties").get("area") == 42
+    assert data.get("properties").get("volume") == 42
+
+
+def test_delete_sql_manipulator(config_manipulator, config):
+    """
+    Test for delete with SQL Manipulator call
+    Where clause is overwritten by the manipulator to not
+    match to any record. No record should be deleted.
+    """
+    identifier = 27
+
+    p = OracleProvider(config_manipulator)
+
+    result = p.delete(identifier)
+
+    assert not result
+
+    p2 = OracleProvider(config)
+
+    down = p2.query(sortby=[{"property": "id", "order": "-"}])
+    assert down["features"][0]["id"] == identifier

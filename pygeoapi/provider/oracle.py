@@ -728,6 +728,12 @@ class OracleProvider(BaseProvider):
         return feature_collection
 
     def create(self, request_data):
+        """
+        Creates on record with the given data.
+
+        :param request_data: Data of the record as Geojson
+        :returns: ID of the created record
+        """
         LOGGER.debug(f"Request data: {str(request_data)}")
 
         with DatabaseConnection(
@@ -819,6 +825,13 @@ class OracleProvider(BaseProvider):
         return identifier[0]
 
     def update(self, identifier, request_data):
+        """
+        Updates the record with the given identifier.
+
+        :param identifier: ID of the record
+        :param request_data: Data of the record as Geojson
+        :returns: True
+        """
         LOGGER.debug(f"Identifier: {identifier}")
         LOGGER.debug(f"Request data: {str(request_data)}")
 
@@ -890,6 +903,7 @@ class OracleProvider(BaseProvider):
 
             try:
                 cursor.execute(sql_query, bind_variables)
+                rowcount = cursor.rowcount
                 db.conn.commit()
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
@@ -899,9 +913,16 @@ class OracleProvider(BaseProvider):
 
                 raise ProviderQueryError()
 
-        return True
+        return True if rowcount == 1 else False
 
     def delete(self, identifier):
+        """
+        Deletes the record with the given identifier.
+
+        :param identifier: ID of the record
+        :returns: True
+        """
+
         LOGGER.debug(f"Identifier: {identifier}")
 
         with DatabaseConnection(
@@ -933,6 +954,7 @@ class OracleProvider(BaseProvider):
 
             try:
                 cursor.execute(sql_query, bind_variables)
+                rowcount = cursor.rowcount
                 db.conn.commit()
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
@@ -942,7 +964,7 @@ class OracleProvider(BaseProvider):
 
                 raise ProviderQueryError()
 
-        return True
+        return True if rowcount == 1 else False
 
     def _get_sdo_from_geojson_geometry(self, conn, geometry, srid=4326):
         """
