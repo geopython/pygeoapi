@@ -321,7 +321,7 @@ Example SQL Manipulator
 .. code-block:: python
 
   class SqlManipulator:
-    def process(
+    def process_query(
         self,
         db,
         sql_query,
@@ -343,6 +343,44 @@ Example SQL Manipulator
             "foo": "foo",
             "bar": sql_manipulator_options.get("foo"),
         }
+
+        return sql_query, bind_variables
+
+    def process_create(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        request_data,
+    ):
+        bind_variables["name"] = "overwritten"
+
+        return sql_query, bind_variables
+
+    def process_update(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        identifier,
+        request_data,
+    ):
+        bind_variables["area"] = 42
+        bind_variables["volume"] = 42
+
+        return sql_query, bind_variables
+
+    def process_delete(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        identifier,
+    ):
+        sql_query = f"{sql_query} AND 'auth' = 'you arent allowed'"
 
         return sql_query, bind_variables
 
