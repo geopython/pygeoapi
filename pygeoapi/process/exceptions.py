@@ -40,6 +40,10 @@ class JobNotFoundError(JobError):
     pass
 
 
+class JobNotResultFoundError(JobError):
+    pass
+
+
 class ProcessError(Exception):
     pass
 
