@@ -148,10 +148,10 @@ class MongoDBManager(BaseManager):
                 data = json.load(file)
             LOGGER.info("JOBMANAGER - MongoDB job result queried")
             return entry["mimetype"], data
-        except Exception:
+        except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB get_job_result error",
                          exc_info=(traceback))
-            return False
+            raise exceptions.JobNotResultFoundError() from err
 
     def __repr__(self):
         return f'<MongoDBManager> {self.name}'

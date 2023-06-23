@@ -152,10 +152,14 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
+        :raises: JobResultNotFoundError: if the job-related result cannot
+            be returned
         :returns: `tuple` of mimetype and raw output
         """
 
-        raise NotImplementedError()
+        raise exceptions.JobNotResultFoundError()
 
     def delete_job(self, job_id: str) -> bool:
         """
@@ -163,10 +167,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `bool` of status result
         """
 
-        raise NotImplementedError()
+        raise exceptions.JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
                                data_dict: dict) -> Tuple[str, None, JobStatus]:
