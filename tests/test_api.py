@@ -1813,7 +1813,8 @@ def test_execute_process(config, api_):
 
 
 def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job(mock_request(), 'does-not-exist')
+    rsp_headers, code, response = api_.delete_job(
+        mock_request(), 'does-not-exist')
 
     assert code == HTTPStatus.NOT_FOUND
 
