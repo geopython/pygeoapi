@@ -527,7 +527,7 @@ class OracleProvider(BaseProvider):
             # SQL manipulation plugin
             if self.sql_manipulator:
                 LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = _factory(self.sql_manipulator)
+                manipulation_class = _class_factory(self.sql_manipulator)
                 sql_query, bind_variables = manipulation_class.process_query(
                     db,
                     sql_query,
@@ -569,7 +569,7 @@ class OracleProvider(BaseProvider):
 
             return feature_collection
 
-    def get_previous(self, cursor, identifier):
+    def _get_previous(self, cursor, identifier):
         """
         Query previous ID given current ID
 
@@ -595,7 +595,7 @@ class OracleProvider(BaseProvider):
 
         return id
 
-    def get_next(self, cursor, identifier):
+    def _get_next(self, cursor, identifier):
         """
         Query next ID given current ID
 
@@ -649,14 +649,31 @@ class OracleProvider(BaseProvider):
 
             sql_query = f"SELECT {db.columns} {geom_sql} \
                             FROM {self.table} t1 \
-                           WHERE {self.id_field} = :{self.id_field}"
+                           WHERE {self.id_field} = :in_id"
+
+            bind_variables = {
+                "in_id": identifier,
+                **crs_dict
+            }
+
+            # SQL manipulation plugin
+            if self.sql_manipulator:
+                LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
+                manipulation_class = _class_factory(self.sql_manipulator)
+                sql_query, bind_variables = manipulation_class.process_get(
+                    db,
+                    sql_query,
+                    bind_variables,
+                    self.sql_manipulator_options,
+                    identifier,
+                )
 
             LOGGER.debug(f"SQL Query: {sql_query}")
             LOGGER.debug(f"Identifier: {identifier}")
 
             try:
                 cursor.execute(
-                    sql_query, {self.id_field: identifier, **crs_dict}
+                    sql_query, bind_variables
                 )
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
@@ -675,12 +692,12 @@ class OracleProvider(BaseProvider):
             feature = self._response_feature(row_data)
 
             if feature:
-                previous_id = self.get_previous(cursor, identifier)
+                previous_id = self._get_previous(cursor, identifier)
                 if previous_id:
                     feature["prev"] = previous_id
-                next_id = self.get_next(cursor, identifier)
+                next_id = self._get_next(cursor, identifier)
                 if next_id:
-                    feature["next"] = self.get_next(cursor, identifier)
+                    feature["next"] = self._get_next(cursor, identifier)
                 return feature
             else:
                 err = f"item identifier {identifier} not found"
@@ -791,7 +808,7 @@ class OracleProvider(BaseProvider):
             # SQL manipulation plugin
             if self.sql_manipulator:
                 LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = _factory(self.sql_manipulator)
+                manipulation_class = _class_factory(self.sql_manipulator)
                 sql_query, bind_variables = manipulation_class.process_create(
                     db,
                     sql_query,
@@ -888,7 +905,7 @@ class OracleProvider(BaseProvider):
             # SQL manipulation plugin
             if self.sql_manipulator:
                 LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = _factory(self.sql_manipulator)
+                manipulation_class = _class_factory(self.sql_manipulator)
                 sql_query, bind_variables = manipulation_class.process_update(
                     db,
                     sql_query,
@@ -940,7 +957,7 @@ class OracleProvider(BaseProvider):
             # SQL manipulation plugin
             if self.sql_manipulator:
                 LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = _factory(self.sql_manipulator)
+                manipulation_class = _class_factory(self.sql_manipulator)
                 sql_query, bind_variables = manipulation_class.process_delete(
                     db,
                     sql_query,
@@ -995,7 +1012,7 @@ class OracleProvider(BaseProvider):
         return obj
 
 
-def _factory(module_class_string, super_cls: type = None, **kwargs):
+def _class_factory(module_class_string, super_cls: type = None, **kwargs):
     """
     Factory function for class instances.
     Used for dynamic loading of the SQL manipulation class.

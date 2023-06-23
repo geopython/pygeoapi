@@ -67,6 +67,18 @@ class SqlManipulator:
 
         return sql_query, bind_variables
 
+    def process_get(
+        self,
+        db,
+        sql_query,
+        bind_variables,
+        sql_manipulator_options,
+        identifier,
+    ):
+        sql_query = f"{sql_query} AND 'auth' = 'you arent allowed'"
+
+        return sql_query, bind_variables
+
     def process_create(
         self,
         db,
@@ -231,16 +243,6 @@ def test_query(config):
     assert geometry is not None
 
 
-def test_sql_manipulator(config_manipulator):
-    """Test SQL manipulator"""
-    p = OracleProvider(config_manipulator)
-    feature_collection = p.query()
-    features = feature_collection.get("features")
-
-    assert len(features) == 1
-    assert features[0].get("id") == 10
-
-
 def test_get_fields(config):
     """Test get_fields"""
     expected_fields = {
@@ -393,7 +395,29 @@ def test_delete(config):
     assert down["features"][0]["id"] == 25
 
 
-def test_create_sql_manipulator(config_manipulator, create_geojson):
+def test_query_sql_manipulator(config_manipulator):
+    """Test SQL manipulator"""
+    p = OracleProvider(config_manipulator)
+    feature_collection = p.query()
+    features = feature_collection.get("features")
+
+    assert len(features) == 1
+    assert features[0].get("id") == 10
+
+
+def test_get_sql_manipulator(config_manipulator):
+    """Test simple get"""
+    p = OracleProvider(config_manipulator)
+
+    result = None
+
+    with pytest.raises(Exception):
+        result = p.get(5)
+
+    assert not result
+
+
+def test_create_sql_manipulator(config_manipulator, config, create_geojson):
     """
     Test create with SQL Manipulator call.
     Field name should be overwritten with the string "overwritten"
@@ -405,12 +429,13 @@ def test_create_sql_manipulator(config_manipulator, create_geojson):
 
     assert result == expected_identifier
 
-    data = p.get(expected_identifier)
+    p2 = OracleProvider(config)
+    data = p2.get(expected_identifier)
 
     assert data.get("properties").get("name") == "overwritten"
 
 
-def test_update_sql_manipulator(config_manipulator, update_geojson):
+def test_update_sql_manipulator(config_manipulator, config, update_geojson):
     """
     Test update with SQL Manipulator call
     Field names area and volume should be overwritten with the answer to
@@ -423,7 +448,8 @@ def test_update_sql_manipulator(config_manipulator, update_geojson):
 
     assert result
 
-    data = p.get(identifier)
+    p2 = OracleProvider(config)
+    data = p2.get(identifier)
 
     assert data.get("properties").get("area") == 42
     assert data.get("properties").get("volume") == 42
