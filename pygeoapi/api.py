@@ -1147,6 +1147,7 @@ class API:
 
             if tile:
                 # TODO: translate
+
                 LOGGER.debug('Adding tile links')
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
@@ -2760,6 +2761,7 @@ class API:
                 'dataType': 'vector',
                 'links': []
             }
+            tile_matrix['links'].append(matrix.tileMatrixSetDefinition)
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
@@ -2772,6 +2774,7 @@ class API:
                 'title': f'{dataset} - {matrix.tileMatrixSet} - {F_HTML}',
                 'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
             })
+
             tiles['tilesets'].append(tile_matrix)
 
         metadata_format = p.options['metadata_format']
