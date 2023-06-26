@@ -137,8 +137,8 @@ for xml_file in xml_dir.glob('*.xml'):
 
     identifier = m.identifier
     type_ = m.hierarchy
-    title = m.identificationinfo[0].title
-    description = m.identificationinfo[0].abstract
+    title = m.identification[0].title
+    description = m.identification[0].abstract
 
     issued = m.datestamp
 
@@ -156,40 +156,49 @@ for xml_file in xml_dir.glob('*.xml'):
             links.append(lnk)
 
     themes = []
-    for keyword_set in m.identificationinfo[0].keywords2:
-        theme = {}
-        theme['concepts'] = keyword_set.keywords
+    for keyword_set in m.identification[0].keywords:
+        theme = {
+            'concepts': []
+        }
+
+        for kw in keyword_set.keywords:
+            theme['concepts'].append({
+                'id': kw.name
+            })
+
         try:
             theme['scheme'] = keyword_set.thesaurus['url']
         except (AttributeError, KeyError, TypeError):
             pass
+
         themes.append(theme)
 
     providers = []
-    contacts = (m.contact + m.identificationinfo[0].creator +
-                m.identificationinfo[0].publisher +
-                m.identificationinfo[0].contributor)
+    contacts = (m.contact + m.identification[0].creator +
+                m.identification[0].publisher +
+                m.identification[0].contributor)
 
     if m.distribution:
         contacts.extend(m.distribution.distributor)
 
     if contacts:
         for contact in contacts:
-            providers.append(contact2party(contact))
+            if isinstance(contact, CI_ResponsibleParty):
+                providers.append(contact2party(contact))
 
     bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-    minx = float(m.identificationinfo[0].bbox.minx)
-    miny = float(m.identificationinfo[0].bbox.miny)
-    maxx = float(m.identificationinfo[0].bbox.maxx)
-    maxy = float(m.identificationinfo[0].bbox.maxy)
+    minx = float(m.identification[0].bbox.minx)
+    miny = float(m.identification[0].bbox.miny)
+    maxx = float(m.identification[0].bbox.maxx)
+    maxy = float(m.identification[0].bbox.maxy)
 
     bbox = [minx, miny, maxx, maxy]
 
-    te_begin = m.identificationinfo[0].temporalextent_start
+    te_begin = m.identification[0].temporalextent_start
     if te_begin == 'missing':
         te_begin = None
-    te_end = m.identificationinfo[0].temporalextent_end
+    te_end = m.identification[0].temporalextent_end
 
     json_record = {
         'id': identifier,
