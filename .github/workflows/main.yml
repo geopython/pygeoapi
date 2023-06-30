@@ -135,6 +135,7 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
+        pytest tests/test_schemas.py
     - name: build docs 🏗️
       run: cd docs && make html
     - name: failed tests 🚩
