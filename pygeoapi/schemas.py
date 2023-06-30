@@ -33,9 +33,10 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 
+# Enum of data schema types depending on request action
 class SchemaType(Enum):
     item = 'item'
     create = 'create'
@@ -43,6 +44,7 @@ class SchemaType(Enum):
     replace = 'replace'
 
 
+# Enum of valid GeoJSON geometry types
 class GeomType(Enum):
     point = 'Point'
     linestring = 'LineString'
@@ -53,6 +55,7 @@ class GeomType(Enum):
     geometrycollection = 'GeometryCollection'
 
 
+# Records defining GeoJSON properties
 @dataclass
 class GeoJSONProperty:
     name: str
@@ -69,7 +72,21 @@ class GeoJSONProperty:
 
 def get_geometry_schema(
     geom_type: GeomType, geom_nullable: bool = True, n_dims: int = 2,
-):
+) -> dict:
+    """Get JSON schema of GeoJSON geometry.
+
+    :param geom_type: type of GeoJSON geometry.
+    :type geom_type: `GeomType`
+    :param geom_nullable: whether the geometry of the GeoJSON feature can be
+        set to 'null'.
+    :type geom_nullable: bool
+    :param n_dims: number of dimensions of the geometry's coordinates.
+    :type n_dims: int
+
+    :returns: JSON schema of geometry.
+    :rtype: dict
+    """
+    # Common for all GeoJSON geometries
     geom_schema = {
         'type': 'object',
         'properties': {
@@ -84,6 +101,9 @@ def get_geometry_schema(
     }
     properties = geom_schema['properties']
     required = geom_schema['required']
+
+    # For 'GeometryCollection', call function recursively with all other
+    # geometry types
     if geom_type == GeomType.geometrycollection:
         properties['type'] = {'const': 'GeometryCollection'}
         required.append('geometries')
@@ -99,7 +119,7 @@ def get_geometry_schema(
         if geom_nullable:
             return {'oneOf': [{'type': None}, geom_schema]}
         return geom_schema
-
+    # Geometry type different from 'GeometryCollection'
     required.append('coordinates')
     pt_coords = {
         'type': 'array',
@@ -153,11 +173,33 @@ def get_geometry_schema(
 
 
 def get_geojson_schema(
-    properties: Optional[list[GeoJSONProperty]] = None,
+    properties: Optional[List[GeoJSONProperty]] = None,
     geom_type: Optional[GeomType] = None,
     geom_nullable: bool = True,
     n_dims: int = 2,
-):
+) -> dict:
+    """Get JSON schema of GeoJSON feature.
+
+    :param properties: list of feature's properties.
+    :type properties: list of `GeoJSONProperty` objects, optional
+    :param geom_type: type of GeoJSON geometry.
+    :type geom_type: `GeomType`, optional
+    :param geom_nullable: whether the geometry of the GeoJSON feature can be
+        set to 'null'.
+    :type geom_nullable: bool
+    :param n_dims: number of dimensions of the coordinates of the feature's
+        geometry.
+    :type n_dims: int
+
+    :returns: JSON schema of feature.
+    :rtype: dict
+
+    .. note::
+        If ``properties`` and/or ``geom_type`` are not given/set to `None`, a
+        GeoJSON feature will only validate against the returned JSON schema if
+        its 'properties' and/or 'geometry' members are set to 'null',
+        respectively.
+    """
     if geom_type is None:
         geometry_schema = {'type': None}
     else:
