@@ -29,17 +29,11 @@
 
 import json
 import logging
-from enum import Enum
+
+from pygeoapi.schemas import SchemaType
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-class SchemaType(Enum):
-    item = 'item'
-    create = 'create'
-    update = 'update'
-    replace = 'replace'
 
 
 class BaseProvider:
@@ -234,7 +228,7 @@ class BaseProvider:
             LOGGER.debug('Cannot find id; trying properties.identifier')
             identifier = json_data.get(
                 'properties', dict(),
-            ).pop('identifier', None)
+            ).get('identifier', None)
         if identifier is None:
             LOGGER.debug('Cannot find properties.identifier')
             if not accept_missing_identifier:
