@@ -2363,17 +2363,20 @@ class API:
             'href': f'{self.get_collections_url()}/{dataset}'
         }])
 
+        link_request_format = (
+            request.format if request.format is not None else F_JSON
+        )
         if 'prev' in content:
             content['links'].append({
                 'rel': 'prev',
-                'type': FORMAT_TYPES[request.format],
-                'href': f"{self.get_collections_url()}/{dataset}/items/{content['prev']}?f={request.format}"  # noqa
+                'type': FORMAT_TYPES[link_request_format],
+                'href': f"{self.get_collections_url()}/{dataset}/items/{content['prev']}?f={link_request_format}"  # noqa
             })
         if 'next' in content:
             content['links'].append({
                 'rel': 'next',
-                'type': FORMAT_TYPES[request.format],
-                'href': f"{self.get_collections_url()}/{dataset}/items/{content['next']}?f={request.format}"  # noqa
+                'type': FORMAT_TYPES[link_request_format],
+                'href': f"{self.get_collections_url()}/{dataset}/items/{content['next']}?f={link_request_format}"  # noqa
             })
 
         # Set response language to requested provider locale
