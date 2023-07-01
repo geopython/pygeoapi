@@ -1,5 +1,6 @@
 Babel
 click
+filelock
 Flask
 importlib_metadata
 jinja2
@@ -17,4 +18,3 @@ shapely<2.0
 SQLAlchemy<2.0.0
 tinydb
 unicodecsv
-filelock
