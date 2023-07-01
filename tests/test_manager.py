@@ -2,7 +2,7 @@ from typing import Dict
 
 import pytest
 
-from pygeoapi.process.manager import get_manager
+from pygeoapi.process.manager.base import get_manager
 
 
 @pytest.fixture()

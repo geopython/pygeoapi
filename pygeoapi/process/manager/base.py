@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+#           (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,13 +38,14 @@ from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.base import BaseProcessor
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
-from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -335,3 +338,28 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+def get_manager(config: Dict) -> BaseManager:
+    """Instantiate process manager from the supplied configuration.
+
+    :param config: pygeoapi configuration
+
+    :returns: The pygeoapi process manager object
+    """
+    manager_conf = config.get('server', {}).get(
+        'manager',
+        {
+            'name': 'Dummy',
+            'connection': None,
+            'output_dir': None
+        }
+    )
+    processes_conf = {}
+    for id_, resource_conf in config.get('resources', {}).items():
+        if resource_conf.get('type') == 'process':
+            processes_conf[id_] = resource_conf
+    manager_conf['processes'] = processes_conf
+    if manager_conf.get('name') == 'Dummy':
+        LOGGER.info('Starting dummy manager')
+    return load_plugin('process_manager', manager_conf)
