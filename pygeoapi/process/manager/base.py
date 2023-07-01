@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+#           (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,27 +29,30 @@
 #
 # =================================================================
 
+import collections
 from datetime import datetime
 import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.base import BaseProcessor
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
-from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseManager:
     """generic Manager ABC"""
+    processes: OrderedDict[str, Dict]
 
     def __init__(self, manager_def: dict):
         """
@@ -65,6 +70,15 @@ class BaseManager:
 
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
+
+        # Note: There are two different things named OrderedDict here - one
+        # is coming from typing.OrderedDict (type annotation), the other is
+        # coming from collections.OrderedDict (actual type we want to use here)
+        # - this will not be needed anymore when pygeoapi moves to requiring
+        # Python 3.9 as the minimum supported Python version
+        self.processes = collections.OrderedDict()
+        for id_, process_conf in manager_def.get('processes', {}).items():
+            self.processes[id_] = dict(process_conf)
 
     def get_jobs(self, status: JobStatus = None) -> list:
         """
@@ -324,3 +338,28 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+def get_manager(config: Dict) -> BaseManager:
+    """Instantiate process manager from the supplied configuration.
+
+    :param config: pygeoapi configuration
+
+    :returns: The pygeoapi process manager object
+    """
+    manager_conf = config.get('server', {}).get(
+        'manager',
+        {
+            'name': 'Dummy',
+            'connection': None,
+            'output_dir': None
+        }
+    )
+    processes_conf = {}
+    for id_, resource_conf in config.get('resources', {}).items():
+        if resource_conf.get('type') == 'process':
+            processes_conf[id_] = resource_conf
+    manager_conf['processes'] = processes_conf
+    if manager_conf.get('name') == 'Dummy':
+        LOGGER.info('Starting dummy manager')
+    return load_plugin('process_manager', manager_conf)

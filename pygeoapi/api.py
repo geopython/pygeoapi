@@ -5,10 +5,12 @@
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -63,6 +65,7 @@ from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
 from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -671,19 +674,7 @@ class API:
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
 
-        # TODO: add as decorator
-        if 'manager' in self.config['server']:
-            manager_def = self.config['server']['manager']
-        else:
-            LOGGER.info('No process manager defined; starting dummy manager')
-            manager_def = {
-                'name': 'Dummy',
-                'connection': None,
-                'output_dir': None
-            }
-
-        LOGGER.debug(f"Loading process manager {manager_def['name']}")
-        self.manager = load_plugin('process_manager', manager_def)
+        self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
     @gzip
@@ -3261,17 +3252,15 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
 
         if process is not None:
-            if process not in processes_config.keys() or not processes_config:
+            if process not in self.manager.processes.keys():
                 msg = 'Identifier not found'
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers,
                     request.format, 'NoSuchProcess', msg)
 
-        if processes_config:
+        if len(self.manager.processes) > 0:
             if process is not None:
                 relevant_processes = [process]
             else:
@@ -3285,10 +3274,10 @@ class API:
                             HTTPStatus.BAD_REQUEST, headers, request.format,
                             'InvalidParameterValue', msg)
 
-                    relevant_processes = [*processes_config][:limit]
+                    relevant_processes = list(self.manager.processes)[:limit]
                 except TypeError:
                     LOGGER.debug('returning all processes')
-                    relevant_processes = processes_config.keys()
+                    relevant_processes = self.manager.processes.keys()
                 except ValueError:
                     msg = 'limit value should be an integer'
                     return self.get_exception(
@@ -3296,8 +3285,8 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin('process',
-                                processes_config[key]['processor'])
+                p = load_plugin(
+                    'process', self.manager.processes[key]['processor'])
 
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
@@ -3420,16 +3409,12 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        if self.manager:
-            if job_id is None:
-                jobs = sorted(self.manager.get_jobs(),
-                              key=lambda k: k['job_start_datetime'],
-                              reverse=True)
-            else:
-                jobs = [self.manager.get_job(job_id)]
+        if job_id is None:
+            jobs = sorted(self.manager.get_jobs(),
+                          key=lambda k: k['job_start_datetime'],
+                          reverse=True)
         else:
-            LOGGER.debug('Process management not configured')
-            jobs = []
+            jobs = [self.manager.get_job(job_id)]
 
         serialized_jobs = {
             'jobs': [],
@@ -3523,17 +3508,14 @@ class API:
         # Responses are always in US English only
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        processes_config = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process'
-        )
-        if process_id not in processes_config:
+        if process_id not in self.manager.processes:
             msg = 'identifier not found'
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
         process = load_plugin('process',
-                              processes_config[process_id]['processor'])
+                              self.manager.processes[process_id]['processor'])
 
         data = request.data
         if not data:
