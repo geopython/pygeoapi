@@ -3285,9 +3285,7 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin(
-                    'process', self.manager.processes[key]['processor'])
-
+                p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
 
@@ -3514,9 +3512,6 @@ class API:
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
-        process = load_plugin('process',
-                              self.manager.processes[process_id]['processor'])
-
         data = request.data
         if not data:
             # TODO not all processes require input, e.g. time-dependent or
@@ -3555,7 +3550,7 @@ class API:
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process, data_dict, execution_mode=execution_mode)
+                process_id, data_dict, execution_mode=execution_mode)
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'

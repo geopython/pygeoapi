@@ -80,6 +80,23 @@ class BaseManager:
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
+    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+        """Instantiate a processor.
+
+        :param process_id: Identifier of the process
+
+        :raise UnknownProcessError: if the processor cannot be created
+        :returns: instance of the processor
+        """
+
+        try:
+            process_conf = self.processes[process_id]
+        except KeyError as err:
+            raise UnknownProcessError(
+                'Invalid process identifier') from err
+        else:
+            return load_plugin('process', process_conf['processor'])
+
     def get_jobs(self, status: JobStatus = None) -> list:
         """
         Get process jobs, optionally filtered by status
@@ -281,31 +298,34 @@ class BaseManager:
 
     def execute_process(
             self,
-            p: BaseProcessor,
+            process_id: str,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
-        :param p: `pygeoapi.process` object
+        :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
         processing.
 
+        :raises: UnknownProcessError if the input process_id does not
+                 correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
                   response
         """
 
         job_id = str(uuid.uuid1())
+        processor = self.get_processor(process_id)
         if execution_mode == RequestedProcessExecutionMode.respond_async:
+            job_control_options = processor.metadata.get(
+                'jobControlOptions', [])
             # client wants async - do we support it?
             process_supports_async = (
-                ProcessExecutionMode.async_execute.value in p.metadata.get(
-                    'jobControlOptions', []
+                ProcessExecutionMode.async_execute.value in job_control_options
                 )
-            )
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
@@ -333,11 +353,15 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(p, job_id, data_dict)
+        mime_type, outputs, status = handler(processor, job_id, data_dict)
         return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+class UnknownProcessError(Exception):
+    pass
 
 
 def get_manager(config: Dict) -> BaseManager:
