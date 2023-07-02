@@ -64,8 +64,11 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process import exceptions
-from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+    ProcessorExecuteError,
+)
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
@@ -3415,7 +3418,7 @@ class API:
         else:
             try:
                 jobs = [self.manager.get_job(job_id)]
-            except exceptions.JobNotFoundError:
+            except JobNotFoundError:
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers, request.format,
                     'InvalidParameterValue', job_id)
@@ -3608,7 +3611,7 @@ class API:
                                                **self.api_headers)
         try:
             job = self.manager.get_job(job_id)
-        except exceptions.JobNotFoundError:
+        except JobNotFoundError:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchJob', job_id
@@ -3637,7 +3640,7 @@ class API:
 
         try:
             mimetype, job_output = self.manager.get_job_result(job_id)
-        except exceptions.JobNotResultFoundError:
+        except JobResultNotFoundError:
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers,
                 request.format, 'JobResultNotFound', job_id
@@ -3677,7 +3680,7 @@ class API:
             SYSTEM_LOCALE, **self.api_headers)
         try:
             success = self.manager.delete_job(job_id)
-        except exceptions.JobNotFoundError:
+        except JobNotFoundError:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, response_headers, request.format,
                 'NoSuchJob', job_id

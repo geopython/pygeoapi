@@ -30,8 +30,8 @@ from typing import Dict
 
 import pytest
 
+from pygeoapi.process.base import UnknownProcessError
 from pygeoapi.process.manager.base import get_manager
-from pygeoapi.process import exceptions
 
 
 @pytest.fixture()
@@ -69,5 +69,5 @@ def test_get_processor(config):
 
 def test_get_processor_raises_exception(config):
     manager = get_manager(config)
-    with pytest.raises(expected_exception=exceptions.UnknownProcessError):
+    with pytest.raises(expected_exception=UnknownProcessError):
         manager.get_processor('foo')

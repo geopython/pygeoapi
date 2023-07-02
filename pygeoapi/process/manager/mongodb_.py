@@ -32,7 +32,10 @@ import traceback
 
 from pymongo import MongoClient
 
-from pygeoapi.process import exceptions
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+)
 from pygeoapi.process.manager.base import BaseManager
 
 LOGGER = logging.getLogger(__name__)
@@ -133,7 +136,7 @@ class MongoDBManager(BaseManager):
         except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB get_job error",
                          exc_info=(traceback))
-            raise exceptions.JobNotFoundError() from err
+            raise JobNotFoundError() from err
 
     def get_job_result(self, job_id):
         try:
@@ -151,7 +154,7 @@ class MongoDBManager(BaseManager):
         except Exception as err:
             LOGGER.error("JOBMANAGER - MongoDB get_job_result error",
                          exc_info=(traceback))
-            raise exceptions.JobNotResultFoundError() from err
+            raise JobResultNotFoundError() from err
 
     def __repr__(self):
         return f'<MongoDBManager> {self.name}'
