@@ -30,10 +30,8 @@ from typing import Dict
 
 import pytest
 
-from pygeoapi.process.manager.base import (
-    get_manager,
-    UnknownProcessError,
-)
+from pygeoapi.process.base import UnknownProcessError
+from pygeoapi.process.manager.base import get_manager
 
 
 @pytest.fixture()

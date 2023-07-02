@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2019 Tom Kralidis
+#           (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -26,3 +28,36 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
+import logging
+from typing import Dict
+
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.manager.base import BaseManager
+
+LOGGER = logging.getLogger(__name__)
+
+
+def get_manager(config: Dict) -> BaseManager:
+    """Instantiate process manager from the supplied configuration.
+
+    :param config: pygeoapi configuration
+
+    :returns: The pygeoapi process manager object
+    """
+    manager_conf = config.get('server', {}).get(
+        'manager',
+        {
+            'name': 'Dummy',
+            'connection': None,
+            'output_dir': None
+        }
+    )
+    processes_conf = {}
+    for id_, resource_conf in config.get('resources', {}).items():
+        if resource_conf.get('type') == 'process':
+            processes_conf[id_] = resource_conf
+    manager_conf['processes'] = processes_conf
+    if manager_conf.get('name') == 'Dummy':
+        LOGGER.info('Starting dummy manager')
+    return load_plugin('process_manager', manager_conf)

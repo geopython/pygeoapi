@@ -39,7 +39,12 @@ from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
 from pygeoapi.plugin import load_plugin
-from pygeoapi.process.base import BaseProcessor
+from pygeoapi.process.base import (
+    BaseProcessor,
+    JobNotFoundError,
+    JobResultNotFoundError,
+    UnknownProcessError,
+)
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
@@ -92,8 +97,7 @@ class BaseManager:
         try:
             process_conf = self.processes[process_id]
         except KeyError as err:
-            raise UnknownProcessError(
-                'Invalid process identifier') from err
+            raise UnknownProcessError('Invalid process identifier') from err
         else:
             return load_plugin('process', process_conf['processor'])
 
@@ -138,10 +142,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict` of job result
         """
 
-        raise NotImplementedError()
+        raise JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
@@ -149,10 +155,14 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
+        :raises: JobResultNotFoundError: if the job-related result cannot
+            be returned
         :returns: `tuple` of mimetype and raw output
         """
 
-        raise NotImplementedError()
+        raise JobResultNotFoundError()
 
     def delete_job(self, job_id: str) -> bool:
         """
@@ -160,10 +170,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `bool` of status result
         """
 
-        raise NotImplementedError()
+        raise JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
                                data_dict: dict) -> Tuple[str, None, JobStatus]:
@@ -358,10 +370,6 @@ class BaseManager:
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
-
-
-class UnknownProcessError(Exception):
-    pass
 
 
 def get_manager(config: Dict) -> BaseManager:

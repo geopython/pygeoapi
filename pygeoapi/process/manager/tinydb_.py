@@ -37,6 +37,10 @@ from typing import Any, Tuple
 import tinydb
 from filelock import FileLock
 
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+)
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -127,14 +131,15 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :return `bool` of status result
         """
         # delete result file if present
         job_result = self.get_job(job_id)
-        if job_result:
-            location = job_result.get('location')
-            if location and self.output_dir is not None:
-                Path(location).unlink()
+        location = job_result.get('location')
+        if location and self.output_dir is not None:
+            Path(location).unlink()
 
         with self._db() as db:
             removed = bool(db.remove(tinydb.where('identifier') == job_id))
@@ -147,15 +152,21 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
         query = tinydb.Query()
         with self._db() as db:
-            result = db.search(query.identifier == job_id)
-
-        result = result[0] if result else None
-        return result
+            found = db.search(query.identifier == job_id)
+        if found is not None:
+            try:
+                return found[0]
+            except IndexError:
+                raise JobNotFoundError()
+        else:
+            raise JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
@@ -163,14 +174,14 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
+        :raises: JobResultNotFoundError: if the job-related result cannot
+            be returned
         :returns: `tuple` of mimetype and raw output
         """
 
         job_result = self.get_job(job_id)
-        if not job_result:
-            # job does not exist
-            return None
-
         location = job_result.get('location')
         mimetype = job_result.get('mimetype')
         job_status = JobStatus[job_result['status']]
@@ -179,16 +190,17 @@ class TinyDBManager(BaseManager):
             # Job is incomplete
             return (None,)
         if not location:
-            # Job data was not written for some reason
-            # TODO log/raise exception?
-            return (None,)
+            LOGGER.warning(f'job {job_id!r} -  unknown result location')
+            raise JobResultNotFoundError()
         else:
-            location = Path(location)
-
-        with location.open('r', encoding='utf-8') as filehandler:
-            result = json.load(filehandler)
-
-        return mimetype, result
+            try:
+                location = Path(location)
+                with location.open('r', encoding='utf-8') as filehandler:
+                    result = json.load(filehandler)
+            except (TypeError, FileNotFoundError, json.JSONDecodeError):
+                raise JobResultNotFoundError()
+            else:
+                return mimetype, result
 
     def __repr__(self):
         return f'<TinyDBManager> {self.name}'

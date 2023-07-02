@@ -64,7 +64,11 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+    ProcessorExecuteError,
+)
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
@@ -3412,7 +3416,12 @@ class API:
                           key=lambda k: k['job_start_datetime'],
                           reverse=True)
         else:
-            jobs = [self.manager.get_job(job_id)]
+            try:
+                jobs = [self.manager.get_job(job_id)]
+            except JobNotFoundError:
+                return self.get_exception(
+                    HTTPStatus.NOT_FOUND, headers, request.format,
+                    'InvalidParameterValue', job_id)
 
         serialized_jobs = {
             'jobs': [],
@@ -3600,12 +3609,13 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        job = self.manager.get_job(job_id)
-
-        if not job:
-            msg = 'job not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NoSuchJob', msg)
+        try:
+            job = self.manager.get_job(job_id)
+        except JobNotFoundError:
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, headers,
+                request.format, 'NoSuchJob', job_id
+            )
 
         status = JobStatus[job['status']]
 
@@ -3628,7 +3638,13 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        mimetype, job_output = self.manager.get_job_result(job_id)
+        try:
+            mimetype, job_output = self.manager.get_job_result(job_id)
+        except JobResultNotFoundError:
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                request.format, 'JobResultNotFound', job_id
+            )
 
         if mimetype not in (None, FORMAT_TYPES[F_JSON]):
             headers['Content-Type'] = mimetype
@@ -3649,7 +3665,10 @@ class API:
 
         return headers, HTTPStatus.OK, content
 
-    def delete_job(self, job_id) -> Tuple[dict, int, str]:
+    @pre_process
+    def delete_job(
+            self, request: Union[APIRequest, Any], job_id
+    ) -> Tuple[dict, int, str]:
         """
         Delete a process job
 
@@ -3657,32 +3676,37 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
-        success = self.manager.delete_job(job_id)
-
-        if not success:
-            http_status = HTTPStatus.NOT_FOUND
-            response = {
-                'code': 'NoSuchJob',
-                'description': 'Job identifier not found'
-            }
+        response_headers = request.get_response_headers(
+            SYSTEM_LOCALE, **self.api_headers)
+        try:
+            success = self.manager.delete_job(job_id)
+        except JobNotFoundError:
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, response_headers, request.format,
+                'NoSuchJob', job_id
+            )
         else:
-            http_status = HTTPStatus.OK
-            jobs_url = f"{self.base_url}/jobs"
+            if success:
+                http_status = HTTPStatus.OK
+                jobs_url = f"{self.base_url}/jobs"
 
-            response = {
-                'jobID': job_id,
-                'status': JobStatus.dismissed.value,
-                'message': 'Job dismissed',
-                'progress': 100,
-                'links': [{
-                    'href': jobs_url,
-                    'rel': 'up',
-                    'type': FORMAT_TYPES[F_JSON],
-                    'title': 'The job list for the current process'
-                }]
-            }
-
+                response = {
+                    'jobID': job_id,
+                    'status': JobStatus.dismissed.value,
+                    'message': 'Job dismissed',
+                    'progress': 100,
+                    'links': [{
+                        'href': jobs_url,
+                        'rel': 'up',
+                        'type': FORMAT_TYPES[F_JSON],
+                        'title': 'The job list for the current process'
+                    }]
+                }
+            else:
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, response_headers,
+                    request.format, 'InternalError', job_id
+                )
         LOGGER.info(response)
         # TODO: this response does not have any headers
         return {}, http_status, response
