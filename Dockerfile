@@ -91,6 +91,7 @@ ENV TZ=${TZ} \
     tzdata \
     gunicorn \
     python3-dateutil \
+    python3-filelock \
     python3-gevent \
     python3-greenlet \
     python3-pip \
