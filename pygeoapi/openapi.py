@@ -584,6 +584,15 @@ def get_oas_30(cfg):
                         '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
+                },
+                'options': {
+                    'summary': f'Options for {title} items',
+                    'desscription': desc,
+                    'tags': [name],
+                    'operationId': f'options{name.capitalize()}Features',
+                    'responses': {
+                        '200': {'description': 'options response'}
+                    }
                 }
             }
 
@@ -703,6 +712,18 @@ def get_oas_30(cfg):
                         '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                         '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                    }
+                },
+                'options': {
+                    'summary': f'Options for {title} item by id',
+                    'desscription': desc,
+                    'tags': [name],
+                    'operationId': f'options{name.capitalize()}Feature',
+                    'parameters': [
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
+                    ],
+                    'responses': {
+                        '200': {'description': 'options response'}
                     }
                 }
             }
