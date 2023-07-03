@@ -38,7 +38,7 @@ def test_get_geometry_schema():
     for gt, gn, nd in itertools.product(
         (gt for gt in GeomType if gt != GeomType.geometrycollection),
         (True, False),
-        (2, 3, 4),
+        (2, 3),
     ):
         geom_schema = schemas.get_geometry_schema(
             geom_type=gt,
@@ -74,32 +74,63 @@ def test_get_geometry_schema():
 
         coordinates = obj_props['coordinates']
 
-        assert coordinates['type'] == 'array'
+        def validate_pt_coords_schema(pt_coords_schema: dict):
+
+            assert pt_coords_schema['type'] == 'array'
+            assert pt_coords_schema['items']['type'] == 'number'
+            assert pt_coords_schema['minItems'] == nd
+            assert pt_coords_schema['maxItems'] == nd
+
+        def validate_ls_coords_schema(ls_coords_schema: dict):
+
+            assert ls_coords_schema['type'] == 'array'
+            assert ls_coords_schema['minItems'] == 2
+
+            pt_coords_schema = ls_coords_schema['items']
+            validate_pt_coords_schema(pt_coords_schema)
+
+        def validate_poly_coords_schema(poly_coords_schema: dict):
+
+            assert poly_coords_schema['type'] == 'array'
+
+            lr_coords_schema = poly_coords_schema['items']
+
+            assert lr_coords_schema['type'] == 'array'
+            assert lr_coords_schema['minItems'] == 4
+
+            pt_coords_schema = lr_coords_schema['items']
+            validate_pt_coords_schema(pt_coords_schema)
+
+        def validate_multigeom_coords_schema(
+            multigeom_coords_schema: dict,
+            validate_geom_coords_schema: callable,
+        ):
+
+            assert multigeom_coords_schema['type'] == 'array'
+
+            geom_coords_schema = multigeom_coords_schema['items']
+            validate_geom_coords_schema(geom_coords_schema)
 
         if gt == GeomType.point:
-
-            assert coordinates['items']['type'] == 'number'
-            assert coordinates['minItems'] == nd
-            assert coordinates['maxItems'] == nd
+            validate_pt_coords_schema(coordinates)
 
         elif gt == GeomType.linestring:
-
-            assert coordinates['minItems'] == 2
-
-            items = coordinates['items']
-
-            assert items['type'] == 'array'
-            assert items['items']['type'] == 'number'
-            assert items['minItems'] == nd
-            assert items['maxItems'] == nd
+            validate_ls_coords_schema(coordinates)
 
         elif gt == GeomType.polygon:
+            validate_poly_coords_schema(coordinates)
 
-            items = coordinates['items']
+        elif gt == GeomType.multipoint:
+            validate_multigeom_coords_schema(
+                coordinates, validate_pt_coords_schema,
+            )
 
-            assert items['type'] == 'array'
-            assert items['minItems'] == 4
-            assert items['items']['type'] == 'array'
-            assert items['items']['items']['type'] == 'number'
-            assert items['items']['minItems'] == nd
-            assert items['items']['maxItems'] == nd
+        elif gt == GeomType.multilinestring:
+            validate_multigeom_coords_schema(
+                coordinates, validate_ls_coords_schema,
+            )
+
+        elif gt == GeomType.multipolygon:
+            validate_multigeom_coords_schema(
+                coordinates, validate_poly_coords_schema,
+            )
