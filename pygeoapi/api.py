@@ -947,7 +947,7 @@ class API:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
             LOGGER.debug('Processing configured collection links')
-            for link in l10n.translate(v['links'], request.locale):
+            for link in l10n.translate(v.get('links', []), request.locale):
                 lnk = {
                     'type': link['type'],
                     'rel': link['rel'],

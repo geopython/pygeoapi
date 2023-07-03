@@ -509,7 +509,7 @@ def get_oas_30(cfg):
             'description': desc,
             'externalDocs': {}
         }
-        for link in l10n.translate(v['links'], locale_):
+        for link in l10n.translate(v.get('links', []), locale_):
             if link['type'] == 'information':
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
@@ -718,7 +718,7 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'options{name.capitalize()}Feature',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"}  # noqa
                     ],
                     'responses': {
                         '200': {'description': 'options response'}
