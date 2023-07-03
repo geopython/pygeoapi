@@ -69,7 +69,14 @@ class TabledapProvider(BaseProvider):
 
         for key, value in properties.items():
             LOGGER.debug(f'Field: {key}={value}')
-            properties[key] = {'type': type(value).__name__}
+
+            data_type = type(value).__name__
+
+            if data_type == 'str':
+                data_type = 'string'
+            if data_type == 'float':
+                data_type = 'number'
+            properties[key] = {'type': data_type}
 
         return properties
 

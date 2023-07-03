@@ -282,7 +282,10 @@ def get_oas_30(cfg):
     oas['components'] = {
         'responses': {
             '200': {
-                'description': 'successful operation',
+                'description': 'successful operation'
+            },
+            '204': {
+                'description': 'no content'
             },
             'default': {
                 'description': 'Unexpected error',
@@ -737,7 +740,7 @@ def get_oas_30(cfg):
                         'required': True
                     },
                     'responses': {
-                        '204': {'description': 'Successful update'},
+                        '204': {'$ref': '#/components/responses/204'},
                         '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
