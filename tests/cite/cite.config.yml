@@ -2,7 +2,7 @@ server:
     bind:
         host: 0.0.0.0
         port: 5001
-    url: http://localhost:5001
+    url: http://172.19.131.164:5001
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -13,6 +13,10 @@ server:
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    manager:
+        name: TinyDB
+        connection: /tmp/pygeoapi-process-manager.db
+        output_dir: /tmp/
 
 logging:
     level: ERROR
@@ -99,3 +103,8 @@ resources:
               data: http://localhost:9200/canada-hydat-daily-mean-02hc003
               id_field: IDENTIFIER
               time_field: DATE
+
+    hello-world:
+        type: process
+        processor:
+            name: HelloWorld
