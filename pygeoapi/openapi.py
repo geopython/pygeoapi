@@ -1140,10 +1140,12 @@ def get_oas_30(cfg):
                 'description': md_desc,  # noqa
                 'externalDocs': {}
             }
-            for link in l10n.translate(p.metadata['links'], locale_):
+            for link in p.metadata.get('links', []):
                 if link['type'] == 'information':
-                    tag['externalDocs']['description'] = link['type']
-                    tag['externalDocs']['url'] = link['url']
+                    translated_link = l10n.translate(link, locale_)
+                    tag['externalDocs']['description'] = translated_link[
+                        'type']
+                    tag['externalDocs']['url'] = translated_link['url']
                     break
             if len(tag['externalDocs']) == 0:
                 del tag['externalDocs']
