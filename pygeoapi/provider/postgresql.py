@@ -202,12 +202,14 @@ class PostgreSQLProvider(BaseProvider):
             try:
                 python_type = column_type.python_type
             except NotImplementedError:
+                LOGGER.warning(f"Unsupported column type {column_type}")
                 return default_value
             else:
-                return column_type_map.get(
-                    python_type,
-                    default_value,
-                )
+                try:
+                    return column_type_map[python_type]
+                except KeyError:
+                    LOGGER.warning(f"Unsupported column type {column_type}")
+                    return default_value
 
         return {
             str(column.name): {
