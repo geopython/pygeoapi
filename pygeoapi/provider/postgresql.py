@@ -191,24 +191,24 @@ class PostgreSQLProvider(BaseProvider):
         # string, number, integer, object, array, boolean, null,
         # https://json-schema.org/understanding-json-schema/reference/type.html
         column_type_map = {
-            str: "string",
-            float: "number",
-            int: "integer",
-            bool: "boolean",
+            str: 'string',
+            float: 'number',
+            int: 'integer',
+            bool: 'boolean',
         }
-        default_value = "string"
+        default_value = 'string'
 
         def _column_type_to_json_schema_type(column_type):
             try:
                 python_type = column_type.python_type
             except NotImplementedError:
-                LOGGER.warning(f"Unsupported column type {column_type}")
+                LOGGER.warning(f'Unsupported column type {column_type}')
                 return default_value
             else:
                 try:
                     return column_type_map[python_type]
                 except KeyError:
-                    LOGGER.warning(f"Unsupported column type {column_type}")
+                    LOGGER.warning(f'Unsupported column type {column_type}')
                     return default_value
 
         return {
