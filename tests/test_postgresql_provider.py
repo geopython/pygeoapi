@@ -308,18 +308,18 @@ def test_query_cql_properties_bbox_filters(config):
 def test_get_fields(config):
     # Arrange
     expected_fields = {
-        'blockage': {'type': 'VARCHAR(80)'},
-        'covered': {'type': 'VARCHAR(80)'},
-        'depth': {'type': 'VARCHAR(80)'},
-        'layer': {'type': 'VARCHAR(80)'},
-        'name': {'type': 'VARCHAR(80)'},
-        'natural': {'type': 'VARCHAR(80)'},
-        'osm_id': {'type': 'INTEGER'},
-        'tunnel': {'type': 'VARCHAR(80)'},
-        'water': {'type': 'VARCHAR(80)'},
-        'waterway': {'type': 'VARCHAR(80)'},
-        'width': {'type': 'VARCHAR(80)'},
-        'z_index': {'type': 'VARCHAR(80)'}
+        'blockage': {'type': 'string'},
+        'covered': {'type': 'string'},
+        'depth': {'type': 'string'},
+        'layer': {'type': 'string'},
+        'name': {'type': 'string'},
+        'natural': {'type': 'string'},
+        'osm_id': {'type': 'integer'},
+        'tunnel': {'type': 'string'},
+        'water': {'type': 'string'},
+        'waterway': {'type': 'string'},
+        'width': {'type': 'string'},
+        'z_index': {'type': 'string'}
     }
 
     # Act

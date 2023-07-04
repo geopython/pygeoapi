@@ -187,13 +187,35 @@ class PostgreSQLProvider(BaseProvider):
         """
         LOGGER.debug('Get available fields/properties')
 
-        fields = {}
-        for column in self.table_model.__table__.columns:
-            fields[str(column.name)] = {'type': str(column.type)}
+        # sql-schema only allows these types, so we need to map from sqlalchemy
+        # string, number, integer, object, array, boolean, null,
+        # https://json-schema.org/understanding-json-schema/reference/type.html
+        column_type_map = {
+            str: "string",
+            float: "number",
+            int: "integer",
+            bool: "boolean",
+        }
+        default_value = "string"
 
-        fields.pop(self.geom)  # Exclude geometry column
+        def _column_type_to_json_schema_type(column_type):
+            try:
+                python_type = column_type.python_type
+            except NotImplementedError:
+                return default_value
+            else:
+                return column_type_map.get(
+                    python_type,
+                    default_value,
+                )
 
-        return fields
+        return {
+            str(column.name): {
+                'type': _column_type_to_json_schema_type(column.type)
+            }
+            for column in self.table_model.__table__.columns
+            if column.name != self.geom  # Exclude geometry column
+        }
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
