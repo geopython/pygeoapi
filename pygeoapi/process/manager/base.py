@@ -85,7 +85,7 @@ class BaseManager:
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
-    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+    def get_processor(self, process_id: str) -> BaseProcessor:
         """Instantiate a processor.
 
         :param process_id: Identifier of the process
