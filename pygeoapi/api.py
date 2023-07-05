@@ -86,7 +86,7 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
                            modify_pygeofilter, CrsTransformSpec,
-                           transform_bbox)
+                           transform_bbox, Subscriber)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -3490,6 +3490,13 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
+        subscriber_dict = data.get('subscriber', {})
+        subscriber = Subscriber(
+            successUri=subscriber_dict.get('successUri'),
+            inProgressUri=subscriber_dict.get('inProgressUri'),
+            failedUri=subscriber_dict.get('failedUri'),
+        )
+
         try:
             execution_mode = RequestedProcessExecutionMode(
                 request.headers.get('Prefer', request.headers.get('prefer'))
@@ -3499,7 +3506,11 @@ class API:
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process_id, data_dict, execution_mode=execution_mode)
+                process_id,
+                data_dict,
+                execution_mode=execution_mode,
+                subscriber=subscriber,
+            )
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'

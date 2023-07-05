@@ -37,6 +37,7 @@ from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
+import requests
 
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
@@ -50,6 +51,7 @@ from pygeoapi.util import (
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
+    Subscriber,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +72,7 @@ class BaseManager:
 
         self.name = manager_def['name']
         self.is_async = False
+        self.supports_subscribing = False
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
 
@@ -178,7 +181,9 @@ class BaseManager:
         raise JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[str, None, JobStatus]:
+                               data_dict: dict,
+                               subscriber: Optional[Subscriber],
+                               ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -194,13 +199,15 @@ class BaseManager:
         """
         _process = dummy.Process(
             target=self._execute_handler_sync,
-            args=(p, job_id, data_dict)
+            args=(p, job_id, data_dict, subscriber)
         )
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
     def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
-                              data_dict: dict) -> Tuple[str, Any, JobStatus]:
+                              data_dict: dict,
+                              subscriber: Optional[Subscriber],
+                              ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
@@ -233,6 +240,11 @@ class BaseManager:
         }
 
         self.add_job(job_metadata)
+        if subscriber and subscriber.inProgressUri:
+            response = requests.post(subscriber.inProgressUri, json={})
+            LOGGER.debug(
+                'In progress notification response: {response.status_code}'
+            )
 
         try:
             if self.output_dir is not None:
@@ -277,6 +289,12 @@ class BaseManager:
 
             self.update_job(job_id, job_update_metadata)
 
+            if subscriber and subscriber.successUri:
+                response = requests.post(subscriber.successUri, json=outputs)
+                LOGGER.debug(
+                    f'Success notification response: {response.status_code}'
+                )
+
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
@@ -308,13 +326,20 @@ class BaseManager:
 
             self.update_job(job_id, job_metadata)
 
+            if subscriber and subscriber.failedUri:
+                response = requests.post(subscriber.failedUri, json={})
+                LOGGER.debug(
+                    f'Failed notification response: {response.status_code}'
+                )
+
         return jfmt, outputs, current_status
 
     def execute_process(
             self,
             process_id: str,
             data_dict: dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
+            execution_mode: Optional[RequestedProcessExecutionMode] = None,
+            subscriber: Optional[Subscriber] = None,
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -367,7 +392,14 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(processor, job_id, data_dict)
+        mime_type, outputs, status = handler(
+            processor,
+            job_id,
+            data_dict,
+            # only pass subscriber if supported, otherwise this breaks existing
+            # managers
+            **({'subscriber': subscriber} if self.supports_subscribing else {})
+        )
         return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):
