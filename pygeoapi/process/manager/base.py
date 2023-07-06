@@ -348,6 +348,7 @@ class BaseManager:
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
                                processing.
+        :param subscriber: `Subscriber` optionally specifying callback urls
 
         :raises UnknownProcessError: if the input process_id does not
                                      correspond to a known process
