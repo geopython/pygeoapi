@@ -3491,12 +3491,22 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
-        subscriber_dict = data.get('subscriber', {})
-        subscriber = Subscriber(
-            successUri=subscriber_dict.get('successUri'),
-            inProgressUri=subscriber_dict.get('inProgressUri'),
-            failedUri=subscriber_dict.get('failedUri'),
-        )
+        subscriber = None
+        subscriber_dict = data.get('subscriber')
+        if subscriber_dict:
+            try:
+                success_uri = subscriber_dict['successUri']
+            except KeyError:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'MissingParameterValue', 'Missing successUri')
+            else:
+                subscriber = Subscriber(
+                    # NOTE: successUri is mandatory according to the standard
+                    successUri=success_uri,
+                    inProgressUri=subscriber_dict.get('inProgressUri'),
+                    failedUri=subscriber_dict.get('failedUri'),
+                )
 
         try:
             execution_mode = RequestedProcessExecutionMode(

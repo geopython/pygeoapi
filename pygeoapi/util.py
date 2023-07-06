@@ -597,7 +597,7 @@ class Subscriber:
 
     https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
     """
-    successUri: Optional[str]
+    successUri: str
     inProgressUri: Optional[str]
     failedUri: Optional[str]
 

@@ -289,7 +289,7 @@ class BaseManager:
 
             self.update_job(job_id, job_update_metadata)
 
-            if subscriber and subscriber.successUri:
+            if subscriber:
                 response = requests.post(subscriber.successUri, json=outputs)
                 LOGGER.debug(
                     f'Success notification response: {response.status_code}'
