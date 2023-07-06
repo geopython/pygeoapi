@@ -3503,9 +3503,9 @@ class API:
             else:
                 subscriber = Subscriber(
                     # NOTE: successUri is mandatory according to the standard
-                    successUri=success_uri,
-                    inProgressUri=subscriber_dict.get('inProgressUri'),
-                    failedUri=subscriber_dict.get('failedUri'),
+                    success_uri=success_uri,
+                    in_progress_uri=subscriber_dict.get('inProgressUri'),
+                    failed_uri=subscriber_dict.get('failedUri'),
                 )
 
         try:

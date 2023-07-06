@@ -240,8 +240,8 @@ class BaseManager:
         }
 
         self.add_job(job_metadata)
-        if subscriber and subscriber.inProgressUri:
-            response = requests.post(subscriber.inProgressUri, json={})
+        if subscriber and subscriber.in_progress_uri:
+            response = requests.post(subscriber.in_progress_uri, json={})
             LOGGER.debug(
                 'In progress notification response: {response.status_code}'
             )
@@ -290,7 +290,7 @@ class BaseManager:
             self.update_job(job_id, job_update_metadata)
 
             if subscriber:
-                response = requests.post(subscriber.successUri, json=outputs)
+                response = requests.post(subscriber.success_uri, json=outputs)
                 LOGGER.debug(
                     f'Success notification response: {response.status_code}'
                 )
@@ -326,8 +326,8 @@ class BaseManager:
 
             self.update_job(job_id, job_metadata)
 
-            if subscriber and subscriber.failedUri:
-                response = requests.post(subscriber.failedUri, json={})
+            if subscriber and subscriber.failed_uri:
+                response = requests.post(subscriber.failed_uri, json={})
                 LOGGER.debug(
                     f'Failed notification response: {response.status_code}'
                 )

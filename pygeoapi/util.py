@@ -597,9 +597,9 @@ class Subscriber:
 
     https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
     """
-    successUri: str
-    inProgressUri: Optional[str]
-    failedUri: Optional[str]
+    success_uri: str
+    in_progress_uri: Optional[str]
+    failed_uri: Optional[str]
 
 
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
