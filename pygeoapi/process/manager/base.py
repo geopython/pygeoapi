@@ -240,11 +240,7 @@ class BaseManager:
         }
 
         self.add_job(job_metadata)
-        if subscriber and subscriber.in_progress_uri:
-            response = requests.post(subscriber.in_progress_uri, json={})
-            LOGGER.debug(
-                'In progress notification response: {response.status_code}'
-            )
+        self._send_in_progress_notification(subscriber)
 
         try:
             if self.output_dir is not None:
@@ -288,12 +284,7 @@ class BaseManager:
             }
 
             self.update_job(job_id, job_update_metadata)
-
-            if subscriber:
-                response = requests.post(subscriber.success_uri, json=outputs)
-                LOGGER.debug(
-                    f'Success notification response: {response.status_code}'
-                )
+            self._send_success_notification(subscriber, outputs=outputs)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -326,11 +317,7 @@ class BaseManager:
 
             self.update_job(job_id, job_metadata)
 
-            if subscriber and subscriber.failed_uri:
-                response = requests.post(subscriber.failed_uri, json={})
-                LOGGER.debug(
-                    f'Failed notification response: {response.status_code}'
-                )
+            self._send_failed_notification(subscriber)
 
         return jfmt, outputs, current_status
 
@@ -402,6 +389,29 @@ class BaseManager:
             **({'subscriber': subscriber} if self.supports_subscribing else {})
         )
         return job_id, mime_type, outputs, status, response_headers
+
+    def _send_in_progress_notification(self, subscriber: Optional[Subscriber]):
+        if subscriber and subscriber.in_progress_uri:
+            response = requests.post(subscriber.in_progress_uri, json={})
+            LOGGER.debug(
+                f'In progress notification response: {response.status_code}'
+            )
+
+    def _send_success_notification(
+            self, subscriber: Optional[Subscriber], outputs: Any
+    ):
+        if subscriber:
+            response = requests.post(subscriber.success_uri, json=outputs)
+            LOGGER.debug(
+                f'Success notification response: {response.status_code}'
+            )
+
+    def _send_failed_notification(self, subscriber: Optional[Subscriber]):
+        if subscriber and subscriber.failed_uri:
+            response = requests.post(subscriber.failed_uri, json={})
+            LOGGER.debug(
+                f'Failed notification response: {response.status_code}'
+            )
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
