@@ -182,7 +182,7 @@ class BaseManager:
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
                                data_dict: dict,
-                               subscriber: Optional[Subscriber],
+                               subscriber: Optional[Subscriber] = None,
                                ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
@@ -206,7 +206,7 @@ class BaseManager:
 
     def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
                               data_dict: dict,
-                              subscriber: Optional[Subscriber],
+                              subscriber: Optional[Subscriber] = None,
                               ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
