@@ -327,8 +327,10 @@ by downstream applications.
    `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
    `nldi_xstool`_,United States Geological Survey,Water data processing
    `pygeometa-plugin`_,pygeometa project,pygeometa as a service
+   `cgs-plugins`_,Center for Geospatial Solutions,feature and processes plugins
 
 
+.. _`cgs-plugins`: https://github.com/cgs-earth/pygeoapi-plugins
 .. _`Cookiecutter`: https://github.com/audreyfeldroy/cookiecutter-pypackage
 .. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
 .. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill

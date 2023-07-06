@@ -2,9 +2,11 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -42,8 +44,9 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import l10n
-from pygeoapi.plugin import load_plugin
 from pygeoapi.models.openapi import OAPIFormat
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.manager.base import get_manager
 from pygeoapi.provider.base import ProviderTypeError
 from pygeoapi.schemas import SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
@@ -61,7 +64,7 @@ OPENAPI_YAML = {
     'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
-    'oat': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerHubUnresolved/ogc-api-tiles.yaml', # noqa
+    'oat': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml'  # noqa
 }
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -280,7 +283,10 @@ def get_oas_30(cfg):
     oas['components'] = {
         'responses': {
             '200': {
-                'description': 'successful operation',
+                'description': 'successful operation'
+            },
+            '204': {
+                'description': 'no content'
             },
             'default': {
                 'description': 'Unexpected error',
@@ -504,7 +510,7 @@ def get_oas_30(cfg):
             'description': desc,
             'externalDocs': {}
         }
-        for link in l10n.translate(v['links'], locale_):
+        for link in l10n.translate(v.get('links', []), locale_):
             if link['type'] == 'information':
                 tag['externalDocs']['description'] = link['type']
                 tag['externalDocs']['url'] = link['url']
@@ -578,6 +584,14 @@ def get_oas_30(cfg):
                         '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                         '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                    }
+                },
+                'options': {
+                    'summary': f'Options for {title} items',
+                    'tags': [name],
+                    'operationId': f'options{name.capitalize()}Features',
+                    'responses': {
+                        '200': {'description': 'options response'}
                     }
                 }
             }
@@ -699,6 +713,17 @@ def get_oas_30(cfg):
                         '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
+                },
+                'options': {
+                    'summary': f'Options for {title} item by id',
+                    'tags': [name],
+                    'operationId': f'options{name.capitalize()}Feature',
+                    'parameters': [
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"}  # noqa
+                    ],
+                    'responses': {
+                        '200': {'description': 'options response'}
+                    }
                 }
             }
 
@@ -735,7 +760,7 @@ def get_oas_30(cfg):
                         'required': True
                     },
                     'responses': {
-                        '204': {'description': 'Successful update'},
+                        '204': {'$ref': '#/components/responses/204'},
                         '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                         '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
                     }
@@ -1105,9 +1130,9 @@ def get_oas_30(cfg):
             }
         }
 
-    processes = filter_dict_by_key_value(cfg['resources'], 'type', 'process')
+    process_manager = get_manager(cfg)
 
-    if processes:
+    if len(process_manager.processes) > 0:
         paths['/processes'] = {
             'get': {
                 'summary': 'Processes',
@@ -1125,13 +1150,12 @@ def get_oas_30(cfg):
         }
         LOGGER.debug('setting up processes')
 
-        for k, v in processes.items():
+        for k, v in process_manager.processes.items():
             if k.startswith('_'):
                 LOGGER.debug(f'Skipping hidden layer: {k}')
                 continue
             name = l10n.translate(k, locale_)
-            p = load_plugin('process', v['processor'])
-
+            p = process_manager.get_processor(k)
             md_desc = l10n.translate(p.metadata['description'], locale_)
             process_name_path = f'/processes/{name}'
             tag = {
@@ -1139,10 +1163,12 @@ def get_oas_30(cfg):
                 'description': md_desc,  # noqa
                 'externalDocs': {}
             }
-            for link in l10n.translate(p.metadata['links'], locale_):
+            for link in p.metadata.get('links', []):
                 if link['type'] == 'information':
-                    tag['externalDocs']['description'] = link['type']
-                    tag['externalDocs']['url'] = link['url']
+                    translated_link = l10n.translate(link, locale_)
+                    tag['externalDocs']['description'] = translated_link[
+                        'type']
+                    tag['externalDocs']['url'] = translated_link['url']
                     break
             if len(tag['externalDocs']) == 0:
                 del tag['externalDocs']

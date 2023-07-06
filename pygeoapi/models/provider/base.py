@@ -71,18 +71,33 @@ class TileMatrixSetEnumType(BaseModel):
     tileMatrixSet: str
     tileMatrixSetURI: str
     crs: str
+    tileMatrixSetDefinition: dict
 
 
 class TileMatrixSetEnum(Enum):
     WORLDCRS84QUAD = TileMatrixSetEnumType(
         tileMatrixSet="WorldCRS84Quad",
         tileMatrixSetURI="http://schemas.opengis.net/tms/1.0/json/examples/WorldCRS84Quad.json",  # noqa
-        crs="http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+        crs="http://www.opengis.net/def/crs/OGC/1.3/CRS84",
+        tileMatrixSetDefinition=
+            {
+                'type': 'application/json',
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
+                'title': 'WorldCRS84QuadTileMatrixSet definition (as JSON)',
+                'href': 'https://raw.githubusercontent.com/opengeospatial/2D-Tile-Matrix-Set/master/registry/json/WorldCRS84Quad.json'  # authoritative TMS definition
+            }
         )
     WEBMERCATORQUAD = TileMatrixSetEnumType(
         tileMatrixSet="WebMercatorQuad",
         tileMatrixSetURI="http://schemas.opengis.net/tms/1.0/json/examples/WebMercatorQuad.json",  # noqa
-        crs="http://www.opengis.net/def/crs/EPSG/0/3857"
+        crs="http://www.opengis.net/def/crs/EPSG/0/3857",
+        tileMatrixSetDefinition=
+            {
+                'type': 'application/json',
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
+                'title': 'WebMercatorQuadTileMatrixSet definition (as JSON)',
+                'href': 'https://raw.githubusercontent.com/opengeospatial/2D-Tile-Matrix-Set/master/registry/json/WebMercatorQuad.json'  # authoritative TMS definition
+            }
         )
 
 

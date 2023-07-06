@@ -1808,12 +1808,13 @@ def test_execute_process(config, api_):
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
     for _, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_job(job_id)
+        rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
         assert code == HTTPStatus.OK
 
 
 def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job('does-not-exist')
+    rsp_headers, code, response = api_.delete_job(
+        mock_request(), 'does-not-exist')
 
     assert code == HTTPStatus.NOT_FOUND
 
@@ -1839,11 +1840,11 @@ def test_delete_job(api_):
     assert data['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
 
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
     req = mock_request(data=req_body_async, HTTP_Prefer='respond-async')
@@ -1855,10 +1856,10 @@ def test_delete_job(api_):
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
 

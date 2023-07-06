@@ -132,6 +132,7 @@ jobs:
         pytest tests/test_socrata_provider.py
         pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
+        pytest tests/test_tinydb_manager_for_parallel_requests.py
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py

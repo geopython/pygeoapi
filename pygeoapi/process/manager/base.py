@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+#           (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,27 +29,35 @@
 #
 # =================================================================
 
+import collections
 from datetime import datetime
 import json
 import logging
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
+from pygeoapi.plugin import load_plugin
+from pygeoapi.process.base import (
+    BaseProcessor,
+    JobNotFoundError,
+    JobResultNotFoundError,
+    UnknownProcessError,
+)
 from pygeoapi.util import (
     DATETIME_FORMAT,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
-from pygeoapi.process.base import BaseProcessor
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BaseManager:
     """generic Manager ABC"""
+    processes: OrderedDict[str, Dict]
 
     def __init__(self, manager_def: dict):
         """
@@ -65,6 +75,31 @@ class BaseManager:
 
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
+
+        # Note: There are two different things named OrderedDict here - one
+        # is coming from typing.OrderedDict (type annotation), the other is
+        # coming from collections.OrderedDict (actual type we want to use here)
+        # - this will not be needed anymore when pygeoapi moves to requiring
+        # Python 3.9 as the minimum supported Python version
+        self.processes = collections.OrderedDict()
+        for id_, process_conf in manager_def.get('processes', {}).items():
+            self.processes[id_] = dict(process_conf)
+
+    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+        """Instantiate a processor.
+
+        :param process_id: Identifier of the process
+
+        :raise UnknownProcessError: if the processor cannot be created
+        :returns: instance of the processor
+        """
+
+        try:
+            process_conf = self.processes[process_id]
+        except KeyError as err:
+            raise UnknownProcessError('Invalid process identifier') from err
+        else:
+            return load_plugin('process', process_conf['processor'])
 
     def get_jobs(self, status: JobStatus = None) -> list:
         """
@@ -107,10 +142,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict` of job result
         """
 
-        raise NotImplementedError()
+        raise JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
@@ -118,10 +155,14 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
+        :raises: JobResultNotFoundError: if the job-related result cannot
+            be returned
         :returns: `tuple` of mimetype and raw output
         """
 
-        raise NotImplementedError()
+        raise JobResultNotFoundError()
 
     def delete_job(self, job_id: str) -> bool:
         """
@@ -129,10 +170,12 @@ class BaseManager:
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `bool` of status result
         """
 
-        raise NotImplementedError()
+        raise JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
                                data_dict: dict) -> Tuple[str, None, JobStatus]:
@@ -267,31 +310,34 @@ class BaseManager:
 
     def execute_process(
             self,
-            p: BaseProcessor,
+            process_id: str,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
 
-        :param p: `pygeoapi.process` object
+        :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
         processing.
 
+        :raises: UnknownProcessError if the input process_id does not
+                 correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
                   response
         """
 
         job_id = str(uuid.uuid1())
+        processor = self.get_processor(process_id)
         if execution_mode == RequestedProcessExecutionMode.respond_async:
+            job_control_options = processor.metadata.get(
+                'jobControlOptions', [])
             # client wants async - do we support it?
             process_supports_async = (
-                ProcessExecutionMode.async_execute.value in p.metadata.get(
-                    'jobControlOptions', []
+                ProcessExecutionMode.async_execute.value in job_control_options
                 )
-            )
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
@@ -319,8 +365,33 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(p, job_id, data_dict)
+        mime_type, outputs, status = handler(processor, job_id, data_dict)
         return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
+
+
+def get_manager(config: Dict) -> BaseManager:
+    """Instantiate process manager from the supplied configuration.
+
+    :param config: pygeoapi configuration
+
+    :returns: The pygeoapi process manager object
+    """
+    manager_conf = config.get('server', {}).get(
+        'manager',
+        {
+            'name': 'Dummy',
+            'connection': None,
+            'output_dir': None
+        }
+    )
+    processes_conf = {}
+    for id_, resource_conf in config.get('resources', {}).items():
+        if resource_conf.get('type') == 'process':
+            processes_conf[id_] = resource_conf
+    manager_conf['processes'] = processes_conf
+    if manager_conf.get('name') == 'Dummy':
+        LOGGER.info('Starting dummy manager')
+    return load_plugin('process_manager', manager_conf)

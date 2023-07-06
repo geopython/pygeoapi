@@ -77,7 +77,9 @@ class BaseProvider:
         """
         Get provider field information (names, types)
 
-        :returns: dict of fields
+        Example response: {'field1': 'string', 'field2': 'number'}}
+
+        :returns: dict of field names and their associated JSON Schema typess
         """
 
         raise NotImplementedError()
