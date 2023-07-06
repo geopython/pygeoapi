@@ -775,6 +775,13 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     assert geom_orig.equals_exact(geom_created, 1e-4)
 
     # Test a few create requests that raise errors
+    # Create request for a feature with same FID as an existing one
+    req = mock_request(data=feature_created)
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'create', 'capital_cities')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
     # Request without data
     req = mock_request()
     rsp_headers, code, _ = pg_api_.manage_collection_item(
@@ -861,3 +868,56 @@ def test_manage_collection_items_postgresql_create(pg_api_):
     )
 
     assert transform_func(geom_orig).equals_exact(geom_created, 1e-4)
+
+
+def test_manage_collection_items_postgresql_replace(pg_api_):
+    """
+    Test item replacement with the PostgreSQLProvider.
+    """
+    # Feature to create and replace
+    feature_orig = {
+        'type': 'Feature',
+        'geometry': {'type': 'Point', 'coordinates': [51.5073509, -0.1277583]},
+        'properties': {'name': 'London'},
+    }
+    # POST new feature to collection and test that the item creation was
+    # successful
+    req = mock_request(data=feature_orig)
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'create', 'capital_cities')
+
+    assert code == HTTPStatus.CREATED
+
+    feature_uri = rsp_headers['Location']
+    fid = urlparse(feature_uri).path.rsplit('/', 1)[-1]
+
+    # Replacing feature
+    replacing_feature = {
+        'type': 'Feature',
+        'geometry': {'type': 'Point', 'coordinates': [41.893333, 12.482778]},
+        'properties': {'name': 'Rome'},
+    }
+    # PUT new feature to collection and replace existing feature. Check that
+    # item replacement was successful
+    req = mock_request(data=replacing_feature)
+    rsp_headers, code, _ = pg_api_.manage_collection_item(
+        req, 'replace', 'capital_cities', identifier=fid)
+
+    assert code == HTTPStatus.NO_CONTENT
+
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = pg_api_.get_collection_item(
+        req, 'capital_cities', fid,
+    )
+
+    assert code == HTTPStatus.OK
+
+    replaced_feature = json.loads(response)
+    # Test that replaced feature is identical to the replacing feature
+    for k in ('type', 'properties'):
+        assert replacing_feature[k] == replaced_feature[k]
+
+    replaced_geom = geojson_to_geom(replacing_feature['geometry'])
+    replacing_geom = geojson_to_geom(replaced_feature['geometry'])
+
+    assert replaced_geom.equals_exact(replacing_geom, 1e-4)

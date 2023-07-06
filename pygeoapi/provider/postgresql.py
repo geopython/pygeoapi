@@ -70,8 +70,9 @@ from sqlalchemy.sql.expression import and_
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderConnectionError, ProviderQueryError,
-    ProviderItemNotFoundError, ProviderInvalidDataError
+    ProviderItemNotFoundError, ProviderInvalidDataError,
 )
+from pygeoapi.schemas import SchemaType
 from pygeoapi.util import get_transform_from_crs, crs_transform_feature
 
 
@@ -249,6 +250,26 @@ class PostgreSQLProvider(BaseProvider):
                                if next_item is not None else identifier)
 
         return feature
+
+    def get_schema(self, schema_type=SchemaType.item):
+        """
+        Get provider schema model
+
+        :param schema_type: `SchemaType` of schema (default is 'item')
+        """
+        if schema_type == SchemaType.item:
+            raise NotImplementedError()
+        elif schema_type == SchemaType.create:
+            raise NotImplementedError()
+            # schema_dict =
+            # return (
+            #     'application/geo+json',
+            #     schema_dict,
+            # )
+        elif schema_type == SchemaType.replace:
+            raise NotImplementedError()
+        elif schema_type == SchemaType.update:
+            raise NotImplementedError()
 
     def create(self, item, crs_transform_func=None):
         """
