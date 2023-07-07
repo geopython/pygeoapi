@@ -138,42 +138,18 @@ def config():
 
 
 @pytest.fixture()
-def config_manipulator():
+def config_manipulator(config):
     return {
-        "name": "Oracle",
-        "type": "feature",
-        "data": {
-            "host": HOST,
-            "port": PORT,
-            "service_name": SERVICE_NAME,
-            "user": USERNAME,
-            "password": PASSWORD,
-        },
-        "id_field": "id",
-        "table": "lakes",
-        "geom_field": "geometry",
+        **config,
         "sql_manipulator": "tests.test_oracle_provider.SqlManipulator",
         "sql_manipulator_options": {"foo": "bar"},
-        "editable": True,
     }
 
 
 @pytest.fixture()
-def config_properties():
+def config_properties(config):
     return {
-        "name": "Oracle",
-        "type": "feature",
-        "data": {
-            "host": HOST,
-            "port": PORT,
-            "service_name": SERVICE_NAME,
-            "user": USERNAME,
-            "password": PASSWORD,
-        },
-        "id_field": "id",
-        "table": "lakes",
-        "geom_field": "geometry",
-        "editable": True,
+        **config,
         "properties": ["id", "name", "wiki_link"],
     }
 
@@ -260,7 +236,10 @@ def test_get_fields(config):
 
 
 def test_get_fields_properties(config_properties):
-    """Test get_fields"""
+    """
+    Test get_fields with subset of columns.
+    Test of property configuration.
+    """
     expected_fields = {
         "id": {"type": "NUMBER"},
         "name": {"type": "VARCHAR2"},
@@ -343,6 +322,10 @@ def test_create(config, create_geojson):
 
     assert result == 26
 
+    data = p.get(26)
+
+    assert data.get("properties").get("name") == "Lake Constance"
+
 
 def test_update(config, update_geojson):
     """Test simple update"""
@@ -353,8 +336,6 @@ def test_update(config, update_geojson):
     assert result
 
     data = p.get(identifier)
-
-    print(data)
 
     assert data.get("properties").get("area") == 536000
     assert data.get("properties").get("volume") == 48000
@@ -406,15 +387,14 @@ def test_query_sql_manipulator(config_manipulator):
 
 
 def test_get_sql_manipulator(config_manipulator):
-    """Test simple get"""
+    """
+    Test get with SQL manipulator that throws
+    an authorization error.
+    """
     p = OracleProvider(config_manipulator)
 
-    result = None
-
     with pytest.raises(Exception):
-        result = p.get(5)
-
-    assert not result
+        p.get(5)
 
 
 def test_create_sql_manipulator(config_manipulator, config, create_geojson):

@@ -37,6 +37,7 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
 )
 import importlib
+from typing import Optional
 
 LOGGER = logging.getLogger(__name__)
 
@@ -651,10 +652,7 @@ class OracleProvider(BaseProvider):
                             FROM {self.table} t1 \
                            WHERE {self.id_field} = :in_id"
 
-            bind_variables = {
-                "in_id": identifier,
-                **crs_dict
-            }
+            bind_variables = {"in_id": identifier, **crs_dict}
 
             # SQL manipulation plugin
             if self.sql_manipulator:
@@ -672,9 +670,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"Identifier: {identifier}")
 
             try:
-                cursor.execute(
-                    sql_query, bind_variables
-                )
+                cursor.execute(sql_query, bind_variables)
             except oracledb.Error as err:
                 LOGGER.error(f"Error executing sql_query: {sql_query}")
                 LOGGER.error(err)
@@ -771,11 +767,9 @@ class OracleProvider(BaseProvider):
             # Flter function to get only properties who are
             # in the column list
             def filter_binds(pair):
-                key, value = pair
-                if key.lower() in [field.lower() for field in self.fields]:
-                    return True
-                else:
-                    return False
+                return pair[0].lower() in [
+                    field.lower() for field in self.fields
+                ]
 
             # Filter bind variables
             bind_variables = dict(
@@ -816,12 +810,6 @@ class OracleProvider(BaseProvider):
                     self.sql_manipulator_options,
                     request_data,
                 )
-
-            # Clean up placeholders that aren't used by the
-            # manipulation plugin.
-            sql_query = sql_query.replace("#HINTS#", "")
-            sql_query = sql_query.replace("#JOIN#", "")
-            sql_query = sql_query.replace("#WHERE#", "")
 
             LOGGER.debug(f"SQL Query: {sql_query}")
             LOGGER.debug(f"Bind variables: {bind_variables}")
@@ -870,11 +858,9 @@ class OracleProvider(BaseProvider):
             # Flter function to get only properties who are
             # in the column list
             def filter_binds(pair):
-                key, value = pair
-                if key.lower() in [field.lower() for field in self.fields]:
-                    return True
-                else:
-                    return False
+                return pair[0].lower() in [
+                    field.lower() for field in self.fields
+                ]
 
             # Filter bind variables
             bind_variables = dict(
@@ -930,7 +916,7 @@ class OracleProvider(BaseProvider):
 
                 raise ProviderQueryError()
 
-        return True if rowcount == 1 else False
+        return rowcount == 1
 
     def delete(self, identifier):
         """
@@ -981,7 +967,7 @@ class OracleProvider(BaseProvider):
 
                 raise ProviderQueryError()
 
-        return True if rowcount == 1 else False
+        return rowcount == 1
 
     def _get_sdo_from_geojson_geometry(self, conn, geometry, srid=4326):
         """
@@ -1012,7 +998,9 @@ class OracleProvider(BaseProvider):
         return obj
 
 
-def _class_factory(module_class_string, super_cls: type = None, **kwargs):
+def _class_factory(
+    module_class_string, super_cls: Optional[type] = None, **kwargs
+):
     """
     Factory function for class instances.
     Used for dynamic loading of the SQL manipulation class.
