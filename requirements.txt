@@ -1,10 +1,11 @@
 Babel
 click
+filelock
 Flask
 importlib_metadata
 jinja2
 jsonschema
-pydantic
+pydantic<2.0
 pygeofilter
 pygeoif
 pyproj

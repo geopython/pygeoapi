@@ -1,2 +1,2 @@
 Django
-pydantic
+pydantic<2.0

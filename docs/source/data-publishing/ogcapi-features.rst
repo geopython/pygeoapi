@@ -25,8 +25,8 @@ parameters.
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅n
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅n
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
@@ -118,9 +118,7 @@ This provider has the support for the CQL queries as indicated in the table abov
 ESRI Feature Service
 ^^^^^^^^^^^^^^^^^^^^
 
-To publish an ESRI `Feature Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm>`
-or `Map Service <https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm>`
-specify the URL for the service layer in the ``data`` field.
+To publish an `ESRI Feature Service`_ or `ESRI Map Service`_ specify the URL for the service layer in the ``data`` field.
 
 * ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
 * If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
@@ -507,15 +505,14 @@ are included in the docker examples for SensorThings.
 Socrata
 ^^^^^^^
 
-To publish a `Socrata Open Data API (SODA) <https://dev.socrata.com/>` endpoint, pygeoapi heavily
-relies on `sodapy <https://github.com/xmunoz/sodapy>`.
+To publish a `Socrata Open Data API (SODA)`_ endpoint, pygeoapi heavily relies on `sodapy`_.
 
 
 * ``data`` is the domain of the SODA endpoint.
 * ``resource_id`` is the 4x4 resource id pattern.
 * ``geom_field`` is required for bbox queries to work.
 * ``token`` is optional and can be included in the configuration to pass
-  an `app token <https://dev.socrata.com/docs/app-tokens.html>` to Socrata.
+  an `app token <https://dev.socrata.com/docs/app-tokens.html>`_ to Socrata.
 
 
 .. code-block:: yaml
@@ -620,7 +617,11 @@ Data access examples
    provider `id_field` values support slashes (i.e. ``my/cool/identifier``). The client request would then
    be responsible for encoding the identifier accordingly (i.e. ``http://localhost:5000/collections/foo/items/my%2Fcool%2Fidentifier``)
 
+.. _`ESRI Feature Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm
+.. _`ESRI Map Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm
 .. _`Google Cloud SQL`: https://cloud.google.com/sql
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`Socrata Open Data API (SODA)`: https://dev.socrata.com
+.. _`sodapy`: https://github.com/xmunoz/sodapy
 .. _`Tabledap`: https://coastwatch.pfeg.noaa.gov/erddap/tabledap/documentation.html
 .. _`requests`: https://requests.readthedocs.io
