@@ -53,7 +53,7 @@ services:
       - mongo
 
   mongo:
-    image: mongo:5.0.3
+    image: mongo:6.0.7
     container_name: mongo
     ports:
       - 27017:27017
