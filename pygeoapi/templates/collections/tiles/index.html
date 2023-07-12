@@ -6,7 +6,7 @@
 / <a href="../{{ data['id'] }}/tiles">{% trans %}Tiles{% endtrans %}</a>
 {% endblock %}
 {% block extrahead %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
     <style>

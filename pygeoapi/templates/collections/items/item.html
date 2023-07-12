@@ -34,8 +34,8 @@
 / <a href="./{{ data['id'] }}">{{ ptitle | truncate( 25 ) }}</a>
 {% endblock %}
 {% block extrahead %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/leaflet.css"/>
+    <script src="{{ config['server']['url'] }}/static/js/leaflet.js"></script>
 {% endblock %}
 
 {% block body %}
