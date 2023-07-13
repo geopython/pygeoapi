@@ -61,7 +61,6 @@ class BaseProvider:
             raise RuntimeError('name/type/data are required')
 
         self.editable = provider_def.get('editable', False)
-        self.options = provider_def.get('options')
         self.id_field = provider_def.get('id_field')
         self.uri_field = provider_def.get('uri_field')
         self.x_field = provider_def.get('x_field')
@@ -77,6 +76,80 @@ class BaseProvider:
         self.axes = []
         self.crs = None
         self.num_bands = None
+
+        self._supported_output_formats = list()
+        self._format_options = dict()
+        self._format_mimetype = dict()
+        storage_format_config = provider_def.get('storage_format')
+        if storage_format_config is not None:
+            self._format_config = {
+                'storage': {
+                    'name': storage_format_config['name'],
+                    'mimetype': storage_format_config['mimetype'],
+                    'options': storage_format_config.get('options'),
+                },
+                'supported_output_formats': list(),
+            }
+            if storage_format_config.get('valid_output_format', True):
+                self._format_config['supported_output_formats'].append(
+                    self._format_config['storage']
+                )
+            for f in provider_def.get('format', list()):
+                self._format_config['supported_output_formats'].append(
+                    {
+                     'name': f['name'],
+                     'mimetype': f['mimetype'],
+                     'options': f.get('options'),
+                    }
+                )
+            for f in self._format_config['supported_output_formats']:
+                self._format_options[f['name']] = f['options']
+                self._format_mimetype[f['name']] = f['mimetype']
+                self._supported_output_formats.append(f['name'])
+        else:
+            storage_format_config = provider_def.get('format', dict())
+            self._format_config = {
+                'storage': {
+                    'name': storage_format_config['name'],
+                    'mimetype': storage_format_config['mimetype'],
+                    'options': provider_def.get('options'),
+                },
+            }
+            self._supported_output_formats.append(
+                storage_format_config['name']
+            )
+
+    @property
+    def storage_format(self):
+        """Get the name of the storage format
+        """
+        return self._format_config['storage']['name']
+
+    @property
+    def options(self):
+        """Get the options of the storage format
+        """
+        return self._format_config['storage']['options']
+
+    @property
+    def mimetype(self):
+        """Get the mimetype of the storage format
+        """
+        return self._format_config['storage']['mimetype']
+
+    def get_format_options(self, fmt_name):
+        """Get the options for a given output format
+        """
+        return self._format_options[fmt_name]
+
+    def get_format_mimetype(self, fmt_name):
+        """Get the mimetype for a given output format
+        """
+        return self._format_mimetype[fmt_name]
+
+    @property
+    def supported_output_formats(self):
+        return list(self._supported_output_formats)
 
     def get_fields(self):
         """
