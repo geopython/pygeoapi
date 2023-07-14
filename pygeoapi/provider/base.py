@@ -108,34 +108,37 @@ class BaseProvider:
                 self._supported_output_formats.append(f['name'])
         else:
             storage_format_config = provider_def.get('format', dict())
-            self._format_config = {
-                'storage': {
-                    'name': storage_format_config['name'],
-                    'mimetype': storage_format_config['mimetype'],
-                    'options': provider_def.get('options'),
-                },
-            }
-            self._supported_output_formats.append(
-                storage_format_config['name']
-            )
+            if storage_format_config:
+                fmt_name = storage_format_config['name']
+                self._format_config = {
+                    'storage': {
+                        'name': fmt_name,
+                        'mimetype': storage_format_config['mimetype'],
+                        'options': provider_def.get('options'),
+                    },
+                }
+
+                self._supported_output_formats.append(fmt_name)
+            else:
+                self._format_config = {'storage': dict()}
 
     @property
     def storage_format(self):
         """Get the name of the storage format
         """
-        return self._format_config['storage']['name']
+        return self._format_config['storage'].get('name')
 
     @property
     def options(self):
         """Get the options of the storage format
         """
-        return self._format_config['storage']['options']
+        return self._format_config['storage'].get('options')
 
     @property
     def mimetype(self):
         """Get the mimetype of the storage format
         """
-        return self._format_config['storage']['mimetype']
+        return self._format_config['storage'].get('mimetype')
 
     def get_format_options(self, fmt_name):
         """Get the options for a given output format
@@ -149,6 +152,8 @@ class BaseProvider:
 
     @property
     def supported_output_formats(self):
+        """Get the list of supported output formats
+        """
         return list(self._supported_output_formats)
 
     def get_fields(self):
