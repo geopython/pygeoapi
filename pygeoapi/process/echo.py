@@ -83,14 +83,13 @@ PROCESS_METADATA = {
       }
     }
   },
-  "links": [
-    {
-      "href": "https://processing.example.org/oapi-p/processes/echo/execution",
-      "rel": "http://www.opengis.net/def/rel/ogc/1.0/execute",
-      "title": "Execute endpoint",
-      "type": "endpoint"
-    }
-  ],
+  "links": [{
+        'type': 'text/html',
+        'rel': 'about',
+        'title': 'information',
+        'href': 'https://example.org/process',
+        'hreflang': 'en-US'
+    }],
   'example': {
     'inputs': {
       'echo': 'echoValue',
