@@ -103,21 +103,24 @@ class BaseProvider:
                     }
                 )
             for f in self._format_config['supported_output_formats']:
-                self._format_options[f['name']] = f['options']
-                self._format_mimetype[f['name']] = f['mimetype']
+                self._format_options[f['name'].lower()] = f['options']
+                self._format_mimetype[f['name'].lower()] = f['mimetype']
                 self._supported_output_formats.append(f['name'])
         else:
             storage_format_config = provider_def.get('format', dict())
             if storage_format_config:
                 fmt_name = storage_format_config['name']
+                fmt_mimetype = storage_format_config['mimetype']
+                fmt_options = provider_def.get('options')
                 self._format_config = {
                     'storage': {
                         'name': fmt_name,
-                        'mimetype': storage_format_config['mimetype'],
-                        'options': provider_def.get('options'),
+                        'mimetype': fmt_mimetype,
+                        'options': fmt_options,
                     },
                 }
-
+                self._format_mimetype[fmt_name.lower()] = fmt_mimetype
+                self._format_options[fmt_name.lower()] = fmt_options
                 self._supported_output_formats.append(fmt_name)
             else:
                 self._format_config = {'storage': dict()}
@@ -143,12 +146,12 @@ class BaseProvider:
     def get_format_options(self, fmt_name):
         """Get the options for a given output format
         """
-        return self._format_options[fmt_name]
+        return self._format_options[fmt_name.lower()]
 
     def get_format_mimetype(self, fmt_name):
         """Get the mimetype for a given output format
         """
-        return self._format_mimetype[fmt_name]
+        return self._format_mimetype[fmt_name.lower()]
 
     @property
     def supported_output_formats(self):
