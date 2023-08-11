@@ -32,10 +32,13 @@ import logging
 from pyproj import CRS, Transformer
 import rasterio
 from rasterio.io import MemoryFile
+from rasterio.windows import Window
 import rasterio.mask
 
-from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderQueryError)
+from pygeoapi.provider.base import (
+    BaseProvider, ProviderConnectionError, ProviderInvalidQueryError,
+    ProviderQueryError,
+)
 from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
@@ -60,7 +63,6 @@ class RasterioProvider(BaseProvider):
             self.crs = self._coverage_properties['bbox_crs']
             self.num_bands = self._coverage_properties['num_bands']
             self.fields = [str(num) for num in range(1, self.num_bands+1)]
-            self.native_format = provider_def['format']['name']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -174,18 +176,27 @@ class RasterioProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
+        if format_.lower() not in (
+            f.lower() for f in self.supported_output_formats
+        ):
+            msg = f'Invalid format: {format_}'
+            LOGGER.error(msg)
+            raise ProviderInvalidQueryError(msg)
         bands = properties
         LOGGER.debug(f'Bands: {bands}, subsets: {subsets}')
 
         args = {
             'indexes': None
         }
-        shapes = []
 
         if not bbox:
-            bbox = []
+            bbox = list()
 
-        if all([not bands, not subsets, not bbox, format_ != 'json']):
+        if (
+            all([not bands, not subsets, not bbox])
+            and self.storage_format is not None
+            and format_.lower() == self.storage_format.lower()
+        ):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
 
@@ -208,119 +219,104 @@ class RasterioProvider(BaseProvider):
 
             if crs_src == crs_dest:
                 LOGGER.debug('source bbox CRS and data CRS are the same')
-                shapes = [{
-                   'type': 'Polygon',
-                   'coordinates': [[
-                       [minx, miny],
-                       [minx, maxy],
-                       [maxx, maxy],
-                       [maxx, miny],
-                       [minx, miny],
-                   ]]
-                }]
             else:
                 LOGGER.debug('source bbox CRS and data CRS are different')
                 LOGGER.debug('reprojecting bbox into native coordinates')
 
-                t = Transformer.from_crs(crs_src, crs_dest, always_xy=True)
-                minx2, miny2 = t.transform(minx, miny)
-                maxx2, maxy2 = t.transform(maxx, maxy)
-
                 LOGGER.debug(f'Source coordinates: {minx}, {miny}, {maxx}, {maxy}')  # noqa
-                LOGGER.debug(f'Destination: {minx2}, {miny2}, {maxx2}, {maxy2}')  # noqa
 
-                shapes = [{
-                   'type': 'Polygon',
-                   'coordinates': [[
-                       [minx2, miny2],
-                       [minx2, maxy2],
-                       [maxx2, maxy2],
-                       [maxx2, miny2],
-                       [minx2, miny2],
-                   ]]
-                }]
+                t = Transformer.from_crs(crs_src, crs_dest, always_xy=False)
+                minx, miny = t.transform(minx, miny)
+                maxx, maxy = t.transform(maxx, maxy)
 
-        elif (self._coverage_properties['x_axis_label'] in subsets and
+                LOGGER.debug(f'Destination: {minx}, {miny}, {maxx}, {maxy}')  # noqa
+
+                bbox = [minx, miny, maxx, maxy]
+
+        elif (self._coverage_properties['x_axis_label'] in subsets or
                 self._coverage_properties['y_axis_label'] in subsets):
             LOGGER.debug('Creating spatial subset')
 
             x = self._coverage_properties['x_axis_label']
             y = self._coverage_properties['y_axis_label']
 
-            shapes = [{
-               'type': 'Polygon',
-               'coordinates': [[
-                   [subsets[x][0], subsets[y][0]],
-                   [subsets[x][0], subsets[y][1]],
-                   [subsets[x][1], subsets[y][1]],
-                   [subsets[x][1], subsets[y][0]],
-                   [subsets[x][0], subsets[y][0]]
-               ]]
-            }]
+            subset_x = subsets.get(x)
+            if subset_x:
+                minx = subset_x[0]
+                maxx = subset_x[1]
+            else:
+                minx = self._coverage_properties['bbox'][0]
+                maxx = self._coverage_properties['bbox'][2]
+
+            subset_y = subsets.get(y)
+            if subset_y:
+                miny = subset_y[0]
+                maxy = subset_y[1]
+            else:
+                miny = self._coverage_properties['bbox'][1]
+                maxy = self._coverage_properties['bbox'][3]
+
+            bbox = [minx, miny, maxx, maxy]
 
         if bands:
             LOGGER.debug('Selecting bands')
             args['indexes'] = list(map(int, bands))
 
-        with rasterio.open(self.data) as _data:
+        with rasterio.open(self.data) as src:
             LOGGER.debug('Creating output coverage metadata')
-            out_meta = _data.meta
+            out_profile = src.profile
 
             if self.options is not None:
                 LOGGER.debug('Adding dataset options')
                 for key, value in self.options.items():
-                    out_meta[key] = value
+                    out_profile[key] = value
 
-            if shapes:  # spatial subset
+            if bbox:  # spatial subset
+                LOGGER.error(bbox)
+                row_start, col_start = src.index(minx, maxy)
+                row_stop, col_stop = src.index(maxx, miny)
+                window = Window.from_slices(
+                    (row_start, row_stop), (col_start, col_stop),
+                )
                 try:
                     LOGGER.debug('Clipping data with bbox')
-                    out_image, out_transform = rasterio.mask.mask(
-                        _data,
-                        filled=False,
-                        shapes=shapes,
-                        crop=True,
-                        indexes=args['indexes'])
+                    out_image = src.read(indexes=args['indexes'], window=window)  # noqa
+
                 except ValueError as err:
                     LOGGER.error(err)
                     raise ProviderQueryError(err)
 
-                out_meta.update({'driver': self.native_format,
-                                 'height': out_image.shape[1],
-                                 'width': out_image.shape[2],
-                                 'transform': out_transform})
+                out_profile.update(
+                    {
+                     'height': window.height,
+                     'width': window.width,
+                     'transform': src.window_transform(window),
+                     'bbox': bbox,
+                    }
+                )
             else:  # no spatial subset
                 LOGGER.debug('Creating data in memory with band selection')
-                out_image = _data.read(indexes=args['indexes'])
-
-            if bbox:
-                out_meta['bbox'] = [bbox[0], bbox[1], bbox[2], bbox[3]]
-            elif shapes:
-                out_meta['bbox'] = [
-                    subsets[x][0], subsets[y][0],
-                    subsets[x][1], subsets[y][1]
+                out_image = src.read(indexes=args['indexes'])
+                out_profile['bbox'] = [
+                    src.bounds.left,
+                    src.bounds.bottom,
+                    src.bounds.right,
+                    src.bounds.top
                 ]
+
+            out_profile['units'] = src.units
+
+            if format_ == 'json':
+                LOGGER.debug('Creating output in CoverageJSON')
+                out_profile['bands'] = args['indexes']
+                return self.gen_covjson(out_profile, out_image)
             else:
-                out_meta['bbox'] = [
-                    _data.bounds.left,
-                    _data.bounds.bottom,
-                    _data.bounds.right,
-                    _data.bounds.top
-                ]
-
-            out_meta['units'] = _data.units
-
-            LOGGER.debug('Serializing data in memory')
-            with MemoryFile() as memfile:
-                with memfile.open(**out_meta) as dest:
-                    dest.write(out_image)
-
-                if format_ == 'json':
-                    LOGGER.debug('Creating output in CoverageJSON')
-                    out_meta['bands'] = args['indexes']
-                    return self.gen_covjson(out_meta, out_image)
-
-                else:  # return data in native format
-                    LOGGER.debug('Returning data in native format')
+                LOGGER.debug('Serializing data in memory')
+                out_profile['driver'] = format_
+                with MemoryFile() as memfile:
+                    with memfile.open(**out_profile) as dest:
+                        dest.write(out_image)
+                    LOGGER.debug(f'Returning data in format {format_}')
                     return memfile.read()
 
     def gen_covjson(self, metadata, data):
