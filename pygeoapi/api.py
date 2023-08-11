@@ -2417,7 +2417,6 @@ class API:
 
         query_args = {}
         format_ = F_JSON
-
         # Force response content type and language (en-US only) headers
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                FORMAT_TYPES[F_JSON],
@@ -2541,19 +2540,16 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
                 'NoApplicableCode', msg)
 
-        mt = collection_def['format']['name']
-        if format_ == mt:  # native format
-            if p.filename is not None:
-                cd = f'attachment; filename="{p.filename}"'
-                headers['Content-Disposition'] = cd
-
-            headers['Content-Type'] = collection_def['format']['mimetype']
-            return headers, HTTPStatus.OK, data
-        elif format_ == F_JSON:
+        if format_ == F_JSON:
             headers['Content-Type'] = 'application/prs.coverage+json'
             return headers, HTTPStatus.OK, to_json(data, self.pretty_print)
-        else:
-            return self.get_format_exception(request)
+
+        if p.filename is not None:
+            cd = f'attachment; filename="{p.filename}"'
+            headers['Content-Disposition'] = cd
+
+        headers['Content-Type'] = p.get_format_mimetype(format_)
+        return headers, HTTPStatus.OK, data
 
     @gzip
     @pre_process
