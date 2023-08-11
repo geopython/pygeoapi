@@ -272,7 +272,6 @@ class RasterioProvider(BaseProvider):
                     out_profile[key] = value
 
             if bbox:  # spatial subset
-                LOGGER.error(bbox)
                 row_start, col_start = src.index(minx, maxy)
                 row_stop, col_stop = src.index(maxx, miny)
                 window = Window.from_slices(
