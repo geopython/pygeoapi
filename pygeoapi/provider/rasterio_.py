@@ -176,7 +176,7 @@ class RasterioProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        if format_.lower() not in (
+        if format_ != 'json' and format_.lower() not in (
             f.lower() for f in self.supported_output_formats
         ):
             msg = f'Invalid format: {format_}'
