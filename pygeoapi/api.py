@@ -909,11 +909,6 @@ class API:
             collection_data = get_provider_default(v['providers'])
             collection_data_type = collection_data['type']
 
-            collection_data_format = None
-
-            if 'format' in collection_data:
-                collection_data_format = collection_data['format']
-
             collection = {
                 'id': k,
                 'title': l10n.translate(v['title'], request.locale),
@@ -1098,16 +1093,9 @@ class API:
                 collection['links'].append({
                     'type': 'application/prs.coverage+json',
                     'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                    'title': 'Coverage data',
+                    'title': 'Coverage data as CoverageJSON',
                     'href': f'{self.get_collections_url()}/{k}/coverage?f={F_JSON}'  # noqa
                 })
-                if collection_data_format is not None:
-                    collection['links'].append({
-                        'type': collection_data_format['mimetype'],
-                        'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                        'title': f"Coverage data as {collection_data_format['name']}",  # noqa
-                        'href': f"{self.get_collections_url()}/{k}/coverage?f={collection_data_format['name']}"  # noqa
-                    })
                 if dataset is not None:
                     LOGGER.debug('Creating extended coverage metadata')
                     try:
@@ -1124,6 +1112,15 @@ class API:
                     except ProviderTypeError:
                         pass
                     else:
+                        for f in p.supported_output_formats:
+                            collection['links'].append(
+                                {
+                                 'type': p.get_format_mimetype(f),
+                                 'rel': f'{OGC_RELTYPES_BASE}/coverage',
+                                 'title': f'Coverage data as {f}',
+                                 'href': f'{self.get_collections_url()}/{k}/coverage?f={f}'  # noqa
+                                 }
+                            )
                         collection['crs'] = [p.crs]
                         collection['domainset'] = p.get_coverage_domainset()
                         collection['rangetype'] = p.get_coverage_rangetype()
