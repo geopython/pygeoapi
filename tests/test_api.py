@@ -1464,8 +1464,8 @@ def test_get_collection_coverage(config, api_):
     assert code == HTTPStatus.OK
     content = json.loads(response)
 
-    assert content['domain']['axes']['x']['num'] == 34
-    assert content['domain']['axes']['y']['num'] == 34
+    assert content['domain']['axes']['x']['num'] == 35
+    assert content['domain']['axes']['y']['num'] == 35
     assert 'TMP' in content['parameters']
     assert 'TMP' in content['ranges']
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']

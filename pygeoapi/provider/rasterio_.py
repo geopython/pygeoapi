@@ -28,6 +28,7 @@
 # =================================================================
 
 import logging
+import math
 
 from pyproj import CRS, Transformer
 import rasterio
@@ -272,8 +273,8 @@ class RasterioProvider(BaseProvider):
                     out_profile[key] = value
 
             if bbox:  # spatial subset
-                row_start, col_start = src.index(minx, maxy)
-                row_stop, col_stop = src.index(maxx, miny)
+                row_start, col_start = src.index(minx, maxy, op=math.floor)
+                row_stop, col_stop = src.index(maxx, miny, op=math.ceil)
                 window = Window.from_slices(
                     (row_start, row_stop), (col_start, col_stop),
                 )
@@ -284,7 +285,6 @@ class RasterioProvider(BaseProvider):
                 except ValueError as err:
                     LOGGER.error(err)
                     raise ProviderQueryError(err)
-
                 out_profile.update(
                     {
                      'height': window.height,
