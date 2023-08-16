@@ -45,8 +45,16 @@ class BaseProcessor:
 
         :returns: pygeoapi.processor.base.BaseProvider
         """
+        self.processor_def = processor_def
         self.name = processor_def['name']
         self.metadata = process_metadata
+
+    def set_process_manager(self, process_manager, job_id: str):
+        """
+        When the process is executed inside a manager, this method references the manager so that the process can update its progression.
+        """
+        self.process_manager = process_manager
+        self.job_id = job_id
 
     def execute(self, data: dict) -> Tuple[str, Any]:
         """

@@ -33,6 +33,8 @@ import collections
 from datetime import datetime
 import json
 import logging
+import multiprocessing
+#import concurrent.futures
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
@@ -51,8 +53,12 @@ from pygeoapi.util import (
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
 )
-
+from pygeoapi.provider.base import (
+    ProviderPreconditionFailed,
+    ProviderRequestEntityTooLargeError
+)
 LOGGER = logging.getLogger(__name__)
+
 
 
 class BaseManager:
@@ -72,6 +78,11 @@ class BaseManager:
         self.is_async = False
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
+        self.max_concurrent = manager_def.get('max_concurrent', 0)
+        self.max_queue = manager_def.get('max_queue', 0)
+        self.result_in_db = manager_def.get('result_in_db', False)
+        self.internal_error_in_db = manager_def.get('internal_error_in_db', False)
+        self.job_pending = 0
 
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
@@ -84,6 +95,12 @@ class BaseManager:
         self.processes = collections.OrderedDict()
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
+
+        # If parallel processing is limited
+        self.semaphore = None
+        if self.max_concurrent > 0:
+            # Create a semaphore to limit a maximum of parallel processes
+            self.semaphore = multiprocessing.Semaphore(self.max_concurrent)
 
     def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
         """Instantiate a processor.
@@ -192,12 +209,21 @@ class BaseManager:
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
+
+        # If limiting the queue
+        if self.max_queue > 0:
+            # Check if over
+            if self.job_pending >= self.max_queue:
+                # Refuse, queue is full
+                return 'application/json', {'job_id': None}, JobStatus.dismissed
+
+        # Proceed
         _process = dummy.Process(
             target=self._execute_handler_sync,
             args=(p, job_id, data_dict)
         )
         _process.start()
-        return 'application/json', None, JobStatus.accepted
+        return 'application/json', {'job_id': job_id}, JobStatus.accepted
 
     def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
                               data_dict: dict) -> Tuple[str, Any, JobStatus]:
@@ -217,6 +243,12 @@ class BaseManager:
 
         process_id = p.metadata['id']
         current_status = JobStatus.accepted
+        message = 'Job accepted'
+
+        # If using limitation
+        if self.semaphore:
+            current_status = JobStatus.in_queue
+            message = 'Job accepted and put in queue'
 
         job_metadata = {
             'identifier': job_id,
@@ -227,86 +259,135 @@ class BaseManager:
             'status': current_status.value,
             'location': None,
             'mimetype': None,
-            'message': 'Job accepted and ready for execution',
+            'message': message,
             'progress': 5
         }
 
         self.add_job(job_metadata)
 
         try:
-            if self.output_dir is not None:
-                filename = f"{p.metadata['id']}-{job_id}"
-                job_filename = self.output_dir / filename
-            else:
-                job_filename = None
+            # Increment task count pending
+            self.job_pending = self.job_pending + 1
 
-            current_status = JobStatus.running
-            jfmt, outputs = p.execute(data_dict)
+            # If limiting parallel processing
+            if self.semaphore:
+                # Acquire the semaphore permission
+                self.semaphore.acquire()
 
-            self.update_job(job_id, {
-                'status': current_status.value,
-                'message': 'Writing job output',
-                'progress': 95
-            })
+            try:
+                current_status = JobStatus.accepted
+                self.update_job(job_id, {
+                    'status': current_status.value,
+                    'message': 'Job ready for execution',
+                    'progress': 10
+                })
 
-            if self.output_dir is not None:
-                LOGGER.debug(f'writing output to {job_filename}')
-                if isinstance(outputs, dict):
-                    mode = 'w'
-                    data = json.dumps(outputs, sort_keys=True, indent=4)
-                    encoding = 'utf-8'
-                elif isinstance(outputs, bytes):
-                    mode = 'wb'
-                    data = outputs
-                    encoding = None
-                with job_filename.open(mode=mode, encoding=encoding) as fh:
-                    fh.write(data)
+                if self.output_dir is not None:
+                    filename = f"{p.metadata['id']}-{job_id}"
+                    job_filename = self.output_dir / filename
+                else:
+                    job_filename = None
 
-            current_status = JobStatus.successful
+                current_status = JobStatus.running
+                jfmt, outputs = p.execute(data_dict)
 
-            job_update_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': str(job_filename),
-                'mimetype': jfmt,
-                'message': 'Job complete',
-                'progress': 100
-            }
+                self.update_job(job_id, {
+                    'status': current_status.value,
+                    'message': 'Writing job output',
+                    'progress': 95
+                })
 
-            self.update_job(job_id, job_update_metadata)
+                if self.output_dir is not None:
+                    LOGGER.debug(f'writing output to {job_filename}')
+                    if isinstance(outputs, dict):
+                        mode = 'w'
+                        data = json.dumps(outputs, sort_keys=True, indent=4)
+                        encoding = 'utf-8'
+                    elif isinstance(outputs, bytes):
+                        mode = 'wb'
+                        data = outputs
+                        encoding = None
+                    with job_filename.open(mode=mode, encoding=encoding) as fh:
+                        fh.write(data)
 
-        except Exception as err:
-            # TODO assess correct exception type and description to help users
-            # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
-            # must still be able to be retrieved with their error message
-            # intact, and the correct HTTP error status at the /results
-            # endpoint, even if the /result endpoint correctly returns the
-            # failure information (i.e. what one might assume is a 200
-            # response).
+                current_status = JobStatus.successful
 
-            current_status = JobStatus.failed
-            code = 'InvalidParameterValue'
-            outputs = {
-                'code': code,
-                'description': 'Error updating job'
-            }
-            LOGGER.error(err)
-            job_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
-                'status': current_status.value,
-                'location': None,
-                'mimetype': None,
-                'message': f'{code}: {outputs["description"]}'
-            }
+                job_update_metadata = {
+                    'job_end_datetime': datetime.utcnow().strftime(
+                        DATETIME_FORMAT),
+                    'status': current_status.value,
+                    'location': str(job_filename),
+                    'mimetype': jfmt,
+                    'message': 'Job complete',
+                    'progress': 100
+                }
 
-            jfmt = 'application/json'
+                # If data is going in the database
+                if self.result_in_db:
+                    job_update_metadata['result'] = json.dumps(outputs, sort_keys=True, indent=4)
 
-            self.update_job(job_id, job_metadata)
+                # Update the job termination
+                self.update_job(job_id, job_update_metadata)
 
-        return jfmt, outputs, current_status
+            except Exception as err:
+                # TODO assess correct exception type and description to help users
+                # NOTE, the /results endpoint should return the error HTTP status
+                # for jobs that failed, ths specification says that failing jobs
+                # must still be able to be retrieved with their error message
+                # intact, and the correct HTTP error status at the /results
+                # endpoint, even if the /result endpoint correctly returns the
+                # failure information (i.e. what one might assume is a 200
+                # response).
+
+                current_status = JobStatus.failed
+                if isinstance(err, ProviderPreconditionFailed):
+                    code = 'PreconditionFailed'
+                    description = str(err)
+
+                elif isinstance(err, ProviderRequestEntityTooLargeError):
+                    code = 'RequestEntityTooLargeError'
+                    description = str(err)
+
+                else:
+                    code = 'InvalidParameterValue'
+                    description = 'Error processing job'
+
+                outputs = {
+                    'code': code,
+                    'error': err,
+                    'description': description
+                }
+
+                LOGGER.error(err)
+                job_metadata = {
+                    'job_end_datetime': datetime.utcnow().strftime(
+                        DATETIME_FORMAT),
+                    'status': current_status.value,
+                    'location': None,
+                    'mimetype': None,
+                    'message': f'{code}: {outputs["description"]}'
+                }
+
+                jfmt = 'application/json'
+
+                # If the internal error is going in the database
+                if self.internal_error_in_db:
+                    job_metadata['internal_error'] = str(err)
+
+                # Update the job
+                self.update_job(job_id, job_metadata)
+
+            return jfmt, outputs, current_status
+
+        finally:
+            # Decrement job pending
+            self.job_pending = self.job_pending - 1
+
+            # If using limitation
+            if self.semaphore:
+                # Release the semaphore
+                self.semaphore.release()
+
 
     def execute_process(
             self,
@@ -331,6 +412,10 @@ class BaseManager:
 
         job_id = str(uuid.uuid1())
         processor = self.get_processor(process_id)
+
+        # Running inside a process manager, set it
+        processor.set_process_manager(self, job_id)
+
         if execution_mode == RequestedProcessExecutionMode.respond_async:
             job_control_options = processor.metadata.get(
                 'jobControlOptions', [])
