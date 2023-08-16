@@ -72,3 +72,23 @@ class ProcessorGenericError(Exception):
 class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
     pass
+
+
+class JobError(Exception):
+    pass
+
+
+class JobNotFoundError(JobError):
+    pass
+
+
+class JobResultNotFoundError(JobError):
+    pass
+
+
+class ProcessError(Exception):
+    pass
+
+
+class UnknownProcessError(ProcessError):
+    pass

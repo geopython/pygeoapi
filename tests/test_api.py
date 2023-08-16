@@ -607,7 +607,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 25
+    assert len(root['conformsTo']) == 30
     assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
            in root['conformsTo']
 
@@ -1803,12 +1803,13 @@ def test_execute_process(config, api_):
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
     for _, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_job(job_id)
+        rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
         assert code == HTTPStatus.OK
 
 
 def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job('does-not-exist')
+    rsp_headers, code, response = api_.delete_job(
+        mock_request(), 'does-not-exist')
 
     assert code == HTTPStatus.NOT_FOUND
 
@@ -1834,11 +1835,11 @@ def test_delete_job(api_):
     assert data['value'] == 'Hello Sync Test Deletion!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
 
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
     req = mock_request(data=req_body_async, HTTP_Prefer='respond-async')
@@ -1850,10 +1851,10 @@ def test_delete_job(api_):
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(job_id)
+    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
 
@@ -1927,6 +1928,63 @@ def test_get_collection_edr_query(config, api_):
 
     assert len(data['parameters'].keys()) == 1
     assert list(data['parameters'].keys())[0] == 'SST'
+
+    # Zulu time zone
+    req = mock_request({
+        'coords': 'POINT(11 11)',
+        'datetime': '2000-01-17T00:00:00Z/2000-06-16T23:00:00Z'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+
+    # bounded date range
+    req = mock_request({
+        'coords': 'POINT(11 11)',
+        'datetime': '2000-01-17/2000-06-16'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+
+    data = json.loads(response)
+    time_dict = data['domain']['axes']['TIME']
+
+    assert time_dict['start'] == '2000-02-15T16:29:05.999999999'
+    assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
+    assert time_dict['num'] == 5
+
+    # unbounded date range - start
+    req = mock_request({
+        'coords': 'POINT(11 11)',
+        'datetime': '../2000-06-16'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+
+    data = json.loads(response)
+    time_dict = data['domain']['axes']['TIME']
+
+    assert time_dict['start'] == '2000-01-16T06:00:00.000000000'
+    assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
+    assert time_dict['num'] == 6
+
+    # unbounded date range - end
+    req = mock_request({
+        'coords': 'POINT(11 11)',
+        'datetime': '2000-06-16/..'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+
+    data = json.loads(response)
+    time_dict = data['domain']['axes']['TIME']
+
+    assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
+    assert time_dict['stop'] == '2000-12-16T01:20:05.999999996'
+    assert time_dict['num'] == 7
 
     # some data
     req = mock_request({

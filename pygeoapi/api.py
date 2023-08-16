@@ -5,10 +5,12 @@
 #          Sander Schaminee <sander.schaminee@geocat.net>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -62,7 +64,12 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import ProcessorExecuteError
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+    ProcessorExecuteError,
+)
+from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
@@ -116,7 +123,11 @@ SYSTEM_LOCALE = l10n.Locale('en', 'US')
 CONFORMANCE = {
     'common': [
         'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections'
+        'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/html',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30'
     ],
     'feature': [
         'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
@@ -142,7 +153,8 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
     ],
     'tile': [
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core'
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt'
     ],
     'record': [
         'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
@@ -666,19 +678,7 @@ class API:
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
 
-        # TODO: add as decorator
-        if 'manager' in self.config['server']:
-            manager_def = self.config['server']['manager']
-        else:
-            LOGGER.info('No process manager defined; starting dummy manager')
-            manager_def = {
-                'name': 'Dummy',
-                'connection': None,
-                'output_dir': None
-            }
-
-        LOGGER.debug(f"Loading process manager {manager_def['name']}")
-        self.manager = load_plugin('process_manager', manager_def)
+        self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
     @gzip
@@ -947,7 +947,7 @@ class API:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
 
             LOGGER.debug('Processing configured collection links')
-            for link in l10n.translate(v['links'], request.locale):
+            for link in l10n.translate(v.get('links', []), request.locale):
                 lnk = {
                     'type': link['type'],
                     'rel': link['rel'],
@@ -1130,21 +1130,29 @@ class API:
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
+                p = load_plugin('provider', tile)
+            except ProviderConnectionError:
+                msg = 'connection error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    headers, request.format,
+                    'NoApplicableCode', msg)
             except ProviderTypeError:
                 tile = None
 
             if tile:
                 # TODO: translate
+
                 LOGGER.debug('Adding tile links')
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'tiles',
+                    'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
                     'title': 'Tiles as JSON',
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'tiles',
+                    'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
                     'title': 'Tiles as HTML',
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_HTML}'  # noqa
                 })
@@ -2352,17 +2360,20 @@ class API:
             'href': f'{self.get_collections_url()}/{dataset}'
         }])
 
+        link_request_format = (
+            request.format if request.format is not None else F_JSON
+        )
         if 'prev' in content:
             content['links'].append({
                 'rel': 'prev',
-                'type': FORMAT_TYPES[request.format],
-                'href': f"{self.get_collections_url()}/{dataset}/items/{content['prev']}?f={request.format}"  # noqa
+                'type': FORMAT_TYPES[link_request_format],
+                'href': f"{self.get_collections_url()}/{dataset}/items/{content['prev']}?f={link_request_format}"  # noqa
             })
         if 'next' in content:
             content['links'].append({
                 'rel': 'next',
-                'type': FORMAT_TYPES[request.format],
-                'href': f"{self.get_collections_url()}/{dataset}/items/{content['next']}?f={request.format}"  # noqa
+                'type': FORMAT_TYPES[link_request_format],
+                'href': f"{self.get_collections_url()}/{dataset}/items/{content['next']}?f={link_request_format}"  # noqa
             })
 
         # Set response language to requested provider locale
@@ -2750,6 +2761,7 @@ class API:
                 'dataType': 'vector',
                 'links': []
             }
+            tile_matrix['links'].append(matrix.tileMatrixSetDefinition)
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
@@ -2762,6 +2774,7 @@ class API:
                 'title': f'{dataset} - {matrix.tileMatrixSet} - {F_HTML}',
                 'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
             })
+
             tiles['tilesets'].append(tile_matrix)
 
         metadata_format = p.options['metadata_format']
@@ -3245,17 +3258,15 @@ class API:
         if not request.is_valid():
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
-        processes_config = filter_dict_by_key_value(self.config['resources'],
-                                                    'type', 'process')
 
         if process is not None:
-            if process not in processes_config.keys() or not processes_config:
+            if process not in self.manager.processes.keys():
                 msg = 'Identifier not found'
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers,
                     request.format, 'NoSuchProcess', msg)
 
-        if processes_config:
+        if len(self.manager.processes) > 0:
             if process is not None:
                 relevant_processes = [process]
             else:
@@ -3269,10 +3280,10 @@ class API:
                             HTTPStatus.BAD_REQUEST, headers, request.format,
                             'InvalidParameterValue', msg)
 
-                    relevant_processes = [*processes_config][:limit]
+                    relevant_processes = list(self.manager.processes)[:limit]
                 except TypeError:
                     LOGGER.debug('returning all processes')
-                    relevant_processes = processes_config.keys()
+                    relevant_processes = self.manager.processes.keys()
                 except ValueError:
                     msg = 'limit value should be an integer'
                     return self.get_exception(
@@ -3280,9 +3291,7 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = load_plugin('process',
-                                processes_config[key]['processor'])
-
+                p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
 
@@ -3404,16 +3413,17 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        if self.manager:
-            if job_id is None:
-                jobs = sorted(self.manager.get_jobs(),
-                              key=lambda k: k['job_start_datetime'],
-                              reverse=True)
-            else:
-                jobs = [self.manager.get_job(job_id)]
+        if job_id is None:
+            jobs = sorted(self.manager.get_jobs(),
+                          key=lambda k: k['job_start_datetime'],
+                          reverse=True)
         else:
-            LOGGER.debug('Process management not configured')
-            jobs = []
+            try:
+                jobs = [self.manager.get_job(job_id)]
+            except JobNotFoundError:
+                return self.get_exception(
+                    HTTPStatus.NOT_FOUND, headers, request.format,
+                    'InvalidParameterValue', job_id)
 
         serialized_jobs = {
             'jobs': [],
@@ -3507,17 +3517,11 @@ class API:
         # Responses are always in US English only
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        processes_config = filter_dict_by_key_value(
-            self.config['resources'], 'type', 'process'
-        )
-        if process_id not in processes_config:
+        if process_id not in self.manager.processes:
             msg = 'identifier not found'
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
-
-        process = load_plugin('process',
-                              processes_config[process_id]['processor'])
 
         data = request.data
         if not data:
@@ -3550,13 +3554,14 @@ class API:
 
         try:
             execution_mode = RequestedProcessExecutionMode(
-                request.headers.get('Prefer'))
+                request.headers.get('Prefer', request.headers.get('prefer'))
+            )
         except ValueError:
             execution_mode = None
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process, data_dict, execution_mode=execution_mode)
+                process_id, data_dict, execution_mode=execution_mode)
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'
@@ -3606,12 +3611,13 @@ class API:
             return self.get_format_exception(request)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        job = self.manager.get_job(job_id)
-
-        if not job:
-            msg = 'job not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NoSuchJob', msg)
+        try:
+            job = self.manager.get_job(job_id)
+        except JobNotFoundError:
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, headers,
+                request.format, 'NoSuchJob', job_id
+            )
 
         status = JobStatus[job['status']]
 
@@ -3634,7 +3640,13 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        mimetype, job_output = self.manager.get_job_result(job_id)
+        try:
+            mimetype, job_output = self.manager.get_job_result(job_id)
+        except JobResultNotFoundError:
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
+                request.format, 'JobResultNotFound', job_id
+            )
 
         if mimetype not in (None, FORMAT_TYPES[F_JSON]):
             headers['Content-Type'] = mimetype
@@ -3655,7 +3667,10 @@ class API:
 
         return headers, HTTPStatus.OK, content
 
-    def delete_job(self, job_id) -> Tuple[dict, int, str]:
+    @pre_process
+    def delete_job(
+            self, request: Union[APIRequest, Any], job_id
+    ) -> Tuple[dict, int, str]:
         """
         Delete a process job
 
@@ -3663,32 +3678,37 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
-        success = self.manager.delete_job(job_id)
-
-        if not success:
-            http_status = HTTPStatus.NOT_FOUND
-            response = {
-                'code': 'NoSuchJob',
-                'description': 'Job identifier not found'
-            }
+        response_headers = request.get_response_headers(
+            SYSTEM_LOCALE, **self.api_headers)
+        try:
+            success = self.manager.delete_job(job_id)
+        except JobNotFoundError:
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, response_headers, request.format,
+                'NoSuchJob', job_id
+            )
         else:
-            http_status = HTTPStatus.OK
-            jobs_url = f"{self.base_url}/jobs"
+            if success:
+                http_status = HTTPStatus.OK
+                jobs_url = f"{self.base_url}/jobs"
 
-            response = {
-                'jobID': job_id,
-                'status': JobStatus.dismissed.value,
-                'message': 'Job dismissed',
-                'progress': 100,
-                'links': [{
-                    'href': jobs_url,
-                    'rel': 'up',
-                    'type': FORMAT_TYPES[F_JSON],
-                    'title': 'The job list for the current process'
-                }]
-            }
-
+                response = {
+                    'jobID': job_id,
+                    'status': JobStatus.dismissed.value,
+                    'message': 'Job dismissed',
+                    'progress': 100,
+                    'links': [{
+                        'href': jobs_url,
+                        'rel': 'up',
+                        'type': FORMAT_TYPES[F_JSON],
+                        'title': 'The job list for the current process'
+                    }]
+                }
+            else:
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, response_headers,
+                    request.format, 'InternalError', job_id
+                )
         LOGGER.info(response)
         # TODO: this response does not have any headers
         return {}, http_status, response

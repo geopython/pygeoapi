@@ -27,19 +27,20 @@
 #
 # =================================================================
 
-try:
-    import fcntl
-except ModuleNotFoundError:
-    # When on Windows, fcntl does not exist and file locking is automatic
-    fcntl = None
 
+from contextlib import contextmanager
 import json
 import logging
 from pathlib import Path
 from typing import Any, Tuple
 
 import tinydb
+from filelock import FileLock
 
+from pygeoapi.process.base import (
+    JobNotFoundError,
+    JobResultNotFoundError,
+)
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
 
@@ -61,19 +62,12 @@ class TinyDBManager(BaseManager):
         super().__init__(manager_def)
         self.is_async = True
 
-    def _connect(self, mode: str = 'r') -> bool:
-        """
-        connect to manager
-
-        :returns: `bool` of status of result
-        """
-
-        self.db = tinydb.TinyDB(self.connection)
-
-        if mode == 'w' and fcntl is not None:
-            fcntl.lockf(self.db.storage._handle, fcntl.LOCK_EX)
-
-        return True
+    @contextmanager
+    def _db(self):
+        self.lock = FileLock(f"{self.connection}.lock")
+        with self.lock:
+            with tinydb.TinyDB(self.connection) as db:
+                yield db
 
     def destroy(self) -> bool:
         """
@@ -82,8 +76,9 @@ class TinyDBManager(BaseManager):
         :returns: `bool` status of result
         """
 
-        self.db.purge()
-        self.db.close()
+        with self._db as db:
+            db.purge()
+
         return True
 
     def get_jobs(self, status: JobStatus = None) -> list:
@@ -96,9 +91,8 @@ class TinyDBManager(BaseManager):
         :returns: 'list` of jobs (identifier, status, process identifier)
         """
 
-        self._connect()
-        jobs_list = self.db.all()
-        self.db.close()
+        with self._db() as db:
+            jobs_list = db.all()
 
         return jobs_list
 
@@ -111,9 +105,8 @@ class TinyDBManager(BaseManager):
         :returns: identifier of added job
         """
 
-        self._connect(mode='w')
-        doc_id = self.db.insert(job_metadata)
-        self.db.close()
+        with self._db() as db:
+            doc_id = db.insert(job_metadata)
 
         return doc_id  # noqa
 
@@ -127,9 +120,8 @@ class TinyDBManager(BaseManager):
         :returns: `bool` of status result
         """
 
-        self._connect(mode='w')
-        self.db.update(update_dict, tinydb.where('identifier') == job_id)
-        self.db.close()
+        with self._db() as db:
+            db.update(update_dict, tinydb.where('identifier') == job_id)
 
         return True
 
@@ -139,18 +131,18 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :return `bool` of status result
         """
         # delete result file if present
         job_result = self.get_job(job_id)
-        if job_result:
-            location = job_result.get('location')
-            if location and self.output_dir is not None:
-                Path(location).unlink()
+        location = job_result.get('location')
+        if location and self.output_dir is not None:
+            Path(location).unlink()
 
-        self._connect(mode='w')
-        removed = bool(self.db.remove(tinydb.where('identifier') == job_id))
-        self.db.close()
+        with self._db() as db:
+            removed = bool(db.remove(tinydb.where('identifier') == job_id))
 
         return removed
 
@@ -160,16 +152,21 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
-        self._connect()
         query = tinydb.Query()
-        result = self.db.search(query.identifier == job_id)
-
-        result = result[0] if result else None
-        self.db.close()
-        return result
+        with self._db() as db:
+            found = db.search(query.identifier == job_id)
+        if found is not None:
+            try:
+                return found[0]
+            except IndexError:
+                raise JobNotFoundError()
+        else:
+            raise JobNotFoundError()
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
         """
@@ -177,14 +174,14 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
+        :raises: JobNotFoundError: if the job_id does not correspond to a
+            known job
+        :raises: JobResultNotFoundError: if the job-related result cannot
+            be returned
         :returns: `tuple` of mimetype and raw output
         """
 
         job_result = self.get_job(job_id)
-        if not job_result:
-            # job does not exist
-            return None
-
         location = job_result.get('location')
         mimetype = job_result.get('mimetype')
         job_status = JobStatus[job_result['status']]
@@ -193,16 +190,17 @@ class TinyDBManager(BaseManager):
             # Job is incomplete
             return (None,)
         if not location:
-            # Job data was not written for some reason
-            # TODO log/raise exception?
-            return (None,)
+            LOGGER.warning(f'job {job_id!r} -  unknown result location')
+            raise JobResultNotFoundError()
         else:
-            location = Path(location)
-
-        with location.open('r', encoding='utf-8') as filehandler:
-            result = json.load(filehandler)
-
-        return mimetype, result
+            try:
+                location = Path(location)
+                with location.open('r', encoding='utf-8') as filehandler:
+                    result = json.load(filehandler)
+            except (TypeError, FileNotFoundError, json.JSONDecodeError):
+                raise JobResultNotFoundError()
+            else:
+                return mimetype, result
 
     def __repr__(self):
         return f'<TinyDBManager> {self.name}'

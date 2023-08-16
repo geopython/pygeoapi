@@ -66,6 +66,56 @@ The following methods are options to connect a plugin to pygeoapi:
          id_field: stn_id
 
 
+Specifying custom pygeoapi CLI commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Third-party plugins may also provide custom CLI commands. This can be done by means of two additional steps:
+
+1. Create your CLI commands using click
+2. In your plugin's ``setup.py`` or ``pyproject.toml`` file, specify an entrypoint for the ``pygeoapi`` group
+   pointing to your click CLI command or group.
+
+As a simple example, lets imagine you develop a plugin named ``myplugin``, which has a ``cli.py`` module with
+the following contents:
+
+.. code-block:: python
+
+   # module: myplugin.cli
+   import click
+
+   @click.command(name="super-command")
+   def my_cli_command():
+       print("Hello, this is my custom pygeoapi CLI command!")
+
+
+Then, in your plugin's ``setup.py`` file, specify the entrypoints section:
+
+.. code-block:: python
+
+   # file: setup.py
+   entry_points={
+       'pygeoapi': ['my-plugin = myplugin.cli:my_cli_command']
+   }
+
+Alternatively, if using a ``pyproject.toml`` file instead:
+
+.. code-block:: python
+
+   # file: pyproject.toml
+   # Noter that this example uses poetry, other Python projects may differ in
+   # how they expect entry_points to be specified
+   [tool.poetry.plugins."pygeoapi"]
+   my-plugin = 'myplugin.cli:my_cli_command'
+
+
+After having installed this plugin, you should now be able to call the CLI command by running:
+
+.. code-block:: sh
+
+   $ pygeoapi plugins super-command
+   Hello, this is my custom pygeoapi CLI command!
+
+
 .. note::  The United States Geological Survey has created a Cookiecutter project for creating pygeoapi plugins. See the `pygeoapi-plugin-cookiecutter`_ project to get started.
 
 **Option 2**: Update in core pygeoapi:
@@ -93,11 +143,6 @@ The pygeoapi process manager may also be customized. Similarly to the provider p
 configuration's ``server.manager.name`` to indicate either the dotted path to the python package and the relevant
 manager class (*i.e.* similar to option 1 above) or the name of a known core pygeoapi plugin (*i.e.*, similar to
 option 2 above).
-
-
-
-
-
 
 Example: custom pygeoapi vector data provider
 ---------------------------------------------
@@ -282,8 +327,10 @@ by downstream applications.
    `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
    `nldi_xstool`_,United States Geological Survey,Water data processing
    `pygeometa-plugin`_,pygeometa project,pygeometa as a service
+   `cgs-plugins`_,Center for Geospatial Solutions,feature and processes plugins
 
 
+.. _`cgs-plugins`: https://github.com/cgs-earth/pygeoapi-plugins
 .. _`Cookiecutter`: https://github.com/audreyfeldroy/cookiecutter-pypackage
 .. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
 .. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill

@@ -243,7 +243,8 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     else:
         indent = None
 
-    return json.dumps(dict_, default=json_serial, indent=indent)
+    return json.dumps(dict_, default=json_serial, indent=indent,
+                      separators=(',', ':'))
 
 
 def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:

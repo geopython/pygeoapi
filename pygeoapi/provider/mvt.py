@@ -60,6 +60,9 @@ class MVTProvider(BaseTileProvider):
         """
 
         super().__init__(provider_def)
+
+        self.tile_type = 'vector'
+
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
@@ -254,11 +257,12 @@ class MVTProvider(BaseTileProvider):
         if is_url(self.data):
             url = urlparse(self.data)
             base_url = f'{url.scheme}://{url.netloc}'
-            with requests.Session() as session:
-                session.get(base_url)
-                resp = session.get(f'{base_url}/{layer}/metadata.json')
-                resp.raise_for_status()
-            metadata_json_content = resp.json()
+            if metadata_format == TilesMetadataFormat.TILEJSON:
+                with requests.Session() as session:
+                    session.get(base_url)
+                    resp = session.get(f'{base_url}/{layer}/metadata.json')
+                    resp.raise_for_status()
+                metadata_json_content = resp.json()
         else:
             if not isinstance(self.service_metadata_url, Path):
                 msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa

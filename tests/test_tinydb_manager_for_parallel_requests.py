@@ -112,7 +112,7 @@ def test_async_hello_world_process_parallel(api_, config):
     query = Query()
     for process_out in processes_out.values():
         try:
-            assert process_out['http_status'] == 201
+            assert process_out['http_status'] == 200
             job_id = process_out['headers']['Location'].split('/')[-1]
             job_dict = db.search(query.identifier == job_id)[0]
             assert job_dict["identifier"] == job_id
@@ -120,7 +120,7 @@ def test_async_hello_world_process_parallel(api_, config):
             assert job_dict["mimetype"] == process_out['headers'][
                 'Content-Type']
             try:
-                with open(f'{index_name.parent()}/hello-world-{job_id}') as fh:
+                with open(f'{index_name.parent}/hello-world-{job_id}') as fh:
                     out_json = json.load(fh)
                     assert out_json["id"] == "echo"
                     assert out_json["value"] == "Hello World! Hello"

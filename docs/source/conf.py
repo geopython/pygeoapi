@@ -100,7 +100,7 @@ master_doc = 'index'
 # General information about the project.
 # General information about the project.
 project = 'pygeoapi'
-author = 'pygeoapi team'
+author = 'pygeoapi development team'
 license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'  # noqa
 copyright = '2018-2023, ' + author + ' ' + license
 
@@ -111,7 +111,7 @@ today_fmt = '%Y-%m-%d'
 # built documents.
 #
 # The short X.Y version.
-version = '0.15.dev0'
+version = '0.16.dev0'
 # The full version, including alpha/beta/rc tags.
 release = version
 

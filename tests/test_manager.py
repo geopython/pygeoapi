@@ -1,10 +1,8 @@
 # =================================================================
 #
-# Authors: Tom Kralidis <tomkralidis@gmail.com>
-#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
+# Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2019 Tom Kralidis
-#           (c) 2023 Ricardo Garcia Silva
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -28,36 +26,48 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-
-import logging
 from typing import Dict
 
-from pygeoapi.plugin import load_plugin
-from pygeoapi.process.manager.base import BaseManager
+import pytest
 
-LOGGER = logging.getLogger(__name__)
+from pygeoapi.process.base import UnknownProcessError
+from pygeoapi.process.manager.base import get_manager
 
 
-def get_manager(config: Dict) -> BaseManager:
-    """Instantiate process manager from the supplied configuration.
-
-    :param config: pygeoapi configuration
-
-    :returns: The pygeoapi process manager object
-    """
-    manager_conf = config.get('server', {}).get(
-        'manager',
-        {
-            'name': 'Dummy',
-            'connection': None,
-            'output_dir': None
+@pytest.fixture()
+def config() -> Dict:
+    return {
+        'server': {
+            'manager': {
+                'name': 'TinyDB',
+                'output_dir': '/tmp',
+            }
+        },
+        'resources': {
+            'hello-world': {
+                'type': 'process',
+                'processor': {
+                    'name': 'HelloWorld'
+                }
+            }
         }
-    )
-    processes_conf = {}
-    for id_, resource_conf in config.get('resources', {}).items():
-        if resource_conf.get('type') == 'process':
-            processes_conf[id_] = resource_conf
-    manager_conf['processes'] = processes_conf
-    if manager_conf.get('name') == 'Dummy':
-        LOGGER.info('Starting dummy manager')
-    return load_plugin('process_manager', manager_conf)
+    }
+
+
+def test_get_manager(config):
+    manager = get_manager(config)
+    assert manager.name == config['server']['manager']['name']
+    assert 'hello-world' in manager.processes
+
+
+def test_get_processor(config):
+    manager = get_manager(config)
+    process_id = 'hello-world'
+    processor = manager.get_processor(process_id)
+    assert processor.metadata["id"] == process_id
+
+
+def test_get_processor_raises_exception(config):
+    manager = get_manager(config)
+    with pytest.raises(expected_exception=UnknownProcessError):
+        manager.get_processor('foo')
