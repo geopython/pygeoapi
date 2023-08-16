@@ -28,7 +28,8 @@
 # =================================================================
 
 
-import json, logging
+import json
+import logging
 from pathlib import Path
 from typing import (Any, Tuple)
 
@@ -259,7 +260,7 @@ class PostgresDBManager(BaseManager):
                 conn.commit()
                 return True
         else:
-             raise JobNotFoundError()
+            raise JobNotFoundError()
 
     def get_job(self, job_id: str) -> dict:
         """
