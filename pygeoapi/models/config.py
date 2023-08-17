@@ -34,8 +34,11 @@ from pydantic import BaseModel, Field
 
 class APIRules(BaseModel):
     """ Pydantic model for API design rules that must be adhered to. """
-    api_version: str = Field(regex=r'^\d+\.\d+\..+$',
-                             description="Semantic API version number.")
+    api_version: str = Field(
+        "",
+        regex=r'^\d+\.\d+\..+$',
+        description="Semantic API version number."
+    )
     url_prefix: str = Field(
         "",
         description="If set, pygeoapi routes will be prepended with the "
