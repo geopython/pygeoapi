@@ -35,12 +35,11 @@ import logging
 
 import pytest
 import pyproj
+from shapely.geometry import shape as geojson_to_geom
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.ogr import OGRProvider
-from pygeoapi.util import (
-    CrsTransformSpec, get_transform_from_crs, geojson_to_geom,
-)
+from pygeoapi.util import CrsTransformSpec, get_transform_from_crs
 
 LOGGER = logging.getLogger(__name__)
 
