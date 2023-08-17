@@ -321,6 +321,11 @@ class ProviderInvalidDataError(ProviderGenericError):
     pass
 
 
+class ProviderPreconditionFailed(ProviderGenericError):
+    """provider precondition failed"""
+    pass
+
+
 class ProviderRequestEntityTooLargeError(ProviderGenericError):
     """provider request entity too large error"""
     pass

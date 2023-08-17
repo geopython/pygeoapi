@@ -34,7 +34,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BaseProcessor:
-    """generic Processor ABC. Processes are inherited from this class"""
+    """
+    Generic Processor ABC. Processes are inherited from this class
+    """
 
     def __init__(self, processor_def: dict, process_metadata: dict):
         """
@@ -45,19 +47,25 @@ class BaseProcessor:
 
         :returns: pygeoapi.processor.base.BaseProvider
         """
+        self.processor_def = processor_def
         self.name = processor_def['name']
         self.metadata = process_metadata
 
+    def set_process_manager(self, process_manager, job_id: str):
+        """
+        When the process is executed inside a manager, this method references
+        the manager so that the process can update its progression.
+        """
+        self.process_manager = process_manager
+        self.job_id = job_id
+
     def execute(self, data: dict) -> Tuple[str, Any]:
         """
-        execute the process
-
+        Execute the process
         :param data: Dict with the input data that the process needs in order
                      to execute
-
         :returns: tuple of MIME type and process response
         """
-
         raise NotImplementedError()
 
     def __repr__(self):
