@@ -15,11 +15,11 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, properties, subset, bbox, datetime
+   :header: Provider, properties, subset, bbox, datetime, scale-size, scale-factor, scale-axes
    :align: left
 
-   :ref:`Rasterio<rasterio-provider>`,✅,✅,✅,
-   :ref:`Xarray<xarray-provider>`,✅,✅,✅,✅
+   :ref:`Rasterio<rasterio-provider>`,✅,✅,✅,❌,❌,❌,❌
+   :ref:`Xarray<xarray-provider>`,✅,✅,✅,✅,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -53,6 +53,64 @@ capable of handling.
 .. note::
    The Rasterio provider ``format.name`` directive **requires** a valid
    `GDAL raster driver short name`_.
+
+The `Rasterio`_ provider supports multiple output encodings for coverage data,
+which can be different from the native format or CoverageJSON, as long as they
+are compatible with the native format (e.g. data types, bit depth, file size
+limit). In order, to allow for multiple output encodings, one can configure the
+`Rasterio`_ provider as follows:
+
+.. code-block:: yaml
+
+    - type: coverage
+      name: rasterio
+      data: tests/data/CMC_glb_TMP_TGL_2_latlon.15x.15_2020081000_P000.grib2
+      storage_format: # native format
+          name: GRIB # required
+          mimetype: application/x-grib2 # required
+          valid_output_format: True/False # optional, default True
+          # Note: options were moved inside the storage_format block
+          options: # optional options (i.e. GDAL creation)
+              DATA_ENCODING: COMPLEX_PACKING
+      # list of other formats supported for export
+      format:
+          # first additional format
+          - name: GTiff # required
+            mimetype: image/tiff # required
+            options: # optional options (i.e. GDAL creation)
+                TILED: YES
+		BLOCKXSIZE: 256
+		BLOCKYSIZE: 256
+          # second additional format
+          - name: ... # required
+            mimetype: ... # required
+            options: # optional options (i.e. GDAL creation)
+                opt1_name: opt1_value
+                opt2_name: opt2_value
+                ...
+          ...
+
+This way of configuring the `Rasterio`_ provider can also be used to publish a
+coverage dataset made up of multiple data files in a single collection, as long
+as they can be indexed in a single GDAL reable file. One can use the `GDAL
+virtual format`_ to create a virtual dataset composed from multiple data files
+(see https://gdal.org/programs/gdalbuildvrt.html), as data source for the
+service:
+
+.. code-block:: yaml
+
+    - type: coverage
+      name: rasterio
+      data: /path/to/coverage/virtual/dataset.vrt
+      storage_format:
+          name: VRT
+          mimetype: xml/vrt
+          valid_output_format: False # not interesting for end-users
+      # list of other formats supported for export
+      format:
+          - name: GTiff
+            mimetype: image/tiff
+
 
 .. _xarray-provider:
 
@@ -104,7 +162,8 @@ Data access examples
   * http://localhost:5000/collections/foo/coverage/domainset
 * coverage access via CoverageJSON (default)
   * http://localhost:5000/collections/foo/coverage?f=json
-* coverage access via native format (as defined in ``provider.format.name``)
+* coverage access via native format or other supported output formats
+  (as defined in ``provider.format.name`` or ``provider.storage_format.name``)
   * http://localhost:5000/collections/foo/coverage?f=GRIB
 * coverage access with comma-separated properties
   * http://localhost:5000/collections/foo/coverage?properties=1,3
@@ -125,3 +184,4 @@ Data access examples
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
 .. _`GDAL raster driver short name`: https://gdal.org/drivers/raster/index.html
+.. _`GDAL virtual format`: https://gdal.org/drivers/raster/vrt.html
