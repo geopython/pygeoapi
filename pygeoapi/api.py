@@ -1706,15 +1706,17 @@ class API:
                     'href': f'{uri}?offset={prev}{serialized_query_params}'
                 })
 
-        if len(content['features']) == limit:
-            next_ = offset + limit
-            content['links'].append(
-                {
-                    'type': 'application/geo+json',
-                    'rel': 'next',
-                    'title': 'items (next)',
-                    'href': f'{uri}?offset={next_}{serialized_query_params}'
-                })
+        if 'numberMatched' in content:
+            if content['numberMatched'] > (limit + offset):
+                next_ = offset + limit
+                next_href = f'{uri}?offset={next_}{serialized_query_params}'
+                content['links'].append(
+                    {
+                        'type': 'application/geo+json',
+                        'rel': 'next',
+                        'title': 'items (next)',
+                        'href': next_href
+                    })
 
         content['links'].append(
             {
