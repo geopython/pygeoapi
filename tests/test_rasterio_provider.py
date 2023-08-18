@@ -29,8 +29,10 @@
 
 import pytest
 
-from pygeoapi.provider.rasterio_ import RasterioProvider
+import pyproj
 
+from pygeoapi.provider.rasterio_ import RasterioProvider
+from pygeoapi.util import get_transform_from_crs
 from .util import get_test_file_path
 
 path = get_test_file_path(
@@ -98,10 +100,23 @@ def test_query_bbox_reprojection(config):
     )
     p = RasterioProvider(config)
 
-    data = p.query(bbox=[-79, 45, -75, 49])
+    bbox_crs_epsg = 4326
+    bbox = [-79, 45, -75, 49]
+    xmin, ymin, xmax, ymax = bbox
+    data = p.query(bbox=bbox, bbox_crs=bbox_crs_epsg)
+    storage_crs = p._data.crs
+    transform_func = get_transform_from_crs(
+        pyproj.CRS.from_epsg(bbox_crs_epsg),
+        storage_crs,
+        geom_objects=False,
+        always_xy=True,
+    )
+    x_start, y_stop = transform_func(xmin, ymin)
+    x_stop, y_start = transform_func(xmax, ymax)
 
     assert isinstance(data, dict)
-    assert data['domain']['axes']['x']['start'] == -79.0
-    assert data['domain']['axes']['x']['stop'] == -75.0
-    assert data['domain']['axes']['y']['start'] == 49.0
-    assert data['domain']['axes']['y']['stop'] == 45.0
+
+    assert data['domain']['axes']['x']['start'] == x_start
+    assert data['domain']['axes']['x']['stop'] == x_stop
+    assert data['domain']['axes']['y']['start'] == y_start
+    assert data['domain']['axes']['y']['stop'] == y_stop
