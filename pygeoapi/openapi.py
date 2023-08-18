@@ -793,11 +793,17 @@ def get_oas_30(cfg):
 
         LOGGER.debug('setting up coverage endpoints')
         try:
-            load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'coverage'))
+            cp = load_plugin('provider', get_provider_by_type(
+                             collections[k]['providers'], 'coverage'))
 
             coverage_path = f'{collection_name_path}/coverage'
 
+            output_formats = deepcopy(items_f)
+            output_formats['schema']['enum'].extend(
+                f.lower()
+                for f in cp.supported_output_formats
+                if f.lower() not in output_formats
+            )
             paths[coverage_path] = {
                 'get': {
                     'summary': f'Get {title} coverage',
@@ -805,7 +811,7 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'get{name.capitalize()}Coverage',
                     'parameters': [
-                        items_f,
+                        output_formats,
                         items_l,
                         {'$ref': '#/components/parameters/bbox'},
                         {'$ref': '#/components/parameters/bbox-crs'},  # noqa
