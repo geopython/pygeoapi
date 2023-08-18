@@ -304,7 +304,7 @@ def get_oas_30(cfg):
             'f': {
                 'name': 'f',
                 'in': 'query',
-                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
+                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is JSON.',  # noqa
                 'required': False,
                 'schema': {
                     'type': 'string',
@@ -798,7 +798,10 @@ def get_oas_30(cfg):
 
             coverage_path = f'{collection_name_path}/coverage'
 
-            output_formats = deepcopy(items_f)
+            cov_f = deepcopy(oas['components']['parameters']['f'])
+            output_formats = deepcopy(cov_f)
+            cov_f['schema']['enum'] = ['json', 'html']
+            output_formats['schema']['enum'] = ['json']
             output_formats['schema']['enum'].extend(
                 f.lower()
                 for f in cp.supported_output_formats
@@ -834,7 +837,7 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'get{name.capitalize()}CoverageDomainSet',
                     'parameters': [
-                        items_f,
+                        cov_f,
                         items_l
                     ],
                     'responses': {
@@ -855,7 +858,7 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'get{name.capitalize()}CoverageRangeType',
                     'parameters': [
-                        items_f,
+                        cov_f,
                         items_l
                     ],
                     'responses': {
