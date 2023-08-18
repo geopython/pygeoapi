@@ -140,21 +140,19 @@ def test_query_output_formats(config):
 
     # Check that output data are returned in the right format and that the
     # dataset values are identical for both queries
-    with (
-        MemoryFile(data_grib) as memfile_grib,
-        MemoryFile(data_gtiff) as memfile_gtiff
-    ):
+    with MemoryFile(data_grib) as memfile_grib:
         with memfile_grib.open() as dataset_grib:
             data_arr_grib = dataset_grib.read()
 
             assert dataset_grib.driver == 'GRIB'
 
+    with MemoryFile(data_gtiff) as memfile_gtiff:
         with memfile_gtiff.open() as dataset_gtiff:
             data_arr_gtiff = dataset_gtiff.read()
 
             assert dataset_gtiff.driver == 'GTiff'
 
-        assert (data_arr_grib == data_arr_gtiff).all()
+    assert (data_arr_grib == data_arr_gtiff).all()
 
     # Check that using unsupported formats as query parameter throws an error
     unsupported_formats = ['PNG', 'foo']
