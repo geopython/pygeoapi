@@ -38,7 +38,7 @@ import rasterio.mask
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderConnectionError, ProviderInvalidQueryError,
-    ProviderQueryError,
+    ProviderQueryError, ProviderNoDataError,
 )
 from pygeoapi.util import read_data
 
@@ -226,12 +226,11 @@ class RasterioProvider(BaseProvider):
 
                 LOGGER.debug(f'Source coordinates: {minx}, {miny}, {maxx}, {maxy}')  # noqa
 
-                t = Transformer.from_crs(crs_src, crs_dest, always_xy=False)
+                t = Transformer.from_crs(crs_src, crs_dest, always_xy=True)
                 minx, miny = t.transform(minx, miny)
                 maxx, maxy = t.transform(maxx, maxy)
 
                 LOGGER.debug(f'Destination: {minx}, {miny}, {maxx}, {maxy}')  # noqa
-
                 bbox = [minx, miny, maxx, maxy]
 
         elif (self._coverage_properties['x_axis_label'] in subsets or
@@ -275,6 +274,21 @@ class RasterioProvider(BaseProvider):
             if bbox:  # spatial subset
                 row_start, col_start = src.index(minx, maxy, op=math.floor)
                 row_stop, col_stop = src.index(maxx, miny, op=math.ceil)
+                # Check if spatial subset is within the range of valid values
+                # of the dataset's axes
+                if (
+                    (row_start < 0 and row_stop < 0)
+                    or (col_start < 0 and col_stop < 0)
+                    or (row_start > src.height and row_stop > src.height)
+                    or (col_start > src.width and col_stop > src.width)
+                ):
+                    msg = 'Spatial subset outside of domainset'
+                    LOGGER.error(msg)
+                    raise ProviderNoDataError(msg)
+                row_start = 0 if row_start < 0 else row_start
+                row_stop = src.height if row_stop > src.height else row_stop
+                col_start = 0 if col_start < 0 else col_start
+                col_stop = src.width if col_stop > src.width else col_stop
                 window = Window.from_slices(
                     (row_start, row_stop), (col_start, col_stop),
                 )
@@ -328,7 +342,6 @@ class RasterioProvider(BaseProvider):
 
         LOGGER.debug('Creating CoverageJSON domain')
         minx, miny, maxx, maxy = metadata['bbox']
-
         cj = {
             'type': 'Coverage',
             'domain': {
