@@ -48,7 +48,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PostgresDBManager(BaseManager):
-    """TinyDB Manager"""
+    """PostgresDB Manager"""
 
     def __init__(self, manager_def: dict):
         """
@@ -170,15 +170,16 @@ class PostgresDBManager(BaseManager):
         with self.open_conn() as conn:
             # Open a cursor
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
-                str_query = """INSERT INTO {table} ({field_identifier},
-                                                    {field_process_id},
-                                                    {field_status},
-                                                    {field_progress},
-                                                    {field_job_start_datetime},
-                                                    {field_location},
-                                                    {field_mimetype},
-                                                    {field_message})
-                                             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                str_query = """INSERT INTO {table} (
+                                    {field_identifier},
+                                    {field_process_id},
+                                    {field_status},
+                                    {field_progress},
+                                    {field_job_start_datetime},
+                                    {field_location},
+                                    {field_mimetype},
+                                    {field_message})
+                                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                             """
 
                 # Query in the database
