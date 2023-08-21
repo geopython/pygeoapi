@@ -248,6 +248,14 @@ MongoDB
 .. note::
    Mongo 5 or greater is supported.
 
+`MongoDB <https://www.mongodb.com/>`_ is a powerful and versatile NoSQL database that provides numerous advantages, making it a preferred choice for many applications. One of the main reasons to use MongoDB is its ability to handle large volumes of unstructured data, making it ideal for managing diverse data types such as text, geospatial, and multimedia data. Additionally, MongoDB's flexible document model allows for easy schema evolution, enabling developers to iterate quickly and adapt to changing requirements.
+
+`GeoJSON <https://www.mongodb.com/docs/manual/reference/geojson/>`_ support is available officially by MongoDB , thus a GeoJSON file can be added to MongoDB using following command
+
+`mongoimport --db test -c points --file "path/to/file.geojson" --jsonArray`
+
+Here `test` is the name of database , `points` is the target collection name.
+
 * each document must be a GeoJSON Feature, with a valid geometry.
 
 .. code-block:: yaml
