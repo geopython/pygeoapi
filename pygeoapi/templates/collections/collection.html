@@ -176,7 +176,6 @@
                 var bounds = [firstCorner, secondCorner];
                 boundingBox = L.rectangle(bounds, {color:"#ff7800", weight:1});
                 boundingBox.addTo(map);
-                var bboxCoords = boundingBox.getBounds().toBBoxString();
             }
         }
         drawingBoundingBox = false;
