@@ -513,9 +513,9 @@ class ElasticsearchProvider(BaseProvider):
         if not self.properties and not self.select_properties:
             all_properties = self.get_fields()
         if self.properties and self.select_properties:
-            all_properties = set(self.properties) & set(self.select_properties)
+            all_properties = self.properties and self.select_properties
         else:
-            all_properties = set(self.properties) | set(self.select_properties)
+            all_properties = self.properties or self.select_properties
 
         LOGGER.debug(f'resulting properties: {all_properties}')
         return all_properties
