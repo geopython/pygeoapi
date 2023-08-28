@@ -147,7 +147,7 @@
             var bboxCoords = boundingBox.getBounds().toBBoxString();
             L.popup({maxWidth:"auto"})
             .setLatLng(boundingBox.getBounds().getCenter())
-            .setContent(`?bbox=${bboxCoords}`)
+            .setContent(`bbox=${bboxCoords}`)
             .addTo(map);
         }
     }
