@@ -80,7 +80,7 @@ class TabledapProvider(BaseProvider):
 
         return properties
 
-    def query(self, startindex=0, limit=10, resulttype='results',
+    def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
               filterq=None, **kwargs):
