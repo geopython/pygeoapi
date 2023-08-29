@@ -128,5 +128,70 @@
 
     map.addLayer(bbox_layer);
     map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
+
+    // Allow to get bbox query parameter of a rectangular area specified by
+    // dragging the mouse while pressing the Ctrl key
+    var firstCorner;
+    var secondCorner;
+    var currentBoundingBox;
+    var boundingBox;
+    var drawingBoundingBox = false;
+
+    map.on('mousedown', setFirstCorner);
+    map.on('mouseup', setSecondCorner);
+    map.on('mousemove', drawCurrentBoundingBox);
+    map.on('click', boundingBoxInfo);
+
+    function boundingBoxInfo(e) {
+        if (map.hasLayer(boundingBox)) {
+            var bboxCoords = boundingBox.getBounds().toBBoxString();
+            L.popup({maxWidth:"auto"})
+            .setLatLng(boundingBox.getBounds().getCenter())
+            .setContent(`bbox=${bboxCoords}`)
+            .addTo(map);
+        }
+    }
+
+    function setFirstCorner(e) {
+        if (e.originalEvent.ctrlKey) {
+            if (map.hasLayer(boundingBox)) {
+                map.removeLayer(boundingBox);
+            }
+            map.dragging.disable();
+            firstCorner = e.latlng;
+            drawingBoundingBox = true;
+        } else if (map.hasLayer(boundingBox) && !boundingBox.getBounds().contains(e.latlng)) {
+        map.removeLayer(boundingBox);
+        }
+    }
+
+    function setSecondCorner(e) {
+        if (map.hasLayer(currentBoundingBox)) {
+             map.removeLayer(currentBoundingBox);
+        }
+        if (e.originalEvent.ctrlKey) {
+            if (drawingBoundingBox) {
+                drawingBoundingBox = false;
+                secondCorner = e.latlng;
+                var bounds = [firstCorner, secondCorner];
+                boundingBox = L.rectangle(bounds, {color:"#ff7800", weight:1});
+                boundingBox.addTo(map);
+            }
+        }
+        drawingBoundingBox = false;
+        map.dragging.enable();
+    }
+
+    function drawCurrentBoundingBox(e) {
+        if (drawingBoundingBox) {
+            if (map.hasLayer(currentBoundingBox)) {
+                map.removeLayer(currentBoundingBox);
+            }
+            secondCorner = e.latlng;
+            var bounds = [firstCorner, secondCorner];
+            currentBoundingBox = L.rectangle(bounds, {dashArray:"4 1", weight:0.4});
+            currentBoundingBox.addTo(map);
+        }
+    }
     </script>
 {% endblock %}
