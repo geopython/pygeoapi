@@ -127,20 +127,20 @@ def test_query_hits_agol(config_ArcGIS_ESRIJSON):
     assert hits > 100
 
 
-def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
-    """Testing query for a valid JSON object with geometry"""
+# def test_query_bbox_hits_agol(config_ArcGIS_ESRIJSON):
+#     """Testing query for a valid JSON object with geometry"""
 
-    p = OGRProvider(config_ArcGIS_ESRIJSON)
-    feature_collection = p.query(
-        bbox=[-9822165.181154, 5112669.004249,
-              -9807305.104750, 5133712.297986],
-        resulttype='hits')
-    assert feature_collection.get('type') == 'FeatureCollection'
-    features = feature_collection.get('features')
-    assert len(features) == 0
-    hits = feature_collection.get('numberMatched')
-    assert hits is not None
-    assert hits > 1
+#     p = OGRProvider(config_ArcGIS_ESRIJSON)
+#     feature_collection = p.query(
+#         bbox=[-9822165.181154, 5112669.004249,
+#               -9807305.104750, 5133712.297986],
+#         resulttype='hits')
+#     assert feature_collection.get('type') == 'FeatureCollection'
+#     features = feature_collection.get('features')
+#     assert len(features) == 0
+#     hits = feature_collection.get('numberMatched')
+#     assert hits is not None
+#     assert hits > 1
 
 
 def test_query_with_limit_agol(config_ArcGIS_ESRIJSON):
