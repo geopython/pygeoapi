@@ -138,7 +138,7 @@ class TabledapProvider(BaseProvider):
         matched = len(data['features'])
         returned = limit
 
-        data = data['features'][startindex:limit]
+        data = data['features'][offset:limit]
 
         # add id to each feature as this is required by pygeoapi
         for idx in range(len(data)):
