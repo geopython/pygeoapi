@@ -3294,6 +3294,7 @@ class API:
                 p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
+                p2['id'] = key
 
                 if process is None:
                     p2.pop('inputs')
