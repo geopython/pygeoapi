@@ -28,15 +28,12 @@
 # =================================================================
 
 import logging
-
-from pygeoapi.process.base import (BaseProcessor)
-from pygeoapi.provider.base import (ProviderPreconditionFailed)
-from pygeoapi.util import (get_provider_by_type)
+from pygeoapi.process.base import BaseProcessor
+from pygeoapi.provider.base import ProviderPreconditionFailed
+from pygeoapi.util import get_provider_by_type
 from pygeoapi.plugin import load_plugin
 
-
 LOGGER = logging.getLogger(__name__)
-
 
 #: Process metadata and description
 PROCESS_METADATA = {
@@ -47,8 +44,8 @@ PROCESS_METADATA = {
         'fr': 'Extrait les données'
     },
     'description': {
-        'en': 'This process takes a list of collections, a geometry wkt and crs as inputs and proceeds to extract the records of all collections.',
-        'fr': 'Ce processus prend une liste de collections, une géométrie en format wkt avec un crs et extrait les enregistrements de toutes les collections.',
+        'en': 'This process takes a list of collections, a geometry wkt and crs as inputs and proceeds to extract the records of all collections.',  # noqa
+        'fr': 'Ce processus prend une liste de collections, une géométrie en format wkt avec un crs et extrait les enregistrements de toutes les collections.',  # noqa
     },
     'jobControlOptions': ['sync-execute', 'async-execute'],
     'keywords': ['extract'],
@@ -62,7 +59,7 @@ PROCESS_METADATA = {
     'inputs': {
         'collections': {
             'title': 'An array of collection names to extract records from',
-            'description': 'An array of collection names to extract records from',
+            'description': 'An array of collection names to extract records from',  # noqa
             'schema': {
                 'type': 'string'
             },
@@ -97,7 +94,7 @@ PROCESS_METADATA = {
     'outputs': {
         'echo': {
             'title': 'The url to the zip file containing the information',
-            'description': 'The url to the zip file containing the information',
+            'description': 'The url to the zip file containing the information',  # noqa
             'schema': {
                 'type': 'object',
                 'contentMediaType': 'application/json'
@@ -110,7 +107,7 @@ PROCESS_METADATA = {
                 "coll_name_1",
                 "coll_name_2"
             ],
-            "geom": "POLYGON((-72.3061 45.3656, -72.3061 45.9375, -71.7477 45.9375, -71.7477 45.3656, -72.3061 45.3656))",
+            "geom": "POLYGON((-72.3061 45.3656, -72.3061 45.9375, -71.7477 45.9375, -71.7477 45.3656, -72.3061 45.3656))",  # noqa
             "geom_crs": 4326
         }
     }
@@ -119,15 +116,17 @@ PROCESS_METADATA = {
 
 class ExtractProcessor(BaseProcessor):
     """
-    Extract Processor used to query multiple collections, of various providers, at the same time.
-    In this iteration, only collection types feature and coverage are supported, but the logic could be scaled up.
+    Extract Processor used to query multiple collections, of various
+    providers, at the same time. In this iteration, only collection types
+    feature and coverage are supported, but the logic could be scaled up.
     """
 
     def __init__(self, processor_def, process_metadata):
         """
-        Initialize object
+        Initialize the Extract Processor
 
         :param processor_def: provider definition
+        :param process_metadata: process metadata
 
         :returns: pygeoapi.process.extract.ExtractProcessor
         """
@@ -141,26 +140,46 @@ class ExtractProcessor(BaseProcessor):
         self.geom_wkt = None
         self.geom_crs = None
 
-
     def get_collection_type(self, coll_name: str):
+        """
+        Return the collection type given its collection name by reading the
+        internal processor definition configuration.
+
+        :param coll_name: the collection name
+
+        :returns: the collection type
+        """
+
         # Read the configuration for it
         c_conf = self.processor_def['collections'][coll_name]
 
         # Get the collection type by its providers
         return self._get_collection_type_from_providers(c_conf['providers'])
 
-
     def get_collection_coverage_mimetype(self, coll_name: str):
+        """
+        Return the collection coverage mimetype given its collection name
+        by reading the internal processor definition configuration.
+
+        :param coll_name: the collection name
+
+        :returns: the collection coverage mimetype
+        """
+
         # Read the configuration for it
         c_conf = self.processor_def['collections'][coll_name]
 
         # Get the collection type by its providers
-        return self._get_collection_mimetype_image_from_providers(c_conf['providers'])
-
+        return self._get_collection_mimetype_image_from_providers(
+            c_conf['providers'])
 
     def execute(self, data: dict):
         """
         Entry point of the execution process.
+
+        :param data: the input parameters, as-received, for the process
+
+        :returns: results of the process as provided by 'on_query_results'
         """
 
         try:
@@ -175,15 +194,24 @@ class ExtractProcessor(BaseProcessor):
                     for c in self.colls:
                         # If running inside a job manager
                         if self.process_manager:
-                            # The progression can be a value between 15 and 85 (<10 and >90 reserved by the process manager itself)
-                            prog_value = ((85 - 15) * i / len(self.colls)) + 15
+                            # The progression can be a value between 15 and 85
+                            # (<10 and >90 reserved by the process manager
+                            # itself)
+                            prog_value = ((85 - 15) * i / len(self.colls)) + 15  # noqa
                             message = message + (" | " if i > 1 else "") + c
 
                             # Update the job progress
-                            self.process_manager.update_job(self.job_id, {'message': message, 'progress': prog_value})
+                            self.process_manager.update_job(
+                                self.job_id, {
+                                    'message': message,
+                                    'progress': prog_value
+                                })
 
-                        # Call on query with it which will query the collection based on its provider
-                        query_res[c] = self.on_query(c, self.geom_wkt, self.geom_crs)
+                        # Call on query with it which will query the
+                        # collection based on its provider
+                        query_res[c] = self.on_query(c,
+                                                     self.geom_wkt,
+                                                     self.geom_crs)
 
                         # Increment
                         i = i+1
@@ -195,7 +223,7 @@ class ExtractProcessor(BaseProcessor):
                     return self.on_query_results(query_res)
 
                 else:
-                    raise ProviderPreconditionFailed("Invalid execution parameters")
+                    raise ProviderPreconditionFailed("Invalid execution parameters")  # noqa
 
             else:
                 raise ProviderPreconditionFailed("Invalid input parameters")
@@ -207,12 +235,15 @@ class ExtractProcessor(BaseProcessor):
             # Keep raising error
             raise err
 
-
     def on_query(self, coll_name: str, geom_wkt: str, geom_crs: int):
         """
         Overridable function to query a particular collection given its name.
-        One trick here is that the collections in processor_def must be a deepcopy of the
-        ressources from the API configuration.
+
+        :param coll_name: the collection name to extract, validated
+        :param geom_wkt: the geometry wkt, validated
+        :param geom_crs: the geometry crs, validated
+
+        :returns: results of the process as provided by 'on_query_results'
         """
 
         # Read the configuration for it
@@ -230,7 +261,8 @@ class ExtractProcessor(BaseProcessor):
         # If the collection has a provider of type feature
         if c_type == "feature":
             # Query using the provider logic and clip = True!
-            res = p.query(offset=0, limit=self.processor_def['server']['limit'],
+            res = p.query(offset=0,
+                          limit=self.processor_def['server']['limit'],
                           resulttype='results', bbox=None,
                           bbox_crs=None, geom_wkt=geom_wkt, geom_crs=geom_crs,
                           datetime_=None, properties=[],
@@ -251,15 +283,19 @@ class ExtractProcessor(BaseProcessor):
 
         else:
             res = None
-            pass # Skip, unsupported
+            pass  # Skip, unsupported
 
         # Return the query result
         return res
 
-
     def on_query_validate_inputs(self, data: dict):
         """
-        Override this method to perform validations of inputs
+        Override this method to perform input validations.
+
+        :param data: the input parameters, as-received, for the process
+
+        :returns: returns True when inputs were all valid. Otherwise raises
+        an exception.
         """
 
         if "collections" in data and data['collections']:
@@ -268,7 +304,7 @@ class ExtractProcessor(BaseProcessor):
 
             # Check if each collection exists
             for c in self.colls:
-                if not c in self.processor_def['collections']:
+                if c not in self.processor_def['collections']:
                     # Error
                     err = CollectionsNotFoundException(c)
                     LOGGER.warning(err)
@@ -303,41 +339,56 @@ class ExtractProcessor(BaseProcessor):
         # All good
         return True
 
-
     def on_query_validate_execution(self, data: dict):
         """
-        Override this method to perform validations pre-execution
-        """
-        return True
+        Override this method to perform pre-execution validations
 
+        :param data: the input parameters, as-received, for the process
+
+        :returns: returns True when execution is good to go.
+        """
+
+        # All good
+        return True
 
     def on_query_finalize(self, data: dict, query_res: dict):
         """
-        Override this method to do further things with the queried results
+        Override this method to do further things with the extracted results
+        of each collection.
+
+        :param data: the input parameters, as-received, for the process
+        :param query_res: the extraction results of each collection
         """
-
         pass
-
 
     def on_query_results(self, query_res: dict):
         """
-        Override this method to return something else than the default json of the results
+        Override this method to return something else than the results
+        as json.
+
+        :param query_res: the extraction results of each collection
+
+        :returns: returns the results as json
         """
 
         # Return the query results
         return 'application/json', query_res
 
-
     def on_exception(self, exception: Exception):
         """
-        Override this method to do further things when an exception happened
+        Override this method to do further things when an exception happened.
+
+        :param exception: the exception which happened
         """
 
         pass
 
-
     @staticmethod
     def _get_collection_type_from_providers(providers: list):
+        """
+        Utility function to get a collection type from the providers list.
+        """
+
         # For each provider
         for p in providers:
             if p['type'] == "feature":
@@ -346,16 +397,18 @@ class ExtractProcessor(BaseProcessor):
                 return "coverage"
         return None
 
-
     @staticmethod
     def _get_collection_mimetype_image_from_providers(providers: list):
+        """
+        Utility function to get a coverage mimetype from the providers list.
+        """
+
         # For each provider
         for p in providers:
             if p['type'] == "coverage":
                 if 'format' in p and 'mimetype' in p['format']:
                     return p['format']['mimetype']
         return None
-
 
     def __repr__(self):
         return f'<ExtractProcessor> {self.name}'

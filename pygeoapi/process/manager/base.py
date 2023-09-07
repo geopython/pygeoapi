@@ -34,7 +34,6 @@ from datetime import datetime
 import json
 import logging
 import multiprocessing
-#import concurrent.futures
 from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
@@ -81,7 +80,8 @@ class BaseManager:
         self.max_concurrent = manager_def.get('max_concurrent', 0)
         self.max_queue = manager_def.get('max_queue', 0)
         self.result_in_db = manager_def.get('result_in_db', False)
-        self.internal_error_in_db = manager_def.get('internal_error_in_db', False)
+        self.internal_error_in_db = manager_def.get('internal_error_in_db',
+                                                    False)
         self.job_pending = 0
 
         if self.output_dir is not None:
@@ -89,9 +89,9 @@ class BaseManager:
 
         # Note: There are two different things named OrderedDict here - one
         # is coming from typing.OrderedDict (type annotation), the other is
-        # coming from collections.OrderedDict (actual type we want to use here)
-        # - this will not be needed anymore when pygeoapi moves to requiring
-        # Python 3.9 as the minimum supported Python version
+        # coming from collections.OrderedDict (actual type we want
+        # to use here) - this will not be needed anymore when pygeoapi moves
+        # to requiring Python 3.9 as the minimum supported Python version
         self.processes = collections.OrderedDict()
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
@@ -195,7 +195,7 @@ class BaseManager:
         raise JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[str, None, JobStatus]:
+                               data_dict: dict) -> Tuple[str, None, JobStatus]:  # noqa
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -215,7 +215,7 @@ class BaseManager:
             # Check if over
             if self.job_pending >= self.max_queue:
                 # Refuse, queue is full
-                return 'application/json', {'job_id': None}, JobStatus.dismissed
+                return 'application/json', {'job_id': None}, JobStatus.dismissed  # noqa
 
         # Proceed
         _process = dummy.Process(
@@ -307,7 +307,8 @@ class BaseManager:
                         mode = 'wb'
                         data = outputs
                         encoding = None
-                    with job_filename.open(mode=mode, encoding=encoding) as fh:
+                    with job_filename.open(mode=mode,
+                                           encoding=encoding) as fh:
                         fh.write(data)
 
                 current_status = JobStatus.successful
@@ -324,20 +325,23 @@ class BaseManager:
 
                 # If data is going in the database
                 if self.result_in_db:
-                    job_update_metadata['result'] = json.dumps(outputs, sort_keys=True, indent=4)
+                    job_update_metadata['result'] = json.dumps(outputs,
+                                                               sort_keys=True,
+                                                               indent=4)
 
                 # Update the job termination
                 self.update_job(job_id, job_update_metadata)
 
             except Exception as err:
-                # TODO assess correct exception type and description to help users
-                # NOTE, the /results endpoint should return the error HTTP status
-                # for jobs that failed, ths specification says that failing jobs
-                # must still be able to be retrieved with their error message
-                # intact, and the correct HTTP error status at the /results
-                # endpoint, even if the /result endpoint correctly returns the
-                # failure information (i.e. what one might assume is a 200
-                # response).
+                # TODO assess correct exception type and description to help
+                # users
+                # NOTE, the /results endpoint should return the error HTTP
+                # status for jobs that failed, ths specification says that
+                # failing jobs must still be able to be retrieved with their
+                # error message intact, and the correct HTTP error status at
+                # the /results endpoint, even if the /result endpoint
+                # correctly returns the failure information
+                # (i.e. what one might assume is a 200 response).
 
                 current_status = JobStatus.failed
                 if isinstance(err, ProviderPreconditionFailed):
@@ -388,7 +392,6 @@ class BaseManager:
                 # Release the semaphore
                 self.semaphore.release()
 
-
     def execute_process(
             self,
             process_id: str,
@@ -421,7 +424,7 @@ class BaseManager:
                 'jobControlOptions', [])
             # client wants async - do we support it?
             process_supports_async = (
-                ProcessExecutionMode.async_execute.value in job_control_options
+                ProcessExecutionMode.async_execute.value in job_control_options  # noqa
                 )
             if self.is_async and process_supports_async:
                 LOGGER.debug('Asynchronous execution')
@@ -442,7 +445,7 @@ class BaseManager:
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
             response_headers = {
-                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
+                'Preference-Applied': RequestedProcessExecutionMode.wait.value}  # noqa
         else:  # client has no preference
             # according to OAPI - Processes spec we ought to respond with sync
             LOGGER.debug('Synchronous execution')
@@ -458,10 +461,10 @@ class BaseManager:
 
 
 def get_manager(config: Dict) -> BaseManager:
-    """Instantiate process manager from the supplied configuration.
+    """
+    Instantiate process manager from the supplied configuration.
 
     :param config: pygeoapi configuration
-
     :returns: The pygeoapi process manager object
     """
     manager_conf = config.get('server', {}).get(

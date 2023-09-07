@@ -48,7 +48,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PostgresDBManager(BaseManager):
-    """TinyDB Manager"""
+    """PostgresDB Manager"""
 
     def __init__(self, manager_def: dict):
         """
@@ -87,7 +87,9 @@ class PostgresDBManager(BaseManager):
         Returns a connection to the database
         """
 
-        return psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname, user=self.user, password=self.password, sslmode="allow")
+        return psycopg2.connect(host=self.host, port=self.port,
+                                dbname=self.dbname, user=self.user,
+                                password=self.password, sslmode="allow")
 
     def destroy(self) -> bool:
         """
@@ -103,7 +105,8 @@ class PostgresDBManager(BaseManager):
 
                 # Query in the database
                 query = sql.SQL(str_query).format(
-                    table=sql.Identifier(self.dbname, self.table_jobs['table_name'])
+                    table=sql.Identifier(self.dbname,
+                                         self.table_jobs['table_name'])
                 )
 
                 # Execute cursor
@@ -123,25 +126,31 @@ class PostgresDBManager(BaseManager):
 
         with self.open_conn() as conn:
             # Open a cursor
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
                 if status:
-                    str_query = "SELECT * FROM {table} WHERE {field_status} = %s ORDER BY {field_order} DESC"
+                    str_query = """SELECT * FROM {table}
+                                   WHERE {field_status} = %s
+                                   ORDER BY {field_order} DESC"""
 
                     # Query in the database
                     query = sql.SQL(str_query).format(
-                        table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                        field_order=sql.Identifier(self.table_jobs['field_date_started']))
+                        table=sql.Identifier(self.dbname,
+                                             self.table_jobs['table_name']),
+                        field_order=sql.Identifier(self.table_jobs['field_date_started']))  # noqa
 
                     # Execute cursor and fetch
                     cur.execute(query, (status,))
 
                 else:
-                    str_query = "SELECT * FROM {table} ORDER BY {field_order} DESC"
+                    str_query = """SELECT *
+                                   FROM {table}
+                                   ORDER BY {field_order} DESC"""
 
                     # Query in the database
                     query = sql.SQL(str_query).format(
-                        table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                        field_order=sql.Identifier(self.table_jobs['field_date_started']))
+                        table=sql.Identifier(self.dbname,
+                                             self.table_jobs['table_name']),
+                        field_order=sql.Identifier(self.table_jobs['field_date_started']))  # noqa
 
                     # Execute cursor and fetch
                     cur.execute(query)
@@ -160,39 +169,40 @@ class PostgresDBManager(BaseManager):
 
         with self.open_conn() as conn:
             # Open a cursor
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                str_query = """INSERT INTO {table} ({field_identifier},
-                                                    {field_process_id},
-                                                    {field_status},
-                                                    {field_progress},
-                                                    {field_job_start_datetime},
-                                                    {field_location},
-                                                    {field_mimetype},
-                                                    {field_message})
-                                             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
+                str_query = """INSERT INTO {table} (
+                                    {field_identifier},
+                                    {field_process_id},
+                                    {field_status},
+                                    {field_progress},
+                                    {field_job_start_datetime},
+                                    {field_location},
+                                    {field_mimetype},
+                                    {field_message})
+                                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                             """
 
                 # Query in the database
                 query = sql.SQL(str_query).format(
-                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']),
-                    field_process_id=sql.Identifier(self.table_jobs['field_process_id']),
-                    field_status=sql.Identifier(self.table_jobs['field_status']),
-                    field_progress=sql.Identifier(self.table_jobs['field_progress']),
-                    field_job_start_datetime=sql.Identifier(self.table_jobs['field_date_started']),
-                    field_location=sql.Identifier(self.table_jobs['field_location']),
-                    field_mimetype=sql.Identifier(self.table_jobs['field_mimetype']),
-                    field_message=sql.Identifier(self.table_jobs['field_message']))
+                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),  # noqa
+                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']),  # noqa
+                    field_process_id=sql.Identifier(self.table_jobs['field_process_id']),  # noqa
+                    field_status=sql.Identifier(self.table_jobs['field_status']),  # noqa
+                    field_progress=sql.Identifier(self.table_jobs['field_progress']),  # noqa
+                    field_job_start_datetime=sql.Identifier(self.table_jobs['field_date_started']),  # noqa
+                    field_location=sql.Identifier(self.table_jobs['field_location']),  # noqa
+                    field_mimetype=sql.Identifier(self.table_jobs['field_mimetype']),  # noqa
+                    field_message=sql.Identifier(self.table_jobs['field_message']))  # noqa
 
                 # Execute cursor and fetch
-                cur.execute(query, (job_metadata[self.table_jobs['field_identifier']],
-                                    job_metadata[self.table_jobs['field_process_id']],
-                                    job_metadata[self.table_jobs['field_status']],
-                                    job_metadata[self.table_jobs['field_progress']],
-                                    job_metadata[self.table_jobs['field_date_started']],
-                                    job_metadata[self.table_jobs['field_location']],
-                                    job_metadata[self.table_jobs['field_mimetype']],
-                                    job_metadata[self.table_jobs['field_message']]))
+                cur.execute(query, (job_metadata[self.table_jobs['field_identifier']],  # noqa
+                                    job_metadata[self.table_jobs['field_process_id']],  # noqa
+                                    job_metadata[self.table_jobs['field_status']],  # noqa
+                                    job_metadata[self.table_jobs['field_progress']],  # noqa
+                                    job_metadata[self.table_jobs['field_date_started']],  # noqa
+                                    job_metadata[self.table_jobs['field_location']],  # noqa
+                                    job_metadata[self.table_jobs['field_mimetype']],  # noqa
+                                    job_metadata[self.table_jobs['field_message']]))  # noqa
             conn.commit()
             return job_metadata['identifier']
 
@@ -208,7 +218,7 @@ class PostgresDBManager(BaseManager):
 
         with self.open_conn() as conn:
             # Open a cursor
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
                 str_query = "UPDATE {table} SET "
                 i = 1
                 values = []
@@ -222,8 +232,8 @@ class PostgresDBManager(BaseManager):
 
                 # Query in the database
                 query = sql.SQL(str_query).format(
-                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']))
+                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),  # noqa
+                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']))  # noqa
 
                 # Execute cursor and fetch
                 cur.execute(query, values)
@@ -246,14 +256,14 @@ class PostgresDBManager(BaseManager):
         if job_result:
             with self.open_conn() as conn:
                 # Open a cursor
-                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    str_query = "DELETE FROM {table} WHERE {field_identifier}=%s"
-                    print(str_query)
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
+                    str_query = """DELETE FROM {table}
+                                   WHERE {field_identifier}=%s"""
 
                     # Query in the database
                     query = sql.SQL(str_query).format(
-                        table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                        field_identifier=sql.Identifier(self.table_jobs['field_identifier']))
+                        table=sql.Identifier(self.dbname, self.table_jobs['table_name']),  # noqa
+                        field_identifier=sql.Identifier(self.table_jobs['field_identifier']))  # noqa
 
                     # Execute cursor and fetch
                     cur.execute(query, (job_id,))
@@ -275,13 +285,14 @@ class PostgresDBManager(BaseManager):
 
         with self.open_conn() as conn:
             # Open a cursor
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                str_query = "SELECT * FROM {table} WHERE {field_identifier}=%s"
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:  # noqa
+                str_query = """SELECT * FROM {table}
+                               WHERE {field_identifier}=%s"""
 
                 # Query in the database
                 query = sql.SQL(str_query).format(
-                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),
-                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']))
+                    table=sql.Identifier(self.dbname, self.table_jobs['table_name']),  # noqa
+                    field_identifier=sql.Identifier(self.table_jobs['field_identifier']))  # noqa
 
                 # Execute cursor and fetch
                 cur.execute(query, (job_id,))
@@ -310,7 +321,7 @@ class PostgresDBManager(BaseManager):
         # If job was found
         if job_result:
             # Read the status
-            job_status = JobStatus[job_result[self.table_jobs['field_status']]]
+            job_status = JobStatus[job_result[self.table_jobs['field_status']]]  # noqa
 
             # If job is complete
             if job_status == JobStatus.successful:
@@ -323,7 +334,7 @@ class PostgresDBManager(BaseManager):
                 # If the job is in the database
                 if self.result_in_db:
                     # Read the result
-                    result = json.loads(job_result[self.table_jobs['field_result']])
+                    result = json.loads(job_result[self.table_jobs['field_result']])  # noqa
                     return mimetype, result
 
                 elif location:
@@ -334,7 +345,7 @@ class PostgresDBManager(BaseManager):
                     return mimetype, result
 
                 else:
-                    LOGGER.warning(f'job {job_id!r} -  unknown result location')
+                    LOGGER.warning(f'job {job_id!r} -  unknown result location')  # noqa
                     raise JobResultNotFoundError()
 
             # Job is incomplete
