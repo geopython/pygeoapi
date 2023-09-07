@@ -1756,7 +1756,7 @@ def test_execute_process(config, api_):
     assert code == HTTPStatus.OK
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
+    assert data['description'] == 'Error processing job'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
@@ -1768,7 +1768,7 @@ def test_execute_process(config, api_):
     assert code == HTTPStatus.OK
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
+    assert data['description'] == 'Error processing job'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))

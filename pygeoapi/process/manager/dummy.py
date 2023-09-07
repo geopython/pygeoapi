@@ -101,7 +101,6 @@ class DummyManager(BaseManager):
         except Exception as err:
             outputs = {
                 'code': 'InvalidParameterValue',
-                # 'error': err,
                 'description': 'Error updating job'
             }
             current_status = JobStatus.failed
