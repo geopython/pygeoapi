@@ -59,7 +59,6 @@ from pygeoapi.provider.base import (
 LOGGER = logging.getLogger(__name__)
 
 
-
 class BaseManager:
     """generic Manager ABC"""
     processes: OrderedDict[str, Dict]
