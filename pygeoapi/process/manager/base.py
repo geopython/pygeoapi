@@ -357,7 +357,7 @@ class BaseManager:
 
                 outputs = {
                     'code': code,
-                    'error': err,
+                    # 'error': err,
                     'description': description
                 }
 
