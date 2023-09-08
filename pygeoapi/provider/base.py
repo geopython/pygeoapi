@@ -29,16 +29,11 @@
 
 import json
 import logging
-from enum import Enum
+
+from pygeoapi.schemas import SchemaType
+
 
 LOGGER = logging.getLogger(__name__)
-
-
-class SchemaType(Enum):
-    item = 'item'
-    create = 'create'
-    update = 'update'
-    replace = 'replace'
 
 
 class BaseProvider:
