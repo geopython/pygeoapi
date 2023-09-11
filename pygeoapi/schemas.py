@@ -63,10 +63,10 @@ def get_GeoJSONFeature_schema(
     :type geom_type: `GeomType`, optional
     :param geom_nullable: whether the geometry of the GeoJSON Feature can be
         set to 'null'.
-    :type geom_nullable: bool
+    :type geom_nullable: bool, default: True
     :param n_dims: number of dimensions of the coordinates of the feature's
-        geometry.
-    :type n_dims: int
+        geometry. Must be larger than 1.
+    :type n_dims: int, default: 2
 
     :returns: JSON schema of GeoJSON Feature.
     :rtype: dict
@@ -97,10 +97,10 @@ def get_GeoJSONFeatureCollection_schema(
     :type geom_type: `GeomType`, optional
     :param geom_nullable: whether the geometry of the GeoJSON Features can be
         set to 'null'.
-    :type geom_nullable: bool
+    :type geom_nullable: bool, default: True
     :param n_dims: number of dimensions of the coordinates of the features'
-        geometry.
-    :type n_dims: int
+        geometry. Must be larger than 1.
+    :type n_dims: int, default: 2
 
     :returns: JSON schema of GeoJSON FeatureCollection.
     :rtype: dict

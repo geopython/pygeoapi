@@ -34,6 +34,7 @@ from typing import Any, List, Literal, Optional, Union
 from pydantic import create_model, conint, conlist, field_validator
 
 
+# Types for GeoJSON Features' geometry
 GeomType = Literal[
     'Point',
     'LineString',
@@ -46,6 +47,8 @@ GeomType = Literal[
 
 
 def linear_ring_closed(cls, coordinates):
+    """Validator function that check whether a linear ring is closed or opened.
+    """
     for ring in coordinates:
         assert ring[0] == ring[-1], (
             'First and and last position of linear ring must be the same'
@@ -54,12 +57,28 @@ def linear_ring_closed(cls, coordinates):
 
 
 def multiple_linear_rings_closed(cls, coordinates):
+    """Validator function that checks for closed/opened linear rings.
+    """
     for poly in coordinates:
         linear_ring_closed(cls, poly)
     return coordinates
 
 
 def create_GeoJSONGeometry_model(geom_type: GeomType, n_dims: conint(gt=1)):
+    """ Create a pydantic model for a GeoJSON Geometry.
+
+    Generic function that creates dynamically a pydantic model for a GeoJSON
+    Geometry, based on a geometry type and a N number of coordinate dimensions.
+
+    :param geom_type: type of GeoJSON geometry.
+    :type geom_type: `GeomType`
+    :param n_dims: number of dimensions of the GeoJSON Geometry's
+    coordinates. Must be larger than 1.
+    :type n_dims: int
+
+    :returns: pydantic model of GeoJSON Geometry
+    :rtype: subclass of `pydantic.BaseModel`
+    """
     validators = dict()
     bbox_type = conlist(
         item_type=float,
@@ -127,6 +146,32 @@ def create_GeoJSONFeature_model(
     geom_nullable: bool = True,
     n_dims: conint(gt=1) = 2,
 ):
+    """ Create a pydantic model for a GeoJSON Feature.
+
+    Generic function that creates dynamically a pydantic model for a GeoJSON
+    Feature, based on a list of properties, a geometry type and a N number of
+    coordinate dimensions.
+
+    :param properties: list of feature's properties.
+    :type properties: list of `GeoJSONProperty` objects, optional
+    :param geom_type: type of GeoJSON geometry.
+    :type geom_type: `GeomType`, optional
+    :param geom_nullable: whether the geometry of the GeoJSON Feature can be
+        set to 'null'.
+    :type geom_nullable: bool, default: True
+    :param n_dims: number of dimensions of the coordinates of the feature's
+        geometry. Must be larger than 1.
+    :type n_dims: int, default: 2
+
+    :returns: pydantic model of GeoJSON Feature
+    :rtype: subclass of `pydantic.BaseModel`
+
+    .. note::
+        If ``properties`` and/or ``geom_type`` are not given/set to `None`, a
+        GeoJSON Feature object will only validate against the returned GeoJSON
+        Feature model if its 'properties' and/or 'geometry' members are set to
+        'null', respectively.
+    """
     bbox_type = conlist(
         item_type=float,
         min_length=2 * n_dims,
@@ -173,6 +218,32 @@ def create_GeoJSONFeatureCollection_model(
     geom_nullable: bool = True,
     n_dims: conint(gt=1) = 2,
 ):
+    """ Create a pydantic model for a GeoJSON FeatureCollection.
+
+    Generic function that creates dynamically a pydantic model for a GeoJSON
+    FeatureCollection, based on a list of properties, a geometry type and a N
+    number of coordinate dimensions.
+
+    :param properties: list of features' properties.
+    :type properties: list of `GeoJSONProperty` objects, optional
+    :param geom_type: type of GeoJSON geometry.
+    :type geom_type: `GeomType`, optional
+    :param geom_nullable: whether the geometry of the GeoJSON Features can be
+        set to 'null'.
+    :type geom_nullable: bool, default: True
+    :param n_dims: number of dimensions of the coordinates of the features'
+        geometry. Must be larger than 1.
+    :type n_dims: int, default: 2
+
+    :returns: pydantic model of GeoJSON FeatureCollection
+    :rtype: subclass of `pydantic.BaseModel`
+
+    .. note::
+        If ``properties`` and/or ``geom_type`` are not given/set to `None`, a
+        GeoJSON FeatureCollection object will only validate against the
+        returned GeoJSON FeatureCollection model if all Features have their
+        'properties' and/or 'geometry' members set to 'null', respectively.
+    """
     bbox_type = conlist(
         item_type=float,
         min_length=2 * n_dims,
