@@ -70,12 +70,13 @@ class XarrayProvider(BaseProvider):
                     open_func = xarray.open_dataset
             if provider_def['data'].startswith('s3://'):
                 LOGGER.debug('Data is stored in S3 bucket.')
-                try:
-                    self._storage_options = provider_def['storage_options']
-                except KeyError:
-                    raise RuntimeError('storage_options required for s3.')
+                if 's3' in provider_def.get('options', {}):
+                    s3_options = provider_def['options']['s3']
+                else:
+                    s3_options = {}
+                LOGGER.debug(s3_options)
                 data_to_open = fsspec.get_mapper(self.data,
-                                                 **self._storage_options)
+                                                **s3_options)
                 LOGGER.debug('Completed S3 Open Function')
             else:
                 data_to_open = self.data
@@ -84,8 +85,8 @@ class XarrayProvider(BaseProvider):
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
-                         self._coverage_properties['y_axis_label'],
-                         self._coverage_properties['time_axis_label']]
+                            self._coverage_properties['y_axis_label'],
+                            self._coverage_properties['time_axis_label']]
 
             self.fields = self._coverage_properties['fields']
         except Exception as err:

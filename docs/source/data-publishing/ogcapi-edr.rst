@@ -66,9 +66,10 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          format:
             name: zarr
             mimetype: application/zip
-         storage_options:
-            anon: true
-            requester_pays: false
+         options:
+            s3:
+               anon: true
+               requester_pays: false
 
 .. note::
 
@@ -78,7 +79,7 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
 .. note::
    When referencing data stored in an S3 bucket, be sure to provide the full
    S3 URL. Any parameters required to open the dataset using fsspec can be added
-   to the config file under `storage_options`.
+   to the config file under `options` and `s3`, as shown above.
 
 
 Data access examples

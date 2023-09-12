@@ -339,9 +339,10 @@ resources:
               format:
                   name: zarr
                   mimetype: application/zip
-              storage_options:
-                  anon: true
-                  requester_pays: false
+              options:
+                  s3:
+                    anon: true
+                    requester_pays: false
     
     objects:
         type: collection
