@@ -76,7 +76,7 @@ class XarrayProvider(BaseProvider):
                     s3_options = {}
                 LOGGER.debug(s3_options)
                 data_to_open = fsspec.get_mapper(self.data,
-                                                **s3_options)
+                                                 **s3_options)
                 LOGGER.debug('Completed S3 Open Function')
             else:
                 data_to_open = self.data
@@ -85,8 +85,8 @@ class XarrayProvider(BaseProvider):
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
-                            self._coverage_properties['y_axis_label'],
-                            self._coverage_properties['time_axis_label']]
+                         self._coverage_properties['y_axis_label'],
+                         self._coverage_properties['time_axis_label']]
 
             self.fields = self._coverage_properties['fields']
         except Exception as err:
