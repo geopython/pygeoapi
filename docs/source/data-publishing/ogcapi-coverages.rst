@@ -94,7 +94,7 @@ The `Xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
 .. note::
    When referencing `NetCDF`_ or `Zarr`_ data stored in an S3 bucket, 
    be sure to provide the full S3 URL. Any parameters required to open the dataset
-   using fsspec can be added to the config file under `storage_options`.
+   using fsspec can be added to the config file under `options` and `s3`.
 
 Data access examples
 --------------------
