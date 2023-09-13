@@ -636,7 +636,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 8
+    assert len(collections['collections']) == 9
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -2001,6 +2001,15 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
+
+    # S3 EDR
+    req = mock_request({
+        'coords': 'POINT(-100 40)',
+        'parameter-name': 'GWETROOT'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'nasa-power', None, 'position')
+    assert code == HTTPStatus.OK
 
     # position no coords
     req = mock_request({
