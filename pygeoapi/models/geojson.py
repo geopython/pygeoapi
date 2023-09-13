@@ -31,7 +31,9 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import create_model, conint, conlist, field_validator
+from pydantic import (
+    ConfigDict, create_model, conint, conlist, field_validator,
+)
 
 from pygeoapi.models.validators import (
     geometry_collection_linear_rings_closed,
@@ -157,9 +159,10 @@ def create_geojson_geometry_model(
         return create_model(
             f'GeoJSON{geom_type}',
             type=(Literal[geom_type], ...),
-            geometries=(Union[tuple(geom_type_models)], ...),
+            geometries=(List[Union[tuple(geom_type_models)]], ...),
             bbox=(bbox_type, Optional),
             __validators__=validators,
+            __config__=ConfigDict(extra='forbid'),
         )
     return create_model(
         f'GeoJSON{geom_type}',
@@ -167,6 +170,7 @@ def create_geojson_geometry_model(
         coordinates=(coordinates_type, ...),
         bbox=(bbox_type, Optional),
         __validators__=validators,
+        __config__=ConfigDict(extra='forbid'),
     )
 
 
@@ -257,7 +261,9 @@ def create_geojson_feature_model(
                 default = Optional
             property_fields_def[prop.name] = (data_type, default)
         properties_model = create_model(
-            'FeaturePropertiesSchema', **property_fields_def,
+            'FeaturePropertiesSchema',
+            __config__=ConfigDict(extra='forbid'),
+            **property_fields_def,
         )
         properties_field_def = (properties_model, ...)
     return create_model(
@@ -268,6 +274,7 @@ def create_geojson_feature_model(
         properties=properties_field_def,
         bbox=(bbox_type, Optional),
         __validators__=validators,
+        __config__=ConfigDict(extra='forbid'),
     )
 
 
@@ -334,4 +341,5 @@ def create_geojson_feature_collection_model(
         features=(List[feature_model], ...),
         bbox=(bbox_type, Optional),
         __validators__=validators,
+        __config__=ConfigDict(extra='forbid'),
     )

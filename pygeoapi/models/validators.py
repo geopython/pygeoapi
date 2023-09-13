@@ -117,7 +117,6 @@ def feature_collection_linear_rings_closed(cls, features):
     """Validator function that checks for closed/opened linear rings in the
     features' geometry of a feature collection.
     """
-    if features:
-        for feature in features:
-            _ = feature_linear_rings_closed(feature, feature.geometry)
+    for feature in features:
+        _ = feature_linear_rings_closed(feature, feature.geometry)
     return features
