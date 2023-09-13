@@ -36,7 +36,7 @@ from typing import List, Optional
 from pydantic import conint
 
 from pygeoapi.models.geojson import (
-    create_GeoJSONFeature_model, create_GeoJSONFeatureCollection_model,
+    create_geojson_feature_model, create_geojson_feature_collection_model,
     GeoJSONProperty, GeomType,
 )
 
@@ -49,7 +49,7 @@ class SchemaType(Enum):
     replace = 'replace'
 
 
-def get_GeoJSONFeature_schema(
+def get_geojson_feature_schema(
     properties: Optional[List[GeoJSONProperty]] = None,
     geom_type: Optional[GeomType] = None,
     geom_nullable: bool = True,
@@ -77,13 +77,13 @@ def get_GeoJSONFeature_schema(
         its 'properties' and/or 'geometry' members are set to 'null',
         respectively.
     """
-    geojson_feature_model = create_GeoJSONFeature_model(
+    geojson_feature_model = create_geojson_feature_model(
         properties, geom_type, geom_nullable, n_dims,
     )
     return geojson_feature_model.model_json_schema()
 
 
-def get_GeoJSONFeatureCollection_schema(
+def get_geojson_feature_collection_schema(
     properties: Optional[List[GeoJSONProperty]] = None,
     geom_type: Optional[GeomType] = None,
     geom_nullable: bool = True,
@@ -111,7 +111,7 @@ def get_GeoJSONFeatureCollection_schema(
         their 'properties' and/or 'geometry' members are set to 'null',
         respectively.
     """
-    geojson_feature_collection_model = create_GeoJSONFeatureCollection_model(
+    geojson_feature_collection_model = create_geojson_feature_collection_model(
         properties, geom_type, geom_nullable, n_dims,
     )
     return geojson_feature_collection_model.model_json_schema()
