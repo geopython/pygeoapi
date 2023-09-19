@@ -591,7 +591,7 @@ def valid_features():
          'properties': {
              'city': 'Paris',
              'population': 2_102_650,
-             'area': 2_853.5,
+             'area': None,
              'db_datetime': dt.datetime(2023, 9, 19),
          },
         },
@@ -600,7 +600,6 @@ def valid_features():
          'geometry': {'type': 'Point', 'coordinates': [40.712778, -74.006111]},
          'properties': {
              'city': 'New York',
-             'population': 8_804_190,
              'area': 1_223.59,
              'db_datetime': dt.datetime(2023, 9, 10),
          },
@@ -630,8 +629,7 @@ def valid_features():
          'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
          'properties': {
              'city': 'Amsterdam',
-             'population': 1_459_402,
-             'area': 219.32,
+             'area': None,
              'db_datetime': dt.datetime(2023, 9, 11),
          },
         },
@@ -642,7 +640,6 @@ def valid_features():
              'city': 'Athens',
              'population': 3_059_764,
              'area': 412,
-             'db_datetime': dt.datetime(2023, 9, 12),
          },
         },
         {
@@ -652,7 +649,7 @@ def valid_features():
              'city': 'Lisbon',
              'population': 548_703,
              'area': 100.05,
-             'db_datetime': dt.datetime(2023, 9, 13),
+             'db_datetime': None,
          },
         },
     ]
