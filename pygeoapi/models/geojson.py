@@ -29,11 +29,12 @@
 
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import (
     ConfigDict, create_model, conint, conlist, field_validator,
 )
+from typing_extensions import Literal
 
 from pygeoapi.models.validators import (
     geometry_collection_linear_rings_closed,
