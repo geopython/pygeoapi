@@ -2,6 +2,7 @@ Babel
 click
 filelock
 Flask
+fsspec
 importlib_metadata
 jinja2
 jsonschema
