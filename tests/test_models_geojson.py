@@ -28,6 +28,7 @@
 # =================================================================
 
 
+from copy import deepcopy
 import datetime as dt
 import itertools
 
@@ -36,8 +37,8 @@ import pytest
 
 from pygeoapi.models.geojson import (
     create_geojson_geometry_model,
-    # create_geojson_feature_model,
-    # create_geojson_feature_collection_model,
+    create_geojson_feature_model,
+    create_geojson_feature_collection_model,
     GeoJSONProperty,
 )
 
@@ -53,7 +54,7 @@ def invalid_bboxes() -> list:
 
 @pytest.fixture
 def invalid_points(invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON Points"""
+    """Returns list of invalid 2D GeoJSON Points"""
     invalid_points = [
         {
          'type': 'wrong_type',
@@ -94,7 +95,7 @@ def invalid_points(invalid_bboxes) -> list:
 
 @pytest.fixture
 def invalid_linestrings(invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON LineStrings"""
+    """Returns list of invalid 2D GeoJSON LineStrings"""
     invalid_linestrings = [
         {
          'type': 'wrong_type',
@@ -131,7 +132,7 @@ def invalid_linestrings(invalid_bboxes) -> list:
 
 @pytest.fixture
 def invalid_polygons(invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON Polygons"""
+    """Returns list of invalid 2D GeoJSON Polygons"""
     invalid_polygons = [
         {
          'type': 'wrong_type',
@@ -180,7 +181,7 @@ def invalid_polygons(invalid_bboxes) -> list:
 
 @pytest.fixture
 def invalid_multipoints(invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON MultiPoints"""
+    """Returns list of invalid 2D GeoJSON MultiPoints"""
     invalid_multipoints = [
         {
          'type': 'wrong_type',
@@ -217,7 +218,7 @@ def invalid_multipoints(invalid_bboxes) -> list:
 
 @pytest.fixture
 def invalid_multilinestrings(invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON MultiLineStrings"""
+    """Returns list of invalid 2D GeoJSON MultiLineStrings"""
     invalid_multilinestrings = [
         {
          'type': 'wrong_type',
@@ -254,7 +255,7 @@ def invalid_multilinestrings(invalid_bboxes) -> list:
 
 @pytest.fixture
 def invalid_multipolygons(invalid_polygons, invalid_bboxes) -> list:
-    """Returns list of invalid GeoJSON MultiPolygons"""
+    """Returns list of invalid 2D GeoJSON MultiPolygons"""
     invalid_multipolygons = [
         {
          'type': 'wrong_type',
@@ -299,7 +300,7 @@ def invalid_geometrycollections(
     invalid_multipolygons,
     invalid_bboxes,
 ) -> list:
-    """Returns list of invalid GeoJSON GeometryCollections"""
+    """Returns list of invalid 2D GeoJSON GeometryCollections"""
     invalid_geometrycollections = [
         {
          'type': 'wrong_type',
@@ -328,8 +329,8 @@ def invalid_geometrycollections(
               'coordinates': [0.0, 0.0],
              }
          ],
-         # mismatch between number of dimensions for the 'coordinates' of the
-         # GeoJSON Point and the'bbox' fields
+         # mismatch between number of dimensions for the 'coordinates' field of
+         # the GeoJSON Point and the'bbox' field
          'bbox': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         },
     ]
@@ -630,7 +631,6 @@ def valid_features():
          'properties': {
              'city': 'Amsterdam',
              'area': None,
-             'db_datetime': dt.datetime(2023, 9, 11),
          },
         },
         {
@@ -655,9 +655,212 @@ def valid_features():
     ]
 
 
-def test_create_geojson_feature_model():
-    pass
+@pytest.fixture
+def invalid_features(invalid_points, valid_features) -> list:
+    """Returns list of invalid features"""
+    invalid_features = [
+        {
+         'type': 'wrong_type',
+         'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
+         'properties': {
+             'city': 'Amsterdam',
+             'area': None,
+         },
+        },
+        {
+         'type': 'Feature',
+         'wrong_field': 'blabla',
+         'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
+         'properties': {
+             'city': 'Amsterdam',
+             'area': None,
+         },
+        },
+        {
+         'type': 'Feature',
+         'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
+         'properties': {
+             'city': 'Amsterdam',
+             'area': None,
+         },
+         # mismatch between number of dimensions for the 'coordinates' field of
+         # the GeoJSON Point and the'bbox' field
+         'bbox': [-180.0, -90.0, 0.0, 180.0, 90.0, 0.0],
+        },
+        {
+         'type': 'Feature',
+         'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
+         'properties': {
+             # missing required field
+             # 'city': 'Amsterdam',
+             'area': None,
+         },
+        },
+        {
+         'type': 'Feature',
+         'geometry': {'type': 'Point', 'coordinates': [52.372778, 4.893611]},
+         'properties': {
+             # non-nullable field set to None
+             'city': None,
+             'area': None,
+         },
+        },
+    ]
+    valid_feature = valid_features[0]
+    for point in invalid_points:
+        feature = deepcopy(valid_feature)
+        feature['geometry'] = point
+        invalid_features.append(feature)
+
+    return invalid_features
 
 
-def test_create_geojson_feature_collection_model():
-    pass
+def test_create_geojson_feature_model(
+    geojson_properties, valid_features, invalid_features,
+):
+    """Test that pydantic models validate valid GeoJSON Features and raises
+    ValidationError for invalid GeoJSON Features.
+    """
+    FeatureModel2D = create_geojson_feature_model(
+        properties=geojson_properties,
+        geom_type='Point',
+        geom_nullable=False,
+    )
+
+    for feature in valid_features:
+        _ = FeatureModel2D.model_validate(feature)
+
+    for feature in invalid_features:
+        with pytest.raises(ValidationError):
+            FeatureModel2D.model_validate(feature)
+
+    # test geom_nullable parameter
+    feature = deepcopy(valid_features[0])
+    feature['geometry'] = None
+
+    with pytest.raises(ValidationError):
+        FeatureModel2D.model_validate(feature)
+
+    FeatureModel2D = create_geojson_feature_model(
+        properties=geojson_properties,
+        geom_type='Point',
+        geom_nullable=True,
+    )
+
+    _ = FeatureModel2D.model_validate(feature)
+
+    # test geom_type parameter (forcing geojson feature to have
+    # 'geometry' == null)
+    FeatureModel2D = create_geojson_feature_model(
+        properties=geojson_properties,
+        geom_type=None,
+    )
+    with pytest.raises(ValidationError):
+        FeatureModel2D.model_validate(valid_features[0])
+
+    # testing properties parameter (geojson feature with orwithout properties)
+    feature = deepcopy(valid_features[0])
+
+    FeatureModel2D = create_geojson_feature_model(
+        properties=None,
+        geom_type='Point',
+    )
+
+    with pytest.raises(ValidationError):
+        FeatureModel2D.model_validate(feature)
+
+    FeatureModel2D = create_geojson_feature_model(
+        properties=geojson_properties,
+        geom_type='Point',
+    )
+    feature['properties'] = None
+
+    with pytest.raises(ValidationError):
+        FeatureModel2D.model_validate(feature)
+
+    # test Feature with 3D geometry
+    properties = [
+        GeoJSONProperty(
+            name='mountain', dtype=str, nullable=False, required=True,
+        ),
+    ]
+    FeatureModel3D = create_geojson_feature_model(
+        properties=properties,
+        geom_type='Point',
+        n_dims=3,
+    )
+    feature3d = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [27.988056, 86.925278, 8_848.86],
+        },
+        'properties': {'mountain': 'Mount Everest'},
+    }
+
+    _ = FeatureModel3D.model_validate(feature3d)
+
+    # remove third dimension in 'coordinates'
+    feature3d['geometry']['coordinates'] = feature3d['geometry']['coordinates'][:2]  # noqa
+
+    with pytest.raises(ValidationError):
+        _ = FeatureModel3D.model_validate(feature3d)
+
+
+@pytest.fixture
+def valid_feature_collections(valid_features) -> list:
+    """Returns list of valid feature collections"""
+    return [
+        {
+         'type': 'FeatureCollection',
+         'features': [],
+        },
+        {
+         'type': 'FeatureCollection',
+         'features': valid_features,
+        },
+    ]
+
+
+@pytest.fixture
+def invalid_feature_collections(invalid_features, valid_features) -> list:
+    """Returns list of invalid feature collections"""
+    return [
+        {
+         'type': 'FeatureCollection',
+         'features': None,
+        },
+        {
+         'type': 'FeatureCollection',
+         'features': invalid_features,
+        },
+        {
+         'type': 'FeatureCollection',
+         'features': valid_features,
+         # mismatch between number of dimensions for the 'coordinates' field of
+         # the GeoJSON geometries and the'bbox' field
+         'bbox': [-180.0, -90.0, 0.0, 180.0, 90.0, 0.0],
+        },
+    ]
+
+
+def test_create_geojson_feature_collection_model(
+    geojson_properties,
+    valid_feature_collections,
+    invalid_feature_collections,
+):
+    """Test that pydantic models validate valid GeoJSON FeatureCollections and
+    raises ValidationError for invalid GeoJSON FeatureCollections.
+    """
+    FeatureCollectionModel2D = create_geojson_feature_collection_model(
+        properties=geojson_properties,
+        geom_type='Point',
+        geom_nullable=False,
+    )
+
+    for feature_collection in valid_feature_collections:
+        _ = FeatureCollectionModel2D.model_validate(feature_collection)
+
+    for feature_collection in invalid_feature_collections:
+        with pytest.raises(ValidationError):
+            FeatureCollectionModel2D.model_validate(feature_collection)
