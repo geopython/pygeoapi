@@ -144,12 +144,14 @@ class Admin(API):
 
         headers = request.get_response_headers()
 
+        cfg = get_config(raw=True)
+
         if request.format == F_HTML:
             content = render_j2_template(
-                self.config, 'admin/index.html', self.config, request.locale
+                self.config, 'admin/index.html', cfg, request.locale
             )
         else:
-            content = to_json(self.config, self.pretty_print)
+            content = to_json(cfg, self.pretty_print)
 
         return headers, 200, content
 
