@@ -1,37 +1,42 @@
-{% extends "_base.html" %} {% block title %} Admin {% endblock %} {% block
-extrahead %}
-<link
-  href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.css"
-  rel="stylesheet"
-/>
-<link
-  href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.css"
-  rel="stylesheet"
-/>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-{% endblock %}
+{% extends "_base.html" %} {% block title %} Admin {% endblock %}
 {% block body %}
-<div id="app" data-app>
-  <v-main>
-    <v-responsive class="mx-auto" width="90%" max-width="1130">
-      <gui-block key="tree" label="root" :vals="tree" />
-    </v-responsive>
-  </v-main>
-</div>
-{% endblock %} {% block extrafoot %} {% include "admin/guiblock.html" %}
+{% set tree = data %} 
 
-<script>
-  const vue = new Vue({
-    el: '#app',
-    vuetify: new Vuetify(),
-    data: function () {
-      return {
-        tree: {{ data | to_json | safe }},
-      }
-    },
-  })
-</script>
+<section id="admin">
+  <div class="admin">
+
+    {% for key, node in tree.items() recursive %}
+      <div class="card mt-2">
+
+        {# if node has a title #}
+        {% if key|int(-1) == -1 %}
+          <div class="card-header">
+            <b>{{ key }}</b>
+          </div>
+        {% endif %}
+
+        <div class="card-body">
+          {# if node has a renderable value #}
+          {% if node is not iterable or node is string %}
+            {{ node }}
+            
+          {# if node has named child nodes #}
+          {% elif node is mapping %}
+            {{ loop(node.items()) }}
+
+          {# if node has unnamed child nodes #}
+          {% else %}
+            {% set outerloop = loop %}
+            {% for subnode in node %}
+              {% set tmpnode = {loop.index|string: subnode} %}
+              {{ outerloop(tmpnode.items()) }}
+            {% endfor %}
+          {% endif %}
+        </div>
+
+      </div>
+    {% endfor %}
+
+  </div>
+</section>
 {% endblock %}
