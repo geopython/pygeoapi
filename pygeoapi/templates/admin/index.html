@@ -1,4 +1,21 @@
 {% extends "_base.html" %} {% block title %} Admin {% endblock %}
+{% macro render_item_value(v, width) -%}
+    {% set val = v | string | trim %}
+    {% if v is string or v is number %}
+        {{ val | urlize() }}
+    {% elif v is mapping %}
+      {% for i,j in v.items() %}
+        <i>{{ i }}:</i> {{ render_item_value(j, 60) }}<br/>
+      {% endfor %}
+    {% elif v is iterable %}
+      {% for i in v %}
+        {{ render_item_value(i, 60) }}
+      {% endfor %}
+    {% else %}
+      {{ val | urlize() }}
+    {% endif %}
+{%- endmacro %}
+
 {% block body %}
 {% set tree = data %} 
 
@@ -18,7 +35,7 @@
         <div class="card-body">
           {# if node has a renderable value #}
           {% if node is not iterable or node is string %}
-            {{ node }}
+            {{ render_item_value(node, 80)  }}
             
           {# if node has named child nodes #}
           {% elif node is mapping %}
