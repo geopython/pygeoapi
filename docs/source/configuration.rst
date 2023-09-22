@@ -50,6 +50,7 @@ For more information related to API design rules (the ``api_rules`` property in 
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
     limit: 10  # server limit on number of items to return
+    admin: false # boolean on whether to enable admin api. 
 
     templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
       path: /path/to/jinja2/templates/folder # path to templates folder containing the Jinja2 template HTML files
