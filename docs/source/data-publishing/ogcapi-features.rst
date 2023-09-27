@@ -266,6 +266,54 @@ Here `test` is the name of database , `points` is the target collection name.
          data: mongodb://localhost:27017/testdb
          collection: testplaces
 
+.. _Oracle:
+
+Oracle
+^^^^^^
+
+.. note::
+  Requires Python package oracledb
+
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521 # defaults to 1521 if not provided
+            service_name: XEPDB1
+            # sid: XEPDB1
+            user: geo_test
+            password: geo_test
+            # external_auth: wallet
+            # tns_name: XEPDB1
+            # tns_admin /opt/oracle/client/network/admin 
+            # init_oracle_client: True
+
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        # sql_manipulator: tests.test_oracle_provider.SqlManipulator
+        # sql_manipulator_options:
+        #     foo: bar
+        # mandatory_properties:
+        # - bbox
+        # source_crs: 31287 # defaults to 4326 if not provided
+        # target_crs: 31287 # defaults to 4326 if not provided
+
+The provider supports connection over host and port with SID or SERVICE_NAME. For TNS naming, the system 
+environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
+
+The providers supports external authentication. At the moment only wallet authentication is implemented.
+
+Sometimes it is necessary to use the Oracle client for the connection. In this case init_oracle_client must be set to True.
+
+The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
+useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
+
+An example an more informations about that feature you can find in the test class in tests/test_oracle_provider.py.
 
 .. _PostgreSQL:
 

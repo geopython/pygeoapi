@@ -42,7 +42,27 @@ jobs:
           - python-version: 3.7
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
-
+    
+    services:
+      # Oracle service (label used to access the service container)
+      oracle:
+        # Docker Hub image (feel free to change the tag "latest" to any other available one)
+        image: gvenzl/oracle-xe:latest
+        # Provide passwords and other environment variables to container
+        env:
+          ORACLE_RANDOM_PASSWORD: true
+          APP_USER: geo_test
+          APP_USER_PASSWORD: geo_test
+        # Forward Oracle port
+        ports:
+          - 1521:1521
+        # Provide healthcheck script options for startup
+        options: >-
+          --health-cmd healthcheck.sh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -105,6 +125,7 @@ jobs:
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
+        python3 tests/load_oracle_data.py
     - name: run unit tests ⚙️
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
@@ -126,6 +147,7 @@ jobs:
         pytest tests/test_ogr_sqlite_provider.py
         pytest tests/test_ogr_wfs_provider.py
         pytest tests/test_openapi.py
+        pytest tests/test_oracle_provider.py
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
         pytest tests/test_sensorthings_provider.py

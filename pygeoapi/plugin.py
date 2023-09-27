@@ -50,6 +50,7 @@ PLUGINS = {
         'MapScript': 'pygeoapi.provider.mapscript_.MapScriptProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'MVT': 'pygeoapi.provider.mvt.MVTProvider',
+        'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
