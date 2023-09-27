@@ -27,17 +27,19 @@
 #
 # =================================================================
 
-import logging
+import importlib
 import json
+import logging
+from typing import Optional
+
 import oracledb
+
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
-    ProviderQueryError,
     ProviderItemNotFoundError,
+    ProviderQueryError,
 )
-import importlib
-from typing import Optional
 
 LOGGER = logging.getLogger(__name__)
 
@@ -311,7 +313,7 @@ class OracleProvider(BaseProvider):
         if bbox:
             bbox_dict = {"clause": "", "properties": {}}
 
-            sdo_mask = "mask={}".format(sdo_mask)
+            sdo_mask = f"mask={sdo_mask}"
 
             bbox_dict["properties"] = {
                 "srid": bbox_crs or 4326,
@@ -343,9 +345,7 @@ class OracleProvider(BaseProvider):
             where_dict["properties"].update(bbox_dict["properties"])
 
         if where_conditions:
-            where_dict["clause"] = " WHERE {}".format(
-                " AND ".join(where_conditions)
-            )
+            where_dict["clause"] = f" WHERE {' AND '.join(where_conditions)}"
 
         LOGGER.debug(where_dict)
 
@@ -1012,16 +1012,12 @@ def _class_factory(
     """
     module_name, class_name = module_class_string.rsplit(".", 1)
     module = importlib.import_module(module_name)
-    LOGGER.debug(
-        "reading class {} from module {}".format(class_name, module_name)
-    )
+    LOGGER.debug(f"reading class {class_name} from module {module_name}")
     cls = getattr(module, class_name)
     if super_cls is not None:
         assert issubclass(
             cls, super_cls
-        ), "class {} should inherit from {}".format(
-            class_name, super_cls.__name__
-        )
-    LOGGER.debug("initialising {} with params {}".format(class_name, kwargs))
+        ), f"class {class_name} should inherit from {super_cls.__name__}"
+    LOGGER.debug(f"initialising {class_name} with params {kwargs}")
     obj = cls(**kwargs)
     return obj

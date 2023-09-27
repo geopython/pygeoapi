@@ -311,84 +311,9 @@ The providers supports external authentication. At the moment only wallet authen
 Sometimes it is necessary to use the Oracle client for the connection. In this case init_oracle_client must be set to True.
 
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
-useful e.g. for authorization at row level or manipulation of the explain plan with hints. For this, the SQL 
-statement has three different placeholders which could be replaced: #HINTS#, #WHERE# and #JOIN#.
+useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
-.. code-block:: sql
-
-  SELECT #HINTS# t1.id, ...
-    FROM table t1 #JOIN# 
-    #WHERE#
-    ORDER BY t1.id ASC
-    OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
-
-Example SQL Manipulator
-"""""""""""""""""""""""
-.. code-block:: python
-
-  class SqlManipulator:
-    def process_query(
-        self,
-        db,
-        sql_query,
-        bind_variables,
-        sql_manipulator_options,
-        bbox,
-        source_crs,
-        properties,
-    ):
-        sql = "ID = 10 AND :foo != :bar"
-
-        if sql_query.find(" WHERE ") == -1:
-            sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
-        else:
-            sql_query = sql_query.replace("#WHERE#", f" AND {sql}")
-
-        bind_variables = {
-            **bind_variables,
-            "foo": "foo",
-            "bar": sql_manipulator_options.get("foo"),
-        }
-
-        return sql_query, bind_variables
-
-    def process_create(
-        self,
-        db,
-        sql_query,
-        bind_variables,
-        sql_manipulator_options,
-        request_data,
-    ):
-        bind_variables["name"] = "overwritten"
-
-        return sql_query, bind_variables
-
-    def process_update(
-        self,
-        db,
-        sql_query,
-        bind_variables,
-        sql_manipulator_options,
-        identifier,
-        request_data,
-    ):
-        bind_variables["area"] = 42
-        bind_variables["volume"] = 42
-
-        return sql_query, bind_variables
-
-    def process_delete(
-        self,
-        db,
-        sql_query,
-        bind_variables,
-        sql_manipulator_options,
-        identifier,
-    ):
-        sql_query = f"{sql_query} AND 'auth' = 'you arent allowed'"
-
-        return sql_query, bind_variables
+An example an more informations about that feature you can find in the test class in tests/test_oracle_provider.py.
 
 .. _PostgreSQL:
 
