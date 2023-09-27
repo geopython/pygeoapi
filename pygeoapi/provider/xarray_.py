@@ -35,6 +35,7 @@ import tempfile
 import zipfile
 
 import xarray
+import fsspec
 import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
@@ -67,8 +68,20 @@ class XarrayProvider(BaseProvider):
                     open_func = xarray.open_mfdataset
                 else:
                     open_func = xarray.open_dataset
+            if provider_def['data'].startswith('s3://'):
+                LOGGER.debug('Data is stored in S3 bucket.')
+                if 's3' in provider_def.get('options', {}):
+                    s3_options = provider_def['options']['s3']
+                else:
+                    s3_options = {}
+                LOGGER.debug(s3_options)
+                data_to_open = fsspec.get_mapper(self.data,
+                                                 **s3_options)
+                LOGGER.debug('Completed S3 Open Function')
+            else:
+                data_to_open = self.data
 
-            self._data = open_func(self.data)
+            self._data = open_func(data_to_open)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],

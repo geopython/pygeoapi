@@ -31,7 +31,7 @@
 
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import RootModel
 
 
 class SupportedFormats(Enum):
@@ -39,5 +39,5 @@ class SupportedFormats(Enum):
     YAML = "yaml"
 
 
-class OAPIFormat(BaseModel):
-    __root__: SupportedFormats = SupportedFormats.YAML
+class OAPIFormat(RootModel):
+    root: SupportedFormats = SupportedFormats.YAML

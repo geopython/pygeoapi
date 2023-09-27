@@ -1709,15 +1709,17 @@ class API:
                     'href': f'{uri}?offset={prev}{serialized_query_params}'
                 })
 
-        if len(content['features']) == limit:
-            next_ = offset + limit
-            content['links'].append(
-                {
-                    'type': 'application/geo+json',
-                    'rel': 'next',
-                    'title': 'items (next)',
-                    'href': f'{uri}?offset={next_}{serialized_query_params}'
-                })
+        if 'numberMatched' in content:
+            if content['numberMatched'] > (limit + offset):
+                next_ = offset + limit
+                next_href = f'{uri}?offset={next_}{serialized_query_params}'
+                content['links'].append(
+                    {
+                        'type': 'application/geo+json',
+                        'rel': 'next',
+                        'title': 'items (next)',
+                        'href': next_href
+                    })
 
         content['links'].append(
             {
@@ -2055,7 +2057,7 @@ class API:
         else:
             LOGGER.debug('processing Elasticsearch CQL_JSON data')
             try:
-                filter_ = CQLModel.parse_raw(data)
+                filter_ = CQLModel.model_validate_json(data)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
@@ -3292,6 +3294,7 @@ class API:
                 p = self.manager.get_processor(key)
                 p2 = l10n.translate_struct(deepcopy(p.metadata),
                                            request.locale)
+                p2['id'] = key
 
                 if process is None:
                     p2.pop('inputs')

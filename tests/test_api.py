@@ -636,7 +636,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 8
+    assert len(collections['collections']) == 9
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
@@ -907,17 +907,15 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == 35
 
     links = features['links']
-    assert len(links) == 5
+    assert len(links) == 4
     assert '/collections/obs/items?f=json' in links[0]['href']
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?offset=2&limit=2' in links[3]['href']
-    assert links[3]['rel'] == 'next'
-    assert '/collections/obs' in links[4]['href']
-    assert links[4]['rel'] == 'collection'
+    assert '/collections/obs' in links[3]['href']
+    assert links[3]['rel'] == 'collection'
 
     # Invalid offset
     req = mock_request({'offset': -1})
@@ -957,7 +955,7 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 1
 
     links = features['links']
-    assert len(links) == 6
+    assert len(links) == 5
     assert '/collections/obs/items?f=json&limit=1&bbox=-180,90,180,90' in \
         links[0]['href']
     assert links[0]['rel'] == 'self'
@@ -970,11 +968,8 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?offset=0&limit=1&bbox=-180,90,180,90' \
         in links[3]['href']
     assert links[3]['rel'] == 'prev'
-    assert '/collections/obs/items?offset=2&limit=1&bbox=-180,90,180,90' \
-        in links[4]['href']
-    assert links[4]['rel'] == 'next'
-    assert '/collections/obs' in links[5]['href']
-    assert links[5]['rel'] == 'collection'
+    assert '/collections/obs' in links[4]['href']
+    assert links[4]['rel'] == 'collection'
 
     req = mock_request({
         'sortby': 'bad-property',
@@ -2006,6 +2001,15 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
+
+    # S3 EDR
+    req = mock_request({
+        'coords': 'POINT(-100 40)',
+        'parameter-name': 'GWETROOT'
+    })
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'nasa-power', None, 'position')
+    assert code == HTTPStatus.OK
 
     # position no coords
     req = mock_request({

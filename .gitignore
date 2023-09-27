@@ -122,3 +122,6 @@ pygeoapi/db.sqlite3
 
 # Pre-commit hooks config file
 .pre-commit-config.yaml
+
+# Pycharm project files
+.idea

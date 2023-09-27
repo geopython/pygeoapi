@@ -58,11 +58,29 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          format:
             name: zarr
             mimetype: application/zip
+    
+    providers:
+       - type: edr
+         name: xarray-edr
+         data: s3://power-analysis-ready-datastore/power_901_annual_meteorology_utc.zarr
+         format:
+            name: zarr
+            mimetype: application/zip
+         options:
+            s3:
+               anon: true
+               requester_pays: false
 
 .. note::
 
    `Zarr`_ files are directories with files and subdirectories.  Therefore
    a zip file is returned upon request for said format.
+
+.. note::
+   When referencing data stored in an S3 bucket, be sure to provide the full
+   S3 URL. Any parameters required to open the dataset using fsspec can be added
+   to the config file under `options` and `s3`, as shown above.
+
 
 Data access examples
 --------------------

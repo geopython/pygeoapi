@@ -294,7 +294,7 @@ class ElasticsearchProvider(BaseProvider):
         try:
             LOGGER.debug('querying Elasticsearch')
             if filterq:
-                LOGGER.debug(f'adding cql object: {filterq.json()}')
+                LOGGER.debug(f'adding cql object: {filterq.model_dump_json()}')
                 query = update_query(input_query=query, cql=filterq)
             LOGGER.debug(json.dumps(query, indent=4))
 
@@ -513,9 +513,9 @@ class ElasticsearchProvider(BaseProvider):
         if not self.properties and not self.select_properties:
             all_properties = self.get_fields()
         if self.properties and self.select_properties:
-            all_properties = set(self.properties) & set(self.select_properties)
+            all_properties = self.properties and self.select_properties
         else:
-            all_properties = set(self.properties) | set(self.select_properties)
+            all_properties = self.properties or self.select_properties
 
         LOGGER.debug(f'resulting properties: {all_properties}')
         return all_properties
@@ -645,16 +645,16 @@ class ESQueryBuilder:
 def _build_query(q, cql):
 
     # this would be handled by the AST with the traverse of CQL model
-    op, node = get_next_node(cql.__root__)
+    op, node = get_next_node(cql.root)
     q.operation = op
     if isinstance(node, list):
         query_list = []
         for elem in node:
             op, next_node = get_next_node(elem)
             if not getattr(next_node, 'between', 0) == 0:
-                property = next_node.between.value.__root__.__root__.property
-                lower = next_node.between.lower.__root__.__root__
-                upper = next_node.between.upper.__root__.__root__
+                property = next_node.between.value.root.root.property
+                lower = next_node.between.lower.root.root
+                upper = next_node.between.upper.root.root
                 query_list.append(Q(
                     {
                         'range':
@@ -665,24 +665,24 @@ def _build_query(q, cql):
                             }
                     }
                 ))
-            if not getattr(next_node, '__root__', 0) == 0:
-                scalars = tuple(next_node.__root__.eq.__root__)
-                property = scalars[0].__root__.property
-                value = scalars[1].__root__.__root__
+            if not getattr(next_node, 'root', 0) == 0:
+                scalars = tuple(next_node.root.eq.root)
+                property = scalars[0].root.property
+                value = scalars[1].root.root
                 query_list.append(Q(
                     {'match': {f'{property}': f'{value}'}}
                 ))
         q.must(query_list)
     elif not getattr(node, 'between', 0) == 0:
-        property = node.between.value.__root__.__root__.property
+        property = node.between.value.root.root.property
         lower = None
         if not getattr(node.between.lower,
-                       '__root__', 0) == 0:
-            lower = node.between.lower.__root__.__root__
+                       'root', 0) == 0:
+            lower = node.between.lower.root.root
         upper = None
         if not getattr(node.between.upper,
-                       '__root__', 0) == 0:
-            upper = node.between.upper.__root__.__root__
+                       'root', 0) == 0:
+            upper = node.between.upper.root.root
         query = Q(
             {
                 'range':
@@ -694,26 +694,26 @@ def _build_query(q, cql):
             }
         )
         q.must(query)
-    elif not getattr(node, '__root__', 0) == 0:
+    elif not getattr(node, 'root', 0) == 0:
         next_op, next_node = get_next_node(node)
         if not getattr(next_node, 'eq', 0) == 0:
-            scalars = tuple(next_node.eq.__root__)
-            property = scalars[0].__root__.property
-            value = scalars[1].__root__.__root__
+            scalars = tuple(next_node.eq.root)
+            property = scalars[0].root.property
+            value = scalars[1].root.root
             query = Q(
                 {'match': {f'{property}': f'{value}'}}
             )
             q.must(query)
     elif not getattr(node, 'intersects', 0) == 0:
-        property = node.intersects.__root__[0].__root__.property
+        property = node.intersects.root[0].root.property
         if property == 'geometry':
-            geom_type = node.intersects.__root__[
-                1].__root__.__root__.__root__.type
-            if geom_type.value == 'Polygon':
-                coordinates = node.intersects.__root__[
-                    1].__root__.__root__.__root__.coordinates
+            geom_type = node.intersects.root[
+                1].root.root.root.type
+            if geom_type == 'Polygon':
+                coordinates = node.intersects.root[
+                    1].root.root.root.coordinates
                 coords_list = [
-                    poly_coords.__root__ for poly_coords in coordinates[0]
+                    poly_coords.root for poly_coords in coordinates[0]
                 ]
                 filter_ = Q(
                     {

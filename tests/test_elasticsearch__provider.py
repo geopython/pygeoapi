@@ -46,6 +46,20 @@ def config():
 
 
 @pytest.fixture()
+def config_ordered_properties():
+    return {
+        'name': 'Elasticsearch',
+        'type': 'feature',
+        'data': 'http://localhost:9200/ne_110m_populated_places_simple',  # noqa
+        'id_field': 'geonameid',
+        'properties': [
+            'adm0name',
+            'adm1name'
+        ]
+    }
+
+
+@pytest.fixture()
 def config_cql():
     return {
         'name': 'Elasticsearch',
@@ -64,7 +78,7 @@ def between():
             "upper": 100000
         }
     }
-    return CQLModel.parse_obj(between_)
+    return CQLModel.model_validate(between_)
 
 
 @pytest.fixture()
@@ -75,7 +89,7 @@ def between_upper():
             "upper": 100000
         }
     }
-    return CQLModel.parse_obj(between_)
+    return CQLModel.model_validate(between_)
 
 
 @pytest.fixture()
@@ -86,7 +100,7 @@ def between_lower():
             "lower": 10000
         }
     }
-    return CQLModel.parse_obj(between_)
+    return CQLModel.model_validate(between_)
 
 
 @pytest.fixture()
@@ -97,7 +111,7 @@ def eq():
             "Admin-0 capital"
         ]
     }
-    return CQLModel.parse_obj(eq_)
+    return CQLModel.model_validate(eq_)
 
 
 @pytest.fixture()
@@ -121,7 +135,7 @@ def _and(eq, between):
             }
         ]
     }
-    return CQLModel.parse_obj(and_)
+    return CQLModel.model_validate(and_)
 
 
 @pytest.fixture()
@@ -141,7 +155,7 @@ def intersects():
             ]
         }
     ]}
-    return CQLModel.parse_obj(intersects)
+    return CQLModel.model_validate(intersects)
 
 
 def test_query(config):
@@ -209,6 +223,15 @@ def test_query(config):
     p = ElasticsearchProvider(config)
     results = p.query()
     assert len(results['features'][0]['properties']) == 1
+
+
+def test_query_ordered_properties(config_ordered_properties):
+    p = ElasticsearchProvider(config_ordered_properties)
+
+    result = p.query()
+    feature_properties = list(result['features'][0]['properties'].keys())
+
+    assert feature_properties == ['adm0name', 'adm1name']
 
 
 def test_get(config):
