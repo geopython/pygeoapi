@@ -463,9 +463,10 @@ class ElasticsearchProvider(BaseProvider):
         LOGGER.debug('Fetching id and geometry from GeoJSON document')
         feature_ = doc['_source']
 
-        if self.id_field in doc['_source']['properties']:
+        try:
             id_ = doc['_source']['properties'][self.id_field]
-        else:
+        except KeyError as err:
+            LOGGER.debug(f'Missing field: {err}')
             id_ = doc['_source'].get('id', doc['_id'])
 
         feature_['id'] = id_
