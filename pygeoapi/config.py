@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,7 +34,9 @@ import json
 from jsonschema import validate as jsonschema_validate
 import logging
 from pathlib import Path
+from pydantic_core import ValidationError
 
+from pygeoapi.models.provider.postgres import ConfigOptions as PostgresOptions
 from pygeoapi.util import to_json, yaml_load
 
 LOGGER = logging.getLogger(__name__)
@@ -57,6 +61,38 @@ def validate_config(instance_dict: dict) -> bool:
     :returns: `bool` of validation
     """
     jsonschema_validate(json.loads(to_json(instance_dict)), load_schema())
+    collections = list(instance_dict["resources"].keys())
+    providers_list = [
+        instance_dict["resources"][collection]["providers"]
+        for collection in collections
+        if instance_dict["resources"][collection].get("providers")]
+    for providers in providers_list:
+        for provider in providers:
+            if provider.get("options"):
+                if not validate_provider_options(
+                    provider_options=provider["options"],
+                    provider_type=provider["name"]
+                ):
+                    return False
+    return True
+
+
+def validate_provider_options(provider_options: dict,
+                              provider_type: str) -> bool:
+    """
+    Validate pygeoapi provider configuration against pygeoapi schema
+
+    :param provider_options: dict of provider options configuration
+    :param provider_type: plugin provider type
+
+    :returns: `bool` of validation
+    """
+    try:
+        if provider_type == 'PostgreSQL':
+            PostgresOptions.model_validate(provider_options)
+    except ValidationError as e:
+        LOGGER.error(f"{provider_type} options not valid: {e}")
+        return False
     return True
 
 
@@ -78,8 +114,10 @@ def validate(ctx, config_file):
     with open(config_file) as ff:
         click.echo(f'Validating {config_file}')
         instance = yaml_load(ff)
-        validate_config(instance)
-        click.echo('Valid configuration')
+        if validate_config(instance):
+            click.echo('Valid configuration')
+        else:
+            click.echo('Not valid configuration')
 
 
 config.add_command(validate)
