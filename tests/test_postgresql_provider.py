@@ -74,11 +74,11 @@ def config():
                  'dbname': 'test',
                  'user': 'postgres',
                  'password': PASSWORD,
-                 'search_path': ['osm', 'public'],
-                 'options': {
-                                'connect_timeout': 10
-                            }
+                 'search_path': ['osm', 'public']
                  },
+        'options': {
+                        'connect_timeout': 10
+                   },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
@@ -94,9 +94,9 @@ def pg_api_():
 
 
 def test_valid_connection_options(config):
-    if config['data'].get('options'):
-        keys = list(config['data']['options'].keys())
-        for key in keys: 
+    if config.get('options'):
+        keys = list(config['options'].keys())
+        for key in keys:
             assert key in ['connect_timeout', 'tcp_user_timeout', 'keepalives',
                            'keepalives_idle', 'keepalives_count',
                            'keepalives_interval']
@@ -282,7 +282,7 @@ def test_get_not_existing_item_raise_exception(config):
     ("osm_id BETWEEN 80800000 AND 80900000 AND BBOX(foo_geom, 29, -2.8, 29.2, -2.9)",  # noqa
         [80827793, 80835470, 80835472, 80835483, 80835489]),
     ("osm_id BETWEEN 80800000 AND 80900000 AND "
-    "CROSSES(foo_geom,  LINESTRING(29.091 -2.731, 29.253 -2.845))",
+        "CROSSES(foo_geom,  LINESTRING(29.091 -2.731, 29.253 -2.845))",
         [80835470, 80835472, 80835489])
 ])
 def test_query_cql(config, cql, expected_ids):

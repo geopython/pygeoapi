@@ -344,6 +344,43 @@ Must have PostGIS installed.
          table: hotosm_bdi_waterways
          geom_field: foo_geom
 
+A number of database connection options can be also configured in the provider in order to adjust properly the sqlalchemy engine client.
+These are optional and if not specified, the default from the engine will be used. Please see also `SQLAlchemy docs <https://docs.sqlalchemy.org/en/14/core/engines.html#custom-dbapi-connect-arguments-on-connect-routines>`_.
+
+.. code-block:: yaml
+
+    providers:
+       - type: feature
+         name: PostgreSQL
+         data:
+             host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided
+             dbname: test
+             user: postgres
+             password: postgres
+             search_path: [osm, public]
+         options:
+             # Maximum time to wait while connecting, in seconds.
+             connect_timeout: 10
+             # Number of *milliseconds* that transmitted data may remain
+             # unacknowledged before a connection is forcibly closed.
+             tcp_user_timeout: 10000
+             # Whether client-side TCP keepalives are used. 1 = use keepalives,
+             # 0 = don't use keepalives.
+             keepalives: 1
+             # Number of seconds of inactivity after which TCP should send a
+             # keepalive message to the server.
+             keepalives_idle: 5
+             # Number of TCP keepalives that can be lost before the client's
+             # connection to the server is considered dead.
+             keepalives_count: 5
+             # Number of seconds after which a TCP keepalive message that is not
+             # acknowledged by the server should be retransmitted.
+             keepalives_interval: 1
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
+
 The PostgreSQL provider is also able to connect to Cloud SQL databases.
 
 .. code-block:: yaml

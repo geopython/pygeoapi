@@ -103,7 +103,10 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug(f'Geometry field: {self.geom}')
 
         # Read table information from database
-        self._store_db_parameters(provider_def['data'])
+        options = None
+        if provider_def.get('options'):
+            options = provider_def['options']
+        self._store_db_parameters(provider_def['data'], options)
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.fields = self.get_fields()
@@ -267,14 +270,14 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature
 
-    def _store_db_parameters(self, parameters):
+    def _store_db_parameters(self, parameters, options):
         self.db_user = parameters.get('user')
         self.db_host = parameters.get('host')
         self.db_port = parameters.get('port', 5432)
         self.db_name = parameters.get('dbname')
         self.db_search_path = parameters.get('search_path', ['public'])
         self._db_password = parameters.get('password')
-        self.db_options = parameters.get('options')
+        self.db_options = options
 
     def _get_engine_and_table_model(self):
         """
