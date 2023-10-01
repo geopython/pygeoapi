@@ -274,6 +274,7 @@ class PostgreSQLProvider(BaseProvider):
         self.db_name = parameters.get('dbname')
         self.db_search_path = parameters.get('search_path', ['public'])
         self._db_password = parameters.get('password')
+        self.db_options = parameters.get('options')
 
     def _get_engine_and_table_model(self):
         """
@@ -296,10 +297,15 @@ class PostgreSQLProvider(BaseProvider):
                 port=self.db_port,
                 database=self.db_name
             )
+            conn_args = {
+                'client_encoding': 'utf8',
+                'application_name': 'pygeoapi'
+            }
+            if self.db_options:
+                conn_args.update(self.db_options)
             engine = create_engine(
                 conn_str,
-                connect_args={'client_encoding': 'utf8',
-                              'application_name': 'pygeoapi'},
+                connect_args=conn_args,
                 pool_pre_ping=True)
             _ENGINE_STORE[engine_store_key] = engine
 
