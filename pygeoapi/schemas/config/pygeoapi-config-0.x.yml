@@ -448,10 +448,13 @@ properties:
                                       options:
                                           type: object
                                           description: optional options key value pairs to pass to provider (i.e. GDAL creation)
-                                          patternProperties:
-                                              "^[a-z]{2}$":
-                                                  allOf:
-                                                      - type: string
+                                          oneOf:
+                                              - $ref: '#/definitions/provider/properties/PostgreSQL/properties/config/properties/options'
+                                            #   - type: object 
+                                            #     patternProperties:
+                                            #         "^[a-z]{2}$":
+                                            #             allOf:
+                                            #                 - type: string
                                       properties:
                                           type: array
                                           description: only return the following properties, in order
@@ -542,6 +545,26 @@ definitions:
                           - type: array
                             items:
                                 type: string
+    provider:
+        properties:
+            PostgreSQL:
+                properties:
+                    config:
+                        properties:
+                            options:
+                                properties:
+                                    connect_timeout:
+                                        type: integer
+                                    tcp_user_timeout:
+                                        type: integer
+                                    keepalives:
+                                        type: integer
+                                    keepalives_idle:
+                                        type: integer
+                                    keepalives_count:
+                                        type: integer
+                                    keepalives_interval:
+                                        type: integer
 required:
     - server
     - logging

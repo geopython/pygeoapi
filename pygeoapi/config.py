@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -57,6 +59,7 @@ def validate_config(instance_dict: dict) -> bool:
     :returns: `bool` of validation
     """
     jsonschema_validate(json.loads(to_json(instance_dict)), load_schema())
+
     return True
 
 
