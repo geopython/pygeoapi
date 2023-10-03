@@ -31,9 +31,10 @@
 
 
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import conint
+from pydantic.json_schema import GenerateJsonSchema
 
 from pygeoapi.models.geojson import (
     create_geojson_feature_model, create_geojson_feature_collection_model,
@@ -47,6 +48,40 @@ class SchemaType(Enum):
     create = 'create'
     update = 'update'
     replace = 'replace'
+
+
+def exclude_properties_default(properties: List[str], schema: Dict) -> None:
+    """Remove the default value for given properties in a schema.
+
+    The function remove all default values for the listed properties in a
+    schema (`dict` instance). If the schema is a nested dictionary, the default
+    values will be removed at all nesting levels.
+
+    :param: list of properties to remove the default value for.
+    :type properties: List[str]
+    :param schema: input schema.
+    :type schema: dict
+    """
+    for k, v in schema.items():
+        if k in properties:
+            _ = v.pop('default', None)
+        if isinstance(v, dict):
+            exclude_properties_default(properties, v)
+
+
+class GeoJsonSchemaGenerator(GenerateJsonSchema):
+    """Subclass of `GenerateJsonSchema` to customize JSON schema generation.
+    """
+
+    def generate(self, schema, mode='validation'):
+        """Override `GenerateJsonSchema.generate` and remove default values for
+        'bbox' and 'id' properties in the generated schema.
+        """
+        json_schema = super().generate(schema, mode=mode)
+        exclude_properties_default(
+            properties=['bbox', 'id'], schema=json_schema,
+        )
+        return json_schema
 
 
 def get_geojson_feature_schema(
@@ -80,7 +115,9 @@ def get_geojson_feature_schema(
     geojson_feature_model = create_geojson_feature_model(
         properties, geom_type, geom_nullable, n_dims,
     )
-    return geojson_feature_model.model_json_schema()
+    return geojson_feature_model.model_json_schema(
+        schema_generator=GeoJsonSchemaGenerator
+    )
 
 
 def get_geojson_feature_collection_schema(
@@ -114,4 +151,6 @@ def get_geojson_feature_collection_schema(
     geojson_feature_collection_model = create_geojson_feature_collection_model(
         properties, geom_type, geom_nullable, n_dims,
     )
-    return geojson_feature_collection_model.model_json_schema()
+    return geojson_feature_collection_model.model_json_schema(
+        schema_generator=GeoJsonSchemaGenerator
+    )
