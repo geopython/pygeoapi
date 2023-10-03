@@ -161,7 +161,7 @@ def create_geojson_geometry_model(
             f'GeoJSON{geom_type}',
             type=(Literal[geom_type], ...),
             geometries=(List[Union[tuple(geom_type_models)]], ...),
-            bbox=(bbox_type, Optional),
+            bbox=(bbox_type, None),
             __validators__=validators,
             __config__=ConfigDict(extra='forbid'),
         )
@@ -169,7 +169,7 @@ def create_geojson_geometry_model(
         f'GeoJSON{geom_type}',
         type=(Literal[geom_type], ...),
         coordinates=(coordinates_type, ...),
-        bbox=(bbox_type, Optional),
+        bbox=(bbox_type, None),
         __validators__=validators,
         __config__=ConfigDict(extra='forbid'),
     )
@@ -239,7 +239,7 @@ def create_geojson_feature_model(
         validators['geometry_validator'] = field_validator('geometry')(feature_linear_rings_closed)  # noqa
     bbox_type = get_bbox_type(n_dims)
     if geom_type is None:
-        geom_field_def = (Optional[None], ...)
+        geom_field_def = (Literal[None], ...)
     elif geom_nullable:
         geojson_geom_model = create_geojson_geometry_model(geom_type, n_dims)
         geom_field_def = (Optional[geojson_geom_model], ...)
@@ -248,7 +248,7 @@ def create_geojson_feature_model(
             create_geojson_geometry_model(geom_type, n_dims), ...,
         )
     if properties is None:
-        properties_field_def = (Optional[None], ...)
+        properties_field_def = (Literal[None], ...)
     else:
         property_fields_def = dict()
         for prop in properties:
@@ -259,7 +259,7 @@ def create_geojson_feature_model(
             if prop.required:
                 default = ...
             else:
-                default = Optional
+                default = None
             property_fields_def[prop.name] = (data_type, default)
         properties_model = create_model(
             'FeaturePropertiesSchema',
@@ -270,10 +270,10 @@ def create_geojson_feature_model(
     return create_model(
         'GeoJSONFeature',
         type=(Literal['Feature'], ...),
-        id=(Union[str, float], Optional),
+        id=(Union[str, float], None),
         geometry=geom_field_def,
         properties=properties_field_def,
-        bbox=(bbox_type, Optional),
+        bbox=(bbox_type, None),
         __validators__=validators,
         __config__=ConfigDict(extra='forbid'),
     )
@@ -340,7 +340,7 @@ def create_geojson_feature_collection_model(
         'GeoJSONFeatureCollection',
         type=(Literal['FeatureCollection'], ...),
         features=(List[feature_model], ...),
-        bbox=(bbox_type, Optional),
+        bbox=(bbox_type, None),
         __validators__=validators,
         __config__=ConfigDict(extra='forbid'),
     )
