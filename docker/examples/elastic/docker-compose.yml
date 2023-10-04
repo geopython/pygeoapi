@@ -60,8 +60,8 @@ services:
     container_name: elastic
 
     ports:
-      - 9300:9300
-      - 9200:9200
+      - 9300
+      - 9200
     volumes:
       - elastic_search_data:/usr/share/elasticsearch/data
 
