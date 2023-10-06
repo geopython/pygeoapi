@@ -7,7 +7,7 @@ This config is only for local development and testing.
 
 ## Elasticsearch
 
-- official Elasticsearch: **5.6.8** on **CentosOS 7**
+- official Elasticsearch: **8.4.0** on **Ubuntu 20.04.4 LTS (Focal Fossa)**
 - ports **9300** and **9200**
 
 ES requires the host system to have its virtual memory
