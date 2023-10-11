@@ -7,6 +7,8 @@ import argparse
 import subprocess
 import geojson
 import os
+import sys
+import tempfile
 
 
 '''
@@ -31,6 +33,9 @@ How to add this service to an existing pygeoapi instance?
 * Add to pygeoapi-config.yml
 * Add code into directory process (bash scripts need to be executable!)
 * Install any python dependencies into the pygeoapo virtualenv!
+
+Locally, the data dir is:
+export PYGEOAPI_DATA_DIR="/home/mbuurman/work/testing_hydrographr/data/basin_481051"
 
 '''
 
@@ -129,6 +134,12 @@ class SnapToNetworkProcessor(BaseProcessor):
     def execute(self, data):
         LOGGER.info('Starting "snap_to_network as ogc_service!"')
 
+        # Get PYGEOAPI_DATA_DIR from environment:
+        if not 'PYGEOAPI_DATA_DIR' in os.environ:
+            print('ERROR: Missing environment variable PYGEOAPI_DATA_DIR. We cannot find the input data!\nPlease run:\nexport PYGEOAPI_DATA_DIR="/.../"')
+            print('Exiting...')
+            sys.exit(1) # This leads to curl error: (52) Empty reply from server. TODO: Send error message back!!!
+
         # Get input:
         method = data.get('method')
         distance = data.get('distance')
@@ -144,7 +155,7 @@ class SnapToNetworkProcessor(BaseProcessor):
 
         # Make a file out of the input geojson, as the bash file wants them as a file
         # Otherwise, rewrite the bash file to python!
-        input_coord_file_path = '/tmp/__input_tuesday.txt'
+        input_coord_file_path =  tempfile.gettempdir()+os.sep+'__input_snappingtool.txt'
         col_name_lat = 'lat'
         col_name_lon = 'lon'
         col_name_id = 'dummy_unused' # or so! I don't think is is really used, is it? TODO check this third column business
@@ -152,10 +163,13 @@ class SnapToNetworkProcessor(BaseProcessor):
 
         # Hardcoded paths on server:
         # TODO: Do we have to cut them smaller for processing?
-        path_accumul_tif = '/home/mbuurman/work/testing_hydrographr/data/basin_481051/accumulation_481051.tif'
-        path_stream_tif  = '/home/mbuurman/work/testing_hydrographr/data/basin_481051/segment_481051.tif'
-        tmp_dir = '/tmp'
-        snap_tmp_path = '/tmp/__output_tuesday.txt' # intermediate result storage used by GRASS!
+        #path_accumul_tif = '/home/mbuurman/work/testing_hydrographr/data/basin_481051/accumulation_481051.tif'
+        #path_stream_tif  = '/home/mbuurman/work/testing_hydrographr/data/basin_481051/segment_481051.tif'
+        # TODO The file name is still hardcoded!
+        path_accumul_tif = os.environ['PYGEOAPI_DATA_DIR']+os.sep+'accumulation_481051.tif'
+        path_stream_tif  = os.environ['PYGEOAPI_DATA_DIR']+os.sep+'segment_481051.tif'
+        tmp_dir =  tempfile.gettempdir()
+        snap_tmp_path =  tempfile.gettempdir()+os.sep+'__output_snappingtool.txt' # intermediate result storage used by GRASS!
 
         # Now call the tool:
         snap_tmp_path = self.call_snap_to_network_sh(input_coord_file_path,
