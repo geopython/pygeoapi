@@ -302,9 +302,3 @@ resources:
         type: process
         processor:
             name: HelloWorld
-
-    snap-to-network:
-        type: process
-        processor:
-            name: SnapToNetwork
-    
