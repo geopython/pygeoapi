@@ -1,6 +1,7 @@
 #! /bin/bash
 
-# Adapted version by Merret, 2023-10-10, 11:04
+# Source:
+# https://github.com/glowabio/hydrographr/blob/main/inst/sh/snap_to_network.sh
 
 ##  file (e.g. txt or csv) that has been generated at the beginning
 ##  of the R function, based on the data.frame table the user provided
@@ -38,7 +39,6 @@ export DIR=${11}
 
 ## Set random string
 export RAND_STRING=$(xxd -l 8 -c 32 -p < /dev/random)
-echo "MB: RAND_STRING: "+$RAND_STRING
 
 ## save name of file without extension
 #b=$(echo $DAT | awk -F"." '{print $1}')
@@ -67,9 +67,7 @@ export op=$(tail -n +2 $DATA | wc -l)
 grass -f --gtext --tmp-location $STR  <<'EOF'
 
 # read stream raster file
-echo "1"
 r.in.gdal input=$STR output=stream
-echo "2"
 
 # read reference points
 # v.in.ogr --o input=$DIR/ref_points_${RAND_STRING}.gpkg layer=ref_points output=ref_points \
@@ -77,17 +75,11 @@ echo "2"
 
 v.in.ascii -z in=$DATA out=ref_points separator=comma \
   cat=1 x=2 y=3 z=3 skip=1
-# DEBUG
-# grass v.in.ascii -z in="/tmp/__input_tuesday.txt" out=ref_points separator=comma cat=1 x=2 y=3 z=3 skip=1
-
-
-echo "3 in: "$DATA
 
 # if not then identify id of those left out
 
 if [ "$METHOD" = "distance" ]
 then
-    echo "4 distance"
 
     r.stream.snap --o input=ref_points output=snap_points stream_rast=stream \
         radius=$rdist
@@ -144,7 +136,6 @@ fi
 #
 if [ "$METHOD" = "accumulation" ]
 then
-    echo "4 accu"
     r.in.gdal input=$ACC output=accum
     r.stream.snap --o input=ref_points output=snap_points stream_rast=stream \
         radius=$rdist accumulation=accum threshold=$acct

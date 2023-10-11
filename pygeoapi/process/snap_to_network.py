@@ -2,6 +2,7 @@
 import logging
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 LOGGER = logging.getLogger(__name__)
+# TODO Improve logging!
 
 import argparse
 import subprocess
@@ -207,8 +208,8 @@ class SnapToNetworkProcessor(BaseProcessor):
                 coord_pair_str = '%s%s%s%s%s\n' % (99999, sep, lat, sep, lon) # comma separated
                 inputfile.write(coord_pair_str)
 
-        # DEBUG
-        # THis is what happens in R in this line:
+        # DEBUG TODO FIXME This is a dirty little fix
+        # This is what happens in R in this line:
         # https://github.com/glowabio/hydrographr/blob/HEAD/R/snap_to_network.R#L193C3-L193C17
         # They just export the coordinates, no other columns!
         # But the input line in grass seems to expect more lines!
@@ -226,9 +227,6 @@ class SnapToNetworkProcessor(BaseProcessor):
 
         LOGGER.debug('Now calling bash which calls grass/gdal...')
         LOGGER.debug('Current directory: %s' % os.getcwd())
-        # bash_file = os.getcwd()+'/snap_to_network.sh'
-        # Does not exist: /home/mbuurman/work/project_AquaInfra/pygeoapi/test/pygeoapi/pygeoapi/snap_to_network.sh
-        # The real thing: /home/mbuurman/work/project_AquaInfra/pygeoapi/test/pygeoapi/pygeoapi/pygeoapi/process/snap_to_network.sh
         bash_file = os.getcwd()+'/pygeoapi/process/snap_to_network.sh'
         cmd =[bash_file, path_coord_file, id_col_name, lon_col_name, lat_col_name,
               path_stream_tif, path_accumul_tif, method, str(distance), str(accumulation), snap_tmp_path, tmp_dir]
