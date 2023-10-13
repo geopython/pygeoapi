@@ -308,3 +308,8 @@ resources:
         processor:
             name: SnapToNetwork
     
+    get-filtered-vector:
+        type: process
+        processor:
+            name: GetFilteredVector
+    
