@@ -64,7 +64,7 @@ services:
         MONGO_INITDB_DATABASE: pop_places
 
   mongo-express:
-    image: mongo-express
+    image: mongo-express:1.0.0
     restart: always
     container_name: mongo_express
     environment:
