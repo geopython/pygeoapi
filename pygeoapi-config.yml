@@ -38,7 +38,6 @@ server:
     languages:
         # First language is the default language
         - en-US
-        - fr-CA
     # cors: true
     pretty_print: true
     limit: 10
@@ -55,25 +54,19 @@ server:
     # ogc_schemas_location: /opt/schemas.opengis.net
     
 logging:
-    level: ERROR
+    level: DEBUG
     #logfile: /tmp/pygeoapi.log
 
 metadata:
     identification:
         title:
-            en: pygeoapi default instance
-            fr: instance par défaut de pygeoapi
+            en: AquaInfra processing services
         description:
-            en: pygeoapi provides an API to geospatial data
-            fr: pygeoapi fournit une API aux données géospatiales
+            en: An OGC conformant API to AquaInfra processing services
         keywords:
             en:
                 - geospatial
                 - data
-                - api
-            fr:
-                - géospatiale
-                - données
                 - api
         keywords_type: theme
         terms_of_service: https://creativecommons.org/licenses/by/4.0/
@@ -82,22 +75,18 @@ metadata:
         name: CC-BY 4.0 license (TODO check)
         url: https://creativecommons.org/licenses/by/4.0/
     provider:
-        name: Organization Name
-        url: https://pygeoapi.io
+        name: Leibniz Institute for Freshwater Ecology and Inland Fisheries (FVB-IGB), Berlin
+        url: https://igb-berlin.de
     contact:
-        name: Lastname, Firstname
-        position: Position Title
-        address: Mailing Address
-        city: City
-        stateorprovince: Administrative Area
-        postalcode: Zip or Postal Code
-        country: Country
-        phone: +xx-xxx-xxx-xxxx
-        fax: +xx-xxx-xxx-xxxx
-        email: you@example.org
-        url: Contact URL
-        hours: Mo-Fr 08:00-17:00
-        instructions: During hours of service. Off on weekends.
+        name: Buurman, Merret
+        position: Scientific Staff
+        address: Müggelseedamm 310
+        city: Berlin
+        stateorprovince: Berlin
+        postalcode: 12587
+        country: Germany
+        email: merret.buurman@igb-berlin.de
+        url: https://glowabio.org/
         role: pointOfContact
 
 resources:
