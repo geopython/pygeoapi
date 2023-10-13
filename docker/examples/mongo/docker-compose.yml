@@ -67,6 +67,9 @@ services:
     image: mongo-express
     restart: always
     container_name: mongo_express
+    environment:
+     ME_CONFIG_BASICAUTH_USERNAME: admin #admin username
+     ME_CONFIG_BASICAUTH_PASSWORD: admin #admin password
     links:
       - mongo
     depends_on:
