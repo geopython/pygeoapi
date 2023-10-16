@@ -64,9 +64,12 @@ services:
         MONGO_INITDB_DATABASE: pop_places
 
   mongo-express:
-    image: mongo-express
+    image: mongo-express:1.0.0
     restart: always
     container_name: mongo_express
+    environment:
+     ME_CONFIG_BASICAUTH_USERNAME: admin #admin username
+     ME_CONFIG_BASICAUTH_PASSWORD: admin #admin password
     links:
       - mongo
     depends_on:
