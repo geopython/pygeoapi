@@ -38,7 +38,7 @@ server:
     bind:
         host: 0.0.0.0
         port: 80
-    url: http://localhost:5000
+    url: ec2-3-26-8-226.ap-southeast-2.compute.amazonaws.com:5000
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     gzip: false
