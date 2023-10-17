@@ -38,18 +38,20 @@ server:
     bind:
         host: 0.0.0.0
         port: 80
-    url: ec2-3-26-8-226.ap-southeast-2.compute.amazonaws.com:5000
+    url: http://[EC2_endpoint]:5000 #ex. ec2-x-x-x-x.ap-southeast-2.compute.amazonaws.com
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     gzip: false
     language: en-US
-    cors: true
+    #cors: true
     pretty_print: true
     limit: 10
     # templates: /path/to/templates
     map:
-        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        #url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
+        #attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     ogc_schemas_location: /schemas.opengis.net
 
 logging:
@@ -58,8 +60,8 @@ logging:
 
 metadata:
     identification:
-        title: pygeoapi Demo instance - running latest GitHub version
-        description: pygeoapi provides an API to geospatial data
+        title: Geoscience Australia - Linked Data
+        description: This service is powered by pygeoapi, an API to geospatial data
         keywords:
             - geospatial
             - data
@@ -90,6 +92,150 @@ metadata:
         role: pointOfContact
 
 resources:
+    gs:
+        type: collection
+        title: Gravity Station
+        description: GA Gravity Station linked data demo
+        keywords:
+            - gravity
+            - Geoscience
+            - Australia
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://www.ga.gov.au/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: PostgreSQL
+              data:
+                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  port: 5432
+                  dbname: postgres
+                  user: [DBloginUsername]
+                  password: "[loginPassword]"
+                  search_path: ["[Schemaname]", "$user"]
+              id_field: "[IDcolumnname]"
+              table: [tablename]
+              title_field: [IDcolumnlabel]
+              geom_field: geom # geometry field name
+
+    samples:
+        type: collection
+        title: Samples
+        description: GA Samples linked data demo (10 rows)
+        keywords:
+            - samples
+            - Geoscience
+            - Australia
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://www.ga.gov.au/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: PostgreSQL
+              data:
+                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  port: 5432
+                  dbname: postgres
+                  user: [DBloginUsername]
+                  password: "[loginPassword]"
+                  search_path: ["[Schemaname]", "$user"]
+              id_field: "[IDcolumnname]"
+              table: [tablename]
+              title_field: [IDcolumnlabel]
+              geom_field: geom # geometry field name
+
+    bh:
+        type: collection
+        title: Boreholes
+        description: GA Boreholes linked data demo (10 rows)
+        keywords:
+            - boreholes
+            - Geoscience
+            - Australia
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://www.ga.gov.au/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: PostgreSQL
+              data:
+                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  port: 5432
+                  dbname: postgres
+                  user: [DBloginUsername]
+                  password: "[loginPassword]"
+                  search_path: ["[Schemaname]", "$user"]
+              id_field: "[IDcolumnname]"
+              table: [tablename]
+              title_field: [IDcolumnlabel]
+              geom_field: geom # geometry field name
+
+    fs:
+        type: collection
+        title: Field Site
+        description: GA Field Site linked data demo (10 rows)
+        keywords:
+            - field
+            - Geoscience
+            - Australia
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://www.ga.gov.au/
+              hreflang: en-US
+        extents:
+            spatial:
+                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2011-11-11
+                end: null  # or empty (either means open ended)
+        providers:
+            - type: feature
+              name: PostgreSQL
+              data:
+                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  port: 5432
+                  dbname: postgres
+                  user: [DBloginUsername]
+                  password: "[loginPassword]"
+                  search_path: ["[Schemaname]", "$user"]
+              id_field: "[IDcolumnname]"
+              table: [tablename]
+              title_field: [IDcolumnlabel]
+              geom_field: geom # geometry field name
+
     obs:
         type: collection
         title: Observations
@@ -154,42 +300,6 @@ resources:
               name: GeoJSON
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
-
-    gs:
-        type: collection
-        title: Gravity Station
-        description: GA Gravity Station linked data demo
-        keywords:
-            - gravity
-            - Geoscience
-            - Australia
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://www.ga.gov.au/
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            temporal:
-                begin: 2011-11-11
-                end: null  # or empty (either means open ended)
-        providers:
-            - type: feature
-              name: PostgreSQL
-              data: 
-                  host: x.x.x.x #change this locally
-                  port: 5432
-                  dbname: xxx #change this locally
-                  user: "xxx"
-                  password: "xxx" #change this locally
-                  search_path: ["xxx", "$user"] #change this locally
-              id_field: "Station no"
-              table: "ORA_GRAVITY_STATION_GEOM"
-              title_field: "Station no"
-              geom_field: geom
 
     countries:
         type: collection
