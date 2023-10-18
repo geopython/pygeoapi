@@ -1653,6 +1653,12 @@ class API:
                               select_properties=select_properties,
                               crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
+        except ProviderInvalidQueryError as err:
+            LOGGER.error(err)
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -2074,6 +2080,12 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q,
                               filterq=filter_)
+        except ProviderInvalidQueryError as err:
+            LOGGER.error(err)
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -3853,6 +3865,11 @@ class API:
 
         try:
             data = p.query(**query_args)
+        except ProviderInvalidQueryError as err:
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderNoDataError:
             msg = 'No data found'
             return self.get_exception(
