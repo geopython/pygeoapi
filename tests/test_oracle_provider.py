@@ -138,6 +138,44 @@ def config():
 
 
 @pytest.fixture()
+def config_public_synonym():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes_public_syn",
+        "geom_field": "geometry",
+        "editable": True,
+    }
+
+
+@pytest.fixture()
+def config_private_synonym():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes_private_syn",
+        "geom_field": "geometry",
+        "editable": True,
+    }
+
+
+@pytest.fixture()
 def config_manipulator(config):
     return {
         **config,
@@ -230,6 +268,38 @@ def test_get_fields(config):
     }
 
     provider = OracleProvider(config)
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields
+
+
+def test_get_fields_private_synonym(config_private_synonym):
+    """Test get_fields from private synonym"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config_private_synonym)
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields
+
+
+def test_get_fields_public_synonym(config_public_synonym):
+    """Test get_fields from public synonym"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config_public_synonym)
 
     assert provider.get_fields() == expected_fields
     assert provider.fields == expected_fields

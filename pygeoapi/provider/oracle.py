@@ -39,6 +39,7 @@ from pygeoapi.provider.base import (
     ProviderConnectionError,
     ProviderItemNotFoundError,
     ProviderQueryError,
+    ProviderGenericError,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -184,7 +185,8 @@ class DatabaseConnection:
             LOGGER.error(e)
             raise ProviderConnectionError(e)
 
-        # Check if table name has schema inside
+        # Check if table name has schema/owner inside
+        # If not, current user is set
         table_parts = self.table.split(".")
         if len(table_parts) == 2:
             schema = table_parts[0]
@@ -196,34 +198,23 @@ class DatabaseConnection:
         LOGGER.debug("Schema: " + schema)
         LOGGER.debug("Table: " + table)
 
-        self.cur = self.conn.cursor()
         if self.context == "query":
-            # Get table column names and types, excluding geometry
-            query_cols = "select column_name, data_type \
-                            from all_tab_columns \
-                           where table_name = UPPER(:table_name) \
-                             and owner = UPPER(:owner) \
-                             and data_type != 'SDO_GEOMETRY'"
-
-            self.cur.execute(
-                query_cols, {"table_name": table, "owner": schema}
-            )
-            result = self.cur.fetchall()
+            column_list = self._get_table_columns(schema, table)
 
             # When self.properties is set, then the result would be filtered
             if self.properties:
-                result = [
-                    res
-                    for res in result
-                    if res[0].lower()
+                column_list = [
+                    col
+                    for col in column_list
+                    if col[0].lower()
                     in [item.lower() for item in self.properties]
                 ]
 
             # Concatenate column names with ', '
-            self.columns = ", ".join([item[0].lower() for item in result])
+            self.columns = ", ".join([item[0].lower() for item in column_list])
 
             # Populate dictionary for columns with column type
-            for k, v in dict(result).items():
+            for k, v in dict(column_list).items():
                 self.fields[k.lower()] = {"type": v}
 
         return self
@@ -231,6 +222,66 @@ class DatabaseConnection:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # some logic to commit/rollback
         self.conn.close()
+
+    def _get_table_columns(self, schema, table):
+        """
+        Returns an array with all column names and data types
+        from Oracle table ALL_TAB_COLUMNS.
+        Lookup for public and private synonyms.
+        Throws ProviderGenericError when table not exist or accesable.
+        """
+        cur = self.conn.cursor()
+
+        sql = "SELECT COUNT(1) \
+                     FROM all_tables \
+                    WHERE table_name = UPPER(:table_name) \
+                      AND owner = UPPER(:owner)"
+        cur.execute(sql, {"table_name": table, "owner": schema})
+        result = cur.fetchone()
+
+        if result[0] == 0:
+            sql = "SELECT COUNT(1) \
+                        FROM all_synonyms \
+                    WHERE synonym_name = UPPER(:table_name) \
+                        AND owner = UPPER(:owner)"
+            cur.execute(sql, {"table_name": table, "owner": schema})
+            result = cur.fetchone()
+
+            if result[0] == 0:
+                sql = "SELECT COUNT(1) \
+                            FROM all_synonyms \
+                        WHERE synonym_name = UPPER(:table_name) \
+                            AND owner = 'PUBLIC'"
+                cur.execute(sql, {"table_name": table})
+                result = cur.fetchone()
+
+                if result[0] == 0:
+                    raise ProviderGenericError("Table not found")
+
+                else:
+                    schema = "PUBLIC"
+
+            sql = "SELECT table_owner, table_name \
+                        FROM all_synonyms \
+                    WHERE synonym_name = UPPER(:table_name) \
+                        AND owner = UPPER(:owner)"
+            cur.execute(sql, {"table_name": table, "owner": schema})
+            result = cur.fetchone()
+
+            schema = result[0]
+            table = result[1]
+
+        # Get table column names and types, excluding geometry
+        query_cols = "select column_name, data_type \
+                        from all_tab_columns \
+                        where table_name = UPPER(:table_name) \
+                            and owner = UPPER(:owner) \
+                            and data_type != 'SDO_GEOMETRY'"
+
+        cur.execute(query_cols, {"table_name": table, "owner": schema})
+        result = cur.fetchall()
+
+        return result
 
 
 class OracleProvider(BaseProvider):
