@@ -57,7 +57,7 @@ jobs:
         ports:
           - 1521:1521
         volumes:
-          - tests/oracle/init-db:/container-entrypoint-initdb.d
+          - tests/data/oracle/init-db:/container-entrypoint-initdb.d
         # Provide healthcheck script options for startup
         options: >-
           --health-cmd healthcheck.sh
