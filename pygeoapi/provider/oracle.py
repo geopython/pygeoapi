@@ -441,9 +441,11 @@ class OracleProvider(BaseProvider):
         datetime_=None,
         properties=[],
         sortby=[],
-        select_properties=[],
         skip_geometry=False,
+        select_properties=[],
+        crs_transform_spec=None,
         q=None,
+        language=None,
         filterq=None,
         **kwargs,
     ):
@@ -585,9 +587,19 @@ class OracleProvider(BaseProvider):
                     sql_query,
                     bind_variables,
                     self.sql_manipulator_options,
+                    offset,
+                    limit,
+                    resulttype,
                     bbox,
-                    self.source_crs,
+                    datetime_,
                     properties,
+                    sortby,
+                    skip_geometry,
+                    select_properties,
+                    crs_transform_spec,
+                    q,
+                    language,
+                    filterq,
                 )
 
             # Clean up placeholders that aren't used by the

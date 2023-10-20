@@ -48,9 +48,19 @@ class SqlManipulator:
         sql_query,
         bind_variables,
         sql_manipulator_options,
+        offset,
+        limit,
+        resulttype,
         bbox,
-        source_crs,
+        datetime_,
         properties,
+        sortby,
+        skip_geometry,
+        select_properties,
+        crs_transform_spec,
+        q,
+        language,
+        filterq,
     ):
         sql = "ID = 10 AND :foo != :bar"
 
