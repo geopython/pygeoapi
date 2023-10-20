@@ -51,11 +51,13 @@ jobs:
         # Provide passwords and other environment variables to container
         env:
           ORACLE_RANDOM_PASSWORD: true
-          APP_USER: geo_test
-          APP_USER_PASSWORD: geo_test
+          # APP_USER: geo_test
+          # APP_USER_PASSWORD: geo_test
         # Forward Oracle port
         ports:
           - 1521:1521
+        volumes:
+          - tests/oracle/init-db:/container-entrypoint-initdb.d
         # Provide healthcheck script options for startup
         options: >-
           --health-cmd healthcheck.sh
