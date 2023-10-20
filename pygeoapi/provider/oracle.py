@@ -37,9 +37,10 @@ import oracledb
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
+    ProviderGenericError,
+    ProviderInvalidQueryError,
     ProviderItemNotFoundError,
     ProviderQueryError,
-    ProviderGenericError,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ class DatabaseConnection:
                 )
 
                 if "tns_name" not in self.conn_dict:
-                    raise Exception(
+                    raise ProviderConnectionError(
                         "tns_name must be set for external authentication!"
                     )
 
@@ -112,7 +113,7 @@ class DatabaseConnection:
                 )
 
                 if "host" not in self.conn_dict:
-                    raise Exception(
+                    raise ProviderConnectionError(
                         "Host must be set for connection with service_name!"
                     )
 
@@ -129,7 +130,7 @@ class DatabaseConnection:
                 )
 
                 if "host" not in self.conn_dict:
-                    raise Exception(
+                    raise ProviderConnectionError(
                         "Host must be set for connection with sid!"
                     )
 
@@ -472,12 +473,12 @@ class OracleProvider(BaseProvider):
         if self.mandatory_properties:
             for mand_col in self.mandatory_properties:
                 if mand_col == "bbox" and not bbox:
-                    raise ProviderQueryError(
+                    raise ProviderInvalidQueryError(
                         f"Missing mandatory filter property: {mand_col}"
                     )
                 else:
                     if mand_col not in property_dict:
-                        raise ProviderQueryError(
+                        raise ProviderInvalidQueryError(
                             f"Missing mandatory filter property: {mand_col}"
                         )
 
