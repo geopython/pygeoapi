@@ -33,7 +33,11 @@ import numpy as np
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
-from pygeoapi.provider.xarray_ import _to_datetime_string, XarrayProvider
+from pygeoapi.provider.xarray_ import (
+    _to_datetime_string,
+    _convert_float32_to_float64,
+    XarrayProvider,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -180,9 +184,11 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
 
         bbox = kwargs.get('bbox')
+        xmin, ymin, xmax, ymax = self._configure_bbox(bbox)
+
         if len(bbox) == 4:
-            query_params[self.x_field] = slice(bbox[0], bbox[2])
-            query_params[self.y_field] = slice(bbox[1], bbox[3])
+            query_params[self.x_field] = slice(bbox[xmin], bbox[xmax])
+            query_params[self.y_field] = slice(bbox[ymin], bbox[ymax])
         else:
             raise ProviderQueryError('z-axis not supported')
 
@@ -206,9 +212,10 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             else:
                 data = self._data
             data = data.sel(query_params)
+            data = _convert_float32_to_float64(data)
         except KeyError:
             raise ProviderNoDataError()
-
+    
         height = data.dims[self.y_field]
         width = data.dims[self.x_field]
         time, time_steps = self._parse_time_metadata(data, kwargs)
@@ -288,3 +295,11 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         except KeyError:
             time_steps = kwargs.get('limit')
         return time, time_steps
+    
+    def _configure_bbox(self, bbox):
+        xmin, ymin, xmax, ymax = 0, 1, 2, 3
+        if self._data[self.x_field][0] > self._data[self.x_field][-1]:
+            xmin, xmax = xmax, xmin
+        if self._data[self.y_field][0] > self._data[self.y_field][-1]:
+            ymin, ymax = ymax, ymin
+        return xmin, ymin, xmax, ymax
