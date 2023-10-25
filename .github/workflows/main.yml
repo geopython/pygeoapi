@@ -121,7 +121,6 @@ jobs:
         image: container-registry.oracle.com/database/express:latest
         docker_network: ${{ job.container.network }}
         options: -d -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521
-        run: echo "Container running"
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
