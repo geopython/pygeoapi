@@ -65,24 +65,11 @@ jobs:
       #     --health-timeout 5s
       #     --health-retries 10
       # oracle:
-      #   # Docker Hub image (feel free to change the tag "latest" to any other available one)
       #   image: container-registry.oracle.com/database/express:latest
-      #   # Provide passwords and other environment variables to container
-      #   # env:
-      #     # ORACLE_RANDOM_PASSWORD: true
-      #     # APP_USER: geo_test
-      #     # APP_USER_PASSWORD: geo_test
-      #   # Forward Oracle port
       #   ports:
       #     - 1521:1521
       #   volumes:
       #     - ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup
-      #   # Provide healthcheck script options for startup
-      #   # options: >-
-      #   #   --health-cmd healthcheck.sh
-      #   #   --health-interval 10s
-      #   #   --health-timeout 5s
-      #   #   --health-retries 10
     steps:
     - name: Chown user
       run: |
@@ -155,6 +142,7 @@ jobs:
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
+        docker ps
         python3 tests/load_oracle_data.py
     - name: run unit tests ⚙️
       env:
