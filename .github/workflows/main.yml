@@ -116,11 +116,13 @@ jobs:
         packages: gdal-bin libgdal-dev
         version: 3.0.4
     - name: Install and run Oracle
-      uses: addnab/docker-run-action@v3
-      with:
-        image: container-registry.oracle.com/database/express:latest
-        docker_network: ${{ job.container.network }}
-        options: -d -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521
+      #uses: addnab/docker-run-action@v3
+      #with:
+      #  image: container-registry.oracle.com/database/express:latest
+      #  docker_network: ${{ job.container.network }}
+      #  options: -d -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521
+      run: |
+        docker run -d --name oracledb -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
