@@ -219,7 +219,7 @@ class MVTProvider(BaseTileProvider):
                 session.get(base_url)
                 # There is a "." in the url path
                 if '.' in url.path:
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}.{f}{url_query}')  # noqa
+                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}.{format_}{url_query}')  # noqa
                 # There is no "." in the url )e.g. elasticsearch)
                 else:
                     resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
