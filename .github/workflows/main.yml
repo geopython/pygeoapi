@@ -43,27 +43,27 @@ jobs:
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
-    services:
+    #services:
       # Oracle service (label used to access the service container)
-      oracle:
-        # Docker Hub image (feel free to change the tag "latest" to any other available one)
-        image: gvenzl/oracle-xe:latest
-        # Provide passwords and other environment variables to container
-        env:
-          ORACLE_RANDOM_PASSWORD: true
-          # APP_USER: geo_test
-          # APP_USER_PASSWORD: geo_test
-        # Forward Oracle port
-        ports:
-          - 1521:1521
-        volumes:
-          - ${{ github.workspace }}/tests/data/oracle/init-db:/docker-entrypoint-startdb.d
-        # Provide healthcheck script options for startup
-        options: >-
-          --health-cmd healthcheck.sh
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
+      # oracle:
+      #   # Docker Hub image (feel free to change the tag "latest" to any other available one)
+      #   image: gvenzl/oracle-xe:latest
+      #   # Provide passwords and other environment variables to container
+      #   env:
+      #     ORACLE_RANDOM_PASSWORD: true
+      #     # APP_USER: geo_test
+      #     # APP_USER_PASSWORD: geo_test
+      #   # Forward Oracle port
+      #   ports:
+      #     - 1521:1521
+      #   volumes:
+      #     - ${{ github.workspace }}/tests/data/oracle/init-db:/docker-entrypoint-startdb.d
+      #   # Provide healthcheck script options for startup
+      #   options: >-
+      #     --health-cmd healthcheck.sh
+      #     --health-interval 10s
+      #     --health-timeout 5s
+      #     --health-retries 10
       # oracle:
       #   # Docker Hub image (feel free to change the tag "latest" to any other available one)
       #   image: container-registry.oracle.com/database/express:latest
@@ -128,6 +128,11 @@ jobs:
       with:
         packages: gdal-bin libgdal-dev
         version: 3.0.4
+    - name: Install an run Oracle
+      uses: addnab/docker-run-action@v3
+      with:
+        image: container-registry.oracle.com/database/express:latest
+        options: -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
