@@ -226,7 +226,7 @@ resources:
                   host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
-                  user: [DBloginUsername]
+                  user: piduser
                   password: "PWD"
                   search_path: ["SCHEMA", "$user"]
               id_field: "ENO"
