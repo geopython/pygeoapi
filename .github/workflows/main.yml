@@ -132,6 +132,7 @@ jobs:
       uses: addnab/docker-run-action@v3
       with:
         image: container-registry.oracle.com/database/express:latest
+        docker_network: ${{ job.container.network }}
         options: -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521
         run: echo "Container running"
     - name: Install requirements 📦
