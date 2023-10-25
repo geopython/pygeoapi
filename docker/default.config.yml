@@ -95,7 +95,7 @@ resources:
     gs:
         type: collection
         title: Gravity Station
-        description: GA Gravity Station linked data demo
+        description: GA Gravity Station linked data demo (full) from RDS PostgreSQL
         keywords:
             - gravity
             - Geoscience
@@ -108,30 +108,30 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                bbox: [105,-45,160,-5] #world -180,-90,180,90
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
-                begin: 2011-11-11
-                end: null  # or empty (either means open ended)
+                begin: 2023-11-11
+                end: null  #or empty (either means open ended)
         providers:
             - type: feature
               name: PostgreSQL
               data:
-                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
-                  user: [DBloginUsername]
-                  password: "[loginPassword]"
-                  search_path: ["[Schemaname]", "$user"]
-              id_field: "[IDcolumnname]"
-              table: [tablename]
-              title_field: [IDcolumnlabel]
-              geom_field: geom # geometry field name
+                  user: piduser
+                  password: "PWD"
+                  search_path: ["SCHEMA", "$user"]
+              id_field: "Station no"
+              table: GEOM_GRAVITY_STATION
+              title_field: Station no
+              geom_field: geom
 
     samples:
         type: collection
         title: Samples
-        description: GA Samples linked data demo (10 rows)
+        description: GA Samples linked data demo (10 rows) from RDS PostgreSQL
         keywords:
             - samples
             - Geoscience
@@ -144,25 +144,25 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                bbox: [105,-45,160,-5] #world -180,-90,180,90
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: null  # or empty (either means open ended)
+                end: null  #or empty (either means open ended)
         providers:
             - type: feature
               name: PostgreSQL
               data:
-                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
-                  user: [DBloginUsername]
-                  password: "[loginPassword]"
-                  search_path: ["[Schemaname]", "$user"]
-              id_field: "[IDcolumnname]"
-              table: [tablename]
-              title_field: [IDcolumnlabel]
-              geom_field: geom # geometry field name
+                  user: piduser
+                  password: "PWD"
+                  search_path: ["SCHEMA", "$user"]
+              id_field: "Sample ID"
+              table: GEOM_SAMPLE_MINI
+              title_field: Sample ID
+              geom_field: geom
 
     bh:
         type: collection
@@ -180,30 +180,30 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                bbox: [105,-45,160,-5] #world -180,-90,180,90
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: null  # or empty (either means open ended)
+                end: null  #or empty (either means open ended)
         providers:
             - type: feature
               name: PostgreSQL
               data:
-                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
-                  user: [DBloginUsername]
-                  password: "[loginPassword]"
-                  search_path: ["[Schemaname]", "$user"]
-              id_field: "[IDcolumnname]"
-              table: [tablename]
-              title_field: [IDcolumnlabel]
-              geom_field: geom # geometry field name
+                  user: piduser
+                  password: "PWD"
+                  search_path: ["SCHEMA", "$user"]
+              id_field: "ENO"
+              table: GEOM_BOREHOLES_MINI
+              title_field: ENO
+              geom_field: geom
 
     fs:
         type: collection
         title: Field Site
-        description: GA Field Site linked data demo (10 rows)
+        description: GA Field Site linked data demo (10 rows) from RDS PostgreSQL
         keywords:
             - field
             - Geoscience
@@ -216,30 +216,30 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                bbox: [105,-45,160,-5] #world -180,-90,180,90
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: null  # or empty (either means open ended)
+                end: null  #or empty (either means open ended)
         providers:
             - type: feature
               name: PostgreSQL
               data:
-                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
                   user: [DBloginUsername]
-                  password: "[loginPassword]"
-                  search_path: ["[Schemaname]", "$user"]
-              id_field: "[IDcolumnname]"
-              table: [tablename]
-              title_field: [IDcolumnlabel]
-              geom_field: geom # geometry field name
+                  password: "PWD"
+                  search_path: ["SCHEMA", "$user"]
+              id_field: "ENO"
+              table: GEOM_FIELD_SITE_MINI
+              title_field: ENO
+              geom_field: geom
 
     sv:
         type: collection
         title: Survey
-        description: GA Survey linked data demo
+        description: GA Survey linked data demo (full) from RDS PostgreSQL
         keywords:
             - survey
             - Geoscience
@@ -252,25 +252,25 @@ resources:
               hreflang: en-US
         extents:
             spatial:
-                bbox: [105,-45,160,-5] # world -180,-90,180,90
+                bbox: [105,-45,160,-5] #world -180,-90,180,90
                 crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
             temporal:
                 begin: 2011-11-11
-                end: null  # or empty (either means open ended)
+                end: null  #or empty (either means open ended)
         providers:
             - type: feature
               name: PostgreSQL
               data:
-                  host: [RDS_endpoint] #ex. dbid.xxxx.ap-southeast-2.rds.amazonaws.com
+                  host: [RDS_endpoint] #dbid.xxxx.ap-southeast-2.rds.amazonaws.com
                   port: 5432
                   dbname: postgres
-                  user: [DBloginUsername]
-                  password: "[loginPassword]"
-                  search_path: ["[Schemaname]", "$user"]
-              id_field: "[IDcolumnname]"
-              table: [tablename]
-              title_field: [IDcolumnlabel]
-              geom_field: geom # geometry field name
+                  user: piduser
+                  password: "PWD"
+                  search_path: ["SCHEMA", "$user"]
+              id_field: "ENO"
+              table: GEOM_SURVEY
+              title_field: ENO
+              geom_field: geom
 
     obs:
         type: collection
