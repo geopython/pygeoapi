@@ -38,7 +38,7 @@ server:
     bind:
         host: 0.0.0.0
         port: 80
-    url: http://[EC2_endpoint]:5000 #ec2-x-x-x-x.ap-southeast-2.compute.amazonaws.com
+    url: http://EC2endpoint:5000 #ec2-x-x-x-x.ap-southeast-2.compute.amazonaws.com
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     gzip: false
@@ -48,8 +48,6 @@ server:
     limit: 10
     # templates: /path/to/templates
     map:
-        #url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        #attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     ogc_schemas_location: /schemas.opengis.net
