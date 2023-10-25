@@ -122,7 +122,7 @@ jobs:
       #  docker_network: ${{ job.container.network }}
       #  options: -d -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521
       run: |
-        docker run -d --name oracledb -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
+        docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
