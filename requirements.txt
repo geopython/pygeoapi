@@ -19,3 +19,4 @@ SQLAlchemy<2.0.0
 tinydb
 typing-extensions
 unicodecsv
+oracledb
