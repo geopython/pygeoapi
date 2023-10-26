@@ -77,8 +77,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-zarr \
     python3-mapscript \
     python3-pytest \
-    python3-pyld\
-    python3-oracledb"
+    python3-pyld"
 
 # ENV settings
 ENV TZ=${TZ} \
