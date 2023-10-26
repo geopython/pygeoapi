@@ -136,9 +136,9 @@ RUN \
     && rm -rf /var/lib/apt/lists/*
 
 #install oracledb python package
-RUN apt-get -y install wget
+RUN apt update && apt install -y --no-install-recommends wget unzip
 RUN wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm
-RUN apt-get -y install oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm
+RUN apt -y install oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm
 
 ENTRYPOINT ["/entrypoint.sh"]
 
