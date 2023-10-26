@@ -6,7 +6,7 @@ fiona
 #GDAL>=3.0.0
 geoalchemy
 netCDF4
-oracledb
+oracledb==1.2.2
 pandas; python_version < '3.7'
 pandas==1.2.5; python_version >= '3.7'
 psycopg2
