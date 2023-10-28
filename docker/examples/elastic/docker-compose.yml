@@ -58,10 +58,8 @@ services:
     build: ./ES
 
     container_name: elastic
-# For debugging purposes, you may open these elastic ports at your discretion.
-# However, these ports should not remain open on a container running in
-# production. Leaving these ports open, gives access to the container on
-# unintended and unecessary ports.
+# Elastic ports may be opened for debugging but should remain closed in
+# production workloads.
     # ports:
     #   - 9300:9300
     #   - 9200:9200
