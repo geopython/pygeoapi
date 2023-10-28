@@ -58,10 +58,13 @@ services:
     build: ./ES
 
     container_name: elastic
-
-    ports:
-      - 9300:9300
-      - 9200:9200
+# For debugging purposes, you may open these elastic ports at your discretion.
+# However, these ports should not remain open on a container running in
+# production. Leaving these ports open, gives access to the container on
+# unintended and unecessary ports.
+    # ports:
+    #   - 9300:9300
+    #   - 9200:9200
     volumes:
       - elastic_search_data:/usr/share/elasticsearch/data
 
