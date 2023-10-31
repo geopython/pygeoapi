@@ -1,4 +1,4 @@
-# Setting up a Pygeoapi Server with SensorThings (STA) Using Docker Compose
+# Setting up a pygeoapi server with SensorThings (STA) using Docker Compose
 
 This folder contains a Docker Compose configuration necessary to setup an example `pygeoapi` server using a STA endpoint. 
 
