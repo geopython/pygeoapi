@@ -136,9 +136,38 @@ RUN \
     && rm -rf /var/lib/apt/lists \
 
     #install oracledb python package
-    && apt update && apt install -y --no-install-recommends wget zip unzip alien \
-    && wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
-    && alien -i oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm/*
+    #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
+    #&& wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
+    #&& alien -i oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm/*
 
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
 
+
+
+# Set the working directory to /opt/oracle
+WORKDIR /opt/oracle
+
+# Install necessary packages and download Oracle Instant Client
+RUN apt-get update && apt-get install -y libaio1 wget unzip \
+  && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
+  && unzip instantclient-basiclite-linuxx64.zip \
+  && rm -f instantclient-basiclite-linuxx64.zip
+
+# Set up Oracle Instant Client
+RUN cd /opt/oracle/instantclient* \
+  && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
+  && echo /opt/oracle/instantclient* > /etc/ld.so.conf.d/oracle-instantclient.conf \
+  && ldconfig
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the rest of your app's source code from your host to your image filesystem.
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+
+# Copy function code
+COPY oraconn.py .
+COPY sql_string.py .
+
+ENTRYPOINT [ "python", "oraconn.py" ]

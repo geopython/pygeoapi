@@ -19,4 +19,5 @@ SQLAlchemy<2.0.0
 tinydb
 typing-extensions
 unicodecsv
-oracledb
+python-dotenv==1.0.0
+oracledb==1.2.2
