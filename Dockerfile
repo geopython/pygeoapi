@@ -156,7 +156,7 @@ RUN apt-get update && apt-get install -y libaio1 wget unzip \
 # Set up Oracle Instant Client
 RUN cd /opt/oracle/instantclient-basiclite-linuxx64 \
   && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
-  && echo /opt/oracle/instantclient* > /etc/ld.so.conf.d/oracle-instantclient.conf \
+  && echo /opt/oracle/instantclient-basiclite-linuxx64 > /etc/ld.so.conf.d/oracle-instantclient.conf \
   && ldconfig
 
 # Set the working directory to /app
