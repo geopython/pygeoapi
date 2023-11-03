@@ -261,6 +261,7 @@ class CSWFacadeProvider(BaseProvider):
         LOGGER.debug(f'Transforming {record.identifier}')
         feature = {
             'id': record.identifier,
+            'type': 'Feature',
             'geometry': None,
             'time': record.date or None,
             'properties': {},

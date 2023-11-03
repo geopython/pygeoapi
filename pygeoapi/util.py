@@ -852,5 +852,5 @@ def bbox2geojsongeometry(bbox: list) -> dict:
     :returns: `dict` of GeoJSON geometry
     """
 
-    b = box(*bbox)
+    b = box(*bbox, ccw=False)
     return geom_to_geojson(b)
