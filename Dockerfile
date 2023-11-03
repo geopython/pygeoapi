@@ -151,12 +151,11 @@ WORKDIR /opt/oracle
 RUN apt-get update && apt-get install -y libaio1 wget unzip \
   && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
   && unzip instantclient-basiclite-linuxx64.zip \
-  && ls -la \
+  && ls -R \
   && rm -f instantclient-basiclite-linuxx64.zip
 
 # Set up Oracle Instant Client
 RUN cd /instantclient_21_12 \
-  && ls -la \
   && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
   && echo /instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
   && ldconfig
