@@ -99,6 +99,7 @@ ENV TZ=${TZ} \
     python3-yaml \
     ${ADD_DEB_PACKAGES}"
 
+
 WORKDIR /pygeoapi
 ADD . /pygeoapi
 
@@ -133,42 +134,56 @@ RUN \
     && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
     && apt-get clean \
     && apt autoremove -y  \
-    && rm -rf /var/lib/apt/lists \
+    && rm -rf /var/lib/apt/lists
 
+
+WORKDIR /opt/oracle
+
+# Install necessary packages and download Oracle Instant Client
+RUN \
+    apt-get update && apt-get install -y libaio1 wget unzip \
+    && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
+    && unzip instantclient-basiclite-linuxx64.zip \
+    && rm -f instantclient-basiclite-linuxx64.zip \
+    && cd ./instantclient_21_12 \
+    && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
+    && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
+    && ldconfig
     #install oracledb python package
     #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
     #&& wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
     #&& alien -i oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm/*
 
-#ENTRYPOINT ["/entrypoint.sh"]
 
-
-
-# Set the working directory to /opt/oracle
-WORKDIR /opt/oracle
-
-# Install necessary packages and download Oracle Instant Client
-RUN apt-get update && apt-get install -y libaio1 wget unzip \
-  && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
-  && unzip instantclient-basiclite-linuxx64.zip \
-  && ls -R \
-  && rm -f instantclient-basiclite-linuxx64.zip
-
-# Set up Oracle Instant Client
-RUN cd ./instantclient_21_12 \
-  && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
-  && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
-  && ldconfig
-
-# Set the working directory to /app
 WORKDIR /app
-
 # Copy the rest of your app's source code from your host to your image filesystem.
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
-# Copy function code
-COPY oraconn.py .
-COPY sql_string.py .
 
-ENTRYPOINT [ "python", "oraconn.py" ]
+ENTRYPOINT ["/entrypoint.sh"]
+
+
+### test block for OCI connection FROM ubuntu:jammy 
+#WORKDIR /opt/oracle
+# Install necessary packages and download Oracle Instant Client
+#RUN apt-get update && apt-get install -y libaio1 wget unzip \
+  #&& wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
+  #&& unzip instantclient-basiclite-linuxx64.zip \
+  #&& ls -R \
+  #&& rm -f instantclient-basiclite-linuxx64.zip
+# Set up Oracle Instant Client
+#RUN cd ./instantclient_21_12 \
+  #&& rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
+  #&& echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
+  #&& ldconfig
+# Set the working directory to /app
+#WORKDIR /app
+# Copy the rest of your app's source code from your host to your image filesystem.
+#COPY requirements.txt .
+#RUN pip3 install -r requirements.txt
+# Copy function code
+#COPY oraconn.py .
+#COPY sql_string.py .
+#ENTRYPOINT [ "python", "oraconn.py" ]
+### end of test block
