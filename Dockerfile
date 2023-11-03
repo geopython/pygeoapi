@@ -148,7 +148,8 @@ RUN \
     && cd ./instantclient_21_12 \
     && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
     && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
-    && ldconfig
+    && ldconfig \
+    && export ORACLEDB_THICK=true
     #install oracledb python package
     #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
     #&& wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
