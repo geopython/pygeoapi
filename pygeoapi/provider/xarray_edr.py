@@ -215,7 +215,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             data = _convert_float32_to_float64(data)
         except KeyError:
             raise ProviderNoDataError()
-    
+
         height = data.dims[self.y_field]
         width = data.dims[self.x_field]
         time, time_steps = self._parse_time_metadata(data, kwargs)
@@ -295,7 +295,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         except KeyError:
             time_steps = kwargs.get('limit')
         return time, time_steps
-    
+
     def _configure_bbox(self, bbox):
         xmin, ymin, xmax, ymax = 0, 1, 2, 3
         if self._data[self.x_field][0] > self._data[self.x_field][-1]:
