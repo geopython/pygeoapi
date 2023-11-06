@@ -43,7 +43,8 @@ from pygeoapi.provider.base import (
 
 LOGGER = logging.getLogger(__name__)
 
-oracledb.init_oracle_client()
+#oracledb.init_oracle_client()
+oracledb.init_oracle_client(lib_dir="./instantclient_21_12")
 
 
 class DatabaseConnection:
