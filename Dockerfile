@@ -161,7 +161,7 @@ RUN \
 #RUN pip3 install -r requirements.txt
 
 
-#ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 
 ### test block for OCI connection FROM ubuntu:jammy 
