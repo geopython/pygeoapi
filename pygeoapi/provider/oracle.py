@@ -43,6 +43,8 @@ from pygeoapi.provider.base import (
 
 LOGGER = logging.getLogger(__name__)
 
+oracledb.init_oracle_client()
+
 
 class DatabaseConnection:
     """Database connection class to be used as 'with' statement.
