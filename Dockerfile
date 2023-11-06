@@ -110,7 +110,7 @@ RUN \
     && rm -f instantclient-basiclite-linuxx64.zip \
     && cd ./instantclient_21_12 \
     && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
-    && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
+    && echo /opt/oracle/instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
     && ldconfig
     #install oracledb python package
     #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
@@ -161,7 +161,7 @@ RUN \
 #RUN pip3 install -r requirements.txt
 
 
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
 
 
 ### test block for OCI connection FROM ubuntu:jammy 
