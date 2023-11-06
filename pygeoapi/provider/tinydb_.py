@@ -165,6 +165,16 @@ class TinyDBCatalogueProvider(BaseProvider):
                 QUERY.append(f"(Q.properties['{prop[0]}']=='{prop[1]}')")
 
         if q is not None:
+            tokens = q.split(',')
+            if len(tokens) == 1 and ' ' not in q:
+                QUERY.append(f"(Q.properties['_metadata-anytext'].search('{q}', flags=re.IGNORECASE))")  # noqa
+            else:
+                Q_QUERY = []
+                for t in tokens:
+                    Q_QUERY.append(f"(Q.properties['_metadata-anytext'].search('{q}', flags=re.IGNORECASE))")  # noqa
+                    QUERY.append('(' + '|'.join(Q_QUERY) + ')')
+   
+
             for t in q.split():
                 QUERY.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
 
