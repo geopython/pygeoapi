@@ -100,6 +100,24 @@ ENV TZ=${TZ} \
     ${ADD_DEB_PACKAGES}"
 
 
+WORKDIR /opt/oracle
+
+# Install necessary packages and download Oracle Instant Client
+RUN \
+    apt-get update && apt-get install -y libaio1 wget unzip \
+    && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
+    && unzip instantclient-basiclite-linuxx64.zip \
+    && rm -f instantclient-basiclite-linuxx64.zip \
+    && cd ./instantclient_21_12 \
+    && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
+    && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
+    && ldconfig
+    #install oracledb python package
+    #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
+    #&& wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
+    #&& alien -i oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm/*
+
+
 WORKDIR /pygeoapi
 ADD . /pygeoapi
 
@@ -137,29 +155,10 @@ RUN \
     && rm -rf /var/lib/apt/lists
 
 
-WORKDIR /opt/oracle
-
-# Install necessary packages and download Oracle Instant Client
-RUN \
-    apt-get update && apt-get install -y libaio1 wget unzip \
-    && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
-    && unzip instantclient-basiclite-linuxx64.zip \
-    && rm -f instantclient-basiclite-linuxx64.zip \
-    && cd ./instantclient_21_12 \
-    && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
-    && echo ./instantclient_21_12 > /etc/ld.so.conf.d/oracle-instantclient.conf \
-    && ldconfig \
-    && export ORACLEDB_THICK=true
-    #install oracledb python package
-    #&& apt update && apt install -y --no-install-recommends wget zip unzip alien \
-    #&& wget https://download.oracle.com/otn_software/linux/instantclient/1918000/oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm \
-    #&& alien -i oracle-instantclient19.18-basic-19.18.0.0.0-2.x86_64.rpm/*
-
-
-WORKDIR /app
+#WORKDIR /app
 # Copy the rest of your app's source code from your host to your image filesystem.
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+#COPY requirements.txt .
+#RUN pip3 install -r requirements.txt
 
 
 ENTRYPOINT ["/entrypoint.sh"]
