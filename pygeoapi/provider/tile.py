@@ -30,8 +30,9 @@
 # =================================================================
 
 import logging
+from http import HTTPStatus
 
-from pygeoapi.provider.base import ProviderGenericError
+from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -125,14 +126,16 @@ class BaseTileProvider:
 
 class ProviderTileQueryError(ProviderGenericError):
     """provider tile query error"""
-    pass
+    default_msg = 'Tile not found'
 
 
-class ProviderTileNotFoundError(ProviderGenericError):
+class ProviderTileNotFoundError(ProviderItemNotFoundError):
     """provider tile not found error"""
-    pass
+    default_msg = 'Tile not found (check logs)'
 
 
 class ProviderTilesetIdNotFoundError(ProviderTileQueryError):
     """provider tileset matrix query error"""
-    pass
+    default_msg = 'Tileset id not found'
+    http_status_code = HTTPStatus.NOT_FOUND
+    ogc_exception_code = 'NotFound'

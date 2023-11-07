@@ -74,12 +74,9 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
-    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError,
+    ProviderQueryError, ProviderTypeError,
     ProviderRequestEntityTooLargeError)
 
-from pygeoapi.provider.tile import (ProviderTileNotFoundError,
-                                    ProviderTileQueryError,
-                                    ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            DATETIME_FORMAT, UrlPrefetcher,
@@ -2061,30 +2058,11 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q,
                               filterq=filter_)
-        except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
-            msg = f'query error: {err}'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidQuery', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
@@ -2191,10 +2169,10 @@ class API:
             try:
                 _ = p.delete(identifier)
             except ProviderGenericError as err:
-                msg = str(err)
+                LOGGER.error(err)
                 return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+                    err.http_status_code, headers, request.format,
+                    err.ogc_exception_code, err.message)
 
             return headers, HTTPStatus.OK, ''
 
@@ -2834,33 +2812,11 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, format_,
                 'InvalidParameterValue', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderTilesetIdNotFoundError:
-            msg = 'Tileset id not found'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
-        except ProviderTileQueryError as err:
-            LOGGER.error(err)
-            msg = 'Tile not found'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderTileNotFoundError as err:
-            LOGGER.error(err)
-            msg = 'Tile not found (check logs)'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'Generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
     @gzip
     @pre_process
