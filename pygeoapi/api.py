@@ -2305,28 +2305,11 @@ class API:
                 language=prv_locale,
                 crs_transform_spec=crs_transform_spec,
             )
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderItemNotFoundError:
-            msg = 'identifier not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NotFound', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.default_msg)
 
         if content is None:
             msg = 'identifier not found'

@@ -30,6 +30,7 @@
 import json
 import logging
 from enum import Enum
+from http import HTTPStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -273,12 +274,14 @@ class BaseProvider:
 
 class ProviderGenericError(Exception):
     """provider generic error"""
-    pass
+    ogc_exception_code = 'NoApplicableCode'
+    http_status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    default_msg = 'generic error (check logs)'
 
 
 class ProviderConnectionError(ProviderGenericError):
     """provider connection error"""
-    pass
+    default_msg = 'connection error (check logs)'
 
 
 class ProviderTypeError(ProviderGenericError):
@@ -298,7 +301,9 @@ class ProviderQueryError(ProviderGenericError):
 
 class ProviderItemNotFoundError(ProviderGenericError):
     """provider item not found query error"""
-    pass
+    ogc_exception_code = 'NotFound'
+    http_status_code = HTTPStatus.NOT_FOUND
+    default_msg = 'identifier not found'
 
 
 class ProviderNoDataError(ProviderGenericError):
