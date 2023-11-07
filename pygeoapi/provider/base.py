@@ -278,6 +278,17 @@ class ProviderGenericError(Exception):
     http_status_code = HTTPStatus.INTERNAL_SERVER_ERROR
     default_msg = 'generic error (check logs)'
 
+    def __init__(self, msg=None, *args, user_msg=None) -> None:
+        # if only a user_msg is provided, use it as msg
+        if user_msg and not msg:
+            msg = user_msg
+        super().__init__(msg, *args)
+        self.user_msg = user_msg
+
+    @property
+    def message(self):
+        return self.user_msg if self.user_msg else self.default_msg
+
 
 class ProviderConnectionError(ProviderGenericError):
     """provider connection error"""
@@ -294,8 +305,6 @@ class ProviderInvalidQueryError(ProviderGenericError):
     ogc_exception_code = 'InvalidQuery'
     http_status_code = HTTPStatus.BAD_REQUEST
     default_msg = "query error"
-
-    # TODO: user facing message
 
 
 class ProviderQueryError(ProviderGenericError):

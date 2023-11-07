@@ -1655,10 +1655,9 @@ class API:
                               q=q, language=prv_locale, filterq=filter_)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         serialized_query_params = ''
         for k, v in request.params.items():
@@ -2291,7 +2290,7 @@ class API:
             LOGGER.error(err)
             return self.get_exception(
                 err.http_status_code, headers, request.format,
-                err.ogc_exception_code, err.default_msg)
+                err.ogc_exception_code, err.message)
 
         if content is None:
             msg = 'identifier not found'
