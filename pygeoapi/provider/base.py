@@ -297,7 +297,8 @@ class ProviderConnectionError(ProviderGenericError):
 
 class ProviderTypeError(ProviderGenericError):
     """provider type error"""
-    pass
+    default_msg = 'invalid provider type'
+    http_status_code = HTTPStatus.BAD_REQUEST
 
 
 class ProviderInvalidQueryError(ProviderGenericError):
@@ -321,7 +322,9 @@ class ProviderItemNotFoundError(ProviderGenericError):
 
 class ProviderNoDataError(ProviderGenericError):
     """provider no data error"""
-    pass
+    ogc_exception_code = 'InvalidParameterValue'
+    http_status_code = HTTPStatus.NO_CONTENT
+    default_msg = 'No data found'
 
 
 class ProviderNotFoundError(ProviderGenericError):
@@ -341,4 +344,10 @@ class ProviderInvalidDataError(ProviderGenericError):
 
 class ProviderRequestEntityTooLargeError(ProviderGenericError):
     """provider request entity too large error"""
-    pass
+    http_status_code = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+    def __init__(self, msg=None, *args, user_msg=None) -> None:
+        if msg and not user_msg:
+            # This error type shows the error by default
+            user_msg = msg
+        super().__init__(msg, *args, user_msg=user_msg)
