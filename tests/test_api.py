@@ -2035,13 +2035,14 @@ def test_get_collection_edr_query(config, api_):
     # cube decreasing latitude coords and S3
     req = mock_request({
         'bbox': '-100,40,-99,45',
-        'parameter-name': 'tmn', 
+        'parameter-name': 'tmn',
         'datetime': '1994-01-01/1994-12-31',
     })
 
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'usgs-prism', None, 'cube')
     assert code == HTTPStatus.OK
+
 
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
