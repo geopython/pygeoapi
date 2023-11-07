@@ -1653,24 +1653,6 @@ class API:
                               select_properties=select_properties,
                               crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
-        except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
-            msg = f'query error: {err}'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidQuery', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
             msg = 'generic error (check logs)'

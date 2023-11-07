@@ -291,12 +291,16 @@ class ProviderTypeError(ProviderGenericError):
 
 class ProviderInvalidQueryError(ProviderGenericError):
     """provider invalid query error"""
-    pass
+    ogc_exception_code = 'InvalidQuery'
+    http_status_code = HTTPStatus.BAD_REQUEST
+    default_msg = "query error"
+
+    # TODO: user facing message
 
 
 class ProviderQueryError(ProviderGenericError):
     """provider query error"""
-    pass
+    default_msg = 'query error (check logs)'
 
 
 class ProviderItemNotFoundError(ProviderGenericError):
