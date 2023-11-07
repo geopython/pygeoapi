@@ -32,7 +32,8 @@
 import logging
 from http import HTTPStatus
 
-from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError
+from pygeoapi.provider.base import (
+    ProviderGenericError, ProviderItemNotFoundError)
 
 LOGGER = logging.getLogger(__name__)
 

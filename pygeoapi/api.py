@@ -2129,7 +2129,7 @@ class API:
                 msg = str(err)
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
-                   'InvalidParameterValue', msg)
+                    'InvalidParameterValue', msg)
             except ProviderGenericError as err:
                 LOGGER.error(err)
                 return self.get_exception(
