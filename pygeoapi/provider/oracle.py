@@ -233,39 +233,50 @@ class DatabaseConnection:
         """
         cur = self.conn.cursor()
 
-        sql = "SELECT COUNT(1) \
-                     FROM all_tables \
-                    WHERE table_name = UPPER(:table_name) \
-                      AND owner = UPPER(:owner)"
+        sql = """
+              SELECT COUNT(1)
+                FROM all_objects
+               WHERE object_type IN ('VIEW','TABLE','MATERIALIZED VIEW')
+                 AND object_name = UPPER(:table_name)
+                 AND owner = UPPER(:owner)
+              """
         cur.execute(sql, {"table_name": table, "owner": schema})
         result = cur.fetchone()
 
         if result[0] == 0:
-            sql = "SELECT COUNT(1) \
-                        FROM all_synonyms \
-                    WHERE synonym_name = UPPER(:table_name) \
-                        AND owner = UPPER(:owner)"
+            sql = """
+                  SELECT COUNT(1)
+                    FROM all_synonyms
+                   WHERE synonym_name = UPPER(:table_name)
+                     AND owner = UPPER(:owner)
+                  """
             cur.execute(sql, {"table_name": table, "owner": schema})
             result = cur.fetchone()
 
             if result[0] == 0:
-                sql = "SELECT COUNT(1) \
-                            FROM all_synonyms \
-                        WHERE synonym_name = UPPER(:table_name) \
-                            AND owner = 'PUBLIC'"
+                sql = """
+                      SELECT COUNT(1)
+                        FROM all_synonyms
+                       WHERE synonym_name = UPPER(:table_name)
+                         AND owner = 'PUBLIC'
+                      """
                 cur.execute(sql, {"table_name": table})
                 result = cur.fetchone()
 
                 if result[0] == 0:
-                    raise ProviderGenericError("Table not found")
+                    raise ProviderGenericError(
+                        f"Table {schema}.{table} not found!"
+                    )
 
                 else:
                     schema = "PUBLIC"
 
-            sql = "SELECT table_owner, table_name \
-                        FROM all_synonyms \
-                    WHERE synonym_name = UPPER(:table_name) \
-                        AND owner = UPPER(:owner)"
+            sql = """
+                  SELECT table_owner, table_name
+                    FROM all_synonyms
+                   WHERE synonym_name = UPPER(:table_name)
+                     AND owner = UPPER(:owner)
+                  """
             cur.execute(sql, {"table_name": table, "owner": schema})
             result = cur.fetchone()
 
@@ -273,11 +284,13 @@ class DatabaseConnection:
             table = result[1]
 
         # Get table column names and types, excluding geometry
-        query_cols = "select column_name, data_type \
-                        from all_tab_columns \
-                        where table_name = UPPER(:table_name) \
-                            and owner = UPPER(:owner) \
-                            and data_type != 'SDO_GEOMETRY'"
+        query_cols = """
+                     SELECT column_name, data_type
+                       FROM all_tab_columns
+                      WHERE table_name = UPPER(:table_name)
+                        AND owner = UPPER(:owner)
+                        AND data_type != 'SDO_GEOMETRY'
+                     """
 
         cur.execute(query_cols, {"table_name": table, "owner": schema})
         result = cur.fetchall()
