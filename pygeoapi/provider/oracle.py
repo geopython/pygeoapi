@@ -468,6 +468,7 @@ class OracleProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
+        
         # Check mandatory filter properties
         property_dict = dict(properties)
         if self.mandatory_properties:
@@ -843,24 +844,32 @@ class OracleProvider(BaseProvider):
             columns_str = ", ".join([col for col in columns])
             values_str = ", ".join([f":{col}" for col in columns])
 
-            sql_query = f"INSERT INTO {self.table} (\
-                            {columns_str}, \
-                            {self.geom}) \
-                          VALUES ({values_str}, :in_geometry) \
-                          RETURNING {self.id_field} INTO :out_id"
+            sql_query = f"""
+                        INSERT INTO {self.table} (
+                            {columns_str},
+                            {self.geom}
+                        )
+                        VALUES (
+                            {values_str},
+                            sdo_util.from_geojson(:in_geometry, NULL, :srid)
+                        )
+                        RETURNING {self.id_field} INTO :out_id
+                        """
 
             # Out bind variable for the id of the created row
             out_id = cursor.var(int)
 
             # Bind variable for the SDO_GEOMETRY type
-            in_geometry = self._get_sdo_from_geojson_geometry(
-                db.conn, request_data.get("geometry").get("coordinates")[0]
-            )
+            # in_geometry = self._get_sdo_from_geojson_geometry(
+            #     db.conn, request_data.get("geometry").get("coordinates")[0]
+            # )
+            in_geometry = request_data.get("geometry")
 
             bind_variables = {
                 **bind_variables,
                 "out_id": out_id,
-                "in_geometry": in_geometry,
+                "in_geometry": json.dumps(in_geometry),
+                "srid": self.source_crs,
             }
 
             # SQL manipulation plugin
@@ -936,20 +945,28 @@ class OracleProvider(BaseProvider):
 
             set_str = ", ".join([f" {col} = :{col}" for col in columns])
 
-            sql_query = f"UPDATE {self.table} \
-                             SET {set_str} \
-                               , {self.geom} = :in_geometry \
-                           WHERE {self.id_field} = :in_id"
+            sql_query = f"""
+                        UPDATE {self.table}
+                           SET {set_str}
+                             , {self.geom} = sdo_util.from_geojson(
+                                                 :in_geometry,
+                                                 NULL,
+                                                 :srid
+                                             )
+                         WHERE {self.id_field} = :in_id
+                        """
 
             # Bind variable for the SDO_GEOMETRY type
-            in_geometry = self._get_sdo_from_geojson_geometry(
-                db.conn, request_data.get("geometry").get("coordinates")[0]
-            )
+            # in_geometry = self._get_sdo_from_geojson_geometry(
+            #     db.conn, request_data.get("geometry").get("coordinates")[0]
+            # )
+            in_geometry = json.dumps(request_data.get("geometry"))
 
             bind_variables = {
                 **bind_variables,
                 "in_id": identifier,
                 "in_geometry": in_geometry,
+                "srid": self.source_crs
             }
 
             # SQL manipulation plugin

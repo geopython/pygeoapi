@@ -227,6 +227,18 @@ def create_geojson():
 
 
 @pytest.fixture()
+def create_point_geojson():
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [9.603316032965449, 47.48872063967191],
+        },
+        "properties": {"name": "Yachthafen Fischerinsel", "wiki_link": None},
+    }
+
+
+@pytest.fixture()
 def update_geojson():
     return {
         "type": "Feature",
@@ -533,3 +545,15 @@ def test_delete_sql_manipulator(config_manipulator, config):
 
     down = p2.query(sortby=[{"property": "id", "order": "-"}])
     assert down["features"][0]["id"] == identifier
+
+
+def test_create_point(config, create_point_geojson):
+    """Test simple create"""
+    p = OracleProvider(config)
+    result = p.create(create_point_geojson)
+
+    assert result == 28
+
+    data = p.get(28)
+
+    assert data.get("geometry").get("type") == "Point"
