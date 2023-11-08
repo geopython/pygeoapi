@@ -102,22 +102,5 @@
         style="height:24px;vertical-align: middle;" /></a> {{ version }}</footer>
     {% block extrafoot %}
     {% endblock %}
-    <script>
-      // Requests and embeds JSON-LD representation of current page
-      var xhr = new XMLHttpRequest();
-      var path = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=jsonld";
-      xhr.open('GET', path);
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          var head = document.getElementsByTagName('head')[0];
-          var jsonld_datablock = document.createElement('script');
-          jsonld_datablock.type = "application/ld+json";
-          //remove full context path, because search engines don't expect it here, pyld requires it.
-          jsonld_datablock.textContent = xhr.responseText.replace('docs/jsonldcontext.jsonld','');
-          head.appendChild(jsonld_datablock);
-        }
-      };
-      xhr.send();
-    </script>
   </body>
 </html>
