@@ -468,7 +468,6 @@ class OracleProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
-        
         # Check mandatory filter properties
         property_dict = dict(properties)
         if self.mandatory_properties:
@@ -966,7 +965,7 @@ class OracleProvider(BaseProvider):
                 **bind_variables,
                 "in_id": identifier,
                 "in_geometry": in_geometry,
-                "srid": self.source_crs
+                "srid": self.source_crs,
             }
 
             # SQL manipulation plugin
