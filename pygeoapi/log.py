@@ -31,6 +31,8 @@
 
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ def setup_logger(logging_config):
     Setup configuration
 
     :param logging_config: logging specific configuration
-
+    
     :returns: void (creates logging instance)
     """
 
@@ -49,23 +51,71 @@ def setup_logger(logging_config):
     date_format = '%Y-%m-%dT%H:%M:%SZ'
 
     loglevels = {
-        'CRITICAL': logging.CRITICAL,
-        'ERROR': logging.ERROR,
-        'WARNING': logging.WARNING,
-        'INFO': logging.INFO,
-        'DEBUG': logging.DEBUG,
-        'NOTSET': logging.NOTSET,
+        "CRITICAL": logging.CRITICAL,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+        "NOTSET": logging.NOTSET,
     }
 
-    loglevel = loglevels[logging_config['level']]
+    loglevel = loglevels[logging_config["level"]]
 
-    if 'logfile' in logging_config:
-        logging.basicConfig(level=loglevel, datefmt=date_format,
-                            format=log_format,
-                            filename=logging_config['logfile'])
+    if "logfile" in logging_config:
+        rotation = logging_config.get("rotation")
+        if rotation:
+            rotate_mode = rotation.get("mode")
+            
+            rotate_backup_count = rotation.get("backup_count", 0)
+            
+            if rotate_mode == "size":
+                rotate_max_bytes = rotation.get("max_bytes", 0)
+                
+                logging.basicConfig(
+                    handlers=[
+                        RotatingFileHandler(
+                            filename=logging_config["logfile"],
+                            maxBytes=rotate_max_bytes,
+                            backupCount=rotate_backup_count,
+                        )
+                    ],
+                    level=loglevel,
+                    datefmt=date_format,
+                    format=log_format,
+                )
+            elif rotate_mode == "time":
+                rotate_when = rotation.get("when", "h")
+                rotate_interval = rotation.get("interval", 1)
+
+                logging.basicConfig(
+                    handlers=[
+                        TimedRotatingFileHandler(
+                            filename=logging_config["logfile"],
+                            when=rotate_when,
+                            interval=rotate_interval,
+                            backupCount=rotate_backup_count,
+                        )
+                    ],
+                    level=loglevel,
+                    datefmt=date_format,
+                    format=log_format,
+                )
+            else:
+                raise Exception(f"Invalid rotation mode:{rotate_mode}")
+        else:
+            logging.basicConfig(
+                level=loglevel,
+                datefmt=date_format,
+                format=log_format,
+                filename=logging_config["logfile"],
+            )
     else:
-        logging.basicConfig(level=loglevel, datefmt=date_format,
-                            format=log_format, stream=sys.stdout)
+        logging.basicConfig(
+            level=loglevel,
+            datefmt=date_format,
+            format=log_format,
+            stream=sys.stdout,
+        )
 
-    LOGGER.debug('Logging initialized')
+    LOGGER.debug("Logging initialized")
     return
