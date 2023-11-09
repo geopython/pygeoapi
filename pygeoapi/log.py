@@ -42,13 +42,14 @@ def setup_logger(logging_config):
     Setup configuration
 
     :param logging_config: logging specific configuration
-    
+
     :returns: void (creates logging instance)
     """
 
-    log_format = \
-        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
-    date_format = '%Y-%m-%dT%H:%M:%SZ'
+    log_format = (
+        "[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s"
+    )
+    date_format = "%Y-%m-%dT%H:%M:%SZ"
 
     loglevels = {
         "CRITICAL": logging.CRITICAL,
@@ -65,12 +66,12 @@ def setup_logger(logging_config):
         rotation = logging_config.get("rotation")
         if rotation:
             rotate_mode = rotation.get("mode")
-            
+
             rotate_backup_count = rotation.get("backup_count", 0)
-            
+
             if rotate_mode == "size":
                 rotate_max_bytes = rotation.get("max_bytes", 0)
-                
+
                 logging.basicConfig(
                     handlers=[
                         RotatingFileHandler(
