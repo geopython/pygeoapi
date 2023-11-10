@@ -1413,97 +1413,68 @@ def test_get_collection_coverage_rangetype(config, api_):
     assert rangetype['field'][0]['uom']['code'] == '[C]'
 
 
-def test_get_collection_coverage(config, api_):
-    req = mock_request()
+@pytest.mark.parametrize('request_, collection, expected_code, expected_headers', [
+    pytest.param(mock_request(), 'obs', HTTPStatus.BAD_REQUEST, None),
+    pytest.param(mock_request({'properties': '12'}), 'gdps-temperature', HTTPStatus.BAD_REQUEST, None),
+    pytest.param(mock_request({'subset': 'bad_axis(10:20)'}), 'gdps-temperature', HTTPStatus.BAD_REQUEST, None),
+    pytest.param(mock_request({'f': 'blah'}), 'gdps-temperature', HTTPStatus.BAD_REQUEST, None),
+    pytest.param(mock_request({'f': 'html'}), 'gdps-temperature', HTTPStatus.BAD_REQUEST, {'Content-Type': 'text/html'}),
+    pytest.param(mock_request(HTTP_ACCEPT='text/html'), 'gdps-temperature', HTTPStatus.OK, None),
+    pytest.param(mock_request({'subset': 'lat(1:2)'}), 'cmip5', HTTPStatus.NO_CONTENT, None),
+])
+def test_get_collection_coverage(
+        config, api_, request_, collection, expected_code, expected_headers):
     rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'obs')
+        request_, collection)
+    assert code == expected_code
+    for expected_header_name, expected_header_value  in (expected_headers or {}).items():
+        assert rsp_headers.get(expected_header_name) == expected_header_value
 
-    assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'properties': '12'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'subset': 'bad_axis(10:20)'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'f': 'blah'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
-
-    assert code == HTTPStatus.BAD_REQUEST
-    assert rsp_headers['Content-Type'] == 'text/html'
-
-    req = mock_request(HTTP_ACCEPT='text/html')
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
-
+def test_get_collection_coverage_subset_temporal(api_):
+    req = mock_request({
+        'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
+    })
+    rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
     assert code == HTTPStatus.OK
-    assert rsp_headers['Content-Type'] == 'application/prs.coverage+json'
+    assert isinstance(json.loads(response), dict)
 
+
+def test_get_collection_coverage_subset(api_):
     req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
 
     assert code == HTTPStatus.OK
     content = json.loads(response)
-
     assert content['domain']['axes']['x']['num'] == 35
     assert content['domain']['axes']['y']['num'] == 35
     assert 'TMP' in content['parameters']
     assert 'TMP' in content['ranges']
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
-    req = mock_request({'bbox': '-79,45,-75,49'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
 
-    assert code == HTTPStatus.OK
-    content = json.loads(response)
-
-    assert content['domain']['axes']['x']['start'] == -79.0
-    assert content['domain']['axes']['x']['stop'] == -75.0
-    assert content['domain']['axes']['y']['start'] == 49.0
-    assert content['domain']['axes']['y']['stop'] == 45.0
-
+def test_get_collection_coverage_subset_grib_output(api_):
     req = mock_request({
         'subset': 'Lat(5:10),Long(5:10)',
         'f': 'GRIB'
     })
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
-
     assert code == HTTPStatus.OK
     assert isinstance(response, bytes)
 
-    # req = mock_request({
-    #     'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
-    # })
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-    #
-    # assert code == HTTPStatus.OK
-    # assert isinstance(json.loads(response), dict)
 
-    # req = mock_request({'subset': 'lat(1:2'})
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-    #
-    # assert code == HTTPStatus.BAD_REQUEST
-    #
-    # req = mock_request({'subset': 'lat(1:2)'})
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
-    #
-    # assert code == HTTPStatus.NO_CONTENT
+def test_get_collection_coverage_bbox(api_):
+    req = mock_request({'bbox': '-79,45,-75,49'})
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req, 'gdps-temperature')
+    assert code == HTTPStatus.OK
+    content = json.loads(response)
+    assert content['domain']['axes']['x']['start'] == -79.0
+    assert content['domain']['axes']['x']['stop'] == -75.0
+    assert content['domain']['axes']['y']['start'] == 49.0
+    assert content['domain']['axes']['y']['stop'] == 45.0
 
 
 def test_get_collection_map(config, api_):
