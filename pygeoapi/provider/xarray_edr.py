@@ -30,6 +30,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
@@ -122,17 +123,24 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
-            if (datetime_ is not None and
-                isinstance(query_params[self.time_field], slice)): # noqa
-                # separate query into spatial and temporal components
-                LOGGER.debug('Separating temporal query')
-                time_query = {self.time_field:
-                              query_params[self.time_field]}
-                remaining_query = {key: val for key,
-                                   val in query_params.items()
-                                   if key != self.time_field}
-                data = data.sel(time_query).sel(remaining_query,
-                                                method='nearest')
+
+            if self.time_field in query_params:
+                remaining_query = {
+                    key: val for key, val in query_params.items()
+                    if key != self.time_field
+                }
+                if isinstance(query_params[self.time_field], slice):
+                    time_query = {
+                        self.time_field: query_params[self.time_field]
+                    }
+                else:
+                    time_query = {
+                        self.time_field: (
+                                data[self.time_field].dt.date ==
+                                query_params[self.time_field]
+                        )
+                    }
+                data = data.sel(time_query).sel(remaining_query,method='nearest')
             else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
@@ -259,7 +267,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 LOGGER.debug('Reversing slicing from high to low')
                 return slice(end, begin)
         else:
-            return datetime_
+            return pd.Timestamp(datetime_)
 
     def _get_time_range(self, data):
         """

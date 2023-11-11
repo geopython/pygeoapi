@@ -282,8 +282,6 @@ resources:
             - type: coverage
               name: rasterio
               data: tests/data/CMC_glb_TMP_TGL_2_latlon.15x.15_2020081000_P000.grib2
-              options:
-                  DATA_ENCODING: COMPLEX_PACKING
               format:
                   name: GRIB
                   mimetype: application/x-grib2
