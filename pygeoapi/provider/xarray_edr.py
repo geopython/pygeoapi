@@ -140,7 +140,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                                 query_params[self.time_field]
                         )
                     }
-                data = data.sel(time_query).sel(remaining_query,method='nearest')
+                data = data.sel(
+                    time_query).sel(remaining_query, method='nearest')
             else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
