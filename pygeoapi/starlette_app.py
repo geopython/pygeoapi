@@ -50,6 +50,7 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API
+from pygeoapi.openapi import load_openapi_document
 from pygeoapi.util import yaml_load, get_api_rules
 
 if 'PYGEOAPI_CONFIG' not in os.environ:
@@ -57,6 +58,11 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+if 'PYGEOAPI_OPENAPI' not in os.environ:
+    raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
+
+OPENAPI = load_openapi_document()
 
 p = Path(__file__)
 
@@ -70,7 +76,7 @@ except KeyError:
 
 API_RULES = get_api_rules(CONFIG)
 
-api_ = API(CONFIG)
+api_ = API(CONFIG, OPENAPI)
 
 
 def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
@@ -116,13 +122,7 @@ async def openapi(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
-            openapi_ = yaml_load(ff)
-        else:  # JSON file, do not transform
-            openapi_ = ff
-
-    return get_response(api_.openapi(request, openapi_))
+    return get_response(api_.openapi_(request))
 
 
 async def conformance(request: Request):

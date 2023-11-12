@@ -31,10 +31,11 @@
 
 import json
 import logging
-import pytest
-from pygeoapi.api import (API)
-from pygeoapi.util import yaml_load, geojson_to_geom
 
+import pytest
+
+from pygeoapi.api import API
+from pygeoapi.util import yaml_load, geojson_to_geom
 from .util import get_test_file_path, mock_request
 
 LOGGER = logging.getLogger(__name__)
@@ -49,8 +50,14 @@ def config():
 
 
 @pytest.fixture()
+def openapi():
+    with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def api_(config):
-    return API(config)
+    return API(config, openapi)
 
 
 def test_get_collection_items_bbox_crs(config, api_):
