@@ -42,7 +42,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, IO, Union, List, Callable
+from typing import Any, Dict, IO, Union, List, Callable
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -161,6 +161,23 @@ def get_typed_value(value: str) -> Union[float, int, str]:
         value2 = value
 
     return value2
+
+
+def get_config_from_path(config_path: Path) -> Dict:
+    """Read pygeoapi configuration from the input config_path"""
+    with config_path.open() as fh:
+        return yaml_load(fh)
+
+
+def get_openapi_from_path(openapi_path: Path) -> Union[Dict, str]:
+    """Read pygeoapi OpenAPI document from the input openapi_path."""
+
+    with openapi_path.open() as ff:
+        if openapi_path.suffix in ('.yaml', '.yml'):
+            openapi_ = yaml_load(ff)
+        else:  # JSON string, do not transform
+            openapi_ = ff.read()
+    return openapi_
 
 
 def yaml_load(fh: IO) -> dict:

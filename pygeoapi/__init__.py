@@ -32,13 +32,19 @@
 __version__ = '0.16.dev0'
 
 import click
+import os
+import sys
 try:
     # importlib.metadata is part of Python's standard library from 3.8
     from importlib.metadata import entry_points
 except ImportError:
     from importlib_metadata import entry_points
-from pygeoapi.config import config
-from pygeoapi.openapi import openapi
+from pathlib import Path
+
+import pygeoapi.util
+import pygeoapi.api
+from pygeoapi.config import config as config_click_group
+from pygeoapi.openapi import openapi as openapi_click_group
 
 
 def _find_plugins():
@@ -74,9 +80,27 @@ def _find_plugins():
 
 
 @click.group()
+@click.pass_context
 @click.version_option(version=__version__)
-def cli():
-    pass
+@click.option(
+    '-c',
+    '--pygeoapi-config',
+    envvar='PYGEOAPI_CONFIG',
+    type=click.Path(
+        file_okay=True, dir_okay=False, readable=True, path_type=Path)
+)
+@click.option(
+    '--pygeoapi-openapi',
+    envvar='PYGEOAPI_OPENAPI',
+    type=click.Path(
+        file_okay=True, dir_okay=False, readable=True, path_type=Path)
+)
+def cli(ctx: click.Context, pygeoapi_config, pygeoapi_openapi):
+    ctx.ensure_object(dict)
+    ctx.obj['api'] = pygeoapi.api.API(
+        config=pygeoapi.util.get_config_from_path(pygeoapi_config),
+        openapi=pygeoapi.util.get_openapi_from_path(pygeoapi_openapi)
+    )
 
 
 @_find_plugins()
@@ -86,28 +110,73 @@ def plugins():
     pass
 
 
-@cli.command()
+@cli.command(context_settings={'ignore_unknown_options': True})
 @click.option('--flask', 'server', flag_value="flask", default=True)
 @click.option('--starlette', 'server', flag_value="starlette")
 @click.option('--django', 'server', flag_value="django")
+@click.option(
+    '--debug',
+    is_flag=True,
+    help="Whether to run with debug turned on or not"
+)
+@click.argument(
+    'extra-gunicorn-args', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def serve(ctx, server):
-    """Run the server with different daemon type (--flask is the default)"""
+def serve(ctx, server, debug, extra_gunicorn_args):
+    """Run the server with different daemon type (--flask is the default)
 
-    if server == "flask":
-        from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
-    elif server == "starlette":
-        from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
-    elif server == "django":
-        from pygeoapi.django_app import main as serve_django
-        ctx.invoke(serve_django)
+    EXTRA_GUNICORN_ARGS - pass additional arguments to be forwarded to the
+    gunicorn web server. These will overwrite any pygeoapi-specific gunicorn
+    configuration
+    \f
+    """
+
+    print(f"{ctx.obj=} {debug=} {extra_gunicorn_args=}")
+    api_ = ctx.obj['api']
+    bind_address = api_.config['server']['bind']['host']
+    bind_port = api_.config['server']['bind']['port']
+    gunicorn_params = ['gunicorn']
+    if server == 'flask':
+        gunicorn_params.append('pygeoapi.flask_app:create_app()')
+    elif server == 'django':
+        ...
+    elif server == 'starlette':
+        ...
+
+    gunicorn_params.extend(
+        [
+            f'--bind={bind_address}:{bind_port}',
+            f'--error-logfile=-',
+            f'--access-logfile=-',
+        ]
+    )
+    if debug:
+        gunicorn_params.extend(
+            [
+                '--workers=1',
+                '--reload',
+                f'--log-level=debug',
+            ]
+        )
     else:
-        raise click.ClickException('--flask/--starlette/--django is required')
+        log_level = api_.config['logging']['level']
+        gunicorn_params.append(f'--log-level={log_level.lower()}')
+    gunicorn_params.extend(extra_gunicorn_args)
+    print(f"About to exec gunicorn with {gunicorn_params=}")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os.execvp('gunicorn', gunicorn_params)
+
+    # elif server == "starlette":
+    #     from pygeoapi.starlette_app import serve as serve_starlette
+    #     ctx.forward(serve_starlette)
+    #     ctx.invoke(serve_starlette)
+    # elif server == "django":
+    #     from pygeoapi.django_app import main as serve_django
+    #     ctx.invoke(serve_django)
+    # else:
+    #     raise click.ClickException('--flask/--starlette/--django is required')
 
 
-cli.add_command(config)
-cli.add_command(openapi)
+cli.add_command(config_click_group)
+cli.add_command(openapi_click_group)

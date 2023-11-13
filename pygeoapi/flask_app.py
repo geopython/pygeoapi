@@ -31,83 +31,26 @@
 """Flask module providing the route paths to the api"""
 
 import os
+import sys
+from http import HTTPStatus
+from pathlib import Path
 
 import click
 
-from flask import Flask, Blueprint, make_response, request, send_from_directory
+from flask import (
+    current_app,
+    Blueprint,
+    Flask,
+    make_response,
+    request,
+    send_from_directory
+)
 
 from pygeoapi.api import API
-from pygeoapi.openapi import load_openapi_document
 from pygeoapi.util import get_mimetype, yaml_load, get_api_rules
 
 
-if 'PYGEOAPI_CONFIG' not in os.environ:
-    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
-
-if 'PYGEOAPI_OPENAPI' not in os.environ:
-    raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
-
-OPENAPI = load_openapi_document()
-
-API_RULES = get_api_rules(CONFIG)
-
-STATIC_FOLDER = 'static'
-if 'templates' in CONFIG['server']:
-    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
-
-APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
-APP.url_map.strict_slashes = API_RULES.strict_slashes
-
-BLUEPRINT = Blueprint(
-    'pygeoapi',
-    __name__,
-    static_folder=STATIC_FOLDER,
-    url_prefix=API_RULES.get_url_prefix('flask')
-)
-
-# CORS: optionally enable from config.
-if CONFIG['server'].get('cors', False):
-    try:
-        from flask_cors import CORS
-        CORS(APP)
-    except ModuleNotFoundError:
-        print('Python package flask-cors required for CORS support')
-
-APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
-    'pretty_print', True)
-
-api_ = API(CONFIG, OPENAPI)
-
-OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
-
-if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.startswith('http')):
-    # serve the OGC schemas locally
-
-    if not os.path.exists(OGC_SCHEMAS_LOCATION):
-        raise RuntimeError('OGC schemas misconfigured')
-
-    @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
-    def schemas(path):
-        """
-        Serve OGC schemas locally
-
-        :param path: path of the OGC schema document
-
-        :returns: HTTP response
-        """
-
-        full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
-        dirname_ = os.path.dirname(full_filepath)
-        basename_ = os.path.basename(full_filepath)
-
-        # TODO: better sanitization?
-        path_ = dirname_.replace('..', '').replace('//', '')
-        return send_from_directory(path_, basename_,
-                                   mimetype=get_mimetype(basename_))
+BLUEPRINT = Blueprint('pygeoapi', __name__)
 
 
 def get_response(result: tuple):
@@ -128,6 +71,45 @@ def get_response(result: tuple):
     return response
 
 
+@BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
+def schemas(path):
+    """Serve OGC schemas locally
+
+    :param path: path of the OGC schema document
+
+    :returns: HTTP response
+    """
+
+    pygeoapi: API = current_app.config['pygeoapi']['api']
+    ogc_schemas_location = pygeoapi.config.get(
+        'server', {}).get('ogc_schemas_location')
+    got_local_schemas = not ogc_schemas_location.startswith('http')
+    if ogc_schemas_location is not None:
+        if got_local_schemas:
+            schemas_dir = Path(ogc_schemas_location).resolve()
+            if schemas_dir.is_dir():
+                return send_from_directory(
+                    schemas_dir,
+                    schemas_dir.name,
+                    mimetype=get_mimetype(schemas_dir.name)
+                )
+            else:
+                raise RuntimeError('OGC schemas misconfigured')
+        else:
+            return (
+                (
+                    "OGC SCHEMAS are configured as a remote resource - "
+                    "cannot serve locally"
+                ),
+                HTTPStatus.NOT_FOUND
+            )
+    else:
+        return (
+            "OGC SCHEMAS are not configured - cannot serve locally",
+            HTTPStatus.NOT_FOUND
+        )
+
+
 @BLUEPRINT.route('/')
 def landing_page():
     """
@@ -135,6 +117,7 @@ def landing_page():
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.landing_page(request))
 
 
@@ -145,6 +128,7 @@ def openapi():
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.openapi_(request))
 
 
@@ -155,6 +139,7 @@ def conformance():
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.conformance(request))
 
 
@@ -168,6 +153,7 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.describe_collections(request, collection_id))
 
 
@@ -180,6 +166,7 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
@@ -199,6 +186,7 @@ def collection_items(collection_id, item_id=None):
     :returns: HTTP response
     """
 
+    api_: API = current_app.config['pygeoapi']['api']
     if item_id is None:
         if request.method == 'GET':  # list items
             return get_response(
@@ -242,6 +230,7 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_coverage(request, collection_id))
 
 
@@ -254,6 +243,7 @@ def collection_coverage_domainset(collection_id):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_coverage_domainset(
         request, collection_id))
 
@@ -267,6 +257,7 @@ def collection_coverage_rangetype(collection_id):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_coverage_rangetype(
         request, collection_id))
 
@@ -280,6 +271,7 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_tiles(
         request, collection_id))
 
@@ -295,6 +287,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_tiles_metadata(
         request, collection_id, tileMatrixSetId))
 
@@ -314,6 +307,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_collection_tiles_data(
         request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
 
@@ -330,6 +324,7 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
+    api_: API = current_app.config['pygeoapi']['api']
     headers, status_code, content = api_.get_collection_map(
         request, collection_id, style_id)
 
@@ -351,6 +346,7 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.describe_processes(request, process_id))
 
 
@@ -366,6 +362,7 @@ def get_jobs(job_id=None):
     :returns: HTTP response
     """
 
+    api_: API = current_app.config['pygeoapi']['api']
     if job_id is None:
         return get_response(api_.get_jobs(request))
     else:
@@ -385,6 +382,7 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.execute_process(request, process_id))
 
 
@@ -398,6 +396,7 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_job_result(request, job_id))
 
 
@@ -412,6 +411,7 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
 
@@ -437,6 +437,7 @@ def get_collection_edr_query(collection_id, instance_id=None):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     query_type = request.path.split('/')[-1]
     return get_response(api_.get_collection_edr_query(request, collection_id,
                                                       instance_id, query_type))
@@ -449,6 +450,7 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_stac_root(request))
 
 
@@ -461,30 +463,36 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
+    api_: API = current_app.config['pygeoapi']['api']
     return get_response(api_.get_stac_path(request, path))
 
 
-APP.register_blueprint(BLUEPRINT)
+def create_app(api: API) -> Flask:
+    """Create the pygeoapi flask application"""
+    static_folder = (
+        api.config.get('server', {})
+        .get('templates', {})
+        .get('static', 'static')
+    )
+    app = Flask(
+        __name__,
+        static_folder=static_folder,
+        static_url_path='/static'
+    )
+    api_rules = get_api_rules(api.config)
+    app.url_map.strict_slashes = api_rules.strict_slashes
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = api.config.get(
+        'server', {}).get('pretty_print', True)
+    app.config['PYGEOAPI'] = {
+        'api': api,
+    }
+    if api.config.get('server', {}).get('cors', False):
+        try:
+            from flask_cors import CORS
+            app = CORS(app)
+        except ModuleNotFoundError:
+            print('Python package flask-cors required for CORS support')
 
+    app.register_blueprint(BLUEPRINT)
+    return app
 
-@click.command()
-@click.pass_context
-@click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server=None, debug=False):
-    """
-    Serve pygeoapi via Flask. Runs pygeoapi
-    as a flask server. Not recommend for production.
-
-    :param server: `string` of server type
-    :param debug: `bool` of whether to run in debug mode
-
-    :returns: void
-    """
-
-    # setup_logger(CONFIG['logging'])
-    APP.run(debug=True, host=api_.config['server']['bind']['host'],
-            port=api_.config['server']['bind']['port'])
-
-
-if __name__ == '__main__':  # run locally, for testing
-    serve()
