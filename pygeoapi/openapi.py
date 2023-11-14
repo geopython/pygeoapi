@@ -37,7 +37,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Union
+from typing import Dict, Union
 
 import click
 from jsonschema import validate as jsonschema_validate
@@ -1339,28 +1339,27 @@ def validate_openapi_document(instance_dict):
         return True
 
 
-def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
-                              output_format: OAPIFormat):
+def generate_openapi_document(
+        pygeoapi_config: Dict,
+        output_format: OAPIFormat
+):
     """
     Generate an OpenAPI document from the configuration file
 
-    :param cfg_file: configuration Path instance
+    :param pygeoapi_config: pygeoapi configuration
     :param output_format: output format for OpenAPI document
 
     :returns: content of the OpenAPI document in the output
               format requested
     """
-    if isinstance(cfg_file, Path):
-        with cfg_file.open(mode="r") as cf:
-            s = yaml_load(cf)
-    else:
-        s = yaml_load(cfg_file)
-    pretty_print = s['server'].get('pretty_print', False)
+    pretty_print = pygeoapi_config['server'].get('pretty_print', False)
 
     if output_format == 'yaml':
-        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
+        content = yaml.safe_dump(
+            get_oas(pygeoapi_config), default_flow_style=False)
     else:
-        content = to_json(get_oas(s), pretty=pretty_print)
+        content = to_json(
+            get_oas(pygeoapi_config), pretty=pretty_print)
     return content
 
 
@@ -1372,18 +1371,17 @@ def openapi():
 
 @click.command()
 @click.pass_context
-@click.argument('config_file', type=click.File(encoding='utf-8'))
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
 @click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
               help='Name of output file')
-def generate(ctx, config_file, output_file, format_='yaml'):
+def generate(ctx, output_file, format_='yaml'):
     """Generate OpenAPI Document"""
 
-    if config_file is None:
-        raise click.ClickException('--config/-c required')
-
-    content = generate_openapi_document(config_file, format_)
+    content = generate_openapi_document(
+        ctx.obj['pygeoapi_config'],
+        format_
+    )
 
     if output_file is None:
         click.echo(content)
@@ -1395,16 +1393,11 @@ def generate(ctx, config_file, output_file, format_='yaml'):
 
 @click.command()
 @click.pass_context
-@click.argument('openapi_file', type=click.File())
-def validate(ctx, openapi_file):
+def validate(ctx):
     """Validate OpenAPI Document"""
 
-    if openapi_file is None:
-        raise click.ClickException('--openapi/-o required')
-
-    click.echo(f'Validating {openapi_file}')
-    instance = yaml_load(openapi_file)
-    validate_openapi_document(instance)
+    click.echo(f'Validating {ctx.obj["pygeoapi_openapi_path"]}...')
+    validate_openapi_document(ctx.obj['pygeoapi_openapi'])
     click.echo('Valid OpenAPI document')
 
 

@@ -35,7 +35,7 @@ from jsonschema import validate as jsonschema_validate
 import logging
 from pathlib import Path
 
-from pygeoapi.util import to_json, yaml_load
+import pygeoapi.util
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def load_schema() -> dict:
     schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
 
     with schema_file.open() as fh2:
-        return yaml_load(fh2)
+        return pygeoapi.util.yaml_load(fh2)
 
 
 def validate_config(instance_dict: dict) -> bool:
@@ -58,7 +58,10 @@ def validate_config(instance_dict: dict) -> bool:
 
     :returns: `bool` of validation
     """
-    jsonschema_validate(json.loads(to_json(instance_dict)), load_schema())
+    jsonschema_validate(
+        json.loads(pygeoapi.util.to_json(instance_dict)),
+        load_schema()
+    )
 
     return True
 
@@ -71,18 +74,12 @@ def config():
 
 @click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
-def validate(ctx, config_file):
+def validate(ctx):
     """Validate configuration"""
 
-    if config_file is None:
-        raise click.ClickException('--config/-c required')
-
-    with open(config_file) as ff:
-        click.echo(f'Validating {config_file}')
-        instance = yaml_load(ff)
-        validate_config(instance)
-        click.echo('Valid configuration')
+    click.echo(f'Validating {ctx.obj["pygeoapi_config_path"]}...')
+    validate_config(ctx.obj['pygeoapi_config'])
+    click.echo('Valid configuration')
 
 
 config.add_command(validate)
