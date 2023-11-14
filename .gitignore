@@ -112,6 +112,7 @@ ENV/
 
 # Visual Studio Code settings
 *.code-workspace
+.vscode/
 
 .DS_Store
 examples/django/sample_project/db.sqlite3

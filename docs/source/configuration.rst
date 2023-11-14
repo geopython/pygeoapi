@@ -82,9 +82,35 @@ The ``logging`` section provides directives for logging messages which are usefu
   logging:
       level: ERROR  # the logging level (see https://docs.python.org/3/library/logging.html#logging-levels)
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
-
+      logformat: # example for miliseconds:'[%(asctime)s.%(msecs)03d] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+      dateformat: # example for miliseconds:'%Y-%m-%dT%H:%M:%S'
+      rotation:
+          mode: # [None|time|size]
+          when: # [s|m|h|d|w0-w6|midnight]
+          interval: 
+          max_bytes: 
+          backup_count: 
 .. note::
    If ``level`` is defined and ``logfile`` is undefined, logging messages are output to the server's ``stdout``.
+
+
+``rotation``
+
+The ``rotation`` supports rotation of disk log files. The ``logfile`` file is opened and used as the stream for logging.
+
+.. code-block:: yaml
+
+  logging:
+      rotation:
+          mode: # [None|time|size]
+          when: # [s|m|h|d|w0-w6|midnight]
+          interval: 
+          max_bytes: 
+          backup_count: 
+.. note::
+  The ``mode`` can be defined by size or time.
+  For RotatingFileHandler set mode size and parameters max_bytes and backup_count.
+  For TimedRotatingFileHandler set mode time and parameters when, interval and backup_count.
 
 
 ``metadata``
