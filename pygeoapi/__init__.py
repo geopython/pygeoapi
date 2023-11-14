@@ -236,7 +236,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
         gunicorn_params.extend(debug_gunicorn_params)
     else:
         gunicorn_params.extend(non_debug_gunicorn_params)
-    print(f"About to exec gunicorn with {gunicorn_params=}")
+    print(f"About to exec gunicorn with {gunicorn_params}")
     sys.stdout.flush()
     sys.stderr.flush()
     os.execvp('gunicorn', gunicorn_params)
