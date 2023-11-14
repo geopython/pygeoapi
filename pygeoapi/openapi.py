@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -1362,6 +1362,24 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
     else:
         content = to_json(get_oas(s), pretty=pretty_print)
     return content
+
+
+def load_openapi_document() -> dict:
+    """
+    Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
+
+    :returns: `dict` of OpenAPI document
+    """
+
+    pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
+
+    with open(pygeoapi_openapi, encoding='utf8') as ff:
+        if pygeoapi_openapi.endswith(('.yaml', '.yml')):
+            openapi_ = yaml_load(ff)
+        else:  # JSON string, do not transform
+            openapi_ = ff.read()
+
+    return openapi_
 
 
 @click.group()
