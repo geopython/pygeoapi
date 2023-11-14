@@ -118,8 +118,8 @@ def _find_plugins():
     )
 )
 def cli(ctx: click.Context, pygeoapi_config, pygeoapi_openapi):
-    print(f'{pygeoapi_config=}')
-    print(f'{pygeoapi_openapi=}')
+    print(f'pygeoapi_config: {pygeoapi_config}')
+    print(f'pygeoapi_openapi: {pygeoapi_openapi}')
     ctx.ensure_object(dict)
     ctx.obj.update(
         {
