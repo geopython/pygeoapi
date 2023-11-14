@@ -490,7 +490,7 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
     if pygeoapi_config.get('server', {}).get('cors', False):
         try:
             from flask_cors import CORS
-            app = CORS(app)
+            CORS(app)
         except ModuleNotFoundError:
             print('Python package flask-cors required for CORS support')
 

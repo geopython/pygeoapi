@@ -36,6 +36,7 @@ import logging
 import time
 import gzip
 from http import HTTPStatus
+from pathlib import Path
 
 from pyld import jsonld
 import pytest
@@ -252,6 +253,50 @@ def test_apirequest(api_):
     assert apireq.get_response_headers()['Content-Language'] == 'de'
 
 
+def test_apirules_active_flask(config_with_rules, rules_api):
+    assert rules_api.config == config_with_rules
+    rules = get_api_rules(config_with_rules)
+    base_url = get_base_url(config_with_rules)
+    flask_prefix = rules.get_url_prefix('flask')
+    config_file_path = (
+            Path(__file__).parent / 'pygeoapi-test-config-apirules.yml')
+    openapi_file_path = (
+            Path(__file__).parent / 'pygeoapi-test-openapi.yml')
+    with mock_flask(
+            str(config_file_path), str(openapi_file_path)) as flask_client:
+        # Test happy path
+        response = flask_client.get(f'{flask_prefix}/conformance')
+        assert response.status_code == 200
+        assert response.headers['X-API-Version'] == __version__
+        assert response.request.url == \
+               flask_client.application.url_for('pygeoapi.conformance')
+        response = flask_client.get(f'{flask_prefix}/static/img/pygeoapi.png')
+        assert response.status_code == 200
+        # Test that static resources also work without URL prefix
+        response = flask_client.get('/static/img/pygeoapi.png')
+        assert response.status_code == 200
+
+        # Test strict slashes
+        response = flask_client.get(f'{flask_prefix}/conformance/')
+        assert response.status_code == 404
+        # For the landing page ONLY, trailing slashes are actually preferred.
+        # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
+        # Omitting the trailing slash should lead to a redirect.
+        response = flask_client.get(f'{flask_prefix}/')
+        assert response.status_code == 200
+        response = flask_client.get(flask_prefix)
+        assert response.status_code in (307, 308)
+
+        # Test links on landing page for correct URLs
+        response = flask_client.get(flask_prefix, follow_redirects=True)
+        assert response.status_code == 200
+        assert response.is_json
+        links = response.json['links']
+        assert all(
+            href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
+        )
+
+
 def test_apirules_active(config_with_rules, rules_api):
     assert rules_api.config == config_with_rules
     rules = get_api_rules(config_with_rules)
@@ -259,7 +304,9 @@ def test_apirules_active(config_with_rules, rules_api):
 
     # Test Flask
     flask_prefix = rules.get_url_prefix('flask')
-    with mock_flask('pygeoapi-test-config-apirules.yml') as flask_client:
+    config_file_path = (
+            Path(__file__).parent / 'pygeoapi-test-config-apirules.yml')
+    with mock_flask(str(config_file_path)) as flask_client:
         # Test happy path
         response = flask_client.get(f'{flask_prefix}/conformance')
         assert response.status_code == 200

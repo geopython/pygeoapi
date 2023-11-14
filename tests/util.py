@@ -91,44 +91,54 @@ def mock_flask(config_file: str = 'pygeoapi-test-config.yml',
 
     :param openapi_file: Optional OpenAPI YAML file to use.
     """
-    flask_app = None
-    env_conf = os.getenv('PYGEOAPI_CONFIG')
-    env_openapi = os.getenv('PYGEOAPI_OPENAPI')
-    try:
-        # Temporarily override environment variable so we can import Flask app
-        os.environ['PYGEOAPI_CONFIG'] = get_test_file_path(config_file)
-        os.environ['PYGEOAPI_OPENAPI'] = get_test_file_path(openapi_file)
-
-        # Import current pygeoapi Flask app module
-        from pygeoapi import flask_app
-
-        # Force a module reload to make sure we really use another config
-        reload(flask_app)
-
-        # Set server root path
-        url_parts = urlsplit(flask_app.CONFIG['server']['url'])
-        app_root = url_parts.path.rstrip('/') or '/'
-        flask_app.APP.config['SERVER_NAME'] = url_parts.netloc
-        flask_app.APP.config['APPLICATION_ROOT'] = app_root
-
-        # Create and return test client
-        client = flask_app.APP.test_client(**kwargs)
-        yield client
-
-    finally:
-        if env_conf is None and env_openapi is None:
-            # Remove env variable again if it was not set initially
-            del os.environ['PYGEOAPI_CONFIG']
-            del os.environ['PYGEOAPI_OPENAPI']
-            # Unload Flask app module
-            del sys.modules['pygeoapi.flask_app']
-        else:
-            # Restore env variable to its original value and reload Flask app
-            os.environ['PYGEOAPI_CONFIG'] = env_conf
-            os.environ['PYGEOAPI_OPENAPI'] = env_openapi
-            if flask_app:
-                reload(flask_app)
-        del client
+    from pygeoapi.flask_app import create_app
+    app = create_app(
+        pygeoapi_config_path=config_file,
+        pygeoapi_openapi_path=openapi_file
+    )
+    client = app.test_client(**kwargs)
+    yield client
+    #
+    #
+    #
+    # flask_app = None
+    # env_conf = os.getenv('PYGEOAPI_CONFIG')
+    # env_openapi = os.getenv('PYGEOAPI_OPENAPI')
+    # try:
+    #     # Temporarily override environment variable so we can import Flask app
+    #     os.environ['PYGEOAPI_CONFIG'] = get_test_file_path(config_file)
+    #     os.environ['PYGEOAPI_OPENAPI'] = get_test_file_path(openapi_file)
+    #
+    #     # Import current pygeoapi Flask app module
+    #     from pygeoapi import flask_app
+    #
+    #     # Force a module reload to make sure we really use another config
+    #     reload(flask_app)
+    #
+    #     # Set server root path
+    #     url_parts = urlsplit(flask_app.CONFIG['server']['url'])
+    #     app_root = url_parts.path.rstrip('/') or '/'
+    #     flask_app.APP.config['SERVER_NAME'] = url_parts.netloc
+    #     flask_app.APP.config['APPLICATION_ROOT'] = app_root
+    #
+    #     # Create and return test client
+    #     client = flask_app.APP.test_client(**kwargs)
+    #     yield client
+    #
+    # finally:
+    #     if env_conf is None and env_openapi is None:
+    #         # Remove env variable again if it was not set initially
+    #         del os.environ['PYGEOAPI_CONFIG']
+    #         del os.environ['PYGEOAPI_OPENAPI']
+    #         # Unload Flask app module
+    #         del sys.modules['pygeoapi.flask_app']
+    #     else:
+    #         # Restore env variable to its original value and reload Flask app
+    #         os.environ['PYGEOAPI_CONFIG'] = env_conf
+    #         os.environ['PYGEOAPI_OPENAPI'] = env_openapi
+    #         if flask_app:
+    #             reload(flask_app)
+    #     del client
 
 
 @contextmanager
