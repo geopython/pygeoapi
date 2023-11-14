@@ -4,11 +4,13 @@
 #          Luca Delucchi <lucadeluge@gmail.com>
 #          Krishna Lodha <krishnaglodha@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -489,7 +491,8 @@ def _feed_response(request: HttpRequest, api_definition: str,
                    *args, **kwargs) -> Tuple[Dict, int, str]:
     """Use pygeoapi api to process the input request"""
 
-    api_ = API(settings.PYGEOAPI_CONFIG)
+    api_ = API(
+        config=settings.PYGEOAPI_CONFIG, openapi=settings.PYGEOAPI_OPENAPI)
     api = getattr(api_, api_definition)
     return api(request, *args, **kwargs)
 

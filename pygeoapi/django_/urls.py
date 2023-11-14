@@ -4,11 +4,13 @@
 #          Luca Delucchi <lucadeluge@gmail.com>
 #          Krishna Lodha <krishnaglodha@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -55,6 +57,7 @@ from django.urls import (
 from django.conf import settings
 from django.conf.urls import include
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from . import views
 
@@ -243,7 +246,10 @@ if url_route_prefix:
 
 # Add static URL and optionally add prefix (note: do NOT use django style here)
 url_static_prefix = settings.API_RULES.get_url_prefix()
-urlpatterns += static(
-    f"{url_static_prefix}{settings.STATIC_URL}",
-    document_root=settings.STATIC_ROOT
-)
+if settings.DEBUG:
+    urlpatterns += staticfiles_urlpatterns(prefix=url_static_prefix or None)
+else:
+    urlpatterns += static(
+        f"{url_static_prefix}{settings.STATIC_URL}",
+        document_root=settings.STATIC_ROOT
+    )

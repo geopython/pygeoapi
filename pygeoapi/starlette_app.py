@@ -3,10 +3,12 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2022 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,7 +50,7 @@ from starlette.types import ASGIApp, Scope, Send, Receive
 from starlette.responses import (
     Response, JSONResponse, HTMLResponse, RedirectResponse
 )
-import uvicorn
+from uvicorn.workers import UvicornWorker
 
 import pygeoapi.util
 from pygeoapi.api import API
@@ -478,6 +480,14 @@ async def stac_catalog_path(request: Request):
     return get_response(api_.get_stac_path(request, path))
 
 
+class PygeoapiUvicornWorker(UvicornWorker):
+    CONFIG_KWARGS = {
+        # this parameter is set because the starlette implementation uses
+        # nest_asyncio, which only works with asyncio
+        'loop': 'asyncio'
+    }
+
+
 class ApiRulesMiddleware:
     """ Custom middleware to properly deal with trailing slashes.
     See https://github.com/encode/starlette/issues/869.
@@ -574,7 +584,6 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlet
             Mount(url_prefix or '/', routes=api_routes)
         ]
     )
-
     if url_prefix:
         # If a URL prefix is in effect, Flask allows the static resource URLs
         # to be written both with or without that prefix (200 in both cases).
@@ -596,9 +605,8 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlet
 
     ogc_schemas_location = pygeoapi_config.get(
         'server', {}).get('ogc_schemas_location')
-    got_local_schemas = not ogc_schemas_location.startswith('http')
     if ogc_schemas_location is not None:
-        if got_local_schemas:
+        if not ogc_schemas_location.startswith('http'):
             schemas_dir = Path(ogc_schemas_location)
             if schemas_dir.is_dir():
                 app.mount(
@@ -624,34 +632,3 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlet
         )
     app.state.PYGEOAPI = API(config=pygeoapi_config, openapi=pygeoapi_openapi_document)
     return app
-
-
-@click.command()
-@click.pass_context
-@click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server=None, debug=False):
-    """
-    Serve pygeoapi via Starlette. Runs pygeoapi
-    as a uvicorn server. Not recommend for production.
-
-    :param server: `string` of server type
-    :param debug: `bool` of whether to run in debug mode,
-                    default log level is INFO
-
-    :returns: void
-    """
-
-    log_level = 'info'
-    if debug:
-        log_level = 'debug'
-    uvicorn.run(
-        "pygeoapi.starlette_app:APP",
-        reload=True,
-        log_level=log_level,
-        loop='asyncio',
-        host=api_.config['server']['bind']['host'],
-        port=api_.config['server']['bind']['port'])
-
-
-if __name__ == "__main__":  # run locally, for testing
-    serve()

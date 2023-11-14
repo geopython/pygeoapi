@@ -148,60 +148,88 @@ def plugins():
 def serve(ctx, server, debug, extra_gunicorn_args):
     """Run the server with different daemon type (--flask is the default)
 
+    If the `--debug` option is set, then gunicorn will run with reloading
+    capabilities, will use the DEBUG log level and will also only use a
+    single worker - the `--debug` flag is only recommended for development, do
+    not enable it in production.
+
     EXTRA_GUNICORN_ARGS - pass additional arguments to be forwarded to the
     gunicorn web server. These will overwrite any pygeoapi-specific gunicorn
-    configuration
+    configuration.
     \f
+
+    This will `exec` the gunicorn application, meaning that gunicorn will
+    take over the current process. You can thus interact with it by sending
+    signals, as mentioned in the gunicorn docs:
+
+    https://docs.gunicorn.org/en/latest/signals.html
+
+    For example, reloading the server can be done by sending the HUP signal
+    to its main process
     """
 
     bind_address = ctx.obj['pygeoapi_config']['server']['bind']['host']
     bind_port = ctx.obj['pygeoapi_config']['server']['bind']['port']
     gunicorn_params = ['gunicorn']
+    common_gunicorn_params = [
+        f'--bind={bind_address}:{bind_port}',
+        f'--error-logfile=-',
+        f'--access-logfile=-',
+    ]
+    extra_gunicorn_params = []
+    debug_gunicorn_params = [
+        '--workers=1',
+        '--reload',
+        f'--log-level=debug',
+    ]
+    log_level = ctx.obj['pygeoapi_config']['logging']['level']
+    non_debug_gunicorn_params = [
+        f'--log-level={log_level.lower()}'
+    ]
     if server == 'flask':
         gunicorn_params.append(
-            f'pygeoapi.flask_app:create_app("{ctx.obj["pygeoapi_config_path"]}", "{ctx.obj["pygeoapi_openapi_path"]}")'
+            f'pygeoapi.flask_app:create_app('
+            f'"{ctx.obj["pygeoapi_config_path"]}", '
+            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f')'
         )
-        gunicorn_params.extend(
+    elif server == 'django':
+        gunicorn_params.append(
+            f'pygeoapi.django_.wsgi:create_app('
+            f'{debug}, '
+            f'"{ctx.obj["pygeoapi_config_path"]}", '
+            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f')'
+        )
+        extra_gunicorn_params.extend(
             [
-                f'--bind={bind_address}:{bind_port}',
-                f'--error-logfile=-',
-                f'--access-logfile=-',
+                f'--pythonpath={Path(__file__).parent.resolve()}'
             ]
         )
-        if debug:
-            gunicorn_params.extend(
-                [
-                    '--workers=1',
-                    '--reload',
-                    f'--log-level=debug',
-                ]
-            )
-        else:
-            log_level = ctx.obj['pygeoapi_config']['logging']['level']
-            gunicorn_params.append(f'--log-level={log_level.lower()}')
-    elif server == 'django':
-        ...
     elif server == 'starlette':
         gunicorn_params.append(
-            f'pygeoapi.starlette_app:create_app("{ctx.obj["pygeoapi_config_path"]}", "{ctx.obj["pygeoapi_openapi_path"]}")'
+            f'pygeoapi.starlette_app:create_app('
+            f'"{ctx.obj["pygeoapi_config_path"]}", '
+            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f')'
         )
-        ...
-
+        extra_gunicorn_params.extend(
+            [
+                '--worker-class=pygeoapi.starlette_app.PygeoapiUvicornWorker',
+            ]
+        )
+    else:
+        raise click.ClickException('--flask/--starlette/--django is required')
+    gunicorn_params.extend(common_gunicorn_params)
     gunicorn_params.extend(extra_gunicorn_args)
+    if debug:
+        gunicorn_params.extend(debug_gunicorn_params)
+    else:
+        gunicorn_params.extend(non_debug_gunicorn_params)
     print(f"About to exec gunicorn with {gunicorn_params=}")
     sys.stdout.flush()
     sys.stderr.flush()
     os.execvp('gunicorn', gunicorn_params)
-
-    # elif server == "starlette":
-    #     from pygeoapi.starlette_app import serve as serve_starlette
-    #     ctx.forward(serve_starlette)
-    #     ctx.invoke(serve_starlette)
-    # elif server == "django":
-    #     from pygeoapi.django_app import main as serve_django
-    #     ctx.invoke(serve_django)
-    # else:
-    #     raise click.ClickException('--flask/--starlette/--django is required')
 
 
 cli.add_command(config_click_group)

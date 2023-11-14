@@ -4,11 +4,13 @@
 #          Luca Delucchi <lucadeluge@gmail.com>
 #          Krishna Lodha <krishnaglodha@gmail.com>
 #          Tom Kralidis <tomkralidis@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,12 +48,11 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
-# pygeoapi specific
-from pygeoapi.django_app import config
-from pygeoapi.util import get_api_rules
+from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = str(Path(__file__).parents[1])
 
 
 # Quick-start development settings - unsuitable for production
@@ -61,7 +62,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = ')#cqm2jfato)gk((nm#%r7h&#n&aqy00_21pavfp=l8)4%cegb'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = None  # This is set by pygeoapi's django_/wsgi.py:create_app()
 
 ALLOWED_HOSTS = []
 
@@ -105,7 +106,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'django_.wsgi.application'
+# WSGI_APPLICATION = 'django_.wsgi.application'
 
 
 # Database
@@ -165,11 +166,12 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, 'assets')
 STATIC_URL = '/static/'
 
-# pygeoapi specific
-PYGEOAPI_CONFIG = config()
-
-API_RULES = get_api_rules(PYGEOAPI_CONFIG)
+# The below settings are for pygeoapi - do not bother changing them, they are
+# set at runtime, after having read the pygeoapi configuration file
+PYGEOAPI_CONFIG = None
+PYGEOAPI_OPENAPI = None
+API_RULES = None
 
 # Defaults to True in Django
 # https://docs.djangoproject.com/en/3.2/ref/settings/#append-slash
-APPEND_SLASH = not API_RULES.strict_slashes
+APPEND_SLASH = None
