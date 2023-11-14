@@ -86,6 +86,10 @@ def _find_plugins():
     '-c',
     '--pygeoapi-config',
     envvar='PYGEOAPI_CONFIG',
+    help=(
+            'Path to the pygeoapi configuration file. This can also be '
+            'specified as the `PYGEOAPI_CONFIG` environment variable.'
+    ),
     required=True,
     type=click.Path(
         exists=True,
@@ -99,6 +103,10 @@ def _find_plugins():
 @click.option(
     '--pygeoapi-openapi',
     envvar='PYGEOAPI_OPENAPI',
+    help=(
+        'Path to the pygeoapi openapi document. This can also be '
+        'specified as the `PYGEOAPI_OPENAPI` environment variable.'
+    ),
     required=True,
     type=click.Path(
         exists=True,
