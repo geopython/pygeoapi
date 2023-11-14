@@ -85,12 +85,18 @@ def config():
     }
 
 
+@pytest.fixture()
+def openapi():
+    with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
+        return yaml_load(fh)
+
+
 # API using PostgreSQL provider
 @pytest.fixture()
-def pg_api_():
+def pg_api_(openapi):
     with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
         config = yaml_load(fh)
-        return API(config)
+        return API(config, openapi)
 
 
 def test_valid_connection_options(config):
