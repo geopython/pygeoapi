@@ -181,14 +181,16 @@ def serve(ctx, server, debug, extra_gunicorn_args):
     gunicorn_params = ['gunicorn']
     common_gunicorn_params = [
         f'--bind={bind_address}:{bind_port}',
-        f'--error-logfile=-',
-        f'--access-logfile=-',
+        '--error-logfile=-',
+        '--access-logfile=-',
     ]
     extra_gunicorn_params = []
     debug_gunicorn_params = [
         '--workers=1',
         '--reload',
-        f'--log-level=debug',
+        f'--reload-extra-file={ctx.obj["pygeoapi_config_path"]}',
+        f'--reload-extra-file={ctx.obj["pygeoapi_openapi_path"]}',
+        '--log-level=debug',
     ]
     log_level = ctx.obj['pygeoapi_config']['logging']['level']
     non_debug_gunicorn_params = [
@@ -229,7 +231,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
     else:
         raise click.ClickException('--flask/--starlette/--django is required')
     gunicorn_params.extend(common_gunicorn_params)
-    gunicorn_params.extend(extra_gunicorn_args)
+    gunicorn_params.extend(extra_gunicorn_params)
     if debug:
         gunicorn_params.extend(debug_gunicorn_params)
     else:

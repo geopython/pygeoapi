@@ -496,4 +496,3 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
 
     app.register_blueprint(BLUEPRINT)
     return app
-

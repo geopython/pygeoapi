@@ -36,10 +36,11 @@
 
 import os
 import logging
+import signal
+import threading
+import time
 from typing import Union
 from pathlib import Path
-
-import click
 
 from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
@@ -480,12 +481,45 @@ async def stac_catalog_path(request: Request):
     return get_response(api_.get_stac_path(request, path))
 
 
+class ReloaderThread(threading.Thread):
+
+    def __init__(self, worker: UvicornWorker, sleep_interval: float = 1.0):
+        super().__init__()
+        self.setDaemon(True)
+        self._worker = worker
+        self._interval = sleep_interval
+
+    def run(self) -> None:
+        while True:
+            if not self._worker.alive:
+                os.kill(os.getpid(), signal.SIGINT)
+            time.sleep(self._interval)
+
+
 class PygeoapiUvicornWorker(UvicornWorker):
+    """Custom Gunicorn worker class
+
+    This class exists mainly to overcome a bug in gunicorn whereby it
+    cannot reload code when using uvicorn. The bug, and the fix, which this
+    class implements are documented here:
+
+    https://github.com/benoitc/gunicorn/issues/2339#issuecomment-867481389
+
+    """
     CONFIG_KWARGS = {
         # this parameter is set because the starlette implementation uses
         # nest_asyncio, which only works with asyncio
         'loop': 'asyncio'
     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._reloader_thread = ReloaderThread(self)
+
+    def run(self) -> None:
+        if self.cfg.reload:
+            self._reloader_thread.start()
+        super().run()
 
 
 class ApiRulesMiddleware:
@@ -568,7 +602,10 @@ api_routes = [
 ]
 
 
-def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlette:
+def create_app(
+        pygeoapi_config_path: str,
+        pygeoapi_openapi_path: str
+) -> Starlette:
     """Create the pygeoapi starlette application"""
     pygeoapi_config = pygeoapi.util.get_config_from_path(
         Path(pygeoapi_config_path))
@@ -628,7 +665,9 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlet
         if not ogc_schemas_location.exists():
             raise RuntimeError('OGC schemas misconfigured')
         app.mount(
-            f'{url_prefix}/schemas', StaticFiles(directory=ogc_schemas_location)
+            f'{url_prefix}/schemas',
+            StaticFiles(directory=ogc_schemas_location)
         )
-    app.state.PYGEOAPI = API(config=pygeoapi_config, openapi=pygeoapi_openapi_document)
+    app.state.PYGEOAPI = API(
+        config=pygeoapi_config, openapi=pygeoapi_openapi_document)
     return app

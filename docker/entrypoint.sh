@@ -2,8 +2,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -95,12 +97,13 @@ case ${entry_cmd} in
 		[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
 
 		echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
-		exec gunicorn --workers ${WSGI_WORKERS} \
-				--worker-class=${WSGI_WORKER_CLASS} \
-				--timeout ${WSGI_WORKER_TIMEOUT} \
-				--name=${CONTAINER_NAME} \
-				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-				pygeoapi.flask_app:APP
+		exec pygeoapi serve \
+		    --flask \
+		    -- \
+		    --workers=${WSGI_WORKERS} \
+		    --worker-class=${WSGI_WORKER_CLASS} \
+		    --timeout=${WSGI_WORKER_TIMEOUT} \
+		    --name=${CONTAINER_NAME}
 	  ;;
 	*)
 	  error "unknown command arg: must be run (default) or test"

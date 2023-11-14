@@ -80,4 +80,3 @@ def create_app(
     settings.configure(django_settings)
     django.setup(set_prefix=False)
     return WSGIHandler()
-
