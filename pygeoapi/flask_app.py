@@ -30,12 +30,8 @@
 
 """Flask module providing the route paths to the api"""
 
-import os
-import sys
 from http import HTTPStatus
 from pathlib import Path
-
-import click
 
 from flask import (
     current_app,
@@ -47,7 +43,7 @@ from flask import (
 )
 
 from pygeoapi.api import API
-from pygeoapi.util import get_mimetype, yaml_load, get_api_rules
+import pygeoapi.util
 
 
 BLUEPRINT = Blueprint('pygeoapi', __name__)
@@ -80,8 +76,8 @@ def schemas(path):
     :returns: HTTP response
     """
 
-    pygeoapi: API = current_app.config['pygeoapi']['api']
-    ogc_schemas_location = pygeoapi.config.get(
+    api_: API = current_app.config['PYGEOAPI']['api']
+    ogc_schemas_location = api_.config.get(
         'server', {}).get('ogc_schemas_location')
     got_local_schemas = not ogc_schemas_location.startswith('http')
     if ogc_schemas_location is not None:
@@ -91,7 +87,7 @@ def schemas(path):
                 return send_from_directory(
                     schemas_dir,
                     schemas_dir.name,
-                    mimetype=get_mimetype(schemas_dir.name)
+                    mimetype=pygeoapi.util.get_mimetype(schemas_dir.name)
                 )
             else:
                 raise RuntimeError('OGC schemas misconfigured')
@@ -117,7 +113,7 @@ def landing_page():
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.landing_page(request))
 
 
@@ -128,7 +124,7 @@ def openapi():
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.openapi_(request))
 
 
@@ -139,7 +135,7 @@ def conformance():
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.conformance(request))
 
 
@@ -153,7 +149,7 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.describe_collections(request, collection_id))
 
 
@@ -166,7 +162,7 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_queryables(request, collection_id))
 
 
@@ -186,7 +182,7 @@ def collection_items(collection_id, item_id=None):
     :returns: HTTP response
     """
 
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     if item_id is None:
         if request.method == 'GET':  # list items
             return get_response(
@@ -230,7 +226,7 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_coverage(request, collection_id))
 
 
@@ -243,7 +239,7 @@ def collection_coverage_domainset(collection_id):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_coverage_domainset(
         request, collection_id))
 
@@ -257,7 +253,7 @@ def collection_coverage_rangetype(collection_id):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_coverage_rangetype(
         request, collection_id))
 
@@ -271,7 +267,7 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_tiles(
         request, collection_id))
 
@@ -287,7 +283,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_tiles_metadata(
         request, collection_id, tileMatrixSetId))
 
@@ -307,7 +303,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_collection_tiles_data(
         request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
 
@@ -324,7 +320,7 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     headers, status_code, content = api_.get_collection_map(
         request, collection_id, style_id)
 
@@ -346,7 +342,7 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.describe_processes(request, process_id))
 
 
@@ -362,7 +358,7 @@ def get_jobs(job_id=None):
     :returns: HTTP response
     """
 
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     if job_id is None:
         return get_response(api_.get_jobs(request))
     else:
@@ -382,7 +378,7 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.execute_process(request, process_id))
 
 
@@ -396,7 +392,7 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_job_result(request, job_id))
 
 
@@ -411,7 +407,7 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
 
@@ -437,7 +433,7 @@ def get_collection_edr_query(collection_id, instance_id=None):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     query_type = request.path.split('/')[-1]
     return get_response(api_.get_collection_edr_query(request, collection_id,
                                                       instance_id, query_type))
@@ -450,7 +446,7 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_stac_root(request))
 
 
@@ -463,14 +459,19 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-    api_: API = current_app.config['pygeoapi']['api']
+    api_: API = current_app.config['PYGEOAPI']['api']
     return get_response(api_.get_stac_path(request, path))
 
 
-def create_app(api: API) -> Flask:
+def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
     """Create the pygeoapi flask application"""
+    pygeoapi_config = pygeoapi.util.get_config_from_path(
+        Path(pygeoapi_config_path))
+    pygeoapi_openapi_document = pygeoapi.util.get_openapi_from_path(
+        Path(pygeoapi_openapi_path))
+    api = API(config=pygeoapi_config, openapi=pygeoapi_openapi_document)
     static_folder = (
-        api.config.get('server', {})
+        pygeoapi_config.get('server', {})
         .get('templates', {})
         .get('static', 'static')
     )
@@ -479,14 +480,14 @@ def create_app(api: API) -> Flask:
         static_folder=static_folder,
         static_url_path='/static'
     )
-    api_rules = get_api_rules(api.config)
+    api_rules = pygeoapi.util.get_api_rules(pygeoapi_config)
     app.url_map.strict_slashes = api_rules.strict_slashes
-    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = api.config.get(
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = pygeoapi_config.get(
         'server', {}).get('pretty_print', True)
     app.config['PYGEOAPI'] = {
         'api': api,
     }
-    if api.config.get('server', {}).get('cors', False):
+    if pygeoapi_config.get('server', {}).get('cors', False):
         try:
             from flask_cors import CORS
             app = CORS(app)

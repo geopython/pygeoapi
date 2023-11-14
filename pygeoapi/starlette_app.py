@@ -33,6 +33,7 @@
 """ Starlette module providing the route paths to the api"""
 
 import os
+import logging
 from typing import Union
 from pathlib import Path
 
@@ -49,34 +50,11 @@ from starlette.responses import (
 )
 import uvicorn
 
+import pygeoapi.util
 from pygeoapi.api import API
-from pygeoapi.openapi import load_openapi_document
-from pygeoapi.util import yaml_load, get_api_rules
+from pygeoapi.models import config as config_models
 
-if 'PYGEOAPI_CONFIG' not in os.environ:
-    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
-
-if 'PYGEOAPI_OPENAPI' not in os.environ:
-    raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
-
-OPENAPI = load_openapi_document()
-
-p = Path(__file__)
-
-APP = Starlette(debug=True)
-STATIC_DIR = Path(p).parent.resolve() / 'static'
-
-try:
-    STATIC_DIR = Path(CONFIG['server']['templates']['static'])
-except KeyError:
-    pass
-
-API_RULES = get_api_rules(CONFIG)
-
-api_ = API(CONFIG, OPENAPI)
+LOGGER = logging.getLogger(__name__)
 
 
 def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
@@ -111,6 +89,7 @@ async def landing_page(request: Request):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     return get_response(api_.landing_page(request))
 
 
@@ -122,6 +101,7 @@ async def openapi(request: Request):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     return get_response(api_.openapi_(request))
 
 
@@ -133,6 +113,7 @@ async def conformance(request: Request):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     return get_response(api_.conformance(request))
 
 
@@ -145,6 +126,7 @@ async def collection_queryables(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.get_collection_queryables(request, collection_id))
@@ -159,6 +141,7 @@ async def get_collection_tiles(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.get_collection_tiles(
@@ -175,6 +158,7 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
 
     :returns: HTTP response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
@@ -198,6 +182,7 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
 
     :returns: HTTP response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
@@ -224,6 +209,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     :returns: Starlette HTTP Response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'item_id' in request.path_params:
@@ -273,6 +259,7 @@ async def collection_coverage(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -288,6 +275,7 @@ async def collection_coverage_domainset(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -305,6 +293,7 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
     :returns: Starlette HTTP Response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -322,6 +311,7 @@ async def collection_map(request: Request, collection_id, style_id=None):
     :returns: HTTP response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'style_id' in request.path_params:
@@ -340,6 +330,7 @@ async def get_processes(request: Request, process_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
@@ -356,6 +347,7 @@ async def get_jobs(request: Request, job_id=None):
     :returns: Starlette HTTP Response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
@@ -378,6 +370,7 @@ async def execute_process_jobs(request: Request, process_id=None):
     :returns: Starlette HTTP Response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
@@ -394,6 +387,7 @@ async def get_job_result(request: Request, job_id=None):
     :returns: HTTP response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
@@ -412,6 +406,7 @@ async def get_job_result_resource(request: Request,
     :returns: HTTP response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
     if 'resource' in request.path_params:
@@ -431,6 +426,7 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     :returns: HTTP response
     """
 
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -451,6 +447,7 @@ async def collections(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
+    api_ = request.app.state.PYGEOAPI
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.describe_collections(request, collection_id))
@@ -464,6 +461,7 @@ async def stac_catalog_root(request: Request):
 
     :returns: Starlette HTTP response
     """
+    api_ = request.app.state.PYGEOAPI
     return get_response(api_.get_stac_root(request))
 
 
@@ -475,6 +473,7 @@ async def stac_catalog_path(request: Request):
 
     :returns: Starlette HTTP response
     """
+    api_ = request.app.state.PYGEOAPI
     path = request.path_params["path"]
     return get_response(api_.get_stac_path(request, path))
 
@@ -485,14 +484,19 @@ class ApiRulesMiddleware:
     """
     def __init__(
             self,
-            app: ASGIApp
+            app: ASGIApp,
+            *,
+            api_rules: config_models.APIRules,
     ) -> None:
         self.app = app
-        self.prefix = API_RULES.get_url_prefix('starlette')
+        # self.prefix = API_RULES.get_url_prefix('starlette')
+        self.prefix = api_rules.get_url_prefix('starlette')
+        self.strict_slashes = api_rules.strict_slashes
 
     async def __call__(self, scope: Scope,
                        receive: Receive, send: Send) -> None:
-        if scope['type'] == "http" and API_RULES.strict_slashes:
+        # if scope['type'] == "http" and API_RULES.strict_slashes:
+        if scope['type'] == "http" and self.strict_slashes:
             path = scope['path']
             if path == self.prefix:
                 # If the root (landing page) is requested without a trailing
@@ -553,45 +557,73 @@ api_routes = [
     Route('/stac/{path:path}', stac_catalog_path),
 ]
 
-url_prefix = API_RULES.get_url_prefix('starlette')
-APP = Starlette(
-    routes=[
-        Mount(f'{url_prefix}/static', StaticFiles(directory=STATIC_DIR)),
-        Mount(url_prefix or '/', routes=api_routes)
-    ]
-)
 
-if url_prefix:
-    # If a URL prefix is in effect, Flask allows the static resource URLs
-    # to be written both with or without that prefix (200 in both cases).
-    # Starlette does not allow this, so for consistency we'll add a static
-    # mount here WITHOUT the URL prefix (due to router order).
-    APP.mount(
-        '/static', StaticFiles(directory=STATIC_DIR),
+def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Starlette:
+    """Create the pygeoapi starlette application"""
+    pygeoapi_config = pygeoapi.util.get_config_from_path(
+        Path(pygeoapi_config_path))
+    pygeoapi_openapi_document = pygeoapi.util.get_openapi_from_path(
+        Path(pygeoapi_openapi_path))
+    api_rules = pygeoapi.util.get_api_rules(pygeoapi_config)
+    url_prefix = api_rules.get_url_prefix('starlette')
+    static_dir = Path(__file__).parent.resolve() / 'static'
+    app = Starlette(
+        routes=[
+            Mount(
+                f'{url_prefix}/static', StaticFiles(directory=static_dir)),
+            Mount(url_prefix or '/', routes=api_routes)
+        ]
     )
 
-# If API rules require strict slashes, do not redirect
-if API_RULES.strict_slashes:
-    APP.router.redirect_slashes = False
-    APP.add_middleware(ApiRulesMiddleware)
+    if url_prefix:
+        # If a URL prefix is in effect, Flask allows the static resource URLs
+        # to be written both with or without that prefix (200 in both cases).
+        # Starlette does not allow this, so for consistency we'll add a static
+        # mount here WITHOUT the URL prefix (due to router order).
+        app.mount(
+            '/static', StaticFiles(directory=static_dir),
+        )
 
-# CORS: optionally enable from config.
-if CONFIG['server'].get('cors', False):
-    from starlette.middleware.cors import CORSMiddleware
-    APP.add_middleware(CORSMiddleware, allow_origins=['*'])
+    # If API rules require strict slashes, do not redirect
+    if api_rules.strict_slashes:
+        app.router.redirect_slashes = False
+        app.add_middleware(ApiRulesMiddleware, api_rules=api_rules)
 
-try:
-    OGC_SCHEMAS_LOCATION = Path(CONFIG['server']['ogc_schemas_location'])
-except KeyError:
-    OGC_SCHEMAS_LOCATION = None
+    # CORS: optionally enable from config.
+    if pygeoapi_config.get('server', {}).get('cors', False):
+        from starlette.middleware.cors import CORSMiddleware
+        app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
-if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.name.startswith('http')):
-    if not OGC_SCHEMAS_LOCATION.exists():
-        raise RuntimeError('OGC schemas misconfigured')
-    APP.mount(
-        f'{url_prefix}/schemas', StaticFiles(directory=OGC_SCHEMAS_LOCATION)
-    )
+    ogc_schemas_location = pygeoapi_config.get(
+        'server', {}).get('ogc_schemas_location')
+    got_local_schemas = not ogc_schemas_location.startswith('http')
+    if ogc_schemas_location is not None:
+        if got_local_schemas:
+            schemas_dir = Path(ogc_schemas_location)
+            if schemas_dir.is_dir():
+                app.mount(
+                    f'{url_prefix}/schemas',
+                    StaticFiles(directory=schemas_dir)
+                )
+            else:
+                raise RuntimeError('OGC schemas misconfigured')
+        else:
+            LOGGER.warning(
+                "OGC SCHEMAS are configured as a remote resource - "
+                "cannot serve locally"
+            )
+    else:
+        LOGGER.warning('OGC SCHEMAS are not configured - cannot serve locally')
+
+    if (ogc_schemas_location is not None and
+            not ogc_schemas_location.name.startswith('http')):
+        if not ogc_schemas_location.exists():
+            raise RuntimeError('OGC schemas misconfigured')
+        app.mount(
+            f'{url_prefix}/schemas', StaticFiles(directory=ogc_schemas_location)
+        )
+    app.state.PYGEOAPI = API(config=pygeoapi_config, openapi=pygeoapi_openapi_document)
+    return app
 
 
 @click.command()

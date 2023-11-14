@@ -86,20 +86,43 @@ def _find_plugins():
     '-c',
     '--pygeoapi-config',
     envvar='PYGEOAPI_CONFIG',
+    required=True,
     type=click.Path(
-        file_okay=True, dir_okay=False, readable=True, path_type=Path)
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        path_type=Path
+    )
 )
 @click.option(
     '--pygeoapi-openapi',
     envvar='PYGEOAPI_OPENAPI',
+    required=True,
     type=click.Path(
-        file_okay=True, dir_okay=False, readable=True, path_type=Path)
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        path_type=Path
+    )
 )
 def cli(ctx: click.Context, pygeoapi_config, pygeoapi_openapi):
+    print(f'{pygeoapi_config=}')
+    print(f'{pygeoapi_openapi=}')
     ctx.ensure_object(dict)
-    ctx.obj['api'] = pygeoapi.api.API(
-        config=pygeoapi.util.get_config_from_path(pygeoapi_config),
-        openapi=pygeoapi.util.get_openapi_from_path(pygeoapi_openapi)
+    ctx.obj.update(
+        {
+            'pygeoapi_config_path': pygeoapi_config,
+            'pygeoapi_openapi_path': pygeoapi_openapi,
+            'pygeoapi_config': pygeoapi.util.get_config_from_path(
+                pygeoapi_config),
+            'pygeoapi_openapi': pygeoapi.util.get_openapi_from_path(
+                pygeoapi_openapi)
+
+        }
     )
 
 
@@ -131,36 +154,39 @@ def serve(ctx, server, debug, extra_gunicorn_args):
     \f
     """
 
-    print(f"{ctx.obj=} {debug=} {extra_gunicorn_args=}")
-    api_ = ctx.obj['api']
-    bind_address = api_.config['server']['bind']['host']
-    bind_port = api_.config['server']['bind']['port']
+    bind_address = ctx.obj['pygeoapi_config']['server']['bind']['host']
+    bind_port = ctx.obj['pygeoapi_config']['server']['bind']['port']
     gunicorn_params = ['gunicorn']
     if server == 'flask':
-        gunicorn_params.append('pygeoapi.flask_app:create_app()')
+        gunicorn_params.append(
+            f'pygeoapi.flask_app:create_app("{ctx.obj["pygeoapi_config_path"]}", "{ctx.obj["pygeoapi_openapi_path"]}")'
+        )
+        gunicorn_params.extend(
+            [
+                f'--bind={bind_address}:{bind_port}',
+                f'--error-logfile=-',
+                f'--access-logfile=-',
+            ]
+        )
+        if debug:
+            gunicorn_params.extend(
+                [
+                    '--workers=1',
+                    '--reload',
+                    f'--log-level=debug',
+                ]
+            )
+        else:
+            log_level = ctx.obj['pygeoapi_config']['logging']['level']
+            gunicorn_params.append(f'--log-level={log_level.lower()}')
     elif server == 'django':
         ...
     elif server == 'starlette':
+        gunicorn_params.append(
+            f'pygeoapi.starlette_app:create_app("{ctx.obj["pygeoapi_config_path"]}", "{ctx.obj["pygeoapi_openapi_path"]}")'
+        )
         ...
 
-    gunicorn_params.extend(
-        [
-            f'--bind={bind_address}:{bind_port}',
-            f'--error-logfile=-',
-            f'--access-logfile=-',
-        ]
-    )
-    if debug:
-        gunicorn_params.extend(
-            [
-                '--workers=1',
-                '--reload',
-                f'--log-level=debug',
-            ]
-        )
-    else:
-        log_level = api_.config['logging']['level']
-        gunicorn_params.append(f'--log-level={log_level.lower()}')
     gunicorn_params.extend(extra_gunicorn_args)
     print(f"About to exec gunicorn with {gunicorn_params=}")
     sys.stdout.flush()
