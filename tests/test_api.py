@@ -3,9 +3,11 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -42,16 +44,17 @@ from pyld import jsonld
 import pytest
 import pyproj
 from shapely.geometry import Point
+from starlette.testclient import TestClient as StarletteTestClient
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
-from pygeoapi.util import (yaml_load, get_crs_from_uri,
-                           get_api_rules, get_base_url)
+from pygeoapi.util import (yaml_load, get_crs_from_uri, get_base_url)
 
-from .util import (get_test_file_path, mock_request,
-                   mock_flask, mock_starlette)
+from pygeoapi.flask_app import create_app as create_flask_app
+from pygeoapi.starlette_app import create_app as create_starlette_app
+from .util import get_test_file_path, mock_request
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,13 +62,6 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
-        return yaml_load(fh)
-
-
-@pytest.fixture()
-def config_with_rules() -> dict:
-    """ Returns a pygeoapi configuration with default API rules. """
-    with open(get_test_file_path('pygeoapi-test-config-apirules.yml')) as fh:
         return yaml_load(fh)
 
 
@@ -95,22 +91,42 @@ def api_(config, openapi):
 
 
 @pytest.fixture()
-def enclosure_api(config_enclosure):
+def enclosure_api(config_enclosure, openapi):
     """ Returns an API instance with a collection with enclosure links. """
     return API(config_enclosure, openapi)
 
 
 @pytest.fixture()
-def rules_api(config_with_rules):
-    """ Returns an API instance with URL prefix and strict slashes policy.
-    The API version is extracted from the current version here.
-    """
-    return API(config_with_rules, openapi)
+def api_hidden_resources(config_hidden_resources):
+    return API(config_hidden_resources, openapi)
 
 
 @pytest.fixture()
-def api_hidden_resources(config_hidden_resources):
-    return API(config_hidden_resources, openapi)
+def flask_app():
+    config_path = Path(__file__).parent / 'pygeoapi-test-config.yml'
+    openapi_path = Path(__file__).parent / 'pygeoapi-test-openapi.yml'
+    return create_flask_app(str(config_path), str(openapi_path))
+
+
+@pytest.fixture()
+def starlette_app():
+    config_path = Path(__file__).parent / 'pygeoapi-test-config.yml'
+    openapi_path = Path(__file__).parent / 'pygeoapi-test-openapi.yml'
+    return create_starlette_app(str(config_path), str(openapi_path))
+
+
+@pytest.fixture()
+def flask_app_with_api_rules():
+    config_path = Path(__file__).parent / 'pygeoapi-test-config-apirules.yml'
+    openapi_path = Path(__file__).parent / 'pygeoapi-test-openapi.yml'
+    return create_flask_app(str(config_path), str(openapi_path))
+
+
+@pytest.fixture()
+def starlette_app_with_api_rules():
+    config_path = Path(__file__).parent / 'pygeoapi-test-config-apirules.yml'
+    openapi_path = Path(__file__).parent / 'pygeoapi-test-openapi.yml'
+    return create_starlette_app(str(config_path), str(openapi_path))
 
 
 def test_apirequest(api_):
@@ -253,169 +269,132 @@ def test_apirequest(api_):
     assert apireq.get_response_headers()['Content-Language'] == 'de'
 
 
-def test_apirules_active_flask(config_with_rules, rules_api):
-    assert rules_api.config == config_with_rules
-    rules = get_api_rules(config_with_rules)
-    base_url = get_base_url(config_with_rules)
-    flask_prefix = rules.get_url_prefix('flask')
-    config_file_path = (
-            Path(__file__).parent / 'pygeoapi-test-config-apirules.yml')
-    openapi_file_path = (
-            Path(__file__).parent / 'pygeoapi-test-openapi.yml')
-    with mock_flask(
-            str(config_file_path), str(openapi_file_path)) as flask_client:
+def test_apirules_active_flask(flask_app_with_api_rules):
+    api_rules = flask_app_with_api_rules.config['PYGEOAPI']['api_rules']
+    url_prefix = api_rules.get_url_prefix('flask')
+    with flask_app_with_api_rules.test_client() as test_client:
         # Test happy path
-        response = flask_client.get(f'{flask_prefix}/conformance')
+        response = test_client.get(f'{url_prefix}/conformance')
         assert response.status_code == 200
         assert response.headers['X-API-Version'] == __version__
         assert response.request.url == \
-               flask_client.application.url_for('pygeoapi.conformance')
-        response = flask_client.get(f'{flask_prefix}/static/img/pygeoapi.png')
+               test_client.application.url_for(
+                   'pygeoapi.conformance', _external=True
+               )
+        response = test_client.get(f'{url_prefix}/static/img/pygeoapi.png')
         assert response.status_code == 200
         # Test that static resources also work without URL prefix
-        response = flask_client.get('/static/img/pygeoapi.png')
+        response = test_client.get('/static/img/pygeoapi.png')
         assert response.status_code == 200
 
         # Test strict slashes
-        response = flask_client.get(f'{flask_prefix}/conformance/')
+        response = test_client.get(f'{url_prefix}/conformance/')
         assert response.status_code == 404
         # For the landing page ONLY, trailing slashes are actually preferred.
         # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
         # Omitting the trailing slash should lead to a redirect.
-        response = flask_client.get(f'{flask_prefix}/')
+        response = test_client.get(f'{url_prefix}/')
         assert response.status_code == 200
-        response = flask_client.get(flask_prefix)
+        response = test_client.get(url_prefix)
         assert response.status_code in (307, 308)
 
         # Test links on landing page for correct URLs
-        response = flask_client.get(flask_prefix, follow_redirects=True)
+        response = test_client.get(url_prefix, follow_redirects=True)
         assert response.status_code == 200
         assert response.is_json
         links = response.json['links']
+        base_url = get_base_url(
+            flask_app_with_api_rules.config['PYGEOAPI']['api'].config)
         assert all(
             href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
         )
 
 
-def test_apirules_active(config_with_rules, rules_api):
-    assert rules_api.config == config_with_rules
-    rules = get_api_rules(config_with_rules)
-    base_url = get_base_url(config_with_rules)
+def test_apirules_active_starlette(starlette_app_with_api_rules):
+    test_client = StarletteTestClient(starlette_app_with_api_rules)
+    test_client.follow_redirects = False
+    api_rules = starlette_app_with_api_rules.state.PYGEOAPI['api_rules']
+    url_prefix = api_rules.get_url_prefix('starlette')
 
-    # Test Flask
-    flask_prefix = rules.get_url_prefix('flask')
-    config_file_path = (
-            Path(__file__).parent / 'pygeoapi-test-config-apirules.yml')
-    with mock_flask(str(config_file_path)) as flask_client:
-        # Test happy path
-        response = flask_client.get(f'{flask_prefix}/conformance')
-        assert response.status_code == 200
-        assert response.headers['X-API-Version'] == __version__
-        assert response.request.url == \
-               flask_client.application.url_for('pygeoapi.conformance')
-        response = flask_client.get(f'{flask_prefix}/static/img/pygeoapi.png')
-        assert response.status_code == 200
-        # Test that static resources also work without URL prefix
-        response = flask_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
+    # Test happy path
+    response = test_client.get(f'{url_prefix}/conformance')
+    assert response.status_code == 200
+    assert response.headers['X-API-Version'] == __version__
+    response = test_client.get(f'{url_prefix}/static/img/pygeoapi.png')  # noqa
+    assert response.status_code == 200
+    # Test that static resources also work without URL prefix
+    response = test_client.get('/static/img/pygeoapi.png')
+    assert response.status_code == 200
 
-        # Test strict slashes
-        response = flask_client.get(f'{flask_prefix}/conformance/')
-        assert response.status_code == 404
-        # For the landing page ONLY, trailing slashes are actually preferred.
-        # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
-        # Omitting the trailing slash should lead to a redirect.
-        response = flask_client.get(f'{flask_prefix}/')
-        assert response.status_code == 200
-        response = flask_client.get(flask_prefix)
-        assert response.status_code in (307, 308)
+    # Test strict slashes
+    response = test_client.get(f'{url_prefix}/conformance/')
+    assert response.status_code == 404
+    # For the landing page ONLY, trailing slashes are actually preferred.
+    # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
+    # Omitting the trailing slash should lead to a redirect.
+    response = test_client.get(f'{url_prefix}/')
+    assert response.status_code == 200
+    response = test_client.get(url_prefix)
+    assert response.status_code in (307, 308)
 
-        # Test links on landing page for correct URLs
-        response = flask_client.get(flask_prefix, follow_redirects=True)
-        assert response.status_code == 200
-        assert response.is_json
-        links = response.json['links']
-        assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
-        )
-
-    # Test Starlette
-    starlette_prefix = rules.get_url_prefix('starlette')
-    with mock_starlette('pygeoapi-test-config-apirules.yml') as starlette_client:  # noqa
-        # Test happy path
-        response = starlette_client.get(f'{starlette_prefix}/conformance')
-        assert response.status_code == 200
-        assert response.headers['X-API-Version'] == __version__
-        response = starlette_client.get(f'{starlette_prefix}/static/img/pygeoapi.png')  # noqa
-        assert response.status_code == 200
-        # Test that static resources also work without URL prefix
-        response = starlette_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
-
-        # Test strict slashes
-        response = starlette_client.get(f'{starlette_prefix}/conformance/')
-        assert response.status_code == 404
-        # For the landing page ONLY, trailing slashes are actually preferred.
-        # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
-        # Omitting the trailing slash should lead to a redirect.
-        response = starlette_client.get(f'{starlette_prefix}/')
-        assert response.status_code == 200
-        response = starlette_client.get(starlette_prefix)
-        assert response.status_code in (307, 308)
-
-        # Test links on landing page for correct URLs
-        response = starlette_client.get(starlette_prefix, follow_redirects=True)  # noqa
-        assert response.status_code == 200
-        links = response.json()['links']
-        assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
-        )
+    # Test links on landing page for correct URLs
+    response = test_client.get(url_prefix, follow_redirects=True)  # noqa
+    assert response.status_code == 200
+    links = response.json()['links']
+    base_url = get_base_url(
+        starlette_app_with_api_rules.state.PYGEOAPI['api'].config)
+    assert all(
+        href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
+    )
 
 
-def test_apirules_inactive(config, api_):
-    assert api_.config == config
-    rules = get_api_rules(config)
-
-    # Test Flask
-    flask_prefix = rules.get_url_prefix('flask')
-    assert flask_prefix == ''
-    with mock_flask('pygeoapi-test-config.yml') as flask_client:
-        response = flask_client.get('')
+def test_apirules_inactive_flask(flask_app):
+    api_rules = flask_app.config['PYGEOAPI']['api_rules']
+    url_prefix = api_rules.get_url_prefix('flask')
+    assert url_prefix == ''
+    with flask_app.test_client() as test_client:
+        response = test_client.get('')
         assert response.status_code == 200
-        response = flask_client.get('/conformance')
+        response = test_client.get('/conformance')
         assert response.status_code == 200
         assert 'X-API-Version' not in response.headers
         assert response.request.url == \
-               flask_client.application.url_for('pygeoapi.conformance')
-        response = flask_client.get('/static/img/pygeoapi.png')
+               test_client.application.url_for(
+                   'pygeoapi.conformance', _external=True
+               )
+
+        response = test_client.get('/static/img/pygeoapi.png')
         assert response.status_code == 200
 
         # Test trailing slashes
-        response = flask_client.get('/')
+        response = test_client.get('/')
         assert response.status_code == 200
-        response = flask_client.get('/conformance/')
+        response = test_client.get('/conformance/')
         assert response.status_code == 200
         assert 'X-API-Version' not in response.headers
 
-    # Test Starlette
-    starlette_prefix = rules.get_url_prefix('starlette')
-    assert starlette_prefix == ''
-    with mock_starlette('pygeoapi-test-config.yml') as starlette_client:
-        response = starlette_client.get('')
-        assert response.status_code == 200
-        response = starlette_client.get('/conformance')
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
-        assert str(response.url) == f"{starlette_client.base_url}/conformance"
-        response = starlette_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
 
-        # Test trailing slashes
-        response = starlette_client.get('/')
-        assert response.status_code == 200
-        response = starlette_client.get('/conformance/', follow_redirects=True)
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
+def test_apirules_inactive_starlette(starlette_app):
+    test_client = StarletteTestClient(starlette_app)
+    test_client.follow_redirects = False
+    api_rules = starlette_app.state.PYGEOAPI['api_rules']
+    url_prefix = api_rules.get_url_prefix('starlette')
+    assert url_prefix == ''
+    response = test_client.get('')
+    assert response.status_code == 200
+    response = test_client.get('/conformance')
+    assert response.status_code == 200
+    assert 'X-API-Version' not in response.headers
+    assert str(response.url) == f"{test_client.base_url}/conformance"
+    response = test_client.get('/static/img/pygeoapi.png')
+    assert response.status_code == 200
+
+    # Test trailing slashes
+    response = test_client.get('/')
+    assert response.status_code == 200
+    response = test_client.get('/conformance/', follow_redirects=True)
+    assert response.status_code == 200
+    assert 'X-API-Version' not in response.headers
 
 
 def test_api(config, api_, openapi):
@@ -1244,7 +1223,8 @@ def test_manage_collection_item_editable_options_req(config):
     assert rsp_headers['Allow'] == 'HEAD, GET, PUT, DELETE'
 
 
-def test_describe_collections_enclosures(config_enclosure, enclosure_api):
+def test_describe_collections_enclosures(enclosure_api):
+    config_enclosure = enclosure_api.config
     original_enclosures = {
         lnk['title']: lnk
         for lnk in config_enclosure['resources']['objects']['links']

@@ -101,6 +101,7 @@ The pygeoapi flask blueprint expects to be able to find a ``PYGEOAPI`` key in th
 config key is expected to be a dictionary and to contain at least the following keys:
 
 - ``api`` - This should store an instance of ``pygeoapi.api.API``
+- ``api_rules`` - This should store an instance of ``pygeoapi.models.config.APIRules``
 
 .. code-block:: python
 
@@ -113,14 +114,25 @@ config key is expected to be a dictionary and to contain at least the following 
 
    pygeoapi_config = pygeoapi.util.get_config_from_path(Path('example-config.yml'))
    pygeoapi_openapi = pygeoapi.util.get_openapi_from_path(Path('example-openapi.yml'))
+   api_rules = pygeoapi.util.get_api_rules(pygeoapi_config)
+   static_folder = (
+       pygeoapi_config.get('server', {})
+       .get('templates', {})
+       .get('static', 'static')
+   )
 
    app = flask.Flask(__name__)
    app.config['PYGEOAPI'] = {
        'api': API(
            config=pygeoapi_config,
            openapi=pygeoapi_openapi,
-       )
+       ),
+       'api_rules': api_rules,
    }
+
+   pygeoapi_blueprint.url_prefix = api_rules.get_url_prefix('flask')
+   pygeoapi_blueprint.static_folder = static_folder
+
    app.register_blueprint(pygeoapi_blueprint, url_prefix='/my-pygeoapi')
 
    @app.route('/')
@@ -187,9 +199,9 @@ your own starlette app:
    async def homepage(request):
        # inside a starlette route, you can retrieve the pygeoapi API object
        # for this you need to get a hold of the relevant mount and extract it
-       # from the mount's app.state.PYGEOAPI variable
+       # from the mount's app.state.PYGEOAPI variable, which is a dict
        pygeoapi_mount = [m for m in request.app.routes if m.name == 'pygeoapi'][0]
-       pygeoapi_ = pygeoapi_mount.app.state.PYGEOAPI
+       pygeoapi_ = pygeoapi_mount.app.state.PYGEOAPI['api']
        return HTMLResponse(
            f'<h1>This is a uber fantastichen pygeoapi-enabled starlette app</h1>'
            f'<p>Oh, and the pygeoapi server description is: '

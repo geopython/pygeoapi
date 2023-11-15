@@ -478,7 +478,7 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
     app = Flask(
         __name__,
         static_folder=static_folder,
-        static_url_path='/static'
+        static_url_path='/static',
     )
     api_rules = pygeoapi.util.get_api_rules(pygeoapi_config)
     app.url_map.strict_slashes = api_rules.strict_slashes
@@ -486,6 +486,7 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
         'server', {}).get('pretty_print', True)
     app.config['PYGEOAPI'] = {
         'api': api,
+        'api_rules': api_rules,
     }
     if pygeoapi_config.get('server', {}).get('cors', False):
         try:
@@ -494,5 +495,7 @@ def create_app(pygeoapi_config_path: str, pygeoapi_openapi_path: str) -> Flask:
         except ModuleNotFoundError:
             print('Python package flask-cors required for CORS support')
 
+    BLUEPRINT.url_prefix = api_rules.get_url_prefix('flask')
+    BLUEPRINT.static_folder = static_folder
     app.register_blueprint(BLUEPRINT)
     return app

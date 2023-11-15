@@ -32,12 +32,10 @@
 # =================================================================
 
 from copy import deepcopy
-import io
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Dict, Union
+from typing import Dict
 
 import click
 from jsonschema import validate as jsonschema_validate
@@ -49,7 +47,7 @@ from pygeoapi.plugin import load_plugin
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
 from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, to_json, yaml_load,
+                           filter_providers_by_type, to_json,
                            get_api_rules, get_base_url)
 
 LOGGER = logging.getLogger(__name__)

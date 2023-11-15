@@ -92,7 +92,7 @@ async def landing_page(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     return get_response(api_.landing_page(request))
 
 
@@ -104,7 +104,7 @@ async def openapi(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     return get_response(api_.openapi_(request))
 
 
@@ -116,7 +116,7 @@ async def conformance(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     return get_response(api_.conformance(request))
 
 
@@ -129,7 +129,7 @@ async def collection_queryables(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.get_collection_queryables(request, collection_id))
@@ -144,7 +144,7 @@ async def get_collection_tiles(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.get_collection_tiles(
@@ -161,7 +161,7 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
 
     :returns: HTTP response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
@@ -185,7 +185,7 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
 
     :returns: HTTP response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
@@ -212,7 +212,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     :returns: Starlette HTTP Response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'item_id' in request.path_params:
@@ -262,7 +262,7 @@ async def collection_coverage(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -278,7 +278,7 @@ async def collection_coverage_domainset(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -296,7 +296,7 @@ async def collection_coverage_rangetype(request: Request, collection_id=None):
     :returns: Starlette HTTP Response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -314,7 +314,7 @@ async def collection_map(request: Request, collection_id, style_id=None):
     :returns: HTTP response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     if 'style_id' in request.path_params:
@@ -333,7 +333,7 @@ async def get_processes(request: Request, process_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
@@ -350,7 +350,7 @@ async def get_jobs(request: Request, job_id=None):
     :returns: Starlette HTTP Response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
@@ -373,7 +373,7 @@ async def execute_process_jobs(request: Request, process_id=None):
     :returns: Starlette HTTP Response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
@@ -390,7 +390,7 @@ async def get_job_result(request: Request, job_id=None):
     :returns: HTTP response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
@@ -409,7 +409,7 @@ async def get_job_result_resource(request: Request,
     :returns: HTTP response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
     if 'resource' in request.path_params:
@@ -429,7 +429,7 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     :returns: HTTP response
     """
 
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
@@ -450,7 +450,7 @@ async def collections(request: Request, collection_id=None):
 
     :returns: Starlette HTTP Response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
     return get_response(api_.describe_collections(request, collection_id))
@@ -464,7 +464,7 @@ async def stac_catalog_root(request: Request):
 
     :returns: Starlette HTTP response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     return get_response(api_.get_stac_root(request))
 
 
@@ -476,7 +476,7 @@ async def stac_catalog_path(request: Request):
 
     :returns: Starlette HTTP response
     """
-    api_ = request.app.state.PYGEOAPI
+    api_ = request.app.state.PYGEOAPI['api']
     path = request.path_params["path"]
     return get_response(api_.get_stac_path(request, path))
 
@@ -668,6 +668,8 @@ def create_app(
             f'{url_prefix}/schemas',
             StaticFiles(directory=ogc_schemas_location)
         )
-    app.state.PYGEOAPI = API(
-        config=pygeoapi_config, openapi=pygeoapi_openapi_document)
+    app.state.PYGEOAPI = {
+        'api': API(config=pygeoapi_config, openapi=pygeoapi_openapi_document),
+        'api_rules': api_rules,
+    }
     return app
