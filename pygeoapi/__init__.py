@@ -100,36 +100,14 @@ def _find_plugins():
         path_type=Path
     )
 )
-@click.option(
-    '--pygeoapi-openapi',
-    envvar='PYGEOAPI_OPENAPI',
-    help=(
-        'Path to the pygeoapi openapi document. This can also be '
-        'specified as the `PYGEOAPI_OPENAPI` environment variable.'
-    ),
-    required=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        resolve_path=True,
-        path_type=Path
-    )
-)
-def cli(ctx: click.Context, pygeoapi_config, pygeoapi_openapi):
+def cli(ctx: click.Context, pygeoapi_config):
     print(f'pygeoapi_config: {pygeoapi_config}')
-    print(f'pygeoapi_openapi: {pygeoapi_openapi}')
     ctx.ensure_object(dict)
     ctx.obj.update(
         {
             'pygeoapi_config_path': pygeoapi_config,
-            'pygeoapi_openapi_path': pygeoapi_openapi,
             'pygeoapi_config': pygeoapi.util.get_config_from_path(
                 pygeoapi_config),
-            'pygeoapi_openapi': pygeoapi.util.get_openapi_from_path(
-                pygeoapi_openapi)
-
         }
     )
 
@@ -150,10 +128,27 @@ def plugins():
     is_flag=True,
     help="Whether to run with debug turned on or not"
 )
+@click.option(
+    '--pygeoapi-openapi',
+    envvar='PYGEOAPI_OPENAPI',
+    help=(
+            'Path to the pygeoapi openapi document. This can also be '
+            'specified as the `PYGEOAPI_OPENAPI` environment variable.'
+    ),
+    required=True,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        path_type=Path
+    )
+)
 @click.argument(
     'extra-gunicorn-args', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def serve(ctx, server, debug, extra_gunicorn_args):
+def serve(ctx, server, debug, pygeoapi_openapi, extra_gunicorn_args):
     """Run the server with different daemon type (--flask is the default)
 
     If the `--debug` option is set, then gunicorn will run with reloading
@@ -189,7 +184,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
         '--workers=1',
         '--reload',
         f'--reload-extra-file={ctx.obj["pygeoapi_config_path"]}',
-        f'--reload-extra-file={ctx.obj["pygeoapi_openapi_path"]}',
+        f'--reload-extra-file={str(pygeoapi_openapi)}',
         '--log-level=debug',
     ]
     log_level = ctx.obj['pygeoapi_config']['logging']['level']
@@ -200,7 +195,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
         gunicorn_params.append(
             f'pygeoapi.flask_app:create_app('
             f'"{ctx.obj["pygeoapi_config_path"]}", '
-            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f'"{str(pygeoapi_openapi)}"'
             f')'
         )
     elif server == 'django':
@@ -208,7 +203,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
             f'pygeoapi.django_.wsgi:create_app('
             f'{debug}, '
             f'"{ctx.obj["pygeoapi_config_path"]}", '
-            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f'"{str(pygeoapi_openapi)}"'
             f')'
         )
         extra_gunicorn_params.extend(
@@ -220,7 +215,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
         gunicorn_params.append(
             f'pygeoapi.starlette_app:create_app('
             f'"{ctx.obj["pygeoapi_config_path"]}", '
-            f'"{ctx.obj["pygeoapi_openapi_path"]}"'
+            f'"{str(pygeoapi_openapi)}"'
             f')'
         )
         extra_gunicorn_params.extend(
@@ -232,6 +227,7 @@ def serve(ctx, server, debug, extra_gunicorn_args):
         raise click.ClickException('--flask/--starlette/--django is required')
     gunicorn_params.extend(common_gunicorn_params)
     gunicorn_params.extend(extra_gunicorn_params)
+    gunicorn_params.extend(extra_gunicorn_args)
     if debug:
         gunicorn_params.extend(debug_gunicorn_params)
     else:

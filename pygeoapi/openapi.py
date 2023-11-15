@@ -35,12 +35,14 @@ from copy import deepcopy
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Dict
 
 import click
 from jsonschema import validate as jsonschema_validate
 import yaml
 
+import pygeoapi.util
 from pygeoapi import l10n
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.plugin import load_plugin
@@ -1390,12 +1392,30 @@ def generate(ctx, output_file, format_='yaml'):
 
 
 @click.command()
+@click.option(
+    '--pygeoapi-openapi',
+    envvar='PYGEOAPI_OPENAPI',
+    help=(
+            'Path to the pygeoapi openapi document. This can also be '
+            'specified as the `PYGEOAPI_OPENAPI` environment variable.'
+    ),
+    required=True,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        path_type=Path
+    )
+)
 @click.pass_context
-def validate(ctx):
+def validate(ctx, pygeoapi_openapi):
     """Validate OpenAPI Document"""
 
-    click.echo(f'Validating {ctx.obj["pygeoapi_openapi_path"]}...')
-    validate_openapi_document(ctx.obj['pygeoapi_openapi'])
+    click.echo(f'Validating {pygeoapi_openapi}...')
+    openapi_document = pygeoapi.util.get_openapi_from_path(pygeoapi_openapi)
+    validate_openapi_document(openapi_document)
     click.echo('Valid OpenAPI document')
 
 
