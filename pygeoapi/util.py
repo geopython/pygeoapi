@@ -361,7 +361,7 @@ def json_serial(obj: Any) -> str:
         return float(obj)
     elif type(obj).__name__ == 'int64':
         return int(obj)
-    elif type(obj).__name__ == 'float64':
+    elif type(obj).__name__ in ['float32', 'float64']:
         return float(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
