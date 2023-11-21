@@ -89,14 +89,14 @@ def openapi():
 
 
 @pytest.fixture()
-def api_(config):
-    return API(config)
+def api_(config, openapi):
+    return API(config, openapi)
 
 
 @pytest.fixture()
 def enclosure_api(config_enclosure):
     """ Returns an API instance with a collection with enclosure links. """
-    return API(config_enclosure)
+    return API(config_enclosure, openapi)
 
 
 @pytest.fixture()
@@ -104,12 +104,12 @@ def rules_api(config_with_rules):
     """ Returns an API instance with URL prefix and strict slashes policy.
     The API version is extracted from the current version here.
     """
-    return API(config_with_rules)
+    return API(config_with_rules, openapi)
 
 
 @pytest.fixture()
 def api_hidden_resources(config_hidden_resources):
-    return API(config_hidden_resources)
+    return API(config_hidden_resources, openapi)
 
 
 def test_apirequest(api_):
@@ -376,7 +376,7 @@ def test_api(config, api_, openapi):
     assert isinstance(api_.config, dict)
 
     req = mock_request(HTTP_ACCEPT='application/json')
-    rsp_headers, code, response = api_.openapi(req, openapi)
+    rsp_headers, code, response = api_.openapi_(req)
     assert rsp_headers['Content-Type'] == 'application/vnd.oai.openapi+json;version=3.0'  # noqa
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
@@ -385,7 +385,7 @@ def test_api(config, api_, openapi):
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     req = mock_request(HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.openapi(req, openapi)
+    rsp_headers, code, response = api_.openapi_(req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
            FORMAT_TYPES[F_HTML]
 
@@ -393,14 +393,14 @@ def test_api(config, api_, openapi):
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     req = mock_request({'ui': 'redoc'}, HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.openapi(req, openapi)
+    rsp_headers, code, response = api_.openapi_(req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
            FORMAT_TYPES[F_HTML]
 
     assert 'ReDoc' in response
 
     req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.openapi(req, openapi)
+    rsp_headers, code, response = api_.openapi_(req)
     assert rsp_headers['Content-Language'] == 'en-US'
     assert code == HTTPStatus.BAD_REQUEST
 
@@ -445,7 +445,7 @@ def test_gzip(config, api_):
     config['server']['gzip'] = True
     enc_16 = 'utf-16'
     config['server']['encoding'] = enc_16
-    api_ = API(config)
+    api_ = API(config, openapi)
 
     # Responses from server with gzip compression
     rsp_json_headers, _, rsp_gzip_json = api_.landing_page(req_gzip_json)
@@ -529,7 +529,7 @@ def test_gzip_csv(config, api_):
 
     # Use utf-16 encoding
     config['server']['encoding'] = 'utf-16'
-    api_ = API(config)
+    api_ = API(config, openapi)
 
     req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
     rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
@@ -1183,7 +1183,7 @@ def test_manage_collection_item_editable_options_req(config):
     """Test OPTIONS request on a editable items endpoint"""
     config = copy.deepcopy(config)
     config['resources']['obs']['providers'][0]['editable'] = True
-    api_ = API(config)
+    api_ = API(config, openapi)
 
     req = mock_request()
     rsp_headers, code, _ = api_.manage_collection_item(req, 'options', 'obs')
@@ -2002,15 +2002,6 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
-    # S3 EDR
-    req = mock_request({
-        'coords': 'POINT(-100 40)',
-        'parameter-name': 'GWETROOT'
-    })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'nasa-power', None, 'position')
-    assert code == HTTPStatus.OK
-
     # position no coords
     req = mock_request({
         'datetime': '2000-01-17'
@@ -2040,6 +2031,17 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'cube')
     assert code == HTTPStatus.BAD_REQUEST
+
+    # cube decreasing latitude coords and S3
+    req = mock_request({
+        'bbox': '-100,40,-99,45',
+        'parameter-name': 'tmn',
+        'datetime': '1994-01-01/1994-12-31',
+    })
+
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'usgs-prism', None, 'cube')
+    assert code == HTTPStatus.OK
 
 
 def test_validate_bbox():

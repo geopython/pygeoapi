@@ -38,7 +38,6 @@ from typing import Tuple, Dict, Mapping, Optional
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from pygeoapi.api import API
-from pygeoapi.openapi import get_oas
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -65,8 +64,7 @@ def openapi(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    openapi_config = get_oas(settings.PYGEOAPI_CONFIG)
-    response_ = _feed_response(request, 'openapi', openapi_config)
+    response_ = _feed_response(request, 'openapi_')
     response = _to_django_response(*response_)
 
     return response
