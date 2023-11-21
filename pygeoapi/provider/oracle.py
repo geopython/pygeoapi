@@ -30,9 +30,11 @@
 import importlib
 import json
 import logging
+import oracledb
+import pyproj
 from typing import Optional
 
-import oracledb
+from pygeoapi.api import DEFAULT_STORAGE_CRS, DEFAULT_CRS
 
 from pygeoapi.provider.base import (
     BaseProvider,
@@ -42,6 +44,8 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError,
 )
+
+from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -313,28 +317,36 @@ class OracleProvider(BaseProvider):
 
         super().__init__(provider_def)
 
+        # Table properties
         self.table = provider_def["table"]
         self.id_field = provider_def["id_field"]
         self.conn_dic = provider_def["data"]
         self.geom = provider_def["geom_field"]
         self.properties = [item.lower() for item in self.properties]
+        self.mandatory_properties = provider_def.get("mandatory_properties")
 
+        # SQL manipulator properties
         self.sql_manipulator = provider_def.get("sql_manipulator")
         self.sql_manipulator_options = provider_def.get(
             "sql_manipulator_options"
         )
-        self.mandatory_properties = provider_def.get("mandatory_properties")
-        self.source_crs = provider_def.get("source_crs", 4326)
-        self.target_crs = provider_def.get("target_crs", 4326)
+
+        # CRS properties
+        storage_crs_uri = provider_def.get("storage_crs", DEFAULT_STORAGE_CRS)
+        self.storage_crs = get_crs_from_uri(storage_crs_uri)
+        default_crs_uri = provider_def.get("default_crs", DEFAULT_CRS)
+        self.default_crs = get_crs_from_uri(default_crs_uri)
+
+        # SDO properties
         self.sdo_mask = provider_def.get("sdo_mask", "anyinteraction")
 
         LOGGER.debug("Setting Oracle properties:")
         LOGGER.debug(f"Name:{self.name}")
         LOGGER.debug(f"ID_field:{self.id_field}")
         LOGGER.debug(f"Table:{self.table}")
-        LOGGER.debug(f"source_crs: {self.source_crs}")
-        LOGGER.debug(f"target_crs: {self.target_crs}")
         LOGGER.debug(f"sdo_mask: {self.sdo_mask}")
+        LOGGER.debug(f"storage_crs {self.storage_crs}")
+        LOGGER.debug(f"default_crs: {self.default_crs}")
 
         self.get_fields()
 
@@ -381,7 +393,7 @@ class OracleProvider(BaseProvider):
             sdo_mask = f"mask={sdo_mask}"
 
             bbox_dict["properties"] = {
-                "srid": bbox_crs or 4326,
+                "srid": self._get_srid_from_crs(bbox_crs),
                 "minx": bbox[0],
                 "miny": bbox[1],
                 "maxx": bbox[2],
@@ -446,6 +458,20 @@ class OracleProvider(BaseProvider):
                 oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize
             )
 
+    def _get_srid_from_crs(self, crs):
+        """
+        Works only for EPSG codes!
+        Anything else is hard coded!
+        """
+        if crs == "OGC:CRS84":
+            srid = 4326
+        elif crs == "OGC:CRS84h":
+            srid = 4326
+        else:
+            srid = crs.to_epsg()
+
+        return srid
+
     def query(
         self,
         offset=0,
@@ -507,7 +533,7 @@ class OracleProvider(BaseProvider):
                 where_dict = self._get_where_clauses(
                     properties=properties,
                     bbox=bbox,
-                    bbox_crs=self.source_crs,
+                    bbox_crs=self.storage_crs,
                     sdo_mask=self.sdo_mask,
                 )
 
@@ -548,26 +574,43 @@ class OracleProvider(BaseProvider):
             where_dict = self._get_where_clauses(
                 properties=properties,
                 bbox=bbox,
-                bbox_crs=self.source_crs,
+                bbox_crs=self.storage_crs,
                 sdo_mask=self.sdo_mask,
             )
+
+            # Get correct SRID
+            if crs_transform_spec is not None:
+                source_crs = pyproj.CRS.from_wkt(
+                    crs_transform_spec.source_crs_wkt
+                )
+                source_srid = self._get_srid_from_crs(source_crs)
+
+                target_crs = pyproj.CRS.from_wkt(
+                    crs_transform_spec.target_crs_wkt
+                )
+                target_srid = self._get_srid_from_crs(target_crs)
+            else:
+                source_srid = self._get_srid_from_crs(self.storage_crs)
+                target_srid = self._get_srid_from_crs(self.default_crs)
+
+            LOGGER.debug(f"source_srid: {source_srid}")
+            LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
             #   When a different output CRS is definded, the geometry
             #   geometry column would be transformed.
             if skip_geometry:
                 geom = ""
-            elif (
-                not skip_geometry
-                and self.target_crs
-                and self.target_crs != self.source_crs
-            ):
-                geom = f", sdo_cs.transform(t1.{self.geom}, \
-                                            :target_srid).get_geojson() \
-                            AS geometry "
+
+            elif not skip_geometry and source_srid != target_srid:
+                geom = f""", sdo_cs.transform(t1.{self.geom},
+                                             :target_srid).get_geojson()
+                             AS geometry """
+
                 where_dict["properties"].update(
-                    {"target_srid": int(self.target_crs)}
+                    {"target_srid": int(target_srid)}
                 )
+
             else:
                 geom = f", t1.{self.geom}.get_geojson() AS geometry "
 
@@ -717,13 +760,15 @@ class OracleProvider(BaseProvider):
             cursor = db.conn.cursor()
 
             crs_dict = {}
-            if self.target_crs and self.target_crs != self.source_crs:
-                geom_sql = f", sdo_cs.transform(t1.{self.geom}, \
-                                                :target_srid).get_geojson() \
-                                AS geometry "
-                crs_dict = {"target_srid": int(self.target_crs)}
-            else:
-                geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
+            # TODO !!!!!!
+            # if self.target_crs and self.target_crs != self.source_crs:
+            #     geom_sql = f", sdo_cs.transform(t1.{self.geom}, \
+            #                                     :target_srid).get_geojson() \
+            #                     AS geometry "
+            #     crs_dict = {"target_srid": int(self.target_crs)}
+            # else:
+            #     geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
+            geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
 
             sql_query = f"SELECT {db.columns} {geom_sql} \
                             FROM {self.table} t1 \
@@ -881,7 +926,7 @@ class OracleProvider(BaseProvider):
                 **bind_variables,
                 "out_id": out_id,
                 "in_geometry": json.dumps(in_geometry),
-                "srid": self.source_crs,
+                "srid": self._get_srid_from_crs(self.storage_crs),
             }
 
             # SQL manipulation plugin
@@ -978,7 +1023,7 @@ class OracleProvider(BaseProvider):
                 **bind_variables,
                 "in_id": identifier,
                 "in_geometry": in_geometry,
-                "srid": self.source_crs,
+                "srid": self._get_srid_from_crs(self.storage_crs),
             }
 
             # SQL manipulation plugin
