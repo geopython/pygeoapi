@@ -29,21 +29,17 @@
 #
 # =================================================================
 
+import json
 from pathlib import Path
 
+from multiprocessing import Process, Manager
+import pytest
+from tinydb import TinyDB, Query
 from werkzeug.wrappers import Request
 from werkzeug.test import create_environ
-from multiprocessing import Process, Manager
-import json
 
-from tinydb import TinyDB, Query
-
-import pytest
-from pygeoapi.api import (
-    API, APIRequest
-)
+from pygeoapi.api import API, APIRequest
 from pygeoapi.util import yaml_load
-
 from .util import get_test_file_path
 
 
@@ -54,8 +50,14 @@ def config():
 
 
 @pytest.fixture()
-def api_(config):
-    return API(config)
+def openapi():
+    with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
+def api_(config, openapi):
+    return API(config, openapi)
 
 
 def _execute_process(api, request, process_id, index, processes_out):

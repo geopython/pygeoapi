@@ -359,9 +359,9 @@ def json_serial(obj: Any) -> str:
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
-    elif type(obj).__name__ == 'int64':
+    elif type(obj).__name__ in ['int32', 'int64']:
         return int(obj)
-    elif type(obj).__name__ == 'float64':
+    elif type(obj).__name__ in ['float32', 'float64']:
         return float(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
