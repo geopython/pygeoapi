@@ -34,7 +34,7 @@ import oracledb
 import pyproj
 from typing import Optional
 
-from pygeoapi.api import DEFAULT_STORAGE_CRS, DEFAULT_CRS
+from pygeoapi.api import DEFAULT_STORAGE_CRS
 
 from pygeoapi.provider.base import (
     BaseProvider,
@@ -334,7 +334,7 @@ class OracleProvider(BaseProvider):
         # CRS properties
         storage_crs_uri = provider_def.get("storage_crs", DEFAULT_STORAGE_CRS)
         self.storage_crs = get_crs_from_uri(storage_crs_uri)
-        
+
         # TODO See Issue #1393
         # default_crs_uri = provider_def.get("default_crs", DEFAULT_CRS)
         # self.default_crs = get_crs_from_uri(default_crs_uri)
@@ -348,9 +348,9 @@ class OracleProvider(BaseProvider):
         LOGGER.debug(f"Table:{self.table}")
         LOGGER.debug(f"sdo_mask: {self.sdo_mask}")
         LOGGER.debug(f"storage_crs {self.storage_crs}")
-        
+
         # TODO See Issue #1393
-        #LOGGER.debug(f"default_crs: {self.default_crs}")
+        # LOGGER.debug(f"default_crs: {self.default_crs}")
 
         self.get_fields()
 
