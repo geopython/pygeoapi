@@ -334,8 +334,10 @@ class OracleProvider(BaseProvider):
         # CRS properties
         storage_crs_uri = provider_def.get("storage_crs", DEFAULT_STORAGE_CRS)
         self.storage_crs = get_crs_from_uri(storage_crs_uri)
-        default_crs_uri = provider_def.get("default_crs", DEFAULT_CRS)
-        self.default_crs = get_crs_from_uri(default_crs_uri)
+        
+        # TODO See Issue #1393
+        # default_crs_uri = provider_def.get("default_crs", DEFAULT_CRS)
+        # self.default_crs = get_crs_from_uri(default_crs_uri)
 
         # SDO properties
         self.sdo_mask = provider_def.get("sdo_mask", "anyinteraction")
@@ -346,7 +348,9 @@ class OracleProvider(BaseProvider):
         LOGGER.debug(f"Table:{self.table}")
         LOGGER.debug(f"sdo_mask: {self.sdo_mask}")
         LOGGER.debug(f"storage_crs {self.storage_crs}")
-        LOGGER.debug(f"default_crs: {self.default_crs}")
+        
+        # TODO See Issue #1393
+        #LOGGER.debug(f"default_crs: {self.default_crs}")
 
         self.get_fields()
 
@@ -591,7 +595,10 @@ class OracleProvider(BaseProvider):
                 target_srid = self._get_srid_from_crs(target_crs)
             else:
                 source_srid = self._get_srid_from_crs(self.storage_crs)
-                target_srid = self._get_srid_from_crs(self.default_crs)
+                target_srid = source_srid
+
+                # TODO See Issue #1393
+                # target_srid = self._get_srid_from_crs(self.default_crs)
 
             LOGGER.debug(f"source_srid: {source_srid}")
             LOGGER.debug(f"target_srid: {target_srid}")
