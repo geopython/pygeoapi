@@ -749,7 +749,7 @@ class OracleProvider(BaseProvider):
 
         return id
 
-    def get(self, identifier, **kwargs):
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
         Query the provider for a specific
         feature id e.g: /collections/ocrl_lakes/items/1
@@ -767,15 +767,41 @@ class OracleProvider(BaseProvider):
             cursor = db.conn.cursor()
 
             crs_dict = {}
-            # TODO !!!!!!
-            # if self.target_crs and self.target_crs != self.source_crs:
-            #     geom_sql = f", sdo_cs.transform(t1.{self.geom}, \
-            #                                     :target_srid).get_geojson() \
-            #                     AS geometry "
-            #     crs_dict = {"target_srid": int(self.target_crs)}
-            # else:
-            #     geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
-            geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
+
+            # Get correct SRIDs
+            if crs_transform_spec is not None:
+                source_crs = pyproj.CRS.from_wkt(
+                    crs_transform_spec.source_crs_wkt
+                )
+                source_srid = self._get_srid_from_crs(source_crs)
+
+                target_crs = pyproj.CRS.from_wkt(
+                    crs_transform_spec.target_crs_wkt
+                )
+                target_srid = self._get_srid_from_crs(target_crs)
+
+            else:
+                source_srid = self._get_srid_from_crs(self.storage_crs)
+                target_srid = source_srid
+
+                # TODO See Issue #1393
+                # target_srid = self._get_srid_from_crs(self.default_crs)
+
+            LOGGER.debug(f"source_srid: {source_srid}")
+            LOGGER.debug(f"target_srid: {target_srid}")
+
+            # Build geometry column call
+            #   When a different output CRS is definded, the geometry
+            #   geometry column would be transformed.
+            if source_srid != target_srid:
+                crs_dict = {"target_srid": target_srid}
+
+                geom_sql = f""", sdo_cs.transform(t1.{self.geom},
+                                             :target_srid).get_geojson()
+                                    AS geometry """
+
+            else:
+                geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
 
             sql_query = f"SELECT {db.columns} {geom_sql} \
                             FROM {self.table} t1 \
