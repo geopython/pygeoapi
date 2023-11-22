@@ -26,6 +26,7 @@ parameters.
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
    `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
@@ -300,8 +301,6 @@ Oracle
         #     foo: bar
         # mandatory_properties:
         # - bbox
-        # source_crs: 31287 # defaults to 4326 if not provided
-        # target_crs: 31287 # defaults to 4326 if not provided
 
 The provider supports connection over host and port with SID or SERVICE_NAME. For TNS naming, the system 
 environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
