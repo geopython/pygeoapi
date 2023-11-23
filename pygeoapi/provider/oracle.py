@@ -235,7 +235,6 @@ class DatabaseConnection:
         Lookup for public and private synonyms.
         Throws ProviderGenericError when table not exist or accesable.
         """
-        cur = self.conn.cursor()
 
         sql = """
               SELECT COUNT(1)
@@ -244,8 +243,9 @@ class DatabaseConnection:
                  AND object_name = UPPER(:table_name)
                  AND owner = UPPER(:owner)
               """
-        cur.execute(sql, {"table_name": table, "owner": schema})
-        result = cur.fetchone()
+        with self.conn.cursor() as cur:
+            cur.execute(sql, {"table_name": table, "owner": schema})
+            result = cur.fetchone()
 
         if result[0] == 0:
             sql = """
@@ -254,8 +254,9 @@ class DatabaseConnection:
                    WHERE synonym_name = UPPER(:table_name)
                      AND owner = UPPER(:owner)
                   """
-            cur.execute(sql, {"table_name": table, "owner": schema})
-            result = cur.fetchone()
+            with self.conn.cursor() as cur:
+                cur.execute(sql, {"table_name": table, "owner": schema})
+                result = cur.fetchone()
 
             if result[0] == 0:
                 sql = """
@@ -264,8 +265,9 @@ class DatabaseConnection:
                        WHERE synonym_name = UPPER(:table_name)
                          AND owner = 'PUBLIC'
                       """
-                cur.execute(sql, {"table_name": table})
-                result = cur.fetchone()
+                with self.conn.cursor() as cur:
+                    cur.execute(sql, {"table_name": table})
+                    result = cur.fetchone()
 
                 if result[0] == 0:
                     raise ProviderGenericError(
@@ -281,8 +283,9 @@ class DatabaseConnection:
                    WHERE synonym_name = UPPER(:table_name)
                      AND owner = UPPER(:owner)
                   """
-            cur.execute(sql, {"table_name": table, "owner": schema})
-            result = cur.fetchone()
+            with self.conn.cursor() as cur:
+                cur.execute(sql, {"table_name": table, "owner": schema})
+                result = cur.fetchone()
 
             schema = result[0]
             table = result[1]
@@ -295,9 +298,9 @@ class DatabaseConnection:
                         AND owner = UPPER(:owner)
                         AND data_type != 'SDO_GEOMETRY'
                      """
-
-        cur.execute(query_cols, {"table_name": table, "owner": schema})
-        result = cur.fetchall()
+        with self.conn.cursor() as cur:
+            cur.execute(query_cols, {"table_name": table, "owner": schema})
+            result = cur.fetchall()
 
         return result
 
@@ -599,6 +602,8 @@ class OracleProvider(BaseProvider):
 
                 # TODO See Issue #1393
                 # target_srid = self._get_srid_from_crs(self.default_crs)
+                # If issue is not accepted, this block can be merged with
+                # the following block.
 
             LOGGER.debug(f"source_srid: {source_srid}")
             LOGGER.debug(f"target_srid: {target_srid}")
@@ -609,7 +614,7 @@ class OracleProvider(BaseProvider):
             if skip_geometry:
                 geom = ""
 
-            elif not skip_geometry and source_srid != target_srid:
+            elif source_srid != target_srid:
                 geom = f""", sdo_cs.transform(t1.{self.geom},
                                              :target_srid).get_geojson()
                              AS geometry """
@@ -786,6 +791,8 @@ class OracleProvider(BaseProvider):
 
                 # TODO See Issue #1393
                 # target_srid = self._get_srid_from_crs(self.default_crs)
+                # If issue is not accepted, this block can be merged with
+                # the following block.
 
             LOGGER.debug(f"source_srid: {source_srid}")
             LOGGER.debug(f"target_srid: {target_srid}")
