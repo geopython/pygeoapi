@@ -47,8 +47,9 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 import dateutil.parser
-import shapely.ops
+from shapely import ops
 from shapely.geometry import (
+    box,
     GeometryCollection,
     LinearRing,
     LineString,
@@ -358,9 +359,9 @@ def json_serial(obj: Any) -> str:
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
-    elif type(obj).__name__ == 'int64':
+    elif type(obj).__name__ in ['int32', 'int64']:
         return int(obj)
-    elif type(obj).__name__ == 'float64':
+    elif type(obj).__name__ in ['float32', 'float64']:
         return float(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
@@ -710,7 +711,7 @@ def get_transform_from_crs(
     crs_transform = pyproj.Transformer.from_crs(
         crs_in, crs_out, always_xy=always_xy,
     ).transform
-    return partial(shapely.ops.transform, crs_transform)
+    return partial(ops.transform, crs_transform)
 
 
 def crs_transform(func):
@@ -840,3 +841,16 @@ class UrlPrefetcher:
         except Exception:  # noqa
             return CaseInsensitiveDict()
         return response.headers
+
+
+def bbox2geojsongeometry(bbox: list) -> dict:
+    """
+    Converts bbox values into GeoJSON geometry
+
+    :param bbox: `list` of minx, miny, maxx, maxy
+
+    :returns: `dict` of GeoJSON geometry
+    """
+
+    b = box(*bbox, ccw=False)
+    return geom_to_geojson(b)

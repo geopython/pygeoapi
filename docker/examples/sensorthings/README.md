@@ -1,31 +1,51 @@
-# Pygeoapi with SensorThings (STA)
+# Setting up a pygeoapi server with SensorThings (STA) using Docker Compose
 
-This folder contains a Docker Compose configuration necessary to setup an example
-`pygeoapi` server using a STA endpoint. 
+This folder contains a Docker Compose configuration necessary to setup an example `pygeoapi` server using a STA endpoint. 
 
 This config is only for local development and testing.
 
+## Introduction
+
+The `pygeoapi` server with SensorThings (STA) provides a platform for publishing SensorThings API data as features. [SensorThings](https://github.com/opengeospatial/sensorthings) is a standardized way to provide access to Internet of Things (IoT) data, making it easier to manage and interact with sensor data.
+
 ## SensorThings Build options
 
-There are three example STA endpoints. To switch between examples, the `pygeoapi.config.yml` file used in the docker
-compose needs to be changed.
+There are two example SensorThings API (STA) endpoints available. To switch between examples, you need to change the `pygeoapi.config.yml` file used in the [Docker Compose file](docker-compose.yml).
 
-- The first, [brgm.sta.pygeoapi.config.yml](brgm.sta.pygeoapi.config.yml) creates a `pygeoapi` server serving the BRGM water quality endpoint. 
+1. [**brgm.config.yml**](brgm.config.yml): Configures a `pygeoapi` server to serve water quality data from BRGM (Bureau de Recherches Géologiques et Minières), the French Geological Survey.
 
-- The second, [iow.sta.pygeoapi.config.yml](iow.sta.pygeoapi.config.yml) creates a `pygeoapi` server hosting example IoW endpoint with URIs. 
+2. [**usgs.config.yml**](usgs.config.yml): Configures a `pygeoapi` server to serve data from the United States Geological Survey (USGS).
 
-- The final config, [sta.pygeoapi.config.yml](sta.pygeoapi.config.yml) creates a `pygeoapi` server inside of a muti-container Docker app,
-and linked to an empty [FROST server](https://fraunhoferiosb.github.io/FROST-Server/). To use this configuration, 
-uncomment Lines 40 - 70 of the docker-compose.yml file in addition to changing the pygeoapi config. The 
-database can be populated following a workflow similar to that of the populator script for build testing, `load_sta_data.py`.
-`Note: The pygeoapi server will fail to build until the STA server has been populated, thus the addition of always restart`
+
+### Additional details
+- [**docker-compose.yml**](docker-compose.yml): Defines the Docker Compose configuration for orchestrating the `pygeoapi` server examples. It specifies the Docker image to use, the ports to expose, and the volumes to mount.
+
+- The BRGM water quality endpoint provides access to water quality data from BRGM, the French Geological Survey.
+
+- The USGS data endpoint provides access to data from the United States Geological Survey (USGS).
+
+### Which build option should I choose?
+
+The best build option for you will depend on your specific needs. If you are interested in accessing water quality data from the BRGM, then you should choose the `brgm.config.yml` file. If you are interested in accessing data from the USGS, then you should choose the `usgs.config.yml` file.
+
+If you are not sure which build option to choose, you can start with the `brgm.config.yml` file. This is the simplest build option and it provides access to a _real-world dataset_.
 
 ## SensorThings Usage
 
-After editing the [docker-compose.yml](docker-compose.yml) file appropriately:
+After editing the [docker-compose.yml](docker-compose.yml) file appropriately, you can start the `pygeoapi` container using the following command:
 
-```
+```bash
 docker compose up [-d]
 ```
 
-Navigate to `localhost:5000`.
+This command will create and start the pygeoapi container, republishing SensorThings data. You can then access the pygeoapi server at http://localhost:5000.
+
+## Stopping and Removing Containers
+
+To stop and remove the containers, use the following command:
+
+```bash
+docker compose down
+```
+
+Please ensure you have the necessary requirements installed before following the setup instructions.

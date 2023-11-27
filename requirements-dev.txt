@@ -1,9 +1,6 @@
 # Flask-based CORS setup
 flask_cors
 
-# Generate pydantic models from json schema
-datamodel-code-generator
-
 # testing
 pytest
 pytest-cov

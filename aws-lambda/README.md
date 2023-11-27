@@ -12,7 +12,7 @@ environment: zappa and node/serverless.
 
 ## zappa
 
-[zappa](https://www.zappa.io) provides Python tooling to interact with AWS lambda.  Ensure the environment
+[Zappa](https://github.com/zappa/Zappa) provides Python tooling to interact with AWS lambda.  Ensure the environment
 variables `AWS_ACCESS_KEY` and `AWS_SECRET_ACCESS_KEY` are set and available.
 
 ```bash

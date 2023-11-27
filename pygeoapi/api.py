@@ -641,16 +641,18 @@ class APIRequest:
 class API:
     """API object"""
 
-    def __init__(self, config):
+    def __init__(self, config, openapi):
         """
         constructor
 
         :param config: configuration dict
+        :param openapi: openapi dict
 
         :returns: `pygeoapi.API` instance
         """
 
         self.config = config
+        self.openapi = openapi
         self.api_headers = get_api_rules(self.config).response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
@@ -790,8 +792,8 @@ class API:
 
     @gzip
     @pre_process
-    def openapi(self, request: Union[APIRequest, Any],
-                openapi) -> Tuple[dict, int, str]:
+    def openapi_(self, request: Union[APIRequest, Any]) -> Tuple[
+                 dict, int, str]:
         """
         Provide OpenAPI document
 
@@ -821,10 +823,11 @@ class API:
 
         headers['Content-Type'] = 'application/vnd.oai.openapi+json;version=3.0'  # noqa
 
-        if isinstance(openapi, dict):
-            return headers, HTTPStatus.OK, to_json(openapi, self.pretty_print)
+        if isinstance(self.openapi, dict):
+            return headers, HTTPStatus.OK, to_json(self.openapi,
+                                                   self.pretty_print)
         else:
-            return headers, HTTPStatus.OK, openapi
+            return headers, HTTPStatus.OK, self.openapi
 
     @gzip
     @pre_process
@@ -1653,6 +1656,12 @@ class API:
                               select_properties=select_properties,
                               crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
+        except ProviderInvalidQueryError as err:
+            LOGGER.error(err)
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -2057,7 +2066,7 @@ class API:
         else:
             LOGGER.debug('processing Elasticsearch CQL_JSON data')
             try:
-                filter_ = CQLModel.parse_raw(data)
+                filter_ = CQLModel.model_validate_json(data)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
@@ -2074,6 +2083,12 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q,
                               filterq=filter_)
+        except ProviderInvalidQueryError as err:
+            LOGGER.error(err)
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderConnectionError as err:
             LOGGER.error(err)
             msg = 'connection error (check logs)'
@@ -3853,6 +3868,11 @@ class API:
 
         try:
             data = p.query(**query_args)
+        except ProviderInvalidQueryError as err:
+            msg = f'query error: {err}'
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidQuery', msg)
         except ProviderNoDataError:
             msg = 'No data found'
             return self.get_exception(

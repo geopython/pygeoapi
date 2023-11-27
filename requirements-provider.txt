@@ -6,6 +6,7 @@ fiona
 #GDAL>=3.0.0
 geoalchemy
 netCDF4
+oracledb
 pandas; python_version < '3.7'
 pandas==1.2.5; python_version >= '3.7'
 psycopg2
@@ -17,3 +18,4 @@ scipy
 sodapy
 xarray
 zarr
+s3fs<=2023.6.0

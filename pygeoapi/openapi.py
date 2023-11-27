@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -1009,6 +1009,10 @@ def get_oas_30(cfg):
                     })
 
             for eqe in edr_query_endpoints:
+                if eqe['qt'] == 'cube':
+                    spatial_parameter = 'bbox'
+                else:
+                    spatial_parameter = f"{eqe['qt']}Coords.yaml"
                 paths[eqe['path']] = {
                     'get': {
                         'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
@@ -1016,7 +1020,7 @@ def get_oas_30(cfg):
                         'tags': [k],
                         'operationId': eqe['op_id'],
                         'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{eqe['qt']}Coords.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
@@ -1362,6 +1366,24 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
     else:
         content = to_json(get_oas(s), pretty=pretty_print)
     return content
+
+
+def load_openapi_document() -> dict:
+    """
+    Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
+
+    :returns: `dict` of OpenAPI document
+    """
+
+    pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
+
+    with open(pygeoapi_openapi, encoding='utf8') as ff:
+        if pygeoapi_openapi.endswith(('.yaml', '.yml')):
+            openapi_ = yaml_load(ff)
+        else:  # JSON string, do not transform
+            openapi_ = ff.read()
+
+    return openapi_
 
 
 @click.group()

@@ -58,10 +58,11 @@ services:
     build: ./ES
 
     container_name: elastic
-
-    ports:
-      - 9300:9300
-      - 9200:9200
+# Elastic ports may be opened for debugging but should remain closed in
+# production workloads.
+    # ports:
+    #   - 9300:9300
+    #   - 9200:9200
     volumes:
       - elastic_search_data:/usr/share/elasticsearch/data
 

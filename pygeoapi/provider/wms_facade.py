@@ -140,4 +140,4 @@ class WMSFacadeProvider(BaseProvider):
         return response.content
 
     def __repr__(self):
-        return f'<MapScriptProvider> {self.data}'
+        return f'<WMSFacadeProvider> {self.data}'

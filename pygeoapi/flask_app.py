@@ -37,6 +37,7 @@ import click
 from flask import Flask, Blueprint, make_response, request, send_from_directory
 
 from pygeoapi.api import API
+from pygeoapi.openapi import load_openapi_document
 from pygeoapi.util import get_mimetype, yaml_load, get_api_rules
 
 
@@ -45,6 +46,11 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
+
+if 'PYGEOAPI_OPENAPI' not in os.environ:
+    raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
+
+OPENAPI = load_openapi_document()
 
 API_RULES = get_api_rules(CONFIG)
 
@@ -73,7 +79,7 @@ if CONFIG['server'].get('cors', False):
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
 
-api_ = API(CONFIG)
+api_ = API(CONFIG, OPENAPI)
 
 OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
 
@@ -139,13 +145,7 @@ def openapi():
 
     :returns: HTTP response
     """
-    with open(os.environ.get('PYGEOAPI_OPENAPI'), encoding='utf8') as ff:
-        if os.environ.get('PYGEOAPI_OPENAPI').endswith(('.yaml', '.yml')):
-            openapi_ = yaml_load(ff)
-        else:  # JSON string, do not transform
-            openapi_ = ff.read()
-
-    return get_response(api_.openapi(request, openapi_))
+    return get_response(api_.openapi_(request))
 
 
 @BLUEPRINT.route('/conformance')

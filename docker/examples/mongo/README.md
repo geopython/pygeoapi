@@ -7,7 +7,7 @@ This config is only for local development and testing.
 
 ## MongoDB
 
-- official MongoDB: **6.0.7** on **Ubuntu Focal**
+- official MongoDB: **7.0.2** on **Ubuntu Focal**
 - ports **27017**
 
 ## Building and Running

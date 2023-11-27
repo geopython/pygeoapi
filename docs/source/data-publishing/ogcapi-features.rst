@@ -266,6 +266,54 @@ Here `test` is the name of database , `points` is the target collection name.
          data: mongodb://localhost:27017/testdb
          collection: testplaces
 
+.. _Oracle:
+
+Oracle
+^^^^^^
+
+.. note::
+  Requires Python package oracledb
+
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521 # defaults to 1521 if not provided
+            service_name: XEPDB1
+            # sid: XEPDB1
+            user: geo_test
+            password: geo_test
+            # external_auth: wallet
+            # tns_name: XEPDB1
+            # tns_admin /opt/oracle/client/network/admin 
+            # init_oracle_client: True
+
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        # sql_manipulator: tests.test_oracle_provider.SqlManipulator
+        # sql_manipulator_options:
+        #     foo: bar
+        # mandatory_properties:
+        # - bbox
+        # source_crs: 31287 # defaults to 4326 if not provided
+        # target_crs: 31287 # defaults to 4326 if not provided
+
+The provider supports connection over host and port with SID or SERVICE_NAME. For TNS naming, the system 
+environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
+
+The providers supports external authentication. At the moment only wallet authentication is implemented.
+
+Sometimes it is necessary to use the Oracle client for the connection. In this case init_oracle_client must be set to True.
+
+The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
+useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
+
+An example an more informations about that feature you can find in the test class in tests/test_oracle_provider.py.
 
 .. _PostgreSQL:
 
@@ -292,6 +340,43 @@ Must have PostGIS installed.
              user: postgres
              password: postgres
              search_path: [osm, public]
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
+
+A number of database connection options can be also configured in the provider in order to adjust properly the sqlalchemy engine client.
+These are optional and if not specified, the default from the engine will be used. Please see also `SQLAlchemy docs <https://docs.sqlalchemy.org/en/14/core/engines.html#custom-dbapi-connect-arguments-on-connect-routines>`_.
+
+.. code-block:: yaml
+
+    providers:
+       - type: feature
+         name: PostgreSQL
+         data:
+             host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided
+             dbname: test
+             user: postgres
+             password: postgres
+             search_path: [osm, public]
+         options:
+             # Maximum time to wait while connecting, in seconds.
+             connect_timeout: 10
+             # Number of *milliseconds* that transmitted data may remain
+             # unacknowledged before a connection is forcibly closed.
+             tcp_user_timeout: 10000
+             # Whether client-side TCP keepalives are used. 1 = use keepalives,
+             # 0 = don't use keepalives.
+             keepalives: 1
+             # Number of seconds of inactivity after which TCP should send a
+             # keepalive message to the server.
+             keepalives_idle: 5
+             # Number of TCP keepalives that can be lost before the client's
+             # connection to the server is considered dead.
+             keepalives_count: 5
+             # Number of seconds after which a TCP keepalive message that is not
+             # acknowledged by the server should be retransmitted.
+             keepalives_interval: 1
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom

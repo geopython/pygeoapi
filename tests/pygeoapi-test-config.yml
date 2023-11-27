@@ -314,6 +314,37 @@ resources:
                   name: NetCDF
                   mimetype: application/x-netcdf
 
+    usgs-prism:
+        type: collection
+        title: Parameter-elevation Regressions on Independent Slopes Model (PRISM)
+        description: PRISM Monthly Climate Data for the Continental United States
+        keywords:
+            - temperature
+            - precipitation
+        extents:
+            spatial:
+                bbox: [-125.020836, 24.104166, -66.520836, 49.9375]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://cida.usgs.gov/thredds/catalog.html?dataset=cida.usgs.gov/prism_v2
+              hreflang: en-US
+        providers:
+            - type: edr
+              name: xarray-edr
+              data: s3://mdmf/gdp/PRISM_v2.zarr
+              format:
+                  name: zarr
+                  mimetype: application/zip
+              options:
+                  s3:
+                    anon: true
+                    requester_pays: false
+                    client_kwargs:
+                        endpoint_url: https://usgs.osn.mghpcc.org/
+    
     objects:
         type: collection
         title: GeoJSON objects
