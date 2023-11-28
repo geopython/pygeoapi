@@ -84,23 +84,20 @@ The ``logging`` section provides directives for logging messages which are usefu
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
       logformat: # example for miliseconds:'[%(asctime)s.%(msecs)03d] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
       dateformat: # example for miliseconds:'%Y-%m-%dT%H:%M:%S'
-      rotation:
-          mode: # [None|time|size]
-          when: # [s|m|h|d|w0-w6|midnight]
-          interval: 
-          max_bytes: 
-          backup_count: 
+
 .. note::
    If ``level`` is defined and ``logfile`` is undefined, logging messages are output to the server's ``stdout``.
 
 
-``rotation``
+``logfile rotation``
+^^^^^^^^^^^
 
-The ``rotation`` supports rotation of disk log files. The ``logfile`` file is opened and used as the stream for logging.
+The ``logfile rotation`` supports rotation of disk log files. The ``logfile`` file is opened and used as the stream for logging.
 
 .. code-block:: yaml
 
   logging:
+      logfile: /path/to/pygeoapi.log  # the full file path to the logfile
       rotation:
           mode: # [None|time|size]
           when: # [s|m|h|d|w0-w6|midnight]
@@ -109,8 +106,13 @@ The ``rotation`` supports rotation of disk log files. The ``logfile`` file is op
           backup_count: 
 .. note::
   The ``mode`` can be defined by size or time.
-  For RotatingFileHandler set mode size and parameters max_bytes and backup_count.
-  For TimedRotatingFileHandler set mode time and parameters when, interval and backup_count.
+  For RotatingFileHandler_ set mode size and parameters max_bytes and backup_count.
+
+  .. _RotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#rotatingfilehandler
+
+  For TimedRotatingFileHandler_ set mode time and parameters when, interval and backup_count.
+  
+  .. _TimedRotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler
 
 
 ``metadata``
