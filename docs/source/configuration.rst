@@ -99,13 +99,13 @@ The ``logfile rotation`` supports rotation of disk log files. The ``logfile`` fi
   logging:
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
       rotation:
-          mode: # [None|time|size]
+          mode: # [time|size]
           when: # [s|m|h|d|w0-w6|midnight]
           interval: 
           max_bytes: 
           backup_count: 
 .. note::
-  The ``mode`` can be defined by size or time.
+  Rotation block is not mandatory and defined only when needed. The ``mode`` can be defined by size or time.
   For RotatingFileHandler_ set mode size and parameters max_bytes and backup_count.
 
   .. _RotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#rotatingfilehandler
