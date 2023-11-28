@@ -1009,6 +1009,10 @@ def get_oas_30(cfg):
                     })
 
             for eqe in edr_query_endpoints:
+                if eqe['qt'] == 'cube':
+                    spatial_parameter = 'bbox'
+                else:
+                    spatial_parameter = f"{eqe['qt']}Coords.yaml"
                 paths[eqe['path']] = {
                     'get': {
                         'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
@@ -1016,7 +1020,7 @@ def get_oas_30(cfg):
                         'tags': [k],
                         'operationId': eqe['op_id'],
                         'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{eqe['qt']}Coords.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa

@@ -2002,15 +2002,6 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
-    # S3 EDR
-    req = mock_request({
-        'coords': 'POINT(-100 40)',
-        'parameter-name': 'GWETROOT'
-    })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'nasa-power', None, 'position')
-    assert code == HTTPStatus.OK
-
     # position no coords
     req = mock_request({
         'datetime': '2000-01-17'
@@ -2040,6 +2031,17 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'cube')
     assert code == HTTPStatus.BAD_REQUEST
+
+    # cube decreasing latitude coords and S3
+    req = mock_request({
+        'bbox': '-100,40,-99,45',
+        'parameter-name': 'tmn',
+        'datetime': '1994-01-01/1994-12-31',
+    })
+
+    rsp_headers, code, response = api_.get_collection_edr_query(
+        req, 'usgs-prism', None, 'cube')
+    assert code == HTTPStatus.OK
 
 
 def test_validate_bbox():
