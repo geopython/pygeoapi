@@ -107,6 +107,7 @@ F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
 F_MVT = 'mvt'
+F_NETCDF = 'NetCDF'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
@@ -114,7 +115,8 @@ FORMAT_TYPES = OrderedDict((
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
     (F_PNG, 'image/png'),
-    (F_MVT, 'application/vnd.mapbox-vector-tile')
+    (F_MVT, 'application/vnd.mapbox-vector-tile'),
+    (F_NETCDF, 'application/x-netcdf'),
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -2433,11 +2435,10 @@ class API:
         """
 
         query_args = {}
-        format_ = F_JSON
+        format_ = request.format or F_JSON
 
         # Force response content type and language (en-US only) headers
         headers = request.get_response_headers(SYSTEM_LOCALE,
-                                               FORMAT_TYPES[F_JSON],
                                                **self.api_headers)
 
         LOGGER.debug('Loading provider')
@@ -2499,10 +2500,7 @@ class API:
                 'InvalidParameterValue', msg)
 
         query_args['datetime_'] = datetime_
-
-        if 'f' in request.params:
-            # Format explicitly set using a query parameter
-            query_args['format_'] = format_ = request.format
+        query_args['format_'] = format_
 
         properties = request.params.get('properties')
         if properties:
