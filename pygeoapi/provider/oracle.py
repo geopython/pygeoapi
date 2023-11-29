@@ -343,13 +343,15 @@ class OracleProvider(BaseProvider):
         # self.default_crs = get_crs_from_uri(default_crs_uri)
 
         # SDO properties
-        self.sdo_mask = provider_def.get("sdo_mask", "anyinteraction")
+        self.sdo_param = provider_def.get("sdo_param")
+        self.sdo_operator = provider_def.get("sdo_operator", "sdo_filter")
 
         LOGGER.debug("Setting Oracle properties:")
         LOGGER.debug(f"Name:{self.name}")
         LOGGER.debug(f"ID_field:{self.id_field}")
         LOGGER.debug(f"Table:{self.table}")
-        LOGGER.debug(f"sdo_mask: {self.sdo_mask}")
+        LOGGER.debug(f"sdo_param: {self.sdo_param}")
+        LOGGER.debug(f"sdo_operator: {self.sdo_operator}")
         LOGGER.debug(f"storage_crs {self.storage_crs}")
 
         # TODO See Issue #1393
@@ -373,7 +375,12 @@ class OracleProvider(BaseProvider):
         return self.fields
 
     def _get_where_clauses(
-        self, properties, bbox, bbox_crs, sdo_mask="anyinteraction"
+        self,
+        properties,
+        bbox,
+        bbox_crs,
+        sdo_param=None,
+        sdo_operator="sdo_filter",
     ):
         """
         Generarates WHERE conditions to be implemented in query.
@@ -397,33 +404,72 @@ class OracleProvider(BaseProvider):
         if bbox:
             bbox_dict = {"clause": "", "properties": {}}
 
-            sdo_mask = f"mask={sdo_mask}"
+            if sdo_operator == "sdo_relate":
+                if not sdo_param:
+                    sdo_param = "mask=anyinteract"
 
-            bbox_dict["properties"] = {
-                "srid": self._get_srid_from_crs(bbox_crs),
-                "minx": bbox[0],
-                "miny": bbox[1],
-                "maxx": bbox[2],
-                "maxy": bbox[3],
-                "sdo_mask": sdo_mask,
-            }
+                bbox_dict["properties"] = {
+                    "srid": self._get_srid_from_crs(bbox_crs),
+                    "minx": bbox[0],
+                    "miny": bbox[1],
+                    "maxx": bbox[2],
+                    "maxy": bbox[3],
+                    "sdo_param": sdo_param,
+                }
 
-            bbox_dict[
-                "clause"
-            ] = f"sdo_relate({self.geom}, \
-                             mdsys.sdo_geometry(2003, \
-                                                :srid, \
-                                                NULL, \
-                                                mdsys.sdo_elem_info_array(\
-                                                    1, \
-                                                    1003, \
-                                                    3\
-                                                ), \
-                             mdsys.sdo_ordinate_array(:minx, \
-                                                      :miny, \
-                                                      :maxx, \
-                                                      :maxy)), \
-                             :sdo_mask) = 'TRUE'"
+                bbox_query = f"""
+                sdo_relate({self.geom},
+                           mdsys.sdo_geometry(2003,
+                                              :srid,
+                                              NULL,
+                                              mdsys.sdo_elem_info_array(
+                                                    1,
+                                                    1003,
+                                                    3
+                                              ),
+                                              mdsys.sdo_ordinate_array(
+                                                    :minx,
+                                                    :miny,
+                                                    :maxx,
+                                                    :maxy
+                                              )
+                           ),
+                           :sdo_param
+                ) = 'TRUE'
+                """
+
+            else:
+                bbox_dict["properties"] = {
+                    "srid": self._get_srid_from_crs(bbox_crs),
+                    "minx": bbox[0],
+                    "miny": bbox[1],
+                    "maxx": bbox[2],
+                    "maxy": bbox[3],
+                    "sdo_param": sdo_param,
+                }
+
+                bbox_query = f"""
+                sdo_filter({self.geom},
+                           mdsys.sdo_geometry(2003,
+                                              :srid,
+                                              NULL,
+                                              mdsys.sdo_elem_info_array(
+                                                    1,
+                                                    1003,
+                                                    3
+                                              ),
+                                              mdsys.sdo_ordinate_array(
+                                                    :minx,
+                                                    :miny,
+                                                    :maxx,
+                                                    :maxy
+                                              )
+                           ),
+                           :sdo_param
+                ) = 'TRUE'
+                """
+
+            bbox_dict["clause"] = bbox_query
 
             where_conditions.append(bbox_dict["clause"])
             where_dict["properties"].update(bbox_dict["properties"])
@@ -541,7 +587,8 @@ class OracleProvider(BaseProvider):
                     properties=properties,
                     bbox=bbox,
                     bbox_crs=self.storage_crs,
-                    sdo_mask=self.sdo_mask,
+                    sdo_param=self.sdo_param,
+                    sdo_operator=self.sdo_operator,
                 )
 
                 # Not dangerous to use self.table as substitution,
@@ -582,7 +629,8 @@ class OracleProvider(BaseProvider):
                 properties=properties,
                 bbox=bbox,
                 bbox_crs=self.storage_crs,
-                sdo_mask=self.sdo_mask,
+                sdo_param=self.sdo_param,
+                sdo_operator=self.sdo_operator,
             )
 
             # Get correct SRID
