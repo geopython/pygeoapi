@@ -50,8 +50,3 @@ class MVTTilesJson(BaseModel):
     # attribution: Optional[str]
     description: Optional[str]
     vector_layers: Optional[List[VectorLayers]]
-
-
-
-
-
