@@ -41,12 +41,12 @@ class VectorLayers(BaseModel):
 
 class MVTTilesJson(BaseModel):
     tilejson: str = "3.0.0"
-    name: Optional[str]
-    tiles: Optional[str]
-    minzoom: Optional[int]
-    maxzoom: Optional[int]
-    bounds: Optional[str]
-    center: Optional[str]
-    attribution: Optional[str]
-    description: Optional[str]
-    vector_layers: Optional[List[VectorLayers]]
+    name: Optional[str] = None
+    tiles: Optional[str]  = None
+    minzoom: Optional[int] = None
+    maxzoom: Optional[int] = None
+    bounds: Optional[str] = None
+    center: Optional[str] = None
+    attribution: Optional[str] = None
+    description: Optional[str] = None
+    vector_layers: Optional[List[VectorLayers]] = None
