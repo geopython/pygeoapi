@@ -280,11 +280,11 @@ class MVTProvider(BaseTileProvider):
         content = {}
         if metadata_format == TilesMetadataFormat.TILEJSON:
             if 'metadata_json_content' in locals():
+                metadata_json_content["tiles"] = service_url
+                metadata_json_content["vector_layers"] = json.loads(
+                         metadata_json_content["json"])["vector_layers"]
                 content = MVTTilesJson(**metadata_json_content)
-                content.tiles = service_url
-                content.vector_layers = json.loads(
-                        metadata_json_content["json"])["vector_layers"]
-                return content.dict()
+                return content.model_dump()
             else:
                 msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
                 LOGGER.error(msg)

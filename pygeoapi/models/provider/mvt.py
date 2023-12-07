@@ -47,6 +47,11 @@ class MVTTilesJson(BaseModel):
     maxzoom: Optional[int]
     bounds: Optional[str]
     center: Optional[str]
-    attribution: Optional[str]
+    # attribution: Optional[str]
     description: Optional[str]
     vector_layers: Optional[List[VectorLayers]]
+
+
+
+
+
