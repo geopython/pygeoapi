@@ -211,9 +211,12 @@ def geojson2jsonld(cls, data: dict, dataset: str,
         data.update(data.pop('properties'))
 
         # Include multiple geometry encodings
-        data['type'] = 'schema:Place'
-        jsonldify_geometry(data)
-        data['@id'] = identifier
+        # if data.get('geometry') is not null:
+
+        if (data.get('geometry') is not None):
+            data['type'] = 'schema:Place'
+            jsonldify_geometry(data)
+            data['@id'] = identifier
 
     else:
         # Collection of jsonld
