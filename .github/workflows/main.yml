@@ -20,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.8
           architecture: x64
       - name: Checkout pygeoapi
         uses: actions/checkout@master
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: 3.7
+          - python-version: 3.8
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
