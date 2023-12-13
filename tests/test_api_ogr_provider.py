@@ -56,7 +56,7 @@ def openapi():
 
 
 @pytest.fixture()
-def api_(config):
+def api_(config, openapi):
     return API(config, openapi)
 
 

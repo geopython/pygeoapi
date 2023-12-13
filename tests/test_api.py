@@ -94,13 +94,13 @@ def api_(config, openapi):
 
 
 @pytest.fixture()
-def enclosure_api(config_enclosure):
+def enclosure_api(config_enclosure, openapi):
     """ Returns an API instance with a collection with enclosure links. """
     return API(config_enclosure, openapi)
 
 
 @pytest.fixture()
-def rules_api(config_with_rules):
+def rules_api(config_with_rules, openapi):
     """ Returns an API instance with URL prefix and strict slashes policy.
     The API version is extracted from the current version here.
     """
@@ -108,7 +108,7 @@ def rules_api(config_with_rules):
 
 
 @pytest.fixture()
-def api_hidden_resources(config_hidden_resources):
+def api_hidden_resources(config_hidden_resources, openapi):
     return API(config_hidden_resources, openapi)
 
 
