@@ -30,7 +30,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
@@ -268,7 +267,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 LOGGER.debug('Reversing slicing from high to low')
                 return slice(end, begin)
         else:
-            return pd.Timestamp(datetime_)
+            return np.datetime64(datetime_)
 
     def _get_time_range(self, data):
         """
