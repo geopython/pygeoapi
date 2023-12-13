@@ -15,7 +15,7 @@ on:
 
 jobs:
   flake8_py3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -35,7 +35,7 @@ jobs:
 
   main:
     needs: [flake8_py3]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
