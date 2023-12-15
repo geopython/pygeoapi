@@ -1185,7 +1185,7 @@ class API:
             except ProviderTypeError:
                 edr = None
 
-            if edr and dataset is not None:
+            if edr:
                 # TODO: translate
                 LOGGER.debug('Adding EDR links')
                 try:
