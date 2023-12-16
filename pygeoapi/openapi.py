@@ -1012,7 +1012,7 @@ def get_oas_30(cfg):
                 if eqe['qt'] == 'cube':
                     spatial_parameter = 'bbox'
                 else:
-                    spatial_parameter = f"{eqe['qt']}Coords.yaml"
+                    spatial_parameter = f"{eqe['qt']}Coords"
                 paths[eqe['path']] = {
                     'get': {
                         'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
