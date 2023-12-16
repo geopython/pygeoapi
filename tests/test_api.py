@@ -1883,7 +1883,7 @@ def test_get_collection_edr_query(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
-    parameter_names = list(collection['parameter-names'].keys())
+    parameter_names = list(collection['parameter_names'].keys())
     parameter_names.sort()
     assert len(parameter_names) == 4
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
@@ -1905,9 +1905,9 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
-    # bad parameter-name parameter
+    # bad parameter_names parameter
     req = mock_request({
-        'coords': 'POINT(11 11)', 'parameter-name': 'bad'
+        'coords': 'POINT(11 11)', 'parameter_names': 'bad'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
@@ -1938,7 +1938,7 @@ def test_get_collection_edr_query(config, api_):
 
     # single parameter
     req = mock_request({
-        'coords': 'POINT(11 11)', 'parameter-name': 'SST'
+        'coords': 'POINT(11 11)', 'parameter_names': 'SST'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
@@ -2055,7 +2055,7 @@ def test_get_collection_edr_query(config, api_):
     # cube decreasing latitude coords and S3
     req = mock_request({
         'bbox': '-100,40,-99,45',
-        'parameter-name': 'tmn',
+        'parameter_names': 'tmn',
         'datetime': '1994-01-01/1994-12-31',
     })
 

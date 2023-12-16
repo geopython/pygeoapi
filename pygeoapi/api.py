@@ -1196,9 +1196,9 @@ class API:
                 LOGGER.debug('Adding EDR links')
                 parameters = p.get_fields()
                 if parameters:
-                    collection['parameter-names'] = {}
+                    collection['parameter_names'] = {}
                     for f in parameters['field']:
-                        collection['parameter-names'][f['id']] = f
+                        collection['parameter_names'][f['id']] = f
 
                 for qt in p.get_query_types():
                     collection['links'].append({
@@ -3764,8 +3764,8 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        LOGGER.debug('Processing parameter-name parameter')
-        parameternames = request.params.get('parameter-name') or []
+        LOGGER.debug('Processing parameter_names parameter')
+        parameternames = request.params.get('parameter_names') or []
         if isinstance(parameternames, str):
             parameternames = parameternames.split(',')
 
@@ -3841,7 +3841,7 @@ class API:
 
         if parameternames and not any((fld['id'] in parameternames)
                                       for fld in p.get_fields()['field']):
-            msg = 'Invalid parameter-name'
+            msg = 'Invalid parameter_names'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
