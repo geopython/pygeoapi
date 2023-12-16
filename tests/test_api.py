@@ -1449,8 +1449,11 @@ def test_get_collection_coverage(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
 
-    assert code == HTTPStatus.OK
-    assert rsp_headers['Content-Type'] == 'application/prs.coverage+json'
+    # NOTE: This test used to assert the code to be 200 OK,
+    #       but it requested HTML, which is not available,
+    #       so it should be 400 Bad Request
+    assert code == HTTPStatus.BAD_REQUEST
+    assert rsp_headers['Content-Type'] == 'text/html'
 
     req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
@@ -1486,6 +1489,13 @@ def test_get_collection_coverage(config, api_):
 
     assert code == HTTPStatus.OK
     assert isinstance(response, bytes)
+
+    req = mock_request(HTTP_ACCEPT='application/x-netcdf')
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req, 'cmip5')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'application/x-netcdf'
 
     # req = mock_request({
     #     'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
