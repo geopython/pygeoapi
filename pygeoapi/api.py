@@ -3314,7 +3314,7 @@ class API:
                 if process is None:
                     p2.pop('inputs')
                     p2.pop('outputs')
-                    p2.pop('example')
+                    p2.pop('example', None)
 
                 p2['jobControlOptions'] = ['sync-execute']
                 if self.manager.is_async:

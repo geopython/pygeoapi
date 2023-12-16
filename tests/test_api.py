@@ -1633,6 +1633,16 @@ def test_describe_processes(config, api_):
     assert data['code'] == 'NoSuchProcess'
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
+    # Test describe doesn't crash if example is missing
+    req = mock_request()
+    processor = api_.manager.get_processor("hello-world")
+    example = processor.metadata.pop("example")
+    rsp_headers, code, response = api_.describe_processes(req)
+    processor.metadata['example'] = example
+    data = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert len(data['processes']) == 2
+
 
 def test_execute_process(config, api_):
     req_body_0 = {
