@@ -35,16 +35,18 @@ from flask import Blueprint, request, make_response
 
 from pygeoapi.admin import Admin
 from pygeoapi.config import get_config
+from pygeoapi.openapi import load_openapi_document
 
 LOGGER = logging.getLogger(__name__)
 
 CONFIG = get_config()
+OPENAPI = load_openapi_document()
 
 STATIC_FOLDER = 'static'
 if 'templates' in CONFIG['server']:
     STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
 
-admin_ = Admin(CONFIG)
+admin_ = Admin(CONFIG, OPENAPI)
 ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
 
 

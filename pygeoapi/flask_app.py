@@ -43,11 +43,10 @@ from pygeoapi.util import get_mimetype, get_api_rules
 from pygeoapi.flask_admin import ADMIN_BLUEPRINT
 
 
-CONFIG = get_config()
-
 if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
 
+CONFIG = get_config()
 OPENAPI = load_openapi_document()
 
 API_RULES = get_api_rules(CONFIG)

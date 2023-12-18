@@ -50,19 +50,20 @@ LOGGER = logging.getLogger(__name__)
 class Admin(API):
     """Admin object"""
 
-    PYGEOAPI_CONFIG = os.environ.get("PYGEOAPI_CONFIG")
-    PYGEOAPI_OPENAPI = os.environ.get("PYGEOAPI_OPENAPI")
+    PYGEOAPI_CONFIG = os.environ.get('PYGEOAPI_CONFIG')
+    PYGEOAPI_OPENAPI = os.environ.get('PYGEOAPI_OPENAPI')
 
-    def __init__(self, config):
+    def __init__(self, config, openapi):
         """
         constructor
 
         :param config: configuration dict
+        :param openapi: openapi dict
 
-        :returns: `wis2box_api.Admin` instance
+        :returns: `pygeoapi.API` instance
         """
 
-        super().__init__(config)
+        super().__init__(config, openapi)
 
     def validate(self, config):
         """
