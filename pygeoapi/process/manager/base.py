@@ -177,8 +177,12 @@ class BaseManager:
 
         raise JobNotFoundError()
 
-    def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[str, None, JobStatus]:
+    def _execute_handler_async(
+            self,
+            p: BaseProcessor,
+            job_id: str,
+            data_dict: dict, out_dict: Optional[dict] = None
+    ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -194,13 +198,18 @@ class BaseManager:
         """
         _process = dummy.Process(
             target=self._execute_handler_sync,
-            args=(p, job_id, data_dict)
+            args=(p, job_id, data_dict, out_dict)
         )
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
-    def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
-                              data_dict: dict) -> Tuple[str, Any, JobStatus]:
+    def _execute_handler_sync(
+            self,
+            p: BaseProcessor,
+            job_id: str,
+            data_dict: dict,
+            out_dict: Optional[dict] = None
+    ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
@@ -211,6 +220,10 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param out_dict: `dict` optionally specify the subset of required
+        outputs - defaults to all outputs.
+        The value of any key may be an object and include the property
+        `transmissionMode` - defauts to `value`.
 
         :returns: tuple of MIME type, response payload and status
         """
@@ -312,7 +325,8 @@ class BaseManager:
             self,
             process_id: str,
             data_dict: dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
+            execution_mode: Optional[RequestedProcessExecutionMode] = None,
+            out_dict: Optional[dict] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -321,6 +335,10 @@ class BaseManager:
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
         processing.
+        :param out_dict: `dict` optionally specify the subset of required
+        outputs - defaults to all outputs.
+        The value of any key may be an object and include the property
+        `transmissionMode` - defauts to `value`.
 
         :raises: UnknownProcessError if the input process_id does not
                  correspond to a known process
@@ -365,7 +383,7 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(processor, job_id, data_dict)
+        mime_type, outputs, status = handler(processor, job_id, data_dict, out_dict)
         return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):
