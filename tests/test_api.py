@@ -94,13 +94,13 @@ def api_(config, openapi):
 
 
 @pytest.fixture()
-def enclosure_api(config_enclosure):
+def enclosure_api(config_enclosure, openapi):
     """ Returns an API instance with a collection with enclosure links. """
     return API(config_enclosure, openapi)
 
 
 @pytest.fixture()
-def rules_api(config_with_rules):
+def rules_api(config_with_rules, openapi):
     """ Returns an API instance with URL prefix and strict slashes policy.
     The API version is extracted from the current version here.
     """
@@ -108,7 +108,7 @@ def rules_api(config_with_rules):
 
 
 @pytest.fixture()
-def api_hidden_resources(config_hidden_resources):
+def api_hidden_resources(config_hidden_resources, openapi):
     return API(config_hidden_resources, openapi)
 
 
@@ -1449,8 +1449,11 @@ def test_get_collection_coverage(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage(
         req, 'gdps-temperature')
 
-    assert code == HTTPStatus.OK
-    assert rsp_headers['Content-Type'] == 'application/prs.coverage+json'
+    # NOTE: This test used to assert the code to be 200 OK,
+    #       but it requested HTML, which is not available,
+    #       so it should be 400 Bad Request
+    assert code == HTTPStatus.BAD_REQUEST
+    assert rsp_headers['Content-Type'] == 'text/html'
 
     req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
     rsp_headers, code, response = api_.get_collection_coverage(
@@ -1486,6 +1489,13 @@ def test_get_collection_coverage(config, api_):
 
     assert code == HTTPStatus.OK
     assert isinstance(response, bytes)
+
+    req = mock_request(HTTP_ACCEPT='application/x-netcdf')
+    rsp_headers, code, response = api_.get_collection_coverage(
+        req, 'cmip5')
+
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'application/x-netcdf'
 
     # req = mock_request({
     #     'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
@@ -1632,6 +1642,16 @@ def test_describe_processes(config, api_):
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
+
+    # Test describe doesn't crash if example is missing
+    req = mock_request()
+    processor = api_.manager.get_processor("hello-world")
+    example = processor.metadata.pop("example")
+    rsp_headers, code, response = api_.describe_processes(req)
+    processor.metadata['example'] = example
+    data = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert len(data['processes']) == 2
 
 
 def test_execute_process(config, api_):
@@ -1863,7 +1883,7 @@ def test_get_collection_edr_query(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
-    parameter_names = list(collection['parameter-names'].keys())
+    parameter_names = list(collection['parameter_names'].keys())
     parameter_names.sort()
     assert len(parameter_names) == 4
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
@@ -1885,9 +1905,9 @@ def test_get_collection_edr_query(config, api_):
         req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
-    # bad parameter-name parameter
+    # bad parameter_names parameter
     req = mock_request({
-        'coords': 'POINT(11 11)', 'parameter-name': 'bad'
+        'coords': 'POINT(11 11)', 'parameter_names': 'bad'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
@@ -1918,7 +1938,7 @@ def test_get_collection_edr_query(config, api_):
 
     # single parameter
     req = mock_request({
-        'coords': 'POINT(11 11)', 'parameter-name': 'SST'
+        'coords': 'POINT(11 11)', 'parameter_names': 'SST'
     })
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
@@ -2035,7 +2055,7 @@ def test_get_collection_edr_query(config, api_):
     # cube decreasing latitude coords and S3
     req = mock_request({
         'bbox': '-100,40,-99,45',
-        'parameter-name': 'tmn',
+        'parameter_names': 'tmn',
         'datetime': '1994-01-01/1994-12-31',
     })
 

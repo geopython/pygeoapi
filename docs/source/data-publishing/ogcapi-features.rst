@@ -26,6 +26,7 @@ parameters.
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
    `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
@@ -274,6 +275,8 @@ Oracle
 .. note::
   Requires Python package oracledb
 
+Connection
+""""""""""
 .. code-block:: yaml
 
   providers:
@@ -295,21 +298,64 @@ Oracle
         table: lakes
         geom_field: geometry
         title_field: name
-        # sql_manipulator: tests.test_oracle_provider.SqlManipulator
-        # sql_manipulator_options:
-        #     foo: bar
-        # mandatory_properties:
-        # - bbox
-        # source_crs: 31287 # defaults to 4326 if not provided
-        # target_crs: 31287 # defaults to 4326 if not provided
 
-The provider supports connection over host and port with SID or SERVICE_NAME. For TNS naming, the system 
+The provider supports connection over host and port with SID, SERVICE_NAME or TNS_NAME. For TNS naming, the system 
 environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
 
 The providers supports external authentication. At the moment only wallet authentication is implemented.
 
 Sometimes it is necessary to use the Oracle client for the connection. In this case init_oracle_client must be set to True.
 
+SDO options
+"""""""""""
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521
+            service_name: XEPDB1
+            user: geo_test
+            password: geo_test
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        sdo_operator: sdo_relate # defaults to sdo_filter
+        sdo_param: mask=touch+coveredby # defaults to mask=anyinteract
+        
+The provider supports two different SDO operators, sdo_filter and sdo_relate. When not set, the default is sdo_relate!
+Further more  it is possible to set the sdo_param option. When sdo_relate is used the default is anyinteraction!
+`See Oracle Documentation for details <https://docs.oracle.com/en/database/oracle/oracle-database/23/spatl/spatial-operators-reference.html>`_.
+
+Mandatory properties
+""""""""""""""""""""
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521
+            service_name: XEPDB1
+            user: geo_test
+            password: geo_test
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        manadory_properties:
+        - example_group_id
+
+On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to 
+configure mandatory properties. When this is activated, the provoder throws an exception when the parameter
+is not in the query uri.
+
+Custom SQL Manipulator Plugin
+"""""""""""""""""""""""""""""
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
 useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 

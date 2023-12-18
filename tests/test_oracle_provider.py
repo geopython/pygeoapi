@@ -48,9 +48,19 @@ class SqlManipulator:
         sql_query,
         bind_variables,
         sql_manipulator_options,
+        offset,
+        limit,
+        resulttype,
         bbox,
-        source_crs,
+        datetime_,
         properties,
+        sortby,
+        skip_geometry,
+        select_properties,
+        crs_transform_spec,
+        q,
+        language,
+        filterq,
     ):
         sql = "ID = 10 AND :foo != :bar"
 
@@ -138,6 +148,44 @@ def config():
 
 
 @pytest.fixture()
+def config_public_synonym():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes_public_syn",
+        "geom_field": "geometry",
+        "editable": True,
+    }
+
+
+@pytest.fixture()
+def config_private_synonym():
+    return {
+        "name": "Oracle",
+        "type": "feature",
+        "data": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "id_field": "id",
+        "table": "lakes_private_syn",
+        "geom_field": "geometry",
+        "editable": True,
+    }
+
+
+@pytest.fixture()
 def config_manipulator(config):
     return {
         **config,
@@ -175,6 +223,18 @@ def create_geojson():
             "wiki_link": "https://en.wikipedia.org/wiki/Lake_Constance",
             "foo": "bar",
         },
+    }
+
+
+@pytest.fixture()
+def create_point_geojson():
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [9.603316032965449, 47.48872063967191],
+        },
+        "properties": {"name": "Yachthafen Fischerinsel", "wiki_link": None},
     }
 
 
@@ -230,6 +290,38 @@ def test_get_fields(config):
     }
 
     provider = OracleProvider(config)
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields
+
+
+def test_get_fields_private_synonym(config_private_synonym):
+    """Test get_fields from private synonym"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config_private_synonym)
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields
+
+
+def test_get_fields_public_synonym(config_public_synonym):
+    """Test get_fields from public synonym"""
+    expected_fields = {
+        "id": {"type": "NUMBER"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
+        "name": {"type": "VARCHAR2"},
+        "wiki_link": {"type": "VARCHAR2"},
+    }
+
+    provider = OracleProvider(config_public_synonym)
 
     assert provider.get_fields() == expected_fields
     assert provider.fields == expected_fields
@@ -453,3 +545,15 @@ def test_delete_sql_manipulator(config_manipulator, config):
 
     down = p2.query(sortby=[{"property": "id", "order": "-"}])
     assert down["features"][0]["id"] == identifier
+
+
+def test_create_point(config, create_point_geojson):
+    """Test simple create"""
+    p = OracleProvider(config)
+    result = p.create(create_point_geojson)
+
+    assert result == 28
+
+    data = p.get(28)
+
+    assert data.get("geometry").get("type") == "Point"

@@ -15,12 +15,12 @@ on:
 
 jobs:
   flake8_py3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.8
           architecture: x64
       - name: Checkout pygeoapi
         uses: actions/checkout@master
@@ -35,35 +35,18 @@ jobs:
 
   main:
     needs: [flake8_py3]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
-          - python-version: 3.7
+          - python-version: 3.8
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
-    services:
-      # Oracle service (label used to access the service container)
-      oracle:
-        # Docker Hub image (feel free to change the tag "latest" to any other available one)
-        image: gvenzl/oracle-xe:latest
-        # Provide passwords and other environment variables to container
-        env:
-          ORACLE_RANDOM_PASSWORD: true
-          APP_USER: geo_test
-          APP_USER_PASSWORD: geo_test
-        # Forward Oracle port
-        ports:
-          - 1521:1521
-        # Provide healthcheck script options for startup
-        options: >-
-          --health-cmd healthcheck.sh
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-    
     steps:
+    - name: Chown user
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       name: Setup Python ${{ matrix.python-version }}
@@ -105,6 +88,9 @@ jobs:
       with:
         packages: gdal-bin libgdal-dev
         version: 3.0.4
+    - name: Install and run Oracle
+      run: |
+        docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
@@ -125,6 +111,7 @@ jobs:
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
+        docker ps
         python3 tests/load_oracle_data.py
     - name: run unit tests ⚙️
       env:

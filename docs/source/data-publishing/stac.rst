@@ -156,6 +156,7 @@ File examples
 
   {
       "id": "STAC-Catalog",
+      "type": "Catalog",
       "stac_version": "1.0.0",
       "description": "A description of the STAC Catalog",
       "links": [
@@ -185,6 +186,7 @@ The code above shows the root catalog. The sub-catalogs have an additional ``rel
 
   {
       "id": "dem",
+      "type": "Catalog",
       "stac_version": "1.0.0",
       "description": "Digital Elevation Data",
       "links": [

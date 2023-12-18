@@ -24,6 +24,19 @@ CREATE TABLE geo_test.lakes (
 cur.execute(sql)
 
 sql = """
+CREATE PUBLIC SYNONYM lakes_public_syn FOR geo_test.lakes
+"""
+
+cur.execute(sql)
+
+sql = """
+CREATE SYNONYM geo_test.lakes_private_syn FOR geo_test.lakes
+"""
+
+cur.execute(sql)
+
+
+sql = """
 INSERT INTO lakes (area, volume, name, wiki_link, geometry)
   VALUES (NULL, NULL, 'Lake Baikal',
     'https://en.wikipedia.org/wiki/Lake_Baikal',
