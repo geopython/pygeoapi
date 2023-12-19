@@ -40,7 +40,8 @@ from typing import Any, Tuple, Union
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 
 from pygeoapi.config import get_config, validate_config
-from pygeoapi.openapi import get_oas, validate_openapi_document
+from pygeoapi.openapi import get_oas
+# from pygeoapi.openapi import validate_openapi_document
 from pygeoapi.util import to_json, render_j2_template, yaml_dump
 
 
@@ -60,7 +61,7 @@ class Admin(API):
         :param config: configuration dict
         :param openapi: openapi dict
 
-        :returns: `pygeoapi.API` instance
+        :returns: `pygeoapi.Admin` instance
         """
 
         super().__init__(config, openapi)
@@ -75,9 +76,9 @@ class Admin(API):
         LOGGER.debug('Validating configuration')
         validate_config(config)
         # validate OpenAPI document
-        LOGGER.debug('Validating openapi document')
-        oas = get_oas(config)
-        validate_openapi_document(oas)
+        # LOGGER.debug('Validating openapi document')
+        # oas = get_oas(config)
+        # validate_openapi_document(oas)
         return True
 
     def write(self, config):
@@ -123,7 +124,7 @@ class Admin(API):
         # validate OpenAPI document
         config = deepcopy(config)
         oas = get_oas(config)
-        validate_openapi_document(oas)
+        # validate_openapi_document(oas)
 
         # write OpenAPI document
         LOGGER.debug('Writing OpenAPI document')

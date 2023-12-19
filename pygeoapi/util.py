@@ -231,7 +231,7 @@ def yaml_dump(dict_: dict, destfile: str) -> bool:
 
     with lock:
         LOGGER.debug('Dumping YAML document')
-        with open(destfile, 'wb', encoding='utf8') as fh:
+        with open(destfile, 'wb') as fh:
             yaml.dump(dict_, fh, sort_keys=False, encoding='utf8', indent=4,
                       default_flow_style=False)
 

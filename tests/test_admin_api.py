@@ -76,7 +76,7 @@ class APITest(unittest.TestCase):
         response = self.http.post(url, data=post_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.text,
-                         'Location: /admin/resources/data2')
+                         'Location: /admin/config/resources/data2')
 
         # NOTE: we sleep 5 between CRUD requests so as to let gunicorn
         # restart with the refreshed configuration
