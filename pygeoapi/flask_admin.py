@@ -68,7 +68,7 @@ def get_response(result: tuple):
     return response
 
 
-@ADMIN_BLUEPRINT.route('/admin')
+@ADMIN_BLUEPRINT.route('/admin/config')
 def admin():
     """
     Admin landing page endpoint
@@ -78,7 +78,7 @@ def admin():
     return get_response(admin_.admin(request))
 
 
-@ADMIN_BLUEPRINT.route('/admin/resources', methods=['GET', 'POST'])
+@ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
 def resources():
     """
     Resource landing page endpoint
@@ -93,8 +93,8 @@ def resources():
 
 
 @ADMIN_BLUEPRINT.route(
-    '/admin/resources/<resource_id>', methods=['GET', 'PUT', 'PATCH', 'DELETE']
-)
+    '/admin/config/resources/<resource_id>',
+    methods=['GET', 'PUT', 'PATCH', 'DELETE'])
 def resource(resource_id):
     """
     Resource landing page endpoint

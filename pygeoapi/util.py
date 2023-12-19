@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 import base64
+from filelock import FileLock
 import json
 import logging
 import mimetypes
@@ -43,8 +44,6 @@ from decimal import Decimal
 from enum import Enum
 import pathlib
 from pathlib import Path
-from shutil import copy2
-from tempfile import NamedTemporaryFile
 from typing import Any, IO, Union, List, Callable
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -225,16 +224,16 @@ def yaml_dump(dict_: dict, destfile: str) -> bool:
 
     def path_representer(dumper, data):
         return dumper.represent_scalar(u'tag:yaml.org,2002:str', str(data))
+
     yaml.add_multi_representer(pathlib.PurePath, path_representer)
 
-    LOGGER.debug('Dumping YAML document')
-    with NamedTemporaryFile(delete=False) as fh:
-        temp_filename = fh.name
-        yaml.dump(dict_, fh, sort_keys=False, encoding='utf8', indent=4,
-                  default_flow_style=False)
+    lock = FileLock(f'{destfile}.lock')
 
-    LOGGER.debug(f'Moving {temp_filename} to {destfile}')
-    copy2(temp_filename, destfile)
+    with lock:
+        LOGGER.debug('Dumping YAML document')
+        with open(destfile, 'wb', encoding='utf8') as fh:
+            yaml.dump(dict_, fh, sort_keys=False, encoding='utf8', indent=4,
+                      default_flow_style=False)
 
     return True
 
