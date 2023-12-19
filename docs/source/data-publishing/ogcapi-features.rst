@@ -110,7 +110,17 @@ To publish an Elasticsearch index, the following are required in your index:
          id_field: geonameid
          time_field: datetimefield
 
-This provider has the support for the CQL queries as indicated in the table above.
+.. note::
+
+   For Elasticseach indexes that are password protect, a RFC1738 URL can be used as follows:
+
+   ``data: http://username:password@localhost:9200/ne_110m_populated_places_simple``
+
+   To further conceal authentication credentials, environment variables can be used:
+
+   ``data: http://${MY_USERNAME}:${MY_PASSWORD}@localhost:9200/ne_110m_populated_places_simple``
+
+The ES provider also has the support for the CQL queries as indicated in the table above.
 
 .. seealso::
   :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.

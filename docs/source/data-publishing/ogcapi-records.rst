@@ -15,12 +15,12 @@ pygeoapi core record providers are listed below, along with a matrix of supporte
 parameters.
 
 .. csv-table::
-   :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), transactions
+   :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), CQL, transactions
    :align: left
 
-   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌
-   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅
-   `CSWFacade`_,✅,results/hits,✅,✅,✅,❌,❌
+   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅,✅
+   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌,✅
+   `CSWFacade`_,✅,results/hits,✅,✅,✅,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -50,6 +50,11 @@ To publish an Elasticsearch index, the following are required in your index:
          data: http://localhost:9200/some_metadata_index
          id_field: identifier
          time_field: datetimefield
+
+The ES provider also has the support for the CQL queries as indicated in the table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 TinyDBCatalogue
 ^^^^^^^^^^^^^^^
