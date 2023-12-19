@@ -1,4 +1,4 @@
 aiofiles
-starlette
+starlette==0.33.0
 uvicorn[standard]
 nest-asyncio
