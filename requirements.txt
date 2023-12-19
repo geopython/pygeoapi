@@ -4,8 +4,8 @@ filelock
 Flask
 importlib_metadata
 jinja2
+jsonpatch
 jsonschema
-json-merge-patch
 pydantic
 pygeofilter
 pygeoif

@@ -64,6 +64,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-elasticsearch \
     python3-fiona \
     python3-gdal \
+    python3-jsonpatch \
     python3-netcdf4 \
     python3-pandas \
     python3-psycopg2 \

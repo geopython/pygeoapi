@@ -32,7 +32,7 @@
 from copy import deepcopy
 import os
 import json
-from json_merge_patch import create_patch, merge
+from jsonpatch import make_patch
 from jsonschema.exceptions import ValidationError
 import logging
 from typing import Any, Tuple, Union
@@ -65,6 +65,20 @@ class Admin(API):
         """
 
         super().__init__(config, openapi)
+
+    def merge(self, obj1, obj2):
+        if isinstance(obj1, dict) and isinstance(obj2, dict):
+            merged = obj1.copy()
+            for key, value in obj2.items():
+                if key in merged:
+                    merged[key] = self.merge(merged[key], value)
+                else:
+                    merged[key] = value
+            return merged
+        elif isinstance(obj1, list) and isinstance(obj2, list):
+            return [self.merge(i1, i2) for i1, i2 in zip(obj1, obj2)]
+        else:
+            return obj2
 
     def validate(self, config):
         """
@@ -104,10 +118,10 @@ class Admin(API):
         LOGGER.debug('Reading env variables in configuration')
         raw_conf = get_config(raw=True)
         conf = get_config()
-        patch = create_patch(conf, raw_conf)
+        patch = make_patch(conf, raw_conf)
 
         LOGGER.debug('Merging env variables')
-        config = merge(config, patch)
+        config = patch.apply(config)
 
         # write pygeoapi configuration
         LOGGER.debug('Writing pygeoapi configutation')
@@ -259,7 +273,7 @@ class Admin(API):
             )
 
         LOGGER.debug('Merging configuration')
-        config = merge(config, data)
+        config = self.merge(config, data)
 
         try:
             self.validate(config)
@@ -576,7 +590,7 @@ class Admin(API):
             )
 
         LOGGER.debug('Merging resource block')
-        data = merge(resource, data)
+        data = self.merge(resource, data)
         LOGGER.debug('Updating resource')
         config['resources'].update({resource_id: data})
 
