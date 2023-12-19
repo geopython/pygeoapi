@@ -52,8 +52,8 @@ entry_cmd=${1:-run}
 
 # Shorthand
 function error() {
-	echo "ERROR: $@"
-	exit -1
+    echo "ERROR: $@"
+    exit -1
 }
 
 # Workdir
@@ -70,46 +70,46 @@ pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
 echo "openapi.yml generated continue to pygeoapi"
 
 case ${entry_cmd} in
-	# Run Unit tests
-	test)
-	  for test_py in $(ls tests/test_*.py)
-	  do
-	    # Skip tests requireing backend server or libs installed
-	    case ${test_py} in
-	        tests/test_elasticsearch__provider.py)
-	        ;&
-	        tests/test_sensorthings_provider.py)
-	        ;&
-	        tests/test_postgresql_provider.py)
-			    ;&
-	        tests/test_mongo_provider.py)
-	        	echo "Skipping: ${test_py}"
-	        ;;
-	        *)
-	        	python3 -m pytest ${test_py}
-	         ;;
-	    esac
-	  done
-	  ;;
+    # Run Unit tests
+    test)
+      for test_py in $(ls tests/test_*.py)
+      do
+        # Skip tests requireing backend server or libs installed
+        case ${test_py} in
+            tests/test_elasticsearch__provider.py)
+            ;&
+            tests/test_sensorthings_provider.py)
+            ;&
+            tests/test_postgresql_provider.py)
+                ;&
+            tests/test_mongo_provider.py)
+                echo "Skipping: ${test_py}"
+            ;;
+            *)
+                python3 -m pytest ${test_py}
+             ;;
+        esac
+      done
+      ;;
 
-	# Run pygeoapi server
-	run)
-		# SCRIPT_NAME should not have value '/'
-		[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
+    # Run pygeoapi server
+    run)
+        # SCRIPT_NAME should not have value '/'
+        [[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
 
-		echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
-		exec gunicorn --workers ${WSGI_WORKERS} \
-				--worker-class=${WSGI_WORKER_CLASS} \
-				--timeout ${WSGI_WORKER_TIMEOUT} \
-				--name=${CONTAINER_NAME} \
-				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
+        echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
+        exec gunicorn --workers ${WSGI_WORKERS} \
+                --worker-class=${WSGI_WORKER_CLASS} \
+                --timeout ${WSGI_WORKER_TIMEOUT} \
+                --name=${CONTAINER_NAME} \
+                --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
                 --reload \
-				--reload-extra-file ${PYGEOAPI_CONFIG} \
-				pygeoapi.flask_app:APP
-	  ;;
-	*)
-	  error "unknown command arg: must be run (default) or test"
-	  ;;
+                --reload-extra-file ${PYGEOAPI_CONFIG} \
+                pygeoapi.flask_app:APP
+      ;;
+    *)
+      error "unknown command arg: must be run (default) or test"
+      ;;
 esac
 
 echo "END /entrypoint.sh"
