@@ -3554,7 +3554,7 @@ class API:
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input does not appear to be valid JSON
             LOGGER.error(err)
-            msg = 'invalid request data'
+            msg = f'invalid request data: {str(err)}'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)

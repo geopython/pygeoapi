@@ -244,7 +244,8 @@ class BaseManager:
             'progress': 5
         }
 
-        self.add_job(job_metadata)
+        if self.connection is not None:
+            self.add_job(job_metadata)
 
         try:
             if self.output_dir is not None:
@@ -256,11 +257,12 @@ class BaseManager:
             current_status = JobStatus.running
             jfmt, outputs = p.execute(data_dict)
 
-            self.update_job(job_id, {
-                'status': current_status.value,
-                'message': 'Writing job output',
-                'progress': 95
-            })
+            if self.connection is not None:
+                self.update_job(job_id, {
+                    'status': current_status.value,
+                    'message': 'Writing job output',
+                    'progress': 95
+                })
 
             if self.output_dir is not None:
                 LOGGER.debug(f'writing output to {job_filename}')
@@ -287,12 +289,13 @@ class BaseManager:
                 'progress': 100
             }
 
-            self.update_job(job_id, job_update_metadata)
+            if self.connection is not None:
+                self.update_job(job_id, job_update_metadata)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
+            # for jobs that failed, this specification says that failing jobs
             # must still be able to be retrieved with their error message
             # intact, and the correct HTTP error status at the /results
             # endpoint, even if the /result endpoint correctly returns the
@@ -303,7 +306,7 @@ class BaseManager:
             code = 'InvalidParameterValue'
             outputs = {
                 'code': code,
-                'description': 'Error updating job'
+                'description': str(err)
             }
             LOGGER.error(err)
             job_metadata = {
@@ -317,7 +320,8 @@ class BaseManager:
 
             jfmt = 'application/json'
 
-            self.update_job(job_id, job_metadata)
+            if self.connection is not None:
+                self.update_job(job_id, job_metadata)
 
         return jfmt, outputs, current_status
 
