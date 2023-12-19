@@ -1379,8 +1379,8 @@ def get_admin():
             }
         },
         'patch': {
-            'summary': 'Update admin configuration',
-            'description': 'Update admin configuration',
+            'summary': 'Partially update admin configuration',
+            'description': 'Partially update admin configuration',
             'tags': ['admin'],
             'operationId': 'patchAdminConfig',
             'requestBody': {
@@ -1485,7 +1485,7 @@ def get_admin():
             }
         },
         'patch': {
-            'summary': 'Parially update admin configuration resource',
+            'summary': 'Partially update admin configuration resource',
             'description': 'Partially update admin configuration resource',
             'tags': ['admin'],
             'operationId': 'patchAdminConfigResource',
@@ -1508,6 +1508,7 @@ def get_admin():
             }
         },
         'delete': {
+            'summary': 'Delete admin configuration resource',
             'description': 'Delete admin configuration resource',
             'tags': ['admin'],
             'operationId': 'deleteAdminConfigResource',
