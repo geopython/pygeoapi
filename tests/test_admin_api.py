@@ -153,7 +153,7 @@ class APITest(unittest.TestCase):
 def get_abspath(filepath):
     """helper function absolute file access"""
 
-    return Path(THISDIR) / 'data' / filepath
+    return Path(THISDIR) / 'data' / 'admin' / filepath
 
 
 if __name__ == '__main__':
