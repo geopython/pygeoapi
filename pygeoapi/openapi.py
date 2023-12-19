@@ -1377,6 +1377,26 @@ def get_admin():
                 '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                 '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
             }
+        },
+        'patch': {
+            'summary': 'Update admin configuration',
+            'description': 'Update admin configuration',
+            'tags': ['admin'],
+            'operationId': 'patchAdminConfig',
+            'requestBody': {
+                'description': 'Updates admin configuration',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
         }
     }
     paths['/admin/config/resources'] = {

@@ -68,14 +68,21 @@ def get_response(result: tuple):
     return response
 
 
-@ADMIN_BLUEPRINT.route('/admin/config')
+@ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
 def admin():
     """
     Admin landing page endpoint
 
     :returns: HTTP response
     """
-    return get_response(admin_.admin(request))
+    if request.method == 'GET':
+        return get_response(admin_.get_config(request))
+
+    elif request.method == 'PUT':
+        return get_response(admin_.put_config(request))
+
+    elif request.method == 'PATCH':
+        return get_response(admin_.patch_config(request))
 
 
 @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])

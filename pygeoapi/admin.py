@@ -132,9 +132,12 @@ class Admin(API):
         LOGGER.debug('Finished writing OpenAPI document')
 
     @pre_process
-    def admin(self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+    def get_config(
+        self,
+        request: Union[APIRequest, Any]
+    ) -> Tuple[dict, int, str]:
         """
-        Provide admin document
+        Provide admin configuration document
 
         :param request: request object
 
@@ -156,6 +159,122 @@ class Admin(API):
             content = to_json(cfg, self.pretty_print)
 
         return headers, 200, content
+
+    @pre_process
+    def put_config(
+        self,
+        request: Union[APIRequest, Any]
+    ) -> Tuple[dict, int, str]:
+        """
+        Update complete pygeoapi configuration
+
+        :param request: request object
+
+        :returns: tuple of headers, status code, content
+        """
+        LOGGER.debug('Updating configuration')
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers()
+
+        data = request.data
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg
+            )
+
+        try:
+            # Parse data
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input is not valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg
+            )
+
+        LOGGER.debug('Updating configuration')
+        try:
+            self.validate(data)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
+            )
+
+        self.write(data)
+
+        return headers, 204, {}
+
+    @pre_process
+    def patch_config(
+        self, request: Union[APIRequest, Any]
+    ) -> Tuple[dict, int, str]:
+        """
+        Update partial pygeoapi configuration
+
+        :param request: request object
+        :param resource_id: resource identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        config = deepcopy(self.config)
+        headers = request.get_response_headers()
+
+        data = request.data
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg
+            )
+
+        try:
+            # Parse data
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input is not valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg
+            )
+
+        LOGGER.debug('Merging configuration')
+        config = merge(config, data)
+
+        try:
+            self.validate(config)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
+            )
+
+        self.write(config)
+
+        content = to_json(config, self.pretty_print)
+
+        return headers, 204, content
 
     @pre_process
     def resources(
@@ -474,4 +593,4 @@ class Admin(API):
 
         content = to_json(resource, self.pretty_print)
 
-        return headers, 200, content
+        return headers, 204, content

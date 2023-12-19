@@ -63,6 +63,31 @@ class APITest(unittest.TestCase):
         keys = ['logging', 'metadata', 'resources', 'server']
         self.assertEqual(sorted(content.keys()), keys)
 
+        # PUT configuration
+        with get_abspath('admin-put.json').open() as fh:
+            put = fh.read()
+        response = self.http.put(url, data=put)
+        self.assertEqual(response.status_code, 204)
+
+        # NOTE: we sleep 5 between CRUD requests so as to let gunicorn
+        # restart with the refreshed configuration
+        time.sleep(5)
+
+        content = self.http.get(url).json()
+        self.assertEqual(content['logging']['level'], 'INFO')
+
+        # PATCH configuration
+        with get_abspath('admin-patch.json').open() as fh:
+            patch = fh.read()
+
+        response = self.http.patch(url, data=patch)
+        self.assertEqual(response.status_code, 204)
+
+        time.sleep(5)
+
+        content = self.http.get(url).json()
+        self.assertEqual(content['logging']['level'], 'DEBUG')
+
     def test_resources_crud(self):
 
         url = f'{self.admin_endpoint}/resources'
@@ -106,7 +131,7 @@ class APITest(unittest.TestCase):
             post_data = fh.read()
 
         response = self.http.patch(url, data=post_data)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         time.sleep(5)
 
