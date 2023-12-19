@@ -43,7 +43,7 @@ class APITest(unittest.TestCase):
     def setUp(self):
         """setup test fixtures, etc."""
 
-        self.admin_endpoint = 'http://localhost:5000/admin'
+        self.admin_endpoint = 'http://localhost:5000/admin/config'
         self.http = Session()
         self.http.headers.update({
             'Content-type': 'application/json',
