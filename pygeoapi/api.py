@@ -48,6 +48,7 @@ from http import HTTPStatus
 import json
 import logging
 import re
+import sys
 from typing import Any, Tuple, Union, Optional
 import urllib.parse
 
@@ -1608,8 +1609,7 @@ class API:
         if cql_text is not None:
             try:
                 filter_ = parse_ecql_text(cql_text)
-            except Exception as err:
-                LOGGER.error(err)
+            except Exception:
                 msg = f'Bad CQL string : {cql_text}'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -1655,25 +1655,21 @@ class API:
                               crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
         except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
             msg = f'query error: {err}'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidQuery', msg)
         except ProviderConnectionError as err:
-            LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderQueryError as err:
-            LOGGER.error(err)
             msg = 'query error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -1780,7 +1776,6 @@ class API:
                     }
                 )
             except FormatterSerializationError as err:
-                LOGGER.error(err)
                 msg = 'Error serializing output'
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -2044,7 +2039,6 @@ class API:
             data = request.data.decode()
             LOGGER.debug(data)
         except UnicodeDecodeError as err:
-            LOGGER.error(err)
             msg = 'Unicode error in data'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -2056,7 +2050,6 @@ class API:
             try:
                 filter_ = parse_cql_json(data)
             except Exception as err:
-                LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -2066,7 +2059,6 @@ class API:
             try:
                 filter_ = CQLModel.model_validate_json(data)
             except Exception as err:
-                LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -2082,25 +2074,21 @@ class API:
                               q=q,
                               filterq=filter_)
         except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
             msg = f'query error: {err}'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidQuery', msg)
         except ProviderConnectionError as err:
-            LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderQueryError as err:
-            LOGGER.error(err)
             msg = 'query error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -2136,7 +2124,6 @@ class API:
 
         if dataset not in collections.keys():
             msg = 'Collection not found'
-            LOGGER.error(msg)
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
@@ -2152,7 +2139,6 @@ class API:
                 p = load_plugin('provider', provider_def)
             except ProviderTypeError:
                 msg = 'Invalid provider type'
-                LOGGER.error(msg)
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
@@ -2168,14 +2154,12 @@ class API:
 
         if not p.editable:
             msg = 'Collection is not editable'
-            LOGGER.error(msg)
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
         if action in ['create', 'update'] and not request.data:
             msg = 'No data found'
-            LOGGER.error(msg)
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -2307,7 +2291,6 @@ class API:
                 crs_transform_spec=crs_transform_spec,
             )
         except ProviderConnectionError as err:
-            LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -2317,13 +2300,11 @@ class API:
             return self.get_exception(HTTPStatus.NOT_FOUND, headers,
                                       request.format, 'NotFound', msg)
         except ProviderQueryError as err:
-            LOGGER.error(err)
             msg = 'query error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             msg = 'generic error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -2518,14 +2499,12 @@ class API:
                 subsets = validate_subset(request.params['subset'] or '')
             except (AttributeError, ValueError) as err:
                 msg = f'Invalid subset: {err}'
-                LOGGER.error(msg)
                 return self.get_exception(
                         HTTPStatus.BAD_REQUEST, headers, format_,
                         'InvalidParameterValue', msg)
 
             if not set(subsets.keys()).issubset(p.axes):
                 msg = 'Invalid axis name'
-                LOGGER.error(msg)
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, format_,
                     'InvalidParameterValue', msg)
@@ -2868,7 +2847,6 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, format_,
                 'InvalidParameterValue', msg)
         except ProviderConnectionError as err:
-            LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
@@ -2878,18 +2856,15 @@ class API:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
         except ProviderTileQueryError as err:
-            LOGGER.error(err)
             msg = 'Tile not found'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
                 'NoApplicableCode', msg)
         except ProviderTileNotFoundError as err:
-            LOGGER.error(err)
             msg = 'Tile not found (check logs)'
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             msg = 'Generic error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
@@ -3553,7 +3528,6 @@ class API:
             data = json.loads(data)
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input does not appear to be valid JSON
-            LOGGER.error(err)
             msg = 'invalid request data'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -3576,7 +3550,6 @@ class API:
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'
         except ProcessorExecuteError as err:
-            LOGGER.error(err)
             msg = 'Processing error'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers,
@@ -3983,7 +3956,6 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 stac_collections[dataset]['providers'], 'stac'))
         except ProviderConnectionError as err:
-            LOGGER.error(err)
             msg = 'connection error (check logs)'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers,
@@ -4007,12 +3979,10 @@ class API:
                 path.replace(dataset, '', 1)
             )
         except ProviderNotFoundError as err:
-            LOGGER.error(err)
             msg = 'resource not found'
             return self.get_exception(HTTPStatus.NOT_FOUND, headers,
                                       request.format, 'NotFound', msg)
         except Exception as err:
-            LOGGER.error(err)
             msg = 'data query error'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers,
@@ -4055,7 +4025,11 @@ class API:
         :returns: tuple of headers, status, and message
         """
 
-        LOGGER.error(description)
+        exception_info = sys.exc_info()
+        LOGGER.error(
+            description,
+            exc_info=exception_info if exception_info[0] is not None else None
+        )
         exception = {
             'code': code,
             'description': description
