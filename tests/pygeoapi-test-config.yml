@@ -246,11 +246,11 @@ resources:
               storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
               storage_crs_coordinate_epoch: 2017.23
             - type: tile
-              name: MVT
+              name: MVT-tippecanoe
               # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}
               data: tests/data/tiles/ne_110m_lakes
               options:
-                metadata_format: raw # default | tilejson
+                metadata_format: default # default | tilejson
                 bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
                 zoom:
                     min: 0
