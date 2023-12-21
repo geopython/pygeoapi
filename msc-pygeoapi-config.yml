@@ -1,0 +1,237 @@
+server:
+    bind:
+        host: 0.0.0.0
+        port: 8098
+    url: ${MSC_PYGEOAPI_OGC_API_URL}
+    basepath: ${MSC_PYGEOAPI_OGC_API_URL_BASEPATH}
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    languages:
+        - en-CA
+        - fr-CA
+    cors: true
+    pretty_print: false
+    limit: 500
+    templates:
+        path: ${MSC_PYGEOAPI_TEMPLATES}
+        static: ${MSC_PYGEOAPI_STATIC}
+    map:
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution:
+            en: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>'
+            fr: '<a href="https://www.openstreetmap.org/copyright">© Contributeurs d&apos;OpenStreetMap</a>'
+    ogc_schemas_location: ${MSC_PYGEOAPI_OGC_SCHEMAS_LOCATION}
+
+logging:
+    level: ERROR
+    # logfile: /tmp/pygeoapi.log
+
+metadata:
+    identification:
+        title:
+            en: MSC GeoMet - GeoMet-OGC-API
+            fr: GeoMet du SMC - GeoMet-OGC-API
+        description:
+            en: GeoMet-OGC-API provides public access to the Meteorological Service of Canada (MSC) and Environment and Climate Change Canada (ECCC) data via interoperable web services and application programming interfaces (API). Through open standards, users can freely and quickly access thousands of real-time and archived weather, climate and water datasets and products and integrate them in their domain-specific applications and decision support systems. Users can build mobile apps, create interactive web maps, and display and animate MSC data in desktop software. MSC GeoMet also enables on demand raw data clipping and reprojection, on demand format conversion and custom visualization.
+            fr: GeoMet-OGC-API fournit un accès public aux données du Service météorologique du Canada (SMC) et d'Environnement et Changement climatique Canada (ECCC) par le biais de services Web interopérables et d'interfaces de programmation d'applications (API). Grâce à des normes ouvertes, les utilisateurs peuvent accéder librement et rapidement à des milliers d'ensembles de données et de produits météorologiques, climatiques et hydrologiques en temps réel et archivés et les intégrer dans leurs applications spécifiques et leurs systèmes d'aide à la décision. Les utilisateurs peuvent construire des applications mobiles, créer des cartes web interactives, et afficher et animer les données MSC dans les logiciels de bureau. MSC GeoMet permet également le découpage et la reprojection de données brutes à la demande, la conversion de format à la demande et la visualisation personnalisée.
+        keywords:
+            en: [Weather, Meteorology, Climate, Forecasting, Floods, Weather alerts, Storms, Wind, Temperature, Precipitation, Snow, Ice]
+            fr: [Météo, Météorologie, Climat, Prévisions, Inondations, Alertes météo, Tempêtes, Vent, Température, Précipitations, Neige, Glace]
+        keywords_type: theme
+        terms_of_service:
+            en: https://www.canada.ca/en/transparency/terms.html
+            fr: https://www.canada.ca/fr/transparence/avis.html
+        url:
+            en: https://eccc-msc.github.io/open-data/msc-geomet/readme_en/
+            fr: https://eccc-msc.github.io/open-data/msc-geomet/readme_fr/
+    license:
+        name:
+            en: Environment and Climate Change Canada Data Server End-use Licence
+            fr: Licence d'utilisation finale pour les serveurs de données d'Environnement et Changement climatique Canada
+        url:
+            en: https://eccc-msc.github.io/open-data/licence/readme_en/
+            fr: https://eccc-msc.github.io/open-data/licence/readme_fr/
+    provider:
+        name:
+            en: Government of Canada, Environment and Climate Change Canada, Meteorological Service of Canada
+            fr: Gouvernement du Canada, Environnement et Changement climatique Canada, Service météorologique du Canada
+        url:
+            en: https://www.canada.ca/en/services/environment/weather.html
+            fr: https://www.canada.ca/fr/services/environnement/meteo.html
+    contact:
+        name:
+            en: Government of Canada, Environment and Climate Change Canada, Meteorological Service of Canada
+            fr: Gouvernement du Canada, Environnement et Changement climatique Canada, Service météorologique du Canada
+        position: Service Channel
+        address:
+            en: 77 Westmorland Street, Suite 260
+            fr: 77, rue Westmorland, bureau 260
+        city: Fredericton
+        stateorprovince:
+            en: New Brunswick
+            fr: Nouveau-Brunswick
+        postalcode: E3B 6Z3
+        country: Canada
+        phone:
+            en: None
+            fr: Aucun
+        fax: +01-506-451-6010
+        email: ECWeather-Meteo@ec.gc.ca
+        url:
+            en: https://weather.gc.ca/mainmenu/contact_us_e.html
+            fr: https://meteo.gc.ca/mainmenu/contact_us_f.html
+        hours:
+            en: Monday to Friday, 1300h - 2100h UTC
+            fr: Du lundi au vendredi, de 1300h à 2100h UTC
+        instructions:
+            en: During hours of service
+            fr: Pendant les heures de service
+        role: pointOfContact
+
+resources:
+    weong:hrdps:tt:
+        type: collection
+        title:
+            en: ZARR Weather Elements on the Grid HDRPS Air Temperature
+            fr: ZARR Weather Elements on the Grid HDRPS Air Temperature
+        description:
+            en: ZARR Weather Elements on the Grid HDRPS Air Temperature
+            fr: ZARR Weather Elements on the Grid HDRPS Air Temperature
+        keywords:
+            en: [weong, hrdps]
+            fr: [weong, hrdps]
+        extents:
+            spatial:
+                bbox: [-153.00, 27.63, -43.81, 61.96]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title:
+                en: information
+                fr: information
+              href:
+                en: https://open.canada.ca/data/en/dataset/
+                fr: https://open.canada.ca/data/fr/dataset/
+              hreflang:
+                en: en-CA
+                fr: fr-CA
+        providers:
+            - type: coverage
+              name: msc_pygeoapi.provider.hrdps_zarr.HRDPSWEonGZarrProvider
+              #data: /datalocal/msc/nwp/weong/2022072100_TT.latest.zarr/TT
+              #data: /datalocal/msc/nwp/weong/2022071200_TT.zarr/TT
+              data: /datalocal/hrdps-2023091112-TT.zarr
+              x_field: rlon
+              y_field: rlat
+              time_field: time
+              format:
+                  name: zarr
+                  mimetype: application/zip
+            - type: map
+              name: WMSFacade
+              data: https://geo.weather.gc.ca/geomet
+              options:
+                layer: HRDPS-WEonG_2.5km_AirTemp
+                style: default
+              format:
+                name: png
+                mimetype: image/png
+
+    weong:hrdps:tt:fstd:
+        type: collection
+        title:
+            en: FSTD Weather Elements on the Grid HDRPS Air Temperature
+            fr: FSTD Weather Elements on the Grid HDRPS Air Temperature
+        description:
+            en: FSTD Weather Elements on the Grid HDRPS Air Temperature
+            fr: FSTD Weather Elements on the Grid HDRPS Air Temperature
+        keywords:
+            en: [weong, hrdps]
+            fr: [weong, hrdps]
+        extents:
+            spatial:
+                bbox: [-153.00, 27.63, -43.81, 61.96]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title:
+                en: information
+                fr: information
+              href:
+                en: https://open.canada.ca/data/en/dataset/
+                fr: https://open.canada.ca/data/fr/dataset/
+              hreflang:
+                en: en-CA
+                fr: fr-CA
+        providers:
+            - type: coverage
+              name: msc_pygeoapi.provider.hrdps_fstd.FSTDProvider
+              #data: /datalocal/msc/nwp/weong/2022072100_TT.latest.zarr/TT
+              #data: /datalocal/msc/nwp/weong/2022071200_TT.zarr/TT
+              data: /datalocal/eta_TT/*
+              x_field: rlon
+              y_field: rlat
+              time_field: time
+              format:
+                  name: zarr
+                  mimetype: application/zip
+            - type: map
+              name: WMSFacade
+              data: https://geo.weather.gc.ca/geomet
+              options:
+                layer: HRDPS-WEonG_2.5km_AirTemp
+                style: default
+              format:
+                name: png
+                mimetype: image/png
+
+    weong:hrdps:tt:tiledb:
+        type: collection
+        title:
+            en: TILEDB Weather Elements on the Grid HDRPS Air Temperature
+            fr: TILEDB Weather Elements on the Grid HDRPS Air Temperature
+        description:
+            en: TILEDB Weather Elements on the Grid HDRPS Air Temperature
+            fr: TILEDB Weather Elements on the Grid HDRPS Air Temperature
+        keywords:
+            en: [weong, hrdps]
+            fr: [weong, hrdps]
+        extents:
+            spatial:
+                bbox: [-153.00, 27.63, -43.81, 61.96]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        links:
+            - type: text/html
+              rel: canonical
+              title:
+                en: information
+                fr: information
+              href:
+                en: https://open.canada.ca/data/en/dataset/
+                fr: https://open.canada.ca/data/fr/dataset/
+              hreflang:
+                en: en-CA
+                fr: fr-CA
+        providers:
+            - type: coverage
+              name: msc_pygeoapi.provider.hrdps_tiledb.HRDPSWEonGTileDBProvider
+              #data: /datalocal/msc/nwp/weong/2022072100_TT.latest.zarr/TT
+              #data: /datalocal/msc/nwp/weong/2022071200_TT.zarr/TT
+              data: /datalocal/hrdps-2023091112-TT-tiledb
+              x_field: rlon
+              y_field: rlat
+              time_field: time
+              format:
+                  name: zarr
+                  mimetype: application/zip
+            - type: map
+              name: WMSFacade
+              data: https://geo.weather.gc.ca/geomet
+              options:
+                layer: HRDPS-WEonG_2.5km_AirTemp
+                style: default
+              format:
+                name: png
+                mimetype: image/png

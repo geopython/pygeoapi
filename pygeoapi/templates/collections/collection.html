@@ -8,8 +8,9 @@
 {% endblock %}
 
 {% block extrahead %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@latest/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@latest/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/protomaps-leaflet@latest/dist/protomaps-leaflet.min.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -111,13 +112,77 @@
 
 {% block extrafoot %}
     <script>
-    var map = L.map('collection-map').setView([{{ 0 }}, {{ 0 }}], 1);
-    map.addLayer(new L.TileLayer(
-      '{{ config['server']['map']['url'] }}', {
-        maxZoom: 18,
-        attribution: '{{ config['server']['map']['attribution'] | safe }}'
-      }
-    ));
+var map = L.map('collection-map').setView([{{ 0 }}, {{ 0 }}], 1);
+
+class MyPlaceSymbolizer {
+    draw(context,geom,z,feature) {
+        let pt = geom[0][0]
+        var font = "12px sans-serif"
+        if (feature.props.place == "suburb") font = "500 14px sans-serif"
+        if (feature.props.place == "city") font = "800 16px sans-serif"
+        context.fillStyle = "darkslategray"
+        context.font = font
+        context.fillText(feature.props.name, pt.x,pt.y)
+    }
+}
+
+
+let PAINT_RULES = [
+    {
+        dataLayer:"water",
+        symbolizer:new protomapsL.PolygonSymbolizer(
+          {fill:"steelblue", opacity:0.7})
+    },
+
+    {
+        dataLayer:"roads",
+        symbolizer:new protomapsL.LineSymbolizer(
+          {color:"black"}),
+        minzoom: 6
+    },
+    {
+        dataLayer:"transit",
+        symbolizer:new protomapsL.LineSymbolizer(
+          {color:"pink"}),
+        minzoom: 6
+    },
+    {
+        dataLayer:"boundaries",
+        symbolizer:new protomapsL.LineSymbolizer(
+          {color:"black",
+          width:2}),
+          minzoom: 6
+    },
+    {
+        dataLayer:"buildings",
+        symbolizer:new protomapsL.PolygonSymbolizer(
+          {fill:"grey"}),
+        minzoom: 6
+    },
+    {
+        dataLayer:"landuse",
+        symbolizer:new protomapsL.PolygonSymbolizer(
+          {fill:"lightgray", opacity:0.5}),
+        minzoom: 12
+    }
+]
+
+let LABEL_RULES = [
+    {
+        dataLayer:"places",
+        symbolizer:null,
+        minzoom: 6
+    }
+]
+
+const tileLayer = protomapsL.leafletLayer({
+    url:'https://r2-public.protomaps.com/protomaps-sample-datasets/protomaps-basemap-opensource-20230408.pmtiles',
+    paint_rules:PAINT_RULES
+    }
+);
+
+tileLayer.addTo(map);
+
 
     var bbox_layer = L.polygon([
       ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],

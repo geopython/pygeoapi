@@ -1,0 +1,138 @@
+# =================================================================
+#
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Just van den Broecke <justb4@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
+#          Angelos Tzotsos <gcpp.kalxas@gmail.com>
+#
+# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2021 Angelos Tzotsos
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+# Stage 1: Build the application
+FROM ubuntu:jammy as builder-image
+
+LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
+
+# avoid stuck build due to user prompt
+ARG DEBIAN_FRONTEND=noninteractive
+
+ARG TZ="Etc/UTC"
+ARG LANG="en_US.UTF-8"
+ARG ADD_DEB_PACKAGES="\
+    libsqlite3-mod-spatialite \
+    python3-dask \
+    python3-elasticsearch \
+    python3-fiona \
+    python3-gdal \
+    python3-netcdf4 \
+    python3-pandas \
+    python3-psycopg2 \
+    python3-pymongo \
+    python3-pyproj \
+    python3-rasterio \
+    python3-scipy \
+    python3-shapely \
+    python3-tinydb \
+    python3-xarray \
+    python3-zarr \
+    python3-mapscript \
+    python3-pytest \
+    python3-pyld \
+    python3.10-venv"
+
+ENV TZ=${TZ} \
+    LANG=${LANG} \
+    DEB_BUILD_DEPS="\
+    curl \
+    unzip" \
+    DEB_PACKAGES="\
+    locales \
+    tzdata \
+    gunicorn \
+    python3-dateutil \
+    python3-gevent \
+    python3-greenlet \
+    python3-pip \
+    python3-tz \
+    python3-unicodecsv \
+    python3-yaml \
+    ${ADD_DEB_PACKAGES}"
+
+
+# Install operating system dependencies
+RUN apt-get update -y && apt-get upgrade -y \
+    && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
+    && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"  \
+    && mkdir /schemas.opengis.net \
+    && curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
+    && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
+    && rm -f ./SCHEMAS_OPENGIS_NET.zip
+
+# RUN python3 -m venv /pygeoapi
+
+WORKDIR /pygeoapi
+COPY . /pygeoapi
+
+# ENV PATH="$WORKDIR:$PATH"
+
+RUN pip3 install -r requirements-docker.txt \
+    && pip3 install -e . \
+    && cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh  \
+    && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
+    && apt-get clean \
+    && apt autoremove -y  \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Create a smaller final image
+
+# FROM python:3.11-slim-bookworm AS runtime
+# FROM python:3.10.13-alpine3.18 
+FROM ubuntu:jammy as runtime
+# COPY --from=builder-image /opt/venv /opt/venv
+
+# Make sure we use the virtualenv:
+# ENV PATH="$WORKDIR:$PATH"
+
+ARG TZ="Etc/UTC"
+ARG LANG="en_US.UTF-8"
+
+ENV TZ=${TZ} \
+    LANG=${LANG}
+
+# Copy the application and dependencies from the builder-image stage
+COPY --from=builder-image /pygeoapi /pygeoapi
+COPY --from=builder-image /usr/local/bin /usr/local/bin
+WORKDIR /pygeoapi
+# Set default config and entrypoint for Docker Image
+COPY --from=builder-image /pygeoapi/local.config.yml /pygeoapi/local.config.yml
+COPY --from=builder-image /entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+# CMD sleep 3600
