@@ -28,7 +28,7 @@
 # =================================================================
 
 import logging
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,13 +48,20 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
 
-    def execute(self, data: dict) -> Tuple[str, Any]:
+    def execute(
+            self,
+            data: dict,
+            outputs: Optional[dict] = None
+    ) -> Tuple[str, Any]:
         """
         execute the process
 
         :param data: Dict with the input data that the process needs in order
                      to execute
-
+        :param out_dict: `dict` optionally specify the subset of required
+            outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defauts to `value`.
         :returns: tuple of MIME type and process response
         """
 

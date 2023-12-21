@@ -3562,6 +3562,9 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
+        out_dict = data.get('outputs', None)
+        LOGGER.debug(f'outputs: {out_dict}')
+
         try:
             execution_mode = RequestedProcessExecutionMode(
                 request.headers.get('Prefer', request.headers.get('prefer'))
