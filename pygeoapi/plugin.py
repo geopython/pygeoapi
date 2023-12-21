@@ -50,7 +50,8 @@ PLUGINS = {
         'Hateoas': 'pygeoapi.provider.hateoas.HateoasProvider',
         'MapScript': 'pygeoapi.provider.mapscript_.MapScriptProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
-        'MVT': 'pygeoapi.provider.mvt.MVTProvider',
+        'MVT-tippecanoe':
+        'pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider',
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',

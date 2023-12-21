@@ -36,7 +36,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from pygeoapi.provider.tile import (
-    BaseTileProvider, ProviderTileNotFoundError)
+    BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType,
@@ -48,7 +48,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MVTProvider(BaseTileProvider):
-    """MVT Provider"""
+    """Generic provider for MapBox Vector Tiles
+    Subclass this on specific providers.
+    """
 
     def __init__(self, provider_def):
         """
@@ -63,39 +65,8 @@ class MVTProvider(BaseTileProvider):
 
         self.tile_type = 'vector'
 
-        if is_url(self.data):
-            url = urlparse(self.data)
-            baseurl = f'{url.scheme}://{url.netloc}'
-            param_type = '?f=mvt'
-            layer = f'/{self.get_layer()}'
-
-            LOGGER.debug('Extracting layer name from URL')
-            LOGGER.debug(f'Layer: {layer}')
-
-            tilepath = f'{layer}/tiles'
-            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
-
-            self._service_url = url_join(baseurl, servicepath)
-
-            self._service_metadata_url = url_join(
-                self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
-                'metadata')
-        else:
-            data_path = Path(self.data)
-            if not data_path.exists():
-                msg = f'Service does not exist: {self.data}'
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
-            self._service_url = data_path
-            metadata_path = data_path.joinpath('metadata.json')
-            if not metadata_path.exists():
-                msg = f'Service metadata does not exist: {metadata_path.name}'
-                LOGGER.error(msg)
-                LOGGER.warning(msg)
-            self._service_metadata_url = metadata_path
-
     def __repr__(self):
-        return f'<MVTProvider> {self.data}'
+        raise NotImplementedError()
 
     @property
     def service_url(self):
@@ -106,27 +77,7 @@ class MVTProvider(BaseTileProvider):
         return self._service_metadata_url
 
     def get_layer(self):
-
-        if is_url(self.data):
-            url = urlparse(self.data)
-            # We need to try, at least these different variations that
-            # I have seen across products (maybe there more??)
-
-            if ('/{z}/{x}/{y}' not in url.path and
-                    '/{z}/{y}/{x}' not in url.path):
-                msg = f'This url template is not supported yet: {url.path}'
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
-
-            layer = url.path.split('/{z}/{x}/{y}')[0]
-            layer = layer.split('/{z}/{y}/{x}')[0]
-
-            LOGGER.debug(layer)
-            LOGGER.debug('Removing leading "/"')
-            return layer[1:]
-
-        else:
-            return Path(self.data).name
+        raise NotImplementedError()
 
     def get_tiling_schemes(self):
 
@@ -160,36 +111,6 @@ class MVTProvider(BaseTileProvider):
         basepath = url.path.split('/{z}/{x}/{y}')[0]
         servicepath = servicepath or f'{basepath}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{tile_type}'  # noqa
 
-        if servicepath.startswith(baseurl):
-            self._service_url = servicepath
-        else:
-            self._service_url = url_join(baseurl, servicepath)
-        tile_matrix_set = self.service_url.split(
-            '/{tileMatrix}/{tileRow}/{tileCol}')[0]
-        self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
-        links = {
-            'links': [
-                {
-                    'type': 'application/json',
-                    'rel': 'self',
-                    'title': 'This collection as multi vector tilesets',
-                    'href': f'{tile_matrix_set}?f=json'
-                },
-                {
-                    'type': self.mimetype,
-                    'rel': 'item',
-                    'title': 'This collection as multi vector tiles',
-                    'href': self.service_url
-                }, {
-                    'type': 'application/json',
-                    'rel': 'describedby',
-                    'title': 'Collection metadata in TileJSON format',
-                    'href': f'{self.service_metadata_url}?f=json'
-                }
-            ]
-        }
-        return links
-
     def get_tiles(self, layer=None, tileset=None,
                   z=None, y=None, x=None, format_=None):
         """
@@ -204,39 +125,8 @@ class MVTProvider(BaseTileProvider):
 
         :returns: an encoded mvt tile
         """
-        if format_ == "mvt":
-            format_ = self.format_type
-        if is_url(self.data):
-            url = urlparse(self.data)
-            base_url = f'{url.scheme}://{url.netloc}'
 
-            if url.query:
-                url_query = f'?{url.query}'
-            else:
-                url_query = ''
-
-            with requests.Session() as session:
-                session.get(base_url)
-                # There is a "." in the url path
-                if '.' in url.path:
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}.{format_}{url_query}')  # noqa
-                # There is no "." in the url )e.g. elasticsearch)
-                else:
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
-                resp.raise_for_status()
-                return resp.content
-        else:
-            if not isinstance(self.service_url, Path):
-                msg = f'Wrong data path configuration: {self.service_url}'
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
-            else:
-                try:
-                    service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
-                    with open(service_url_path, mode='rb') as tile:
-                        return tile.read()
-                except FileNotFoundError as err:
-                    raise ProviderTileNotFoundError(err)
+        raise NotImplementedError()
 
     def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, metadata_format=None, title=None,
@@ -332,3 +222,36 @@ class MVTProvider(BaseTileProvider):
                     layers.append(GeospatialDataType(id=vector_layer['id']))
                 content.layers = layers
             return content.dict(exclude_none=True)
+
+    def get_tms_links(self):
+        """
+        Generates TileMatrixSet Links
+
+        :returns: a JSON object with TMS links
+        """
+
+        tile_matrix_set = self.service_url.split(
+            '/{tileMatrix}/{tileRow}/{tileCol}')[0]
+        self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
+        links = {
+            'links': [
+                {
+                    'type': 'application/json',
+                    'rel': 'self',
+                    'title': 'This collection as multi vector tilesets',
+                    'href': f'{tile_matrix_set}?f=json'
+                },
+                {
+                    'type': self.mimetype,
+                    'rel': 'item',
+                    'title': 'This collection as multi vector tiles',
+                    'href': self.service_url
+                }, {
+                    'type': 'application/json',
+                    'rel': 'describedby',
+                    'title': 'Collection metadata in TileJSON format',
+                    'href': f'{self.service_metadata_url}?f=json'
+                }
+            ]
+        }
+        return links
