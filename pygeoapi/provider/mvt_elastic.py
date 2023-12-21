@@ -28,11 +28,9 @@
 # =================================================================
 
 import logging
-from pathlib import Path
+import requests
 from urllib.parse import urlparse
 
-from pygeoapi.provider.tile import (
-    ProviderTileNotFoundError)
 from pygeoapi.provider.mvt import MVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.util import is_url, url_join
@@ -40,13 +38,12 @@ from pygeoapi.util import is_url, url_join
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTTippecanoeProvider(MVTProvider):
-    """MVT Tippecanoe Provider
-    Provider for serving tiles generated with Mapbox Tippecanoe
-    https://github.com/mapbox/tippecanoe
-    It supports both, tiles from a an url or a path on disk.
-    Tippecanoe also provides a TileSet Metadata in a file called
-    "metadata.json".
+class MVTElasticProvider(MVTProvider):
+    """MVT Elastic Provider
+    Provider for serving tiles rendered with the Elasticsearch
+    Vector Tile API
+    https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html
+    As of 12/23, elastic does not provide any tileset metadata.
     """
 
     def __init__(self, MVTProvider):
@@ -55,70 +52,70 @@ class MVTTippecanoeProvider(MVTProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.MVT.MVTTippecanoeProvider
+        :returns: pygeoapi.provider.MVT.MVTElasticProvider
         """
 
         super().__init__(MVTProvider)
 
-        # Pre-rendered tiles served from a static url
-        if is_url(self.data):
-            url = urlparse(self.data)
-            baseurl = f'{url.scheme}://{url.netloc}'
-            param_type = '?f=mvt'
-            layer = f'/{self.get_layer()}'
+        self.tile_type = 'vector'
 
-            LOGGER.debug('Extracting layer name from URL')
-            LOGGER.debug(f'Layer: {layer}')
+        if not is_url(self.data):
+            msg = 'Wrong input format for Elasticsearch MVT'
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
 
-            tilepath = f'{layer}/tiles'
-            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
+        url = urlparse(self.data)
+        baseurl = f'{url.scheme}://{url.netloc}'
+        param_type = '?f=mvt'
+        layer = f'/{self.get_layer()}'
 
-            self._service_url = url_join(baseurl, servicepath)
+        LOGGER.debug('Extracting layer name from URL')
+        LOGGER.debug(f'Layer: {layer}')
 
-            self._service_metadata_url = url_join(
-                self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
-                'metadata')
-        # Pre-rendered tiles served from a local path
-        else:
-            data_path = Path(self.data)
-            if not data_path.exists():
-                msg = f'Service does not exist: {self.data}'
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
-            self._service_url = data_path
-            metadata_path = data_path.joinpath('metadata.json')
-            if not metadata_path.exists():
-                msg = f'Service metadata does not exist: {metadata_path.name}'
-                LOGGER.error(msg)
-                LOGGER.warning(msg)
-            self._service_metadata_url = metadata_path
+        tilepath = f'{layer}/tiles'
+        servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
+
+        self._service_url = url_join(baseurl, servicepath)
+
+        self._service_metadata_url = url_join(
+            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
+            'metadata')
 
     def __repr__(self):
-        return f'<MVTTippecanoeProvider> {self.data}'
+        return f'<MVTElasticProvider> {self.data}'
+
+    @property
+    def service_url(self):
+        return self._service_url
+
+    @property
+    def service_metadata_url(self):
+        return self._service_metadata_url
 
     def get_layer(self):
         """
-        Extracts layer name from url or data path
+        Extracts layer name from url
 
         :returns: layer name
         """
 
-        if is_url(self.data):
-            url = urlparse(self.data)
-            
-            if ('/{z}/{x}/{y}' not in url.path):
-                msg = f'This url template is not supported yet: {url.path}'
-                LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
+        if not is_url(self.data):
+            msg = 'Wrong input format for Elasticsearch MVT'
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
 
-            layer = url.path.split('/{z}/{x}/{y}')[0]
+        url = urlparse(self.data)
 
-            LOGGER.debug(layer)
-            LOGGER.debug('Removing leading "/"')
-            return layer[1:]
+        if ('/{z}/{x}/{y}' not in url.path):
+            msg = 'Wrong input format for Elasticsearch MVT'
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
 
-        else:
-            return Path(self.data).name
+        layer = url.path.split('/{z}/{x}/{y}')[0]
+
+        LOGGER.debug(layer)
+        LOGGER.debug('Removing leading "/"')
+        return layer[1:]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
@@ -153,21 +150,27 @@ class MVTTippecanoeProvider(MVTProvider):
 
         :returns: an encoded mvt tile
         """
-
         if format_ == 'mvt':
             format_ = self.format_type
 
-        if not isinstance(self.service_url, Path):
-            msg = f'Wrong data path configuration: {self.service_url}'
+        if is_url(self.data):
+            url = urlparse(self.data)
+            base_url = f'{url.scheme}://{url.netloc}'
+
+            if url.query:
+                url_query = f'?{url.query}'
+            else:
+                url_query = ''
+
+            with requests.Session() as session:
+                session.get(base_url)
+                resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
+                resp.raise_for_status()
+                return resp.content
+        else:
+            msg = 'Wrong input format for Elasticsearch MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
-        else:
-            try:
-                service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
-                with open(service_url_path, mode='rb') as tile:
-                    return tile.read()
-            except FileNotFoundError as err:
-                raise ProviderTileNotFoundError(err)
 
     def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, metadata_format=None, title=None,
