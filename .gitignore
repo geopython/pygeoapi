@@ -125,3 +125,6 @@ pygeoapi/db.sqlite3
 
 # Pycharm project files
 .idea
+
+# ES data folder
+pygeoapi/docker/examples/elastic/ES/data

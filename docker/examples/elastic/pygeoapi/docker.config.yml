@@ -150,21 +150,6 @@ resources:
               #Note elastic_search is the docker container of ES the name is defined in the docker-compose.yml
               data: http://elastic_search:9200/ne_110m_populated_places_simple
               id_field: geonameid
-            - type: tile
-              name: MVT
-              data: http://elastic_search:9200/ne_110m_populated_places_simple/_mvt/geometry/{z}/{x}/{y}?grid_precision=0
-              # index must have a geo_point
-              options:
-                metadata_format: none # default | tilejson
-                zoom:
-                    min: 0
-                    max: 16
-                schemes:
-                    - WorldCRS84Quad
-              format:
-                    name: pbf
-                    mimetype: application/vnd.mapbox-vector-tile
-
 
     lakes:
         type: collection
