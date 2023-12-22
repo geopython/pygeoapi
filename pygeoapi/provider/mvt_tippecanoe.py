@@ -33,14 +33,14 @@ from urllib.parse import urlparse
 
 from pygeoapi.provider.tile import (
     ProviderTileNotFoundError)
-from pygeoapi.provider.mvt import MVTProvider
+from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTTippecanoeProvider(MVTProvider):
+class MVTTippecanoeProvider(BaseMVTProvider):
     """MVT Tippecanoe Provider
     Provider for serving tiles generated with Mapbox Tippecanoe
     https://github.com/mapbox/tippecanoe
@@ -49,7 +49,7 @@ class MVTTippecanoeProvider(MVTProvider):
     "metadata.json".
     """
 
-    def __init__(self, MVTProvider):
+    def __init__(self, BaseMVTProvider):
         """
         Initialize object
 
@@ -58,7 +58,7 @@ class MVTTippecanoeProvider(MVTProvider):
         :returns: pygeoapi.provider.MVT.MVTTippecanoeProvider
         """
 
-        super().__init__(MVTProvider)
+        super().__init__(BaseMVTProvider)
 
         # Pre-rendered tiles served from a static url
         if is_url(self.data):

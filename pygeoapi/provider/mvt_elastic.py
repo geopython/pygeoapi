@@ -31,14 +31,14 @@ import logging
 import requests
 from urllib.parse import urlparse
 
-from pygeoapi.provider.mvt import MVTProvider
+from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTElasticProvider(MVTProvider):
+class MVTElasticProvider(BaseMVTProvider):
     """MVT Elastic Provider
     Provider for serving tiles rendered with the Elasticsearch
     Vector Tile API
@@ -46,7 +46,7 @@ class MVTElasticProvider(MVTProvider):
     As of 12/23, elastic does not provide any tileset metadata.
     """
 
-    def __init__(self, MVTProvider):
+    def __init__(self, BaseMVTProvider):
         """
         Initialize object
 
@@ -55,7 +55,7 @@ class MVTElasticProvider(MVTProvider):
         :returns: pygeoapi.provider.MVT.MVTElasticProvider
         """
 
-        super().__init__(MVTProvider)
+        super().__init__(BaseMVTProvider)
 
         self.tile_type = 'vector'
 
