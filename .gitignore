@@ -127,4 +127,5 @@ pygeoapi/db.sqlite3
 .idea
 
 # ES data folder
-pygeoapi/docker/examples/elastic/ES/data
+.pygeoapi/docker/examples/elastic/ES/data
+.pygeoapi/docker/examples/MVT-elastic/ES/data
