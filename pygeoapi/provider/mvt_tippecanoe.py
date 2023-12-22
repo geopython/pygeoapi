@@ -105,7 +105,7 @@ class MVTTippecanoeProvider(MVTProvider):
 
         if is_url(self.data):
             url = urlparse(self.data)
-            
+
             if ('/{z}/{x}/{y}' not in url.path):
                 msg = f'This url template is not supported yet: {url.path}'
                 LOGGER.error(msg)
