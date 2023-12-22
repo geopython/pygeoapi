@@ -30,7 +30,7 @@ Connection examples
 -------------------
 
 MVT-tippecanoe
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 This provider gives support to serving tiles generated using `Mapbox Tippecanoe <https://github.com/mapbox/tippecanoe>`_. 
 The tiles can be integrated from a path on disk, or from a static url (e.g.: from an S3 or MinIO bucket). 
@@ -60,7 +60,7 @@ This code block shows how to configure pygeoapi to read Mabox vector tiles gener
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-pre-rendered-vector-tiles>`_  you can find detailed instructions on how-to generate tiles using tippecanoe and integrate them into pygeoapi.
 
 MVT-elastic
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
 
 This provider gives support to serving tiles generated using `Elasticsearch <https://www.elastic.co/>`_. 
 These tiles are rendered on-the-fly using the `Elasticsearch Vector tile search API <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html>`_.
