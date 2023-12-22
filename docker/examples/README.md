@@ -6,8 +6,8 @@ This folder contains the sub-folders:
 - elastic
 - esri
 - mongo
-- MVT-elastic
-- MVT-tippecanoe
+- mvt-elastic
+- mvt-tippecanoe
 - sensorthings
 - skin
 - socrata
@@ -20,9 +20,9 @@ The [esri](esri) example demonstrates a docker compose configuration to run pyge
 
 The [mongo](mongo) example demonstrates a docker compose configuration to run pygeoapi with local MongoDB backend.
 
-The [MVT-elastic](MVT-elastic) example demonstrates a docker compose configuration to run pygeoapi with local Elasticsearch MVT backend.
+The [mvt-elastic](mvt-elastic) example demonstrates a docker compose configuration to run pygeoapi with local Elasticsearch MVT backend.
 
-The [MVT-tippecanoe](MVT-tippecanoe) example demonstrates a docker compose configuration to run pygeoapi with tiles on disk, pre-generated using the Tippecanoe backend.
+The [mvt-tippecanoe](mvt-tippecanoe) example demonstrates a docker compose configuration to run pygeoapi with tiles on disk, pre-generated using the Tippecanoe backend.
 
 The [sensorthings](sensorthings) example demonstrates various pygeoapi implementations of SensorThings API endpoints.
 
