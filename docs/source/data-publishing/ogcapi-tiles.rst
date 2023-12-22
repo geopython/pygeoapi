@@ -36,7 +36,7 @@ This provider gives support to serving tiles generated using `Mapbox Tippecanoe 
 The tiles can be integrated from a path on disk, or from a static url (e.g.: from an S3 or MinIO bucket). 
 In both cases, they have to be rendered before using pygeoapi.
 
-This code block shows how to configure pygeoapi to read Mabox vector tiles generated with tippecanoe, from disk or a URL.
+This code block shows how to configure pygeoapi to read Mapbox vector tiles generated with tippecanoe, from disk or a URL.
 
 .. code-block:: yaml
 
