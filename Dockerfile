@@ -122,6 +122,7 @@ RUN \
 
     # Install remaining pygeoapi deps
     && pip3 install -r requirements-docker.txt \
+    && pip3 install -r requirements-admin.txt \
 
     # Install pygeoapi
     && pip3 install -e . \
