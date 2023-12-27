@@ -4025,9 +4025,29 @@ class API:
             if request.format == F_HTML:  # render
                 content['path'] = path
                 if 'assets' in content:  # item view
-                    content = render_j2_template(self.tpl_config,
-                                                 'stac/item.html',
-                                                 content, request.locale)
+                    if content['type'] == 'Collection':
+                        content = render_j2_template(
+                            self.tpl_config,
+                            'stac/collection_base.html',
+                            content,
+                            request.locale
+                        )
+                    elif content['type'] == 'Feature':
+                        content = render_j2_template(
+                            self.tpl_config,
+                            'stac/item.html',
+                            content,
+                            request.locale
+                        )
+                    else:
+                        msg = f'Unknown STAC type {content.type}'
+                        LOGGER.error(msg)
+                        return self.get_exception(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            headers,
+                            request.format,
+                            'NoApplicableCode',
+                            msg)
                 else:
                     content = render_j2_template(self.tpl_config,
                                                  'stac/catalog.html',

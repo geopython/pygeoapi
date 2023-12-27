@@ -169,15 +169,13 @@ class HateoasProvider(BaseProvider):
                         'entry:type': 'Item'
                     })
 
+            if len(link_href_list) == 0:
+                content = jsondata
+                content = _modify_content_for_display(content, baseurl, urlpath)
+
         elif resource_type == 'Assets':
             content = jsondata
-            content['assets']['default'] = {
-                'href': os.path.join(baseurl, urlpath).replace('\\', '/'),
-            }
-
-            for key in content['assets']:
-                content['assets'][key]['file:size'] = 0
-                content['assets'][key]['created'] = jsondata["properties"]["datetime"] # noqa
+            content = _modify_content_for_display(content, baseurl, urlpath)
 
         content['links'].extend(child_links)
 
@@ -186,6 +184,31 @@ class HateoasProvider(BaseProvider):
     def __repr__(self):
         return f'<HateoasProvider> {self.data}'
 
+
+def _modify_content_for_display(
+        content: dict,
+        baseurl: str,
+        urlpath: str,
+    ) -> dict:
+    """
+    Helper function to fill out required information in content for HTML display
+
+    :param content: `dict` of JSON item
+    :param baseurl: base URL of endpoint
+    :param urlpath: base path of URL
+
+    :returns: `dict` of JSON item
+    """
+    content['assets']['default'] = {
+        'href': os.path.join(baseurl, urlpath).replace('\\', '/'),
+    }   
+    for key in content['assets']:
+        content['assets'][key]['file:size'] = 0
+        try:
+            content['assets'][key]['created'] = content["properties"]["datetime"] # noqa
+        except:
+            pass
+    return content
 
 def _get_json_data(jsonpath):
     """

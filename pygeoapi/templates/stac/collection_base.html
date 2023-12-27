@@ -1,0 +1,114 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} stac/{{ data['path'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ config['server']['url'] }}/stac">{% trans %}SpatioTemporal Asset Catalog{% endtrans %}</a>
+{% for link in get_breadcrumbs(data['path']) %}
+/ <a class="crumbs-path" href="{{config['server']['url'] }}/stac/{{ link['href'] }}">{{ link['title'] }}</a>
+{% endfor %}
+{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block body %}
+    <section id="item">
+      <div class="row">
+        <div class="col-sm">
+          <h2>{% trans %}Collections{% endtrans %}: {{ data['id'] }}</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 col-sm-12">
+          <div class="row">
+            <div class="col-sm-12">
+              <div id="items-map"></div>
+              <div id="assets">
+                <h4>{% trans %}Assets{% endtrans %}</h4>
+                <table class="table table-striped table-bordered">
+                  <thead>
+                    <tr>
+                      <th>{% trans %}URL{% endtrans %}</th>
+                      <th>{% trans %}Last Modified{% endtrans %}</th>
+                      <th>{% trans %}Size{% endtrans %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% for k, link in data['assets'].items() %}
+                  <tr>
+                    <td data-label="name">
+                      <a title="{{ link['href'] }}" href="{{ link['href'] }}">
+                      <span>{{ link['href'] | get_path_basename }}</span></a>
+                    </td>
+                    <td data-label="created">{{ link['created'] }}</td>
+                    <td data-label="size">{{ link['file:size'] | human_size }}</td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-sm-12">
+            <table class="table table-striped table-bordered">
+              <thead>
+              <tr>
+                <th>{% trans %}Property{% endtrans %}</th>
+                <th>{% trans %}Value{% endtrans %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{% trans %}id{% endtrans %}</td>
+                <td>{{ data.id }}</td>
+              </tr>
+              <tr>
+                <td>{% trans %}description{% endtrans %}</td>
+                <td>{{ data.description }}</td>
+              </tr>
+              <tr>
+                <td>{% trans %}extent{% endtrans %}</td>
+                <td>{{ data.extent }}</td>
+              </tr>
+              {% if data['cube:dimensions'] %}
+              <tr>
+                <td>{% trans %}cube:dimensions{% endtrans %}</td>
+                <td>{{ data['cube:dimensions'] }}</td>
+              </tr>
+              {% endif %}
+              {% if data['cube:variables'] %}
+              <tr>
+                <td>{% trans %}cube:variables{% endtrans %}</td>
+                <td>{{ data['cube:variables'] }}</td>
+              </tr>
+              {% endif %}
+
+            </tbody>
+            </table>
+        </div>
+      </div>
+    </section>
+{% endblock %}
+
+{% block extrafoot %}
+    <script>
+    //var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 2);
+    var map = L.map('items-map').setView([{{ 0 }}, {{ 0 }}], 1);
+    map.addLayer(new L.TileLayer(
+        '{{ config['server']['map']['url'] }}', {
+            maxZoom: 18,
+            attribution: '{{ config['server']['map']['attribution'] | safe }}'
+        }
+    ));
+    var bbox_layer = L.polygon([
+        [{{ data['extent']['spatial']['bbox'][0][1] }}, {{ data['extent']['spatial']['bbox'][0][0] }}],
+        [{{ data['extent']['spatial']['bbox'][0][3] }}, {{ data['extent']['spatial']['bbox'][0][0] }}],
+        [{{ data['extent']['spatial']['bbox'][0][3] }}, {{ data['extent']['spatial']['bbox'][0][2] }}],
+        [{{ data['extent']['spatial']['bbox'][0][1] }}, {{ data['extent']['spatial']['bbox'][0][2] }}],
+    ]);
+    map.addLayer(bbox_layer);
+    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
+    </script>
+{% endblock %}
