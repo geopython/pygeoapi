@@ -171,7 +171,11 @@ class HateoasProvider(BaseProvider):
 
             if len(link_href_list) == 0:
                 content = jsondata
-                content = _modify_content_for_display(content, baseurl, urlpath)
+                content = _modify_content_for_display(
+                    content,
+                    baseurl,
+                    urlpath
+                )
 
         elif resource_type == 'Assets':
             content = jsondata
@@ -191,7 +195,7 @@ def _modify_content_for_display(
         urlpath: str,
     ) -> dict:
     """
-    Helper function to fill out required information in content for HTML display
+    Helper function to fill in required information for HTML display.
 
     :param content: `dict` of JSON item
     :param baseurl: base URL of endpoint
@@ -201,14 +205,16 @@ def _modify_content_for_display(
     """
     content['assets']['default'] = {
         'href': os.path.join(baseurl, urlpath).replace('\\', '/'),
-    }   
+    }
     for key in content['assets']:
         content['assets'][key]['file:size'] = 0
         try:
             content['assets'][key]['created'] = content["properties"]["datetime"] # noqa
-        except:
-            pass
+        except Exception as err:
+            LOGGER.debug(err)
+            LOGGER.debug('no properties included in STAC')
     return content
+
 
 def _get_json_data(jsonpath):
     """
