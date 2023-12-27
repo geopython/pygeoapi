@@ -43,9 +43,6 @@ from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
 
 
-if 'PYGEOAPI_OPENAPI' not in os.environ:
-    raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
-
 CONFIG = get_config()
 OPENAPI = load_openapi_document()
 
