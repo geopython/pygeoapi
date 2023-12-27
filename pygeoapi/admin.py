@@ -1,7 +1,7 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
-# Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
+#          Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
 # Copyright (c) 2023 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
@@ -291,7 +291,7 @@ class Admin(API):
         return headers, 204, content
 
     @pre_process
-    def resources(
+    def get_resources(
         self, request: Union[APIRequest, Any]
     ) -> Tuple[dict, int, str]:
         """

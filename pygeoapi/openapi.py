@@ -1315,7 +1315,7 @@ def get_oas_30(cfg):
 
     oas['paths'] = paths
 
-    if cfg['server']['admin']:
+    if cfg['server'].get('admin', False):
         schema_dict = get_config_schema()
         oas['definitions'] = schema_dict['definitions']
         LOGGER.debug('Adding admin endpoints')

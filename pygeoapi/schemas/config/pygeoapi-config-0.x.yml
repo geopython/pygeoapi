@@ -27,7 +27,8 @@ properties:
                 description: URL of server (as used by client)
             admin:
                 type: boolean
-                description: Enable Admin API
+                description: Enable admin API
+                default: false
             mimetype:
                 type: string
                 description: default MIME type
@@ -410,6 +411,7 @@ properties:
                                       editable:
                                           type: boolean
                                           description: whether the resource is editable
+                                          default: false
                                       table:
                                           type: string
                                           description: table name for RDBMS-based providers

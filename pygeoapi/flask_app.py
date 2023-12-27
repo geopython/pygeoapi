@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,11 +36,11 @@ import click
 
 from flask import Flask, Blueprint, make_response, request, send_from_directory
 
+from pygeoapi.admin import Admin
 from pygeoapi.api import API
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
-from pygeoapi.flask_admin import ADMIN_BLUEPRINT
 
 
 if 'PYGEOAPI_OPENAPI' not in os.environ:
@@ -64,6 +64,7 @@ BLUEPRINT = Blueprint(
     static_folder=STATIC_FOLDER,
     url_prefix=API_RULES.get_url_prefix('flask')
 )
+ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
@@ -461,8 +462,66 @@ def stac_catalog_path(path):
     return get_response(api_.get_stac_path(request, path))
 
 
+@ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
+def admin_config():
+    """
+    Admin endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return get_response(admin_.get_config(request))
+
+    elif request.method == 'PUT':
+        return get_response(admin_.put_config(request))
+
+    elif request.method == 'PATCH':
+        return get_response(admin_.patch_config(request))
+
+
+@ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
+def admin_config_resources():
+    """
+    Resources endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return get_response(admin_.get_resources(request))
+
+    elif request.method == 'POST':
+        return get_response(admin_.post_resource(request))
+
+
+@ADMIN_BLUEPRINT.route(
+    '/admin/config/resources/<resource_id>',
+    methods=['GET', 'PUT', 'PATCH', 'DELETE'])
+def admin_config_resource(resource_id):
+    """
+    Resource endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return get_response(admin_.get_resource(request, resource_id))
+
+    elif request.method == 'DELETE':
+        return get_response(admin_.delete_resource(request, resource_id))
+
+    elif request.method == 'PUT':
+        return get_response(admin_.put_resource(request, resource_id))
+
+    elif request.method == 'PATCH':
+        return get_response(admin_.patch_resource(request, resource_id))
+
+
 APP.register_blueprint(BLUEPRINT)
+
 if CONFIG['server'].get('admin'):
+    admin_ = Admin(CONFIG, OPENAPI)
     APP.register_blueprint(ADMIN_BLUEPRINT)
 
 
