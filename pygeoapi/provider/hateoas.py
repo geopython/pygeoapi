@@ -192,8 +192,7 @@ class HateoasProvider(BaseProvider):
 def _modify_content_for_display(
         content: dict,
         baseurl: str,
-        urlpath: str,
-    ) -> dict:
+        urlpath: str) -> dict:
     """
     Helper function to fill in required information for HTML display.
 
