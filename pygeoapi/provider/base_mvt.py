@@ -35,8 +35,7 @@ import requests
 from pathlib import Path
 from urllib.parse import urlparse
 
-from pygeoapi.provider.tile import (
-    BaseTileProvider)
+from pygeoapi.provider.tile import BaseTileProvider
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType,
