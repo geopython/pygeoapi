@@ -57,8 +57,6 @@ class MVTElasticProvider(BaseMVTProvider):
 
         super().__init__(BaseMVTProvider)
 
-        self.tile_type = 'vector'
-
         if not is_url(self.data):
             msg = 'Wrong input format for Elasticsearch MVT'
             LOGGER.error(msg)
