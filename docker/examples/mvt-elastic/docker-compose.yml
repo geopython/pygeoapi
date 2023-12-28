@@ -1,0 +1,73 @@
+# =================================================================
+#
+# Authors: Just van den Broecke <justb4@gmail.com>>
+#          Jorge Samuel Mendes de Jesus <jorge.dejesus@geocat.net>
+#
+# Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2019 Jorge Samuel Mendes de Jesus
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+version: '3.3'
+
+services:
+  pygeoapi:
+    image: geopython/pygeoapi:latest
+
+    container_name: pygeoapi_es
+
+    entrypoint:
+      - /es-entrypoint.sh
+
+    ports:
+      - 5000:80
+
+    volumes:
+      - ./pygeoapi/docker.config.yml:/pygeoapi/local.config.yml
+      - ./pygeoapi/es-entrypoint.sh:/es-entrypoint.sh
+      - ./pygeoapi/wait-for-elasticsearch.sh:/wait-for-elasticsearch.sh
+
+    links:
+      - elastic_search
+
+    depends_on:
+      - elastic_search
+
+  elastic_search:
+    build: ./ES
+
+    container_name: elastic
+# Elastic ports may be opened for debugging but should remain closed in
+# production workloads.
+    # ports:
+    #   - 9300:9300
+    #   - 9200:9200
+    volumes:
+      - elastic_search_data:/usr/share/elasticsearch/data
+
+volumes:
+  elastic_search_data: {}
+
+#NOTE: Host requires changes in configuration to run ES
+#sudo sysctl -w vm.max_map_count=262144
