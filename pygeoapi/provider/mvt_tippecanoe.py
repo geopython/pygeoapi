@@ -169,22 +169,46 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             except FileNotFoundError as err:
                 raise ProviderTileNotFoundError(err)
 
-    def get_metadata(self, dataset, server_url, layer=None,
-                     tileset=None, metadata_format=None, title=None,
-                     description=None, keywords=None, **kwargs):
+    def get_default_metadata(self, dataset, server_url,
+        layer, tileset, title, description, keywords, **kwargs):
         """
-        Gets tile metadata
-
-        :param dataset: dataset name
-        :param server_url: server base url
-        :param layer: mvt tile layer name
-        :param tileset: mvt tileset name
-        :param metadata_format: format for metadata,
-                            enum TilesMetadataFormat
-
-        :returns: `dict` of JSON metadata
+        Gets tile metadata in default format
         """
+        LOGGER.debug("Get default metadata")
+        return ""
 
-        return super().get_metadata(dataset, server_url, layer,
-                                    tileset, metadata_format, title,
-                                    description, keywords, **kwargs)
+    def get_tilejson_metadata(self, dataset, server_url,
+        layer, tileset, title, description, keywords, **kwargs):
+        """
+        Gets tile metadata in tilejson format
+        """
+        LOGGER.debug("Get tilejson metadata")
+        return ""
+    def get_custom_metadata(self, dataset, server_url,
+        layer, tileset, title, description, keywords, **kwargs):
+        """
+        Gets tile metadata in custom format
+        """
+        LOGGER.debug("Get custom metadata")
+        return ""
+
+
+    # def get_metadata(self, dataset, server_url, layer=None,
+    #                  tileset=None, metadata_format=None, title=None,
+    #                  description=None, keywords=None, **kwargs):
+    #     """
+    #     Gets tile metadata
+    #
+    #     :param dataset: dataset name
+    #     :param server_url: server base url
+    #     :param layer: mvt tile layer name
+    #     :param tileset: mvt tileset name
+    #     :param metadata_format: format for metadata,
+    #                         enum TilesMetadataFormat
+    #
+    #     :returns: `dict` of JSON metadata
+    #     """
+    #
+    #     return super().get_metadata(dataset, server_url, layer,
+    #                                 tileset, metadata_format, title,
+    #                                 description, keywords, **kwargs)
