@@ -170,23 +170,24 @@ class MVTElasticProvider(BaseMVTProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
-    def get_default_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+    def get_default_metadata(self, dataset, server_url, layer, tileset,
+                             title, description, keywords, **kwargs):
         """
         Gets tile metadata in default format
         """
         LOGGER.debug("Get default metadata")
         return ""
 
-    def get_tilejson_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+    def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
+                              title, description, keywords, **kwargs):
         """
         Gets tile metadata in tilejson format
         """
         LOGGER.debug("Get tilejson metadata")
         return ""
-    def get_custom_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+
+    def get_custom_metadata(self, dataset, server_url, layer, tileset,
+                            title, description, keywords, **kwargs):
         """
         Gets tile metadata in custom format
         """

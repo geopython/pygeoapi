@@ -125,22 +125,22 @@ class BaseMVTProvider(BaseTileProvider):
 
         raise NotImplementedError()
 
-    def get_default_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+    def get_default_metadata(self, dataset, server_url, layer, tileset,
+                             title, description, keywords, **kwargs):
         """
         Gets tile metadata in default format
         """
         raise NotImplementedError()
 
-    def get_tilejson_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+    def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
+                              title, description, keywords, **kwargs):
         """
         Gets tile metadata in tilejson format
         """
         raise NotImplementedError()
 
-    def get_custom_metadata(self, dataset, server_url,
-        layer, tileset, title, description, keywords, **kwargs):
+    def get_custom_metadata(self, dataset, server_url, layer, tileset,
+                            title, description, keywords, **kwargs):
         """
         Gets tile metadata in custom format
         """
@@ -165,14 +165,17 @@ class BaseMVTProvider(BaseTileProvider):
         #     :returns: `dict` of JSON metadata
         #     """
         if metadata_format == TilesMetadataFormat.DEFAULT:
-            return self.get_default_metadata(dataset, server_url,
-                layer, tileset, title, description, keywords, **kwargs)
+            return self.get_default_metadata(dataset, server_url, layer,
+                                             tileset, title, description,
+                                             keywords, **kwargs)
         elif metadata_format == TilesMetadataFormat.TILEJSON:
-            return self.get_tilejson_metadata(dataset, server_url,
-                layer, tileset, title, description, keywords, **kwargs)
+            return self.get_tilejson_metadata(dataset, server_url, layer,
+                                              tileset, title, description,
+                                              keywords, **kwargs)
         elif metadata_format == TilesMetadataFormat.CUSTOM:
-            return self.get_custom_metadata(dataset, server_url,
-                layer, tileset, title, description, keywords, **kwargs)
+            return self.get_custom_metadata(dataset, server_url, layer,
+                                            tileset, title, description,
+                                            keywords, **kwargs)
         else:
             raise NotImplementedError(f"Not a value of {TilesMetadataFormat}")
 
