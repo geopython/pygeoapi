@@ -587,6 +587,7 @@ def get_oas_30(cfg):
                 },
                 'options': {
                     'summary': f'Options for {title} items',
+                    'description': desc,
                     'tags': [name],
                     'operationId': f'options{name.capitalize()}Features',
                     'responses': {
@@ -715,6 +716,7 @@ def get_oas_30(cfg):
                 },
                 'options': {
                     'summary': f'Options for {title} item by id',
+                    'description': desc,
                     'tags': [name],
                     'operationId': f'options{name.capitalize()}Feature',
                     'parameters': [
