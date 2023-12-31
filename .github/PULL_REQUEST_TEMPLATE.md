@@ -4,6 +4,10 @@
 
 # Additional information
 
+# Dependency policy (RFC2)
+
+- [ ] I have ensured that this PR meets [RFC2](https://pygeoapi.io/development/rfc/2) requirements
+
 # Updates to public demo
 
 - [ ] I have ensured that breaking changes to the [pygeoapi master demo server](https://github.com/geopython/demo.pygeoapi.io) have been addressed
