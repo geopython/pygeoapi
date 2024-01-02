@@ -160,22 +160,32 @@ jobs:
       matrix:
         include:
           - python-version: 3.8
-
+    env:
+      PYGEOAPI_CONFIG: "tests/pygeoapi-test-config-admin.yml"
+      PYGEOAPI_OPENAPI: "tests/pygeoapi-test-openapi-admin.yml"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Run pygeoapi with admin API ⚙️
-      run: |
-        cd docker/examples/admin
-        docker compose up -d --build
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: gunicorn python3-gevent
+        version: 1.0
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
         pip3 install -r requirements-dev.txt
+        pip3 install -r requirements-admin.txt
         python3 setup.py install
+    - name: Run pygeoapi with admin API ⚙️
+      run: |
+        pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+        gunicorn --bind 0.0.0.0:5000 \
+                 --reload \
+                 --reload-extra-file ${PYGEOAPI_CONFIG} \
+                 pygeoapi.flask_app:APP &
     - name: run integration tests ⚙️
       run: |
         pytest tests/test_admin_api.py
