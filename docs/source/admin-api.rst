@@ -14,6 +14,15 @@ The API is enabled with the following server configuration:
     server:
         admin: true # boolean on whether to enable Admin API.
 
+Access control
+--------------
+
+It should be made clear that authentication and authorization is beyond the responsibility of pygeoapi.  This means that
+if a pygeoapi user enables the Admin API, they must provide access control explicity via another service.
+
+pygeoapi hot reloading in gunicorn
+----------------------------------
+
 For pygeoapi to hot reload the configuration as changes are made, the pygeoapi configuration file must be included as
 demonstrated for a gunicorn deployment of pygeoapi via flask:
 
