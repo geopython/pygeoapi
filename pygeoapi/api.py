@@ -1043,6 +1043,8 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
+            is_vector_tile = collection_data_type == 'tile' and collection_data_format['name'] != 'png'
+
             collection = {
                 'id': k,
                 'title': l10n.translate(v['title'], request.locale),
@@ -1155,7 +1157,7 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
                 })
 
-            if collection_data_type in ['feature', 'record', 'tile']:
+            if is_vector_tile or collection_data_type in ['feature', 'record']:
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
@@ -2794,7 +2796,7 @@ class API:
 
         tile_services = p.get_tiles_service(
             baseurl=self.base_url,
-            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
+            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={p.format_type}'  # noqa
         )
 
         for service in tile_services['links']:
