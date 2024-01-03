@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 import base64
+from filelock import FileLock
 import json
 import logging
 import mimetypes
@@ -41,6 +42,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
+import pathlib
 from pathlib import Path
 from typing import Any, IO, Union, List, Callable
 from urllib.parse import urlparse
@@ -79,7 +81,8 @@ LOGGER = logging.getLogger(__name__)
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
-TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+THISDIR = Path(__file__).parent.resolve()
+TEMPLATES = THISDIR / 'templates'
 
 CRS_AUTHORITY = [
     "AUTO",
@@ -90,9 +93,9 @@ CRS_AUTHORITY = [
 # Global to compile only once
 CRS_URI_PATTERN = re.compile(
     (
-     rf"^http://www.opengis\.net/def/crs/"
-     rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
-     rf"[\d|\.]+?/(?P<code>\w+?)$"
+        rf"^http://www.opengis\.net/def/crs/"
+        rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
+        rf"[\d|\.]+?/(?P<code>\w+?)$"
     )
 )
 
@@ -207,6 +210,32 @@ def get_base_url(config: dict) -> str:
     """ Returns the full pygeoapi base URL. """
     rules = get_api_rules(config)
     return url_join(config['server']['url'], rules.get_url_prefix())
+
+
+def yaml_dump(dict_: dict, destfile: str) -> bool:
+    """
+    Dump dict to YAML file
+
+    :param dict_: `dict` to dump
+    :param destfile: destination filepath
+
+    :returns: `bool`
+    """
+
+    def path_representer(dumper, data):
+        return dumper.represent_scalar(u'tag:yaml.org,2002:str', str(data))
+
+    yaml.add_multi_representer(pathlib.PurePath, path_representer)
+
+    lock = FileLock(f'{destfile}.lock')
+
+    with lock:
+        LOGGER.debug('Dumping YAML document')
+        with open(destfile, 'wb') as fh:
+            yaml.dump(dict_, fh, sort_keys=False, encoding='utf8', indent=4,
+                      default_flow_style=False)
+
+    return True
 
 
 def str2bool(value: Union[bool, str]) -> bool:
@@ -365,10 +394,12 @@ def json_serial(obj: Any) -> str:
         return float(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
-
-    msg = f'{obj} type {type(obj)} not serializable'
-    LOGGER.error(msg)
-    raise TypeError(msg)
+    elif isinstance(obj, (pathlib.PurePath, Path)):
+        return str(obj)
+    else:
+        msg = f'{obj} type {type(obj)} not serializable'
+        LOGGER.error(msg)
+        raise TypeError(msg)
 
 
 def is_url(urlstring: str) -> bool:
@@ -822,6 +853,7 @@ class UrlPrefetcher:
     """ Prefetcher to get HTTP headers for specific URLs.
     Allows a maximum of 1 redirect by default.
     """
+
     def __init__(self):
         self._session = Session()
         self._session.max_redirects = 1

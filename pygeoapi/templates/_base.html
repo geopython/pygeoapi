@@ -46,6 +46,11 @@
           <li class="nav-item">
             <a href="mailto:{{ config['metadata']['contact']['email'] }}" class="nav-link" aria-current="page">Contact</a>
           </li>
+          {% if config['server']['admin'] %}
+          <li class="nav-item">
+            <a href="{{ config['server']['url'] }}/admin/config" class="nav-link" aria-current="page">{% trans %}Admin{% endtrans %}</a>
+          </li>
+         {% endif %}
           <!--
             Add additional menu items here
             <a href="https://pygeoapi.io" class="nav-link">About</a>

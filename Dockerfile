@@ -64,6 +64,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-elasticsearch \
     python3-fiona \
     python3-gdal \
+    python3-jsonpatch \
     python3-netcdf4 \
     python3-pandas \
     python3-psycopg2 \
@@ -121,6 +122,7 @@ RUN \
 
     # Install remaining pygeoapi deps
     && pip3 install -r requirements-docker.txt \
+    && pip3 install -r requirements-admin.txt \
 
     # Install pygeoapi
     && pip3 install -e . \

@@ -34,9 +34,12 @@
 # =================================================================
 
 """Integration module for Django"""
+
 from typing import Tuple, Dict, Mapping, Optional
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
+
+from pygeoapi.admin import Admin
 from pygeoapi.api import API
 
 
@@ -485,12 +488,73 @@ def stac_catalog_search(request: HttpRequest) -> HttpResponse:
     pass
 
 
+def admin_config(request: HttpRequest) -> HttpResponse:
+    """
+    Admin landing page endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return _feed_response(request, 'get_admin_config')
+
+    elif request.method == 'PUT':
+        return _feed_response(request, 'put_admin_config')
+
+    elif request.method == 'PATCH':
+        return _feed_response(request, 'patch_admin_config')
+
+
+def admin_config_resources(request: HttpRequest) -> HttpResponse:
+    """
+    Resource landing page endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return _feed_response(request, 'get_admin_config_resources')
+
+    elif request.method == 'POST':
+        return _feed_response(request, 'put_admin_config_resources')
+
+
+def admin_config_resource(request: HttpRequest,
+                          resource_id: str) -> HttpResponse:
+    """
+    Resource landing page endpoint
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'GET':
+        return _feed_response(request, 'put_admin_config_resource',
+                              resource_id)
+
+    elif request.method == 'DELETE':
+        return _feed_response(request, 'delete_admin_config_resource',
+                              resource_id)
+
+    elif request.method == 'PUT':
+        return _feed_response(request, 'put_admin_config_resource',
+                              resource_id)
+
+    elif request.method == 'PATCH':
+        return _feed_response(request, 'patch_admin_config_resource',
+                              resource_id)
+
+
 def _feed_response(request: HttpRequest, api_definition: str,
                    *args, **kwargs) -> Tuple[Dict, int, str]:
     """Use pygeoapi api to process the input request"""
 
-    api_ = API(settings.PYGEOAPI_CONFIG)
+    if 'admin' not in api_definition:
+        api_ = API(settings.PYGEOAPI_CONFIG)
+    else:
+        api_ = Admin(settings.PYGEOAPI_CONFIG)
+
     api = getattr(api_, api_definition)
+
     return api(request, *args, **kwargs)
 
 
