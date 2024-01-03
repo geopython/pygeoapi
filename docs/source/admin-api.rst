@@ -3,14 +3,16 @@
 Admin API
 =========
 
-When the Admin API is enabled, :ref:`transactions` can be made on pygeoapi's configured resources.
-This allows for on the fly addition and modification of the data served by pygeoapi.
-The API is enabled with the server configuration:
+pygeoapi provides the ability to manage configuration through an API.
+
+When enabled, :ref:`transactions` can be made on pygeoapi's configured resources.  This allows for API based modification of the pygeoapi configuration.
+
+The API is enabled with the following server configuration:
 
 .. code-block:: yaml
 
     server:
-        admin: true # boolean on whether to enable admin api.
+        admin: true # boolean on whether to enable Admin API.
 
 For pygeoapi to hot reload the configuration as changes are made, the pygeoapi configuration file must be included as
 demonstrated for a gunicorn deployment of pygeoapi via flask:
