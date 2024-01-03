@@ -75,7 +75,7 @@ class Admin(API):
 
         :returns: `dict` of merged objects
         """
- 
+
         if isinstance(obj1, dict) and isinstance(obj2, dict):
             merged = obj1.copy()
             for key, value in obj2.items():
