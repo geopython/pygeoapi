@@ -67,6 +67,15 @@ class Admin(API):
         super().__init__(config, openapi)
 
     def merge(self, obj1, obj2):
+        """
+        Merge two dictionaries
+
+        :param obj1: `dict` of first object
+        :param obj2: `dict` of second object
+
+        :returns: `dict` of merged objects
+        """
+ 
         if isinstance(obj1, dict) and isinstance(obj2, dict):
             merged = obj1.copy()
             for key, value in obj2.items():
@@ -86,6 +95,7 @@ class Admin(API):
 
         :param config: configuration dict
         """
+
         # validate pygeoapi configuration
         LOGGER.debug('Validating configuration')
         validate_config(config)
@@ -101,6 +111,7 @@ class Admin(API):
 
         :param config: configuration dict
         """
+
         self.write_config(config)
         self.write_oas(config)
 
@@ -110,6 +121,7 @@ class Admin(API):
 
         :param config: configuration dict
         """
+
         # validate pygeoapi configuration
         config = deepcopy(config)
         validate_config(config)
@@ -186,6 +198,7 @@ class Admin(API):
 
         :returns: tuple of headers, status code, content
         """
+
         LOGGER.debug('Updating configuration')
 
         if not request.is_valid():
