@@ -1380,7 +1380,7 @@ def test_get_coverage_domainset(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req, 'obs')
 
-    assert code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert code == HTTPStatus.BAD_REQUEST
 
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req, 'gdps-temperature')
@@ -1399,7 +1399,7 @@ def test_get_collection_coverage_rangetype(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req, 'obs')
 
-    assert code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert code == HTTPStatus.BAD_REQUEST
 
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req, 'gdps-temperature')

@@ -30,6 +30,7 @@
 import json
 import logging
 from enum import Enum
+from http import HTTPStatus
 
 LOGGER = logging.getLogger(__name__)
 
@@ -273,37 +274,57 @@ class BaseProvider:
 
 class ProviderGenericError(Exception):
     """provider generic error"""
-    pass
+    ogc_exception_code = 'NoApplicableCode'
+    http_status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    default_msg = 'generic error (check logs)'
+
+    def __init__(self, msg=None, *args, user_msg=None) -> None:
+        # if only a user_msg is provided, use it as msg
+        if user_msg and not msg:
+            msg = user_msg
+        super().__init__(msg, *args)
+        self.user_msg = user_msg
+
+    @property
+    def message(self):
+        return self.user_msg if self.user_msg else self.default_msg
 
 
 class ProviderConnectionError(ProviderGenericError):
     """provider connection error"""
-    pass
+    default_msg = 'connection error (check logs)'
 
 
 class ProviderTypeError(ProviderGenericError):
     """provider type error"""
-    pass
+    default_msg = 'invalid provider type'
+    http_status_code = HTTPStatus.BAD_REQUEST
 
 
 class ProviderInvalidQueryError(ProviderGenericError):
     """provider invalid query error"""
-    pass
+    ogc_exception_code = 'InvalidQuery'
+    http_status_code = HTTPStatus.BAD_REQUEST
+    default_msg = "query error"
 
 
 class ProviderQueryError(ProviderGenericError):
     """provider query error"""
-    pass
+    default_msg = 'query error (check logs)'
 
 
 class ProviderItemNotFoundError(ProviderGenericError):
     """provider item not found query error"""
-    pass
+    ogc_exception_code = 'NotFound'
+    http_status_code = HTTPStatus.NOT_FOUND
+    default_msg = 'identifier not found'
 
 
 class ProviderNoDataError(ProviderGenericError):
     """provider no data error"""
-    pass
+    ogc_exception_code = 'InvalidParameterValue'
+    http_status_code = HTTPStatus.NO_CONTENT
+    default_msg = 'No data found'
 
 
 class ProviderNotFoundError(ProviderGenericError):
@@ -323,4 +344,10 @@ class ProviderInvalidDataError(ProviderGenericError):
 
 class ProviderRequestEntityTooLargeError(ProviderGenericError):
     """provider request entity too large error"""
-    pass
+    http_status_code = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+    def __init__(self, msg=None, *args, user_msg=None) -> None:
+        if msg and not user_msg:
+            # This error type shows the error by default
+            user_msg = msg
+        super().__init__(msg, *args, user_msg=user_msg)
