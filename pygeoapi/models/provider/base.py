@@ -79,7 +79,6 @@ class TileMatrixSetEnumType(BaseModel):
 class TileMatrixSetEnum(Enum):
     WORLDCRS84QUAD = TileMatrixSetEnumType(
         tileMatrixSet="WorldCRS84Quad",
-
         tileMatrixSetURI="http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad",  # noqa
         crs="http://www.opengis.net/def/crs/OGC/1.3/CRS84",
         tileMatrixSetDefinition=
