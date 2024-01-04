@@ -90,8 +90,8 @@ The ``logging`` section provides directives for logging messages which are usefu
    If ``level`` is defined and ``logfile`` is undefined, logging messages are output to the server's ``stdout``.
 
 
-``rotation``
-^^^^^^^^^^^
+``logging.rotation``
+^^^^^^^^^^^^^^^^^^^^
 
 The ``rotation`` supports rotation of disk log files. The ``logfile`` file is opened and used as the stream for logging.
 
