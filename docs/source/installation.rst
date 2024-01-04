@@ -27,6 +27,7 @@ For developers and the truly impatient
    cd pygeoapi
    pip3 install --upgrade pip
    pip3 install -r requirements.txt
+   pip3 install -r requirements-admin.txt
    python3 setup.py install
    cp pygeoapi-config.yml example-config.yml
    vi example-config.yml  # edit as required
