@@ -38,14 +38,14 @@ from pygeoapi.provider.tile import (
     BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
-    TileMatrixSetEnum)
+    TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
 
 
 class WMTSFacadeProvider(BaseTileProvider):
-    """TMS Provider"""
+    """WMTS Provider"""
 
     def __init__(self, provider_def):
         """
@@ -53,7 +53,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.TMSFacadeProvider
+        :returns: pygeoapi.provider.WMTSFacadeProvider
         """
 
         super().__init__(provider_def)
@@ -67,16 +67,16 @@ class WMTSFacadeProvider(BaseTileProvider):
     def service_url(self):
         return self._service_url
 
-    # @property
-    # def service_metadata_url(self):
-    #     return self._service_metadata_url
+    @property
+    def service_metadata_url(self):
+        return self._service_metadata_url
 
     def get_tiling_schemes(self):
 
         tile_matrix_set_links_list = [
-                TileMatrixSetEnum.WORLDCRS84QUAD.value,
-                TileMatrixSetEnum.WEBMERCATORQUAD.value
-            ]
+            TileMatrixSetEnum.WORLDCRS84QUAD.value,
+            TileMatrixSetEnum.WEBMERCATORQUAD.value
+        ]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list
             if item.tileMatrixSet == self.options['scheme']
@@ -108,11 +108,9 @@ class WMTSFacadeProvider(BaseTileProvider):
         else:
             self._service_url = url_join(baseurl, servicepath)
 
-        LOGGER.info(f'Setting service url to {self.service_url}')
-
-        # tile_matrix_set = self.service_url.split(
-        #     '/{tileMatrix}/{tileRow}/{tileCol}')[0]
-        # self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
+        tile_matrix_set = self.service_url.split(
+            '/{tileMatrix}/{tileRow}/{tileCol}')[0]
+        self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
 
         links = {
             'links': [
@@ -121,19 +119,13 @@ class WMTSFacadeProvider(BaseTileProvider):
                     'rel': 'item',
                     'title': 'This collection as image tiles',
                     'href': self.service_url
+                },
+                {
+                    'type': 'application/json',
+                    'rel': 'describedby',
+                    'title': 'Collection metadata in TileJSON format',
+                    'href': f'{self.service_metadata_url}?f=json'
                 }
-                # {
-                #     'type': 'application/json',
-                #     'rel': 'self',
-                #     'title': 'This collection as multi vector tilesets',
-                #     'href': f'{tile_matrix_set}?f=json'
-                # },
-                # {
-                #     'type': 'application/json',
-                #     'rel': 'describedby',
-                #     'title': 'Collection metadata in TileJSON format',
-                #     'href': f'{self.service_metadata_url}?f=json'
-                # }
             ]
         }
         return links
@@ -161,8 +153,8 @@ class WMTSFacadeProvider(BaseTileProvider):
                 'layer': self.options['layer'],
                 'tileMatrixSet': self.options['tile_matrix_set'],
                 'tileMatrix': z,
-                'tileRow': x,  # why row - x ??
-                'tileCol': y,
+                'tileRow': y,
+                'tileCol': x,
                 'style': ''
             }
 
@@ -198,81 +190,38 @@ class WMTSFacadeProvider(BaseTileProvider):
         :returns: `dict` of JSON metadata
         """
 
-        # if is_url(self.data):
-        #     url = urlparse(self.data)
-        #     base_url = f'{url.scheme}://{url.netloc}'
-        #     if metadata_format == TilesMetadataFormat.TILEJSON:
-        #         with requests.Session() as session:
-        #             session.get(base_url)
-        #             resp = session.get(f'{base_url}/{layer}/metadata.json')
-        #             resp.raise_for_status()
-        #         metadata_json_content = resp.json()
-        # else:
-        #     if not isinstance(self.service_metadata_url, Path):
-        #         msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
-        #         LOGGER.error(msg)
-        #         raise ProviderConnectionError(msg)
-        #
-        #     if self.service_metadata_url.exists():
-        #         with open(self.service_metadata_url, 'r') as md_file:
-        #             metadata_json_content = json.loads(md_file.read())
-        #
-        # service_url = url_join(
-        #     server_url,
-        #     f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
-        #
-        # content = {}
-        # if metadata_format == TilesMetadataFormat.TILEJSON:
-        #     if 'metadata_json_content' in locals():
-        #         content = MVTTilesJson(**metadata_json_content)
-        #         content.tiles = service_url
-        #         content.vector_layers = json.loads(
-        #                 metadata_json_content["json"])["vector_layers"]
-        #         return content.dict()
-        #     else:
-        #         msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
-        #         LOGGER.error(msg)
-        #         raise ProviderConnectionError(msg)
-        # elif metadata_format == TilesMetadataFormat.CUSTOMJSON:
-        #     if 'metadata_json_content' in locals():
-        #         content = metadata_json_content
-        #         if 'json' in metadata_json_content:
-        #             content['json'] = json.loads(metadata_json_content['json'])
-        #         return content
-        #     else:
-        #         msg = f'No custom JSON for tiles metadata available: {self.service_metadata_url}'  # noqa
-        #         LOGGER.error(msg)
-        #         raise ProviderConnectionError(msg)
-        # else:
-        #     tiling_schemes = self.get_tiling_schemes()
-        #     # Default values
-        #     tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
-        #     crs = tiling_schemes[0].crs
-        #     # Checking the selected matrix in configured tiling_schemes
-        #     for schema in tiling_schemes:
-        #         if (schema.tileMatrixSet == tileset):
-        #             crs = schema.crs
-        #             tileMatrixSetURI = schema.tileMatrixSetURI
-        #
-        #     content = TileSetMetadata(title=title, description=description,
-        #                               keywords=keywords, crs=crs,
-        #                               tileMatrixSetURI=tileMatrixSetURI)
-        #
-        #     links = []
-        #     service_url_link_type = "application/vnd.mapbox-vector-tile"
-        #     service_url_link_title = f'{tileset} vector tiles for {layer}'
-        #     service_url_link = LinkType(href=service_url, rel="item",
-        #                                 type=service_url_link_type,
-        #                                 title=service_url_link_title)
-        #     links.append(service_url_link)
-        #
-        #     content.links = links
-        #
-        #     if 'metadata_json_content' in locals():
-        #         vector_layers = json.loads(
-        #             metadata_json_content["json"])["vector_layers"]
-        #         layers = []
-        #         for vector_layer in vector_layers:
-        #             layers.append(GeospatialDataType(id=vector_layer['id']))
-        #         content.layers = layers
-        #     return content.dict(exclude_none=True)
+        if metadata_format != TilesMetadataFormat.DEFAULT:
+            msg = f'No tiles metadata json in {metadata_format} format'  # noqa
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=png')  # noqa
+
+        content = {}
+        tiling_schemes = self.get_tiling_schemes()
+        # Default values
+        tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
+        crs = tiling_schemes[0].crs
+        # Checking the selected matrix in configured tiling_schemes
+        for schema in tiling_schemes:
+            if (schema.tileMatrixSet == tileset):
+                crs = schema.crs
+                tileMatrixSetURI = schema.tileMatrixSetURI
+
+        content = TileSetMetadata(title=title, description=description,
+                                  keywords=keywords, crs=crs,
+                                  tileMatrixSetURI=tileMatrixSetURI)
+
+        links = []
+        service_url_link_type = "application/vnd.mapbox-vector-tile"
+        service_url_link_title = f'{tileset} vector tiles for {layer}'
+        service_url_link = LinkType(href=service_url, rel="item",
+                                    type=service_url_link_type,
+                                    title=service_url_link_title)
+        links.append(service_url_link)
+
+        content.links = links
+
+        return content.dict(exclude_none=True)

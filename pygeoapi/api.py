@@ -2833,12 +2833,15 @@ class API:
 
             tiles['tilesets'].append(tile_matrix)
 
+        format_type = p.format_type
+
         if request.format == F_HTML:  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
             tiles['tilesets'] = [
                 scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
+            tiles['format'] = format_type
             tiles['bounds'] = \
                 self.config['resources'][dataset]['extents']['spatial']['bbox']
             tiles['minzoom'] = p.options['zoom']['min']
@@ -2964,7 +2967,8 @@ class API:
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(t, request.raw_locale)
 
-        if matrix_id not in p.options['schemes']:
+        tiling_schemes = p.get_tiling_schemes()
+        if matrix_id not in [item.tileMatrixSet for item in tiling_schemes]:
             msg = 'tileset not found'
             return self.get_exception(HTTPStatus.NOT_FOUND, headers,
                                       request.format, 'NotFound', msg)

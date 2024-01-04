@@ -84,7 +84,12 @@
       {% endif %}
     {% endfor %}
 
-    var url = tilesUrl.replace('{dataset}', '{{ data["id"] }}').replace('{tileMatrixSetId}', scheme).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
+    var url = tilesUrl
+        .replace('{dataset}', '{{ data["id"] }}')
+        .replace('{tileMatrixSetId}', tileset)
+        .replace("tileMatrix", "z")
+        .replace("tileRow", "y")
+        .replace("tileCol", "x");
 
     {% if data['format'] == 'png' %}
         map.addLayer(new L.TileLayer(
@@ -130,7 +135,7 @@
                     fill: false,
                     radius: 6,
                     fillOpacity: 1
-                })
+                });
 
                 L.DomEvent.stop(e);
             })
@@ -147,7 +152,7 @@
             {{ data['bounds'][3] }},
             {{ data['bounds'][2] }}
         ]
-    ])
+    ]);
     map.fitBounds(bounds, maxZoom={{ data['maxzoom']}});
 
     </script>
