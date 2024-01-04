@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2018 Tom Kralidis
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,7 +60,7 @@ def setup_logger(logging_config):
         'WARNING': logging.WARNING,
         'INFO': logging.INFO,
         'DEBUG': logging.DEBUG,
-        'NOTSET': logging.NOTSET,
+        'NOTSET': logging.NOTSET
     }
 
     loglevel = loglevels[logging_config['level']]
@@ -80,7 +80,7 @@ def setup_logger(logging_config):
                         RotatingFileHandler(
                             filename=logging_config['logfile'],
                             maxBytes=rotate_max_bytes,
-                            backupCount=rotate_backup_count,
+                            backupCount=rotate_backup_count
                         )
                     ],
                     level=loglevel,
@@ -97,12 +97,12 @@ def setup_logger(logging_config):
                             filename=logging_config['logfile'],
                             when=rotate_when,
                             interval=rotate_interval,
-                            backupCount=rotate_backup_count,
+                            backupCount=rotate_backup_count
                         )
                     ],
                     level=loglevel,
                     datefmt=date_format,
-                    format=log_format,
+                    format=log_format
                 )
             else:
                 raise Exception(f'Invalid rotation mode:{rotate_mode}')
@@ -111,14 +111,14 @@ def setup_logger(logging_config):
                 level=loglevel,
                 datefmt=date_format,
                 format=log_format,
-                filename=logging_config['logfile'],
+                filename=logging_config['logfile']
             )
     else:
         logging.basicConfig(
             level=loglevel,
             datefmt=date_format,
             format=log_format,
-            stream=sys.stdout,
+            stream=sys.stdout
         )
 
     LOGGER.debug('Logging initialized')
