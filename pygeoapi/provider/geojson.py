@@ -95,7 +95,7 @@ class GeoJSONProvider(BaseProvider):
             LOGGER.warning(f'File {self.data} does not exist.')
         return fields
 
-    def _load(self, skip_geometry=None, properties=[], select_properties=[]):
+    def _load(self, skip_geometry=None, properties=None, select_properties=None):
         """Load and validate the source GeoJSON file
         at self.data
 
@@ -133,8 +133,8 @@ class GeoJSONProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         query the provider
 

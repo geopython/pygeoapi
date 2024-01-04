@@ -104,7 +104,7 @@ class SQLiteGPKGProvider(BaseProvider):
 
         return self.fields
 
-    def __get_where_clauses(self, properties=[], bbox=[]):
+    def __get_where_clauses(self, properties=None, bbox=None):
         """
         Generarates WHERE conditions to be implemented in query.
         Private method mainly associated with query method.
@@ -278,8 +278,8 @@ class SQLiteGPKGProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         Query SQLite/GPKG for all the content.
         e,g: http://localhost:5000/collections/countries/items?

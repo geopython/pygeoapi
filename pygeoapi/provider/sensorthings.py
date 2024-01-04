@@ -169,8 +169,8 @@ class SensorThingsProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         STA query
 
@@ -206,8 +206,8 @@ class SensorThingsProvider(BaseProvider):
         return self._make_feature(response)
 
     def _load(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None):
         """
         Private function: Load STA data
 
@@ -233,10 +233,10 @@ class SensorThingsProvider(BaseProvider):
         }
 
         if properties or bbox or datetime_:
-            params['$filter'] = self._make_filter(properties, bbox, datetime_)
+            params['$filter'] = self._make_filter(properties or [], bbox, datetime_)
 
         if sortby:
-            params['$orderby'] = self._make_orderby(sortby)
+            params['$orderby'] = self._make_orderby(sortby or [])
 
         # Send request
         LOGGER.debug('Sending query')
@@ -266,13 +266,13 @@ class SensorThingsProvider(BaseProvider):
                 break
 
         hits_ = min(limit, len(v))
-        props = (select_properties, skip_geometry)
+        props = (select_properties or [], skip_geometry)
         fc['features'] = [self._make_feature(e, *props) for e in v[:hits_]]
         fc['numberReturned'] = hits_
 
         return fc
 
-    def _make_feature(self, entity, select_properties=[], skip_geometry=False):
+    def _make_feature(self, entity, select_properties=None, skip_geometry=False):
         """
         Private function: Create feature from entity
 
@@ -295,14 +295,14 @@ class SensorThingsProvider(BaseProvider):
         # Fill properties block
         try:
             f['properties'] = self._expand_properties(
-                entity, select_properties)
+                entity, select_properties or [])
         except KeyError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
 
         return f
 
-    def _get_response(self, url, params={}):
+    def _get_response(self, url, params=None):
         """
         Private function: Get STA response
 
@@ -311,6 +311,7 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: STA response
         """
+        params = params if params is not None else {}
         params.update({'$expand': EXPAND[self.entity]})
 
         r = self.http.get(url, params=params)
@@ -327,7 +328,7 @@ class SensorThingsProvider(BaseProvider):
 
         return response
 
-    def _make_filter(self, properties, bbox=[], datetime_=None):
+    def _make_filter(self, properties, bbox=None, datetime_=None):
         """
         Private function: Make STA filter from query properties
 
@@ -418,7 +419,7 @@ class SensorThingsProvider(BaseProvider):
             LOGGER.warning('No geometry found')
             return None
 
-    def _expand_properties(self, entity, keys=(), uri=''):
+    def _expand_properties(self, entity, keys=None, uri=''):
         """
         Private function: Parse STA entity into feature
 
@@ -432,7 +433,7 @@ class SensorThingsProvider(BaseProvider):
 
         # Properties filter & display
         keys = (() if not self.properties and not keys else
-                set(self.properties) | set(keys))
+                set(self.properties) | set(keys or []))
 
         if self.entity == 'Things':
             self._expand_location(entity)

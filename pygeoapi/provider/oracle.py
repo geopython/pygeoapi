@@ -55,7 +55,7 @@ class DatabaseConnection:
     The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, properties=[], context="query"):
+    def __init__(self, conn_dic, table, properties=None, context="query"):
         """
         OracleProvider Class constructor
 
@@ -86,7 +86,7 @@ class DatabaseConnection:
         self.columns = (
             None  # Comma sepparated string with column names (for SQL query)
         )
-        self.properties = [item.lower() for item in properties]
+        self.properties = [item.lower() for item in properties or []]
         self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
@@ -532,10 +532,10 @@ class OracleProvider(BaseProvider):
         resulttype="results",
         bbox=None,
         datetime_=None,
-        properties=[],
-        sortby=[],
+        properties=None,
+        sortby=None,
         skip_geometry=False,
-        select_properties=[],
+        select_properties=None,
         crs_transform_spec=None,
         q=None,
         language=None,
@@ -560,6 +560,8 @@ class OracleProvider(BaseProvider):
         :returns: GeoJSON FeaturesCollection
         """
 
+        properties = properties or []
+        select_properties = select_properties or []
         # Check mandatory filter properties
         property_dict = dict(properties)
         if self.mandatory_properties:
@@ -621,7 +623,7 @@ class OracleProvider(BaseProvider):
             #   or the configured columns from the Yaml file.
             props = (
                 db.columns
-                if select_properties == []
+                if not select_properties
                 else ", ".join([p for p in select_properties])
             )
 

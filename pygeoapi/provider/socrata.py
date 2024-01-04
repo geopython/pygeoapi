@@ -93,8 +93,8 @@ class SODAServiceProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         SODA query
 
@@ -131,7 +131,7 @@ class SODAServiceProvider(BaseProvider):
             LOGGER.debug('Returning hits')
             return fc
 
-        if sortby != []:
+        if sortby:
             params['order'] = self._make_orderby(sortby)
 
         params['offset'] = offset
@@ -181,7 +181,7 @@ class SODAServiceProvider(BaseProvider):
         f['id'] = f['properties'].pop(self.id_field)
         return f
 
-    def _make_fields(self, select_properties=[]):
+    def _make_fields(self, select_properties=None):
         """
         Make SODA select clause
 
@@ -189,19 +189,19 @@ class SODAServiceProvider(BaseProvider):
 
         :returns: SODA query `$select` clause
         """
-        if self.properties == [] and select_properties == []:
+        if not self.properties and not select_properties:
             return '*'
 
-        if self.properties != [] and select_properties != []:
+        if self.properties and select_properties:
             outFields = set(self.properties) & set(select_properties)
         else:
-            outFields = set(self.properties) | set(select_properties)
+            outFields = set(self.properties) | set(select_properties or [])
 
         outFields = set([self.id_field, *outFields])
         return ','.join(outFields)
 
     @staticmethod
-    def _make_orderby(sortby=[]):
+    def _make_orderby(sortby=None):
         """
         Make SODA order clause
 
@@ -209,12 +209,13 @@ class SODAServiceProvider(BaseProvider):
 
         :returns: SODA query `$order` clause
         """
+        sortby = sortby or []
         __ = {'+': 'ASC', '-': 'DESC'}
         ret = [f"{_['property']} {__[_['order']]}" for _ in sortby]
 
         return ','.join(ret)
 
-    def _make_where(self, bbox=[], datetime_=None, properties=[]):
+    def _make_where(self, bbox=None, datetime_=None, properties=None):
         """
         Private function: Make SODA filter from query properties
 
@@ -227,12 +228,12 @@ class SODAServiceProvider(BaseProvider):
 
         ret = []
 
-        if properties != []:
+        if properties:
             ret.extend(
                 [f'{k} = "{v}"' for (k, v) in properties]
             )
 
-        if bbox != []:
+        if bbox:
             minx, miny, maxx, maxy = bbox
             bpoly = f"'POLYGON (({minx} {miny}, {maxx} {miny}, \
                      {maxx} {maxy}, {minx} {maxy}, {minx} {miny}))'"

@@ -112,8 +112,8 @@ class PostgreSQLProvider(BaseProvider):
         self.fields = self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None,
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None,
               filterq=None, crs_transform_spec=None, **kwargs):
         """
         Query Postgis for all the content.
@@ -140,7 +140,7 @@ class PostgreSQLProvider(BaseProvider):
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(filterq)
         bbox_filter = self._get_bbox_filter(bbox)
-        order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
+        order_by_clauses = self._get_order_by_clauses(sortby or [], self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
                                                              skip_geometry)
 

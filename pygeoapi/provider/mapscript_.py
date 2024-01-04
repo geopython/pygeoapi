@@ -115,7 +115,7 @@ class MapScriptProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError('Cannot connect to map service')
 
-    def query(self, style=None, bbox=[], width=500, height=300, crs='CRS84',
+    def query(self, style=None, bbox=None, width=500, height=300, crs='CRS84',
               datetime_=None, format_='png', transparent=True, **kwargs):
         """
         Generate map
@@ -147,7 +147,7 @@ class MapScriptProvider(BaseProvider):
                 prj_src = mapscript.projectionObj(self._layer.getProjection())
                 prj_dst = mapscript.projectionObj(prj_dst_text)
 
-                rect = mapscript.rectObj(*bbox)
+                rect = mapscript.rectObj(*(bbox or []))
                 _ = rect.project(prj_src, prj_dst)
 
                 map_bbox = [rect.minx, rect.miny, rect.maxx, rect.maxy]

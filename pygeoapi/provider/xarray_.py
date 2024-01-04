@@ -201,7 +201,7 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
-    def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
+    def query(self, properties=None, subsets=None, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):
         """
          Extract data from collection collection
@@ -215,6 +215,8 @@ class XarrayProvider(BaseProvider):
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
+        properties = properties if properties is not None else []
+        subsets = subsets if subsets is not None else {}
 
         if not properties and not subsets and format_ != 'json':
             LOGGER.debug('No parameters specified, returning native data')

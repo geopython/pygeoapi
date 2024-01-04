@@ -98,8 +98,8 @@ class TinyDBCatalogueProvider(BaseProvider):
         return fields
 
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         query TinyDB document store
 

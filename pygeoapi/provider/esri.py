@@ -108,8 +108,8 @@ class ESRIServiceProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         ESRI query
 
@@ -136,7 +136,7 @@ class ESRIServiceProvider(BaseProvider):
             'where': self._make_where(properties, datetime_)
             }
 
-        if bbox != []:
+        if len(bbox or []) == 4:
             xmin, ymin, xmax, ymax = bbox
             params['inSR'] = '4326'
             params['geometryType'] = 'esriGeometryEnvelope'
@@ -233,7 +233,7 @@ class ESRIServiceProvider(BaseProvider):
 
         :returns: ESRI query `order` clause
         """
-        if sortby == []:
+        if not sortby:
             return None
 
         __ = {'+': 'ASC', '-': 'DESC'}
@@ -241,7 +241,7 @@ class ESRIServiceProvider(BaseProvider):
 
         return ','.join(ret)
 
-    def _make_fields(self, select_properties=[]):
+    def _make_fields(self, select_properties=None):
         """
         Make ESRI out fields clause
 
@@ -249,17 +249,18 @@ class ESRIServiceProvider(BaseProvider):
 
         :returns: ESRI query `outFields` clause
         """
-        if self.properties == [] and select_properties == []:
+        select_properties = select_properties or []
+        if not self.properties and not select_properties:
             return '*'
 
-        if self.properties != [] and select_properties != []:
+        if self.properties and select_properties:
             outFields = set(self.properties) & set(select_properties)
         else:
             outFields = set(self.properties) | set(select_properties)
 
         return ','.join(outFields)
 
-    def _make_where(self, properties=[], datetime_=None):
+    def _make_where(self, properties=None, datetime_=None):
         """
         Make ESRI filter from query properties
 
@@ -269,12 +270,12 @@ class ESRIServiceProvider(BaseProvider):
         :returns: ESRI query `where` clause
         """
 
-        if properties == [] and datetime_ is None:
+        if not properties and datetime_ is None:
             return '1 = 1'
 
         p = []
 
-        if properties != []:
+        if properties:
 
             for (k, v) in properties:
                 if 'String' in self.fields[k]['type']:

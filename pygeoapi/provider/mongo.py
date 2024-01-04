@@ -92,7 +92,7 @@ class MongoProvider(BaseProvider):
 
         return (fields)
 
-    def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
+    def _get_feature_list(self, filterObj, sortList=None, skip=0, maxitems=1,
                           skip_geometry=False):
         featurecursor = self.featuredb[self.collection].find(filterObj)
 
@@ -112,8 +112,8 @@ class MongoProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         query the provider
 
@@ -121,7 +121,7 @@ class MongoProvider(BaseProvider):
         """
         and_filter = []
 
-        if len(bbox) == 4:
+        if len(bbox or []) == 4:
             x, y, w, h = map(float, bbox)
             and_filter.append(
                 {'geometry': {'$geoWithin': {'$box': [[x, y], [w, h]]}}})
@@ -132,14 +132,14 @@ class MongoProvider(BaseProvider):
             assert isinstance(datetime_, datetime)
             and_filter.append({'properties.datetime': {'$gte': datetime_}})
 
-        for prop in properties:
+        for prop in properties or []:
             and_filter.append({"properties."+prop[0]: {'$eq': prop[1]}})
 
         filterobj = {'$and': and_filter} if and_filter else {}
 
         sort_list = [("properties." + sort['property'],
                       ASCENDING if (sort['order'] == '+') else DESCENDING)
-                     for sort in sortby]
+                     for sort in sortby or []]
 
         featurelist, matchcount = self._get_feature_list(
             filterobj, sortList=sort_list, skip=offset, maxitems=limit,
