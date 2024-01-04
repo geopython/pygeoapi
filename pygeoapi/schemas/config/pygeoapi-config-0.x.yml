@@ -148,6 +148,43 @@ properties:
             logfile:
                 type: string
                 description: the full file path to the logfile.
+            logformat:
+                type: string
+                description: custom logging format
+            dateformat:
+                type: string
+                description: custom date format to use in logs
+            rotation:
+                type: object
+                description: log rotation settings
+                properties:
+                    mode:
+                        type: string
+                        description: whether to rotate based on size or time
+                        enum:
+                            - size
+                            - time
+                    when:
+                        type: string
+                        description: type of interval
+                        enum:
+                            - s
+                            - m
+                            - h
+                            - d
+                            - w0-w6
+                            - midnight
+                    interval:
+                        type: integer
+                        description: how often to rotate in time mode
+                    max_bytes:
+                        type: integer
+                        description: when to rotate in size mode
+                    backup_count:
+                        type: integer
+                        description: how many backups to keep
+                required:
+                    - mode
         required:
             - level
     metadata:

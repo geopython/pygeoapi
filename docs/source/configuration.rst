@@ -83,9 +83,33 @@ The ``logging`` section provides directives for logging messages which are usefu
   logging:
       level: ERROR  # the logging level (see https://docs.python.org/3/library/logging.html#logging-levels)
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
+      logformat: # example for miliseconds:'[%(asctime)s.%(msecs)03d] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+      dateformat: # example for miliseconds:'%Y-%m-%dT%H:%M:%S'
 
 .. note::
    If ``level`` is defined and ``logfile`` is undefined, logging messages are output to the server's ``stdout``.
+
+
+``logging.rotation``
+^^^^^^^^^^^^^^^^^^^^
+
+The ``rotation`` supports rotation of disk log files. The ``logfile`` file is opened and used as the stream for logging.
+
+.. code-block:: yaml
+
+  logging:
+      logfile: /path/to/pygeoapi.log  # the full file path to the logfile
+      rotation:
+          mode: # [time|size]
+          when: # [s|m|h|d|w0-w6|midnight]
+          interval: 
+          max_bytes: 
+          backup_count: 
+.. note::
+  Rotation block is not mandatory and defined only when needed. The ``mode`` can be defined by size or time.
+  For RotatingFileHandler_ set mode size and parameters max_bytes and backup_count.
+
+  For TimedRotatingFileHandler_ set mode time and parameters when, interval and backup_count.
 
 
 ``metadata``
@@ -601,3 +625,5 @@ At this point, you have the configuration ready to administer the server.
 .. _`JSON-LD`: https://json-ld.org
 .. _`Google Structured Data Testing Tool`: https://search.google.com/structured-data/testing-tool#url=https%3A%2F%2Fdemo.pygeoapi.io%2Fmaster
 .. _`Google Dataset Search`: https://developers.google.com/search/docs/appearance/structured-data/dataset
+.. _RotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#rotatingfilehandler
+.. _TimedRotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler
