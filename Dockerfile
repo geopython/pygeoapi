@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy-20230425
+FROM ubuntu:jammy-20231211.1
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
