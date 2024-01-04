@@ -95,7 +95,12 @@ class GeoJSONProvider(BaseProvider):
             LOGGER.warning(f'File {self.data} does not exist.')
         return fields
 
-    def _load(self, skip_geometry=None, properties=None, select_properties=None):
+    def _load(
+            self,
+            skip_geometry=None,
+            properties=None,
+            select_properties=None
+    ):
         """Load and validate the source GeoJSON file
         at self.data
 

@@ -233,7 +233,8 @@ class SensorThingsProvider(BaseProvider):
         }
 
         if properties or bbox or datetime_:
-            params['$filter'] = self._make_filter(properties or [], bbox, datetime_)
+            params['$filter'] = self._make_filter(
+                properties or [], bbox, datetime_)
 
         if sortby:
             params['$orderby'] = self._make_orderby(sortby or [])
@@ -272,7 +273,12 @@ class SensorThingsProvider(BaseProvider):
 
         return fc
 
-    def _make_feature(self, entity, select_properties=None, skip_geometry=False):
+    def _make_feature(
+            self,
+            entity,
+            select_properties=None,
+            skip_geometry=False
+    ):
         """
         Private function: Create feature from entity
 
