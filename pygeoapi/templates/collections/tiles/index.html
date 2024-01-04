@@ -86,19 +86,19 @@
 
     var url = tilesUrl
         .replace('{dataset}', '{{ data["id"] }}')
-        .replace('{tileMatrixSetId}', tileset)
+        .replace('{tileMatrixSetId}', scheme)
         .replace("tileMatrix", "z")
         .replace("tileRow", "y")
         .replace("tileCol", "x");
 
-    {% if data['format'] == 'png' %}
+    {% if data['tile_type'] == 'raster' %}
         map.addLayer(new L.TileLayer(
             url, {
                 maxZoom: {{ data['maxzoom'] }},
                 crs: 'EPSG:3857'
             }
         ));
-    {% else  %}
+    {% elif data['tile_type'] == 'vector' %}
         var VectorTileOptions = {
             interactive: true,
             rendererFactory: L.canvas.tile,

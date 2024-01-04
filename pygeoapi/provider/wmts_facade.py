@@ -56,6 +56,9 @@ class WMTSFacadeProvider(BaseTileProvider):
         :returns: pygeoapi.provider.WMTSFacadeProvider
         """
 
+        if provider_def['format']['name'] not in ['png', 'jpeg']:
+            raise RuntimeError('wmts format has to be png or jpeg')
+
         super().__init__(provider_def)
 
         self.tile_type = 'raster'
@@ -150,8 +153,8 @@ class WMTSFacadeProvider(BaseTileProvider):
                 'request': 'GetTile',
                 'version': '1.0.0',
                 'format': self.format_type,
-                'layer': self.options['layer'],
-                'tileMatrixSet': self.options['tile_matrix_set'],
+                'layer': self.options['wmts_layer'],
+                'tileMatrixSet': self.options['wmts_tile_matrix_set'],
                 'tileMatrix': z,
                 'tileRow': y,
                 'tileCol': x,
@@ -216,7 +219,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
         links = []
         service_url_link_type = "application/vnd.mapbox-vector-tile"
-        service_url_link_title = f'{tileset} vector tiles for {layer}'
+        service_url_link_title = f'{tileset} raster tiles for {dataset}'
         service_url_link = LinkType(href=service_url, rel="item",
                                     type=service_url_link_type,
                                     title=service_url_link_title)

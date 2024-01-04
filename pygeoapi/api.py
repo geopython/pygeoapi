@@ -102,6 +102,7 @@ F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
+F_JPEG = 'jpeg'
 F_MVT = 'mvt'
 F_NETCDF = 'NetCDF'
 
@@ -111,6 +112,7 @@ FORMAT_TYPES = OrderedDict((
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
     (F_PNG, 'image/png'),
+    (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
 ))
@@ -1043,7 +1045,7 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
-            is_vector_tile = collection_data_type == 'tile' and collection_data_format['name'] != 'png'
+            is_vector_tile = collection_data_type == 'tile' and collection_data_format['name'] not in [F_PNG, F_JPEG]
 
             collection = {
                 'id': k,
@@ -2833,20 +2835,18 @@ class API:
 
             tiles['tilesets'].append(tile_matrix)
 
-        format_type = p.format_type
-
         if request.format == F_HTML:  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
             tiles['tilesets'] = [
                 scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
-            tiles['format'] = format_type
             tiles['bounds'] = \
                 self.config['resources'][dataset]['extents']['spatial']['bbox']
             tiles['minzoom'] = p.options['zoom']['min']
             tiles['maxzoom'] = p.options['zoom']['max']
             tiles['collections_path'] = self.get_collections_url()
+            tiles['tile_type'] = p.tile_type
 
             content = render_j2_template(self.tpl_config,
                                          'collections/tiles/index.html', tiles,
