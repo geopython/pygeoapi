@@ -90,7 +90,7 @@ class WMTSFacadeProvider(BaseTileProvider):
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
         """
-        Gets mvt service description
+        Gets service description
 
         :param baseurl: base URL of endpoint
         :param servicepath: base path of URL
@@ -177,7 +177,7 @@ class WMTSFacadeProvider(BaseTileProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
-    def get_metadata(self, dataset, server_url, layer=None,
+    def get_metadata(self, dataset, server_url,
                      tileset=None, metadata_format=None, title=None,
                      description=None, keywords=None, **kwargs):
         """
@@ -185,8 +185,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
         :param dataset: dataset name
         :param server_url: server base url
-        :param layer: mvt tile layer name
-        :param tileset: mvt tileset name
+        :param tileset: tileset name
         :param metadata_format: format for metadata,
                             enum TilesMetadataFormat
 
@@ -194,7 +193,7 @@ class WMTSFacadeProvider(BaseTileProvider):
         """
 
         if metadata_format != TilesMetadataFormat.DEFAULT:
-            msg = f'No tiles metadata json in {metadata_format} format'  # noqa
+            msg = f'No tiles metadata json in {metadata_format} format available'  # noqa
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
