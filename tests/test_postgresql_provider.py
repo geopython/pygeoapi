@@ -44,7 +44,9 @@ import pytest
 import pyproj
 from http import HTTPStatus
 
+import pygeofilter.ast
 from pygeofilter.parsers.ecql import parse
+from pygeofilter.values import Geometry
 
 from pygeoapi.api import API
 
@@ -748,3 +750,69 @@ def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
     assert code == HTTPStatus.OK
     features = json.loads(response).get('features')
     assert len(features) == 0
+
+
+@pytest.mark.parametrize('original_filter, expected', [
+    pytest.param(
+        "INTERSECTS(geometry, POINT(1 1))",
+        pygeofilter.ast.GeometryIntersects(
+            pygeofilter.ast.Attribute(name='custom_geom_name'),
+            Geometry({'type': 'Point', 'coordinates': (1, 1)})
+        ),
+        id='unnested-geometry'
+    ),
+    pytest.param(
+        "some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))",
+        pygeofilter.ast.And(
+            pygeofilter.ast.Equal(
+                pygeofilter.ast.Attribute(name='some_attribute'), 10),
+            pygeofilter.ast.GeometryIntersects(
+                pygeofilter.ast.Attribute(name='custom_geom_name'),
+                Geometry({'type': 'Point', 'coordinates': (1, 1)})
+            ),
+        ),
+        id='nested-geometry'
+    ),
+    pytest.param(
+        "(some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))) OR "
+        "DWITHIN(geometry, POINT(2 2), 10, meters)",
+        pygeofilter.ast.Or(
+            pygeofilter.ast.And(
+                pygeofilter.ast.Equal(
+                    pygeofilter.ast.Attribute(name='some_attribute'), 10),
+                pygeofilter.ast.GeometryIntersects(
+                    pygeofilter.ast.Attribute(name='custom_geom_name'),
+                    Geometry({'type': 'Point', 'coordinates': (1, 1)})
+                ),
+            ),
+            pygeofilter.ast.DistanceWithin(
+                pygeofilter.ast.Attribute(name='custom_geom_name'),
+                Geometry({'type': 'Point', 'coordinates': (2, 2)}),
+                distance=10,
+                units='meters',
+            )
+        ),
+        id='complex-filter'
+    ),
+])
+def test_modify_pygeofilter(original_filter, expected):
+
+    class _CustomPostgreSqlProvider(PostgreSQLProvider):
+        """This is a subclass of the original PostgreSQLProvider.
+
+        The current test is only interested in verifying the correctness of
+        the logic that modifies the parsed filter. As such, in order
+        to simplify instantiating the postgresql pygeoapi provider, and
+        in order to avoid dealing with mocking out the sqlalchemy table
+        reflection mechanism, this class overrides the __init__() method
+        and can be used to test the implementation of the base class'
+        `self._modify_pygeofilter()` method, which is really all we want
+        to test here.
+        """
+        def __init__(self):
+            self.geom = 'custom_geom_name'
+
+    provider = _CustomPostgreSqlProvider()
+    parsed_filter = parse(original_filter)
+    result = provider._modify_pygeofilter(parsed_filter)
+    assert result == expected

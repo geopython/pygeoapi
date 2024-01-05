@@ -55,6 +55,7 @@ from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is nee
 from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
+import pygeofilter.ast
 import pyproj
 import shapely
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
@@ -138,7 +139,8 @@ class PostgreSQLProvider(BaseProvider):
 
         LOGGER.debug('Preparing filters')
         property_filters = self._get_property_filters(properties)
-        cql_filters = self._get_cql_filters(filterq)
+        modified_filterq = self._modify_pygeofilter(filterq)
+        cql_filters = self._get_cql_filters(modified_filterq)
         bbox_filter = self._get_bbox_filter(bbox)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
@@ -495,3 +497,40 @@ class PostgreSQLProvider(BaseProvider):
         else:
             crs_transform = None
         return crs_transform
+
+    def _modify_pygeofilter(
+            self,
+            ast_tree: pygeofilter.ast.Node,
+    ) -> pygeofilter.ast.Node:
+        """
+        Prepare the input pygeofilter for querying the database.
+
+        Returns a new ``pygeofilter.ast.Node`` object that can be used for
+        querying the database.
+        """
+        new_tree = deepcopy(ast_tree)
+        _inplace_replace_geometry_filter_name(new_tree, self.geom)
+        return new_tree
+
+
+def _inplace_replace_geometry_filter_name(
+        node: pygeofilter.ast.Node,
+        geometry_column_name: str
+):
+    """Recursively traverse node tree and rename nodes of type ``Attribute``.
+
+    Nodes of type ``Attribute`` named ``geometry`` are renamed to the value of
+    the ``geometry_column_name`` parameter.
+    """
+    try:
+        sub_nodes = node.get_sub_nodes()
+    except AttributeError:
+        pass
+    else:
+        for sub_node in sub_nodes:
+            is_attribute_node = isinstance(sub_node, pygeofilter.ast.Attribute)
+            if is_attribute_node and sub_node.name == "geometry":
+                sub_node.name = geometry_column_name
+            else:
+                _inplace_replace_geometry_filter_name(
+                    sub_node, geometry_column_name)
