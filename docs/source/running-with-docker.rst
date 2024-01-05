@@ -103,32 +103,6 @@ Below is a corresponding ``docker-compose`` approach:
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
 
-Deploying with Starlette
-------------------------
-
-By default the ``pygeoapi`` Docker image will run using ``Flask``.  If you need to run using a
-different framework, you can set the ``WSGI_APP_FRAMEWORK`` and ``WSGI_WORKER_CLASS`` environment variables.
-
-.. code-block:: bash
-
-   docker run -p 5000:80 -e WSGI_APP_FRAMEWORK='pygeoapi.starlette_app:APP' -e WSGI_WORKER_CLASS='uvicorn.workers.UvicornH11Worker' -it geopython/pygeoapi
-
-Below is a corresponding ``docker-compose`` approach:
-
-.. code-block:: yaml
-
-   version: "3"
-   services:
-     pygeoapi:
-       image: geopython/pygeoapi:latest
-       ports:
-         - "5000:80"
-       environment:
-        - WSGI_APP_FRAMEWORK=pygeoapi.starlette_app:APP
-        - WSGI_WORKER_CLASS=uvicorn.workers.UvicornH11Worker
-
-A corresponding example can be found in the pygeoapi examples.
-
 Summary
 -------
 
