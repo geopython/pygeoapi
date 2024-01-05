@@ -153,7 +153,8 @@ class CSVProvider(BaseProvider):
                 feature['properties'] = OrderedDict()
 
                 if self.properties or select_properties:
-                    for p in set(self.properties) | set(select_properties or []):
+                    select_properties = set(select_properties or [])
+                    for p in set(self.properties) | select_properties:
                         try:
                             feature['properties'][p] = get_typed_value(row[p])
                         except KeyError as err:
