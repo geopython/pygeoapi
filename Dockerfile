@@ -91,7 +91,6 @@ ENV TZ=${TZ} \
     locales \
     tzdata \
     gunicorn \
-    uvicorn \
     python3-dateutil \
     python3-gevent \
     python3-greenlet \
@@ -124,7 +123,6 @@ RUN \
     # Install remaining pygeoapi deps
     && pip3 install -r requirements-docker.txt \
     && pip3 install -r requirements-admin.txt \
-    && pip3 install -r requirements-starlette.txt \
 
     # Install pygeoapi
     && pip3 install -e . \
