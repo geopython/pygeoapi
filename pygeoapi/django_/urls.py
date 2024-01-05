@@ -225,13 +225,7 @@ urlpatterns = [
         apply_slash_rule('stac/'),
         views.stac_catalog_root,
         name='stac-catalog-root'
-    ),
-    path('stac/<str:path>', views.stac_catalog_path, name='stac-catalog-path'),
-    path(
-        apply_slash_rule('stac/search/'),
-        views.stac_catalog_search,
-        name='stac-catalog-search'
-    ),
+    )
 ]
 
 url_route_prefix = settings.API_RULES.get_url_prefix('django')

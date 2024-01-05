@@ -484,10 +484,6 @@ def stac_catalog_path(request: HttpRequest, path: str) -> HttpResponse:
     return response
 
 
-def stac_catalog_search(request: HttpRequest) -> HttpResponse:
-    pass
-
-
 def admin_config(request: HttpRequest) -> HttpResponse:
     """
     Admin landing page endpoint
