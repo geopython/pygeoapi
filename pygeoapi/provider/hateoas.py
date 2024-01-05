@@ -169,7 +169,7 @@ class HateoasProvider(BaseProvider):
                         'entry:type': 'Item'
                     })
 
-            if len(link_href_list) == 0:
+            if resource_type == "Collection" and len(link_href_list) == 0:
                 content = jsondata
                 content = _modify_content_for_display(
                     content,
