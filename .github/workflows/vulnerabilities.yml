@@ -1,0 +1,40 @@
+name: Check vulnerabilities
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '!**.md'
+  release:
+    types:
+      - released
+
+jobs:
+  clone:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+          architecture: x64
+      - name: Checkout pygeoapi
+        uses: actions/checkout@master
+
+  vulnerabilities:
+    needs: [clone]
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Scan vulnerabilities with trivy
+      run: |
+        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install -y trivy
+        trivy --exit-code 1 fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed .
