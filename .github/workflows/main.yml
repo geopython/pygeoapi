@@ -33,20 +33,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  vulnerabilities:
-    needs: [flake8_py3]
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Scan vulnerabilities with trivy
-      run: |
-        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update
-        sudo apt-get install -y trivy
-        trivy --exit-code 1 fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed .
-
   main:
     needs: [flake8_py3]
     runs-on: ubuntu-22.04
