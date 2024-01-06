@@ -17,22 +17,15 @@ env:
   DOCKER_REPOSITORY: geopython/pygeoapi
 
 jobs:
-  clone:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-          architecture: x64
-      - name: Checkout pygeoapi
-        uses: actions/checkout@master
 
   vulnerabilities:
-    needs: [clone]
     runs-on: ubuntu-22.04
-
+    defaults:
+      run:
+        working-directory: .
     steps:
+    - name: Checkout pygeoapi
+      uses: actions/checkout@v4
     - name: Scan vulnerabilities with trivy
       run: |
         sudo apt-get install -y wget apt-transport-https gnupg lsb-release
@@ -41,7 +34,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y trivy
         trivy --exit-code 1 fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed .
-    - name: Build an image from Dockerfile
+    - name: Build locally the image from Dockerfile
       run: |
         docker buildx build -t ${{ env.DOCKER_REPOSITORY }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
