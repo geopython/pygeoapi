@@ -43,7 +43,7 @@ jobs:
         trivy --exit-code 1 fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed .
     - name: Build an image from Dockerfile
       run: |
-        docker build -t ${{ env.DOCKER_REPOSITORY }}:${{ github.sha }} .
+        docker buildx build -t ${{ env.DOCKER_REPOSITORY }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
       run: |
         trivy --exit-code 1 image --severity HIGH,CRITICAL ${{ env.DOCKER_REPOSITORY }}:${{ github.sha }} --ignore-unfixed
