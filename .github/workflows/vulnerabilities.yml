@@ -13,9 +13,6 @@ on:
     types:
       - released
 
-env:
-  DOCKER_REPOSITORY: geopython/pygeoapi
-
 jobs:
 
   vulnerabilities:
@@ -37,7 +34,7 @@ jobs:
         scan-ref: .
     - name: Build locally the image from Dockerfile
       run: |
-        docker buildx build -t ${{ env.DOCKER_REPOSITORY }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
       uses: aquasecurity/trivy-action@master
       with:
@@ -46,4 +43,4 @@ jobs:
         ignore-unfixed: true
         severity: CRITICAL,HIGH
         vuln-type: os,library
-        image-ref: '${{ env.DOCKER_REPOSITORY }}:${{ github.sha }}'
+        image-ref: '${{ github.repository }}:${{ github.sha }}'
