@@ -14,27 +14,33 @@ on:
       - released
 
 jobs:
-  clone:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-          architecture: x64
-      - name: Checkout pygeoapi
-        uses: actions/checkout@master
 
   vulnerabilities:
-    needs: [clone]
     runs-on: ubuntu-22.04
-
+    defaults:
+      run:
+        working-directory: .
     steps:
+    - name: Checkout pygeoapi
+      uses: actions/checkout@v4
     - name: Scan vulnerabilities with trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: fs
+        exit-code: 1
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+        scanners: vuln,misconfig,secret
+        scan-ref: .
+    - name: Build locally the image from Dockerfile
       run: |
-        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update
-        sudo apt-get install -y trivy
-        trivy --exit-code 1 fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed .
+        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+    - name: Scan locally built Docker image for vulnerabilities with trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: image
+        exit-code: 1
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+        vuln-type: os,library
+        image-ref: '${{ github.repository }}:${{ github.sha }}'
