@@ -27,14 +27,19 @@
 #
 # =================================================================
 
+import json
 import logging
 from pathlib import Path
 from urllib.parse import urlparse
 
 from pygeoapi.provider.tile import (
     ProviderTileNotFoundError)
-from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base_mvt import BaseMVTProvider
+from pygeoapi.models.provider.base import (
+    TileSetMetadata, LinkType)
+from pygeoapi.models.provider.mvt import MVTTilesJson
+
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -169,46 +174,89 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             except FileNotFoundError as err:
                 raise ProviderTileNotFoundError(err)
 
+    def get_html_metadata(self, dataset, server_url, layer, tileset,
+                          title, description, keywords, **kwargs):
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+        metadata_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/metadata')
+
+        metadata = dict()
+        metadata['id'] = dataset
+        metadata['title'] = title
+        metadata['tileset'] = tileset
+        metadata['collections_path'] = service_url
+        metadata['json_url'] = f'{metadata_url}?f=json'
+        # Some providers may not implement tilejson metadata
+        metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
+
+        return metadata
+
     def get_default_metadata(self, dataset, server_url, layer, tileset,
                              title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in default format
-        """
-        LOGGER.debug("Get default metadata")
-        return ""
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+
+        content = {}
+        tiling_schemes = self.get_tiling_schemes()
+        # Default values
+        tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
+        crs = tiling_schemes[0].crs
+        # Checking the selected matrix in configured tiling_schemes
+        for schema in tiling_schemes:
+            if (schema.tileMatrixSet == tileset):
+                crs = schema.crs
+                tileMatrixSetURI = schema.tileMatrixSetURI
+
+        content = TileSetMetadata(title=title, description=description,
+                                  keywords=keywords, crs=crs,
+                                  tileMatrixSetURI=tileMatrixSetURI)
+
+        links = []
+        service_url_link_type = "application/vnd.mapbox-vector-tile"
+        service_url_link_title = f'{tileset} vector tiles for {layer}'
+        service_url_link = LinkType(href=service_url, rel="item",
+                                    type=service_url_link_type,
+                                    title=service_url_link_title)
+        links.append(service_url_link)
+
+        content.links = links
+
+        return content.dict(exclude_none=True)
 
     def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
                               title, description, keywords, **kwargs):
         """
         Gets tile metadata in tilejson format
         """
-        LOGGER.debug("Get tilejson metadata")
-        return ""
 
-    def get_custom_metadata(self, dataset, server_url, layer, tileset,
-                            title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in custom format
-        """
-        LOGGER.debug("Get custom metadata")
-        return ""
+        if not isinstance(self.service_metadata_url, Path):
+            msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
 
-    # def get_metadata(self, dataset, server_url, layer=None,
-    #                  tileset=None, metadata_format=None, title=None,
-    #                  description=None, keywords=None, **kwargs):
-    #     """
-    #     Gets tile metadata
-    #
-    #     :param dataset: dataset name
-    #     :param server_url: server base url
-    #     :param layer: mvt tile layer name
-    #     :param tileset: mvt tileset name
-    #     :param metadata_format: format for metadata,
-    #                         enum TilesMetadataFormat
-    #
-    #     :returns: `dict` of JSON metadata
-    #     """
-    #
-    #     return super().get_metadata(dataset, server_url, layer,
-    #                                 tileset, metadata_format, title,
-    #                                 description, keywords, **kwargs)
+        if self.service_metadata_url.exists():
+            with open(self.service_metadata_url, 'r') as md_file:
+                metadata_json_content = json.loads(md_file.read())
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+
+        content = {}
+
+        if 'metadata_json_content' in locals():
+            content = MVTTilesJson(**metadata_json_content)
+            content.tiles = service_url
+            content.vector_layers = json.loads(
+                    metadata_json_content["json"])["vector_layers"]
+            return content.dict()
+        else:
+            msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)

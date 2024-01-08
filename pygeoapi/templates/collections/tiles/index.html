@@ -39,25 +39,23 @@
       </div>
       <br/>
       <div class="row">
-        {% if data['format']=='tilejson' %}
           <div class="col-md-2 col-sm-12">{% trans %}Metadata{% endtrans %}</div>
-          <div class="col-md-8"><a id="tilejson" href="" target="_blank">Tiles metadata in {{ data['format'] }} format</a></div>
-        {% endif %}      </div>
+          <div class="col-md-8"><a id="metadata_link" href="" target="_blank">Metadata</a></div>
+      </div>
       <script>
         var select = document.getElementById('tilingScheme');
-        var tileset = select.value;
         let params = (new URL(document.location)).searchParams;
-        var scheme = params.get('scheme');
+        var scheme = params.get('scheme') ?? select.value;
         if (scheme) {
             select.value = scheme;
+            document.getElementById("metadata_link").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + scheme + "/metadata";
         }
         select.addEventListener('change', ev => {
           var scheme = ev.target.value;
+          console.log(scheme);
           document.location.search = `scheme=${scheme}`;
+          document.getElementById("metadata_link").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + scheme + "/metadata";
         });
-        if (document.getElementById("tilejson")){
-          document.getElementById("tilejson").href = "{{ config['server']['url'] }}/collections/{{ data['id'] }}/tiles/" + tileset + "/metadata";
-        }
         </script>
       <br/>
       <div class="row">

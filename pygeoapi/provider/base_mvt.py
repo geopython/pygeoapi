@@ -29,19 +29,13 @@
 #
 # =================================================================
 
-import json
 import logging
-import requests
-from pathlib import Path
 from urllib.parse import urlparse
 
 from pygeoapi.provider.tile import BaseTileProvider
-from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
-    TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType,
-    GeospatialDataType)
-from pygeoapi.models.provider.mvt import MVTTilesJson
-from pygeoapi.util import is_url, url_join
+    TileMatrixSetEnum, TilesMetadataFormat)
+from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -125,59 +119,102 @@ class BaseMVTProvider(BaseTileProvider):
 
         raise NotImplementedError()
 
+    def get_html_metadata(self, dataset, server_url, layer, tileset,
+                          title, description, keywords, **kwargs):
+        """
+        Gets tile metadata informations in html format
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+
+        raise NotImplementedError()
+
     def get_default_metadata(self, dataset, server_url, layer, tileset,
                              title, description, keywords, **kwargs):
         """
-        Gets tile metadata in default format
+        Gets tile metadata in default Tile Set Metadata format
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
         """
         raise NotImplementedError()
 
     def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
                               title, description, keywords, **kwargs):
         """
-        Gets tile metadata in tilejson format
-        """
-        raise NotImplementedError()
+        Gets tile metadata in Tilejson format
 
-    def get_custom_metadata(self, dataset, server_url, layer, tileset,
-                            title, description, keywords, **kwargs):
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
         """
-        Gets tile metadata in custom format
-        """
+
         raise NotImplementedError()
 
     def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, metadata_format=None, title=None,
                      description=None, keywords=None, **kwargs):
-        #     """
-        #     Gets tiles metadata
-        #
-        #     :param dataset: dataset name
-        #     :param server_url: server base url
-        #     :param layer: mvt tile layer name
-        #     :param tileset: mvt tileset name
-        #     :param metadata_format: format for metadata,
-        #                         enum TilesMetadataFormat
-        #     :param title: title name
-        #     :param description: description name
-        #     :param keywords: keywords list
-        #
-        #     :returns: `dict` of JSON metadata
-        #     """
-        if metadata_format == TilesMetadataFormat.DEFAULT:
+        """
+        Gets tiles metadata
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+
+        if metadata_format.upper() == TilesMetadataFormat.JSON:
             return self.get_default_metadata(dataset, server_url, layer,
                                              tileset, title, description,
                                              keywords, **kwargs)
-        elif metadata_format == TilesMetadataFormat.TILEJSON:
+        elif metadata_format.upper() == TilesMetadataFormat.TILEJSON:
             return self.get_tilejson_metadata(dataset, server_url, layer,
                                               tileset, title, description,
                                               keywords, **kwargs)
-        elif metadata_format == TilesMetadataFormat.CUSTOM:
-            return self.get_custom_metadata(dataset, server_url, layer,
-                                            tileset, title, description,
-                                            keywords, **kwargs)
+        elif metadata_format.upper() == TilesMetadataFormat.HTML:
+            return self.get_html_metadata(dataset, server_url, layer,
+                                          tileset, title, description,
+                                          keywords, **kwargs)
+        elif metadata_format.upper() == TilesMetadataFormat.JSONLD:
+            return self.get_default_metadata(dataset, server_url, layer,
+                                             tileset, title, description,
+                                             keywords, **kwargs)
         else:
-            raise NotImplementedError(f"Not a value of {TilesMetadataFormat}")
+            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported") # noqa
 
     # def get_metadata(self, dataset, server_url, layer=None,
     #                  tileset=None, metadata_format=None, title=None,
@@ -201,7 +238,7 @@ class BaseMVTProvider(BaseTileProvider):
     #         if metadata_format == TilesMetadataFormat.TILEJSON:
     #             with requests.Session() as session:
     #                 session.get(base_url)
-    #                 resp = session.get(f'{base_url}/{layer}/metadata.json')
+    #                 resp = session.get(f'{base_url}/{layer}/metadata.htmljson') # noqa
     #                 resp.raise_for_status()
     #             metadata_json_content = resp.json()
     #     else:
@@ -234,7 +271,7 @@ class BaseMVTProvider(BaseTileProvider):
     #         if 'metadata_json_content' in locals():
     #             content = metadata_json_content
     #             if 'json' in metadata_json_content:
-    #                 content['json'] = json.loads(metadata_json_content['json'])
+    #                 content['json'] = json.loads(metadata_json_content['json']) # noqa
     #             return content
     #         else:
     #             msg = f'No custom JSON for tiles metadata available: {self.service_metadata_url}'  # noqa

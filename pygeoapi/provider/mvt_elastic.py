@@ -33,6 +33,8 @@ from urllib.parse import urlparse
 
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.models.provider.base import (
+    TileSetMetadata, LinkType)
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -170,13 +172,58 @@ class MVTElasticProvider(BaseMVTProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
+    def get_html_metadata(self, dataset, server_url, layer, tileset,
+                          title, description, keywords, **kwargs):
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+        metadata_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/metadata')
+
+        metadata = dict()
+        metadata['id'] = dataset
+        metadata['title'] = title
+        metadata['tileset'] = tileset
+        metadata['collections_path'] = service_url
+        metadata['json_url'] = f'{metadata_url}?f=json'
+
+        return metadata
+
     def get_default_metadata(self, dataset, server_url, layer, tileset,
                              title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in default format
-        """
-        LOGGER.debug("Get default metadata")
-        return ""
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+
+        content = {}
+        tiling_schemes = self.get_tiling_schemes()
+        # Default values
+        tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
+        crs = tiling_schemes[0].crs
+        # Checking the selected matrix in configured tiling_schemes
+        for schema in tiling_schemes:
+            if (schema.tileMatrixSet == tileset):
+                crs = schema.crs
+                tileMatrixSetURI = schema.tileMatrixSetURI
+
+        content = TileSetMetadata(title=title, description=description,
+                                  keywords=keywords, crs=crs,
+                                  tileMatrixSetURI=tileMatrixSetURI)
+
+        links = []
+        service_url_link_type = "application/vnd.mapbox-vector-tile"
+        service_url_link_title = f'{tileset} vector tiles for {layer}'
+        service_url_link = LinkType(href=service_url, rel="item",
+                                    type=service_url_link_type,
+                                    title=service_url_link_title)
+        links.append(service_url_link)
+
+        content.links = links
+
+        return content.dict(exclude_none=True)
 
     def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
                               title, description, keywords, **kwargs):
@@ -185,31 +232,3 @@ class MVTElasticProvider(BaseMVTProvider):
         """
         LOGGER.debug("Get tilejson metadata")
         return ""
-
-    def get_custom_metadata(self, dataset, server_url, layer, tileset,
-                            title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in custom format
-        """
-        LOGGER.debug("Get custom metadata")
-        return ""
-
-    # def get_metadata(self, dataset, server_url, layer=None,
-    #                  tileset=None, metadata_format=None, title=None,
-    #                  description=None, keywords=None, **kwargs):
-    #     """
-    #     Gets tile metadata
-    #
-    #     :param dataset: dataset name
-    #     :param server_url: server base url
-    #     :param layer: mvt tile layer name
-    #     :param tileset: mvt tileset name
-    #     :param metadata_format: format for metadata,
-    #                         enum TilesMetadataFormat
-    #
-    #     :returns: `dict` of JSON metadata
-    #     """
-    #
-    #     return super().get_metadata(dataset, server_url, layer,
-    #                                 tileset, metadata_format, title,
-    #                                 description, keywords, **kwargs)

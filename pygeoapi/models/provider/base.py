@@ -38,13 +38,14 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class TilesMetadataFormat(Enum):
+class TilesMetadataFormat(str, Enum):
     # Tile Set Metadata
-    DEFAULT = "Tile Set Metadata"
+    JSON = "JSON"
+    JSONLD = "JSONLD"
     # TileJSON 3.0
-    TILEJSON = "TileJSON"
-    # Custom JSON
-    CUSTOMJSON = "Custom"
+    TILEJSON = "TILEJSON"
+    # HTML (default)
+    HTML = "HTML"
 
 
 # Tile Set Metadata Enums

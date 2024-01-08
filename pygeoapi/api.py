@@ -85,8 +85,6 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            get_crs_from_uri, get_supported_crs_list,
                            CrsTransformSpec, transform_bbox)
 
-from pygeoapi.models.provider.base import TilesMetadataFormat
-
 LOGGER = logging.getLogger(__name__)
 
 #: Return headers for requests (e.g:X-Powered-By)
@@ -2686,15 +2684,12 @@ class API:
 
             tiles['tilesets'].append(tile_matrix)
 
-        metadata_format = p.options['metadata_format']
-
         if request.format == F_HTML:  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
             tiles['tilesets'] = [
                 scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
-            tiles['format'] = metadata_format
             tiles['bounds'] = \
                 self.config['resources'][dataset]['extents']['spatial']['bbox']
             tiles['minzoom'] = p.options['zoom']['min']
@@ -2825,47 +2820,30 @@ class API:
             return self.get_exception(HTTPStatus.NOT_FOUND, headers,
                                       request.format, 'NotFound', msg)
 
-        metadata_format = TilesMetadataFormat[
-            str(p.options['metadata_format']).upper()]
-
         # Set response language to requested provider locale
         # (if it supports language) and/or otherwise the requested pygeoapi
         # locale (or fallback default locale)
         l10n.set_response_language(headers, prv_locale, request.locale)
 
-        if request.format == F_HTML:  # render
-            tiles_metadata = p.get_metadata(
-                dataset=dataset, server_url=self.base_url,
-                layer=p.get_layer(), tileset=matrix_id,
-                metadata_format=TilesMetadataFormat.TILEJSON,
-                language=prv_locale)
-            metadata = dict()
-            metadata['metadata'] = tiles_metadata
-            metadata['id'] = dataset
-            metadata['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], request.locale)
-            metadata['tileset'] = matrix_id
-            metadata['format'] = metadata_format.value
-            metadata['collections_path'] = self.get_collections_url()
+        tiles_metadata = p.get_metadata(
+            dataset=dataset, server_url=self.base_url,
+            layer=p.get_layer(), tileset=matrix_id,
+            metadata_format=request._format, title=l10n.translate(
+                self.config['resources'][dataset]['title'],
+                request.locale),
+            description=l10n.translate(
+                self.config['resources'][dataset]['description'],
+                request.locale),
+            language=prv_locale)
 
+        if request.format == F_HTML:  # render
             content = render_j2_template(self.tpl_config,
                                          'collections/tiles/metadata.html',
-                                         metadata, request.locale)
+                                         tiles_metadata, request.locale)
 
             return headers, HTTPStatus.OK, content
         else:
-            tiles_metadata = p.get_metadata(
-                dataset=dataset, server_url=self.base_url,
-                layer=p.get_layer(), tileset=matrix_id,
-                metadata_format=metadata_format, title=l10n.translate(
-                    self.config['resources'][dataset]['title'],
-                    request.locale),
-                description=l10n.translate(
-                    self.config['resources'][dataset]['description'],
-                    request.locale),
-                language=prv_locale)
-
-        return headers, HTTPStatus.OK, tiles_metadata
+            return headers, HTTPStatus.OK, tiles_metadata
 
     @gzip
     @pre_process
