@@ -1045,7 +1045,9 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
-            is_vector_tile = collection_data_type == 'tile' and collection_data_format['name'] not in [F_PNG, F_JPEG]
+            is_vector_tile = (collection_data_type == 'tile' and
+                              collection_data_format['name'] not
+                              in [F_PNG, F_JPEG])
 
             collection = {
                 'id': k,
