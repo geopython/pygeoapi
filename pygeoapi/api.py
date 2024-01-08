@@ -74,6 +74,7 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderTypeError)
+from pygeoapi.models.provider.base import TilesMetadataFormat
 
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
@@ -2784,7 +2785,7 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        if not request.is_valid():
+        if not request.is_valid([TilesMetadataFormat.TILEJSON]):
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
 
