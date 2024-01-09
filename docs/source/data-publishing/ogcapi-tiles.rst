@@ -46,7 +46,6 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
          data: tests/data/tiles/ne_110m_lakes  # local directory tree
          # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf # tiles stored on a MinIO bucket
          options:
-             metadata_format: default # default | tilejson
              zoom:
                  min: 0
                  max: 5
@@ -77,7 +76,6 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
          # if you don't use precision 0, you will be requesting for aggregations which are not supported in the 
          # free version of elastic
          options:
-             metadata_format: default # default | tilejson
              zoom:
                  min: 0
                  max: 5
