@@ -3108,9 +3108,14 @@ class API:
                         'InvalidParameterValue', msg)
 
             for key in relevant_processes:
-                p = self.manager.get_processor(key)
-                p2 = l10n.translate_struct(deepcopy(p.metadata),
-                                           request.locale)
+                p, p2 = None, None
+
+                # Check if process is a "normal" process or one connected with websockets
+                if "processor" in self.manager.processes[key]:
+                    p = self.manager.get_processor(key)
+                    p2 = l10n.translate_struct(deepcopy(p.metadata), request.locale)
+                elif "type" in self.manager.processes[key] and self.manager.processes[key]["type"] == 'process-socket':
+                    p2 = l10n.translate_struct(self.manager.processes[key]["metadata"], request.locale)
                 p2['id'] = key
 
                 if process is None:
@@ -3340,6 +3345,15 @@ class API:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
+        
+        process_type = "process"
+        sid = None
+        
+        # Check if process is a "normal" process or one connected with websockets
+        if self.manager.processes[process_id]["type"] == 'process-socket':
+            process_type = "process-socket"
+            sid = self.manager.processes[process_id]["sid"]
+        
 
         data = request.data
         if not data:
@@ -3378,8 +3392,8 @@ class API:
             execution_mode = None
         try:
             LOGGER.debug('Executing process')
-            result = self.manager.execute_process(
-                process_id, data_dict, execution_mode=execution_mode)
+            print(self.manager.execute_process)
+            result = self.manager.execute_process(process_id, data_dict, execution_mode, process_type, sid)
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'
@@ -3484,6 +3498,31 @@ class API:
                     data, request.locale)
 
         return headers, HTTPStatus.OK, content
+
+
+    def get_websocket_results(self,
+                              job_id: str, 
+                              process_id: str, 
+                              results: dict, 
+                              mimetype: str) -> Tuple[str, Any, JobStatus]:
+        """
+        Handle websocket results
+        param job_id: job identifier
+        param process_id: process identifier
+        param results: results dictionary
+        param mimetype: mimetype of results
+
+        """
+
+        # Ensure results are a dict object
+        results_dict = {
+            "results" : results
+            }
+
+        
+        return self.manager.get_websocket_results(job_id, process_id, results_dict, mimetype)
+
+
 
     @pre_process
     def delete_job(

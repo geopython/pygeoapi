@@ -1,10 +1,15 @@
 Babel
 click
 filelock
+eventlet
 Flask
+Flask-Cors
+flask_socketio
+gunicorn
 importlib_metadata
 jinja2
 jsonschema
+jsonpatch
 pydantic
 pygeofilter
 pygeoif

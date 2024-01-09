@@ -35,6 +35,7 @@ import os
 import click
 
 from flask import Flask, Blueprint, make_response, request, send_from_directory
+from flask_socketio import SocketIO, emit
 
 from pygeoapi.admin import Admin
 from pygeoapi.api import API
@@ -55,6 +56,10 @@ if 'templates' in CONFIG['server']:
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = API_RULES.strict_slashes
 
+SOCKETAPP = SocketIO(APP, logger = True, engineio_logger=False, cors_allowed_origins="*")
+
+
+
 BLUEPRINT = Blueprint(
     'pygeoapi',
     __name__,
@@ -67,7 +72,16 @@ ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
 if CONFIG['server'].get('cors', False):
     try:
         from flask_cors import CORS
-        CORS(APP)
+
+        CORS_EXPOSE_HEADERS = ['Link', 'Content-Type', 'Location']
+        CORS_RESOURCES = {r'/processes/*': {'origins': '*',
+                                        'expose_headers': CORS_EXPOSE_HEADERS}, 
+                                        r'/jobs/*': {'origins': '*',
+                                        'expose_headers': CORS_EXPOSE_HEADERS}}  
+        
+        CORS(APP, resources=CORS_RESOURCES)
+
+        
     except ModuleNotFoundError:
         print('Python package flask-cors required for CORS support')
 
@@ -75,6 +89,31 @@ APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
 
 api_ = API(CONFIG, OPENAPI)
+
+# Create a dict of open jobs that are running through Websockets
+WEBSOCKET_JOBS = {}
+
+def add_websocket_job(job_id: str, sid: str):
+    """
+    Add a job to the websocket jobs list
+
+    :param job_id: Job id
+    :param sid: Socket id
+    """
+    WEBSOCKET_JOBS[job_id] = sid
+
+    print(f'Added job {job_id} to websocket jobs list')
+
+def remove_websocket_job(job_id: str):
+    """
+    Remove a job from the websocket jobs list
+
+    :param job_id: Job id
+    """
+    WEBSOCKET_JOBS.pop(job_id, None)
+
+    print(f'Removed job {job_id} from websocket jobs list')
+
 
 OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
 
@@ -120,6 +159,11 @@ def get_response(result: tuple):
 
     if headers:
         response.headers = headers
+    
+    # Add CORS headers
+    # response.headers['Access-Control-Allow-Origin'] = '*'
+    # response.headers['Access-Control-Expose-Headers'] = 'Location'
+
     return response
 
 
@@ -459,6 +503,70 @@ def stac_catalog_path(path):
     return get_response(api_.get_stac_path(request, path))
 
 
+@SOCKETAPP.on('connect')
+def connect():
+    print("Client connected: " + request.sid)
+
+@SOCKETAPP.on('register')
+def register(data):
+
+    try:
+        # Create a new process
+        new_process = {
+            data['id']: {
+                'type': 'process-socket',
+                'sid': request.sid,
+                'metadata': data
+            }
+        }
+
+        # Add process to the process manager
+        api_.manager.processes.update(new_process)                                   
+
+        print("New process registered: " + data['id'])
+
+        SOCKETAPP.emit('registration_success', {'info':'The registration was successful!'}, to=request.sid)
+
+    except Exception as e:
+        print("Error registering process: " + str(e))
+        SOCKETAPP.emit('registration_error', {'info':'The registration was unsuccessful!'}, to=request.sid)
+
+@SOCKETAPP.on('disconnect')
+def disconnect_process():
+
+    p = ""
+
+    # Remove the process from the process manager
+    for process in api_.manager.processes:
+        if 'sid' in api_.manager.processes[process] and api_.manager.processes[process]['sid'] == request.sid:
+            api_.manager.processes.pop(process)
+
+    print('Client disconnected: ' + process)
+
+@SOCKETAPP.on('simulation_results')
+def simulation_results(data):
+    try:
+        jobID = data['jobID']
+        processID = data['processID']
+        results = data['results']
+        mimetype = data['mimetype']
+
+        print('Simulation results received: ' + jobID)
+
+        # Process results
+        jfmt, outputs, current_status = api_.get_websocket_results(jobID, processID, results, mimetype)
+
+        print("The job was " + current_status.value)
+
+        # Remove websocket job
+        remove_websocket_job(jobID)
+    
+    except:
+        print("Error processing simulation results")
+
+
+
+
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
 def admin_config():
     """
@@ -537,7 +645,7 @@ def serve(ctx, server=None, debug=False):
     """
 
     # setup_logger(CONFIG['logging'])
-    APP.run(debug=True, host=api_.config['server']['bind']['host'],
+    SOCKETAPP.run(APP, host=api_.config['server']['bind']['host'],
             port=api_.config['server']['bind']['port'])
 
 
