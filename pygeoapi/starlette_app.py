@@ -50,7 +50,6 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API
-from pygeoapi.admin import Admin
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -61,6 +60,9 @@ if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
 
 OPENAPI = load_openapi_document()
+
+if CONFIG['server'].get('admin'):
+    from pygeoapi.admin import Admin
 
 p = Path(__file__)
 

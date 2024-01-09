@@ -36,7 +36,6 @@ import click
 
 from flask import Flask, Blueprint, make_response, request, send_from_directory
 
-from pygeoapi.admin import Admin
 from pygeoapi.api import API
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
@@ -47,6 +46,9 @@ CONFIG = get_config()
 OPENAPI = load_openapi_document()
 
 API_RULES = get_api_rules(CONFIG)
+
+if CONFIG['server'].get('admin'):
+    from pygeoapi.admin import Admin
 
 STATIC_FOLDER = 'static'
 if 'templates' in CONFIG['server']:
