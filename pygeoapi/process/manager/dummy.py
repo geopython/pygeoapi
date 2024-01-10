@@ -66,47 +66,6 @@ class DummyManager(BaseManager):
 
         return []
 
-    def execute_process(
-            self,
-            process_id: str,
-            data_dict: dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
-    ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
-        """
-        Default process execution handler
-
-        :param process_id: process identifier
-        :param data_dict: `dict` of data parameters
-        :param execution_mode: requested execution mode
-
-        :returns: tuple of job_id, MIME type, response payload, status and
-                  optionally additional HTTP headers to include in the
-                  response
-        """
-
-        jfmt = 'application/json'
-
-        response_headers = None
-        if execution_mode is not None:
-            response_headers = {
-                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
-            if execution_mode == RequestedProcessExecutionMode.respond_async:
-                LOGGER.debug('Dummy manager does not support asynchronous')
-                LOGGER.debug('Forcing synchronous execution')
-
-        processor = self.get_processor(process_id)
-        try:
-            jfmt, outputs = processor.execute(data_dict)
-            current_status = JobStatus.successful
-        except Exception as err:
-            outputs = {
-                'code': 'InvalidParameterValue',
-                'description': 'Error updating job'
-            }
-            current_status = JobStatus.failed
-            LOGGER.error(err)
-        job_id = str(uuid.uuid1())
-        return job_id, jfmt, outputs, current_status, response_headers
 
     def __repr__(self):
         return f'<DummyManager> {self.name}'
