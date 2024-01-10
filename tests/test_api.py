@@ -802,110 +802,122 @@ def test_describe_collections_json_ld(config, api_):
     assert rsp_headers['Content-Language'] == 'en-US'
 
 
-def test_get_collection_items(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_items(req, 'foo')
+@pytest.mark.parametrize(
+    [
+        'dataset_name',
+        'request_params',
+        'expected_code',
+        'expected_headers',
+        'expected_num_features',
+    ],
+    [
+        pytest.param('foo', None, HTTPStatus.NOT_FOUND, None, None),
+        pytest.param('obs', {'f': 'foo'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox': '1,2,3'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox': '1,2,3,4c'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}, HTTPStatus.BAD_REQUEST, None, None, id='unknown-crs'),  # noqa
+        pytest.param('obs', {'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}, HTTPStatus.OK, None, None, id='known-crs'),  # noqa
+        pytest.param('obs', {'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}, HTTPStatus.OK, None, None, id='default-crs'),  # noqa
+        pytest.param('obs', {'bbox': '4,52,5,53'}, HTTPStatus.OK, None, None, id='unspecified-crs'),  # noqa
+        pytest.param('obs', {'f': 'html', 'lang': 'fr'}, HTTPStatus.OK, {'Content-Type': FORMAT_TYPES[F_HTML], 'Content-Language': 'fr-CA'}, None, id='lang'),  # noqa
+        pytest.param('obs', None, HTTPStatus.OK, {'Content-Language': 'en-US'}, 5, id='default-lang'),  # noqa
+        pytest.param('obs', {'resulttype': 'hits'}, HTTPStatus.OK, None, 0, id='hits'),  # noqa
+        pytest.param('obs', {'limit': 0}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-limit'),  # noqa
+        pytest.param('obs', {'offset': -1}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-offset'),  # noqa
+        pytest.param('obs', {'sortby': 'bad-property', 'stn_id': '35'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-sortby'),  # noqa
+        pytest.param('obs', {'sortby': 'stn_id'}, HTTPStatus.OK, None, None, id='default-sortby'),  # noqa
+        pytest.param('obs', {'sortby': '+stn_id'}, HTTPStatus.OK, None, None, id='ascending-sortby'),  # noqa
+        pytest.param('obs', {'sortby': '-stn_id'}, HTTPStatus.OK, None, None, id='descending-sortby'),  # noqa
+        pytest.param('obs', {'f': 'csv'}, HTTPStatus.OK, {'Content-Type': 'text/csv; charset=utf-8'}, None, id='csv-output'),  # noqa
+        pytest.param('obs', {'datetime': '2003'}, HTTPStatus.OK, None, None, id='valid-year'),  # noqa
+        pytest.param('obs', {'datetime': '1999'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-year'),  # noqa
+        pytest.param('obs', {'datetime': '2010-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-date'),  # noqa
+        pytest.param('obs', {'datetime': '2001-11-11/2003-12-18'}, HTTPStatus.OK, None, None, id='closed-date-interval'),  # noqa
+        pytest.param('obs', {'datetime': '../2003-12-18'}, HTTPStatus.OK, None, None, id='open-start-date-interval'),  # noqa
+        pytest.param('obs', {'datetime': '2001-11-11/..'}, HTTPStatus.OK, None, None, id='open-end-date-interval'),  # noqa
+        pytest.param('obs', {'datetime': '1999/2005-04-22'}, HTTPStatus.OK, None, None, id='date-interval-year-date'),  # noqa
+        pytest.param('obs', {'datetime': '1999/2000-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='date-interval-year-invalid-date'),
+        pytest.param('naturalearth/lakes', {'datetime': '2005-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='lakes-invalid-date'),
+        pytest.param('obs', {'properties': 'foo,bar'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-properties'),
+        # noqa
+    ]
+)
+def test_get_collection_items(
+        config,
+        api_,
+        dataset_name,
+        request_params,
+        expected_code,
+        expected_headers,
+        expected_num_features,
+):
+    req = mock_request(params=request_params)
+    rsp_headers, code, response = api_.get_collection_items(req, dataset_name)
+    assert code == expected_code
+    for header_name, value in (expected_headers or {}).items():
+        assert rsp_headers.get(header_name) == value
+    if expected_num_features is not None:
+        features = json.loads(response)
+        assert len(features['features']) == expected_num_features
+
+
+@pytest.mark.parametrize(
+    [
+        'dataset_name',
+        'request_params',
+        'expected_num_features',
+        'expected_num_matched',
+        'expected_num_returned'
+    ],
+    [
+        pytest.param('obs', {'stn_id': '35'}, 2, 2, None),
+        pytest.param('obs', {'stn_id': '35', 'value': '93.9'}, 1, 1, None),
+        pytest.param('obs', {'limit': 2}, 2, None, None),
+        pytest.param('naturalearth/lakes', {'scalerank': 1}, 10, 11, 10),
+    ]
+)
+def test_get_collection_items_number_matched(
+        config,
+        api_,
+        dataset_name,
+        request_params,
+        expected_num_features,
+        expected_num_matched,
+        expected_num_returned,
+):
+    req = mock_request(params=request_params)
+    rsp_headers, code, response = api_.get_collection_items(req, dataset_name)
     features = json.loads(response)
-    assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request({'f': 'foo'})
+    assert len(features['features']) == expected_num_features
+    if expected_num_matched is not None:
+        assert features['numberMatched'] == expected_num_matched
+    if expected_num_returned is not None:
+        assert features['numberReturned'] == expected_num_returned
+
+
+def test_get_collection_items_skip_geometry(config, api_):
+    req = mock_request({'skipGeometry': 'true'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
+    assert json.loads(response)['features'][0]['geometry'] is None
 
-    assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'bbox': '1,2,3'})
+def test_get_collection_datetime_without_temporal_extents(config, api_):
+    api_.config['resources']['obs']['extents'].pop('temporal')
+    req = mock_request({'datetime': '2002/2014-04-22'})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'bbox': '1,2,3,4c'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'bbox-crs': 'bad_value'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    # bbox-crs must be in configured values for Collection
-    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    # bbox-crs must be in configured values for Collection (CSV will ignore)
-    req = mock_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
     assert code == HTTPStatus.OK
 
-    # bbox-crs can be a default even if not configured
-    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
 
-    assert code == HTTPStatus.OK
-
-    # bbox-crs can be a default even if not configured
-    req = mock_request({'bbox': '4,52,5,53'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'f': 'html', 'lang': 'fr'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
-    assert rsp_headers['Content-Language'] == 'fr-CA'
-
-    req = mock_request()
+@pytest.mark.parametrize('request_params', [
+    pytest.param(None)
+])
+def test_get_collection_items_links(config, api_, request_params):
+    req = mock_request(params=request_params)
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
-    # No language requested: should be set to default from YAML
-    assert rsp_headers['Content-Language'] == 'en-US'
-
-    assert len(features['features']) == 5
-
-    req = mock_request({'resulttype': 'hits'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert len(features['features']) == 0
-
-    # Invalid limit
-    req = mock_request({'limit': 0})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'stn_id': '35'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert len(features['features']) == 2
-    assert features['numberMatched'] == 2
-
-    req = mock_request({'stn_id': '35', 'value': '93.9'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert len(features['features']) == 1
-    assert features['numberMatched'] == 1
-
-    req = mock_request({'limit': 2})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-
-    assert len(features['features']) == 2
-    assert features['features'][1]['properties']['stn_id'] == 35
-
     links = features['links']
     assert len(links) == 4
     assert '/collections/obs/items?f=json' in links[0]['href']
@@ -917,13 +929,8 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[3]['href']
     assert links[3]['rel'] == 'collection'
 
-    # Invalid offset
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
 
-    assert code == HTTPStatus.BAD_REQUEST
-
+def test_get_collection_items_feature_id_and_links(config, api_):
     req = mock_request({'offset': 2})
     rsp_headers, code, response = api_.get_collection_items(req, 'obs')
     features = json.loads(response)
@@ -944,6 +951,8 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
+
+def test_get_collection_items_bbox_in_links(config, api_):
     req = mock_request({
         'offset': 1,
         'limit': 1,
@@ -957,119 +966,19 @@ def test_get_collection_items(config, api_):
     links = features['links']
     assert len(links) == 5
     assert '/collections/obs/items?f=json&limit=1&bbox=-180,90,180,90' in \
-        links[0]['href']
+           links[0]['href']
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld&limit=1&bbox=-180,90,180,90' in \
-        links[1]['href']
+           links[1]['href']
     assert links[1]['rel'] == 'alternate'
     assert '/collections/obs/items?f=html&limit=1&bbox=-180,90,180,90' in \
-        links[2]['href']
+           links[2]['href']
     assert links[2]['rel'] == 'alternate'
     assert '/collections/obs/items?offset=0&limit=1&bbox=-180,90,180,90' \
-        in links[3]['href']
+           in links[3]['href']
     assert links[3]['rel'] == 'prev'
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
-
-    req = mock_request({
-        'sortby': 'bad-property',
-        'stn_id': '35'
-    })
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'sortby': 'stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'sortby': '+stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'sortby': '-stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-    features = json.loads(response)
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'f': 'csv'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
-
-    req = mock_request({'datetime': '2003'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'datetime': '1999'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'datetime': '2010-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'datetime': '2001-11-11/2003-12-18'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'datetime': '../2003-12-18'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'datetime': '2001-11-11/..'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'datetime': '1999/2005-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'datetime': '1999/2000-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    api_.config['resources']['obs']['extents'].pop('temporal')
-
-    req = mock_request({'datetime': '2002/2014-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.OK
-
-    req = mock_request({'scalerank': 1})
-    rsp_headers, code, response = api_.get_collection_items(
-        req, 'naturalearth/lakes')
-    features = json.loads(response)
-
-    assert len(features['features']) == 10
-    assert features['numberMatched'] == 11
-    assert features['numberReturned'] == 10
-
-    req = mock_request({'datetime': '2005-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(
-        req, 'naturalearth/lakes')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'skipGeometry': 'true'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert json.loads(response)['features'][0]['geometry'] is None
-
-    req = mock_request({'properties': 'foo,bar'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
 
 
 def test_get_collection_items_crs(config, api_):
