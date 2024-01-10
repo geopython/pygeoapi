@@ -30,6 +30,7 @@
 """Generic util functions used in the code"""
 
 import base64
+from copy import deepcopy
 from filelock import FileLock
 import json
 import logging
@@ -66,6 +67,8 @@ from shapely.geometry import (
 import yaml
 from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+import pygeofilter.ast
+import pygeofilter.values
 import pyproj
 from pyproj.exceptions import CRSError
 from requests import Session
@@ -83,21 +86,6 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / 'templates'
-
-CRS_AUTHORITY = [
-    "AUTO",
-    "EPSG",
-    "OGC",
-]
-
-# Global to compile only once
-CRS_URI_PATTERN = re.compile(
-    (
-        rf"^http://www.opengis\.net/def/crs/"
-        rf"(?P<auth>{'|'.join(CRS_AUTHORITY)})/"
-        rf"[\d|\.]+?/(?P<code>\w+?)$"
-    )
-)
 
 
 # Type for Shapely geometrical objects.
@@ -686,7 +674,9 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     Author: @MTachon
 
     :param uri: Uniform resource identifier of the coordinate
-        reference system.
+        reference system. In accordance with
+        https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
+        take either the form of a URL or a URN
     :type uri: str
 
     :raises `CRSError`: Error raised if no CRS could be identified from the
@@ -696,23 +686,26 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     :rtype: `pyproj.CRS`
     """
 
+    # normalize the input `uri` to a URL first
+    url = uri.replace(
+        "urn:ogc:def:crs",
+        "http://www.opengis.net/def/crs"
+    ).replace(":", "/")
     try:
-        crs = pyproj.CRS.from_authority(*CRS_URI_PATTERN.search(uri).groups())
-    except CRSError:
+        authority, code = url.rsplit("/", maxsplit=3)[1::2]
+        crs = pyproj.CRS.from_authority(authority, code)
+    except ValueError:
         msg = (
-            f"CRS could not be identified from URI {uri!r} "
-            f"(Authority: {CRS_URI_PATTERN.search(uri).group('auth')!r}, "
-            f"Code: {CRS_URI_PATTERN.search(uri).group('code')!r})."
+            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
+            "follow one of two formats: "
+            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' or "
+            "'urn:ogc:def:crs:{authority}:{version}:{code}' "
+            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
         )
         LOGGER.error(msg)
         raise CRSError(msg)
-    except AttributeError:
-        msg = (
-            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
-            "follow the format "
-            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' "
-            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
-        )
+    except CRSError:
+        msg = f"CRS could not be identified from URI {uri!r}"
         LOGGER.error(msg)
         raise CRSError(msg)
     else:
@@ -886,3 +879,49 @@ def bbox2geojsongeometry(bbox: list) -> dict:
 
     b = box(*bbox, ccw=False)
     return geom_to_geojson(b)
+
+
+def modify_pygeofilter(
+        ast_tree: pygeofilter.ast.Node,
+        storage_crs,
+) -> pygeofilter.ast.Node:
+    """
+    Prepare the input pygeofilter for querying the database.
+
+    Returns a new ``pygeofilter.ast.Node`` object that can be used for
+    querying the database.
+    """
+    new_tree = deepcopy(ast_tree)
+    _inplace_transform_filter_geometries(new_tree, storage_crs)
+    return new_tree
+
+
+def _inplace_transform_filter_geometries(
+        node: pygeofilter.ast.Node,
+        storage_crs
+):
+    """
+    Recursively traverse node tree and convert any coordinates to the appropriate CRS.
+    """
+    try:
+        sub_nodes = node.get_sub_nodes()
+    except AttributeError:
+        pass
+    else:
+        for sub_node in sub_nodes:
+            is_geometry_node = isinstance(sub_node, pygeofilter.values.Geometry)
+            if is_geometry_node:
+                crs = get_crs_from_uri(
+                    sub_node.geometry.get(
+                        'crs', {}
+                    ).get(
+                        'properties', {}
+                    ).get('name', 'urn:ogc:def:crs:OGC:1.3:CRS84')
+                )
+                if crs == storage_crs:
+                    ...  # nothing to do
+                else:
+                    ...  # need to convert the geometry coordinates to the storage crs
+            else:
+                _inplace_transform_filter_geometries(
+                    sub_node, storage_crs)
