@@ -1894,7 +1894,7 @@ class API:
 
         try:
             provider_def = get_provider_by_type(
-                collections[dataset]['providers'],'feature')
+                collections[dataset]['providers'], 'feature')
         except ProviderTypeError:
             try:
                 provider_def = get_provider_by_type(
