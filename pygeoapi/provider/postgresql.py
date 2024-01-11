@@ -139,8 +139,6 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug('Preparing filters')
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(filterq)
-        # modified_filterq = self._modify_pygeofilter(filterq)
-        # cql_filters = self._get_cql_filters(modified_filterq)
         bbox_filter = self._get_bbox_filter(bbox)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
