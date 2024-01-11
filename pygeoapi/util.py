@@ -45,7 +45,7 @@ from decimal import Decimal
 from enum import Enum
 import pathlib
 from pathlib import Path
-from typing import Any, IO, Union, List, Callable
+from typing import Any, IO, Union, List, Optional, Callable
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -883,25 +883,54 @@ def bbox2geojsongeometry(bbox: list) -> dict:
 
 def modify_pygeofilter(
         ast_tree: pygeofilter.ast.Node,
-        storage_crs,
+        *,
+        storage_crs_uri: Optional[str] = None,
+        geometry_column_name: Optional[str] = None
 ) -> pygeofilter.ast.Node:
     """
-    Prepare the input pygeofilter for querying the database.
+    Modifies the input pygeofilter with information from the provider.
 
-    Returns a new ``pygeofilter.ast.Node`` object that can be used for
-    querying the database.
+    :param ast_tree: `pygeofilter.ast.Node` representing the
+    already parsed pygeofilter expression
+    :param storage_crs_uri: An optional string containing the URI of
+    the provider's storage CRS
+    :param geometry_column_name: An optional string containing the
+    actual name of the provider's geometry field
+    :returns: A new pygeofilter.ast.Node, with the modified filter
+    expression
+
+    This function modifies the parsed pygeofilter that contains the raw
+    filter expression provided by an external client. It performs the
+    following modifications:
+
+    - if the filter includes any spatial coordinates and they are being
+      provided in a different CRS from the provider's storage CRS, the
+      corresponding geometries are transformed into the storage CRS
+
+    - if the filter includes the generic 'geometry' name as a reference to
+      the actual geometry of features, it is replaced by the actual name
+      of the geometry field, as specified by the provider
+
     """
     new_tree = deepcopy(ast_tree)
-    _inplace_transform_filter_geometries(new_tree, storage_crs)
+    if storage_crs_uri:
+        storage_crs = get_crs_from_uri(storage_crs_uri)
+        _inplace_transform_filter_geometries(new_tree, storage_crs)
+    if geometry_column_name:
+        _inplace_replace_geometry_filter_name(new_tree, geometry_column_name)
     return new_tree
 
 
 def _inplace_transform_filter_geometries(
         node: pygeofilter.ast.Node,
-        storage_crs
+        storage_crs: pyproj.CRS
 ):
     """
-    Recursively traverse node tree and convert any coordinates to the appropriate CRS.
+    Recursively traverse node tree and convert coordinates to the storage CRS.
+
+    This function modifies nodes in the already-parsed filter in order to find
+    any geometry literals that may be used in the filter and, if necessary,
+    proceeds to convert spatial coordinates to the CRS used by the provider.
     """
     try:
         sub_nodes = node.get_sub_nodes()
@@ -909,8 +938,11 @@ def _inplace_transform_filter_geometries(
         pass
     else:
         for sub_node in sub_nodes:
-            is_geometry_node = isinstance(sub_node, pygeofilter.values.Geometry)
+            is_geometry_node = isinstance(
+                sub_node, pygeofilter.values.Geometry)
             if is_geometry_node:
+                # NOTE: We specify a default CRS using a URI of type URN
+                # because this is what pygeofilter uses internally too
                 crs = get_crs_from_uri(
                     sub_node.geometry.get(
                         'crs', {}
@@ -918,10 +950,44 @@ def _inplace_transform_filter_geometries(
                         'properties', {}
                     ).get('name', 'urn:ogc:def:crs:OGC:1.3:CRS84')
                 )
-                if crs == storage_crs:
-                    ...  # nothing to do
-                else:
-                    ...  # need to convert the geometry coordinates to the storage crs
+                if crs != storage_crs:
+                    # convert geometry coordinates to storage crs
+                    geom = geojson_to_geom(sub_node.geometry)
+                    coord_transformer = pyproj.Transformer.from_crs(
+                        crs_from=crs, crs_to=storage_crs).transform
+                    transformed_geom = ops.transform(coord_transformer, geom)
+                    authority, code = storage_crs.to_authority()
+                    sub_node.geometry = {
+                        **geom_to_geojson(transformed_geom),
+                        'crs': {
+                            'properties': {
+                                'name': f'urn:ogc:def:crs:{authority}::{code}'
+                            }
+                        }
+                    }
             else:
                 _inplace_transform_filter_geometries(
                     sub_node, storage_crs)
+
+
+def _inplace_replace_geometry_filter_name(
+        node: pygeofilter.ast.Node,
+        geometry_column_name: str
+):
+    """Recursively traverse node tree and rename nodes of type ``Attribute``.
+
+    Nodes of type ``Attribute`` named ``geometry`` are renamed to the value of
+    the ``geometry_column_name`` parameter.
+    """
+    try:
+        sub_nodes = node.get_sub_nodes()
+    except AttributeError:
+        pass
+    else:
+        for sub_node in sub_nodes:
+            is_attribute_node = isinstance(sub_node, pygeofilter.ast.Attribute)
+            if is_attribute_node and sub_node.name == "geometry":
+                sub_node.name = geometry_column_name
+            else:
+                _inplace_replace_geometry_filter_name(
+                    sub_node, geometry_column_name)

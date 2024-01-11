@@ -83,7 +83,8 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
+                           modify_pygeofilter, CrsTransformSpec,
+                           transform_bbox)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -1593,6 +1594,11 @@ class API:
         if cql_text is not None:
             try:
                 filter_ = parse_ecql_text(cql_text)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field')
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {cql_text}'
@@ -1629,6 +1635,7 @@ class API:
         LOGGER.debug(f'language: {prv_locale}')
         LOGGER.debug(f'q: {q}')
         LOGGER.debug(f'cql_text: {cql_text}')
+        LOGGER.debug(f'filter_: {filter_}')
         LOGGER.debug(f'filter-lang: {filter_lang}')
 
         try:
@@ -1886,19 +1893,21 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
-            p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'],'feature')
         except ProviderTypeError:
             try:
-                p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
+
+        try:
+            p = load_plugin('provider', provider_def)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return self.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -2016,6 +2025,11 @@ class API:
             LOGGER.debug('processing PostgreSQL CQL_JSON data')
             try:
                 filter_ = parse_cql_json(data)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field')
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
