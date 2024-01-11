@@ -75,6 +75,7 @@ from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.models import config as config_models
 from pygeoapi.provider.base import ProviderTypeError
+from pygeoapi.provider.base_edr import BaseEDRProvider
 
 
 LOGGER = logging.getLogger(__name__)
@@ -886,3 +887,45 @@ def bbox2geojsongeometry(bbox: list) -> dict:
 
     b = box(*bbox, ccw=False)
     return geom_to_geojson(b)
+
+def edr_data_query_object(query_type: str, collection_url: str,
+                          provider_plugin: BaseEDRProvider) -> dict:
+    """
+    Constructs an EDR compliant data_queries metadata object for a given
+    query type, see Requirement A.48:
+    https://docs.ogc.org/is/19-086r5/19-086r5.html#toc43
+    :param query_type: EDR query type (position, radius etc.)
+    :param collection_url: The base collection URL including
+    :param provider_plugin: Instance of EDR provider serving the data, based
+    on pygeoapi.provider.BaseEDRProvider
+    :return: `dictionary` with a data_queries metadata object
+    """
+    data_query_obj = {
+        'link': {
+            'href': f'{collection_url}/{query_type}',
+            'rel': 'data',
+            'variables': {
+                'title': f'{query_type} query',
+                'description': f'{query_type} query',
+                'query_type': query_type,
+            }
+        }
+    }
+    output_formats = provider_plugin.get_output_formats(query_type)
+    if output_formats:
+        data_query_obj['link']['variables']['output_formats'] = output_formats
+    crs_details = provider_plugin.get_crs_details(query_type)
+    if crs_details:
+        data_query_obj['link']['variables']['crs_details'] = crs_details
+    if query_type == 'radius':
+        data_query_obj['link']['within_units'] = \
+            provider_plugin.get_radius_within_units()
+    if query_type == 'cube':
+        data_query_obj['link']['height_units'] = \
+            provider_plugin.get_cube_height_units()
+    if query_type == 'corridor':
+        data_query_obj['link']['height_units'] = \
+            provider_plugin.get_corridor_height_units()
+        data_query_obj['link']['width_units'] = \
+            provider_plugin.get_corridor_width_units()
+    return data_query_obj

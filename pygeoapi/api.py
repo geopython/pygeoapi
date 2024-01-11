@@ -83,7 +83,7 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
+                           CrsTransformSpec, transform_bbox, edr_data_query_object)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
@@ -1189,6 +1189,7 @@ class API:
             if edr:
                 # TODO: translate
                 LOGGER.debug('Adding EDR links')
+                collection['data_queries'] = {}
                 parameters = p.get_fields()
                 if parameters:
                     collection['parameter_names'] = {}
@@ -1196,6 +1197,12 @@ class API:
                         collection['parameter_names'][f['id']] = f
 
                 for qt in p.get_query_types():
+                    collection['data_queries'][qt] = \
+                        edr_data_query_object(
+                            qt,
+                            f'{self.get_collections_url()}/{k}',
+                            p
+                        )
                     collection['links'].append({
                         'type': 'application/json',
                         'rel': 'data',

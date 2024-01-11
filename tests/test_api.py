@@ -1878,8 +1878,22 @@ def test_delete_job(api_):
     assert code == HTTPStatus.NOT_FOUND
 
 
-def test_get_collection_edr_query(config, api_):
-    # edr resource
+def test_describe_collection_edr(config, api_):
+    # Collections metadata
+    req = mock_request()
+    rsp_headers, code, response = api_.describe_collections(req)
+    print(response)
+    collections = json.loads(response)['collections']
+    collection = next(c for c in collections if c['id'] == 'icoads-sst')
+    parameter_names = list(collection['parameter-names'].keys())
+    parameter_names.sort()
+    assert len(parameter_names) == 4
+    assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
+    data_query_names = list(collection['data_queries'].keys())
+    data_query_names.sort()
+    assert len(data_query_names) == 2
+    assert data_query_names == ['cube', 'position']
+    # Specific collection metadata
     req = mock_request()
     rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
@@ -1887,7 +1901,14 @@ def test_get_collection_edr_query(config, api_):
     parameter_names.sort()
     assert len(parameter_names) == 4
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
+    data_query_names = list(collection['data_queries'].keys())
+    data_query_names.sort()
+    assert len(data_query_names) == 2
+    assert data_query_names == ['cube', 'position']
 
+
+def test_get_collection_edr_query(config, api_):
+    req = mock_request()
     # no coords parameter
     rsp_headers, code, response = api_.get_collection_edr_query(
         req, 'icoads-sst', None, 'position')
