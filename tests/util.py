@@ -161,18 +161,10 @@ def mock_starlette(config_file: str = 'pygeoapi-test-config.yml',
         # Force a module reload to make sure we really use another config
         reload(starlette_app)
 
-        # Get server root path
-        public_base_url = starlette_app.CONFIG['server']['url'].rstrip('/')
-        root_path = urlsplit(public_base_url).path.rstrip('/') or ''
-
         # Create and return test client
         # Note: setting the 'root_path' does NOT really work and
         # does not have the same effect as Flask's APPLICATION_ROOT
-        client = StarletteClient(
-            starlette_app.APP,
-            root_path=root_path,
-            **kwargs
-        )
+        client = StarletteClient(starlette_app.APP, **kwargs)
         # Override follow_redirects so behavior is the same as Flask mock
         client.follow_redirects = False
         yield client
