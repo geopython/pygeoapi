@@ -755,6 +755,12 @@ class API:
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Jobs',
             'href': f"{self.base_url}/jobs"
+        },
+         {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'The list of supported tiling schemes (as JSON)',
+            'href': f"{self.base_url}/TileMatrixSets"
         }]
 
         headers = request.get_response_headers(**self.api_headers)
