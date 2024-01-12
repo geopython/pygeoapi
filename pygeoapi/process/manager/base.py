@@ -181,7 +181,8 @@ class BaseManager:
             self,
             p: BaseProcessor,
             job_id: str,
-            data_dict: dict, out_dict: Optional[dict] = None
+            data_dict: dict,
+            requested_output: Optional[dict] = None
     ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
@@ -192,13 +193,18 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param requested_output: `dict` specify the subset of required
+            outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defauts to `value`.
+            Note: 'optional' is for backward compatibility.
 
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
         _process = dummy.Process(
             target=self._execute_handler_sync,
-            args=(p, job_id, data_dict, out_dict)
+            args=(p, job_id, data_dict, requested_output)
         )
         _process.start()
         return 'application/json', None, JobStatus.accepted
@@ -208,7 +214,7 @@ class BaseManager:
             p: BaseProcessor,
             job_id: str,
             data_dict: dict,
-            out_dict: Optional[dict] = None
+            requested_output: Optional[dict] = None
     ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
@@ -220,10 +226,11 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
-        :param out_dict: `dict` optionally specify the subset of required
+        :param requested_output: `dict` specify the subset of required
             outputs - defaults to all outputs.
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
+            Note: 'optional' is for backward compatibility.
             
         :returns: tuple of MIME type, response payload and status
         """
@@ -254,7 +261,7 @@ class BaseManager:
                 job_filename = None
 
             current_status = JobStatus.running
-            jfmt, outputs = p.execute(data_dict)
+            jfmt, outputs = p.execute(data_dict, requested_output)
 
             self.update_job(job_id, {
                 'status': current_status.value,
@@ -326,7 +333,7 @@ class BaseManager:
             process_id: str,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
-            out_dict: Optional[dict] = None
+            requested_output: Optional[dict] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -335,10 +342,11 @@ class BaseManager:
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
         processing.
-        :param out_dict: `dict` optionally specify the subset of required
-            outputs - defaults to all outputs.
+        :param requested_output: `dict` optionally specify the subset of
+            required outputs - defaults to all outputs.
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
+            Note: 'optional' is for backward compatibility.
         
         :raises: UnknownProcessError if the input process_id does not
                  correspond to a known process
@@ -383,7 +391,8 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(processor, job_id, data_dict, out_dict)
+        mime_type, outputs, status = handler(
+            processor, job_id, data_dict, requested_output)
         return job_id, mime_type, outputs, status, response_headers
 
     def __repr__(self):

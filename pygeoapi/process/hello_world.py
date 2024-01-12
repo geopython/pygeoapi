@@ -118,7 +118,7 @@ class HelloWorldProcessor(BaseProcessor):
 
         super().__init__(processor_def, PROCESS_METADATA)
 
-    def execute(self, data, outputs = None):
+    def execute(self, data, requested_outputs = None):
 
         mimetype = 'application/json'
         name = data.get('name')
@@ -129,12 +129,14 @@ class HelloWorldProcessor(BaseProcessor):
         message = data.get('message', '')
         value = f'Hello {name}! {message}'.strip()
 
-        outputs = {
-            'id': 'echo',
-            'value': value
-        }
+        produced_outputs = {}
+        if requested_outputs is None or 'echo' in requested_outputs:
+            produced_outputs = {
+                'id': 'echo',
+                'value': value
+            }
 
-        return mimetype, outputs
-
+        return mimetype, produced_outputs
+    
     def __repr__(self):
         return f'<HelloWorldProcessor> {self.name}'
