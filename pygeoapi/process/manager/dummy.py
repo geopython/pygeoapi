@@ -98,7 +98,7 @@ class DummyManager(BaseManager):
         try:
             jfmt, outputs = processor.execute(data_dict)
             current_status = JobStatus.successful
-        except Exception as err:
+        except Exception:
             outputs = {
                 'code': 'InvalidParameterValue',
                 'description': 'Error updating job'
