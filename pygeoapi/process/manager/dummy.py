@@ -104,7 +104,7 @@ class DummyManager(BaseManager):
                 'description': 'Error updating job'
             }
             current_status = JobStatus.failed
-            LOGGER.error(err)
+            LOGGER.exception('Process failed')
         job_id = str(uuid.uuid1())
         return job_id, jfmt, outputs, current_status, response_headers
 
