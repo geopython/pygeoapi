@@ -193,6 +193,19 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         # Some providers may not implement tilejson metadata
         metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
 
+        if not isinstance(self.service_metadata_url, Path):
+            msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
+            LOGGER.warning(msg)
+        elif self.service_metadata_url.exists():
+            with open(self.service_metadata_url, 'r') as md_file:
+                metadata_json_content = json.loads(md_file.read())
+                if 'metadata_json_content' in locals():
+                    content = MVTTilesJson(**metadata_json_content)
+                    content.tiles = service_url
+                    content.vector_layers = json.loads(
+                    metadata_json_content["json"])["vector_layers"]
+                    metadata['metadata'] = content.model_dump()
+
         return metadata
 
     def get_default_metadata(self, dataset, server_url, layer, tileset,
@@ -227,7 +240,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.dict(exclude_none=True)
+        return content.model_dump(exclude_none=True)
 
     def get_vendor_metadata(self, dataset, server_url, layer, tileset,
                               title, description, keywords, **kwargs):
@@ -255,7 +268,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
-            return content.dict()
+            return content.model_dump()
         else:
             msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
             LOGGER.error(msg)

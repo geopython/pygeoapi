@@ -20,5 +20,13 @@
         <h2>Tile URL template:</h2>
         <b>{{ data['collections_path'] }}</b>
       </p>
+      {% if data['metadata'] %}
+      <h2>Metadata:</h2>
+      <ul>
+        {% for key in data['metadata'].keys() %}
+          <li>{{ key }} (<code>{{ data['metadata'][key] }}</code>)</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
     </section>
 {% endblock %}
