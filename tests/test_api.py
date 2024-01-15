@@ -1827,21 +1827,10 @@ def test_execute_process(config, api_):
         assert code == HTTPStatus.OK
 
 
-def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job(
-        mock_request(), 'does-not-exist')
-
-    assert code == HTTPStatus.NOT_FOUND
-
+def _execute_a_job(api_):
     req_body_sync = {
         'inputs': {
-            'name': 'Sync Test Deletion'
-        }
-    }
-
-    req_body_async = {
-        'inputs': {
-            'name': 'Async Test Deletion'
+            'name': 'Sync Test'
         }
     }
 
@@ -1852,9 +1841,23 @@ def test_delete_job(api_):
     data = json.loads(response)
     assert code == HTTPStatus.OK
     assert 'Location' in rsp_headers
-    assert data['value'] == 'Hello Sync Test Deletion!'
+    assert data['value'] == 'Hello Sync Test!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
+    return job_id
+
+
+def test_delete_job(api_):
+    rsp_headers, code, response = api_.delete_job(
+        mock_request(), 'does-not-exist')
+
+    assert code == HTTPStatus.NOT_FOUND
+    req_body_async = {
+        'inputs': {
+            'name': 'Async Test Deletion'
+        }
+    }
+    job_id = _execute_a_job(api_)
     rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
 
     assert code == HTTPStatus.OK
@@ -1876,6 +1879,26 @@ def test_delete_job(api_):
 
     rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
+
+
+def test_get_job_result(api_):
+    rsp_headers, code, response = api_.get_job_result(mock_request(),
+                                                      'not-exist')
+    assert code == HTTPStatus.NOT_FOUND
+
+    job_id = _execute_a_job(api_)
+    rsp_headers, code, response = api_.get_job_result(mock_request(), job_id)
+    # default response is html
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'text/html'
+    assert 'Hello Sync Test!' in response
+
+    rsp_headers, code, response = api_.get_job_result(
+         mock_request({'f': 'json'}), job_id,
+     )
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'application/json'
+    assert json.loads(response)['value'] == "Hello Sync Test!"
 
 
 def test_get_collection_edr_query(config, api_):

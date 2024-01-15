@@ -3471,6 +3471,7 @@ class API:
                                      default=json_serial)
             else:
                 # HTML
+                headers['Content-Type'] = "text/html"
                 data = {
                     'job': {'id': job_id},
                     'result': job_output
