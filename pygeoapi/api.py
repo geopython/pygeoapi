@@ -3385,10 +3385,9 @@ class API:
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'
         except ProcessorExecuteError as err:
             LOGGER.error(err)
-            msg = 'Processing error'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
+                err.http_status_code, headers,
+                request.format, err.ogc_exception_code, err.message)
 
         response = {}
         if status == JobStatus.failed:
