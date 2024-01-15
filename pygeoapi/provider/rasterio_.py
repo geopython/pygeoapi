@@ -175,7 +175,7 @@ class RasterioProvider(BaseProvider):
         """
 
         bands = properties or []
-        subsets = dict(subsets) if subsets is not None else {}
+        subsets = subsets or {}
         LOGGER.debug(f'Bands: {bands}, subsets: {subsets}')
 
         args = {
