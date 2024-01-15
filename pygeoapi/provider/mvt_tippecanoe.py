@@ -203,7 +203,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
                     content = MVTTilesJson(**metadata_json_content)
                     content.tiles = service_url
                     content.vector_layers = json.loads(
-                    metadata_json_content["json"])["vector_layers"]
+                            metadata_json_content["json"])["vector_layers"]
                     metadata['metadata'] = content.model_dump()
 
         return metadata
@@ -243,7 +243,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         return content.model_dump(exclude_none=True)
 
     def get_vendor_metadata(self, dataset, server_url, layer, tileset,
-                              title, description, keywords, **kwargs):
+                            title, description, keywords, **kwargs):
         """
         Gets tile metadata in tilejson format
         """
