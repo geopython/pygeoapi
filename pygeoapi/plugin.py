@@ -69,7 +69,7 @@ PLUGINS = {
     },
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
-        'ContainsProcess': 'pygeoapi.process.shapely_functions.ContainsProcessor'
+        'ShapelyContains': 'pygeoapi.process.shapely_functions.ShapelyContainsProcessor'
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',

@@ -302,7 +302,7 @@ resources:
         type: process
         processor:
             name: HelloWorld
-    geometry-contains:
+    shapely-geometry-contains:
         type: process
         processor:
-            name: ContainsProcess
+            name: ShapelyContains
