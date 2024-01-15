@@ -158,7 +158,7 @@ class BaseMVTProvider(BaseTileProvider):
         """
         raise NotImplementedError()
 
-    def get_tilejson_metadata(self, dataset, server_url, layer, tileset,
+    def get_vendor_metadata(self, dataset, server_url, layer, tileset,
                               title, description, keywords, **kwargs):
         """
         Gets tile metadata in Tilejson format
@@ -202,7 +202,7 @@ class BaseMVTProvider(BaseTileProvider):
                                              tileset, title, description,
                                              keywords, **kwargs)
         elif metadata_format.upper() == TilesMetadataFormat.TILEJSON:
-            return self.get_tilejson_metadata(dataset, server_url, layer,
+            return self.get_vendor_metadata(dataset, server_url, layer,
                                               tileset, title, description,
                                               keywords, **kwargs)
         elif metadata_format.upper() == TilesMetadataFormat.HTML:
