@@ -210,20 +210,19 @@ class MVTElasticProvider(BaseMVTProvider):
                 tileMatrixSetURI = schema.tileMatrixSetURI
 
                 tiling_scheme_url = url_join(
-                    server_url,f'/TileMatrixSets/{schema.tileMatrixSet}')
+                    server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
                 tiling_scheme_url_type = "application/json"
-                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition'
+                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
-                                            rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme",
-                                            type=tiling_scheme_url_type,
-                                            title=tiling_scheme_url_title)
+                                         el="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
+                                         type=tiling_scheme_url_type,
+                                         title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
             msg = f'Could not identify a valid tiling schema'  # noqa
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
-
 
         content = TileSetMetadata(title=title, description=description,
                                   keywords=keywords, crs=crs,

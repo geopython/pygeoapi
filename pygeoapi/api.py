@@ -74,7 +74,8 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
     ProviderTypeError)
-from pygeoapi.models.provider.base import TilesMetadataFormat, TileMatrixSetEnum
+from pygeoapi.models.provider.base import (TilesMetadataFormat,
+                                           TileMatrixSetEnum)
 
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
@@ -871,7 +872,8 @@ class API:
     @gzip
     @pre_process
     def tilematrixsets(self,
-                    request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+                       request: Union[APIRequest, Any]) -> Tuple[dict, int,
+                                                                 str]:
         """
         Provide tileMatrixSets definition
 
@@ -891,29 +893,27 @@ class API:
         tms = {"tileMatrixSets": []}
 
         for e in enums:
-            tms['tileMatrixSets'].append(
-            {
+            tms['tileMatrixSets'].append({
                 "title": e.title,
                 "id": e.tileMatrixSet,
                 "uri": e.tileMatrixSetURI,
                 "links": [
                     {
-                       "rel" : "self",
-                       "type" : "text/html",
-                       "title" : f"The HTML representation of the {e.tileMatrixSet} tile matrix set",
-                       "href" : f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html"
+                       "rel": "self",
+                       "type": "text/html",
+                       "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                       "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
                     },
                     {
-                       "rel" : "self",
-                       "type" : "application/json",
-                       "title" : f"The JSON representation of the {e.tileMatrixSet} tile matrix set",
-                       "href" : f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json"
+                       "rel": "self",
+                       "type": "application/json",
+                       "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                       "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
                     }
                 ]
             })
 
-
-        tms['links']= [{
+        tms['links'] = [{
             "rel": "alternate",
             "type": "text/html",
             "title": "This document as HTML",
@@ -926,7 +926,8 @@ class API:
         }]
 
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.tpl_config, 'tilematrixsets/index.html',
+            content = render_j2_template(self.tpl_config,
+                                         'tilematrixsets/index.html',
                                          tms, request.locale)
             return headers, HTTPStatus.OK, content
 
@@ -935,7 +936,8 @@ class API:
     @gzip
     @pre_process
     def tilematrixset(self,
-                    request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+                      request: Union[APIRequest, Any]) -> Tuple[dict,
+                                                                int, str]:
         """
         Provide tile matrix definition
 
@@ -974,14 +976,13 @@ class API:
             "tileMatrices": enum.tileMatrices
         }
 
-
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.tpl_config, 'tilematrixsets/tilematrixset.html',
+            content = render_j2_template(self.tpl_config,
+                                         'tilematrixsets/tilematrixset.html',
                                          tms, request.locale)
             return headers, HTTPStatus.OK, content
 
         return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
-
 
     @gzip
     @pre_process
@@ -2793,7 +2794,7 @@ class API:
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
-                'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})',
+                'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})', # noqa
                 'href': f'{self.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
             })
             tile_matrix['links'].append({

@@ -154,6 +154,7 @@ def conformance():
     """
     return get_response(api_.conformance(request))
 
+
 @BLUEPRINT.route('/TileMatrixSets/WorldCRS84Quad')
 def WorldCRS84Quad():
     """
@@ -162,6 +163,7 @@ def WorldCRS84Quad():
     :returns: HTTP response
     """
     return get_response(api_.tilematrixset(request))
+
 
 @BLUEPRINT.route('/TileMatrixSets/WebMercatorQuad')
 def WebMercatorQuad():
@@ -172,6 +174,7 @@ def WebMercatorQuad():
     """
     return get_response(api_.tilematrixset(request))
 
+
 @BLUEPRINT.route('/TileMatrixSets')
 def TileMatrixSets():
     """
@@ -180,6 +183,7 @@ def TileMatrixSets():
     :returns: HTTP response
     """
     return get_response(api_.tilematrixsets(request))
+
 
 @BLUEPRINT.route('/collections')
 @BLUEPRINT.route('/collections/<path:collection_id>')
