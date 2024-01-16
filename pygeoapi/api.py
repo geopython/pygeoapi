@@ -2790,7 +2790,12 @@ class API:
                 'dataType': 'vector',
                 'links': []
             }
-            tile_matrix['links'].append(matrix.tileMatrixSetDefinition)
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
+                'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})',
+                'href': f'{self.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            })
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),

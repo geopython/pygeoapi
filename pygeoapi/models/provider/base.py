@@ -75,7 +75,6 @@ class TileMatrixSetEnumType(BaseModel):
     tileMatrixSetURI: str
     crs: str
     title: str
-    tileMatrixSetDefinition: dict
     orderedAxes: List[str]
     wellKnownScaleSet: str
     tileMatrices: List[dict]
@@ -86,13 +85,6 @@ class TileMatrixSetEnum(Enum):
         tileMatrixSetURI="http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad",  # noqa
         crs="http://www.opengis.net/def/crs/OGC/1.3/CRS84",
         title="World Mercator WGS84 (ellipsoid)",
-        tileMatrixSetDefinition=
-            {
-                'type': 'application/json',
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
-                'title': 'WorldCRS84QuadTileMatrixSet definition (as JSON)',
-                'href': 'https://raw.githubusercontent.com/opengeospatial/2D-Tile-Matrix-Set/master/registry/json/WorldCRS84Quad.json'  # authoritative TMS definition
-            },
         orderedAxes = ["Lon", "Lat"],
         wellKnownScaleSet = "http://www.opengis.net/def/wkss/OGC/1.0/GoogleCRS84Quad",
         tileMatrices = [
@@ -433,13 +425,6 @@ class TileMatrixSetEnum(Enum):
         tileMatrixSetURI="http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad",  # noqa
         crs="http://www.opengis.net/def/crs/EPSG/0/3857",
         title="Google Maps Compatible for the World",
-        tileMatrixSetDefinition=
-            {
-                'type': 'application/json',
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
-                'title': 'WebMercatorQuadTileMatrixSet definition (as JSON)',
-                'href': 'https://raw.githubusercontent.com/opengeospatial/2D-Tile-Matrix-Set/master/registry/json/WebMercatorQuad.json'  # authoritative TMS definition
-            },
         orderedAxes=["E", "N"],
         wellKnownScaleSet="http://www.opengis.net/def/wkss/OGC/1.0/GoogleMapsCompatible",
         tileMatrices=[
