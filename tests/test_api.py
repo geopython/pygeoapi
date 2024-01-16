@@ -557,7 +557,7 @@ def test_root(config, api_):
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 9
+    assert len(root['links']) == 11
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
