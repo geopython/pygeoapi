@@ -40,10 +40,12 @@ import gzip
 from http import HTTPStatus
 
 from pyld import jsonld
+import flask
 import pytest
 import pyproj
 from shapely.geometry import Point
 
+import pygeoapi.flask_app
 from pygeoapi.flask_app import create_app as create_flask_app
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
@@ -116,13 +118,24 @@ def api_hidden_resources(config_hidden_resources, openapi):
 
 @pytest.fixture()
 def flask_app(config, openapi):
-    return create_flask_app(pygeoapi_config=config, pygeoapi_openapi=openapi)
+    pygeoapi_extension = pygeoapi.flask_app.FlaskPygeoapi(
+        pygeoapi_config=config,
+        pygeoapi_openapi=openapi
+    )
+    app = flask.Flask('pygeoapi')
+    pygeoapi_extension.init_app(app)
+    return app
 
 
 @pytest.fixture()
 def flask_app_with_api_rules(config_with_rules, openapi):
-    return create_flask_app(
-        pygeoapi_config=config_with_rules, pygeoapi_openapi=openapi)
+    pygeoapi_extension = pygeoapi.flask_app.FlaskPygeoapi(
+        pygeoapi_config=config_with_rules,
+        pygeoapi_openapi=openapi
+    )
+    app = flask.Flask('pygeoapi')
+    pygeoapi_extension.init_app(app)
+    return app
 
 
 def test_apirequest(api_):
@@ -266,8 +279,9 @@ def test_apirequest(api_):
 
 
 def test_apirules_active_flask(flask_app_with_api_rules):
-    api_rules = flask_app_with_api_rules.config['PYGEOAPI']['api_rules']
+    api_rules = flask_app_with_api_rules.extensions['pygeoapi']['api_rules']
     url_prefix = api_rules.get_url_prefix('flask')
+    print(f"{url_prefix=}")
     with flask_app_with_api_rules.test_client() as test_client:
         # Test happy path
         response = test_client.get(f'{url_prefix}/conformance')
@@ -300,7 +314,7 @@ def test_apirules_active_flask(flask_app_with_api_rules):
         assert response.is_json
         links = response.json['links']
         base_url = get_base_url(
-            flask_app_with_api_rules.config['PYGEOAPI']['api'].config)
+            flask_app_with_api_rules.extensions['pygeoapi']['api'].config)
         assert all(
             href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
         )
@@ -344,7 +358,7 @@ def test_apirules_active_starlette(config_with_rules, rules_api):
 
 
 def test_apirules_inactive_flask(flask_app):
-    api_rules = flask_app.config['PYGEOAPI']['api_rules']
+    api_rules = flask_app.extensions['pygeoapi']['api_rules']
     url_prefix = api_rules.get_url_prefix('flask')
     assert url_prefix == ''
     with flask_app.test_client() as test_client:
