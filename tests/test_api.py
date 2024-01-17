@@ -38,7 +38,6 @@ import logging
 import time
 import gzip
 from http import HTTPStatus
-from pathlib import Path
 
 from pyld import jsonld
 import pytest
@@ -53,8 +52,7 @@ from pygeoapi.api import (
 from pygeoapi.util import (yaml_load, get_crs_from_uri,
                            get_api_rules, get_base_url)
 
-from .util import (get_test_file_path, mock_request,
-                   mock_flask, mock_starlette)
+from .util import get_test_file_path, mock_request, mock_starlette
 
 LOGGER = logging.getLogger(__name__)
 

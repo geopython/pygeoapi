@@ -2,8 +2,10 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -84,8 +86,8 @@ def schemas(path):
     :returns: HTTP response
     """
 
-    api_: API = current_app.config['PYGEOAPI']['api']
-    ogc_schemas_location = api_.config.get(
+    api: API = current_app.config['PYGEOAPI']['api']
+    ogc_schemas_location = api.config.get(
         'server', {}).get('ogc_schemas_location')
     got_local_schemas = not ogc_schemas_location.startswith('http')
     if ogc_schemas_location is not None:
@@ -199,8 +201,9 @@ def collection_items(collection_id, item_id=None):
             if request.content_type is not None:
                 if request.content_type == 'application/geo+json':
                     return get_response(
-                        api.manage_collection_item(request, 'create',
-                                                    collection_id))
+                        api.manage_collection_item(
+                            request, 'create', collection_id)
+                    )
                 else:
                     return get_response(
                         api.post_collection_items(request, collection_id))
@@ -210,16 +213,19 @@ def collection_items(collection_id, item_id=None):
 
     elif request.method == 'DELETE':
         return get_response(
-            api.manage_collection_item(request, 'delete',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'delete', collection_id, item_id)
+        )
     elif request.method == 'PUT':
         return get_response(
-            api.manage_collection_item(request, 'update',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'update', collection_id, item_id)
+        )
     elif request.method == 'OPTIONS':
         return get_response(
-            api.manage_collection_item(request, 'options',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'options', collection_id, item_id)
+        )
     else:
         return get_response(
             api.get_collection_item(request, collection_id, item_id))
