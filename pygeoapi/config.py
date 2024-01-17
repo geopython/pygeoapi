@@ -35,10 +35,17 @@ from jsonschema import validate as jsonschema_validate
 import logging
 import os
 import yaml
+from pathlib import Path
 
 from pygeoapi.util import to_json, yaml_load, THISDIR
 
 LOGGER = logging.getLogger(__name__)
+
+
+def get_config_from_path(config_path: Path) -> dict:
+    """Read pygeoapi configuration from the input config_path."""
+    with config_path.open() as fh:
+        return yaml_load(fh)
 
 
 def get_config(raw: bool = False) -> dict:

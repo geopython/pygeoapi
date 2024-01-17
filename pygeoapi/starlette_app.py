@@ -56,10 +56,10 @@ from pygeoapi.util import get_api_rules
 
 CONFIG = get_config()
 
-if 'PYGEOAPI_OPENAPI' not in os.environ:
+if (pygeoapi_openapi := os.getenv('PYGEOAPI_OPENAPI')) is not None:
+    OPENAPI = load_openapi_document(Path(pygeoapi_openapi))
+else:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
-
-OPENAPI = load_openapi_document()
 
 if CONFIG['server'].get('admin'):
     from pygeoapi.admin import Admin
