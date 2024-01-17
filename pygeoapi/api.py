@@ -2751,7 +2751,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
             else:
-                return headers, HTTPStatus.ACCEPTED, content
+                return headers, HTTPStatus.OK, content
 
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
