@@ -46,7 +46,6 @@ import pyproj
 from shapely.geometry import Point
 
 import pygeoapi.flask_app
-from pygeoapi.flask_app import create_app as create_flask_app
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
