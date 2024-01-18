@@ -172,7 +172,7 @@ class MVTElasticProvider(BaseMVTProvider):
                     return resp.content
             except requests.exceptions.RequestException as e:
                 LOGGER.debug(e)
-                if resp.status_code <= 500:
+                if resp.status_code < 500:
                     raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
                 raise ProviderGenericError  # Server error
         else:
