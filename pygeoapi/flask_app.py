@@ -523,7 +523,7 @@ def admin_config_resource(resource_id):
 
     :returns: HTTP response
     """
-    admin = current_app.config['pygeoapi']['admin']
+    admin = current_app.extensions['pygeoapi']['admin']
     if request.method == 'GET':
         return get_response(admin.get_resource(request, resource_id))
 
@@ -565,7 +565,6 @@ class FlaskPygeoapi:
             .get('templates', {})
             .get('static', 'static')
         )
-        print(f"{static_folder=}")
         app.static_folder = static_folder
         app.url_map.strict_slashes = self.api_rules.strict_slashes
         app.config['JSONIFY_PRETTYPRINT_REGULAR'] = self.api.config.get(
