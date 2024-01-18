@@ -29,12 +29,16 @@
 
 import json
 import logging
+import requests
 from pathlib import Path
 from urllib.parse import urlparse
+import os.path
 
 from pygeoapi.provider.tile import (
     ProviderTileNotFoundError)
-from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base import (ProviderConnectionError,
+                                    ProviderInvalidQueryError,
+                                    ProviderGenericError)
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.models.provider.base import (
     TileSetMetadata, LinkType)
@@ -69,20 +73,29 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
-            param_type = '?f=mvt'
+            extension = os.path.splitext(url.path)[-1]  # e.g. ".pbf"
             layer = f'/{self.get_layer()}'
 
             LOGGER.debug('Extracting layer name from URL')
             LOGGER.debug(f'Layer: {layer}')
 
             tilepath = f'{layer}/tiles'
-            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
+            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{extension}'  # noqa
 
             self._service_url = url_join(baseurl, servicepath)
 
             self._service_metadata_url = url_join(
                 self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
                 'metadata')
+
+            metadata_path = f'{baseurl}/{layer}/metadata.json'
+            head = requests.head(metadata_path)
+            if head.status_code != 200:
+                msg = f'Service metadata does not exist: {metadata_path}'
+                LOGGER.error(msg)
+                LOGGER.warning(msg)
+            self._service_metadata_url = metadata_path
+
         # Pre-rendered tiles served from a local path
         else:
             data_path = Path(self.data)
@@ -144,6 +157,60 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         self._service_url = servicepath
         return self.get_tms_links()
 
+    def get_tiles_from_url(self, layer=None, tileset=None,
+                           z=None, y=None, x=None, format_=None):
+        """
+        Gets tile from a static url (e.g.: bucket, file server)
+
+        :param layer: mvt tile layer
+        :param tileset: mvt tileset
+        :param z: z index
+        :param y: y index
+        :param x: x index
+        :param format_: tile format
+
+        :returns: an encoded mvt tile
+        """
+
+        url = urlparse(self.data)
+        base_url = f'{url.scheme}://{url.netloc}'
+
+        extension = os.path.splitext(url.path)[-1]  # e.g. ".pbf"
+
+        try:
+            with requests.Session() as session:
+                session.get(base_url)
+                resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{extension}')  # noqa
+                resp.raise_for_status()
+                return resp.content
+        except requests.exceptions.RequestException as e:
+            LOGGER.debug(e)
+            if resp.status_code < 500:
+                raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
+            raise ProviderGenericError  # Server error
+
+    def get_tiles_from_disk(self, layer=None, tileset=None,
+                            z=None, y=None, x=None, format_=None):
+        """
+        Gets tile from a path on disk
+
+        :param layer: mvt tile layer
+        :param tileset: mvt tileset
+        :param z: z index
+        :param y: y index
+        :param x: x index
+        :param format_: tile format
+
+        :returns: an encoded mvt tile
+        """
+
+        try:
+            service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
+            with open(service_url_path, mode='rb') as tile:
+                return tile.read()
+        except FileNotFoundError as err:
+            raise ProviderTileNotFoundError(err)
+
     def get_tiles(self, layer=None, tileset=None,
                   z=None, y=None, x=None, format_=None):
         """
@@ -162,17 +229,14 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if format_ == 'mvt':
             format_ = self.format_type
 
-        if not isinstance(self.service_url, Path):
-            msg = f'Wrong data path configuration: {self.service_url}'
+        if isinstance(self.service_url, Path):
+            return self.get_tiles_from_disk(layer, tileset, z, y, x, format_)
+        elif is_url(self.data):
+            return self.get_tiles_from_url(layer, tileset, z, y, x, format_)
+        else:
+            msg = 'Wrong input format for Tippecanoe MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
-        else:
-            try:
-                service_url_path = self.service_url.joinpath(f'{z}/{y}/{x}.{format_}')  # noqa
-                with open(service_url_path, mode='rb') as tile:
-                    return tile.read()
-            except FileNotFoundError as err:
-                raise ProviderTileNotFoundError(err)
 
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
