@@ -100,7 +100,7 @@ case ${entry_cmd} in
 				--timeout ${WSGI_WORKER_TIMEOUT} \
 				--name=${CONTAINER_NAME} \
 				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-				pygeoapi.flask_app:APP
+				'pygeoapi.flask_app:create_app()'
 	  ;;
 	*)
 	  error "unknown command arg: must be run (default) or test"

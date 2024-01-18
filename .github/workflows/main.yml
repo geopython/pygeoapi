@@ -185,7 +185,7 @@ jobs:
         gunicorn --bind 0.0.0.0:5000 \
                  --reload \
                  --reload-extra-file ${PYGEOAPI_CONFIG} \
-                 pygeoapi.flask_app:APP &
+                 'pygeoapi.flask_app:create_app()' &
     - name: run integration tests ⚙️
       run: |
         pytest tests/test_admin_api.py
