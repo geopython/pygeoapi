@@ -73,7 +73,7 @@ from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderTypeError, ProviderInvalidQueryError)
+    ProviderTypeError)
 from pygeoapi.models.provider.base import TilesMetadataFormat
 
 from pygeoapi.models.cql import CQLModel
@@ -2759,11 +2759,6 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, format_,
                 'InvalidParameterValue', msg)
-        except ProviderInvalidQueryError:
-            msg = 'Invalid tile request'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, format_,
-                'InvalidRequest', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
             return self.get_exception(

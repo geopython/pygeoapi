@@ -170,14 +170,11 @@ class MVTElasticProvider(BaseMVTProvider):
                     resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
                     resp.raise_for_status()
                     return resp.content
-            # Client is sending an invalid request
-            except requests.exceptions.HTTPError as e:
-                LOGGER.debug(e)
-                raise ProviderInvalidQueryError
-            # All other errors fall here
             except requests.exceptions.RequestException as e:
                 LOGGER.debug(e)
-                raise ProviderGenericError
+                if resp.status_code <= 500:
+                    raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
+                raise ProviderGenericError  # Server error
         else:
             msg = 'Wrong input format for Elasticsearch MVT'
             LOGGER.error(msg)
