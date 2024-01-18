@@ -280,7 +280,6 @@ def test_apirequest(api_):
 def test_apirules_active_flask(flask_app_with_api_rules):
     api_rules = flask_app_with_api_rules.extensions['pygeoapi']['api_rules']
     url_prefix = api_rules.get_url_prefix('flask')
-    print(f"{url_prefix=}")
     with flask_app_with_api_rules.test_client() as test_client:
         # Test happy path
         response = test_client.get(f'{url_prefix}/conformance')
@@ -1232,10 +1231,10 @@ def test_manage_collection_item_editable_options_req(config):
     assert rsp_headers['Allow'] == 'HEAD, GET, PUT, DELETE'
 
 
-def test_describe_collections_enclosures(enclosure_api):
+def test_describe_collections_enclosures(config_enclosure, enclosure_api):
     original_enclosures = {
         lnk['title']: lnk
-        for lnk in enclosure_api.config['resources']['objects']['links']
+        for lnk in config_enclosure['resources']['objects']['links']
         if lnk['rel'] == 'enclosure'
     }
 

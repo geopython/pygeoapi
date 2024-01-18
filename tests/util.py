@@ -76,11 +76,9 @@ def mock_request(params: dict = None, data=None, **headers) -> Request:
 
 
 @contextmanager
-def mock_starlette(
-        config_file: str = 'pygeoapi-test-config.yml',
-        openapi_file: str = 'pygeoapi-test-openapi.yml',
-        **kwargs
-) -> StarletteClient:  # noqa
+def mock_starlette(config_file: str = 'pygeoapi-test-config.yml',
+                   openapi_file: str = 'pygeoapi-test-openapi.yml',
+                   **kwargs) -> StarletteClient:
     """
     Mocks a Starlette client so we can test the API routing with applied
     API rules.
@@ -89,8 +87,10 @@ def mock_starlette(
 
     :param config_file: Optional configuration YAML file to use.
                         If not set, the default test configuration is used.
+
     :param openapi_file: Optional OpenAPI YAML file to use.
     """
+
     starlette_app = None
     env_conf = os.getenv('PYGEOAPI_CONFIG')
     env_openapi = os.getenv('PYGEOAPI_OPENAPI')
