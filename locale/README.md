@@ -8,7 +8,7 @@ Add translate statements to jinja2 templates
 <title>{% trans %}Page title{% endtrans %}</title>
 ```
 
-To parse the jinja templates to extract the messages, first 
+To parse the jinja templates to extract the messages, first
 create a file named `babel-mapping.ini`:
 
 ```

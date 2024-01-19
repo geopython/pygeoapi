@@ -51,7 +51,7 @@ can be requested by including the ``Prefer: respond-async`` HTTP header in the r
 
 MongoDB
 --------------------
-As an alternative to the default a manager employing `MongoDB`_ can be used. 
+As an alternative to the default a manager employing `MongoDB`_ can be used.
 The connection to an installed `MongoDB`_ instance must be provided in the configuration.
 `MongoDB`_ uses the localhost and port 27017 by default. Jobs are stored in a collection named
 job_manager_pygeoapi.

@@ -7,7 +7,7 @@ Providers
 ---------
 
 As of now the available providers supported for CQL filtering are limited to :ref:`Elasticsearch <Elasticsearch>` and :ref:`PostgreSQL <PostgreSQL>`.
- 
+
 Limitations
 -----------
 
@@ -57,13 +57,13 @@ A ``BETWEEN`` example for a specific property through an HTTP POST request:
     }
   }'
 
-Or 
+Or
 
 .. code-block:: bash
 
-  curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
-  --header 'Content-Type: application/query-cql-json' 
-  --data-raw '{ 
+  curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json'
+  --header 'Content-Type: application/query-cql-json'
+  --data-raw '{
     "between":{
       "value":{"property": "ml"},
       "lower":4,
@@ -81,8 +81,8 @@ An ``EQUALS`` example for a specific property:
 
 .. code-block:: bash
 
-  curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
-  --header 'Content-Type: application/query-cql-json' 
+  curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json'
+  --header 'Content-Type: application/query-cql-json'
   --data-raw '{
       "eq":[{"property": "user_entered"},"APBE"]
   }'

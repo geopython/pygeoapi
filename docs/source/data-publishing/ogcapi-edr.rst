@@ -58,7 +58,7 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          format:
             name: zarr
             mimetype: application/zip
-    
+
     providers:
        - type: edr
          name: xarray-edr

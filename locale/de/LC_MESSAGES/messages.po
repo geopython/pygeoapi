@@ -583,4 +583,3 @@ msgstr "Ergebnis"
 #: pygeoapi/templates/processes/jobs/results/index.html:12
 msgid "Results of job"
 msgstr "Ergebnis des Auftrags"
-

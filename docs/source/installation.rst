@@ -57,24 +57,24 @@ Using DockerHub
 .. code-block:: bash
 
    docker pull geopython/pygeoapi:latest
-   
-Using GitHub Container Registry   
+
+Using GitHub Container Registry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `Docker image`_
 
 .. code-block:: bash
 
-   docker pull ghcr.io/geopython/pygeoapi:latest   
+   docker pull ghcr.io/geopython/pygeoapi:latest
 
 Kubernetes
 ----------
 
-.. note:: 
-   If using the PostgreSQL feature provider it is recommended to set NGINX ingress affinity-mode to persistent; see the below ingress example. 
+.. note::
+   If using the PostgreSQL feature provider it is recommended to set NGINX ingress affinity-mode to persistent; see the below ingress example.
 
 .. code-block:: bash
-   
+
    ---
    apiVersion: networking.k8s.io/v1
    kind: Ingress

@@ -148,7 +148,7 @@ If you wish to make these text values available in English and French, you could
 In other words: each plain text value should be replaced by a dictionary, where the language code is the key and the translated text represents the matching value.
 For lists, this can be applied as well (see ``keywords`` example above), as long as you nest the entire list under a language key instead of each list item.
 
-A similar concept can be applied to the ``title-field`` property of the provider in a collection configuration. If a dataset contains multiple columns each representing the title 
+A similar concept can be applied to the ``title-field`` property of the provider in a collection configuration. If a dataset contains multiple columns each representing the title
 element in a specific language, you can configure the title-field accordingly.
 
 .. code-block:: yaml
@@ -157,8 +157,8 @@ element in a specific language, you can configure the title-field accordingly.
     - type: feature
       name: GeoJSON
       data: tests/data/ne_110m_lakes.geojson
-      title_field: 
-        en: name_eng 
+      title_field:
+        en: name_eng
         fr: nom_fre
         de: name_deu
 
@@ -188,19 +188,19 @@ Translators can follow these steps to prepare their environment for translations
 
       pybabel extract -F babel-mapping.ini -o locale/messages.pot ./
 
-2. Update the existing .po language file: 
+2. Update the existing .po language file:
 
    .. code-block:: bash
 
       pybabel update -d locale -l fr -i locale/messages.pot
 
-3. Open the relevant .po file and contribute your translations. Then compile a .mo file to be used by the application: 
+3. Open the relevant .po file and contribute your translations. Then compile a .mo file to be used by the application:
 
    .. code-block:: bash
 
       pybabel compile -d locale -l fr
 
-Within jinja templates keys are prepared to be translated by wrapping them in: 
+Within jinja templates keys are prepared to be translated by wrapping them in:
 
    .. code-block:: python
 

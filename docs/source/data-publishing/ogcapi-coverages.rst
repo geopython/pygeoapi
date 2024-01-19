@@ -92,7 +92,7 @@ The `Xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
    a zip file is returned upon request for said format.
 
 .. note::
-   When referencing `NetCDF`_ or `Zarr`_ data stored in an S3 bucket, 
+   When referencing `NetCDF`_ or `Zarr`_ data stored in an S3 bucket,
    be sure to provide the full S3 URL. Any parameters required to open the dataset
    using fsspec can be added to the config file under `options` and `s3`.
 

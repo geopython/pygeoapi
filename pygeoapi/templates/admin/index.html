@@ -17,7 +17,7 @@
 {%- endmacro %}
 
 {% block body %}
-{% set tree = data %} 
+{% set tree = data %}
 
 <section id="admin">
   <div class="admin">
@@ -36,7 +36,7 @@
           {# if node has a renderable value #}
           {% if node is not iterable or node is string %}
             {{ render_item_value(node, 80)  }}
-            
+
           {# if node has named child nodes #}
           {% elif node is mapping %}
             {{ loop(node.items()) }}

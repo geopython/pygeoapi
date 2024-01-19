@@ -492,7 +492,7 @@ properties:
                                           description: optional options key value pairs to pass to provider (i.e. GDAL creation)
                                           oneOf:
                                               - $ref: '#/definitions/provider/properties/PostgreSQL/properties/config/properties/options'
-                                            #   - type: object 
+                                            #   - type: object
                                             #     patternProperties:
                                             #         "^[a-z]{2}$":
                                             #             allOf:

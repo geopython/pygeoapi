@@ -10,7 +10,7 @@ on:
     workflows: ["Build"]
     types: [completed]
     branches: [master]
-    
+
 env:
   DOCKER_REPOSITORY: geopython/pygeoapi
 #  DOCKER_TEST_IMAGE: geopython/pygeoapi:test

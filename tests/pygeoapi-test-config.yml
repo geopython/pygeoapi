@@ -341,7 +341,7 @@ resources:
                     requester_pays: false
                     client_kwargs:
                         endpoint_url: https://usgs.osn.mghpcc.org/
-    
+
     objects:
         type: collection
         title: GeoJSON objects

@@ -35,7 +35,7 @@ server:
     admin: true
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
-    languages: 
+    languages:
         - en-US
     cors: true
     pretty_print: true
@@ -60,9 +60,9 @@ logging:
 
 metadata:
     identification:
-        title: 
+        title:
             en: pygeoapi default instance
-        description: 
+        description:
             en: pygeoapi provides an API to geospatial data
         keywords:
             en:

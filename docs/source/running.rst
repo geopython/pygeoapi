@@ -3,22 +3,22 @@
 Running
 =======
 
-Since pygeoapi is a Python API at its core, it can be served via numerous web server scenarios. 
+Since pygeoapi is a Python API at its core, it can be served via numerous web server scenarios.
 So far, pygeoapi can be served via Flask `WSGI`_, Starlette `ASGI`_, and `Django`_.
 
-This section covers how pygeoapi can be run in development environments and in production environments. 
+This section covers how pygeoapi can be run in development environments and in production environments.
 For running pygeoapi using docker, refer to the :ref:`running-with-docker` section.
 
 Running in development
 ----------------------
 
 The ``pygeoapi serve`` is the easiest way to run pygeoapi in your own machine.
-This command starts a pygeoapi server instance. By default, a Flask server is started, 
+This command starts a pygeoapi server instance. By default, a Flask server is started,
 but Starlette and Django are available as well.
 
 Using the ``--starlette`` or ``--django`` flags will start pygeoapi using the specified server technology.
 
-It is also advisable to install the development dependencies (contained in the requirements-dev.txt file) for running pygeoapi for 
+It is also advisable to install the development dependencies (contained in the requirements-dev.txt file) for running pygeoapi for
 development. To do so, run the following command:
 
 .. code-block:: bash
@@ -119,7 +119,7 @@ at http://localhost:5000/oapi
 Django
 ^^^^^^
 
-`Django`_ is a Python web framework that encourages rapid development and clean, pragmatic design. 
+`Django`_ is a Python web framework that encourages rapid development and clean, pragmatic design.
 
 Similarly to Flask and Starlette, Django can be used by pygeoapi to communicate with the core API.
 
@@ -133,7 +133,7 @@ To use Django as a web server it is necessary to install its dependencies runnin
 
    pip3 install -r requirements-django.txt
 
-After Django rependencies is installed, pygeoapi can be run as follows: 
+After Django rependencies is installed, pygeoapi can be run as follows:
 
 .. code-block:: bash
 
@@ -142,7 +142,7 @@ After Django rependencies is installed, pygeoapi can be run as follows:
 As a result, your Django application will be available at http://localhost:5000/.
 
 
-To integrate pygeoapi as part of another Django project in a pluggable it is necessary to add the pygeoapi urls to the 
+To integrate pygeoapi as part of another Django project in a pluggable it is necessary to add the pygeoapi urls to the
 main Django application urls:
 
 .. code-block:: python
@@ -158,30 +158,30 @@ main Django application urls:
    ]
 
 
-This integration can be seen in the provided example Django project. Refer to `examples/django/sample_project/README.md` 
+This integration can be seen in the provided example Django project. Refer to `examples/django/sample_project/README.md`
 for the integration of pygeoapi with an already exising Django application.
 
 Hot-reloading
 ^^^^^^^^^^^^^
 
-The ``pygeoapi serve`` uses the current pygeoapi installation. If the installation was performed using the setup command 
-provided in the :ref:`install` section (``python3 setup.py install``), changes made to the codebase of pygeoapi are not going to be 
+The ``pygeoapi serve`` uses the current pygeoapi installation. If the installation was performed using the setup command
+provided in the :ref:`install` section (``python3 setup.py install``), changes made to the codebase of pygeoapi are not going to be
 reflected in the application until a rebuild (i.e., re-running ``python3 setup.py install``).
 
-By hot-reloading we mean to be able to directly see changes reflected in the application without reinstalling the pygeoapi package or resetting the server. 
-This is useful for development, as the changes made by developers are easily and rapidly reflected and they can take advantage 
+By hot-reloading we mean to be able to directly see changes reflected in the application without reinstalling the pygeoapi package or resetting the server.
+This is useful for development, as the changes made by developers are easily and rapidly reflected and they can take advantage
 of the hot-reloading capabilities that offer each of the web servers available.
 
-For enabling hot-reloading, install the pygeoapi package using pip (instead of the setup.py script) with the following command: 
+For enabling hot-reloading, install the pygeoapi package using pip (instead of the setup.py script) with the following command:
 
 .. code-block:: bash
 
    pip3 install -e .
 
 .. note::
-   This command must be run from the root directory of pygeoapi. 
+   This command must be run from the root directory of pygeoapi.
 
-After the local package is built, you can use the ``pygeoapi serve`` 
+After the local package is built, you can use the ``pygeoapi serve``
 again and the changes on the codebase will be directly reflected on the running instance.
 
 
