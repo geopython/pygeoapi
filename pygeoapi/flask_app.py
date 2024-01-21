@@ -155,24 +155,15 @@ def conformance():
     return get_response(api_.conformance(request))
 
 
-@BLUEPRINT.route('/TileMatrixSets/WorldCRS84Quad')
-def WorldCRS84Quad():
+@BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
+def TileMatrixSet(tileMatrixSetId=None):
     """
-    OGC API WorldCRS84Quad endpoint
+    OGC API TileMatrixSet endpoint
 
+    :param tileMatrixSetId: identifier of tile matrix set
     :returns: HTTP response
     """
-    return get_response(api_.tilematrixset(request))
-
-
-@BLUEPRINT.route('/TileMatrixSets/WebMercatorQuad')
-def WebMercatorQuad():
-    """
-    OGC API WebMercatorQuad endpoint
-
-    :returns: HTTP response
-    """
-    return get_response(api_.tilematrixset(request))
+    return get_response(api_.tilematrixset(request, tileMatrixSetId))
 
 
 @BLUEPRINT.route('/TileMatrixSets')

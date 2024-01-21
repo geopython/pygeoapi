@@ -936,8 +936,9 @@ class API:
     @gzip
     @pre_process
     def tilematrixset(self,
-                      request: Union[APIRequest, Any]) -> Tuple[dict,
-                                                                int, str]:
+                      request: Union[APIRequest, Any],
+                      tileMatrixSetId) -> Tuple[dict,
+                                                int, str]:
         """
         Provide tile matrix definition
 
