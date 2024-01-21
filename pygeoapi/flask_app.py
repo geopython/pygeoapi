@@ -156,7 +156,7 @@ def conformance():
 
 
 @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
-def tilematrixset(tileMatrixSetId=None):
+def get_tilematrix_set(tileMatrixSetId=None):
     """
     OGC API TileMatrixSet endpoint
 
@@ -167,7 +167,7 @@ def tilematrixset(tileMatrixSetId=None):
 
 
 @BLUEPRINT.route('/TileMatrixSets')
-def tilematrixsets():
+def get_tilematrix_sets():
     """
     OGC API TileMatrixSets endpoint
 
