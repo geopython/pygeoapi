@@ -958,7 +958,7 @@ class API:
 
         try:
             for e in enums:
-                if request.path_info.__contains__(e.tileMatrixSet):
+                if tileMatrixSetId == e.tileMatrixSet:
                     enum = e
             if not enum:
                 raise ValueError('could not find this tilematrixset')
