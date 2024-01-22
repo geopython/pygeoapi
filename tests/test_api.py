@@ -52,6 +52,8 @@ from pygeoapi.util import (yaml_load, get_crs_from_uri,
 from .util import (get_test_file_path, mock_request,
                    mock_flask, mock_starlette)
 
+from pygeoapi.models.provider.base import TileMatrixSetEnum
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -621,6 +623,7 @@ def test_conformance(config, api_):
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
+
 def test_tilematrixsets(config, api_):
     req = mock_request()
     rsp_headers, code, response = api_.tilematrixsets(req)
@@ -635,11 +638,38 @@ def test_tilematrixsets(config, api_):
            in root['tileMatrixSets'][1]['uri']
 
     req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.conformance(req)
+    rsp_headers, code, response = api_.tilematrixsets(req)
     assert code == HTTPStatus.BAD_REQUEST
 
     req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.conformance(req)
+    rsp_headers, code, response = api_.tilematrixsets(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+
+def test_tilematrixset(config, api_):
+    req = mock_request()
+
+    enums = [e.value for e in TileMatrixSetEnum]
+    enum = None
+
+    for e in enums:
+        enum = e.tileMatrixSet
+        rsp_headers, code, response = api_.tilematrixset(req, enum)
+        root = json.loads(response)
+
+        assert isinstance(root, dict)
+        assert 'id' in root
+        assert root['id'] == enum
+        assert 'tileMatrices' in root
+        assert len(root['tileMatrices']) == 30
+
+    rsp_headers, code, response = api_.tilematrixset(req, 'foo')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.tilematrixset(req, enum)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
