@@ -150,7 +150,11 @@ CONFORMANCE = {
     ],
     'tile': [
         'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt'
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets'
     ],
     'record': [
         'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
