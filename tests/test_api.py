@@ -621,6 +621,29 @@ def test_conformance(config, api_):
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
+def test_tilematrixsets(config, api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.tilematrixsets(req)
+    root = json.loads(response)
+
+    assert isinstance(root, dict)
+    assert 'tileMatrixSets' in root
+    assert len(root['tileMatrixSets']) == 2
+    assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad' \
+           in root['tileMatrixSets'][0]['uri']
+    assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad' \
+           in root['tileMatrixSets'][1]['uri']
+
+    req = mock_request({'f': 'foo'})
+    rsp_headers, code, response = api_.conformance(req)
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.conformance(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
 
 def test_describe_collections(config, api_):
     req = mock_request({"f": "foo"})
