@@ -161,7 +161,7 @@ def _get_default_config() -> typing.Dict[str, typing.Dict]:
             'pretty_print': False,
             'limit': 10,
             'templates': {
-                'path': TEMPLATES,
+                'path': str(TEMPLATES),
                 'static': str(Path(__file__).parent / 'static'),
             },
             'map': {
