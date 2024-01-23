@@ -37,8 +37,8 @@ try:
     from importlib.metadata import entry_points
 except ImportError:
     from importlib_metadata import entry_points
-from pygeoapi.config import config
-from pygeoapi.openapi import openapi
+from pygeoapi.config import config as config_cli_group
+from pygeoapi.openapi import openapi as openapi_cli_group
 
 
 def _find_plugins():
@@ -109,5 +109,5 @@ def serve(ctx, server):
         raise click.ClickException('--flask/--starlette/--django is required')
 
 
-cli.add_command(config)
-cli.add_command(openapi)
+cli.add_command(config_cli_group)
+cli.add_command(openapi_cli_group)
