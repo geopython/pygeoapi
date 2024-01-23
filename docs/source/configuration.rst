@@ -8,10 +8,15 @@ in the `YAML`_ format which is then referenced via the ``PYGEOAPI_CONFIG`` envir
 file whatever you wish; typical filenames end with ``.yml``.
 
 .. note::
+   pygeoapi does not strictly require you to provide a configuration file, it is able to run with default values. These
+   are not very useful though, as the default configuration does not have any resources. The default configuration
+   can be found `here <https://github.com/geopython/pygeoapi/blob/master/pygeoapi/config.py>`_.
+
+.. note::
    A sample configuration can always be found in the pygeoapi `GitHub <https://github.com/geopython/pygeoapi/blob/master/pygeoapi-config.yml>`_
    repository.
 
-pygeoapi configuration contains the following core sections:
+pygeoapi configuration contains the following core sections, all of which are optional:
 
 - ``server``: server-wide settings
 - ``logging``: logging configuration
@@ -19,6 +24,9 @@ pygeoapi configuration contains the following core sections:
 - ``resources``: dataset collections, processes and stac-collections offered by the server
 
 The full configuration schema with descriptions of all available properties can be found `here <https://github.com/geopython/pygeoapi/blob/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml>`_.
+
+pygeoapi will merge your configuration with its own defaults, so it is OK for you to specify only some of these sections
+in your own configuration file.
 
 .. note::
    `Standard YAML mechanisms <https://en.wikipedia.org/wiki/YAML#Advanced_components>`_ can be used (anchors, references, etc.) for reuse and compactness.
