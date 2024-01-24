@@ -112,31 +112,36 @@ def api_hidden_resources(config_hidden_resources, openapi):
     return API(config_hidden_resources, openapi)
 
 
-def test_apirequest(api_):
-    # Test without (valid) locales
+@pytest.mark.parametrize('supported_locales', [
+    pytest.param([]),
+    pytest.param(None),
+    pytest.param('zz'),
+])
+def test_apirequest_invalid_locales(api_, supported_locales):
+    req = mock_request()
     with pytest.raises(ValueError):
-        req = mock_request()
-        APIRequest(req, [])
-        APIRequest(req, None)
-        APIRequest(req, ['zz'])
+        APIRequest(req, supported_locales)
 
-    # Test all supported formats from query args
-    for f, mt in FORMAT_TYPES.items():
-        req = mock_request({'f': f})
-        apireq = APIRequest(req, api_.locales)
-        assert apireq.is_valid()
-        assert apireq.format == f
-        assert apireq.get_response_headers()['Content-Type'] == mt
 
-    # Test all supported formats from Accept header
-    for f, mt in FORMAT_TYPES.items():
-        req = mock_request(HTTP_ACCEPT=mt)
-        apireq = APIRequest(req, api_.locales)
-        assert apireq.is_valid()
-        assert apireq.format == f
-        assert apireq.get_response_headers()['Content-Type'] == mt
+@pytest.mark.parametrize('format_name, media_type, expect_valid', [
+    pytest.param('html', 'text/html', True),
+    pytest.param('jsonld', 'application/ld+json', True),
+    pytest.param('json', 'application/json', True),
+    pytest.param('png', 'image/png', True),
+    pytest.param('mvt', 'application/vnd.mapbox-vector-tile', True),
+    pytest.param('NetCDF', 'application/x-netcdf', True),
+    pytest.param('foo', 'application/json', False),
+])
+def test_apirequest_media_types_f_param(
+        api_, format_name, media_type, expect_valid):
+    req = mock_request({'f': format_name})
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid() == expect_valid
+    assert apireq.format == format_name
+    assert apireq.get_response_headers()['Content-Type'] == media_type
 
-    # Test nonsense format
+
+def test_apirequest_additional_formats(api_):
     req = mock_request({'f': 'foo'})
     apireq = APIRequest(req, api_.locales)
     assert not apireq.is_valid()
@@ -145,39 +150,58 @@ def test_apirequest(api_):
     assert apireq.get_response_headers()['Content-Type'] == \
            FORMAT_TYPES[F_JSON]
 
-    # Test without format
-    req = mock_request()
+
+@pytest.mark.parametrize('format_name, media_type', [
+    pytest.param('html', 'text/html'),
+    pytest.param('jsonld', 'application/ld+json'),
+    pytest.param('json', 'application/json'),
+    pytest.param('png', 'image/png'),
+    pytest.param('mvt', 'application/vnd.mapbox-vector-tile'),
+    pytest.param('NetCDF', 'application/x-netcdf'),
+])
+def test_apirequest_media_types_accept_header(api_, format_name, media_type):
+    req = mock_request(HTTP_ACCEPT=media_type)
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
-    assert apireq.format is None
-    assert apireq.get_response_headers()['Content-Type'] == \
-           FORMAT_TYPES[F_JSON]
-    assert apireq.get_linkrel(F_JSON) == 'self'
-    assert apireq.get_linkrel(F_HTML) == 'alternate'
+    assert apireq.format == format_name
+    assert apireq.get_response_headers()['Content-Type'] == media_type
 
-    # Test complex format string
-    hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
-    req = mock_request(HTTP_ACCEPT=hh)
+
+@pytest.mark.parametrize(
+    [
+        'request_headers',
+        'expected_format',
+        'expected_content_type',
+        'expected_link_relations',
+    ], [
+        pytest.param({}, None, 'application/json', {F_JSON: 'self', F_HTML: 'alternate'}, id='no-format'),  # noqa
+        pytest.param({'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,'}, 'html', 'text/html', {F_HTML: 'self', F_JSON: 'alternate'}, id='complex-format-string'),  # noqa
+        pytest.param({'HTTP_ACCEPT': 'plain/text,application/ld+json,application/json;q=0.9,'}, 'jsonld', 'application/ld+json', {F_JSONLD: 'self', F_HTML: 'alternate'}, id='multiple-valid-formats'),  # noqa
+    ]
+)
+def test_apirequest_varying_format(
+        api_,
+        request_headers,
+        expected_format,
+        expected_content_type,
+        expected_link_relations,
+):
+    req = mock_request(**request_headers)
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
-    assert apireq.format == F_HTML
-    assert apireq.get_response_headers()['Content-Type'] == \
-           FORMAT_TYPES[F_HTML]
-    assert apireq.get_linkrel(F_HTML) == 'self'
-    assert apireq.get_linkrel(F_JSON) == 'alternate'
+    if expected_format is None:
+        assert apireq.format is None
+    else:
+        assert apireq.format == expected_format
 
-    # Test accept header with multiple valid formats
-    hh = 'plain/text,application/ld+json,application/json;q=0.9,'
-    req = mock_request(HTTP_ACCEPT=hh)
-    apireq = APIRequest(req, api_.locales)
-    assert apireq.is_valid()
-    assert apireq.format == F_JSONLD
-    assert apireq.get_response_headers()['Content-Type'] == \
-           FORMAT_TYPES[F_JSONLD]
-    assert apireq.get_linkrel(F_JSONLD) == 'self'
-    assert apireq.get_linkrel(F_HTML) == 'alternate'
+    response_headers = apireq.get_response_headers()
+    assert response_headers['Content-Type'] == expected_content_type
 
-    # Overrule HTTP content negotiation
+    for link_format, link_relation in expected_link_relations.items():
+        assert apireq.get_linkrel(link_format) == link_relation
+
+
+def test_apirequest_overrule_http_accept(api_):
     req = mock_request({'f': 'html'}, HTTP_ACCEPT='application/json')  # noqa
     apireq = APIRequest(req, api_.locales)
     assert apireq.is_valid()
@@ -185,7 +209,8 @@ def test_apirequest(api_):
     assert apireq.get_response_headers()['Content-Type'] == \
            FORMAT_TYPES[F_HTML]
 
-    # Test data
+
+def test_apirequest_data(api_):
     for d in (None, '', 'test', {'key': 'value'}):
         req = mock_request(data=d)
         apireq = APIRequest.with_data(req, api_.locales)
@@ -196,60 +221,67 @@ def test_apirequest(api_):
         else:
             assert apireq.data == d.encode()
 
-    # Test multilingual
-    test_lang = {
-        'nl': ('en', 'en-US'),  # unsupported lang should return default
-        'en-US': ('en', 'en-US'),
-        'de_CH': ('en', 'en-US'),
-        'fr-CH, fr;q=0.9, en;q=0.8': ('fr', 'fr-CA'),
-        'fr-CH, fr-BE;q=0.9': ('fr', 'fr-CA'),
-    }
-    sup_lang = ('en-US', 'fr_CA')
-    for lang_in, (lang_out, cl_out) in test_lang.items():
-        # Using l query parameter
-        req = mock_request({'lang': lang_in})
-        apireq = APIRequest(req, sup_lang)
-        assert apireq.raw_locale == lang_in
-        assert apireq.locale.language == lang_out
-        assert apireq.get_response_headers()['Content-Language'] == cl_out
 
-        # Using Accept-Language header
-        req = mock_request(HTTP_ACCEPT_LANGUAGE=lang_in)
-        apireq = APIRequest(req, sup_lang)
-        assert apireq.raw_locale == lang_in
-        assert apireq.locale.language == lang_out
-        assert apireq.get_response_headers()['Content-Language'] == cl_out
+@pytest.mark.parametrize('lang, expected_lang, expected_locale', [
+    pytest.param('nl', 'en', 'en-US'),
+    pytest.param('en-US', 'en', 'en-US'),
+    pytest.param('de-CH', 'en', 'en-US'),
+    pytest.param('fr-CH, fr;q=0.9, en;q=0.8', 'fr', 'fr-CA'),
+    pytest.param('fr-CH, fr-BE;q=0.9', 'fr', 'fr-CA'),
+])
+@pytest.mark.parametrize('use_lang_param', [
+    pytest.param(True),
+    pytest.param(False),
+])
+def test_apirequest_language(
+        api_,
+        lang,
+        expected_lang,
+        expected_locale,
+        use_lang_param
+):
+    params = {'lang': lang} if use_lang_param else None
+    request_headers = {
+        'HTTP_ACCEPT_LANGUAGE': lang} if not use_lang_param else {}
+    req = mock_request(params, **request_headers)
+    apireq = APIRequest(req, ('en-US', 'fr_CA'))
+    assert apireq.raw_locale == lang
+    assert apireq.locale.language == expected_lang
+    assert apireq.get_response_headers()['Content-Language'] == expected_locale
 
-    # Test language override
+
+def test_apirequest_language_override():
     req = mock_request({'lang': 'fr'}, HTTP_ACCEPT_LANGUAGE='en_US')
-    apireq = APIRequest(req, sup_lang)
+    apireq = APIRequest(req, ('en-US', 'fr_CA'))
     assert apireq.raw_locale == 'fr'
     assert apireq.locale.language == 'fr'
     assert apireq.get_response_headers()['Content-Language'] == 'fr-CA'
 
-    # Test locale territory
+
+def test_apirequest_locale_territory():
     req = mock_request({'lang': 'en-GB'})
-    apireq = APIRequest(req, sup_lang)
+    apireq = APIRequest(req, ('en-US', 'fr_CA'))
     assert apireq.raw_locale == 'en-GB'
     assert apireq.locale.language == 'en'
     assert apireq.locale.territory == 'US'
     assert apireq.get_response_headers()['Content-Language'] == 'en-US'
 
-    # Test without Accept-Language header or 'lang' query parameter
-    # (should return default language from YAML config)
-    req = mock_request()
-    apireq = APIRequest(req, api_.locales)
-    assert apireq.raw_locale is None
-    assert apireq.locale.language == api_.default_locale.language
-    assert apireq.get_response_headers()['Content-Language'] == 'en-US'
 
-    # Test without Accept-Language header or 'lang' query param
-    # (should return first in custom list of languages)
-    sup_lang = ('de', 'fr', 'en')
-    apireq = APIRequest(req, sup_lang)
+@pytest.mark.parametrize('enabled_locales', [
+    pytest.param(('en-US', 'fr_CA'))
+])
+def test_apirequest_default_language(enabled_locales):
+    apireq = APIRequest(mock_request(), ('de', 'fr', 'en'))
     assert apireq.raw_locale is None
     assert apireq.locale.language == 'de'
     assert apireq.get_response_headers()['Content-Language'] == 'de'
+
+
+def test_apirequest_default_locale_is_first_in_list(api_):
+    apireq = APIRequest(mock_request(), api_.locales)
+    assert apireq.raw_locale is None
+    assert apireq.locale.language == api_.default_locale.language
+    assert apireq.get_response_headers()['Content-Language'] == 'en-US'
 
 
 def test_apirules_active(config_with_rules, rules_api):
@@ -734,37 +766,45 @@ def test_describe_collections_hidden_resources(
     assert len(collections['collections']) == 1
 
 
-def test_get_collection_queryables(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_queryables(req,
-                                                                 'notfound')
-    assert code == HTTPStatus.NOT_FOUND
+@pytest.mark.parametrize("resource, params, expected_status, expected_headers", [  # noqa
+    pytest.param('notfound', None, HTTPStatus.NOT_FOUND, None, id='invalid-collection-id'),  # noqa
+    pytest.param('obs', None, HTTPStatus.OK, {'Content-Type': 'application/schema+json', 'Content-Language': 'en-US'}, id='default-response'),  # noqa
+    pytest.param('obs', {'f': 'json'}, HTTPStatus.OK, {'Content-Type': 'application/schema+json', 'Content-Language': 'en-US'}, id='jsonschema-response-with-f-param'),  # noqa
+    pytest.param('obs', {'f': 'html'}, HTTPStatus.OK, {'Content-Type': FORMAT_TYPES[F_HTML], 'Content-Language': 'en-US'}, id='html-response'),  # noqa
+])
+def test_get_collection_queryables(
+        config, api_, resource, params, expected_status, expected_headers):
+    req = mock_request(params)
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req, resource)
+    assert code == expected_status
+    for expected_header, value in (expected_headers or {}).items():
+        assert rsp_headers.get(expected_header) == value
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
-    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
-    assert rsp_headers['Content-Type'] == 'application/schema+json'
+@pytest.mark.parametrize("resource, params, provider_filtered_properties, expected_num_properties", [  # noqa
+    pytest.param('obs', {'f': 'json'}, None, 5, id='all-properties'),
+    pytest.param('obs', {'f': 'json'}, ['stn_id'], 2, id='provider-filtered-properties'),  # noqa
+])
+def test_get_collection_queryables_properties(
+        config,
+        api_,
+        resource,
+        params,
+        provider_filtered_properties,
+        expected_num_properties,
+):
+    if provider_filtered_properties is not None:
+        api_.config['resources'][resource]['providers'][0]['properties'] = (
+            provider_filtered_properties)
+    req = mock_request(params)
+    rsp_headers, code, response = api_.get_collection_queryables(
+        req, resource)
     queryables = json.loads(response)
-
     assert 'properties' in queryables
-    assert len(queryables['properties']) == 5
-
-    # test with provider filtered properties
-    api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
-
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
-    queryables = json.loads(response)
-
-    assert 'properties' in queryables
-    assert len(queryables['properties']) == 2
+    assert len(queryables['properties']) == expected_num_properties
     assert 'geometry' in queryables['properties']
     assert queryables['properties']['geometry']['$ref'] == 'https://geojson.org/schema/Geometry.json'  # noqa
-
-    # No language requested: should be set to default from YAML
-    assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_describe_collections_json_ld(config, api_):
@@ -813,10 +853,10 @@ def test_describe_collections_json_ld(config, api_):
     [
         pytest.param('foo', None, HTTPStatus.NOT_FOUND, None, None),
         pytest.param('obs', {'f': 'foo'}, HTTPStatus.BAD_REQUEST, None, None),
-        pytest.param('obs', {'bbox': '1,2,3'}, HTTPStatus.BAD_REQUEST, None, None),
-        pytest.param('obs', {'bbox': '1,2,3,4c'}, HTTPStatus.BAD_REQUEST, None, None),
-        pytest.param('obs', {'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),
-        pytest.param('obs', {'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),
+        pytest.param('obs', {'bbox': '1,2,3'}, HTTPStatus.BAD_REQUEST, None, None),  # noqa
+        pytest.param('obs', {'bbox': '1,2,3,4c'}, HTTPStatus.BAD_REQUEST, None, None),  # noqa
+        pytest.param('obs', {'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),  # noqa
+        pytest.param('obs', {'bbox-crs': 'bad_value'}, HTTPStatus.BAD_REQUEST, None, None),  # noqa
         pytest.param('obs', {'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}, HTTPStatus.BAD_REQUEST, None, None, id='unknown-crs'),  # noqa
         pytest.param('obs', {'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}, HTTPStatus.OK, None, None, id='known-crs'),  # noqa
         pytest.param('obs', {'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}, HTTPStatus.OK, None, None, id='default-crs'),  # noqa
@@ -838,10 +878,9 @@ def test_describe_collections_json_ld(config, api_):
         pytest.param('obs', {'datetime': '../2003-12-18'}, HTTPStatus.OK, None, None, id='open-start-date-interval'),  # noqa
         pytest.param('obs', {'datetime': '2001-11-11/..'}, HTTPStatus.OK, None, None, id='open-end-date-interval'),  # noqa
         pytest.param('obs', {'datetime': '1999/2005-04-22'}, HTTPStatus.OK, None, None, id='date-interval-year-date'),  # noqa
-        pytest.param('obs', {'datetime': '1999/2000-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='date-interval-year-invalid-date'),
-        pytest.param('naturalearth/lakes', {'datetime': '2005-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='lakes-invalid-date'),
-        pytest.param('obs', {'properties': 'foo,bar'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-properties'),
-        # noqa
+        pytest.param('obs', {'datetime': '1999/2000-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='date-interval-year-invalid-date'),  # noqa
+        pytest.param('naturalearth/lakes', {'datetime': '2005-04-22'}, HTTPStatus.BAD_REQUEST, None, None, id='lakes-invalid-date'),  # noqa
+        pytest.param('obs', {'properties': 'foo,bar'}, HTTPStatus.BAD_REQUEST, None, None, id='invalid-properties'),  # noqa
     ]
 )
 def test_get_collection_items(
