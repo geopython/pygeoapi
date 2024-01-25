@@ -4,7 +4,7 @@ elasticsearch
 elasticsearch-dsl
 fiona
 #GDAL>=3.0.0
-geoalchemy
+geoalchemy2
 netCDF4
 oracledb
 pandas; python_version < '3.7'
