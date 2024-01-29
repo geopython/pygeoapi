@@ -37,10 +37,8 @@ import os
 from pathlib import Path
 import sys
 
-from pygeoapi.config import get_config
 
-
-def main():
+def main(host, port):
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_.settings')
     django_app_path = Path(os.path.dirname(__file__))
     try:
@@ -51,17 +49,13 @@ def main():
             'available on your PYTHONPATH environment variable? Did you '
             'forget to activate a virtual environment?'
         ) from exc
-
-    CONFIG = get_config()
-
-    bind = f"{CONFIG['server']['bind']['host']}:{CONFIG['server']['bind']['port']}"  # noqa
-
-    sys.argv = [str(django_app_path / 'django_app.py'), 'runserver', bind]
-
     sys.path.append(str(django_app_path))
-
-    execute_from_command_line(sys.argv)
+    execute_from_command_line([
+        str(Path(__file__)),
+        'runserver',
+        f'{host}:{port}'
+    ])
 
 
 if __name__ == '__main__':
-    main()
+    main('127.0.0.1', 5000)

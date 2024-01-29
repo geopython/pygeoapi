@@ -527,7 +527,7 @@ if CONFIG['server'].get('admin'):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server=None, debug=False):
+def serve(ctx, host, port, server=None, debug=False):
     """
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.
@@ -539,8 +539,7 @@ def serve(ctx, server=None, debug=False):
     """
 
     # setup_logger(CONFIG['logging'])
-    APP.run(debug=True, host=api_.config['server']['bind']['host'],
-            port=api_.config['server']['bind']['port'])
+    APP.run(debug=True, host=host, port=port)
 
 
 if __name__ == '__main__':  # run locally, for testing

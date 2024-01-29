@@ -90,21 +90,31 @@ def plugins():
 @click.option('--flask', 'server', flag_value="flask", default=True)
 @click.option('--starlette', 'server', flag_value="starlette")
 @click.option('--django', 'server', flag_value="django")
+@click.option(
+    '--host',
+    default='127.0.0.1', help='Bind socket to this host.',
+    show_default=True
+)
+@click.option(
+    '--port',
+    default=5000, show_default=True,
+    help='Bind socket to this port.'
+)
 @click.pass_context
-def serve(ctx, server):
+def serve(ctx, server, host, port):
     """Run the server with different daemon type (--flask is the default)"""
 
     if server == "flask":
         from pygeoapi.flask_app import serve as serve_flask
         ctx.forward(serve_flask)
-        ctx.invoke(serve_flask)
+        ctx.invoke(serve_flask, host, port)
     elif server == "starlette":
         from pygeoapi.starlette_app import serve as serve_starlette
         ctx.forward(serve_starlette)
-        ctx.invoke(serve_starlette)
+        ctx.invoke(serve_starlette, host, port)
     elif server == "django":
         from pygeoapi.django_app import main as serve_django
-        ctx.invoke(serve_django)
+        ctx.invoke(serve_django, host, port)
     else:
         raise click.ClickException('--flask/--starlette/--django is required')
 

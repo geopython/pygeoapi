@@ -9,19 +9,6 @@ properties:
         type: object
         description: server object
         properties:
-            bind:
-                type: object
-                description: binding server information
-                properties:
-                    host:
-                        type: string
-                        description: binding IP
-                    port:
-                        type: integer
-                        description: binding port
-                required:
-                    - host
-                    - port
             url:
                 type: string
                 description: URL of server (as used by client)
@@ -124,7 +111,6 @@ properties:
                         type: string
                         description: API version response header (leave empty or unset to omit this header)
         required:
-            - bind
             - url
             - mimetype
             - encoding

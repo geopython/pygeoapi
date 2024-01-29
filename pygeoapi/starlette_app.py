@@ -658,7 +658,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server=None, debug=False):
+def serve(ctx, host, port, server=None, debug=False):
     """
     Serve pygeoapi via Starlette. Runs pygeoapi
     as a uvicorn server. Not recommend for production.
@@ -678,8 +678,8 @@ def serve(ctx, server=None, debug=False):
         reload=True,
         log_level=log_level,
         loop='asyncio',
-        host=api_.config['server']['bind']['host'],
-        port=api_.config['server']['bind']['port'])
+        host=host,
+        port=port)
 
 
 if __name__ == "__main__":  # run locally, for testing
