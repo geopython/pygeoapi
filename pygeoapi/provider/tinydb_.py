@@ -62,7 +62,8 @@ class TinyDBCatalogueProvider(BaseProvider):
         LOGGER.debug(f'Connecting to TinyDB db at {self.data}')
 
         if not os.path.exists(self.data):
-            msg = 'TinyDB file does not exist, please check the path specified, or include the full path to the file'
+            msg = ('TinyDB file does not exist, please check the path specified,'
+                  'or include the full path to the file')
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
