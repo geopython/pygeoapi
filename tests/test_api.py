@@ -420,7 +420,8 @@ def test_api_exception(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
 
 
-def test_gzip(config, api_):
+def test_gzip(config, openapi):
+    api_ = API(config, openapi)
     # Requests for each response type and gzip encoding
     req_gzip_json = mock_request(HTTP_ACCEPT=FORMAT_TYPES[F_JSON],
                                  HTTP_ACCEPT_ENCODING=F_GZIP)
@@ -442,10 +443,9 @@ def test_gzip(config, api_):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
     # Add gzip to server and use utf-16 encoding
-    config['server']['gzip'] = True
-    enc_16 = 'utf-16'
-    config['server']['encoding'] = enc_16
-    api_ = API(config, openapi)
+    config_with_gzip = config.copy()
+    config_with_gzip['server']['gzip'] = True
+    api_ = API(config_with_gzip, openapi)
 
     # Responses from server with gzip compression
     rsp_json_headers, _, rsp_gzip_json = api_.landing_page(req_gzip_json)
@@ -454,42 +454,38 @@ def test_gzip(config, api_):
     rsp_gzip_headers, _, rsp_gzip_gzip = api_.landing_page(req_gzip_gzip)
 
     # Validate compressed json response
-    assert rsp_json_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_JSON]}; charset={enc_16}'
+    assert rsp_json_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_json_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_json = gzip.decompress(rsp_gzip_json).decode(enc_16)
+    parsed_gzip_json = gzip.decompress(rsp_gzip_json).decode()
     assert isinstance(parsed_gzip_json, str)
     parsed_gzip_json = json.loads(parsed_gzip_json)
     assert isinstance(parsed_gzip_json, dict)
     assert parsed_gzip_json == json.loads(rsp_json)
 
     # Validate compressed jsonld response
-    assert rsp_jsonld_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_JSONLD]}; charset={enc_16}'
+    assert rsp_jsonld_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_jsonld_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_jsonld = gzip.decompress(rsp_gzip_jsonld).decode(enc_16)
+    parsed_gzip_jsonld = gzip.decompress(rsp_gzip_jsonld).decode()
     assert isinstance(parsed_gzip_jsonld, str)
     parsed_gzip_jsonld = json.loads(parsed_gzip_jsonld)
     assert isinstance(parsed_gzip_jsonld, dict)
     assert parsed_gzip_jsonld == json.loads(rsp_jsonld)
 
     # Validate compressed html response
-    assert rsp_html_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_HTML]}; charset={enc_16}'
+    assert rsp_html_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     assert rsp_html_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_html = gzip.decompress(rsp_gzip_html).decode(enc_16)
+    parsed_gzip_html = gzip.decompress(rsp_gzip_html).decode()
     assert isinstance(parsed_gzip_html, str)
     assert parsed_gzip_html == rsp_html
 
     # Validate compressed gzip response
-    assert rsp_gzip_headers['Content-Type'] == \
-        f'{FORMAT_TYPES[F_GZIP]}; charset={enc_16}'
+    assert rsp_gzip_headers['Content-Type'] == FORMAT_TYPES[F_GZIP]
     assert rsp_gzip_headers['Content-Encoding'] == F_GZIP
 
-    parsed_gzip_gzip = gzip.decompress(rsp_gzip_gzip).decode(enc_16)
+    parsed_gzip_gzip = gzip.decompress(rsp_gzip_gzip).decode()
     assert isinstance(parsed_gzip_gzip, str)
     parsed_gzip_gzip = json.loads(parsed_gzip_gzip)
     assert isinstance(parsed_gzip_gzip, dict)
@@ -506,31 +502,24 @@ def test_gzip(config, api_):
 
     # Confirm each request is the same when decompressed
     assert rsp_json_ == rsp_json == \
-        gzip.decompress(rsp_gzip_json).decode(enc_16)
+        gzip.decompress(rsp_gzip_json).decode()
 
     assert rsp_jsonld_ == rsp_jsonld == \
-        gzip.decompress(rsp_gzip_jsonld).decode(enc_16)
+        gzip.decompress(rsp_gzip_jsonld).decode()
 
     assert rsp_html_ == rsp_html == \
-        gzip.decompress(rsp_gzip_html).decode(enc_16)
+        gzip.decompress(rsp_gzip_html).decode()
 
 
-def test_gzip_csv(config, api_):
+def test_gzip_csv(config, openapi):
+    api_ = API(config, openapi)
     req_csv = mock_request({'f': 'csv'})
     rsp_csv_headers, _, rsp_csv = api_.get_collection_items(req_csv, 'obs')
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv = rsp_csv.decode('utf-8')
-
-    req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
-    assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
-    rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
-    assert rsp_csv == rsp_csv_
-
-    # Use utf-16 encoding
-    config['server']['encoding'] = 'utf-16'
-    api_ = API(config, openapi)
-
+    config_with_gzip = config.copy()
+    config_with_gzip['server']['gzip'] = True
+    api_ = API(config_with_gzip, openapi)
     req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
     rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'

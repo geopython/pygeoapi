@@ -32,9 +32,6 @@ properties:
             mimetype:
                 type: string
                 description: default MIME type
-            encoding:
-                type: string
-                description: default server encoding
             gzip:
                 type: boolean
                 description: default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
@@ -127,7 +124,6 @@ properties:
             - bind
             - url
             - mimetype
-            - encoding
             - map
     logging:
         type: object

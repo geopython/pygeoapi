@@ -94,7 +94,6 @@ HEADERS = {
     'X-Powered-By': f'pygeoapi {__version__}'
 }
 
-CHARSET = ['utf-8']
 F_JSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
@@ -215,16 +214,13 @@ def gzip(func):
 
     def inner(*args, **kwargs):
         headers, status, content = func(*args, **kwargs)
-        charset = CHARSET[0]
         if F_GZIP in headers.get('Content-Encoding', []):
             try:
                 if isinstance(content, bytes):
                     # bytes means Content-Type needs to be set upstream
                     content = compress(content)
                 else:
-                    headers['Content-Type'] = \
-                        f"{headers['Content-Type']}; charset={charset}"
-                    content = compress(content.encode(charset))
+                    content = compress(content.encode())
             except TypeError as err:
                 headers.pop('Content-Encoding')
                 LOGGER.error(f'Error in compression: {err}')
@@ -649,7 +645,6 @@ class API:
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
 
-        CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip'):
             FORMAT_TYPES[F_GZIP] = 'application/gzip'
             FORMAT_TYPES.move_to_end(F_JSON)
