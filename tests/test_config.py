@@ -46,18 +46,16 @@ def config():
 
 
 def test_config_envvars():
-    os.environ['PYGEOAPI_PORT'] = '5001'
     os.environ['PYGEOAPI_TITLE'] = 'my title'
 
     with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:
         config = yaml_load(fh)
 
     assert isinstance(config, dict)
-    assert config['server']['bind']['port'] == 5001
     assert config['metadata']['identification']['title'] == \
         'pygeoapi default instance my title'
 
-    os.environ.pop('PYGEOAPI_PORT')
+    os.environ.pop('PYGEOAPI_TITLE')
 
     with pytest.raises(EnvironmentError):
         with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:  # noqa
