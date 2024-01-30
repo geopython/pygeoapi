@@ -48,6 +48,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 # pygeoapi specific
 from pygeoapi.config import get_config
+from pygeoapi.openapi import load_openapi_document
 from pygeoapi.util import get_api_rules
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -167,6 +168,7 @@ STATIC_URL = '/static/'
 
 # pygeoapi specific
 PYGEOAPI_CONFIG = get_config()
+OPENAPI_DOCUMENT = load_openapi_document()
 
 API_RULES = get_api_rules(PYGEOAPI_CONFIG)
 

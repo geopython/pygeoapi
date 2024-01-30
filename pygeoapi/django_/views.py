@@ -545,9 +545,9 @@ def _feed_response(request: HttpRequest, api_definition: str,
 
     if 'admin' in api_definition and settings.PYGEOAPI_CONFIG['server'].get('admin'):  # noqa
         from pygeoapi.admin import Admin
-        api_ = Admin(settings.PYGEOAPI_CONFIG)
+        api_ = Admin(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
     else:
-        api_ = API(settings.PYGEOAPI_CONFIG)
+        api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
 
     api = getattr(api_, api_definition)
 

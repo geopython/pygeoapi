@@ -151,7 +151,11 @@ CONFORMANCE = {
     ],
     'tile': [
         'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt'
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets'
     ],
     'record': [
         'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
@@ -2883,7 +2887,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
             else:
-                return headers, HTTPStatus.ACCEPTED, content
+                return headers, HTTPStatus.OK, content
 
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
