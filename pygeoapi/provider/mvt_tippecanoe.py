@@ -32,7 +32,6 @@ import logging
 import requests
 from pathlib import Path
 from urllib.parse import urlparse
-import os.path
 
 from pygeoapi.provider.tile import (
     ProviderTileNotFoundError)
@@ -73,7 +72,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
-            extension = os.path.splitext(url.path)[-1]  # e.g. ".pbf"
+            extension = Path(url.path).suffix  # e.g. ".pbf"
             layer = f'/{self.get_layer()}'
 
             LOGGER.debug('Extracting layer name from URL')
@@ -175,7 +174,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         url = urlparse(self.data)
         base_url = f'{url.scheme}://{url.netloc}'
 
-        extension = os.path.splitext(url.path)[-1]  # e.g. ".pbf"
+        extension = Path(url.path).suffix  # e.g. ".pbf"
 
         try:
             with requests.Session() as session:
