@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
-files: '\.(py|sh)$'
+files: '\.(py|sh|sql)$'
 
 repos:
 
