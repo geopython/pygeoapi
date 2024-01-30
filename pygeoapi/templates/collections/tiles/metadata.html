@@ -10,9 +10,9 @@
     <section id="collection">
       <h1>{{ data['tileset'] }} map tileset for {{ data['title'] }}</h1>
       <p>
-      (View
+      (View 
       {% if data['tilejson_url'] %}
-        <a href="{{ data['tilejson_url'] }}">{% trans %}TileJSON{% endtrans %}</a> or
+        <a href="{{ data['tilejson_url'] }}">{% trans %}TileJSON{% endtrans %}</a> or 
       {% endif %}
       <a href="{{ data['json_url'] }}">{% trans %}JSON{% endtrans %}</a> representation)
       </p>

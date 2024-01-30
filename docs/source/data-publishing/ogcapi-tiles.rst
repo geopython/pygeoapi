@@ -7,7 +7,7 @@ Publishing tiles to OGC API - Tiles
 (map, vector, coverage, etc.).
 
 pygeoapi can publish tiles from local or remote data sources (including cloud
-object storage or a tile service).
+object storage or a tile service). 
 
 Providers
 ---------
@@ -24,7 +24,7 @@ pygeoapi core tile providers are listed below, along with supported features.
 Below are specific connection examples based on supported providers.
 
 .. note::
-   Currently only `Mapbox Vector Tiles (MVT) <https://github.com/mapbox/vector-tile-spec>`_  are supported in pygeoapi.
+   Currently only `Mapbox Vector Tiles (MVT) <https://github.com/mapbox/vector-tile-spec>`_  are supported in pygeoapi. 
 
 Connection examples
 -------------------
@@ -32,8 +32,8 @@ Connection examples
 MVT-tippecanoe
 ^^^^^^^^^^^^^^
 
-This provider gives support to serving tiles generated using `Mapbox Tippecanoe <https://github.com/mapbox/tippecanoe>`_.
-The tiles can be integrated from a path on disk, or from a static url (e.g.: from an S3 or MinIO bucket).
+This provider gives support to serving tiles generated using `Mapbox Tippecanoe <https://github.com/mapbox/tippecanoe>`_. 
+The tiles can be integrated from a path on disk, or from a static url (e.g.: from an S3 or MinIO bucket). 
 In both cases, they have to be rendered before using pygeoapi.
 
 This code block shows how to configure pygeoapi to read Mapbox vector tiles generated with tippecanoe, from disk or a URL.
@@ -42,7 +42,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
 
    providers:
        - type: tile
-         name: MVT-tippecanoe
+         name: MVT-tippecanoe 
          data: tests/data/tiles/ne_110m_lakes  # local directory tree
          # data: http://localhost:9000/ne_110m_lakes/{z}/{x}/{y}.pbf # tiles stored on a MinIO bucket
          options:
@@ -52,7 +52,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              schemes:
                  - WorldCRS84Quad
          format:
-             name: pbf
+             name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
 .. tip::
@@ -61,7 +61,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
 MVT-elastic
 ^^^^^^^^^^^^
 
-This provider gives support to serving tiles generated using `Elasticsearch <https://www.elastic.co/>`_.
+This provider gives support to serving tiles generated using `Elasticsearch <https://www.elastic.co/>`_. 
 These tiles are rendered on-the-fly using the `Elasticsearch Vector tile search API <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html>`_.
 In order to use it, the only requirement is to have the data stored in an Elasticsearch index.
 
@@ -71,9 +71,9 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
 
    providers:
        - type: tile
-         name: MVT-elastic
+         name: MVT-elastic 
          data: http://localhost:9200/ne_110m_populated_places_simple2/_mvt/geometry/{z}/{x}/{y}?grid_precision=0
-         # if you don't use precision 0, you will be requesting for aggregations which are not supported in the
+         # if you don't use precision 0, you will be requesting for aggregations which are not supported in the 
          # free version of elastic
          options:
              zoom:
@@ -82,12 +82,12 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
              schemes:
                  - WorldCRS84Quad
          format:
-             name: pbf
+             name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
 .. tip::
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-vector-tiles-from-elasticsearch>`_  you can find detailed instructions on publish tiles stored in an Elasticsearch endpoint.
-
+   
 Data access examples
 --------------------
 

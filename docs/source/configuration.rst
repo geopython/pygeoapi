@@ -102,9 +102,9 @@ The ``rotation`` supports rotation of disk log files. The ``logfile`` file is op
       rotation:
           mode: # [time|size]
           when: # [s|m|h|d|w0-w6|midnight]
-          interval:
-          max_bytes:
-          backup_count:
+          interval: 
+          max_bytes: 
+          backup_count: 
 .. note::
   Rotation block is not mandatory and defined only when needed. The ``mode`` can be defined by size or time.
   For RotatingFileHandler_ set mode size and parameters max_bytes and backup_count.

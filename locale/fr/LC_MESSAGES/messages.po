@@ -592,3 +592,4 @@ msgstr ""
 #: pygeoapi/templates/processes/jobs/results/index.html:12
 msgid "Results of job"
 msgstr ""
+

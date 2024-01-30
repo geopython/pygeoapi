@@ -301,7 +301,7 @@ Connection
             password: geo_test
             # external_auth: wallet
             # tns_name: XEPDB1
-            # tns_admin /opt/oracle/client/network/admin
+            # tns_admin /opt/oracle/client/network/admin 
             # init_oracle_client: True
 
         id_field: id
@@ -309,7 +309,7 @@ Connection
         geom_field: geometry
         title_field: name
 
-The provider supports connection over host and port with SID, SERVICE_NAME or TNS_NAME. For TNS naming, the system
+The provider supports connection over host and port with SID, SERVICE_NAME or TNS_NAME. For TNS naming, the system 
 environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
 
 The providers supports external authentication. At the moment only wallet authentication is implemented.
@@ -335,7 +335,7 @@ SDO options
         title_field: name
         sdo_operator: sdo_relate # defaults to sdo_filter
         sdo_param: mask=touch+coveredby # defaults to mask=anyinteract
-
+        
 The provider supports two different SDO operators, sdo_filter and sdo_relate. When not set, the default is sdo_relate!
 Further more  it is possible to set the sdo_param option. When sdo_relate is used the default is anyinteraction!
 `See Oracle Documentation for details <https://docs.oracle.com/en/database/oracle/oracle-database/23/spatl/spatial-operators-reference.html>`_.
@@ -360,14 +360,14 @@ Mandatory properties
         manadory_properties:
         - example_group_id
 
-On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to
+On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to 
 configure mandatory properties. When this is activated, the provoder throws an exception when the parameter
 is not in the query uri.
 
 Custom SQL Manipulator Plugin
 """""""""""""""""""""""""""""
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
-useful e.g. for authorization at row level or manipulation of the explain plan with hints.
+useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
 An example an more informations about that feature you can find in the test class in tests/test_oracle_provider.py.
 

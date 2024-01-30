@@ -42,7 +42,7 @@ jobs:
           - python-version: 3.8
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
-
+    
     steps:
     - name: Chown user
       run: |

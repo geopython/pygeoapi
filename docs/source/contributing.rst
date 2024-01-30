@@ -30,7 +30,7 @@ Or using the following ``make`` command:
 
    make -C docs html
 
-After building the documentation, the folder ``docs/build`` will contain the website generated with the documentation.
+After building the documentation, the folder ``docs/build`` will contain the website generated with the documentation. 
 Add the folder to a web server or open the file ``docs/build/html/index.html`` file in a web browser to see the contents of the documentation.
 
 The documentation is hosted on `readthedocs`_. It is automatically generated from the contents of the ``master`` branch on GitHub.
