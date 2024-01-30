@@ -77,6 +77,16 @@ urlpatterns = [
         name='conformance'
     ),
     path(
+        apply_slash_rule('TileMatrixSets/'),
+        views.tilematrixsets,
+        name='tilematrixsets'
+    ),
+    path(
+        apply_slash_rule('TileMatrixSets/<str:tilematrixset_id>'),
+        views.tilematrixsets,
+        name='tilematrixset'
+    ),
+    path(
         apply_slash_rule('collections/'),
         views.collections,
         name='collections'

@@ -87,6 +87,28 @@ def conformance(request: HttpRequest) -> HttpResponse:
     return response
 
 
+def tilematrixsets(request: HttpRequest,
+                   tilematrixset_id: Optional[str] = None) -> HttpResponse:
+    """
+    OGC API tilematrixsets endpoint
+
+    :request Django HTTP Request
+    :param tilematrixset_id: tile matrix set identifier
+
+    :returns: Django HTTP Response
+    """
+
+    response = None
+
+    if tilematrixset_id is None:
+        response_ = _feed_response(request, 'tilematrixsets')
+    else:
+        response_ = _feed_response(request, 'tilematrixset', tilematrixset_id)
+    response = _to_django_response(*response_)
+
+    return response
+
+
 def collections(request: HttpRequest,
                 collection_id: Optional[str] = None) -> HttpResponse:
     """
