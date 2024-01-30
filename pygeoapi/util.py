@@ -964,8 +964,6 @@ def _inplace_transform_filter_geometries(
                     crs = get_crs_from_uri(crs_urn_provided_in_ewkt)
                 else:
                     crs = filter_crs
-                print(f"{crs=}")
-                print(f"{storage_crs=}")
                 if crs != storage_crs:
                     # convert geometry coordinates to storage crs
                     geom = geojson_to_geom(sub_node.geometry)
