@@ -85,7 +85,8 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
+                           modify_pygeofilter, CrsTransformSpec,
+                           transform_bbox)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1501,7 +1502,7 @@ class API:
         reserved_fieldnames = ['bbox', 'bbox-crs', 'crs', 'f', 'lang', 'limit',
                                'offset', 'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
-                               'filter', 'filter-lang']
+                               'filter', 'filter-lang', 'filter-crs']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1714,11 +1715,19 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('Processing filter-crs parameter')
+        filter_crs_uri = request.params.get('filter-crs', DEFAULT_CRS)
         LOGGER.debug('processing filter parameter')
         cql_text = request.params.get('filter')
         if cql_text is not None:
             try:
                 filter_ = parse_ecql_text(cql_text)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    filter_crs_uri=filter_crs_uri,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field'),
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {cql_text}'
@@ -1736,7 +1745,6 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
-
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
@@ -1755,7 +1763,9 @@ class API:
         LOGGER.debug(f'language: {prv_locale}')
         LOGGER.debug(f'q: {q}')
         LOGGER.debug(f'cql_text: {cql_text}')
+        LOGGER.debug(f'filter_: {filter_}')
         LOGGER.debug(f'filter-lang: {filter_lang}')
+        LOGGER.debug(f'filter-crs: {filter_crs_uri}')
 
         try:
             content = p.query(offset=offset, limit=limit,
@@ -1925,7 +1935,7 @@ class API:
         reserved_fieldnames = ['bbox', 'f', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
-                               'filter-lang']
+                               'filter-lang', 'filter-crs']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -2012,19 +2022,21 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
-            p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
         except ProviderTypeError:
             try:
-                p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
+
+        try:
+            p = load_plugin('provider', provider_def)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return self.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -2086,6 +2098,8 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('Processing filter-crs parameter')
+        filter_crs = request.params.get('filter-crs', DEFAULT_CRS)
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
         if filter_lang != 'cql-json':  # @TODO add check from the configuration
@@ -2105,6 +2119,7 @@ class API:
         LOGGER.debug(f'skipGeometry: {skip_geometry}')
         LOGGER.debug(f'q: {q}')
         LOGGER.debug(f'filter-lang: {filter_lang}')
+        LOGGER.debug(f'filter-crs: {filter_crs}')
 
         LOGGER.debug('Processing headers')
 
@@ -2142,6 +2157,12 @@ class API:
             LOGGER.debug('processing PostgreSQL CQL_JSON data')
             try:
                 filter_ = parse_cql_json(data)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    filter_crs_uri=filter_crs,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field')
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
