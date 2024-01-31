@@ -32,7 +32,9 @@ import requests
 from urllib.parse import urlparse
 
 from pygeoapi.provider.base_mvt import BaseMVTProvider
-from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base import (ProviderConnectionError,
+                                    ProviderGenericError,
+                                    ProviderInvalidQueryError)
 from pygeoapi.models.provider.base import (
     TileSetMetadata, LinkType)
 from pygeoapi.util import is_url, url_join
@@ -162,11 +164,17 @@ class MVTElasticProvider(BaseMVTProvider):
             else:
                 url_query = ''
 
-            with requests.Session() as session:
-                session.get(base_url)
-                resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
-                resp.raise_for_status()
-                return resp.content
+            try:
+                with requests.Session() as session:
+                    session.get(base_url)
+                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
+                    resp.raise_for_status()
+                    return resp.content
+            except requests.exceptions.RequestException as e:
+                LOGGER.debug(e)
+                if resp.status_code < 500:
+                    raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
+                raise ProviderGenericError  # Server error
         else:
             msg = 'Wrong input format for Elasticsearch MVT'
             LOGGER.error(msg)
