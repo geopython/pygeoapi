@@ -136,6 +136,28 @@ async def conformance(request: Request):
     return get_response(api_.conformance(request))
 
 
+async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
+    """
+    OGC API TileMatrixSet endpoint
+
+    :param tileMatrixSetId: identifier of tile matrix set
+    :returns: HTTP response
+    """
+    if 'tileMatrixSetId' in request.path_params:
+        tileMatrixSetId = request.path_params['tileMatrixSetId']
+
+    return get_response(api_.tilematrixset(request, tileMatrixSetId))
+
+
+async def get_tilematrix_sets(request: Request):
+    """
+    OGC API TileMatrixSets endpoint
+
+    :returns: HTTP response
+    """
+    return get_response(api_.tilematrixsets(request))
+
+
 async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
@@ -566,6 +588,8 @@ api_routes = [
     Route('/', landing_page),
     Route('/openapi', openapi),
     Route('/conformance', conformance),
+    Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
+    Route('/TileMatrixSets', get_tilematrix_sets),
     Route('/collections/{collection_id:path}/queryables', collection_queryables),  # noqa
     Route('/collections/{collection_id:path}/tiles', get_collection_tiles),
     Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}', get_collection_tiles_metadata),  # noqa

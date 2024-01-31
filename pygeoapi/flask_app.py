@@ -155,6 +155,27 @@ def conformance():
     return get_response(api_.conformance(request))
 
 
+@BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
+def get_tilematrix_set(tileMatrixSetId=None):
+    """
+    OGC API TileMatrixSet endpoint
+
+    :param tileMatrixSetId: identifier of tile matrix set
+    :returns: HTTP response
+    """
+    return get_response(api_.tilematrixset(request, tileMatrixSetId))
+
+
+@BLUEPRINT.route('/TileMatrixSets')
+def get_tilematrix_sets():
+    """
+    OGC API TileMatrixSets endpoint
+
+    :returns: HTTP response
+    """
+    return get_response(api_.tilematrixsets(request))
+
+
 @BLUEPRINT.route('/collections')
 @BLUEPRINT.route('/collections/<path:collection_id>')
 def collections(collection_id=None):
