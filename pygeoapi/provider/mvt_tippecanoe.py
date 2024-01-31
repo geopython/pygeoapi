@@ -237,6 +237,34 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
+    def get_metadata_from_URL(self, service_metadata_url=None):
+        """
+        Gets the metadata JSON from disk or URL
+
+        :param service_metadata_url: local path or URL
+
+        :returns: the metadata JSON
+        """
+        if (not service_metadata_url):
+            service_metadata_url = self.service_metadata_url
+
+        metadata_json_content = ''
+        if isinstance(service_metadata_url, Path):
+            if service_metadata_url.exists():
+                with open(service_metadata_url, 'r') as md_file:
+                    metadata_json_content = json.loads(md_file.read())
+        elif is_url(service_metadata_url):
+            with requests.Session() as session:
+                resp = session.get(service_metadata_url)
+                resp.raise_for_status()
+                metadata_json_content = json.loads(resp.content)
+        else:
+            msg = f'Wrong data path configuration: {service_metadata_url}'  # noqa
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
+
+        return metadata_json_content
+
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
 
@@ -253,21 +281,20 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         metadata['tileset'] = tileset
         metadata['collections_path'] = service_url
         metadata['json_url'] = f'{metadata_url}?f=json'
-        # Some providers may not implement tilejson metadata
-        metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
 
-        if not isinstance(self.service_metadata_url, Path):
-            msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
-            LOGGER.warning(msg)
-        elif self.service_metadata_url.exists():
-            with open(self.service_metadata_url, 'r') as md_file:
-                metadata_json_content = json.loads(md_file.read())
-                if 'metadata_json_content' in locals():
-                    content = MVTTilesJson(**metadata_json_content)
-                    content.tiles = service_url
-                    content.vector_layers = json.loads(
-                            metadata_json_content["json"])["vector_layers"]
-                    metadata['metadata'] = content.model_dump()
+        try:
+            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url) # noqa
+
+            content = MVTTilesJson(**metadata_json_content)
+            content.tiles = service_url
+            content.vector_layers = json.loads(
+                    metadata_json_content["json"])["vector_layers"]
+            metadata['metadata'] = content.model_dump()
+            # Some providers may not implement tilejson metadata
+            metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
+        except ProviderConnectionError:
+            # No vendor metadata JSON
+            pass
 
         return metadata
 
@@ -332,28 +359,19 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         Gets tile metadata in tilejson format
         """
 
-        if not isinstance(self.service_metadata_url, Path):
-            msg = f'Wrong data path configuration: {self.service_metadata_url}'  # noqa
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
+        try:
+            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url) # noqa
 
-        if self.service_metadata_url.exists():
-            with open(self.service_metadata_url, 'r') as md_file:
-                metadata_json_content = json.loads(md_file.read())
+            service_url = url_join(
+                server_url,
+                f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
 
-        service_url = url_join(
-            server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
-
-        content = {}
-
-        if 'metadata_json_content' in locals():
             content = MVTTilesJson(**metadata_json_content)
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
             return content.model_dump()
-        else:
+        except ProviderConnectionError:
             msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
