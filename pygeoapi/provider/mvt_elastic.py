@@ -223,7 +223,7 @@ class MVTElasticProvider(BaseMVTProvider):
                 tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
-                                         el="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
+                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
                                          type=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
