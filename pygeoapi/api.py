@@ -370,7 +370,7 @@ class APIRequest:
                 # has been implemented, with_data() can become async too
                 loop = asyncio.get_event_loop()
                 api_req._data = asyncio.run_coroutine_threadsafe(
-                    request.body(), loop)
+                    request.body(), loop).result(1)
         return api_req
 
     @staticmethod
