@@ -2,7 +2,7 @@
 #
 # Authors: Ms. Prajwalita Jayadev Chavan <prajwalita.chavan@gmail.com>
 #
-# Copyright (c) 2024 Prajwalita Jayadev Chavan
+# Copyright (c) 2024 Prajwalita Jayadev Chavan, GISE Hub, IIT Bombay
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
