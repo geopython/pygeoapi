@@ -203,6 +203,14 @@ def config_properties(config):
 
 
 @pytest.fixture()
+def config_extra_properties(config):
+    return {
+        **config,
+        "extra_properties": ["'Here the name is ' || name || '!' as tooltip"],
+    }
+
+
+@pytest.fixture()
 def create_geojson():
     return {
         "type": "Feature",
@@ -356,6 +364,15 @@ def test_query_with_property_filter(config):
     assert features[0].get("id") == 12
 
 
+def test_query_with_extra_properties(config_extra_properties):
+    p = OracleProvider(config_extra_properties)
+
+    feature_collection = p.query(properties=[("name", "Aral Sea")])
+    features = feature_collection.get("features")
+
+    assert features[0]["properties"]["tooltip"] == "Here the name is Aral Sea!"
+
+
 def test_query_bbox(config):
     """Test query with a specified bounding box"""
     p = OracleProvider(config)
@@ -405,6 +422,17 @@ def test_get(config):
     assert result.get("id") == 5
     assert result.get("prev") == 4
     assert result.get("next") == 6
+
+
+def test_get_with_extra_properties(config_extra_properties):
+    """Test simple get"""
+    p = OracleProvider(config_extra_properties)
+    result = p.get(5)
+
+    assert (
+        result["properties"]["tooltip"] ==
+        "Here the name is L. Erie!"
+    )
 
 
 def test_create(config, create_geojson):

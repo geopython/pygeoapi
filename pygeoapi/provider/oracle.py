@@ -55,7 +55,7 @@ class DatabaseConnection:
     The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, properties=[], context="query"):
+    def __init__(self, conn_dic, table, properties=None, context="query"):
         """
         OracleProvider Class constructor
 
@@ -86,7 +86,8 @@ class DatabaseConnection:
         self.columns = (
             None  # Comma sepparated string with column names (for SQL query)
         )
-        self.properties = [item.lower() for item in properties]
+        self.properties = \
+            [item.lower() for item in properties] if properties else []
         self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
@@ -327,6 +328,7 @@ class OracleProvider(BaseProvider):
         self.geom = provider_def["geom_field"]
         self.properties = [item.lower() for item in self.properties]
         self.mandatory_properties = provider_def.get("mandatory_properties")
+        self.extra_properties = provider_def.get("extra_properties", [])
 
         # SQL manipulator properties
         self.sql_manipulator = provider_def.get("sql_manipulator")
@@ -495,6 +497,12 @@ class OracleProvider(BaseProvider):
         ]
 
         return f"ORDER BY {','.join(ret)}"
+
+    def _get_extra_columns_expression(self):
+        """Returns part of SELECT clause for extra properties"""
+        return "".join(
+            f", {e_prop}" for e_prop in self.extra_properties
+        )
 
     def _output_type_handler(
         self, cursor, name, default_type, size, precision, scale
@@ -680,14 +688,16 @@ class OracleProvider(BaseProvider):
             # SQL manipulation class
             paging_bind = {}
             if limit > 0:
-                sql_query = f"SELECT #HINTS# {props} {geom} \
+                sql_query = f"SELECT #HINTS# {props} \
+                              {self._get_extra_columns_expression()} {geom} \
                               FROM {self.table} t1 #JOIN# \
                               {where_dict['clause']} #WHERE# \
                               {orderby} \
                               OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY"
                 paging_bind = {"offset": offset, "limit": limit}
             else:
-                sql_query = f"SELECT #HINTS# {props} {geom} \
+                sql_query = f"SELECT #HINTS# {props} \
+                        {self._get_extra_columns_expression()} {geom} \
                         FROM {self.table} t1 #JOIN# \
                         {where_dict['clause']} #WHERE# \
                         {orderby}"
@@ -858,7 +868,9 @@ class OracleProvider(BaseProvider):
             else:
                 geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
 
-            sql_query = f"SELECT {db.columns} {geom_sql} \
+            sql_query = f"SELECT {db.columns} \
+                            {self._get_extra_columns_expression()} \
+                            {geom_sql} \
                             FROM {self.table} t1 \
                            WHERE {self.id_field} = :in_id"
 
