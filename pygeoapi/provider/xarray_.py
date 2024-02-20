@@ -439,10 +439,10 @@ class XarrayProvider(BaseProvider):
             if coord.lower() == 'time':
                 time_var = coord
                 continue
-            if self._data.coords[coord].attrs['units'] == 'degrees_north':
+            if self._data.coords[coord].attrs.get('units') == 'degrees_north':
                 y_var = coord
                 continue
-            if self._data.coords[coord].attrs['units'] == 'degrees_east':
+            if self._data.coords[coord].attrs.get('units') == 'degrees_east':
                 x_var = coord
                 continue
 
