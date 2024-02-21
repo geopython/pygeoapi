@@ -9,6 +9,7 @@
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2021 Angelos Tzotsos
+# Copyright (c) 2023 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy 
+FROM ubuntu:jammy-20231211.1
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -64,6 +65,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-elasticsearch \
     python3-fiona \
     python3-gdal \
+    python3-jsonpatch \
     python3-netcdf4 \
     python3-pandas \
     python3-psycopg2 \
@@ -100,12 +102,10 @@ ENV TZ=${TZ} \
     ${ADD_DEB_PACKAGES}"
 
 WORKDIR /pygeoapi
-ADD . /pygeoapi
 
 # Install operating system dependencies
 RUN \
     apt-get update -y \
-    && apt-get upgrade -y \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"  \
@@ -119,21 +119,30 @@ RUN \
     && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
     && rm -f ./SCHEMAS_OPENGIS_NET.zip \
 
-    # Install remaining pygeoapi deps
-    && pip3 install -r requirements-docker.txt \
-
-    # Install pygeoapi
-    && pip3 install -e . \
-
-    # Set default config and entrypoint for Docker Image
-    && cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
-    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh  \
-
     # Cleanup TODO: remove unused Locales and TZs
+    # NOTE: this tries to remove gcc, but the actual package gcc-11 can't be
+    #       removed because python3-scipy depends on python3-pythran which
+    #       depends on g++
     && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
     && apt-get clean \
     && apt autoremove -y  \
     && rm -rf /var/lib/apt/lists/*
+
+ADD requirements-docker.txt requirements-admin.txt /pygeoapi/
+# Install remaining pygeoapi deps
+RUN python3 -m pip install --no-cache-dir -r requirements-docker.txt \
+    && python3 -m pip install --no-cache-dir -r requirements-admin.txt
+
+
+ADD . /pygeoapi
+
+ # Install pygeoapi
+RUN python3 -m pip install --no-cache-dir -e . 
+
+RUN \ 
+    # Set default config and entrypoint for Docker Image
+    cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh 
 
 ENTRYPOINT ["/entrypoint.sh"]
 

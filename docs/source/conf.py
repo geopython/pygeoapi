@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -102,7 +102,7 @@ master_doc = 'index'
 project = 'pygeoapi'
 author = 'pygeoapi development team'
 license = 'This work is licensed under a Creative Commons Attribution 4.0 International License'  # noqa
-copyright = '2018-2023, ' + author + ' ' + license
+copyright = '2018-2024, ' + author + ' ' + license
 
 today_fmt = '%Y-%m-%d'
 

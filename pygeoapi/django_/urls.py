@@ -77,6 +77,16 @@ urlpatterns = [
         name='conformance'
     ),
     path(
+        apply_slash_rule('TileMatrixSets/'),
+        views.tilematrixsets,
+        name='tilematrixsets'
+    ),
+    path(
+        apply_slash_rule('TileMatrixSets/<str:tilematrixset_id>'),
+        views.tilematrixsets,
+        name='tilematrixset'
+    ),
+    path(
         apply_slash_rule('collections/'),
         views.collections,
         name='collections'
@@ -225,13 +235,7 @@ urlpatterns = [
         apply_slash_rule('stac/'),
         views.stac_catalog_root,
         name='stac-catalog-root'
-    ),
-    path('stac/<str:path>', views.stac_catalog_path, name='stac-catalog-path'),
-    path(
-        apply_slash_rule('stac/search/'),
-        views.stac_catalog_search,
-        name='stac-catalog-search'
-    ),
+    )
 ]
 
 url_route_prefix = settings.API_RULES.get_url_prefix('django')
@@ -240,6 +244,28 @@ if url_route_prefix:
     urlpatterns = [
         path(url_route_prefix, include(urlpatterns))
     ]
+
+if settings.PYGEOAPI_CONFIG['server'].get('admin', False):
+    admin_urlpatterns = [
+        path(
+            apply_slash_rule('admin/config'),
+            views.admin_config,
+            name='admin-config'
+        ),
+        path(
+            apply_slash_rule('admin/config/resources'),
+            views.admin_config_resources,
+            name='admin-config-resources'
+        ),
+        path(
+            apply_slash_rule('admin/config/resources/<str:resource_id>'),
+            views.admin_config_resource,
+            name='admin-config-resource'
+        ),
+    ]
+
+    urlpatterns.extend(admin_urlpatterns)
+
 
 # Add static URL and optionally add prefix (note: do NOT use django style here)
 url_static_prefix = settings.API_RULES.get_url_prefix()

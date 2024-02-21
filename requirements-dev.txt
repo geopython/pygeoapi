@@ -25,3 +25,5 @@ wheel
 pyOpenSSL
 ndg-httpsclient
 pyasn1
+
+pre-commit

@@ -59,11 +59,10 @@ OPENAPI_YAML = {
     'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
-    'oapit': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/tiles.yaml',  # noqa
-    'oapimt': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-tiles/master/openapi/swaggerhub/map-tiles.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
-    'oat': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml'  # noqa
+    'oapit': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml',  # noqa
+    'pygeoapi': 'https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml'  # noqa
 }
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -432,6 +431,15 @@ def get_oas_30(cfg):
                     'additionalProperties': True
                 },
                 'style': 'form'
+            },
+            'resourceId': {
+                'name': 'resourceId',
+                'in': 'path',
+                'description': 'Configuration resource identifier',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                 }
             }
         },
         'schemas': {
@@ -587,6 +595,7 @@ def get_oas_30(cfg):
                 },
                 'options': {
                     'summary': f'Options for {title} items',
+                    'description': desc,
                     'tags': [name],
                     'operationId': f'options{name.capitalize()}Features',
                     'responses': {
@@ -715,6 +724,7 @@ def get_oas_30(cfg):
                 },
                 'options': {
                     'summary': f'Options for {title} item by id',
+                    'description': desc,
                     'tags': [name],
                     'operationId': f'options{name.capitalize()}Feature',
                     'parameters': [
@@ -948,10 +958,10 @@ def get_oas_30(cfg):
                     'tags': [name],
                     'operationId': f'get{name.capitalize()}Tiles',
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oat']}#/components/parameters/tileMatrixSetId"}, # noqa
-                        {'$ref': f"{OPENAPI_YAML['oat']}#/components/parameters/tileMatrix"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oat']}#/components/parameters/tileRow"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oat']}#/components/parameters/tileCol"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileRow"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileCol"},  # noqa
                         {
                             'name': 'f',
                             'in': 'query',
@@ -1305,7 +1315,215 @@ def get_oas_30(cfg):
 
     oas['paths'] = paths
 
+    if cfg['server'].get('admin', False):
+        schema_dict = get_config_schema()
+        oas['definitions'] = schema_dict['definitions']
+        LOGGER.debug('Adding admin endpoints')
+        oas['paths'].update(get_admin())
+
     return oas
+
+
+def get_config_schema():
+    schema_file = os.path.join(THISDIR, 'schemas', 'config',
+                               'pygeoapi-config-0.x.yml')
+
+    with open(schema_file) as fh2:
+        return yaml_load(fh2)
+
+
+def get_admin():
+
+    schema_dict = get_config_schema()
+
+    paths = {}
+
+    paths['/admin/config'] = {
+        'get': {
+            'summary': 'Get admin configuration',
+            'description': 'Get admin configuration',
+            'tags': ['admin'],
+            'operationId': 'getAdminConfig',
+            'parameters': [
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
+            ],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': schema_dict
+                        }
+                    }
+                }
+            }
+        },
+        'put': {
+            'summary': 'Update admin configuration full',
+            'description': 'Update admin configuration full',
+            'tags': ['admin'],
+            'operationId': 'putAdminConfig',
+            'requestBody': {
+                'description': 'Updates admin configuration',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
+        },
+        'patch': {
+            'summary': 'Partially update admin configuration',
+            'description': 'Partially update admin configuration',
+            'tags': ['admin'],
+            'operationId': 'patchAdminConfig',
+            'requestBody': {
+                'description': 'Updates admin configuration',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
+        }
+    }
+    paths['/admin/config/resources'] = {
+        'get': {
+            'summary': 'Get admin configuration resources',
+            'description': 'Get admin configuration resources',
+            'tags': ['admin'],
+            'operationId': 'getAdminConfigResources',
+            'parameters': [
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
+            ],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                        }
+                    }
+                }
+            }
+        },
+        'post': {
+            'summary': 'Create admin configuration resource',
+            'description': 'Create admin configuration resource',
+            'tags': ['admin'],
+            'operationId': 'postAdminConfigResource',
+            'requestBody': {
+                'description': 'Adds resource to configuration',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '201': {'description': 'Successful creation'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
+        },
+    }
+    paths['/admin/config/resources/{resourceId}'] = {
+        'get': {
+            'summary': 'Get admin configuration resource',
+            'description': 'Get admin configuration resource',
+            'tags': ['admin'],
+            'operationId': 'getAdminConfigResource',
+            'parameters': [
+                {'$ref': '#/components/parameters/resourceId'},
+                {'$ref': '#/components/parameters/f'},
+                {'$ref': '#/components/parameters/lang'}
+            ],
+            'responses': {
+                '200': {
+                    'content': {
+                        'application/json': {
+                            'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                        }
+                    }
+                }
+            }
+        },
+        'put': {
+            'summary': 'Update admin configuration resource',
+            'description': 'Update admin configuration resource',
+            'tags': ['admin'],
+            'operationId': 'putAdminConfigResource',
+            'parameters': [
+                {'$ref': '#/components/parameters/resourceId'},
+            ],
+            'requestBody': {
+                'description': 'Updates admin configuration resource',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
+        },
+        'patch': {
+            'summary': 'Partially update admin configuration resource',
+            'description': 'Partially update admin configuration resource',
+            'tags': ['admin'],
+            'operationId': 'patchAdminConfigResource',
+            'parameters': [
+                {'$ref': '#/components/parameters/resourceId'},
+            ],
+            'requestBody': {
+                'description': 'Updates admin configuration resource',
+                'content': {
+                    'application/json': {
+                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                    }
+                },
+                'required': True
+            },
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+            }
+        },
+        'delete': {
+            'summary': 'Delete admin configuration resource',
+            'description': 'Delete admin configuration resource',
+            'tags': ['admin'],
+            'operationId': 'deleteAdminConfigResource',
+            'parameters': [
+                {'$ref': '#/components/parameters/resourceId'},
+            ],
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                'default': {'$ref': '#/components/responses/default'}  # noqa
+            }
+        }
+    }
+
+    return paths
 
 
 def get_oas(cfg, version='3.0'):

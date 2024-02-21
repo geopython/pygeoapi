@@ -52,6 +52,8 @@ from pygeoapi.util import (yaml_load, get_crs_from_uri,
 from .util import (get_test_file_path, mock_request,
                    mock_flask, mock_starlette)
 
+from pygeoapi.models.provider.base import TileMatrixSetEnum
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -557,7 +559,7 @@ def test_root(config, api_):
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 9
+    assert len(root['links']) == 11
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
@@ -607,7 +609,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 30
+    assert len(root['conformsTo']) == 34
     assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
            in root['conformsTo']
 
@@ -617,6 +619,57 @@ def test_conformance(config, api_):
 
     req = mock_request({'f': 'html'})
     rsp_headers, code, response = api_.conformance(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+
+def test_tilematrixsets(config, api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.tilematrixsets(req)
+    root = json.loads(response)
+
+    assert isinstance(root, dict)
+    assert 'tileMatrixSets' in root
+    assert len(root['tileMatrixSets']) == 2
+    assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad' \
+           in root['tileMatrixSets'][0]['uri']
+    assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad' \
+           in root['tileMatrixSets'][1]['uri']
+
+    req = mock_request({'f': 'foo'})
+    rsp_headers, code, response = api_.tilematrixsets(req)
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.tilematrixsets(req)
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+    # No language requested: should be set to default from YAML
+    assert rsp_headers['Content-Language'] == 'en-US'
+
+
+def test_tilematrixset(config, api_):
+    req = mock_request()
+
+    enums = [e.value for e in TileMatrixSetEnum]
+    enum = None
+
+    for e in enums:
+        enum = e.tileMatrixSet
+        rsp_headers, code, response = api_.tilematrixset(req, enum)
+        root = json.loads(response)
+
+        assert isinstance(root, dict)
+        assert 'id' in root
+        assert root['id'] == enum
+        assert 'tileMatrices' in root
+        assert len(root['tileMatrices']) == 30
+
+    rsp_headers, code, response = api_.tilematrixset(req, 'foo')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.tilematrixset(req, enum)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
@@ -1380,7 +1433,7 @@ def test_get_coverage_domainset(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req, 'obs')
 
-    assert code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert code == HTTPStatus.BAD_REQUEST
 
     rsp_headers, code, response = api_.get_collection_coverage_domainset(
         req, 'gdps-temperature')
@@ -1399,7 +1452,7 @@ def test_get_collection_coverage_rangetype(config, api_):
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req, 'obs')
 
-    assert code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert code == HTTPStatus.BAD_REQUEST
 
     rsp_headers, code, response = api_.get_collection_coverage_rangetype(
         req, 'gdps-temperature')
@@ -1827,21 +1880,10 @@ def test_execute_process(config, api_):
         assert code == HTTPStatus.OK
 
 
-def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job(
-        mock_request(), 'does-not-exist')
-
-    assert code == HTTPStatus.NOT_FOUND
-
+def _execute_a_job(api_):
     req_body_sync = {
         'inputs': {
-            'name': 'Sync Test Deletion'
-        }
-    }
-
-    req_body_async = {
-        'inputs': {
-            'name': 'Async Test Deletion'
+            'name': 'Sync Test'
         }
     }
 
@@ -1852,9 +1894,23 @@ def test_delete_job(api_):
     data = json.loads(response)
     assert code == HTTPStatus.OK
     assert 'Location' in rsp_headers
-    assert data['value'] == 'Hello Sync Test Deletion!'
+    assert data['value'] == 'Hello Sync Test!'
 
     job_id = rsp_headers['Location'].split('/')[-1]
+    return job_id
+
+
+def test_delete_job(api_):
+    rsp_headers, code, response = api_.delete_job(
+        mock_request(), 'does-not-exist')
+
+    assert code == HTTPStatus.NOT_FOUND
+    req_body_async = {
+        'inputs': {
+            'name': 'Async Test Deletion'
+        }
+    }
+    job_id = _execute_a_job(api_)
     rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
 
     assert code == HTTPStatus.OK
@@ -1876,6 +1932,26 @@ def test_delete_job(api_):
 
     rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
+
+
+def test_get_job_result(api_):
+    rsp_headers, code, response = api_.get_job_result(mock_request(),
+                                                      'not-exist')
+    assert code == HTTPStatus.NOT_FOUND
+
+    job_id = _execute_a_job(api_)
+    rsp_headers, code, response = api_.get_job_result(mock_request(), job_id)
+    # default response is html
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'text/html'
+    assert 'Hello Sync Test!' in response
+
+    rsp_headers, code, response = api_.get_job_result(
+         mock_request({'f': 'json'}), job_id,
+     )
+    assert code == HTTPStatus.OK
+    assert rsp_headers['Content-Type'] == 'application/json'
+    assert json.loads(response)['value'] == "Hello Sync Test!"
 
 
 def test_get_collection_edr_query(config, api_):

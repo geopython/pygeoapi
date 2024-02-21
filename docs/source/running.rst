@@ -270,7 +270,7 @@ It is simple to run using the following command:
 
 .. code-block:: bash
 
-   gunicorn pygeoapi.starlette_app:app -w 4 -k uvicorn.workers.UvicornWorker
+   gunicorn pygeoapi.starlette_app:APP -w 4 -k uvicorn.workers.UvicornH11Worker
 
 .. note::
    Uvicorn is as easy to install as ``pip3 install uvicorn``

@@ -40,6 +40,15 @@ Using Elasticsearch the following type of queries are supported right now:
 * Logical ``and`` query with ``between`` and ``eq`` expression
 * Spatial query with ``bbox``
 
+Note that when using a spatial operator in your filter expression, geometries are by default interpreted as being
+in the OGC:CRS84 Coordinate Reference System. If you wish to provide geometries in other CRS, use the ``filter-crs``
+query parameter with a suitable value.
+
+Alternatively, a geometry's CRS may also be included using Extended Well-Known Text, in which case it will override
+the value of ``filter-crs`` (if any) - this can be useful if your filtering expression is complex enough to
+need multiple geometries expressed in different CRSs. The standard way of providing ``filter-crs`` as an additional
+query parameter is preferable for most cases.
+
 Examples
 ^^^^^^^^
 
@@ -92,5 +101,21 @@ A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the `
 .. code-block:: bash
 
   curl "http://localhost:5000/collections/hot_osm_waterways/items?f=json&filter=CROSSES(foo_geom,%20LINESTRING(28%20-2,%2030%20-4))"
+
+A ``DWITHIN`` example via HTTP GET and using a custom CRS for the filter geometry:
+
+.. code-block:: bash
+
+  curl "http://localhost:5000/collections/beni/items?filter=DWITHIN(geometry,POINT(1392921%205145517),100,meters)&filter-crs=http://www.opengis.net/def/crs/EPSG/0/3857"
+
+
+The same example, but this time providing a geometry in EWKT format:
+
+.. code-block:: bash
+
+  curl "http://localhost:5000/collections/beni/items?filter=DWITHIN(geometry,SRID=3857;POINT(1392921%205145517),100,meters)"
+
+
+
 
 Note that the CQL text has been URL encoded. This is required in curl commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.

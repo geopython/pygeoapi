@@ -106,3 +106,22 @@ Set the variable for the Spatialite library under OSX:
 
 
 .. _`GitHub Actions setup`: https://github.com/geopython/pygeoapi/blob/master/.github/workflows/main.yml
+
+
+Using pre-commit
+----------------
+
+You may optionally use `pre-commit`_ in order to check for linting and other static issues
+before committing changes. Pygeoapi's repo includes a ``.pre-commit.yml``
+file, check the pre-commit docs on how to set it up - in a nutshell:
+
+- pre-commit is mentioned in pygeoapi's ``requirements-dev.txt`` file, so it will be included
+  when you pip install those
+- run ``pre-commit install`` once in order to install its git commit hooks.
+- optionally, run ``pre-commit run --all-files``, which will run all pre-commit hooks for all files in the repo.
+  This also prepares the pre-commit environment.
+- from now on, whenever you do a ``git commit``, the pre-commit hooks will run and the commit
+  will only be done if all checks pass
+
+
+.. _pre-commit:

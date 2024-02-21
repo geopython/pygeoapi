@@ -98,13 +98,13 @@ class DummyManager(BaseManager):
         try:
             jfmt, outputs = processor.execute(data_dict)
             current_status = JobStatus.successful
-        except Exception as err:
+        except Exception:
             outputs = {
                 'code': 'InvalidParameterValue',
                 'description': 'Error updating job'
             }
             current_status = JobStatus.failed
-            LOGGER.error(err)
+            LOGGER.exception('Process failed')
         job_id = str(uuid.uuid1())
         return job_id, jfmt, outputs, current_status, response_headers
 

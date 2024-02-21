@@ -1,0 +1,59 @@
+{% extends "_base.html" %} {% block title %} Admin {% endblock %}
+{% macro render_item_value(v, width) -%}
+    {% set val = v | string | trim %}
+    {% if v is string or v is number %}
+        {{ val | urlize() }}
+    {% elif v is mapping %}
+      {% for i,j in v.items() %}
+        <i>{{ i }}:</i> {{ render_item_value(j, 60) }}<br/>
+      {% endfor %}
+    {% elif v is iterable %}
+      {% for i in v %}
+        {{ render_item_value(i, 60) }}
+      {% endfor %}
+    {% else %}
+      {{ val | urlize() }}
+    {% endif %}
+{%- endmacro %}
+
+{% block body %}
+{% set tree = data %} 
+
+<section id="admin">
+  <div class="admin">
+
+    {% for key, node in tree.items() recursive %}
+      <div class="card mt-2">
+
+        {# if node has a title #}
+        {% if key|int(-1) == -1 %}
+          <div class="card-header">
+            <b>{{ key }}</b>
+          </div>
+        {% endif %}
+
+        <div class="card-body">
+          {# if node has a renderable value #}
+          {% if node is not iterable or node is string %}
+            {{ render_item_value(node, 80)  }}
+            
+          {# if node has named child nodes #}
+          {% elif node is mapping %}
+            {{ loop(node.items()) }}
+
+          {# if node has unnamed child nodes #}
+          {% else %}
+            {% set outerloop = loop %}
+            {% for subnode in node %}
+              {% set tmpnode = {loop.index|string: subnode} %}
+              {{ outerloop(tmpnode.items()) }}
+            {% endfor %}
+          {% endif %}
+        </div>
+
+      </div>
+    {% endfor %}
+
+  </div>
+</section>
+{% endblock %}

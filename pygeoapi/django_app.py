@@ -37,17 +37,7 @@ import os
 from pathlib import Path
 import sys
 
-
-def config():
-    from pygeoapi.util import yaml_load
-
-    if not os.environ.get('PYGEOAPI_CONFIG'):
-        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-        CONFIG = yaml_load(fh)
-
-    return CONFIG
+from pygeoapi.config import get_config
 
 
 def main():
@@ -62,7 +52,7 @@ def main():
             'forget to activate a virtual environment?'
         ) from exc
 
-    CONFIG = config()
+    CONFIG = get_config()
 
     bind = f"{CONFIG['server']['bind']['host']}:{CONFIG['server']['bind']['port']}"  # noqa
 

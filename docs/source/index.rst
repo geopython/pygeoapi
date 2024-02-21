@@ -39,6 +39,7 @@ reference documentation on all aspects of the project.
    openapi
    data-publishing/index
    transactions
+   admin-api
    plugins
    html-templating
    crs
