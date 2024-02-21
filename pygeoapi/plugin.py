@@ -69,6 +69,7 @@ PLUGINS = {
     },
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+        'ShapelyBuffer': 'pygeoapi.process.shapely.ShapelyBufferProcessor'
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
