@@ -41,7 +41,7 @@ PROCESS_METADATA = {
     'version': '0.1.0',
     'id': 'shapely',
     'title': {
-        'en': 'Shapely processor'
+        'en': 'Shapely Buffer processor'
     },
     'description': {
         'en': 'An OGC API: processes that takes a polygon, line or point and find out buffer by using shapely.buffer '
@@ -96,7 +96,7 @@ PROCESS_METADATA = {
 
 
 
-class ShapelyProcessor(BaseProcessor):
+class ShapelyBufferProcessor(BaseProcessor):
     """Shapely Processor example"""
 
     def __init__(self, processor_def):
@@ -105,7 +105,7 @@ class ShapelyProcessor(BaseProcessor):
 
         :param processor_def: provider definition
 
-        :returns: pygeoapi.process.shapely.ShapelyProcessor
+        :returns: pygeoapi.process.shapely.ShapelyBufferProcessor
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
@@ -229,7 +229,7 @@ class ShapelyProcessor(BaseProcessor):
         return mimetype, outputs
 
     def __repr__(self):
-        return f'<ShapelyProcessor> {self.name}'
+        return f'<ShapelyBufferProcessor> {self.name}'
 
 
 
