@@ -70,6 +70,7 @@ PLUGINS = {
     'process': {
         'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
         'ShapelyBuffer': 'pygeoapi.process.shapely.ShapelyBufferProcessor'
+        'GDAL_LC_ChangeAnalysis': 'pygeoapi.process.GDAL_LC_ChangeAnalysis.GDAL_LC_ChangeAnalysisProcessor'
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
