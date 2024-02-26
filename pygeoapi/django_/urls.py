@@ -8,7 +8,7 @@
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -97,6 +97,11 @@ urlpatterns = [
         name='collection-detail',
     ),
     path(
+        apply_slash_rule('collections/<str:collection_id>/schema/'),
+        views.collection_schema,
+        name='collection-schema',
+    ),
+    path(
         apply_slash_rule('collections/<str:collection_id>/queryables/'),
         views.collection_queryables,
         name='collection-queryables',
@@ -115,16 +120,6 @@ urlpatterns = [
         apply_slash_rule('collections/<str:collection_id>/coverage/'),
         views.collection_coverage,
         name='collection-coverage',
-    ),
-    path(
-        apply_slash_rule('collections/<str:collection_id>/coverage/domainset/'),  # noqa
-        views.collection_coverage_domainset,
-        name='collection-coverage-domainset',
-    ),
-    path(
-        apply_slash_rule('collections/<str:collection_id>/coverage/rangetype/'),  # noqa
-        views.collection_coverage_rangetype,
-        name='collection-coverage-rangetype',
     ),
     path(
         'collections/<str:collection_id>/map',

@@ -181,24 +181,6 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get_coverage_domainset(self):
-        """
-        Provide coverage domainset
-
-        :returns: CIS JSON object of domainset metadata
-        """
-
-        raise NotImplementedError()
-
-    def get_coverage_rangetype(self):
-        """
-        Provide coverage rangetype
-
-        :returns: CIS JSON object of rangetype metadata
-        """
-
-        raise NotImplementedError()
-
     def _load_and_prepare_item(self, item, identifier=None,
                                accept_missing_identifier=False,
                                raise_if_exists=True):

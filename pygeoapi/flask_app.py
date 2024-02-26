@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -189,10 +189,22 @@ def collections(collection_id=None):
     return get_response(api_.describe_collections(request, collection_id))
 
 
+@BLUEPRINT.route('/collections/<path:collection_id>/schema')
+def collection_schema(collection_id):
+    """
+    OGC API - collections schema endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+    return get_response(api_.get_collection_schema(request, collection_id))
+
+
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
 def collection_queryables(collection_id=None):
     """
-    OGC API collections querybles endpoint
+    OGC API collections queryables endpoint
 
     :param collection_id: collection identifier
 
@@ -261,32 +273,6 @@ def collection_coverage(collection_id):
     :returns: HTTP response
     """
     return get_response(api_.get_collection_coverage(request, collection_id))
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/coverage/domainset')
-def collection_coverage_domainset(collection_id):
-    """
-    OGC API - Coverages coverage domainset endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-    return get_response(api_.get_collection_coverage_domainset(
-        request, collection_id))
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/coverage/rangetype')
-def collection_coverage_rangetype(collection_id):
-    """
-    OGC API - Coverages coverage rangetype endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-    return get_response(api_.get_collection_coverage_rangetype(
-        request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')

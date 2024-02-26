@@ -5,7 +5,7 @@
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
 # Permission is hereby granted, free of charge, to any person
@@ -186,6 +186,22 @@ async def get_tilematrix_sets(request: Request):
     return await get_response(api_.tilematrixsets, request)
 
 
+async def collection_schema(request: Request, collection_id=None):
+    """
+    OGC API collections schema endpoint
+
+    :param request: Starlette Request instance
+    :param collection_id: collection identifier
+
+    :returns: Starlette HTTP Response
+    """
+    if 'collection_id' in request.path_params:
+        collection_id = request.path_params['collection_id']
+
+    return await get_response(
+        api_.get_collection_schema, request, collection_id)
+
+
 async def collection_queryables(request: Request, collection_id=None):
     """
     OGC API collections queryables endpoint
@@ -197,6 +213,7 @@ async def collection_queryables(request: Request, collection_id=None):
     """
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
+
     return await get_response(
         api_.get_collection_queryables, request, collection_id)
 
@@ -339,39 +356,6 @@ async def collection_coverage(request: Request, collection_id=None):
 
     return await get_response(
         api_.get_collection_coverage, request, collection_id)
-
-
-async def collection_coverage_domainset(request: Request, collection_id=None):
-    """
-    OGC API - Coverages coverage domainset endpoint
-
-    :param request: Starlette Request instance
-    :param collection_id: collection identifier
-
-    :returns: Starlette HTTP Response
-    """
-    if 'collection_id' in request.path_params:
-        collection_id = request.path_params['collection_id']
-
-    return await get_response(
-        api_.get_collection_coverage_domainset, request, collection_id)
-
-
-async def collection_coverage_rangetype(request: Request, collection_id=None):
-    """
-    OGC API - Coverages coverage rangetype endpoint
-
-    :param request: Starlette Request instance
-    :param collection_id: collection identifier
-
-    :returns: Starlette HTTP Response
-    """
-
-    if 'collection_id' in request.path_params:
-        collection_id = request.path_params['collection_id']
-
-    return await get_response(
-        api_.get_collection_coverage_rangetype, request, collection_id)
 
 
 async def collection_map(request: Request, collection_id, style_id=None):
@@ -637,6 +621,7 @@ api_routes = [
     Route('/conformance', conformance),
     Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
     Route('/TileMatrixSets', get_tilematrix_sets),
+    Route('/collections/{collection_id:path}/schema', collection_schema),
     Route('/collections/{collection_id:path}/queryables', collection_queryables),  # noqa
     Route('/collections/{collection_id:path}/tiles', get_collection_tiles),
     Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}', get_collection_tiles_metadata),  # noqa
@@ -645,8 +630,6 @@ api_routes = [
     Route('/collections/{collection_id:path}/items', collection_items, methods=['GET', 'POST', 'OPTIONS']),  # noqa
     Route('/collections/{collection_id:path}/items/{item_id:path}', collection_items, methods=['GET', 'PUT', 'DELETE', 'OPTIONS']),  # noqa
     Route('/collections/{collection_id:path}/coverage', collection_coverage),  # noqa
-    Route('/collections/{collection_id:path}/coverage/domainset', collection_coverage_domainset),  # noqa
-    Route('/collections/{collection_id:path}/coverage/rangetype', collection_coverage_rangetype),  # noqa
     Route('/collections/{collection_id:path}/map', collection_map),
     Route('/collections/{collection_id:path}/styles/{style_id:path}/map', collection_map),  # noqa
     Route('/processes', get_processes),

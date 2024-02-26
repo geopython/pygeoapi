@@ -57,15 +57,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         BaseEDRProvider.__init__(self, provider_def)
         XarrayProvider.__init__(self, provider_def)
 
-    def get_fields(self):
-        """
-        Get provider field information (names, types)
-
-        :returns: dict of dicts of parameters
-        """
-
-        return self.get_coverage_rangetype()
-
     @BaseEDRProvider.register()
     def position(self, **kwargs):
         """

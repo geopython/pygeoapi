@@ -240,12 +240,15 @@ The below template provides a minimal example (let's call the file ``mycoolraste
            super().__init__(provider_def)
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
+           self.fields = self.get_fields()
 
-       def get_coverage_domainset(self):
-           # return a CIS JSON DomainSet
-
-       def get_coverage_rangetype(self):
-           # return a CIS JSON RangeType
+       def get_fields(self):
+           # generate a JSON Schema of coverage band metadata
+           return {
+               'b1': {
+                   'type': 'number'
+               }
+           }
 
        def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters

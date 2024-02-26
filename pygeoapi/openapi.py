@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -640,6 +640,27 @@ def get_oas_30(cfg):
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': f"{OPENAPI_YAML['oapir']}/parameters/q.yaml"})
             if p.fields:
+                schema_path = f'{collection_name_path}/schemna'
+
+                paths[schema_path] = {
+                    'get': {
+                        'summary': f'Get {title} schema',
+                        'description': desc,
+                        'tags': [name],
+                        'operationId': f'get{name.capitalize()}Queryables',
+                        'parameters': [
+                            items_f,
+                            items_l
+                        ],
+                        'responses': {
+                            '200': {'$ref': '#/components/responses/Queryables'},  # noqa
+                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                            '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
+                        }
+                    }
+                }
+
                 queryables_path = f'{collection_name_path}/queryables'
 
                 paths[queryables_path] = {
@@ -829,47 +850,6 @@ def get_oas_30(cfg):
                 }
             }
 
-            coverage_domainset_path = f'{collection_name_path}/coverage/domainset'  # noqa
-
-            paths[coverage_domainset_path] = {
-                'get': {
-                    'summary': f'Get {title} coverage domain set',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}CoverageDomainSet',
-                    'parameters': [
-                        items_f,
-                        items_l
-                    ],
-                    'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oacov']}/schemas/cis_1.1/domainSet.yaml"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-            }
-
-            coverage_rangetype_path = f'{collection_name_path}/coverage/rangetype'  # noqa
-
-            paths[coverage_rangetype_path] = {
-                'get': {
-                    'summary': f'Get {title} coverage range type',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}CoverageRangeType',
-                    'parameters': [
-                        items_f,
-                        items_l
-                    ],
-                    'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oacov']}/schemas/cis_1.1/rangeType.yaml"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-            }
         except ProviderTypeError:
             LOGGER.debug('collection is not coverage based')
 

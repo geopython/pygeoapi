@@ -61,24 +61,12 @@ def test_provider(config):
     assert p.axes == ['Long', 'Lat']
 
 
-def test_domainset(config):
+def test_schema(config):
     p = RasterioProvider(config)
-    domainset = p.get_coverage_domainset()
 
-    assert isinstance(domainset, dict)
-    assert domainset['generalGrid']['axisLabels'] == ['Long', 'Lat']
-    assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
-    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 2400  # noqa
-    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 1201  # noqa
-
-
-def test_rangetype(config):
-    p = RasterioProvider(config)
-    rangetype = p.get_coverage_rangetype()
-
-    assert isinstance(rangetype, dict)
-    assert len(rangetype['field']) == 1
-    assert rangetype['field'][0]['name'] == 'Temperature [C]'
+    assert isinstance(p.fields, dict)
+    assert len(p.fields) == 1
+    assert p.fields['1']['title'] == 'Temperature [C]'
 
 
 def test_query(config):
