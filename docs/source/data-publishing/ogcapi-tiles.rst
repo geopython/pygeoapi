@@ -60,7 +60,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-pre-rendered-vector-tiles>`_  you can find detailed instructions on how-to generate tiles using tippecanoe and integrate them into pygeoapi.
 
 MVT-elastic
-^^^^^^^^^^^^
+^^^^^^^^^^^
 
 This provider gives support to serving tiles generated using `Elasticsearch <https://www.elastic.co/>`_. 
 These tiles are rendered on-the-fly using the `Elasticsearch Vector tile search API <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html>`_.
@@ -90,12 +90,12 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-vector-tiles-from-elasticsearch>`_  you can find detailed instructions on publish tiles stored in an Elasticsearch endpoint.
    
 MVT-proxy
-^^^^^^^^^^^^
+^^^^^^^^^
 
 This provider gives support to serving tiles from a generic tiles provider `{z}/{x}/{y}`.
 
 For example, you can get and publish tiles from PostGIS providers like `pg_tileserver <https://github.com/CrunchyData/pg_tileserv>`_ 
-or `Martin <https://github.com/maplibre/martin>`_. Both of them render tiles on the fly and provide properties.
+or `martin <https://github.com/maplibre/martin>`_. Both of them render tiles on the fly and provide properties.
 
 Following block shows how to configure pygeoapi to read Mapbox vector tiles from pg_tileserver endpoint.
 
@@ -115,7 +115,7 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
-Following code block shows how to configure pygeoapi to read Mapbox vector tiles from Martin endpoint.
+Following code block shows how to configure pygeoapi to read Mapbox vector tiles from martin endpoint.
 
 .. code-block:: yaml
 
