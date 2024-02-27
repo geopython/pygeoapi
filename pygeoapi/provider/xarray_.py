@@ -134,7 +134,7 @@ class XarrayProvider(BaseProvider):
                 return read_data(self.data)
 
         if len(properties) < 1:
-            properties = self.fields
+            properties = self.fields.keys()
 
         data = self._data[[*properties]]
 
@@ -295,7 +295,7 @@ class XarrayProvider(BaseProvider):
             'ranges': {}
         }
 
-        for key, value in fields.items():
+        for key, value in self.fields.items():
             parameter = {
                 'type': 'Parameter',
                 'description': value['title'],
