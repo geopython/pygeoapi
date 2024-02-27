@@ -2,7 +2,7 @@
 #
 # Authors: Antonio Cerciello <ant@byteroad.net>
 #
-# Copyright (c) 2023 Antonio Cerciello
+# Copyright (c) 2024 Antonio Cerciello
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -43,7 +43,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MVTProxyProvider(BaseMVTProvider):
-    """MVT Proxy Provider
+    """
+    MVT Proxy Provider
     Provider for serving tiles rendered with an external
     tiles provider
     """
@@ -54,13 +55,13 @@ class MVTProxyProvider(BaseMVTProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.MVT.MVTPostGISProvider
+        :returns: pygeoapi.provider.mvt_proxy.pygeoapi/provider/mvt_proxy.py # noqa
         """
 
         super().__init__(BaseMVTProvider)
 
         if not is_url(self.data):
-            msg = 'Wrong input format for PostGIS MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -82,7 +83,7 @@ class MVTProxyProvider(BaseMVTProvider):
             'metadata')
 
     def __repr__(self):
-        return f'<MVTPostGISProvider> {self.data}'
+        return f'<MVTProxyProvider> {self.data}'
 
     @property
     def service_url(self):
@@ -100,14 +101,14 @@ class MVTProxyProvider(BaseMVTProvider):
         """
 
         if not is_url(self.data):
-            msg = 'Wrong input format for PostGIS MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
         url = urlparse(self.data)
 
         if ('/{z}/{x}/{y}' not in url.path):
-            msg = 'Wrong input format for PostGIS MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -180,7 +181,7 @@ class MVTProxyProvider(BaseMVTProvider):
                     raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
                 raise ProviderGenericError  # Server error
         else:
-            msg = 'Wrong input format for PostGIS MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
