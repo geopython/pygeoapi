@@ -44,6 +44,14 @@ jobs:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
     steps:
+    - name: Clear up github runner disc space
+      run: |
+        echo "Space before"
+        df -h /
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
+        echo "Space after"
+        df -h /
     - name: Chown user
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
