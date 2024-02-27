@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: 3.8
           architecture: x64
+          cache: 'pip'
       - name: Checkout pygeoapi
         uses: actions/checkout@master
       - name: Install flake8

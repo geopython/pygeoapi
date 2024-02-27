@@ -609,7 +609,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 34
+    assert len(root['conformsTo']) == 36
     assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
            in root['conformsTo']
 
@@ -703,7 +703,7 @@ def test_describe_collections(config, api_):
     assert collection['id'] == 'obs'
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
-    assert len(collection['links']) == 12
+    assert len(collection['links']) == 14
     assert collection['extent'] == {
         'spatial': {
             'bbox': [[-180, -90, 180, 90]],
@@ -751,7 +751,11 @@ def test_describe_collections(config, api_):
     collection = json.loads(response)
 
     assert collection['id'] == 'gdps-temperature'
-    assert len(collection['links']) == 14
+    assert len(collection['links']) == 10
+    assert collection['extent']['spatial']['grid'][0]['cellsCount'] == 2400
+    assert collection['extent']['spatial']['grid'][0]['resolution'] == 0.15000000000000002  # noqa
+    assert collection['extent']['spatial']['grid'][1]['cellsCount'] == 1201
+    assert collection['extent']['spatial']['grid'][1]['resolution'] == 0.15
 
     # hiearchical collections
     rsp_headers, code, response = api_.describe_collections(
@@ -785,6 +789,35 @@ def test_describe_collections_hidden_resources(
 
     collections = json.loads(response)
     assert len(collections['collections']) == 1
+
+
+def test_get_collection_schema(config, api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_schema(req,
+                                                             'notfound')
+    assert code == HTTPStatus.NOT_FOUND
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    schema = json.loads(response)
+
+    assert 'properties' in schema
+    assert len(schema['properties']) == 5
+
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = api_.get_collection_schema(
+        req, 'gdps-temperature')
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    schema = json.loads(response)
+
+    assert 'properties' in schema
+    assert len(schema['properties']) == 1
+    assert schema['properties']['1']['type'] == 'number'
 
 
 def test_get_collection_queryables(config, api_):
@@ -833,7 +866,7 @@ def test_describe_collections_json_ld(config, api_):
     assert len(expanded['http://schema.org/dataset']) == 1
     dataset = expanded['http://schema.org/dataset'][0]
     assert dataset['@type'][0] == 'http://schema.org/Dataset'
-    assert len(dataset['http://schema.org/distribution']) == 12
+    assert len(dataset['http://schema.org/distribution']) == 14
     assert all(dist['@type'][0] == 'http://schema.org/DataDownload'
                for dist in dataset['http://schema.org/distribution'])
 
@@ -1426,44 +1459,6 @@ def test_get_collection_item_json_ld(config, api_):
     rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'fr-CA'
-
-
-def test_get_coverage_domainset(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_coverage_domainset(
-        req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    rsp_headers, code, response = api_.get_collection_coverage_domainset(
-        req, 'gdps-temperature')
-
-    domainset = json.loads(response)
-
-    assert domainset['type'] == 'DomainSet'
-    assert domainset['generalGrid']['axisLabels'] == ['Long', 'Lat']
-    assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
-    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 2400  # noqa
-    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 1201  # noqa
-
-
-def test_get_collection_coverage_rangetype(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
-        req, 'obs')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
-    rsp_headers, code, response = api_.get_collection_coverage_rangetype(
-        req, 'gdps-temperature')
-
-    rangetype = json.loads(response)
-
-    assert rangetype['type'] == 'DataRecord'
-    assert len(rangetype['field']) == 1
-    assert rangetype['field'][0]['id'] == 1
-    assert rangetype['field'][0]['name'] == 'Temperature [C]'
-    assert rangetype['field'][0]['uom']['code'] == '[C]'
 
 
 def test_get_collection_coverage(config, api_):

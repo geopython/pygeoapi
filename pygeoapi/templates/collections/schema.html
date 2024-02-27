@@ -1,0 +1,46 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
+/ <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
+/ <a href="./{{ data['id'] }}schema">{% trans %}Schema{% endtrans %}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection-schema">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <p>
+        {% for kw in data['keywords'] %}
+          <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
+        {% endfor %}
+      </p>
+      <h3>{% trans %}Schema{% endtrans %}</h3>
+      <table class="table table-striped table-bordered">
+        <th>Name</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Units</th>
+        <th>Values</th>
+      <ul>
+      {% for qname, qinfo in data['properties'].items() %}
+        <tr>
+          <td>{{ qname }}</td>
+          <td>{{ qinfo['title'] }}</td>
+          {% if qname == 'geometry' %}
+          <td><a href="{{ qinfo['$ref'] }}">{{ qname }} </a></td>
+          {% else %}
+          <td><code>{{ qinfo['type'] }}</code></td>
+          {% endif %}
+          <td>{{ qinfo['x-ogc-unit'] }}</td>
+          <td>
+            <ul>
+            {% for value in qinfo['enum'] %}
+              <li><i>{{ value }}</i></li>
+            {% endfor %}
+            </ul>
+          </td>
+        </tr>
+      {% endfor %}
+      </table>
+    </section>
+{% endblock %}

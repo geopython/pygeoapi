@@ -126,6 +126,25 @@ def collections(request: HttpRequest,
     return response
 
 
+def collection_schema(request: HttpRequest,
+                      collection_id: Optional[str] = None) -> HttpResponse:
+    """
+    OGC API collections schema endpoint
+
+    :request Django HTTP Request
+    :param collection_id: collection identifier
+
+    :returns: Django HTTP Response
+    """
+
+    response_ = _feed_response(
+        request, 'get_collection_schema', collection_id
+    )
+    response = _to_django_response(*response_)
+
+    return response
+
+
 def collection_queryables(request: HttpRequest,
                           collection_id: Optional[str] = None) -> HttpResponse:
     """
@@ -262,44 +281,6 @@ def collection_coverage(request: HttpRequest,
 
     response_ = _feed_response(
         request, 'get_collection_coverage', collection_id
-    )
-    response = _to_django_response(*response_)
-
-    return response
-
-
-def collection_coverage_domainset(request: HttpRequest,
-                                  collection_id: str) -> HttpResponse:
-    """
-    OGC API - Coverages coverage domainset endpoint
-
-    :request Django HTTP Request
-    :param collection_id: collection identifier
-
-    :returns: Django HTTP response
-    """
-
-    response_ = _feed_response(
-        request, 'get_collection_coverage_domainset', collection_id
-    )
-    response = _to_django_response(*response_)
-
-    return response
-
-
-def collection_coverage_rangetype(request: HttpRequest,
-                                  collection_id: str) -> HttpResponse:
-    """
-    OGC API - Coverages coverage rangetype endpoint
-
-    :request Django HTTP Request
-    :param collection_id: collection identifier
-
-    :returns: Django HTTP response
-    """
-
-    response_ = _feed_response(
-        request, 'get_collection_coverage_rangetype', collection_id
     )
     response = _to_django_response(*response_)
 
