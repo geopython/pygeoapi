@@ -20,7 +20,7 @@ pygeoapi core tile providers are listed below, along with supported features.
 
    `MVT-tippecanoe`_,❌,✅
    `MVT-elastic`_,✅,❌
-   `MVT-postgis`_,✅,✅
+   `MVT-proxy`_, N/A , N/A
 
 Below are specific connection examples based on supported providers.
 
@@ -89,21 +89,22 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
 .. tip::
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-vector-tiles-from-elasticsearch>`_  you can find detailed instructions on publish tiles stored in an Elasticsearch endpoint.
    
-MVT-postgis
+MVT-proxy
 ^^^^^^^^^^^^
 
-This provider gives support to serving tiles generated starting from a `PostGIS database <https://postgis.net>`_ 
-and rendered on-the-fly using a middlewares like `pg_tileserver <https://github.com/CrunchyData/pg_tileserv>`_ 
-or `Martin <https://github.com/maplibre/martin>`_.
+This provider gives support to serving tiles from a generic tiles provider `{z}/{x}/{y}`.
 
-This code block shows how to configure pygeoapi to read Mapbox vector tiles from pg_tileserver endpoint.
+For example, you can get and publish tiles from PostGIS providers like `pg_tileserver <https://github.com/CrunchyData/pg_tileserv>`_ 
+or `Martin <https://github.com/maplibre/martin>`_. Both of them render tiles on the fly and provide properties.
+
+Following block shows how to configure pygeoapi to read Mapbox vector tiles from pg_tileserver endpoint.
 
 .. code-block:: yaml
 
    providers:
        - type: tile
-         name: MVT-postgis 
-         data: http://0.0.0.0:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.mvt
+         name: MVT-proxy 
+         data: http://localhost:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.mvt
             options:
               zoom:
                 min: 0
@@ -114,15 +115,14 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
 
-This code block shows how to configure pygeoapi to read Mapbox vector tiles from Martin endpoint.
+Following code block shows how to configure pygeoapi to read Mapbox vector tiles from Martin endpoint.
 
 .. code-block:: yaml
 
-
    providers:
        - type: tile
-         name: MVT-postgis 
-         data: http://0.0.0.0:3000/ne_50m_admin_0_countries/{z}/{x}/{y}
+         name: MVT-proxy 
+         data: http://localhost:3000/ne_50m_admin_0_countries/{z}/{x}/{y}
             options:
               zoom:
                 min: 0

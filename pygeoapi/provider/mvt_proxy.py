@@ -42,10 +42,10 @@ from pygeoapi.util import is_url, url_join
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTPostGISProvider(BaseMVTProvider):
-    """MVT PostGIS Provider
-    Provider for serving tiles rendered with the PostGIS
-    plugins like pg_tileserv and martin
+class MVTProxyProvider(BaseMVTProvider):
+    """MVT Proxy Provider
+    Provider for serving tiles rendered with an external
+    tiles provider
     """
 
     def __init__(self, BaseMVTProvider):
