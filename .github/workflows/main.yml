@@ -44,7 +44,7 @@ jobs:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
     steps:
-    - name: Clear up github runner disc space
+    - name: Clear up GitHub runner diskspace
       run: |
         echo "Space before"
         df -h /
