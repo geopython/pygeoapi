@@ -2,8 +2,10 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
+#          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,80 +33,32 @@
 """Flask module providing the route paths to the api"""
 
 import os
+import typing
+from http import HTTPStatus
+from pathlib import Path
+
 
 import click
 
-from flask import Flask, Blueprint, make_response, request, send_from_directory
-
-from pygeoapi.api import API
-from pygeoapi.openapi import load_openapi_document
-from pygeoapi.config import get_config
-from pygeoapi.util import get_mimetype, get_api_rules
-
-
-CONFIG = get_config()
-OPENAPI = load_openapi_document()
-
-API_RULES = get_api_rules(CONFIG)
-
-if CONFIG['server'].get('admin'):
-    from pygeoapi.admin import Admin
-
-STATIC_FOLDER = 'static'
-if 'templates' in CONFIG['server']:
-    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
-
-APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
-APP.url_map.strict_slashes = API_RULES.strict_slashes
-
-BLUEPRINT = Blueprint(
-    'pygeoapi',
-    __name__,
-    static_folder=STATIC_FOLDER,
-    url_prefix=API_RULES.get_url_prefix('flask')
+from flask import (
+    Flask,
+    current_app,
+    Blueprint,
+    make_response,
+    request,
+    send_from_directory,
 )
-ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
 
-# CORS: optionally enable from config.
-if CONFIG['server'].get('cors', False):
-    try:
-        from flask_cors import CORS
-        CORS(APP)
-    except ModuleNotFoundError:
-        print('Python package flask-cors required for CORS support')
+import pygeoapi.util
+from pygeoapi.admin import Admin
+from pygeoapi.api import API
+from pygeoapi.config import yaml_load
+from pygeoapi.models import config as config_models
+from pygeoapi.openapi import load_openapi_document
 
-APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
-    'pretty_print', True)
 
-api_ = API(CONFIG, OPENAPI)
-
-OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
-
-if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.startswith('http')):
-    # serve the OGC schemas locally
-
-    if not os.path.exists(OGC_SCHEMAS_LOCATION):
-        raise RuntimeError('OGC schemas misconfigured')
-
-    @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
-    def schemas(path):
-        """
-        Serve OGC schemas locally
-
-        :param path: path of the OGC schema document
-
-        :returns: HTTP response
-        """
-
-        full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
-        dirname_ = os.path.dirname(full_filepath)
-        basename_ = os.path.basename(full_filepath)
-
-        # TODO: better sanitization?
-        path_ = dirname_.replace('..', '').replace('//', '')
-        return send_from_directory(path_, basename_,
-                                   mimetype=get_mimetype(basename_))
+BLUEPRINT = Blueprint('pygeoapi', __name__,)
+ADMIN_BLUEPRINT = Blueprint('admin', __name__)
 
 
 def get_response(result: tuple):
@@ -125,6 +79,45 @@ def get_response(result: tuple):
     return response
 
 
+@BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
+def schemas(path):
+    """Serve OGC schemas locally
+
+    :param path: path of the OGC schema document
+
+    :returns: HTTP response
+    """
+
+    api: API = current_app.extensions['pygeoapi']['api']
+    ogc_schemas_location = api.config.get(
+        'server', {}).get('ogc_schemas_location')
+    got_local_schemas = not ogc_schemas_location.startswith('http')
+    if ogc_schemas_location is not None:
+        if got_local_schemas:
+            schemas_dir = Path(ogc_schemas_location).resolve()
+            if schemas_dir.is_dir():
+                return send_from_directory(
+                    schemas_dir,
+                    schemas_dir.name,
+                    mimetype=pygeoapi.util.get_mimetype(schemas_dir.name)
+                )
+            else:
+                raise RuntimeError('OGC schemas misconfigured')
+        else:
+            return (
+                (
+                    "OGC SCHEMAS are configured as a remote resource - "
+                    "cannot serve locally"
+                ),
+                HTTPStatus.NOT_FOUND
+            )
+    else:
+        return (
+            "OGC SCHEMAS are not configured - cannot serve locally",
+            HTTPStatus.NOT_FOUND
+        )
+
+
 @BLUEPRINT.route('/')
 def landing_page():
     """
@@ -132,7 +125,8 @@ def landing_page():
 
     :returns: HTTP response
     """
-    return get_response(api_.landing_page(request))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.landing_page(request))
 
 
 @BLUEPRINT.route('/openapi')
@@ -142,7 +136,8 @@ def openapi():
 
     :returns: HTTP response
     """
-    return get_response(api_.openapi_(request))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.openapi_(request))
 
 
 @BLUEPRINT.route('/conformance')
@@ -152,7 +147,8 @@ def conformance():
 
     :returns: HTTP response
     """
-    return get_response(api_.conformance(request))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.conformance(request))
 
 
 @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
@@ -186,7 +182,8 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_collections(request, collection_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.describe_collections(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
@@ -198,7 +195,8 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_queryables(request, collection_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_queryables(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
@@ -217,38 +215,43 @@ def collection_items(collection_id, item_id=None):
     :returns: HTTP response
     """
 
+    api: API = current_app.extensions['pygeoapi']['api']
     if item_id is None:
         if request.method == 'GET':  # list items
             return get_response(
-                api_.get_collection_items(request, collection_id))
+                api.get_collection_items(request, collection_id))
         elif request.method == 'POST':  # filter or manage items
             if request.content_type is not None:
                 if request.content_type == 'application/geo+json':
                     return get_response(
-                        api_.manage_collection_item(request, 'create',
-                                                    collection_id))
+                        api.manage_collection_item(
+                            request, 'create', collection_id)
+                    )
                 else:
                     return get_response(
-                        api_.post_collection_items(request, collection_id))
+                        api.post_collection_items(request, collection_id))
         elif request.method == 'OPTIONS':
             return get_response(
-                api_.manage_collection_item(request, 'options', collection_id))
+                api.manage_collection_item(request, 'options', collection_id))
 
     elif request.method == 'DELETE':
         return get_response(
-            api_.manage_collection_item(request, 'delete',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'delete', collection_id, item_id)
+        )
     elif request.method == 'PUT':
         return get_response(
-            api_.manage_collection_item(request, 'update',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'update', collection_id, item_id)
+        )
     elif request.method == 'OPTIONS':
         return get_response(
-            api_.manage_collection_item(request, 'options',
-                                        collection_id, item_id))
+            api.manage_collection_item(
+                request, 'options', collection_id, item_id)
+        )
     else:
         return get_response(
-            api_.get_collection_item(request, collection_id, item_id))
+            api.get_collection_item(request, collection_id, item_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
@@ -260,7 +263,8 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_coverage(request, collection_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_coverage(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage/domainset')
@@ -272,7 +276,8 @@ def collection_coverage_domainset(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_coverage_domainset(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_coverage_domainset(
         request, collection_id))
 
 
@@ -285,7 +290,8 @@ def collection_coverage_rangetype(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_coverage_rangetype(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_coverage_rangetype(
         request, collection_id))
 
 
@@ -298,7 +304,8 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_tiles(
         request, collection_id))
 
 
@@ -313,7 +320,8 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_metadata(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_tiles_metadata(
         request, collection_id, tileMatrixSetId))
 
 
@@ -332,7 +340,8 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_data(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_collection_tiles_data(
         request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
 
 
@@ -348,7 +357,8 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.get_collection_map(
+    api: API = current_app.extensions['pygeoapi']['api']
+    headers, status_code, content = api.get_collection_map(
         request, collection_id, style_id)
 
     response = make_response(content, status_code)
@@ -369,7 +379,8 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_processes(request, process_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.describe_processes(request, process_id))
 
 
 @BLUEPRINT.route('/jobs')
@@ -384,13 +395,14 @@ def get_jobs(job_id=None):
     :returns: HTTP response
     """
 
+    api: API = current_app.extensions['pygeoapi']['api']
     if job_id is None:
-        return get_response(api_.get_jobs(request))
+        return get_response(api.get_jobs(request))
     else:
         if request.method == 'DELETE':  # dismiss job
-            return get_response(api_.delete_job(request, job_id))
+            return get_response(api.delete_job(request, job_id))
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            return get_response(api.get_jobs(request, job_id))
 
 
 @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
@@ -403,7 +415,8 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
-    return get_response(api_.execute_process(request, process_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.execute_process(request, process_id))
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results',
@@ -416,7 +429,8 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_job_result(request, job_id))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_job_result(request, job_id))
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results/<resource>',
@@ -430,7 +444,8 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_job_result_resource(
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_job_result_resource(
         request, job_id, resource))
 
 
@@ -455,9 +470,10 @@ def get_collection_edr_query(collection_id, instance_id=None):
 
     :returns: HTTP response
     """
+    api: API = current_app.extensions['pygeoapi']['api']
     query_type = request.path.split('/')[-1]
-    return get_response(api_.get_collection_edr_query(request, collection_id,
-                                                      instance_id, query_type))
+    return get_response(api.get_collection_edr_query(request, collection_id,
+                                                     instance_id, query_type))
 
 
 @BLUEPRINT.route('/stac')
@@ -467,7 +483,8 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_root(request))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_stac_root(request))
 
 
 @BLUEPRINT.route('/stac/<path:path>')
@@ -479,7 +496,8 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_path(request, path))
+    api: API = current_app.extensions['pygeoapi']['api']
+    return get_response(api.get_stac_path(request, path))
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
@@ -490,14 +508,15 @@ def admin_config():
     :returns: HTTP response
     """
 
+    admin = current_app.extensions['pygeoapi']['admin']
     if request.method == 'GET':
-        return get_response(admin_.get_config(request))
+        return get_response(admin.get_config(request))
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_config(request))
+        return get_response(admin.put_config(request))
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_config(request))
+        return get_response(admin.patch_config(request))
 
 
 @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
@@ -508,11 +527,12 @@ def admin_config_resources():
     :returns: HTTP response
     """
 
+    admin = current_app.extensions['pygeoapi']['admin']
     if request.method == 'GET':
-        return get_response(admin_.get_resources(request))
+        return get_response(admin.get_resources(request))
 
     elif request.method == 'POST':
-        return get_response(admin_.post_resource(request))
+        return get_response(admin.post_resource(request))
 
 
 @ADMIN_BLUEPRINT.route(
@@ -524,25 +544,88 @@ def admin_config_resource(resource_id):
 
     :returns: HTTP response
     """
-
+    admin = current_app.extensions['pygeoapi']['admin']
     if request.method == 'GET':
-        return get_response(admin_.get_resource(request, resource_id))
+        return get_response(admin.get_resource(request, resource_id))
 
     elif request.method == 'DELETE':
-        return get_response(admin_.delete_resource(request, resource_id))
+        return get_response(admin.delete_resource(request, resource_id))
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_resource(request, resource_id))
+        return get_response(admin.put_resource(request, resource_id))
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_resource(request, resource_id))
+        return get_response(admin.patch_resource(request, resource_id))
 
 
-APP.register_blueprint(BLUEPRINT)
+class FlaskPygeoapi:
+    api: API
+    api_rules: config_models.APIRules
+    admin: typing.Optional[Admin]
 
-if CONFIG['server'].get('admin'):
-    admin_ = Admin(CONFIG, OPENAPI)
-    APP.register_blueprint(ADMIN_BLUEPRINT)
+    def __init__(
+            self,
+            pygeoapi_config: dict,
+            pygeoapi_openapi: typing.Union[dict, str]
+    ):
+        self.api = API(config=pygeoapi_config, openapi=pygeoapi_openapi)
+        self.api_rules = pygeoapi.util.get_api_rules(pygeoapi_config)
+        if pygeoapi_config['server'].get('admin'):
+            self.admin = Admin(pygeoapi_config, pygeoapi_openapi)
+        else:
+            self.admin = None
+
+    def init_app(
+            self,
+            app: Flask,
+            api_blueprint_prefix: str = '',
+            admin_blueprint_prefix: str = ''
+    ):
+        static_folder = (
+            self.api.config.get('server', {})
+            .get('templates', {})
+            .get('static', 'static')
+        )
+        app.static_folder = static_folder
+        app.url_map.strict_slashes = self.api_rules.strict_slashes
+        app.config['JSONIFY_PRETTYPRINT_REGULAR'] = self.api.config.get(
+            'server', {}).get('pretty_print', True)
+        app.extensions['pygeoapi'] = {
+            'api': self.api,
+            'api_rules': self.api_rules,
+            'admin': self.admin,
+        }
+        BLUEPRINT.url_prefix = '/'.join((
+            api_blueprint_prefix, self.api_rules.get_url_prefix('flask')))
+        BLUEPRINT.static_folder = static_folder
+        app.register_blueprint(BLUEPRINT)
+        if self.admin:
+            ADMIN_BLUEPRINT.static_folder = static_folder
+            app.register_blueprint(
+                ADMIN_BLUEPRINT, url_prefix=admin_blueprint_prefix)
+        if self.api.config.get('server', {}).get('cors', False):
+            try:
+                from flask_cors import CORS
+                CORS(app)
+            except ModuleNotFoundError:
+                print('Python package flask-cors required for CORS support')
+
+
+def create_app():
+    if (pygeoapi_config_path := os.getenv('PYGEOAPI_CONFIG')) is not None:
+        with Path(pygeoapi_config_path).open() as fh:
+            pygeoapi_config = yaml_load(fh)
+    else:
+        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+    if (pygeoapi_openapi_path := os.getenv('PYGEOAPI_OPENAPI')) is not None:
+        pygeoapi_openapi = load_openapi_document(
+            Path(pygeoapi_openapi_path))
+    else:
+        raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
+    pygeoapi_extension = FlaskPygeoapi(pygeoapi_config, pygeoapi_openapi)
+    app = Flask('pygeoapi')
+    pygeoapi_extension.init_app(app)
+    return app
 
 
 @click.command()
@@ -558,10 +641,13 @@ def serve(ctx, server=None, debug=False):
 
     :returns: void
     """
-
-    # setup_logger(CONFIG['logging'])
-    APP.run(debug=True, host=api_.config['server']['bind']['host'],
-            port=api_.config['server']['bind']['port'])
+    app = create_app()
+    pygeoapi_api = app.extensions['pygeoapi']['api']
+    app.run(
+        debug=True,
+        host=pygeoapi_api.config['server']['bind']['host'],
+        port=pygeoapi_api.config['server']['bind']['port']
+    )
 
 
 if __name__ == '__main__':  # run locally, for testing

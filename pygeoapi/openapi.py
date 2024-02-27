@@ -1586,17 +1586,15 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
     return content
 
 
-def load_openapi_document() -> dict:
+def load_openapi_document(openapi_document_path: Path) -> Union[dict, str]:
     """
     Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
 
     :returns: `dict` of OpenAPI document
     """
 
-    pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
-
-    with open(pygeoapi_openapi, encoding='utf8') as ff:
-        if pygeoapi_openapi.endswith(('.yaml', '.yml')):
+    with openapi_document_path.open(encoding='utf-8') as ff:
+        if openapi_document_path.suffix in ('.yaml', '.yml'):
             openapi_ = yaml_load(ff)
         else:  # JSON string, do not transform
             openapi_ = ff.read()
