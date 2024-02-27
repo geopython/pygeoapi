@@ -66,7 +66,7 @@ def test_schema(config):
 
     assert isinstance(p.fields, dict)
     assert len(p.fields) == 4
-    assert p.fields['name'] == 'analysed sea surface temperature'
+    assert p.fields['analysed_sst']['title'] == 'analysed sea surface temperature'  # noqa
 
 
 def test_query(config):
