@@ -103,6 +103,10 @@ ENV/
 # pygeoapi artifacts
 *.openapi.yml
 
+# development setup examples
+example-config.yml
+example-openapi.yml 
+
 # misc
 *.swp
 .pytest_cache
