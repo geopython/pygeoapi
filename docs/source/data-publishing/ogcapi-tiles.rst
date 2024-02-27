@@ -20,6 +20,7 @@ pygeoapi core tile providers are listed below, along with supported features.
 
    `MVT-tippecanoe`_,❌,✅
    `MVT-elastic`_,✅,❌
+   `MVT-postgis`_,✅,✅
 
 Below are specific connection examples based on supported providers.
 
@@ -50,7 +51,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
                  min: 0
                  max: 5
              schemes:
-                 - WorldCRS84Quad
+                 - WebMercatorQuad
          format:
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
@@ -80,7 +81,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
                  min: 0
                  max: 5
              schemes:
-                 - WorldCRS84Quad
+                 - WebMercatorQuad
          format:
              name: pbf 
              mimetype: application/vnd.mapbox-vector-tile
@@ -88,6 +89,50 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
 .. tip::
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-vector-tiles-from-elasticsearch>`_  you can find detailed instructions on publish tiles stored in an Elasticsearch endpoint.
    
+MVT-postgis
+^^^^^^^^^^^^
+
+This provider gives support to serving tiles generated starting from a `PostGIS database <https://postgis.net>`_ 
+and rendered on-the-fly using a middlewares like `pg_tileserver <https://github.com/CrunchyData/pg_tileserv>`_ 
+or `Martin <https://github.com/maplibre/martin>`_.
+
+This code block shows how to configure pygeoapi to read Mapbox vector tiles from pg_tileserver endpoint.
+
+.. code-block:: yaml
+
+   providers:
+       - type: tile
+         name: MVT-postgis 
+         data: http://0.0.0.0:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.mvt
+            options:
+              zoom:
+                min: 0
+                max: 15
+             schemes:
+                 - WebMercatorQuad
+         format:
+             name: pbf 
+             mimetype: application/vnd.mapbox-vector-tile
+
+This code block shows how to configure pygeoapi to read Mapbox vector tiles from Martin endpoint.
+
+.. code-block:: yaml
+
+
+   providers:
+       - type: tile
+         name: MVT-postgis 
+         data: http://0.0.0.0:3000/ne_50m_admin_0_countries/{z}/{x}/{y}
+            options:
+              zoom:
+                min: 0
+                max: 15
+             schemes:
+                 - WebMercatorQuad
+         format:
+             name: pbf 
+             mimetype: application/vnd.mapbox-vector-tile
+
 Data access examples
 --------------------
 
