@@ -250,10 +250,3 @@ class MVTElasticProvider(BaseMVTProvider):
 
         return content.dict(exclude_none=True)
 
-    def get_vendor_metadata(self, dataset, server_url, layer, tileset,
-                            title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in tilejson format
-        """
-        LOGGER.debug("Get tilejson metadata")
-        return ""
