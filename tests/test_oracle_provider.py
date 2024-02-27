@@ -32,6 +32,7 @@
 
 import os
 import pytest
+from pygeoapi.provider.base import ProviderInvalidQueryError
 from pygeoapi.provider.oracle import OracleProvider
 
 USERNAME = os.environ.get("PYGEOAPI_ORACLE_USER", "geo_test")
@@ -340,15 +341,18 @@ def test_get_fields_properties(config_properties):
     Test get_fields with subset of columns.
     Test of property configuration.
     """
+    # NOTE: properties does not influence fields because
+    #       the fields are also used for filtering
     expected_fields = {
         "id": {"type": "NUMBER"},
         "name": {"type": "VARCHAR2"},
         "wiki_link": {"type": "VARCHAR2"},
+        "area": {"type": "NUMBER"},
+        "volume": {"type": "NUMBER"},
     }
 
     provider = OracleProvider(config_properties)
     provided_fields = provider.get_fields()
-    print(provided_fields)
 
     assert provided_fields == expected_fields
     assert provider.fields == expected_fields
@@ -585,3 +589,30 @@ def test_create_point(config, create_point_geojson):
     data = p.get(28)
 
     assert data.get("geometry").get("type") == "Point"
+
+
+def test_query_can_mandate_properties_which_are_not_returned(config):
+    config = {
+        **config,
+        # 'name' has to be filtered, but only 'wiki_link' is returned
+        "properties": ["id", "wiki_link"],
+        "mandatory_properties": ["name"]
+    }
+
+    p = OracleProvider(config)
+    result = p.query(properties=[("name", "Aral Sea")])
+
+    (feature,) = result['features']
+    # id is handled separately, so only wiki link and not name must be here
+    assert feature['properties'].keys() == {"wiki_link"}
+
+
+def test_query_mandatory_properties_must_be_specified(config):
+    config = {
+        **config,
+        "mandatory_properties": ["name"]
+    }
+
+    p = OracleProvider(config)
+    with pytest.raises(ProviderInvalidQueryError):
+        p.query(properties=[("id", "123")])

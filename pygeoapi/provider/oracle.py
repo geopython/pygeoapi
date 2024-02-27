@@ -205,23 +205,23 @@ class DatabaseConnection:
         LOGGER.debug("Table: " + table)
 
         if self.context == "query":
-            column_list = self._get_table_columns(schema, table)
-
-            # When self.properties is set, then the result would be filtered
-            if self.properties:
-                column_list = [
-                    col
-                    for col in column_list
-                    if col[0].lower()
-                    in [item.lower() for item in self.properties]
-                ]
-
-            # Concatenate column names with ', '
-            self.columns = ", ".join([item[0].lower() for item in column_list])
+            columns = dict(self._get_table_columns(schema, table))
 
             # Populate dictionary for columns with column type
-            for k, v in dict(column_list).items():
+            # NOTE: we want all columns available here because they are
+            #       used for filtering in the where clause, not only
+            #       the ones that are returned to the client.
+            for k, v in columns.items():
                 self.fields[k.lower()] = {"type": v}
+
+            filtered_columns = set(self.fields)
+            if self.properties:
+                filtered_columns &= {k.lower() for k in self.properties}
+
+            # fields which are part of the output
+            self.filtered_fields = {
+                k: v for k, v in self.fields.items() if k in filtered_columns
+            }
 
         return self
 
@@ -627,10 +627,10 @@ class OracleProvider(BaseProvider):
             # Create column list.
             #   Uses columns field that was generated in the Connection class
             #   or the configured columns from the Yaml file.
-            props = (
-                db.columns
-                if select_properties == []
-                else ", ".join([p for p in select_properties])
+            props = ", ".join(
+                select_properties
+                if select_properties
+                else db.filtered_fields
             )
 
             where_dict = self._get_where_clauses(
@@ -868,7 +868,8 @@ class OracleProvider(BaseProvider):
             else:
                 geom_sql = f", t1.{self.geom}.get_geojson() AS geometry "
 
-            sql_query = f"SELECT {db.columns} \
+            columns = ", ".join(db.filtered_fields)
+            sql_query = f"SELECT {columns} \
                             {self._get_extra_columns_expression()} \
                             {geom_sql} \
                             FROM {self.table} t1 \
@@ -983,15 +984,13 @@ class OracleProvider(BaseProvider):
             columns = [
                 col
                 for col in columns
-                if col.lower() in [field.lower() for field in self.fields]
+                if col.lower() in db.filtered_fields
             ]
 
             # Flter function to get only properties who are
             # in the column list
             def filter_binds(pair):
-                return pair[0].lower() in [
-                    field.lower() for field in self.fields
-                ]
+                return pair[0].lower() in db.filtered_fields
 
             # Filter bind variables
             bind_variables = dict(
@@ -1082,15 +1081,13 @@ class OracleProvider(BaseProvider):
             columns = [
                 col
                 for col in columns
-                if col.lower() in [field.lower() for field in self.fields]
+                if col.lower() in db.filtered_fields
             ]
 
             # Flter function to get only properties who are
             # in the column list
             def filter_binds(pair):
-                return pair[0].lower() in [
-                    field.lower() for field in self.fields
-                ]
+                return pair[0].lower() in db.filtered_fields
 
             # Filter bind variables
             bind_variables = dict(

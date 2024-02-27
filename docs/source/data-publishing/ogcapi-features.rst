@@ -382,7 +382,7 @@ Extra properties
         geom_field: geometry
         title_field: name
         extra_properties:
-        - "'Here we have " || name AS tooltip"
+        - "'Here we have ' || name AS tooltip"
 
 Extra properties is a list of strings which are added as fields for data retrieval in the SELECT clauses. They
 can be used to return expressions computed by the database.
