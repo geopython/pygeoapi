@@ -450,7 +450,7 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
 
 
 def get_collection_edr_query(request: HttpRequest, collection_id: str,
-                             instance_id: str) -> HttpResponse:
+                             instance_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API - EDR endpoint
 
