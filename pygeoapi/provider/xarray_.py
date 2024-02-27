@@ -316,7 +316,7 @@ class XarrayProvider(BaseProvider):
         data = _convert_float32_to_float64(data)
 
         try:
-            for key, value in fields.items():
+            for key, value in self.fields.items():
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],

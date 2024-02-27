@@ -63,7 +63,7 @@ def test_rangetype(config):
 
     assert isinstance(p.fields, dict)
     assert len(p.fields) == 4
-    assert p.fields['SST'] == 'SEA SURFACE TEMPERATURE'
+    assert p.fields['SST']['title'] == 'SEA SURFACE TEMPERATURE'
 
 
 def test_query(config):
