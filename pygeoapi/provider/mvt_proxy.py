@@ -254,4 +254,3 @@ class MVTProxyProvider(BaseMVTProvider):
         content.links = links
 
         return content.dict(exclude_none=True)
-
