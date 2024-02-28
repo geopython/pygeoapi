@@ -21,7 +21,7 @@ pygeoapi core tile providers are listed below, along with supported features.
    `MVT-tippecanoe`_,❌,✅
    `MVT-elastic`_,✅,❌
    `MVT-proxy`_, N/A , N/A
-   `WMTS`_,✅,❌
+   `WMTSFacade`_,✅,❌
 
 Below are specific connection examples based on supported providers.
 
@@ -132,8 +132,8 @@ Following code block shows how to configure pygeoapi to read Mapbox vector tiles
              mimetype: application/vnd.mapbox-vector-tile
 
 
-WMTS
-^^^^
+WMTSFacade
+^^^^^^^^^^
 
 This provider gives support to serving map tiles generated using a WMTS.
 
