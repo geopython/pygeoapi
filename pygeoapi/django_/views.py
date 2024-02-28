@@ -348,7 +348,7 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
 
 def collection_item_tiles(request: HttpRequest, collection_id: str,
                           tileMatrixSetId: str, tileMatrix: str,
-                          tileRow: str, tileCol: str, ) -> HttpResponse:
+                          tileRow: str, tileCol: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles data endpoint
 
