@@ -36,6 +36,7 @@
 """Integration module for Django"""
 
 from typing import Tuple, Dict, Mapping, Optional
+
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
@@ -328,7 +329,7 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
 
 def collection_item_tiles(request: HttpRequest, collection_id: str,
                           tileMatrixSetId: str, tileMatrix: str,
-                          tileRow: str, tileCol: str,) -> HttpResponse:
+                          tileRow: str, tileCol: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles data endpoint
 
@@ -430,14 +431,16 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
     return response
 
 
-def get_collection_edr_query(request: HttpRequest, collection_id: str,
-                             instance_id: str) -> HttpResponse:
+def get_collection_edr_query(
+        request: HttpRequest, collection_id: str,
+        instance_id: Optional[str] = None
+) -> HttpResponse:
     """
     OGC API - EDR endpoint
 
-    :request Django HTTP Request
-    :param job_id: job identifier
-    :param resource: job resource
+    :param request: Django HTTP Request
+    :param collection_id: collection identifier
+    :param instance_id: optional instance identifier. default is None
 
     :returns: Django HTTP response
     """
