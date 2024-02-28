@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Joana Simoes <jo@byteroad.net>
+# Authors: Antonio Cerciello <ant@byteroad.net>
 #
-# Copyright (c) 2023 Joana Simoes
+# Copyright (c) 2024 Antonio Cerciello
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -42,12 +42,11 @@ from pygeoapi.util import is_url, url_join
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTElasticProvider(BaseMVTProvider):
-    """MVT Elastic Provider
-    Provider for serving tiles rendered with the Elasticsearch
-    Vector Tile API
-    https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html
-    As of 12/23, elastic does not provide any tileset metadata.
+class MVTProxyProvider(BaseMVTProvider):
+    """
+    MVT Proxy Provider
+    Provider for serving tiles rendered with an external
+    tiles provider
     """
 
     def __init__(self, BaseMVTProvider):
@@ -56,13 +55,13 @@ class MVTElasticProvider(BaseMVTProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.MVT.MVTElasticProvider
+        :returns: pygeoapi.provider.mvt_proxy.pygeoapi/provider/mvt_proxy.py # noqa
         """
 
         super().__init__(BaseMVTProvider)
 
         if not is_url(self.data):
-            msg = 'Wrong input format for Elasticsearch MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -84,7 +83,7 @@ class MVTElasticProvider(BaseMVTProvider):
             'metadata')
 
     def __repr__(self):
-        return f'<MVTElasticProvider> {self.data}'
+        return f'<MVTProxyProvider> {self.data}'
 
     @property
     def service_url(self):
@@ -102,14 +101,14 @@ class MVTElasticProvider(BaseMVTProvider):
         """
 
         if not is_url(self.data):
-            msg = 'Wrong input format for Elasticsearch MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
         url = urlparse(self.data)
 
         if ('/{z}/{x}/{y}' not in url.path):
-            msg = 'Wrong input format for Elasticsearch MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -164,19 +163,25 @@ class MVTElasticProvider(BaseMVTProvider):
             else:
                 url_query = ''
 
+            resp = None
+
             try:
                 with requests.Session() as session:
                     session.get(base_url)
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
+                    if '.' in url.path:
+                        resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}.{format_}{url_query}')  # noqa
+                    else:
+                        resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
+
                     resp.raise_for_status()
                     return resp.content
             except requests.exceptions.RequestException as e:
                 LOGGER.debug(e)
-                if resp.status_code < 500:
+                if resp and resp.status_code < 500:
                     raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
                 raise ProviderGenericError  # Server error
         else:
-            msg = 'Wrong input format for Elasticsearch MVT'
+            msg = 'Wrong input format for MVT'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 

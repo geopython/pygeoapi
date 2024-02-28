@@ -58,24 +58,12 @@ def test_provider(config):
     assert p.axes == ['COADSX', 'COADSY', 'TIME']
 
 
-def test_domainset(config):
-    p = XarrayProvider(config)
-    domainset = p.get_coverage_domainset()
-
-    assert isinstance(domainset, dict)
-    assert domainset['generalGrid']['axisLabels'] == ['COADSX', 'COADSY', 'TIME']  # noqa
-    assert domainset['generalGrid']['gridLimits']['axisLabels'] == ['i', 'j']
-    assert domainset['generalGrid']['gridLimits']['axis'][0]['upperBound'] == 180  # noqa
-    assert domainset['generalGrid']['gridLimits']['axis'][1]['upperBound'] == 90  # noqa
-
-
 def test_rangetype(config):
     p = XarrayProvider(config)
-    rangetype = p.get_coverage_rangetype()
 
-    assert isinstance(rangetype, dict)
-    assert len(rangetype['field']) == 4
-    assert rangetype['field'][0]['name'] == 'SEA SURFACE TEMPERATURE'
+    assert isinstance(p.fields, dict)
+    assert len(p.fields) == 4
+    assert p.fields['SST']['title'] == 'SEA SURFACE TEMPERATURE'
 
 
 def test_query(config):

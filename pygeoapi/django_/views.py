@@ -36,6 +36,7 @@
 """Integration module for Django"""
 
 from typing import Tuple, Dict, Mapping, Optional
+
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
@@ -121,6 +122,25 @@ def collections(request: HttpRequest,
     """
 
     response_ = _feed_response(request, 'describe_collections', collection_id)
+    response = _to_django_response(*response_)
+
+    return response
+
+
+def collection_schema(request: HttpRequest,
+                      collection_id: Optional[str] = None) -> HttpResponse:
+    """
+    OGC API collections schema endpoint
+
+    :request Django HTTP Request
+    :param collection_id: collection identifier
+
+    :returns: Django HTTP Response
+    """
+
+    response_ = _feed_response(
+        request, 'get_collection_schema', collection_id
+    )
     response = _to_django_response(*response_)
 
     return response
@@ -268,44 +288,6 @@ def collection_coverage(request: HttpRequest,
     return response
 
 
-def collection_coverage_domainset(request: HttpRequest,
-                                  collection_id: str) -> HttpResponse:
-    """
-    OGC API - Coverages coverage domainset endpoint
-
-    :request Django HTTP Request
-    :param collection_id: collection identifier
-
-    :returns: Django HTTP response
-    """
-
-    response_ = _feed_response(
-        request, 'get_collection_coverage_domainset', collection_id
-    )
-    response = _to_django_response(*response_)
-
-    return response
-
-
-def collection_coverage_rangetype(request: HttpRequest,
-                                  collection_id: str) -> HttpResponse:
-    """
-    OGC API - Coverages coverage rangetype endpoint
-
-    :request Django HTTP Request
-    :param collection_id: collection identifier
-
-    :returns: Django HTTP response
-    """
-
-    response_ = _feed_response(
-        request, 'get_collection_coverage_rangetype', collection_id
-    )
-    response = _to_django_response(*response_)
-
-    return response
-
-
 def collection_tiles(request: HttpRequest, collection_id: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles endpoint
@@ -347,7 +329,7 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
 
 def collection_item_tiles(request: HttpRequest, collection_id: str,
                           tileMatrixSetId: str, tileMatrix: str,
-                          tileRow: str, tileCol: str,) -> HttpResponse:
+                          tileRow: str, tileCol: str) -> HttpResponse:
     """
     OGC API - Tiles collection tiles data endpoint
 
@@ -449,14 +431,16 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
     return response
 
 
-def get_collection_edr_query(request: HttpRequest, collection_id: str,
-                             instance_id: str) -> HttpResponse:
+def get_collection_edr_query(
+        request: HttpRequest, collection_id: str,
+        instance_id: Optional[str] = None
+) -> HttpResponse:
     """
     OGC API - EDR endpoint
 
-    :request Django HTTP Request
-    :param job_id: job identifier
-    :param resource: job resource
+    :param request: Django HTTP Request
+    :param collection_id: collection identifier
+    :param instance_id: optional instance identifier. default is None
 
     :returns: Django HTTP response
     """

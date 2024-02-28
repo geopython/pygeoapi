@@ -57,15 +57,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         BaseEDRProvider.__init__(self, provider_def)
         XarrayProvider.__init__(self, provider_def)
 
-    def get_fields(self):
-        """
-        Get provider field information (names, types)
-
-        :returns: dict of dicts of parameters
-        """
-
-        return self.get_coverage_rangetype()
-
     @BaseEDRProvider.register()
     def position(self, **kwargs):
         """
@@ -118,7 +109,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         try:
             if select_properties:
-                self.fields = select_properties
+                self.fields = {k: v for k, v in self.fields.items() if k in select_properties}  # noqa
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
@@ -215,7 +206,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         LOGGER.debug(f'query parameters: {query_params}')
         try:
             if select_properties:
-                self.fields = select_properties
+                self.fields = {k: v for k, v in self.fields.items() if k in select_properties}  # noqa
                 data = self._data[[*select_properties]]
             else:
                 data = self._data

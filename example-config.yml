@@ -55,7 +55,7 @@ server:
     # ogc_schemas_location: /opt/schemas.opengis.net
     
 logging:
-    level: DEBUG
+    level: ERROR
     #logfile: /tmp/pygeoapi.log
 
 metadata:
@@ -140,6 +140,7 @@ resources:
               geometry:
                   x_field: long
                   y_field: lat
+
     lakes:
         type: collection
         title:
@@ -174,33 +175,7 @@ resources:
               data: tests/data/ne_110m_lakes.geojson
               id_field: id
               title_field: name
-    
-    mapserver_covid:
-        type: collection
-        title: Covid cases
-        description: Covid data via ESRI
-        keywords:
-            - observations
-            - monitoring
-            - points
-        links:
-            - type: text/html
-              rel: canonical
-              title: Company website
-              href: https://rottengrapes.tech/
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            
-        providers:
-            - type: feature
-              name: ESRI
-              data: https://sampleserver5.arcgisonline.com/arcgis/rest/services/Water_Network/MapServer/8
-              id_field: objectid
-              crs : [3443]
-   
+
     mapserver_world_map:
         type: collection
         title: MapServer demo WMS world map

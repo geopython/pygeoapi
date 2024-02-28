@@ -346,7 +346,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
                 })
         elif operation == SupportedShapelyOperations.CONSTRUCTIVE_BUFFER.value:
             result.update({
-                    'result':self.parse_result(parsed_geoms[0].buffer(10))
+                    'result':self.parse_result(parsed_geoms[0].buffer(10)) # todo - how do we receive kwargs from the user?
                 })
         else:
             #CONSTRUCTIVE_CENTROID

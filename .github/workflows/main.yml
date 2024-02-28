@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: 3.8
           architecture: x64
+          cache: 'pip'
       - name: Checkout pygeoapi
         uses: actions/checkout@master
       - name: Install flake8
@@ -44,6 +45,14 @@ jobs:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
     steps:
+    - name: Clear up GitHub runner diskspace
+      run: |
+        echo "Space before"
+        df -h /
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
+        echo "Space after"
+        df -h /
     - name: Chown user
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
