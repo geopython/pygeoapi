@@ -1231,12 +1231,13 @@ class API:
                     else:
                         collection['crs'] = [p.crs]
                         collection['extent']['spatial'] = {
-                            'bbox': [
+                            'bbox': [[
                                 p._coverage_properties['bbox'][0],
                                 p._coverage_properties['bbox'][1],
                                 p._coverage_properties['bbox'][2],
                                 p._coverage_properties['bbox'][3]
-                            ],
+                            ]],
+                            'crs': p.crs,
                             'grid': [{
                                 'cellsCount': p._coverage_properties['width'],
                                 'resolution': p._coverage_properties['resx']
