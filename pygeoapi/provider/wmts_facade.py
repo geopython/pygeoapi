@@ -177,25 +177,57 @@ class WMTSFacadeProvider(BaseTileProvider):
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
-    def get_metadata(self, dataset, server_url,
+    def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, metadata_format=None, title=None,
                      description=None, keywords=None, **kwargs):
         """
-        Gets tile metadata
+        Gets tiles metadata
 
         :param dataset: dataset name
         :param server_url: server base url
-        :param tileset: tileset name
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
         :param metadata_format: format for metadata,
                             enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
 
         :returns: `dict` of JSON metadata
         """
 
-        if metadata_format != TilesMetadataFormat.DEFAULT:
-            msg = f'No tiles metadata json in {metadata_format} format available'  # noqa
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
+        if metadata_format.upper() == TilesMetadataFormat.JSON:
+            return self.get_default_metadata(dataset, server_url, layer,
+                                             tileset, title, description,
+                                             keywords, **kwargs)
+        elif metadata_format.upper() == TilesMetadataFormat.HTML:
+            return self.get_html_metadata(dataset, server_url, layer,
+                                          tileset, title, description,
+                                          keywords, **kwargs)
+        else:
+            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported") # noqa
+
+    def get_html_metadata(self, dataset, server_url, layer, tileset,
+                          title, description, keywords, **kwargs):
+
+        service_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=png')  # noqa
+        metadata_url = url_join(
+            server_url,
+            f'collections/{dataset}/tiles/{tileset}/metadata')
+
+        metadata = dict()
+        metadata['id'] = dataset
+        metadata['title'] = title
+        metadata['tileset'] = tileset
+        metadata['collections_path'] = service_url
+        metadata['json_url'] = f'{metadata_url}?f=json'
+
+        return metadata
+
+    def get_default_metadata(self, dataset, server_url, layer, tileset,
+                             title, description, keywords, **kwargs):
 
         service_url = url_join(
             server_url,
@@ -212,6 +244,21 @@ class WMTSFacadeProvider(BaseTileProvider):
                 crs = schema.crs
                 tileMatrixSetURI = schema.tileMatrixSetURI
 
+                tiling_scheme_url = url_join(
+                    server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
+                tiling_scheme_url_type = "application/json"
+                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
+
+                tiling_scheme = LinkType(href=tiling_scheme_url,
+                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
+                                         type=tiling_scheme_url_type,
+                                         title=tiling_scheme_url_title)
+
+        if tiling_scheme is None:
+            msg = f'Could not identify a valid tiling schema'  # noqa
+            LOGGER.error(msg)
+            raise ProviderConnectionError(msg)
+
         content = TileSetMetadata(title=title, description=description,
                                   keywords=keywords, crs=crs,
                                   tileMatrixSetURI=tileMatrixSetURI)
@@ -222,6 +269,8 @@ class WMTSFacadeProvider(BaseTileProvider):
         service_url_link = LinkType(href=service_url, rel="item",
                                     type=service_url_link_type,
                                     title=service_url_link_title)
+
+        links.append(tiling_scheme)
         links.append(service_url_link)
 
         content.links = links

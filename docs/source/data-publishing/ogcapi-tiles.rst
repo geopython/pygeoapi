@@ -152,7 +152,6 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
                 wmts_tile_matrix_set: webmercator  # the name of the tile matrix set of the wmts. This matrix set has to
                     # align with one of the existing schemes in pygeoapi (either WebMercatorQuad or WorldCRS84Quad)
                 scheme: WebMercatorQuad  # the aligning scheme
-                metadata_format: default
                 zoom:
                     min: 0
                     max: 20
