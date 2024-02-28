@@ -103,7 +103,7 @@ ENV/
 # pygeoapi artifacts
 *.openapi.yml
 
-# development setup examples
+# pygeoapi development setup examples
 example-config.yml
 example-openapi.yml 
 
