@@ -1229,23 +1229,13 @@ class API:
                     except ProviderTypeError:
                         pass
                     else:
-                        collection['crs'] = [p.crs]
-                        collection['extent']['spatial'] = {
-                            'bbox': [[
-                                p._coverage_properties['bbox'][0],
-                                p._coverage_properties['bbox'][1],
-                                p._coverage_properties['bbox'][2],
-                                p._coverage_properties['bbox'][3]
-                            ]],
-                            'crs': p.crs,
-                            'grid': [{
-                                'cellsCount': p._coverage_properties['width'],
-                                'resolution': p._coverage_properties['resx']
+                        collection['extent']['spatial']['grid'] = [{
+                            'cellsCount': p._coverage_properties['width'],
+                            'resolution': p._coverage_properties['resx']
                             }, {
-                                'cellsCount': p._coverage_properties['height'],
-                                'resolution': p._coverage_properties['resy']
-                            }]
-                        }
+                            'cellsCount': p._coverage_properties['height'],
+                            'resolution': p._coverage_properties['resy']
+                        }]
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
