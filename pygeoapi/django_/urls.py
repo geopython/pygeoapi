@@ -183,6 +183,16 @@ urlpatterns = [
         name='collection-edr-corridor',
     ),
     path(
+        'collections/<str:collection_id>/locations/<str:location_id>',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
+        'collections/<str:collection_id>/locations',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
         'collections/<str:collection_id>/instances/<str:instance_id>/position',
         views.get_collection_edr_query,
         name='collection-edr-instance-position',
@@ -211,6 +221,16 @@ urlpatterns = [
         'collections/<str:collection_id>/instances/<str:instance_id>/corridor',
         views.get_collection_edr_query,
         name='collection-edr-instance-corridor',
+    ),
+    path(
+        'collections/<str:collection_id>/instances/locations/<str:location_id>',  # noqa
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
+        'collections/<str:collection_id>/instances/locations',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
     ),
     path(apply_slash_rule('processes/'), views.processes, name='processes'),
     path('processes/<str:process_id>', views.processes, name='process-detail'),
