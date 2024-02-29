@@ -137,6 +137,9 @@ WMTSFacade
 
 This provider gives support to serving map tiles generated using a WMTS.
 
+It is important that the WMTS provides a tile matrix set that matches exactly one of the configured schemes in pygeoapi.
+Currently only `WebMercatorQuad` and `WorldCRS84Quad` are available in pygeopi.
+
 This code block shows how to configure pygeoapi to read map tiles from a WMTS.
 
 .. code-block:: yaml
@@ -149,9 +152,8 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
                 mimetype: image/png
             options:
                 wmts_layer: bkg  # the layer name of the wmts
-                wmts_tile_matrix_set: webmercator  # the name of the tile matrix set of the wmts. This matrix set has to
-                    # align with one of the existing schemes in pygeoapi (either WebMercatorQuad or WorldCRS84Quad)
-                scheme: WebMercatorQuad  # the aligning scheme
+                wmts_tile_matrix_set: webmercator  # the name of the tile matrix set of the wmts.
+                scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
                 zoom:
                     min: 0
                     max: 20

@@ -2,6 +2,7 @@
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Simon Seyock <simonseyock@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
 # Copyright (c) 2023 Tom Kralidis
@@ -57,7 +58,7 @@ class WMTSFacadeProvider(BaseTileProvider):
         """
 
         if provider_def['format']['name'] not in ['png', 'jpeg']:
-            raise RuntimeError('wmts format has to be png or jpeg')
+            raise RuntimeError("WMTS format has to be 'png' or 'jpeg'")
 
         super().__init__(provider_def)
 
@@ -152,7 +153,7 @@ class WMTSFacadeProvider(BaseTileProvider):
                 'service': 'WMTS',
                 'request': 'GetTile',
                 'version': '1.0.0',
-                'format': self.format_type,
+                'format': self.mimetype,
                 'layer': self.options['wmts_layer'],
                 'tileMatrixSet': self.options['wmts_tile_matrix_set'],
                 'tileMatrix': z,
@@ -212,7 +213,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=png')  # noqa
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={self.format_type}')  # noqa
         metadata_url = url_join(
             server_url,
             f'collections/{dataset}/tiles/{tileset}/metadata')
@@ -231,7 +232,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=png')  # noqa
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={self.format_type}')  # noqa
 
         content = {}
         tiling_schemes = self.get_tiling_schemes()
@@ -251,7 +252,7 @@ class WMTSFacadeProvider(BaseTileProvider):
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
                                          rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type=tiling_scheme_url_type,
+                                         type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
@@ -264,10 +265,10 @@ class WMTSFacadeProvider(BaseTileProvider):
                                   tileMatrixSetURI=tileMatrixSetURI)
 
         links = []
-        service_url_link_type = "application/vnd.mapbox-vector-tile"
+        service_url_link_type = f'image/{self.format_type}'
         service_url_link_title = f'{tileset} raster tiles for {dataset}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type=service_url_link_type,
+                                    type_=service_url_link_type,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)
