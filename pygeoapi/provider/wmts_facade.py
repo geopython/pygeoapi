@@ -265,10 +265,9 @@ class WMTSFacadeProvider(BaseTileProvider):
                                   tileMatrixSetURI=tileMatrixSetURI)
 
         links = []
-        service_url_link_type = f'image/{self.format_type}'
         service_url_link_title = f'{tileset} raster tiles for {dataset}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type_=service_url_link_type,
+                                    type_=self.mimetype,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)
