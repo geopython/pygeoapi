@@ -92,7 +92,7 @@ class RasterioProvider(BaseProvider):
 
         return fields
 
-    def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
+    def query(self, properties=None, subsets=None, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):
         """
         Extract data from collection collection
@@ -105,7 +105,8 @@ class RasterioProvider(BaseProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-        bands = properties
+        bands = properties or []
+        subsets = subsets or {}
         LOGGER.debug(f'Bands: {bands}, subsets: {subsets}')
 
         args = {

@@ -92,8 +92,8 @@ class CSWFacadeProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         CSW GetRecords query
 
@@ -139,7 +139,7 @@ class CSWFacadeProvider(BaseProvider):
                 constraints.append(fes.PropertyIsEqualTo(date_property,
                                                          datetime_))
 
-        for p in properties:
+        for p in properties or []:
             LOGGER.debug(f'Processing property {p} parameter')
             if p[0] not in list(self.record_mappings.keys()):
                 msg = f'Invalid property: {p[0]}'

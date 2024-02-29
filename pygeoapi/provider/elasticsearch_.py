@@ -132,8 +132,8 @@ class ElasticsearchProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None,
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None,
               filterq=None, **kwargs):
         """
         query Elasticsearch index
@@ -153,7 +153,7 @@ class ElasticsearchProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
 
-        self.select_properties = select_properties
+        self.select_properties = select_properties or []
 
         query = {'track_total_hits': True, 'query': {'bool': {'filter': []}}}
         filter_ = []
@@ -547,8 +547,8 @@ class ElasticsearchCatalogueProvider(ElasticsearchProvider):
         return fields
 
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None,
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None,
               filterq=None, **kwargs):
 
         records = super().query(

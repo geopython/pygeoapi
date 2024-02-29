@@ -90,8 +90,8 @@ class CSVProvider(BaseProvider):
             return fields
 
     def _load(self, offset=0, limit=10, resulttype='results',
-              identifier=None, bbox=[], datetime_=None, properties=[],
-              select_properties=[], skip_geometry=False, q=None):
+              identifier=None, bbox=None, datetime_=None, properties=None,
+              select_properties=None, skip_geometry=False, q=None):
         """
         Load CSV data
 
@@ -153,7 +153,8 @@ class CSVProvider(BaseProvider):
                 feature['properties'] = OrderedDict()
 
                 if self.properties or select_properties:
-                    for p in set(self.properties) | set(select_properties):
+                    select_properties = set(select_properties or [])
+                    for p in set(self.properties) | select_properties:
                         try:
                             feature['properties'][p] = get_typed_value(row[p])
                         except KeyError as err:
@@ -185,8 +186,8 @@ class CSVProvider(BaseProvider):
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              bbox=None, datetime_=None, properties=None, sortby=None,
+              select_properties=None, skip_geometry=False, q=None, **kwargs):
         """
         CSV query
 
