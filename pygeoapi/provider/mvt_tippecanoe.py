@@ -40,7 +40,7 @@ from pygeoapi.provider.base import (ProviderConnectionError,
                                     ProviderGenericError)
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.models.provider.base import (
-    TileSetMetadata, LinkType)
+    TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.models.provider.mvt import MVTTilesJson
 
 from pygeoapi.util import is_url, url_join
@@ -136,6 +136,13 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         else:
             return Path(self.data).name
 
+    def get_tiling_schemes(self):
+
+        "Only WebMercatorQuad tiling scheme is supported in elastic"
+        return [
+                TileMatrixSetEnum.WEBMERCATORQUAD.value
+            ]
+
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
         """
@@ -226,6 +233,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         if format_ == 'mvt':
             format_ = self.format_type
+
 
         if isinstance(self.service_url, Path):
             return self.get_tiles_from_disk(layer, tileset, z, y, x, format_)
