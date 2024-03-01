@@ -8,7 +8,7 @@
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2021 Angelos Tzotsos
+# Copyright (c) 2024 Angelos Tzotsos
 # Copyright (c) 2023 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy-20231211.1
+FROM ubuntu:jammy-20240212
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -106,19 +106,16 @@ WORKDIR /pygeoapi
 # Install operating system dependencies
 RUN \
     apt-get update -y \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && echo "For ${TZ} date=$(date)" && echo "Locale=$(locale)"  \
-
-    # temporary remove
-    # && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-
     # OGC schemas local setup
     && mkdir /schemas.opengis.net \
     && curl -O http://schemas.opengis.net/SCHEMAS_OPENGIS_NET.zip \
     && unzip ./SCHEMAS_OPENGIS_NET.zip "ogcapi/*" -d /schemas.opengis.net \
     && rm -f ./SCHEMAS_OPENGIS_NET.zip \
-
     # Cleanup TODO: remove unused Locales and TZs
     # NOTE: this tries to remove gcc, but the actual package gcc-11 can't be
     #       removed because python3-scipy depends on python3-pythran which
