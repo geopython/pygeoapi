@@ -2,7 +2,7 @@ name: 'Close stale issues and PRs'
 
 env:
   STALE_AFTER_INACTIVE_DAYS: 90
-  CLOSE_AFTER_INACTIVE_DAYS: 5
+  CLOSE_AFTER_INACTIVE_DAYS: 7
 
 on:
   schedule:
