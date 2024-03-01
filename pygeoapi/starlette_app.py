@@ -645,12 +645,16 @@ api_routes = [
     Route('/collections/{collection_id:path}/radius', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/trajectory', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/corridor', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/locations', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/locations/{location_id}', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/position', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/area', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/cube', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/radius', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/trajectory', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/corridor', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/locations', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}/locations/{location_id}', get_collection_edr_query),  # noqa
     Route('/collections', collections),
     Route('/collections/{collection_id:path}', collections),
     Route('/stac', stac_catalog_root),

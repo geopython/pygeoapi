@@ -433,7 +433,8 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
 
 def get_collection_edr_query(
         request: HttpRequest, collection_id: str,
-        instance_id: Optional[str] = None
+        instance_id: Optional[str] = None,
+        location_id: Optional[str] = None
 ) -> HttpResponse:
     """
     OGC API - EDR endpoint
@@ -441,17 +442,22 @@ def get_collection_edr_query(
     :param request: Django HTTP Request
     :param collection_id: collection identifier
     :param instance_id: optional instance identifier. default is None
+    :param location_id: optional location identifier. default is None
 
     :returns: Django HTTP response
     """
 
-    query_type = request.path.split('/')[-1]
+    if location_id:
+        query_type = 'locations'
+    else:
+        query_type = request.path.split('/')[-1]
     response_ = _feed_response(
         request,
         'get_collection_edr_query',
         collection_id,
         instance_id,
-        query_type
+        query_type,
+        location_id
     )
     response = _to_django_response(*response_)
 

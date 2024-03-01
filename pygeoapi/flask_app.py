@@ -426,24 +426,35 @@ def get_job_result_resource(job_id, resource):
 @BLUEPRINT.route('/collections/<path:collection_id>/radius')
 @BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
 @BLUEPRINT.route('/collections/<path:collection_id>/corridor')
+@BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/locations')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
-def get_collection_edr_query(collection_id, instance_id=None):
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
+def get_collection_edr_query(collection_id, instance_id=None,
+                             location_id=None):
     """
     OGC EDR API endpoints
 
     :param collection_id: collection identifier
     :param instance_id: instance identifier
+    :param location_id: location id of a /locations/<location_id> query
 
     :returns: HTTP response
     """
-    query_type = request.path.split('/')[-1]
+    if location_id:
+        query_type = 'locations'
+    else:
+        query_type = request.path.split('/')[-1]
+
     return get_response(api_.get_collection_edr_query(request, collection_id,
-                                                      instance_id, query_type))
+                                                      instance_id, query_type,
+                                                      location_id))
 
 
 @BLUEPRINT.route('/stac')
