@@ -234,7 +234,6 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if format_ == 'mvt':
             format_ = self.format_type
 
-
         if isinstance(self.service_url, Path):
             return self.get_tiles_from_disk(layer, tileset, z, y, x, format_)
         elif is_url(self.data):
