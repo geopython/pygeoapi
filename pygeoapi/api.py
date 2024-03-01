@@ -3651,7 +3651,8 @@ class API:
     @pre_process
     def get_collection_edr_query(
             self, request: Union[APIRequest, Any],
-            dataset, instance, query_type) -> Tuple[dict, int, str]:
+            dataset, instance, query_type,
+            location_id=None) -> Tuple[dict, int, str]:
         """
         Queries collection EDR
 
@@ -3659,6 +3660,7 @@ class API:
         :param dataset: dataset name
         :param instance: instance name
         :param query_type: EDR query type
+        :param location_id: location id of a /location/<location_id> query
 
         :returns: tuple of headers, status code, content
         """
@@ -3694,11 +3696,11 @@ class API:
             parameternames = parameternames.split(',')
 
         bbox = None
-        if query_type == 'cube':
+        if query_type in ['cube', 'locations']:
             LOGGER.debug('Processing cube bbox')
             try:
                 bbox = validate_bbox(request.params.get('bbox'))
-                if not bbox:
+                if not bbox and query_type == 'cube':
                     raise ValueError('bbox parameter required by cube queries')
             except ValueError as err:
                 return self.get_exception(
@@ -3716,7 +3718,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
-        elif query_type != 'cube':
+        elif query_type not in ['cube', 'locations']:
             msg = 'missing coords parameter'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -3771,7 +3773,8 @@ class API:
             bbox=bbox,
             within=within,
             within_units=within_units,
-            limit=int(self.config['server']['limit'])
+            limit=int(self.config['server']['limit']),
+            location_id=location_id,
         )
 
         try:
