@@ -144,18 +144,17 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
       providers:
           - type: tile
             name: WMTSFacade
-            data: http://127.0.0.1:8080/service
+            data: https://emotional.byteroad.net/geoserver/gwc/service/wmts
             format:
                 name: png  # png or jpeg
                 mimetype: image/png
             options:
-                wmts_layer: bkg  # the layer name of the wmts
-                wmts_tile_matrix_set: webmercator  # the name of the tile matrix set of the wmts.
+                wmts_layer: camb:hex350_grid_mental_1920 # the layer name of the wmts
+                wmts_tile_matrix_set: WebMercatorQuad  # the name of the tile matrix set of the wmts.
                 scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
                 zoom:
                     min: 0
                     max: 20
-
 
 Data access examples
 --------------------
