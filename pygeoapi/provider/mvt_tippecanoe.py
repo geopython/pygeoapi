@@ -72,14 +72,13 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
-            extension = Path(url.path).suffix  # e.g. ".pbf"
             layer = f'/{self.get_layer()}'
 
             LOGGER.debug('Extracting layer name from URL')
             LOGGER.debug(f'Layer: {layer}')
 
             tilepath = f'{layer}/tiles'
-            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{extension}'  # noqa
+            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
 
             self._service_url = url_join(baseurl, servicepath)
 
@@ -326,7 +325,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
                                          rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type=tiling_scheme_url_type,
+                                         type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
@@ -343,7 +342,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         service_url_link_type = "application/vnd.mapbox-vector-tile"
         service_url_link_title = f'{tileset} vector tiles for {layer}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type=service_url_link_type,
+                                    type_=service_url_link_type,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)

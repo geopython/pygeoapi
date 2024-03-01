@@ -102,6 +102,7 @@ F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
+F_JPEG = 'jpeg'
 F_MVT = 'mvt'
 F_NETCDF = 'NetCDF'
 
@@ -111,6 +112,7 @@ FORMAT_TYPES = OrderedDict((
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
     (F_PNG, 'image/png'),
+    (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
 ))
@@ -1043,6 +1045,10 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
+            is_vector_tile = (collection_data_type == 'tile' and
+                              collection_data_format['name'] not
+                              in [F_PNG, F_JPEG])
+
             collection = {
                 'id': k,
                 'title': l10n.translate(v['title'], request.locale),
@@ -1155,7 +1161,7 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
                 })
 
-            if collection_data_type in ['feature', 'record', 'tile']:
+            if is_vector_tile or collection_data_type in ['feature', 'record']:
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
@@ -2785,7 +2791,7 @@ class API:
 
         tile_services = p.get_tiles_service(
             baseurl=self.base_url,
-            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
+            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={p.format_type}'  # noqa
         )
 
         for service in tile_services['links']:
@@ -2833,6 +2839,7 @@ class API:
             tiles['minzoom'] = p.options['zoom']['min']
             tiles['maxzoom'] = p.options['zoom']['max']
             tiles['collections_path'] = self.get_collections_url()
+            tiles['tile_type'] = p.tile_type
 
             content = render_j2_template(self.tpl_config,
                                          'collections/tiles/index.html', tiles,
@@ -2953,7 +2960,8 @@ class API:
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(t, request.raw_locale)
 
-        if matrix_id not in p.options['schemes']:
+        tiling_schemes = p.get_tiling_schemes()
+        if matrix_id not in [item.tileMatrixSet for item in tiling_schemes]:
             msg = 'tileset not found'
             return self.get_exception(HTTPStatus.NOT_FOUND, headers,
                                       request.format, 'NotFound', msg)
