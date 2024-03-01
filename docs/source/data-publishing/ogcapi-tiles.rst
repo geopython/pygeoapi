@@ -15,13 +15,13 @@ Providers
 pygeoapi core tile providers are listed below, along with supported features.
 
 .. csv-table::
-   :header: Provider, rendered on-the-fly, properties
+   :header: Provider, rendered on-the-fly, properties, WebMercatorQuad, WorldCRS84Quad
    :align: left
 
-   `MVT-tippecanoe`_,❌,✅
-   `MVT-elastic`_,✅,❌
-   `MVT-proxy`_, N/A , N/A
-   `WMTSFacade`_,✅,❌
+   `MVT-tippecanoe`_,❌,✅,✅,❌
+   `MVT-elastic`_,✅,❌,✅,❌
+   `MVT-proxy`_,❔,❔,❔,❔
+   `WMTSFacade`_,✅,❌,✅,✅
 
 Below are specific connection examples based on supported providers.
 
@@ -48,8 +48,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              zoom:
                  min: 0
                  max: 5
-             schemes:
-                 - WebMercatorQuad
+        # MVT-elastic always uses WebMercatorQuad tiling scheme
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -107,7 +106,7 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
                 min: 0
                 max: 15
              schemes:
-                 - WebMercatorQuad
+                 - WebMercatorQuad # this option is needed in the MVT-proxy provider
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
