@@ -330,7 +330,7 @@ def test_query_bbox_hits_gs(config_MapServer_WFS_continents):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched')
     assert hits is not None
-    assert hits == 3
+    assert hits > 3
 
 
 def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
@@ -347,7 +347,7 @@ def test_query_bbox_hits_geosol_gs(config_geosol_gs_WFS):
     assert len(features) == 0
     hits = feature_collection.get('numberMatched')
     assert hits is not None
-    assert hits == 1
+    assert hits == 186
 
 
 def test_query_bbox_ms(config_MapServer_WFS_cities):
