@@ -2960,12 +2960,6 @@ class API:
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(t, request.raw_locale)
 
-        tiling_schemes = p.get_tiling_schemes()
-        if matrix_id not in [item.tileMatrixSet for item in tiling_schemes]:
-            msg = 'tileset not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NotFound', msg)
-
         # Set response language to requested provider locale
         # (if it supports language) and/or otherwise the requested pygeoapi
         # locale (or fallback default locale)
