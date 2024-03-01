@@ -88,10 +88,10 @@
         .replace('{dataset}', '{{ data["id"] }}')
         .replace('{tileMatrixSetId}', scheme)
         .replace("tileMatrix", "z")
-        .replace("tileRow", "y")
-        .replace("tileCol", "x");
-
     {% if data['tile_type'] == 'raster' %}
+        url = url
+            .replace("tileRow", "y")
+            .replace("tileCol", "x");
         map.addLayer(new L.TileLayer(
             url, {
                 maxZoom: {{ data['maxzoom'] }},
@@ -99,6 +99,9 @@
             }
         ));
     {% elif data['tile_type'] == 'vector' %}
+        url = url
+            .replace("tileRow", "x")
+            .replace("tileCol", "y");
         var VectorTileOptions = {
             interactive: true,
             rendererFactory: L.canvas.tile,

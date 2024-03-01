@@ -15,13 +15,13 @@ Providers
 pygeoapi core tile providers are listed below, along with supported features.
 
 .. csv-table::
-   :header: Provider, rendered on-the-fly, properties
+   :header: Provider, rendered on-the-fly, properties, WebMercatorQuad, WorldCRS84Quad
    :align: left
 
-   `MVT-tippecanoe`_,❌,✅
-   `MVT-elastic`_,✅,❌
-   `MVT-proxy`_, N/A , N/A
-   `WMTSFacade`_,✅,❌
+   `MVT-tippecanoe`_,❌,✅,✅,❌
+   `MVT-elastic`_,✅,❌,✅,❌
+   `MVT-proxy`_,❔,❔,❔,❔
+   `WMTSFacade`_,✅,❌,✅,✅
 
 Below are specific connection examples based on supported providers.
 
@@ -48,8 +48,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              zoom:
                  min: 0
                  max: 5
-             schemes:
-                 - WebMercatorQuad
+        # MVT-elastic always uses WebMercatorQuad tiling scheme
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -78,8 +77,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
              zoom:
                  min: 0
                  max: 5
-             schemes:
-                 - WebMercatorQuad
+        # MVT-elastic always uses WebMercatorQuad tiling scheme
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -108,7 +106,7 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
                 min: 0
                 max: 15
              schemes:
-                 - WebMercatorQuad
+                 - WebMercatorQuad # this option is needed in the MVT-proxy provider
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -146,18 +144,17 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
       providers:
           - type: tile
             name: WMTSFacade
-            data: http://127.0.0.1:8080/service
+            data: https://emotional.byteroad.net/geoserver/gwc/service/wmts
             format:
                 name: png  # png or jpeg
                 mimetype: image/png
             options:
-                wmts_layer: bkg  # the layer name of the wmts
-                wmts_tile_matrix_set: webmercator  # the name of the tile matrix set of the wmts.
+                wmts_layer: camb:hex350_grid_mental_1920 # the layer name of the wmts
+                wmts_tile_matrix_set: WebMercatorQuad  # the name of the tile matrix set of the wmts.
                 scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
                 zoom:
                     min: 0
                     max: 20
-
 
 Data access examples
 --------------------
