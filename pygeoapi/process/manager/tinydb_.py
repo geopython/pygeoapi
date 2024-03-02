@@ -131,8 +131,8 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
         :return `bool` of status result
         """
         # delete result file if present
@@ -152,8 +152,8 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
@@ -174,10 +174,10 @@ class TinyDBManager(BaseManager):
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
-        :raises: JobResultNotFoundError: if the job-related result cannot
-            be returned
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
+        :raises JobResultNotFoundError: if the job-related result cannot
+                                        be returned
         :returns: `tuple` of mimetype and raw output
         """
 
