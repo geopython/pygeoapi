@@ -121,10 +121,10 @@ class echoProcessor(BaseProcessor):
 
         if echo is None:
             raise ProcessorExecuteError(
-                'Cannot run process without echo value')
+                'Cannot run process without echoInput value')
         if not isinstance(echo, str):
             raise ProcessorExecuteError(
-                'Cannot run process with echo not of type String')
+                'Cannot run process with echoInput not of type String')
 
         outputs = {
             'id': 'echoOutput',
