@@ -90,7 +90,7 @@ class BaseManager:
 
         :param process_id: Identifier of the process
 
-        :raise UnknownProcessError: if the processor cannot be created
+        :raises UnknownProcessError: if the processor cannot be created
         :returns: instance of the processor
         """
 
@@ -142,8 +142,8 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
         :returns: `dict` of job result
         """
 
@@ -155,10 +155,10 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
-        :raises: JobResultNotFoundError: if the job-related result cannot
-            be returned
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
+        :raises JobResultNotFoundError: if the job-related result cannot
+                                         be returned
         :returns: `tuple` of mimetype and raw output
         """
 
@@ -170,8 +170,8 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                   known job
         :returns: `bool` of status result
         """
 
@@ -320,10 +320,10 @@ class BaseManager:
         :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
-        processing.
+                               processing.
 
-        :raises: UnknownProcessError if the input process_id does not
-                 correspond to a known process
+        :raises UnknownProcessError: if the input process_id does not
+                                     correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
                   response

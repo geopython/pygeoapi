@@ -66,7 +66,7 @@ def str2locale(value, silent: bool = False) -> Union[Locale, None]:
 
     :returns: babel.core.Locale or None
 
-    :raises: LocaleError
+    :raises LocaleError:
     """
 
     if isinstance(value, Locale):
@@ -103,7 +103,7 @@ def locale2str(value: Locale) -> str:
     :returns: A string containing a web locale (e.g. 'fr-CH')
               or language tag (e.g. 'de').
 
-    :raises: LocaleError
+    :raises LocaleError:
     """
 
     if not isinstance(value, Locale):
@@ -145,7 +145,7 @@ def best_match(accept_languages, available_locales) -> Locale:
 
     :returns: babel.core.Locale
 
-    :raises: LocaleError
+    :raises LocaleError:
     """
 
     def get_match(locale_, available_locales_):
@@ -254,7 +254,7 @@ def translate(value, language: Union[Locale, str]):
 
     :returns: A translated string or the original value.
 
-    :raises: LocaleError
+    :raises LocaleError:
     """
 
     nested_dicts = isinstance(value, dict) and any(isinstance(v, dict)
@@ -386,7 +386,7 @@ def set_response_language(headers: dict, *locale_: Locale):
                     Multiple locales can be set for this header.
                     Note that duplicates will be removed.
 
-    :raises: LocaleError if no valid Babel Locale was found.
+    :raises LocaleError: if no valid Babel Locale was found.
     """
 
     if not hasattr(headers, '__setitem__'):
@@ -422,7 +422,7 @@ def add_locale(url, locale_) -> str:
 
     :returns: A new URL with a 'lang=<locale>' query parameter.
 
-    :raises: requests.exceptions.MissingSchema
+    :raises requests.exceptions.MissingSchema:
     """
 
     loc = str2locale(locale_, True)

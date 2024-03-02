@@ -21,7 +21,7 @@ parameters.
 
    `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌
+   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅

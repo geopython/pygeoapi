@@ -18,7 +18,7 @@ parameters.
    :header: Provider, properties, subset, bbox, datetime
    :align: left
 
-   :ref:`Rasterio<rasterio-provider>`,✅,✅,✅,
+   :ref:`Rasterio<rasterio-provider>`,✅,✅,✅,✅
    :ref:`Xarray<xarray-provider>`,✅,✅,✅,✅
 
 

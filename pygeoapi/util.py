@@ -674,11 +674,9 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     Author: @MTachon
 
     :param uri: Uniform resource identifier of the coordinate
-        reference system. In accordance with
-        https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
-        take either the form of a URL or a URN
-    :type uri: str
-
+                reference system. In accordance with
+                https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
+                take either the form of a URL or a URN
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
 
@@ -892,15 +890,15 @@ def modify_pygeofilter(
     Modifies the input pygeofilter with information from the provider.
 
     :param ast_tree: `pygeofilter.ast.Node` representing the
-    already parsed pygeofilter expression
+                     already parsed pygeofilter expression
     :param filter_crs_uri: URI of the CRS being used in the filtering
-    expression
+                           expression
     :param storage_crs_uri: An optional string containing the URI of
-    the provider's storage CRS
+                            the provider's storage CRS
     :param geometry_column_name: An optional string containing the
-    actual name of the provider's geometry field
+                                 actual name of the provider's geometry field
     :returns: A new pygeofilter.ast.Node, with the modified filter
-    expression
+              expression
 
     This function modifies the parsed pygeofilter that contains the raw
     filter expression provided by an external client. It performs the

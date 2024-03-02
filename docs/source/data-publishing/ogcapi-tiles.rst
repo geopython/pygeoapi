@@ -54,7 +54,8 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              mimetype: application/vnd.mapbox-vector-tile
 
 .. tip::
-   On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-pre-rendered-vector-tiles>`_  you can find detailed instructions on how-to generate tiles using tippecanoe and integrate them into pygeoapi.
+
+   In the diving into pygeoapi workshop `OGC API - Tiles Exercise <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-pre-rendered-vector-tiles>`_, detailed instructions can be found on how to generate tiles using tippecanoe and integrate them into pygeoapi.
 
 MVT-elastic
 ^^^^^^^^^^^
@@ -141,20 +142,21 @@ Currently only `WebMercatorQuad` and `WorldCRS84Quad` are available in pygeopi.
 This code block shows how to configure pygeoapi to read map tiles from a WMTS.
 
 .. code-block:: yaml
-      providers:
-          - type: tile
-            name: WMTSFacade
-            data: https://emotional.byteroad.net/geoserver/gwc/service/wmts
-            format:
-                name: png  # png or jpeg
-                mimetype: image/png
-            options:
-                wmts_layer: camb:hex350_grid_mental_1920 # the layer name of the wmts
-                wmts_tile_matrix_set: WebMercatorQuad  # the name of the tile matrix set of the wmts.
-                scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
-                zoom:
-                    min: 0
-                    max: 20
+
+   providers:
+       - type: tile
+         name: WMTSFacade
+         data: https://emotional.byteroad.net/geoserver/gwc/service/wmts
+         format:
+             name: png  # png or jpeg
+             mimetype: image/png
+         options:
+             wmts_layer: camb:hex350_grid_mental_1920 # the layer name of the wmts
+             wmts_tile_matrix_set: WebMercatorQuad  # the name of the tile matrix set of the wmts.
+             scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
+             zoom:
+                 min: 0
+                 max: 20
 
 Data access examples
 --------------------
