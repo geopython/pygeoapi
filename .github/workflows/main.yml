@@ -92,11 +92,14 @@ jobs:
       with:
         packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
+    - name: Use ubuntuGIS unstable ppa
+      run: sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable && sudo apt update
+      shell: bash
     - name: Install GDAL with Python bindings
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: gdal-bin libgdal-dev
-        version: 3.0.4
+        version: 3.8.3
     - name: Install and run Oracle
       run: |
         docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
