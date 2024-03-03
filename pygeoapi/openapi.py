@@ -640,7 +640,7 @@ def get_oas_30(cfg):
                 paths[items_path]['get']['parameters'].append(
                     {'$ref': f"{OPENAPI_YAML['oapir']}/parameters/q.yaml"})
             if p.fields:
-                schema_path = f'{collection_name_path}/schemna'
+                schema_path = f'{collection_name_path}/schema'
 
                 paths[schema_path] = {
                     'get': {
