@@ -1045,9 +1045,7 @@ class API:
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
 
-            is_vector_tile = (collection_data_type == 'tile' and
-                              collection_data_format['name'] not
-                              in [F_PNG, F_JPEG])
+            is_raster_tile = collection_data['name'] == 'WMTSFacade'
 
             collection = {
                 'id': k,
@@ -1161,7 +1159,8 @@ class API:
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
                 })
 
-            if is_vector_tile or collection_data_type in ['feature', 'record']:
+            if (not is_raster_tile
+                    and collection_data_type in ['feature', 'record', 'tile']):
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
