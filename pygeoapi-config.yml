@@ -302,3 +302,11 @@ resources:
         type: process
         processor:
             name: HelloWorld
+    shapely-geometry-buffer:
+        type: process
+        processor:
+            name: ShapelyBuffer
+    GDAL-LC-change-analysis:
+        type: process
+        processor:
+            name: GDAL_LC_ChangeAnalysis
