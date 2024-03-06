@@ -55,7 +55,7 @@ class DatabaseConnection:
     The class returns a connection object.
     """
 
-    def __init__(self, conn_dic, table, properties=None, context="query"):
+    def __init__(self, conn_dic, table, properties=[], context="query"):
         """
         OracleProvider Class constructor
 
@@ -86,8 +86,7 @@ class DatabaseConnection:
         self.columns = (
             None  # Comma sepparated string with column names (for SQL query)
         )
-        self.properties = \
-            [item.lower() for item in properties] if properties else []
+        self.properties = [item.lower() for item in properties]
         self.fields = {}  # Dict of columns. Key is col name, value is type
         self.conn = None
 
