@@ -148,6 +148,7 @@ jobs:
         pytest tests/test_ogr_shapefile_provider.py
         pytest tests/test_ogr_sqlite_provider.py
         pytest tests/test_ogr_wfs_provider.py
+        pytest tests/test_ogr_wfs_provider_live.py  # NOTE: these are skipped in the file but listed here for completeness
         pytest tests/test_openapi.py
         pytest tests/test_oracle_provider.py
         pytest tests/test_postgresql_provider.py
