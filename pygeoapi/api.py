@@ -3377,6 +3377,7 @@ class API:
         }
         for job_ in jobs:
             job2 = {
+                'type': 'process',
                 'processID': job_['process_id'],
                 'jobID': job_['identifier'],
                 'status': job_['status'],
@@ -3395,21 +3396,22 @@ class API:
 
                 job2['links'] = [{
                     'href': f'{job_result_url}?f={F_HTML}',
-                    'rel': 'about',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                     'type': FORMAT_TYPES[F_HTML],
                     'title': f'results of job {job_id} as HTML'
                 }, {
                     'href': f'{job_result_url}?f={F_JSON}',
-                    'rel': 'about',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                     'type': FORMAT_TYPES[F_JSON],
                     'title': f'results of job {job_id} as JSON'
                 }]
 
                 if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
                                             FORMAT_TYPES[F_HTML]):
+
                     job2['links'].append({
                         'href': job_result_url,
-                        'rel': 'about',
+                        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',  # noqa
                         'type': job_['mimetype'],
                         'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
                     })
@@ -3519,6 +3521,8 @@ class API:
 
         if status == JobStatus.accepted:
             http_status = HTTPStatus.CREATED
+        elif status == JobStatus.failed:
+            http_status = HTTPStatus.BAD_REQUEST
         else:
             http_status = HTTPStatus.OK
 
@@ -3984,6 +3988,7 @@ class API:
         LOGGER.error(description)
         exception = {
             'code': code,
+            'type': code,
             'description': description
         }
 

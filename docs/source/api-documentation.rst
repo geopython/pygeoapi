@@ -24,4 +24,3 @@ Top level code documentation. Follow the links in each section for module/class 
    :members:
    :private-members:
    :special-members:
-

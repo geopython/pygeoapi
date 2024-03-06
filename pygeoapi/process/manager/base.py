@@ -219,6 +219,7 @@ class BaseManager:
         current_status = JobStatus.accepted
 
         job_metadata = {
+            'type': 'process',
             'identifier': job_id,
             'process_id': process_id,
             'job_start_datetime': datetime.utcnow().strftime(
@@ -226,7 +227,7 @@ class BaseManager:
             'job_end_datetime': None,
             'status': current_status.value,
             'location': None,
-            'mimetype': None,
+            'mimetype': 'application/octet-stream',
             'message': 'Job accepted and ready for execution',
             'progress': 5
         }
@@ -289,6 +290,7 @@ class BaseManager:
             current_status = JobStatus.failed
             code = 'InvalidParameterValue'
             outputs = {
+                'type': code,
                 'code': code,
                 'description': 'Error updating job'
             }
@@ -298,7 +300,7 @@ class BaseManager:
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
-                'mimetype': None,
+                'mimetype': 'application/octet-stream',
                 'message': f'{code}: {outputs["description"]}'
             }
 

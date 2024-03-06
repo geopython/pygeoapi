@@ -69,7 +69,6 @@ PROCESS_METADATA = {
             },
             'minOccurs': 1,
             'maxOccurs': 1,
-            'metadata': None,  # TODO how to use?
             'keywords': ['full name', 'personal']
         },
         'message': {
@@ -80,7 +79,6 @@ PROCESS_METADATA = {
             },
             'minOccurs': 0,
             'maxOccurs': 1,
-            'metadata': None,
             'keywords': ['message']
         }
     },

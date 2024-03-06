@@ -108,7 +108,6 @@ Processing examples
        -H "Prefer: respond-async"
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
 
-.. todo:: add more examples once OAProc implementation is complete
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
 .. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
