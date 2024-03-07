@@ -9,7 +9,7 @@ assignees: ''
 
 <!--
 
-Please note that this issue is subject to RFC4: https://pygeoapi.io/development/rfc/4
+Please note that this Issue is subject to RFC4: https://pygeoapi.io/development/rfc/4
 
 -->
 

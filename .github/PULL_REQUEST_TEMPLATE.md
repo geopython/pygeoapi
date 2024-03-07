@@ -1,6 +1,6 @@
 # Overview
 
-# Related issue / discussion
+# Related Issue / discussion
 
 <!--
 
