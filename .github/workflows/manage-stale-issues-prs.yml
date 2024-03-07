@@ -10,6 +10,10 @@ on:
 
 jobs:
   stale:
+    permissions:
+      issues: write
+      pull-requests: write
+    if: github.repository_owner == 'geopython'
     runs-on: ubuntu-latest
     steps:
       - uses: 'actions/stale@v9'
@@ -18,6 +22,8 @@ jobs:
           enable-statistics: true
           stale-issue-label: Stale
           stale-pr-label: Stale
+          exempt-issue-labels: blocker
+          exempt-pr-labels: blocker
           days-before-stale: ${{ env.STALE_AFTER_INACTIVE_DAYS }}
           days-before-close: ${{ env.CLOSE_AFTER_INACTIVE_DAYS }}
           remove-stale-when-updated: true
