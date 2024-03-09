@@ -68,7 +68,14 @@ OPENAPI_YAML = {
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def get_ogc_schemas_location(server_config):
+def get_ogc_schemas_location(server_config: dict) -> str:
+    """
+    Determine OGC schemas location
+
+    :param server_config: `dict` of server configuration
+
+    :returns: `str` of OGC schemas location
+    """
 
     osl = server_config.get('ogc_schemas_location')
 
@@ -85,7 +92,7 @@ def get_ogc_schemas_location(server_config):
 
 
 # TODO: remove this function once OGC API - Processing is final
-def gen_media_type_object(media_type, api_type, path):
+def gen_media_type_object(media_type: str, api_type: str, path: str) -> dict:
     """
     Generates an OpenAPI Media Type Object
 
@@ -110,7 +117,8 @@ def gen_media_type_object(media_type, api_type, path):
 
 
 # TODO: remove this function once OGC API - Processing is final
-def gen_response_object(description, media_type, api_type, path):
+def gen_response_object(description: str, media_type: str,
+                        api_type: str, path: str) -> dict:
     """
     Generates an OpenAPI Response Object
 
@@ -129,13 +137,15 @@ def gen_response_object(description, media_type, api_type, path):
     return response
 
 
-def get_oas_30(cfg):
+def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
     """
     Generates an OpenAPI 3.0 Document
 
     :param cfg: configuration object
+    :param fail_on_invalid_collection: `bool` of whether to fail on an invalid
+                                       collection
 
-    :returns: OpenAPI definition YAML dict
+    :returns: dict of OpenAPI definition
     """
 
     paths = {}
@@ -549,7 +559,10 @@ def get_oas_30(cfg):
             oas['tags'].extend(r_tags)
             paths.update(r_paths)
         except Exception as err:
-            LOGGER.warning(f'Resource {k} not added to OpenAPI: {err}')
+            if fail_on_invalid_collection:
+                raise
+            else:
+                LOGGER.warning(f'Resource {k} not added to OpenAPI: {err}')
 
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],
@@ -750,7 +763,13 @@ def get_oas_30(cfg):
     return oas
 
 
-def get_config_schema():
+def get_config_schema() -> dict:
+    """
+    Get configuration schema
+
+    :returns: `dict` of configuration schema
+    """
+
     schema_file = os.path.join(THISDIR, 'schemas', 'config',
                                'pygeoapi-config-0.x.yml')
 
@@ -758,7 +777,12 @@ def get_config_schema():
         return yaml_load(fh2)
 
 
-def get_admin():
+def get_admin() -> dict:
+    """
+    Generate admin paths for OpenAPI Document
+
+    :returns: `dict` of paths
+    """
 
     schema_dict = get_config_schema()
 
@@ -955,7 +979,7 @@ def get_admin():
 def handle_collection(locale_: str, components: dict, collection_id: str,
                       collection_def: dict) -> Tuple[list, dict]:
     """
-    Generate relevan OpenAPI constructs for a given collection
+    Generate relevant OpenAPI constructs for a given collection
 
     :param locale_: locale
     :param components: OpenAPI components
@@ -1576,23 +1600,27 @@ def handle_collection(locale_: str, components: dict, collection_id: str,
     return tags, paths
 
 
-def get_oas(cfg, version='3.0'):
+def get_oas(cfg: dict, fail_on_invalid_collection: bool = True,
+            version='3.0') -> dict:
     """
     Stub to generate OpenAPI Document
 
-    :param cfg: configuration object
+    :param cfg: `dict` configuration
+    :param fail_on_invalid_collection: `bool` of whether to fail on an
+                                       invalid collection
     :param version: version of OpenAPI (default 3.0)
 
-    :returns: OpenAPI definition YAML dict
+    :returns: `dict` of OpenAPI definition
     """
 
     if version == '3.0':
-        return get_oas_30(cfg)
+        return get_oas_30(
+            cfg, fail_on_invalid_collection=fail_on_invalid_collection)
     else:
         raise RuntimeError('OpenAPI version not supported')
 
 
-def validate_openapi_document(instance_dict):
+def validate_openapi_document(instance_dict: dict) -> bool:
     """
     Validate an OpenAPI document against the OpenAPI schema
 
@@ -1612,27 +1640,37 @@ def validate_openapi_document(instance_dict):
 
 
 def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
-                              output_format: OAPIFormat):
+                              output_format: OAPIFormat,
+                              fail_on_invalid_collection: bool = True) -> str:
     """
     Generate an OpenAPI document from the configuration file
 
-    :param cfg_file: configuration Path instance
+    :param cfg_file: configuration Path instance (`str` of filepath
+                     or parsed `dict`)
+    :param fail_on_invalid_collection: `bool` of whether to fail on an
+                                       invalid collection
     :param output_format: output format for OpenAPI document
 
-    :returns: content of the OpenAPI document in the output
-              format requested
+    :returns: `str` of the OpenAPI document in the output format requested
     """
+
+    LOGGER.debug(f'Loading configuration {cfg_file}')
+
     if isinstance(cfg_file, Path):
         with cfg_file.open(mode="r") as cf:
             s = yaml_load(cf)
     else:
         s = yaml_load(cfg_file)
+
     pretty_print = s['server'].get('pretty_print', False)
 
+    oas = get_oas(s, fail_on_invalid_collection=fail_on_invalid_collection)
+
     if output_format == 'yaml':
-        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
+        content = yaml.safe_dump(oas, default_flow_style=False)
     else:
-        content = to_json(get_oas(s), pretty=pretty_print)
+        content = to_json(oas, pretty=pretty_print)
+
     return content
 
 
@@ -1663,17 +1701,21 @@ def openapi():
 @click.command()
 @click.pass_context
 @click.argument('config_file', type=click.File(encoding='utf-8'))
+@click.option('--fail-on-invalid-collection/--no-fail-on-invalid-collection',
+              '-fic', default=True, help='Fail on invalid collection')
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
 @click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
               help='Name of output file')
-def generate(ctx, config_file, output_file, format_='yaml'):
+def generate(ctx, config_file, output_file, format_='yaml',
+             fail_on_invalid_collection=True):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
 
-    content = generate_openapi_document(config_file, format_)
+    content = generate_openapi_document(
+        config_file, format_, fail_on_invalid_collection)
 
     if output_file is None:
         click.echo(content)
