@@ -33,8 +33,7 @@
 # =================================================================
 
 from datetime import date, datetime
-from typing import Any, List, Optional, Union
-from typing_extensions import Literal
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, RootModel
 
