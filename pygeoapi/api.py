@@ -60,6 +60,15 @@ from shapely.errors import WKTReadingError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import __version__, l10n
+from pygeoapi.api_ import get_conformance_classes
+from pygeoapi.api_.common import conformance as conformance_common
+from pygeoapi.api_.coverage import conformance as conformance_coverage
+from pygeoapi.api_.edr import conformance as conformance_edr
+from pygeoapi.api_.feature import conformance as conformance_feature
+from pygeoapi.api_.map import conformance as conformance_map
+from pygeoapi.api_.process import conformance as conformance_process
+from pygeoapi.api_.record import conformance as conformance_record
+from pygeoapi.api_.tile import conformance as conformance_tile
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
@@ -120,65 +129,13 @@ FORMAT_TYPES = OrderedDict((
 #: Locale used for system responses (e.g. exceptions)
 SYSTEM_LOCALE = l10n.Locale('en', 'US')
 
-CONFORMANCE = {
-    'common': [
-        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
-        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page',
-        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
-        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/html',
-        'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30'
-    ],
-    'feature': [
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-        'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
-        'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
-        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables',
-        'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
-        'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete',  # noqa
-        'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/schemas',
-        'http://www.opengis.net/spec/ogcapi-features-5/1.0/req/core-roles-features' # noqa
-    ],
-    'coverage': [
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/html',
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',  # noqa
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',  # noqa
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-rangesubset',  # noqa
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-bbox',  # noqa
-        'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-datetime'  # noqa
-    ],
-    'map': [
-        'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
-    ],
-    'tile': [
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/oas30',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets'
-    ],
-    'record': [
-        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/sorting',
-        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/opensearch',
-        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/json',
-        'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/html'
-    ],
-    'process': [
-        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
-        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
-        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30'
-    ],
-    'edr': [
-        'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
-    ]
-}
+CONFORMANCE = {}
+
+for conformance in get_conformance_classes(
+    ogc_specs=[conformance_common, conformance_coverage, conformance_edr,
+               conformance_feature, conformance_map, conformance_process,
+               conformance_record, conformance_tile]):
+    CONFORMANCE.update(conformance.items())
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
