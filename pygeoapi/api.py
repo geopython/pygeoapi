@@ -1423,13 +1423,14 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            LOGGER.debug('Loading coverage provider')
-            p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'coverage'))
-        except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'record'))
+            try:
+                LOGGER.debug('Loading coverage provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+            except ProviderTypeError:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'record'))
         except ProviderGenericError as err:
             LOGGER.error(err)
             return self.get_exception(
@@ -1506,13 +1507,14 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            LOGGER.debug('Loading coverage provider')
-            p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'coverage'))
-        except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'record'))
+            try:
+                LOGGER.debug('Loading coverage provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+            except ProviderTypeError:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'record'))
         except ProviderGenericError as err:
             LOGGER.error(err)
             return self.get_exception(
