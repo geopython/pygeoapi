@@ -3,7 +3,7 @@ azure-storage-blob
 elasticsearch
 elasticsearch-dsl
 fiona
-GDAL<=3.8.3
+GDAL<=3.8.4
 geoalchemy
 netCDF4
 oracledb
