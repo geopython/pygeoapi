@@ -295,7 +295,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
-            metadata['metadata'] = content.model_dump()
+            metadata['metadata'] = content.dict()
             # Some providers may not implement tilejson metadata
             metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
         except ProviderConnectionError:
@@ -357,7 +357,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.model_dump(exclude_none=True)
+        return content.dict(exclude_none=True)
 
     def get_vendor_metadata(self, dataset, server_url, layer, tileset,
                             title, description, keywords, **kwargs):
@@ -376,7 +376,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
-            return content.model_dump()
+            return content.dict()
         except ProviderConnectionError:
             msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
             LOGGER.error(msg)
