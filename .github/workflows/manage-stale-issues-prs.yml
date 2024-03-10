@@ -18,6 +18,7 @@ jobs:
     steps:
       - uses: 'actions/stale@v9'
         with:
+          operations-per-run: 1000
           debug-only: true
           enable-statistics: true
           stale-issue-label: stale
