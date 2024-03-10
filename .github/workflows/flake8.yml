@@ -1,0 +1,24 @@
+name: flake8
+
+on:
+  [ push, pull_request ]
+
+jobs:
+  flake8_py3:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        name: setup Python
+        with:
+          python-version: '3.10'
+      - name: Checkout pygeoapi
+        uses: actions/checkout@master
+      - name: Install flake8
+        run: pip3 install flake8
+      - name: Run flake8
+        uses: suo/flake8-github-action@releases/v1
+        with:
+          checkName: 'flake8_py3'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
