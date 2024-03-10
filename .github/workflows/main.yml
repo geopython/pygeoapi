@@ -78,7 +78,7 @@ jobs:
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: gdal-bin libgdal-dev
-        version: 3.8.3
+        version: 3.8.4
     - name: Install and run Oracle
       run: |
         docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
