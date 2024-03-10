@@ -6,8 +6,8 @@ env:
 
 on:
   schedule:
-    - cron: '1 3 * * 0'  # runs every Sunday at 03h01 UTC
-
+    # - cron: '1 3 * * 0'  # runs every Sunday at 03h01 UTC
+    - cron: '0 * * * *'  # runs every hour, for debugging
 jobs:
   stale:
     permissions:
