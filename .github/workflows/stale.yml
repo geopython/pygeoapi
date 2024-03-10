@@ -7,7 +7,8 @@ env:
 on:
   schedule:
     # - cron: '1 3 * * 0'  # runs every Sunday at 03h01 UTC
-    - cron: '0 * * * *'  # runs every hour, for debugging
+    # - cron: '0 * * * *'  # runs every hour, for debugging
+    - cron: '30 21 * * *'  # first live run, 2024-03-10    
 jobs:
   stale:
     permissions:
@@ -19,7 +20,7 @@ jobs:
       - uses: 'actions/stale@v9'
         with:
           operations-per-run: 1000
-          debug-only: true
+          # debug-only: true
           enable-statistics: true
           stale-issue-label: stale
           stale-pr-label: stale
