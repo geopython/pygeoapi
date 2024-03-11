@@ -50,7 +50,8 @@ from starlette.responses import (
 )
 import uvicorn
 
-from pygeoapi.api import API
+from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.processes as processes_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -113,10 +114,12 @@ async def get_response(
     """
 
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(
+    headers, status, content = await loop.run_in_executor(
         None, call_api_threadsafe, loop, api_call, *args)
+    return _to_response(headers, status, content)
 
-    headers, status, content = result
+
+def _to_response(headers, status, content):
     if headers['Content-Type'] == 'text/html':
         response = HTMLResponse(content=content, status_code=status)
     else:
@@ -127,6 +130,27 @@ async def get_response(
 
     if headers is not None:
         response.headers.update(headers)
+    return response
+
+
+async def execute_from_starlette(api_function, request: Request, *args
+                                 ) -> Response:
+    api_request = await APIRequest.from_starlette(request, api_.locales)
+    content: str | bytes
+    if not api_request.is_valid():
+        headers, status, content = api_.get_format_exception(api_request)
+    else:
+
+        loop = asyncio.get_running_loop()
+        headers, status, content = await loop.run_in_executor(
+            None, call_api_threadsafe, loop, api_function,
+            api_, api_request, *args)
+        # NOTE: that gzip currently doesn't work in starlette
+        #       https://github.com/geopython/pygeoapi/issues/1591
+        content = apply_gzip(headers, content)
+
+    response = _to_response(headers, status, content)
+
     return response
 
 
@@ -389,7 +413,8 @@ async def get_processes(request: Request, process_id=None):
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
-    return await get_response(api_.describe_processes, request, process_id)
+    return await execute_from_starlette(processes_api.describe_processes,
+                                        request, process_id)
 
 
 async def get_jobs(request: Request, job_id=None):
@@ -406,12 +431,14 @@ async def get_jobs(request: Request, job_id=None):
         job_id = request.path_params['job_id']
 
     if job_id is None:  # list of submit job
-        return await get_response(api_.get_jobs, request)
+        return await execute_from_starlette(processes_api.get_jobs, request)
     else:  # get or delete job
         if request.method == 'DELETE':
-            return await get_response(api_.delete_job, job_id)
+            return await execute_from_starlette(processes_api.delete_job,
+                                                request, job_id)
         else:  # Return status of a specific job
-            return await get_response(api_.get_jobs, request, job_id)
+            return await execute_from_starlette(processes_api.get_jobs,
+                                                request, job_id)
 
 
 async def execute_process_jobs(request: Request, process_id=None):
@@ -427,7 +454,8 @@ async def execute_process_jobs(request: Request, process_id=None):
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
-    return await get_response(api_.execute_process, request, process_id)
+    return await execute_from_starlette(processes_api.execute_process,
+                                        request, process_id)
 
 
 async def get_job_result(request: Request, job_id=None):
@@ -443,7 +471,8 @@ async def get_job_result(request: Request, job_id=None):
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
-    return await get_response(api_.get_job_result, request, job_id)
+    return await execute_from_starlette(processes_api.get_job_result,
+                                        request, job_id)
 
 
 async def get_job_result_resource(request: Request,
@@ -463,6 +492,7 @@ async def get_job_result_resource(request: Request,
     if 'resource' in request.path_params:
         resource = request.path_params['resource']
 
+    # TODO: this api function currently doesn't exist
     return await get_response(
         api_.get_job_result_resource, request, job_id, resource)
 

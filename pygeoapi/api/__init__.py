@@ -51,7 +51,6 @@ from typing import Any, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
-import flask
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
@@ -364,6 +363,8 @@ class APIRequest:
         # Get received headers
         self._headers = self.get_request_headers(request.headers)
 
+    # TODO: remove this after all views have been refactored (only used
+    #       in pre_process)
     @classmethod
     def with_data(cls, request, supported_locales) -> 'APIRequest':
         """
@@ -401,13 +402,22 @@ class APIRequest:
         return api_req
 
     @classmethod
-    def from_flask(cls, request: flask.Request, supported_locales
+    def from_flask(cls, request, supported_locales
                    ) -> 'APIRequest':
         """
         Factory class similar to with_data, but only for flask requests
         """
         api_req = cls(request, supported_locales)
         api_req._data = request.data
+        return api_req
+
+    @classmethod
+    async def from_starlette(cls, request, supported_locales) -> 'APIRequest':
+        """
+        Factory class similar to with_data, but only for flask requests
+        """
+        api_req = cls(request, supported_locales)
+        api_req._data = await request.body()
         return api_req
 
     @staticmethod
