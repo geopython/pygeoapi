@@ -86,7 +86,7 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
                            modify_pygeofilter, CrsTransformSpec,
-                           transform_bbox)
+                           transform_bbox, Subscriber)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -174,6 +174,7 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30'
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/callback',
     ],
     'edr': [
         'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
@@ -3492,6 +3493,23 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
+        subscriber = None
+        subscriber_dict = data.get('subscriber')
+        if subscriber_dict:
+            try:
+                success_uri = subscriber_dict['successUri']
+            except KeyError:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'MissingParameterValue', 'Missing successUri')
+            else:
+                subscriber = Subscriber(
+                    # NOTE: successUri is mandatory according to the standard
+                    success_uri=success_uri,
+                    in_progress_uri=subscriber_dict.get('inProgressUri'),
+                    failed_uri=subscriber_dict.get('failedUri'),
+                )
+
         try:
             execution_mode = RequestedProcessExecutionMode(
                 request.headers.get('Prefer', request.headers.get('prefer'))
@@ -3501,7 +3519,11 @@ class API:
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process_id, data_dict, execution_mode=execution_mode)
+                process_id,
+                data_dict,
+                execution_mode=execution_mode,
+                subscriber=subscriber,
+            )
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'

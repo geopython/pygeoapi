@@ -36,6 +36,7 @@ import logging
 import time
 import gzip
 from http import HTTPStatus
+from unittest import mock
 
 from pyld import jsonld
 import pytest
@@ -1738,6 +1739,16 @@ def test_execute_process(config, api_):
             'name': None
         }
     }
+    req_body_7 = {
+        'inputs': {
+            'name': 'Test'
+        },
+        'subscriber': {
+            'successUri': 'https://example.com/success',
+            'inProgressUri': 'https://example.com/inProgress',
+            'failedUri': 'https://example.com/failed',
+        }
+    }
 
     cleanup_jobs = set()
 
@@ -1864,6 +1875,24 @@ def test_execute_process(config, api_):
     response = json.loads(response)
     assert isinstance(response, dict)
     assert code == HTTPStatus.CREATED
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_request(data=req_body_7)
+    with mock.patch(
+        'pygeoapi.process.manager.base.requests.post'
+    ) as post_mocker:
+        rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    assert code == HTTPStatus.OK
+    post_mocker.assert_any_call(
+        req_body_7['subscriber']['inProgressUri'], json={}
+    )
+    post_mocker.assert_any_call(
+        req_body_7['subscriber']['successUri'],
+        json={'id': 'echo', 'value': 'Hello Test!'}
+    )
+    assert post_mocker.call_count == 2
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
