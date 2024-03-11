@@ -49,6 +49,10 @@ To generate the OpenAPI document as JSON, run:
    property names and their data types.  Whenever you make changes to your pygeoapi configuration,
    always refresh the accompanying OpenAPI document.
 
+.. note::
+   By default, pygeoapi OpenAPI document generation will fail on any collection whose provider is improperly
+   configured or when encountering a connection issue.  To skip failing collections, use the
+   --no-fail-on-invalid-collection flag.  The OpenAPI document will then be generated without the failing collection(s)
 
 .. seealso::
    :ref:`openapi` for more information on pygeoapi's OpenAPI support
