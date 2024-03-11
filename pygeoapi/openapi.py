@@ -44,7 +44,7 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import l10n
-from pygeoapi.api import ALL_APIS
+from pygeoapi.api import all_apis
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderTypeError, SchemaType
@@ -1172,7 +1172,7 @@ def get_oas_30(cfg):
 
     oas['paths'] = paths
 
-    for api in ALL_APIS:
+    for api in all_apis():
         sub_oas = api.get_oas_30(cfg, locale_)
         oas['paths'].update(sub_oas['paths'])
         oas['tags'].extend(sub_oas['tags'])

@@ -48,7 +48,7 @@ from typing import Tuple
 from pygeoapi import l10n
 from pygeoapi.util import (
     json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
-    to_json)
+    to_json, DATETIME_FORMAT)
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -57,9 +57,9 @@ from pygeoapi.process.base import (
 from pygeoapi.process.manager.base import get_manager
 
 from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML,
-    DATETIME_FORMAT, F_JSONLD
+    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
 )
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -186,6 +186,13 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 
+def all_apis():
+    # NOTE: this is a function and not a constant to avoid import loops
+    from . import processes
+
+    return [processes]
+
+
 def pre_process(func):
     """
     Decorator that transforms an incoming Request instance specific to the
@@ -3840,10 +3847,3 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
-
-
-# NOTE: this needs to be at the end to avoid import problems
-from . import processes  # noqa
-
-
-ALL_APIS = [processes]
