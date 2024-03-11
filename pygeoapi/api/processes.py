@@ -55,7 +55,6 @@ from pygeoapi.process.base import (
     ProcessorExecuteError,
 )
 from pygeoapi.process.manager.base import get_manager
-from pygeoapi.openapi import OPENAPI_YAML
 
 from . import APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, DATETIME_FORMAT, F_JSONLD
 
@@ -523,4 +522,187 @@ def delete_job(
     LOGGER.info(response)
     # TODO: this response does not have any headers
     return {}, http_status, response
+
+
+def get_oas_30(cfg: dict, locale_: str):
+    from pygeoapi.openapi import OPENAPI_YAML
+
+    oas = {'tags': []}
+
+    paths = {}
+
+    process_manager = get_manager(cfg)
+
+    if len(process_manager.processes) > 0:
+        paths['/processes'] = {
+            'get': {
+                'summary': 'Processes',
+                'description': 'Processes',
+                'tags': ['server'],
+                'operationId': 'getProcesses',
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'responses': {
+                    '200': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ProcessList.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            }
+        }
+
+    LOGGER.debug('setting up processes')
+
+    for k, v in process_manager.processes.items():
+        if k.startswith('_'):
+            LOGGER.debug(f'Skipping hidden layer: {k}')
+            continue
+        name = l10n.translate(k, locale_)
+        p = process_manager.get_processor(k)
+        md_desc = l10n.translate(p.metadata['description'], locale_)
+        process_name_path = f'/processes/{name}'
+        tag = {
+            'name': name,
+            'description': md_desc,  # noqa
+            'externalDocs': {}
+        }
+        for link in p.metadata.get('links', []):
+            if link['type'] == 'information':
+                translated_link = l10n.translate(link, locale_)
+                tag['externalDocs']['description'] = translated_link[
+                    'type']
+                tag['externalDocs']['url'] = translated_link['url']
+                break
+        if len(tag['externalDocs']) == 0:
+            del tag['externalDocs']
+
+        oas['tags'].append(tag)
+
+        paths[process_name_path] = {
+            'get': {
+                'summary': 'Get process metadata',
+                'description': md_desc,
+                'tags': [name],
+                'operationId': f'describe{name.capitalize()}Process',
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            }
+        }
+
+        paths[f'{process_name_path}/execution'] = {
+            'post': {
+                'summary': f"Process {l10n.translate(p.metadata['title'], locale_)} execution",  # noqa
+                'description': md_desc,
+                'tags': [name],
+                'operationId': f'execute{name.capitalize()}Job',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '201': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ExecuteAsync.yaml"},  # noqa
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ServerError.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                },
+                'requestBody': {
+                    'description': 'Mandatory execute request JSON',
+                    'required': True,
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': f"{OPENAPI_YAML['oapip']}/schemas/execute.yaml"  # noqa
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if 'example' in p.metadata:
+            paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
+
+        name_in_path = {
+            'name': 'jobId',
+            'in': 'path',
+            'description': 'job identifier',
+            'required': True,
+            'schema': {
+                'type': 'string'
+            }
+        }
+
+    paths['/jobs'] = {
+        'get': {
+            'summary': 'Retrieve jobs list',
+            'description': 'Retrieve a list of jobs',
+            'tags': ['jobs'],
+            'operationId': 'getJobs',
+            'responses': {
+                '200': {'$ref': '#/components/responses/200'},
+                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                'default': {'$ref': '#/components/responses/default'}
+            }
+        }
+    }
+
+    paths['/jobs/{jobId}'] = {
+        'get': {
+            'summary': 'Retrieve job details',
+            'description': 'Retrieve job details',
+            'tags': ['jobs'],
+            'parameters': [
+                name_in_path,
+                {'$ref': '#/components/parameters/f'}
+            ],
+            'operationId': 'getJob',
+            'responses': {
+                '200': {'$ref': '#/components/responses/200'},
+                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                'default': {'$ref': '#/components/responses/default'}  # noqa
+            }
+        },
+        'delete': {
+            'summary': 'Cancel / delete job',
+            'description': 'Cancel / delete job',
+            'tags': ['jobs'],
+            'parameters': [
+                name_in_path
+            ],
+            'operationId': 'deleteJob',
+            'responses': {
+                '204': {'$ref': '#/components/responses/204'},
+                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                'default': {'$ref': '#/components/responses/default'}  # noqa
+            }
+        },
+    }
+
+    paths['/jobs/{jobId}/results'] = {
+        'get': {
+            'summary': 'Retrieve job results',
+            'description': 'Retrive job resiults',
+            'tags': ['jobs'],
+            'parameters': [
+                name_in_path,
+                {'$ref': '#/components/parameters/f'}
+            ],
+            'operationId': 'getJobResults',
+            'responses': {
+                '200': {'$ref': '#/components/responses/200'},
+                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                'default': {'$ref': '#/components/responses/default'}  # noqa
+            }
+        }
+    }
+
+    oas['paths'] = paths
+
+    tag = {
+        'name': 'jobs',
+        'description': 'Process jobs',
+    }
+    oas['tags'].insert(1, tag)
+
+    return oas
 

@@ -3825,3 +3825,10 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
+
+
+# NOTE: this needs to be at the end to avoid import problems
+from . import processes
+
+
+ALL_APIS = [processes]
