@@ -40,6 +40,8 @@ from werkzeug.test import create_environ
 from werkzeug.wrappers import Request
 from werkzeug.datastructures import ImmutableMultiDict
 
+from pygeoapi.api import APIRequest
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -76,6 +78,24 @@ def mock_request(params: dict = None, data=None, **headers) -> Request:
     request.args = ImmutableMultiDict(params.items())  # noqa
     return request
 
+
+def mock_api_request(params: dict | None = None, data=None, **headers
+                     ) -> APIRequest:
+    """
+    Mocks an APIRequest
+
+    :param params: Optional query parameter dict for the request.
+                   Will be set to {} if omitted.
+    :param data: Optional data/body to send with the request.
+                 Can be text/bytes or a JSON dictionary.
+    :param headers: Optional request HTTP headers to set.
+    :returns: APIRequest instance
+    """
+    return APIRequest.from_flask(
+        mock_request(params=params, data=data, **headers),
+        # NOTE: could also read supported_locales from test config
+        supported_locales=['en-US', 'fr-CA'],
+    )
 
 @contextmanager
 def mock_flask(config_file: str = 'pygeoapi-test-config.yml',

@@ -46,11 +46,14 @@ from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
+from pygeoapi.api.processes import (
+    describe_processes, execute_process, delete_job, get_job_result,
+)
 from pygeoapi.util import (yaml_load, get_crs_from_uri,
                            get_api_rules, get_base_url)
 
 from .util import (get_test_file_path, mock_request,
-                   mock_flask, mock_starlette)
+                   mock_flask, mock_starlette, mock_api_request)
 
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
@@ -1597,31 +1600,31 @@ def test_get_collection_tiles(config, api_):
 
 
 def test_describe_processes(config, api_):
-    req = mock_request({'limit': 1})
+    req = mock_api_request({'limit': 1})
     # Test for description of single processes
-    rsp_headers, code, response = api_.describe_processes(req)
+    rsp_headers, code, response = describe_processes(api_, req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
     assert len(data['processes']) == 1
     assert len(data['links']) == 3
 
-    req = mock_request()
+    req = mock_api_request()
 
     # Test for undefined process
-    rsp_headers, code, response = api_.describe_processes(req, 'foo')
+    rsp_headers, code, response = describe_processes(api_, req, 'foo')
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
 
     # Test for description of all processes
-    rsp_headers, code, response = api_.describe_processes(req)
+    rsp_headers, code, response = describe_processes(api_, req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
     assert len(data['processes']) == 2
     assert len(data['links']) == 3
 
     # Test for particular, defined process
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     process = json.loads(response)
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
@@ -1638,38 +1641,38 @@ def test_describe_processes(config, api_):
     assert 'async-execute' in process['jobControlOptions']
 
     # Check HTML response when requested in headers
-    req = mock_request(HTTP_ACCEPT='text/html')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request(HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: return default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested in headers
-    req = mock_request(HTTP_ACCEPT='application/json')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request(HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check HTML response when requested with query parameter
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: return default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested with query parameter
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'en-US'
 
     # Check JSON response when requested with French language parameter
-    req = mock_request({'lang': 'fr'})
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request({'lang': 'fr'})
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'fr-CA'
@@ -1677,25 +1680,25 @@ def test_describe_processes(config, api_):
     assert process['title'] == 'Bonjour le Monde'
 
     # Check JSON response when language requested in headers
-    req = mock_request(HTTP_ACCEPT_LANGUAGE='fr')
-    rsp_headers, code, response = api_.describe_processes(req, 'hello-world')
+    req = mock_api_request(HTTP_ACCEPT_LANGUAGE='fr')
+    rsp_headers, code, response = describe_processes(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
     assert rsp_headers['Content-Language'] == 'fr-CA'
 
     # Test for undefined process
-    req = mock_request()
-    rsp_headers, code, response = api_.describe_processes(req, 'goodbye-world')
+    req = mock_api_request()
+    rsp_headers, code, response = describe_processes(api_, req, 'goodbye-world')
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSON]
 
     # Test describe doesn't crash if example is missing
-    req = mock_request()
+    req = mock_api_request()
     processor = api_.manager.get_processor("hello-world")
     example = processor.metadata.pop("example")
-    rsp_headers, code, response = api_.describe_processes(req)
+    rsp_headers, code, response = describe_processes(api_, req)
     processor.metadata['example'] = example
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1742,8 +1745,8 @@ def test_execute_process(config, api_):
     cleanup_jobs = set()
 
     # Test posting empty payload to existing process
-    req = mock_request(data='')
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data='')
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
     assert rsp_headers['Content-Language'] == 'en-US'
 
     data = json.loads(response)
@@ -1751,15 +1754,15 @@ def test_execute_process(config, api_):
     assert 'Location' not in rsp_headers
     assert data['code'] == 'MissingParameterValue'
 
-    req = mock_request(data=req_body_0)
-    rsp_headers, code, response = api_.execute_process(req, 'foo')
+    req = mock_api_request(data=req_body_0)
+    rsp_headers, code, response = execute_process(api_, req, 'foo')
 
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert 'Location' not in rsp_headers
     assert data['code'] == 'NoSuchProcess'
 
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1772,8 +1775,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_1)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data=req_body_1)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1786,8 +1789,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_2)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data=req_body_2)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1797,8 +1800,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_3)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data=req_body_3)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1808,8 +1811,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_4)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data=req_body_4)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.BAD_REQUEST
@@ -1818,20 +1821,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_5)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-    data = json.loads(response)
-    assert code == HTTPStatus.BAD_REQUEST
-    assert 'Location' in rsp_headers
-    assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
-
-    cleanup_jobs.add(tuple(['hello-world',
-                            rsp_headers['Location'].split('/')[-1]]))
-
-    req = mock_request(data=req_body_6)
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
-
+    req = mock_api_request(data=req_body_5)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
     data = json.loads(response)
     assert code == HTTPStatus.BAD_REQUEST
     assert 'Location' in rsp_headers
@@ -1841,15 +1832,27 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_0)
-    rsp_headers, code, response = api_.execute_process(req, 'goodbye-world')
+    req = mock_api_request(data=req_body_6)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+
+    data = json.loads(response)
+    assert code == HTTPStatus.BAD_REQUEST
+    assert 'Location' in rsp_headers
+    assert data['code'] == 'InvalidParameterValue'
+    assert data['description'] == 'Error updating job'
+
+    cleanup_jobs.add(tuple(['hello-world',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_api_request(data=req_body_0)
+    rsp_headers, code, response = execute_process(api_, req, 'goodbye-world')
 
     response = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert 'Location' not in rsp_headers
     assert response['code'] == 'NoSuchProcess'
 
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     response = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1857,8 +1860,8 @@ def test_execute_process(config, api_):
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
 
-    req = mock_request(data=req_body_1, HTTP_Prefer='respond-async')
-    rsp_headers, code, response = api_.execute_process(req, 'hello-world')
+    req = mock_api_request(data=req_body_1, HTTP_Prefer='respond-async')
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     assert 'Location' in rsp_headers
     response = json.loads(response)
@@ -1871,7 +1874,7 @@ def test_execute_process(config, api_):
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
     for _, job_id in cleanup_jobs:
-        rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
+        rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
         assert code == HTTPStatus.OK
 
 
@@ -1882,9 +1885,8 @@ def _execute_a_job(api_):
         }
     }
 
-    req = mock_request(data=req_body_sync)
-    rsp_headers, code, response = api_.execute_process(
-        req, 'hello-world')
+    req = mock_api_request(data=req_body_sync)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     data = json.loads(response)
     assert code == HTTPStatus.OK
@@ -1896,8 +1898,7 @@ def _execute_a_job(api_):
 
 
 def test_delete_job(api_):
-    rsp_headers, code, response = api_.delete_job(
-        mock_request(), 'does-not-exist')
+    rsp_headers, code, response = delete_job(api_, mock_api_request(), 'does-not-exist')
 
     assert code == HTTPStatus.NOT_FOUND
     req_body_async = {
@@ -1906,43 +1907,42 @@ def test_delete_job(api_):
         }
     }
     job_id = _execute_a_job(api_)
-    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
+    rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
 
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
+    rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request(data=req_body_async, HTTP_Prefer='respond-async')
-    rsp_headers, code, response = api_.execute_process(
-        req, 'hello-world')
+    req = mock_api_request(data=req_body_async, HTTP_Prefer='respond-async')
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     assert code == HTTPStatus.CREATED
     assert 'Location' in rsp_headers
 
     time.sleep(2)  # Allow time for async execution to complete
     job_id = rsp_headers['Location'].split('/')[-1]
-    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
+    rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
     assert code == HTTPStatus.OK
 
-    rsp_headers, code, response = api_.delete_job(mock_request(), job_id)
+    rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
 
 
 def test_get_job_result(api_):
-    rsp_headers, code, response = api_.get_job_result(mock_request(),
+    rsp_headers, code, response = get_job_result(api_, mock_api_request(),
                                                       'not-exist')
     assert code == HTTPStatus.NOT_FOUND
 
     job_id = _execute_a_job(api_)
-    rsp_headers, code, response = api_.get_job_result(mock_request(), job_id)
+    rsp_headers, code, response = get_job_result(api_, mock_api_request(), job_id)
     # default response is html
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
     assert 'Hello Sync Test!' in response
 
-    rsp_headers, code, response = api_.get_job_result(
-         mock_request({'f': 'json'}), job_id,
+    rsp_headers, code, response = get_job_result(api_,
+         mock_api_request({'f': 'json'}), job_id,
      )
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'application/json'

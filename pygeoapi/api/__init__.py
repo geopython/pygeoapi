@@ -52,6 +52,7 @@ from typing import Any, Tuple, Union, Optional
 import urllib.parse
 
 from dateutil.parser import parse as dateparse
+import flask
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
@@ -375,6 +376,16 @@ class APIRequest:
                 loop = asyncio.get_event_loop()
                 api_req._data = asyncio.run_coroutine_threadsafe(
                     request.body(), loop).result(1)
+        return api_req
+
+    @classmethod
+    def from_flask(cls, request: flask.Request, supported_locales
+                   ) -> 'APIRequest':
+        """
+        Factory class similar to with_data, but only for flask requests
+        """
+        api_req = cls(request, supported_locales)
+        api_req._data = request.data
         return api_req
 
     @staticmethod

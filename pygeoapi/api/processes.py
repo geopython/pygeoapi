@@ -38,11 +38,14 @@
 # =================================================================
 
 
+from copy import deepcopy
+from datetime import datetime, timezone
 import logging
-import json
 from http import HTTPStatus
+import json
 from typing import Tuple
 
+from pygeoapi import l10n
 from pygeoapi.util import (
     json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
     to_json)
@@ -54,15 +57,12 @@ from pygeoapi.process.base import (
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.openapi import OPENAPI_YAML
 
-from . import APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES
+from . import APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, DATETIME_FORMAT, F_JSONLD
 
 LOGGER = logging.getLogger(__name__)
 
 
-@gzip
-@pre_process
-@jsonldify
-def describe_processes(self, request: Union[APIRequest, Any],
+def describe_processes(api: API, request: APIRequest,
                        process=None) -> Tuple[dict, int, str]:
     """
     Provide processes metadata
@@ -76,18 +76,16 @@ def describe_processes(self, request: Union[APIRequest, Any],
 
     processes = []
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     if process is not None:
-        if process not in self.manager.processes.keys():
+        if process not in api.manager.processes.keys():
             msg = 'Identifier not found'
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers,
                 request.format, 'NoSuchProcess', msg)
 
-    if len(self.manager.processes) > 0:
+    if len(api.manager.processes) > 0:
         if process is not None:
             relevant_processes = [process]
         else:
@@ -97,22 +95,22 @@ def describe_processes(self, request: Union[APIRequest, Any],
 
                 if limit <= 0:
                     msg = 'limit value should be strictly positive'
-                    return self.get_exception(
+                    return api.get_exception(
                         HTTPStatus.BAD_REQUEST, headers, request.format,
                         'InvalidParameterValue', msg)
 
-                relevant_processes = list(self.manager.processes)[:limit]
+                relevant_processes = list(api.manager.processes)[:limit]
             except TypeError:
                 LOGGER.debug('returning all processes')
-                relevant_processes = self.manager.processes.keys()
+                relevant_processes = api.manager.processes.keys()
             except ValueError:
                 msg = 'limit value should be an integer'
-                return self.get_exception(
+                return api.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
 
         for key in relevant_processes:
-            p = self.manager.get_processor(key)
+            p = api.manager.get_processor(key)
             p2 = l10n.translate_struct(deepcopy(p.metadata),
                                        request.locale)
             p2['id'] = key
@@ -123,14 +121,14 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 p2.pop('example', None)
 
             p2['jobControlOptions'] = ['sync-execute']
-            if self.manager.is_async:
+            if api.manager.is_async:
                 p2['jobControlOptions'].append('async-execute')
 
             p2['outputTransmission'] = ['value']
             p2['links'] = p2.get('links', [])
 
-            jobs_url = f"{self.base_url}/jobs"
-            process_url = f"{self.base_url}/processes/{key}"
+            jobs_url = f"{api.base_url}/jobs"
+            process_url = f"{api.base_url}/processes/{key}"
 
             # TODO translation support
             link = {
@@ -138,7 +136,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 'rel': request.get_linkrel(F_JSON),
                 'href': f'{process_url}?f={F_JSON}',
                 'title': 'Process description as JSON',
-                'hreflang': self.default_locale
+                'hreflang': api.default_locale
             }
             p2['links'].append(link)
 
@@ -147,7 +145,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 'rel': request.get_linkrel(F_HTML),
                 'href': f'{process_url}?f={F_HTML}',
                 'title': 'Process description as HTML',
-                'hreflang': self.default_locale
+                'hreflang': api.default_locale
             }
             p2['links'].append(link)
 
@@ -156,7 +154,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_HTML}',
                 'title': 'jobs for this process as HTML',
-                'hreflang': self.default_locale
+                'hreflang': api.default_locale
             }
             p2['links'].append(link)
 
@@ -165,7 +163,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_JSON}',
                 'title': 'jobs for this process as JSON',
-                'hreflang': self.default_locale
+                'hreflang': api.default_locale
             }
             p2['links'].append(link)
 
@@ -174,7 +172,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/execute',
                 'href': f'{process_url}/execution?f={F_JSON}',
                 'title': 'Execution for this process as JSON',
-                'hreflang': self.default_locale
+                'hreflang': api.default_locale
             }
             p2['links'].append(link)
 
@@ -183,7 +181,7 @@ def describe_processes(self, request: Union[APIRequest, Any],
     if process is not None:
         response = processes[0]
     else:
-        process_url = f"{self.base_url}/processes"
+        process_url = f"{api.base_url}/processes"
         response = {
             'processes': processes,
             'links': [{
@@ -206,21 +204,20 @@ def describe_processes(self, request: Union[APIRequest, Any],
 
     if request.format == F_HTML:  # render
         if process is not None:
-            response = render_j2_template(self.tpl_config,
+            response = render_j2_template(api.tpl_config,
                                           'processes/process.html',
                                           response, request.locale)
         else:
-            response = render_j2_template(self.tpl_config,
+            response = render_j2_template(api.tpl_config,
                                           'processes/index.html', response,
                                           request.locale)
 
         return headers, HTTPStatus.OK, response
 
-    return headers, HTTPStatus.OK, to_json(response, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
-@gzip
-@pre_process
-def get_jobs(self, request: Union[APIRequest, Any],
+# TODO: get_jobs doesn't have tests
+def get_jobs(api: API, request: APIRequest,
              job_id=None) -> Tuple[dict, int, str]:
     """
     Get process jobs
@@ -231,31 +228,29 @@ def get_jobs(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE,
-                                           **self.api_headers)
+                                           **api.api_headers)
     if job_id is None:
-        jobs = sorted(self.manager.get_jobs(),
+        jobs = sorted(api.manager.get_jobs(),
                       key=lambda k: k['job_start_datetime'],
                       reverse=True)
     else:
         try:
-            jobs = [self.manager.get_job(job_id)]
+            jobs = [api.manager.get_job(job_id)]
         except JobNotFoundError:
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format,
                 'InvalidParameterValue', job_id)
 
     serialized_jobs = {
         'jobs': [],
         'links': [{
-            'href': f"{self.base_url}/jobs?f={F_HTML}",
+            'href': f"{api.base_url}/jobs?f={F_HTML}",
             'rel': request.get_linkrel(F_HTML),
             'type': FORMAT_TYPES[F_HTML],
             'title': 'Jobs list as HTML'
         }, {
-            'href': f"{self.base_url}/jobs?f={F_JSON}",
+            'href': f"{api.base_url}/jobs?f={F_JSON}",
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Jobs list as JSON'
@@ -278,7 +273,7 @@ def get_jobs(self, request: Union[APIRequest, Any],
         if JobStatus[job_['status']] in (
            JobStatus.successful, JobStatus.running, JobStatus.accepted):
 
-            job_result_url = f"{self.base_url}/jobs/{job_['identifier']}/results"  # noqa
+            job_result_url = f"{api.base_url}/jobs/{job_['identifier']}/results"  # noqa
 
             job2['links'] = [{
                 'href': f'{job_result_url}?f={F_HTML}',
@@ -315,16 +310,14 @@ def get_jobs(self, request: Union[APIRequest, Any],
             'jobs': serialized_jobs,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
-        response = render_j2_template(self.tpl_config, j2_template, data,
+        response = render_j2_template(api.tpl_config, j2_template, data,
                                       request.locale)
         return headers, HTTPStatus.OK, response
 
     return headers, HTTPStatus.OK, to_json(serialized_jobs,
-                                           self.pretty_print)
+                                           api.pretty_print)
 
-@gzip
-@pre_process
-def execute_process(self, request: Union[APIRequest, Any],
+def execute_process(api: API, request: APIRequest,
                     process_id) -> Tuple[dict, int, str]:
     """
     Execute process
@@ -335,15 +328,12 @@ def execute_process(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
-
     # Responses are always in US English only
     headers = request.get_response_headers(SYSTEM_LOCALE,
-                                           **self.api_headers)
-    if process_id not in self.manager.processes:
+                                           **api.api_headers)
+    if process_id not in api.manager.processes:
         msg = 'identifier not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers,
             request.format, 'NoSuchProcess', msg)
 
@@ -352,7 +342,7 @@ def execute_process(self, request: Union[APIRequest, Any],
         # TODO not all processes require input, e.g. time-dependent or
         #      random value generators
         msg = 'missing request data'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'MissingParameterValue', msg)
 
@@ -369,7 +359,7 @@ def execute_process(self, request: Union[APIRequest, Any],
         # Input does not appear to be valid JSON
         LOGGER.error(err)
         msg = 'invalid request data'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
@@ -384,14 +374,14 @@ def execute_process(self, request: Union[APIRequest, Any],
         execution_mode = None
     try:
         LOGGER.debug('Executing process')
-        result = self.manager.execute_process(
+        result = api.manager.execute_process(
             process_id, data_dict, execution_mode=execution_mode)
         job_id, mime_type, outputs, status, additional_headers = result
         headers.update(additional_headers or {})
-        headers['Location'] = f'{self.base_url}/jobs/{job_id}'
+        headers['Location'] = f'{api.base_url}/jobs/{job_id}'
     except ProcessorExecuteError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers,
             request.format, err.ogc_exception_code, err.message)
 
@@ -413,15 +403,13 @@ def execute_process(self, request: Union[APIRequest, Any],
         http_status = HTTPStatus.OK
 
     if mime_type == 'application/json':
-        response2 = to_json(response, self.pretty_print)
+        response2 = to_json(response, api.pretty_print)
     else:
         response2 = response
 
     return headers, http_status, response2
 
-@gzip
-@pre_process
-def get_job_result(self, request: Union[APIRequest, Any],
+def get_job_result(api: API, request: APIRequest,
                    job_id) -> Tuple[dict, int, str]:
     """
     Get result of job (instance of a process)
@@ -432,14 +420,12 @@ def get_job_result(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE,
-                                           **self.api_headers)
+                                           **api.api_headers)
     try:
-        job = self.manager.get_job(job_id)
+        job = api.manager.get_job(job_id)
     except JobNotFoundError:
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers,
             request.format, 'NoSuchJob', job_id
         )
@@ -448,27 +434,27 @@ def get_job_result(self, request: Union[APIRequest, Any],
 
     if status == JobStatus.running:
         msg = 'job still running'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers,
             request.format, 'ResultNotReady', msg)
 
     elif status == JobStatus.accepted:
         # NOTE: this case is not mentioned in the specification
         msg = 'job accepted but not yet running'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers,
             request.format, 'ResultNotReady', msg)
 
     elif status == JobStatus.failed:
         msg = 'job failed'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
     try:
-        mimetype, job_output = self.manager.get_job_result(job_id)
+        mimetype, job_output = api.manager.get_job_result(job_id)
     except JobResultNotFoundError:
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR, headers,
             request.format, 'JobResultNotFound', job_id
         )
@@ -488,14 +474,13 @@ def get_job_result(self, request: Union[APIRequest, Any],
                 'result': job_output
             }
             content = render_j2_template(
-                self.config, 'jobs/results/index.html',
+                api.config, 'jobs/results/index.html',
                 data, request.locale)
 
     return headers, HTTPStatus.OK, content
 
-@pre_process
 def delete_job(
-        self, request: Union[APIRequest, Any], job_id
+    api: API, request: APIRequest, job_id
 ) -> Tuple[dict, int, str]:
     """
     Delete a process job
@@ -505,18 +490,18 @@ def delete_job(
     :returns: tuple of headers, status code, content
     """
     response_headers = request.get_response_headers(
-        SYSTEM_LOCALE, **self.api_headers)
+        SYSTEM_LOCALE, **api.api_headers)
     try:
-        success = self.manager.delete_job(job_id)
+        success = api.manager.delete_job(job_id)
     except JobNotFoundError:
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, response_headers, request.format,
             'NoSuchJob', job_id
         )
     else:
         if success:
             http_status = HTTPStatus.OK
-            jobs_url = f"{self.base_url}/jobs"
+            jobs_url = f"{api.base_url}/jobs"
 
             response = {
                 'jobID': job_id,
@@ -531,7 +516,7 @@ def delete_job(
                 }]
             }
         else:
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, response_headers,
                 request.format, 'InternalError', job_id
             )
