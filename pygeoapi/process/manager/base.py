@@ -37,6 +37,7 @@ from multiprocessing import dummy
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
+
 import requests
 
 from pygeoapi.plugin import load_plugin
