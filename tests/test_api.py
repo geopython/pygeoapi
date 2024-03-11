@@ -1688,7 +1688,8 @@ def test_describe_processes(config, api_):
 
     # Test for undefined process
     req = mock_api_request()
-    rsp_headers, code, response = describe_processes(api_, req, 'goodbye-world')
+    rsp_headers, code, response = describe_processes(api_, req,
+                                                     'goodbye-world')
     data = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
     assert data['code'] == 'NoSuchProcess'
@@ -1874,7 +1875,8 @@ def test_execute_process(config, api_):
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs
     for _, job_id in cleanup_jobs:
-        rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
+        rsp_headers, code, response = delete_job(api_, mock_api_request(),
+                                                 job_id)
         assert code == HTTPStatus.OK
 
 
@@ -1898,7 +1900,8 @@ def _execute_a_job(api_):
 
 
 def test_delete_job(api_):
-    rsp_headers, code, response = delete_job(api_, mock_api_request(), 'does-not-exist')
+    rsp_headers, code, response = delete_job(api_, mock_api_request(),
+                                             'does-not-exist')
 
     assert code == HTTPStatus.NOT_FOUND
     req_body_async = {
@@ -1930,20 +1933,22 @@ def test_delete_job(api_):
 
 
 def test_get_job_result(api_):
-    rsp_headers, code, response = get_job_result(api_, mock_api_request(),
-                                                      'not-exist')
+    rsp_headers, code, response = get_job_result(
+        api_, mock_api_request(), 'not-exist',
+    )
     assert code == HTTPStatus.NOT_FOUND
 
     job_id = _execute_a_job(api_)
-    rsp_headers, code, response = get_job_result(api_, mock_api_request(), job_id)
+    rsp_headers, code, response = get_job_result(api_, mock_api_request(),
+                                                 job_id)
     # default response is html
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
     assert 'Hello Sync Test!' in response
 
-    rsp_headers, code, response = get_job_result(api_,
-         mock_api_request({'f': 'json'}), job_id,
-     )
+    rsp_headers, code, response = get_job_result(
+        api_, mock_api_request({'f': 'json'}), job_id,
+    )
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'application/json'
     assert json.loads(response)['value'] == "Hello Sync Test!"

@@ -97,6 +97,7 @@ def mock_api_request(params: dict | None = None, data=None, **headers
         supported_locales=['en-US', 'fr-CA'],
     )
 
+
 @contextmanager
 def mock_flask(config_file: str = 'pygeoapi-test-config.yml',
                openapi_file: str = 'pygeoapi-test-openapi.yml',

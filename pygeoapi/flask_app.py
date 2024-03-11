@@ -34,8 +34,8 @@ import os
 
 import click
 
-from flask import (Flask, Blueprint, make_response, request, send_from_directory,
-                   Response, Request)
+from flask import (Flask, Blueprint, make_response, request,
+                   send_from_directory, Response, Request)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.processes as processes_api
@@ -373,7 +373,8 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    return execute_from_flask(processes_api.describe_processes, request, process_id)
+    return execute_from_flask(processes_api.describe_processes, request,
+                              process_id)
 
 
 @BLUEPRINT.route('/jobs')
@@ -407,7 +408,8 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
-    return execute_from_flask(processes_api.execute_process, request, process_id)
+    return execute_from_flask(processes_api.execute_process, request,
+                              process_id)
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results',

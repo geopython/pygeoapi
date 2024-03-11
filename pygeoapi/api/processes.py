@@ -56,7 +56,10 @@ from pygeoapi.process.base import (
 )
 from pygeoapi.process.manager.base import get_manager
 
-from . import APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, DATETIME_FORMAT, F_JSONLD
+from . import (
+    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML,
+    DATETIME_FORMAT, F_JSONLD
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -215,6 +218,7 @@ def describe_processes(api: API, request: APIRequest,
 
     return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
+
 # TODO: get_jobs doesn't have tests
 def get_jobs(api: API, request: APIRequest,
              job_id=None) -> Tuple[dict, int, str]:
@@ -316,6 +320,7 @@ def get_jobs(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, to_json(serialized_jobs,
                                            api.pretty_print)
 
+
 def execute_process(api: API, request: APIRequest,
                     process_id) -> Tuple[dict, int, str]:
     """
@@ -408,6 +413,7 @@ def execute_process(api: API, request: APIRequest,
 
     return headers, http_status, response2
 
+
 def get_job_result(api: API, request: APIRequest,
                    job_id) -> Tuple[dict, int, str]:
     """
@@ -477,6 +483,7 @@ def get_job_result(api: API, request: APIRequest,
                 data, request.locale)
 
     return headers, HTTPStatus.OK, content
+
 
 def delete_job(
     api: API, request: APIRequest, job_id
@@ -705,4 +712,3 @@ def get_oas_30(cfg: dict, locale_: str):
     oas['tags'].insert(1, tag)
 
     return oas
-

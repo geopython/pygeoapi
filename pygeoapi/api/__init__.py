@@ -41,11 +41,10 @@ Returns content from plugins and sets responses.
 import asyncio
 from collections import OrderedDict
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import partial
 from gzip import compress
 from http import HTTPStatus
-import json
 import logging
 import re
 from typing import Any, Tuple, Union, Optional
@@ -65,11 +64,6 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import (geojson2jsonld, jsonldify,
                                   jsonldify_collection)
 from pygeoapi.log import setup_logger
-from pygeoapi.process.base import (
-    JobNotFoundError,
-    JobResultNotFoundError,
-    ProcessorExecuteError,
-)
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
@@ -79,11 +73,11 @@ from pygeoapi.models.provider.base import (TilesMetadataFormat,
                                            TileMatrixSetEnum)
 
 from pygeoapi.models.cql import CQLModel
-from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
-                           DATETIME_FORMAT, UrlPrefetcher,
+from pygeoapi.util import (dategetter,
+                           UrlPrefetcher,
                            filter_dict_by_key_value, get_provider_by_type,
-                           get_provider_default, get_typed_value, JobStatus,
-                           json_serial, render_j2_template, str2bool,
+                           get_provider_default, get_typed_value,
+                           render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
                            modify_pygeofilter, CrsTransformSpec,
@@ -3849,7 +3843,7 @@ def validate_subset(value: str) -> dict:
 
 
 # NOTE: this needs to be at the end to avoid import problems
-from . import processes
+from . import processes  # noqa
 
 
 ALL_APIS = [processes]
