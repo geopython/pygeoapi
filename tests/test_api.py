@@ -1744,9 +1744,9 @@ def test_execute_process(config, api_):
             'name': 'Test'
         },
         'subscriber': {
-            'successUri': 'invalid://example.com/success',
-            'inProgressUri': 'invalid://example.com/inProgress',
-            'failedUri': 'invalid://example.com/failed',
+            'successUri': 'https://example.com/success',
+            'inProgressUri': 'https://example.com/inProgress',
+            'failedUri': 'https://example.com/failed',
         }
     }
 
