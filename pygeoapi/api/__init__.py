@@ -214,6 +214,7 @@ def pre_process(func):
     return inner
 
 
+# TODO: remove this when all functions have been refactored
 def gzip(func):
     """
     Decorator that compresses the content of an outgoing API result
@@ -243,6 +244,26 @@ def gzip(func):
         return headers, status, content
 
     return inner
+
+
+def apply_gzip(headers: dict, content: str | bytes) -> str | bytes:
+    """
+    Compress content if requested in header.
+    """
+    charset = CHARSET[0]
+    if F_GZIP in headers.get('Content-Encoding', []):
+        try:
+            if isinstance(content, bytes):
+                # bytes means Content-Type needs to be set upstream
+                content = compress(content)
+            else:
+                headers['Content-Type'] = \
+                    f"{headers['Content-Type']}; charset={charset}"
+                content = compress(content.encode(charset))
+        except TypeError as err:
+            headers.pop('Content-Encoding')
+            LOGGER.error(f'Error in compression: {err}')
+    return content
 
 
 class APIRequest:

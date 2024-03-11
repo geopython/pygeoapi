@@ -34,9 +34,11 @@ import os
 
 import click
 
-from flask import Flask, Blueprint, make_response, request, send_from_directory
+from flask import (Flask, Blueprint, make_response, request, send_from_directory,
+                   Response, Request)
 
-from pygeoapi.api import API
+from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.processes as processes_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -107,6 +109,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
+# TODO: inline in execute_from_flask when all views have been refactored
 def get_response(result: tuple):
     """
     Creates a Flask Response object and updates matching headers.
@@ -123,6 +126,21 @@ def get_response(result: tuple):
     if headers:
         response.headers = headers
     return response
+
+
+def execute_from_flask(api_function, request: Request, *args
+                       ) -> Response:
+    api_request = APIRequest.from_flask(request, api_.locales)
+    content: str | bytes
+    if not api_request.is_valid():
+        headers, status, content = api_.get_format_exception(api_request)
+    else:
+
+        headers, status, content = api_function(api_, api_request, *args)
+        content = apply_gzip(headers, content)
+        # handle jsonld too?
+
+    return get_response((headers, status, content))
 
 
 @BLUEPRINT.route('/')
@@ -355,7 +373,7 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_processes(request, process_id))
+    return execute_from_flask(processes_api.describe_processes, request, process_id)
 
 
 @BLUEPRINT.route('/jobs')
@@ -371,12 +389,12 @@ def get_jobs(job_id=None):
     """
 
     if job_id is None:
-        return get_response(api_.get_jobs(request))
+        return execute_from_flask(processes_api.get_jobs, request)
     else:
         if request.method == 'DELETE':  # dismiss job
-            return get_response(api_.delete_job(request, job_id))
+            return execute_from_flask(processes_api.delete_jobs, request)
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            return execute_from_flask(processes_api.get_jobs, request, job_id)
 
 
 @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
@@ -389,7 +407,7 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
-    return get_response(api_.execute_process(request, process_id))
+    return execute_from_flask(processes_api.execute_process, request, process_id)
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results',
@@ -402,7 +420,7 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_job_result(request, job_id))
+    return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results/<resource>',
@@ -416,6 +434,7 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
+    # TODO: this does not seem to exist?
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
 
