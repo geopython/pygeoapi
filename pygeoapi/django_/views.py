@@ -42,6 +42,7 @@ from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.environmental_data_retrieval as edr_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -444,17 +445,14 @@ def get_collection_edr_query(
         query_type = 'locations'
     else:
         query_type = request.path.split('/')[-1]
-    response_ = _feed_response(
+    return execute_from_django(
+        edr_api.get.get_collection_edr_query,
         request,
-        'get_collection_edr_query',
         collection_id,
         instance_id,
         query_type,
         location_id
     )
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:

@@ -39,6 +39,7 @@ from flask import (Flask, Blueprint, make_response, request,
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.environmental_data_retrieval as edr_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -473,9 +474,10 @@ def get_collection_edr_query(collection_id, instance_id=None,
     else:
         query_type = request.path.split('/')[-1]
 
-    return get_response(api_.get_collection_edr_query(request, collection_id,
-                                                      instance_id, query_type,
-                                                      location_id))
+    return execute_from_flask(
+        edr_api.get_collection_edr_query, request, collection_id, instance_id,
+        query_type, location_id,
+    )
 
 
 @BLUEPRINT.route('/stac')

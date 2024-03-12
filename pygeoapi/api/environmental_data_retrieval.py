@@ -38,32 +38,32 @@
 # =================================================================
 
 
-from copy import deepcopy
-from datetime import datetime, timezone
 import logging
 from http import HTTPStatus
-import json
 from typing import Tuple
 
-from pygeoapi import l10n
+from shapely.errors import WKTReadingError
+from shapely.wkt import loads as shapely_loads
+
+from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
-    json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
-    to_json, DATETIME_FORMAT)
+    get_provider_by_type, render_j2_template, to_json,
+    filter_dict_by_key_value,
+)
 
 from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
+    APIRequest, API, F_HTML, validate_datetime, validate_bbox
 )
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@gzip
-@pre_process
 def get_collection_edr_query(
-        self, request: Union[APIRequest, Any],
-        dataset, instance, query_type,
-        location_id=None) -> Tuple[dict, int, str]:
+    api: API, request: APIRequest, dataset, instance, query_type,
+    location_id=None
+) -> Tuple[dict, int, str]:
     """
     Queries collection EDR
 
@@ -77,15 +77,15 @@ def get_collection_edr_query(
     """
 
     if not request.is_valid(PLUGINS['formatter'].keys()):
-        return self.get_format_exception(request)
-    headers = request.get_response_headers(self.default_locale,
-                                           **self.api_headers)
-    collections = filter_dict_by_key_value(self.config['resources'],
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(api.default_locale,
+                                           **api.api_headers)
+    collections = filter_dict_by_key_value(api.config['resources'],
                                            'type', 'collection')
 
     if dataset not in collections.keys():
         msg = 'Collection not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Processing query parameters')
@@ -97,7 +97,7 @@ def get_collection_edr_query(
                                       datetime_)
     except ValueError as err:
         msg = str(err)
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
@@ -114,7 +114,7 @@ def get_collection_edr_query(
             if not bbox and query_type == 'cube':
                 raise ValueError('bbox parameter required by cube queries')
         except ValueError as err:
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', str(err))
 
@@ -126,12 +126,12 @@ def get_collection_edr_query(
             wkt = shapely_loads(wkt)
         except WKTReadingError:
             msg = 'invalid coords parameter'
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     elif query_type not in ['cube', 'locations']:
         msg = 'missing coords parameter'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
@@ -150,26 +150,26 @@ def get_collection_edr_query(
             collections[dataset]['providers'], 'edr'))
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
     if instance is not None and not p.get_instance(instance):
         msg = 'Invalid instance identifier'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers,
             request.format, 'InvalidParameterValue', msg)
 
     if query_type not in p.get_query_types():
         msg = 'Unsupported query type'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
     if parameternames and not any((fld in parameternames)
                                   for fld in p.get_fields().keys()):
         msg = 'Invalid parameter_names'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
@@ -184,7 +184,7 @@ def get_collection_edr_query(
         bbox=bbox,
         within=within,
         within_units=within_units,
-        limit=int(self.config['server']['limit']),
+        limit=int(api.config['server']['limit']),
         location_id=location_id,
     )
 
@@ -192,16 +192,15 @@ def get_collection_edr_query(
         data = p.query(**query_args)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'collections/edr/query.html', data,
-                                     self.default_locale)
+                                     api.default_locale)
     else:
-        content = to_json(data, self.pretty_print)
+        content = to_json(data, api.pretty_print)
 
     return headers, HTTPStatus.OK, content
-

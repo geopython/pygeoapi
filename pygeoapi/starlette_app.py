@@ -52,6 +52,7 @@ import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.environmental_data_retrieval as edr_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -514,8 +515,8 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
         instance_id = request.path_params['instance_id']
 
     query_type = request["path"].split('/')[-1]  # noqa
-    return await get_response(
-        api_.get_collection_edr_query, request, collection_id,
+    return await execute_from_starlette(
+        edr_api.get_collection_edr_query, request, collection_id,
         instance_id, query_type
     )
 

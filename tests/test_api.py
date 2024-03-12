@@ -46,6 +46,7 @@ from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
+from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result,
 )
@@ -1956,7 +1957,7 @@ def test_get_job_result(api_):
 
 def test_get_collection_edr_query(config, api_):
     # edr resource
-    req = mock_request()
+    req = mock_api_request()
     rsp_headers, code, response = api_.describe_collections(req, 'icoads-sst')
     collection = json.loads(response)
     parameter_names = list(collection['parameter_names'].keys())
@@ -1965,34 +1966,34 @@ def test_get_collection_edr_query(config, api_):
     assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # no coords parameter
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
     # bad query type
-    req = mock_request({'coords': 'POINT(11 11)'})
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'corridor')
+    req = mock_api_request({'coords': 'POINT(11 11)'})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'corridor')
     assert code == HTTPStatus.BAD_REQUEST
 
     # bad coords parameter
-    req = mock_request({'coords': 'gah'})
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    req = mock_api_request({'coords': 'gah'})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
     # bad parameter_names parameter
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)', 'parameter_names': 'bad'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
     # all parameters
-    req = mock_request({'coords': 'POINT(11 11)'})
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    req = mock_api_request({'coords': 'POINT(11 11)'})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -2013,11 +2014,11 @@ def test_get_collection_edr_query(config, api_):
     assert parameters == ['AIRT', 'SST', 'UWND', 'VWND']
 
     # single parameter
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)', 'parameter_names': 'SST'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -2026,21 +2027,21 @@ def test_get_collection_edr_query(config, api_):
     assert list(data['parameters'].keys())[0] == 'SST'
 
     # Zulu time zone
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)',
         'datetime': '2000-01-17T00:00:00Z/2000-06-16T23:00:00Z'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     # bounded date range
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)',
         'datetime': '2000-01-17/2000-06-16'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -2051,12 +2052,12 @@ def test_get_collection_edr_query(config, api_):
     assert time_dict['num'] == 5
 
     # unbounded date range - start
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)',
         'datetime': '../2000-06-16'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -2067,12 +2068,12 @@ def test_get_collection_edr_query(config, api_):
     assert time_dict['num'] == 6
 
     # unbounded date range - end
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)',
         'datetime': '2000-06-16/..'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     data = json.loads(response)
@@ -2083,60 +2084,60 @@ def test_get_collection_edr_query(config, api_):
     assert time_dict['num'] == 7
 
     # some data
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)', 'datetime': '2000-01-16'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.OK
 
     # no data
-    req = mock_request({
+    req = mock_api_request({
         'coords': 'POINT(11 11)', 'datetime': '2000-01-17'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.NO_CONTENT
 
     # position no coords
-    req = mock_request({
+    req = mock_api_request({
         'datetime': '2000-01-17'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'position')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
     assert code == HTTPStatus.BAD_REQUEST
 
     # cube bbox parameter 4 dimensional
-    req = mock_request({
+    req = mock_api_request({
         'bbox': '0,0,10,10'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'cube')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'cube')
     assert code == HTTPStatus.OK
 
     # cube bad bbox parameter
-    req = mock_request({
+    req = mock_api_request({
         'bbox': '0,0,10'
     })
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'cube')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'cube')
     assert code == HTTPStatus.BAD_REQUEST
 
     # cube no bbox parameter
-    req = mock_request({})
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'icoads-sst', None, 'cube')
+    req = mock_api_request({})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'cube')
     assert code == HTTPStatus.BAD_REQUEST
 
     # cube decreasing latitude coords and S3
-    req = mock_request({
+    req = mock_api_request({
         'bbox': '-100,40,-99,45',
         'parameter_names': 'tmn',
         'datetime': '1994-01-01/1994-12-31',
     })
 
-    rsp_headers, code, response = api_.get_collection_edr_query(
-        req, 'usgs-prism', None, 'cube')
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'usgs-prism', None, 'cube')
     assert code == HTTPStatus.OK
 
 
