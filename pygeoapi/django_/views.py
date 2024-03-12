@@ -446,7 +446,7 @@ def get_collection_edr_query(
     else:
         query_type = request.path.split('/')[-1]
     return execute_from_django(
-        edr_api.get.get_collection_edr_query,
+        edr_api.get_collection_edr_query,
         request,
         collection_id,
         instance_id,
