@@ -109,8 +109,11 @@ if (OGC_SCHEMAS_LOCATION is not None and
         dirname_ = os.path.dirname(full_filepath)
         basename_ = os.path.basename(full_filepath)
 
-        # TODO: better sanitization?
-        path_ = dirname_.replace('..', '').replace('//', '')
+        path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')
+
+        if '..' in path_:
+            return 'Invalid path', 400
+
         return send_from_directory(path_, basename_,
                                    mimetype=get_mimetype(basename_))
 
