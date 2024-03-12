@@ -369,7 +369,8 @@ def processes(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    return execute_from_django(processes_api.describe_processes, request, process_id)
+    return execute_from_django(processes_api.describe_processes, request,
+                               process_id)
 
 
 def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
