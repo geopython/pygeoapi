@@ -51,8 +51,9 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
-import pygeoapi.api.processes as processes_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.maps as maps_api
+import pygeoapi.api.processes as processes_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -398,8 +399,9 @@ async def collection_map(request: Request, collection_id, style_id=None):
     if 'style_id' in request.path_params:
         style_id = request.path_params['style_id']
 
-    return await get_response(
-        api_.get_collection_map, request, collection_id, style_id)
+    return await execute_from_starlette(
+        maps_api.get_collection_map, request, collection_id, style_id,
+    )
 
 
 async def get_processes(request: Request, process_id=None):

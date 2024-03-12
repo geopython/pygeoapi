@@ -47,6 +47,7 @@ from pygeoapi.api import (
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
 from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
+from pygeoapi.api.maps import get_collection_map
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result,
 )
@@ -1569,13 +1570,13 @@ def test_get_collection_coverage(config, api_):
 
 
 def test_get_collection_map(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_map(req, 'notfound')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_map(api_, req, 'notfound')
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_map(
-        req, 'mapserver_world_map')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_map(
+        api_, req, 'mapserver_world_map')
     assert code == HTTPStatus.OK
     assert isinstance(response, bytes)
     assert response[1:4] == b'PNG'

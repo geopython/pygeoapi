@@ -41,8 +41,9 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
-import pygeoapi.api.processes as processes_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.maps as maps_api
+import pygeoapi.api.processes as processes_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -208,12 +209,9 @@ def collection_map(request: HttpRequest, collection_id: str):
 
     :returns: HTTP response
     """
-
-    response_ = _feed_response(request, 'get_collection_map', collection_id)
-
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(
+        maps_api.get_collection_map, request, collection_id
+    )
 
 
 def collection_style_map(request: HttpRequest, collection_id: str,

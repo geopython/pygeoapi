@@ -42,27 +42,18 @@ import logging
 from http import HTTPStatus
 from typing import Tuple
 
-from shapely.errors import WKTReadingError
-from shapely.wkt import loads as shapely_loads
 
-from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
-from pygeoapi.util import (
-    get_provider_by_type, render_j2_template, to_json,
-    filter_dict_by_key_value,
-)
+from pygeoapi.util import get_provider_by_type, to_json
 
-from . import (
-    APIRequest, API, F_HTML, validate_datetime, validate_bbox
-)
+from . import APIRequest, API, validate_datetime
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@gzip
-@pre_process
-def get_collection_map(self, request: Union[APIRequest, Any],
+def get_collection_map(api: API, request: APIRequest,
                        dataset, style=None) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection map
@@ -74,21 +65,18 @@ def get_collection_map(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
-
     query_args = {
         'crs': 'CRS84'
     }
 
     format_ = request.format or 'png'
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
     LOGGER.debug('Processing query parameters')
 
     LOGGER.debug('Loading provider')
     try:
         collection_def = get_provider_by_type(
-            self.config['resources'][dataset]['providers'], 'map')
+            api.config['resources'][dataset]['providers'], 'map')
 
         p = load_plugin('provider', collection_def)
     except KeyError:
@@ -99,10 +87,10 @@ def get_collection_map(self, request: Union[APIRequest, Any],
         headers['Content-type'] = 'application/json'
         LOGGER.error(exception)
         return headers, HTTPStatus.NOT_FOUND, to_json(
-            exception, self.pretty_print)
+            exception, api.pretty_print)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
@@ -122,7 +110,7 @@ def get_collection_map(self, request: Union[APIRequest, Any],
         headers['Content-type'] = 'application/json'
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
-            exception, self.pretty_print)
+            exception, api.pretty_print)
 
     LOGGER.debug('Processing bbox parameter')
     try:
@@ -135,9 +123,9 @@ def get_collection_map(self, request: Union[APIRequest, Any],
             headers['Content-type'] = 'application/json'
             LOGGER.error(exception)
             return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, self.pretty_print)
+                exception, api.pretty_print)
     except AttributeError:
-        bbox = self.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
+        bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
     try:
         query_args['bbox'] = [float(c) for c in bbox]
     except ValueError:
@@ -148,16 +136,16 @@ def get_collection_map(self, request: Union[APIRequest, Any],
         headers['Content-type'] = 'application/json'
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
-            exception, self.pretty_print)
+            exception, api.pretty_print)
 
     LOGGER.debug('Processing datetime parameter')
     datetime_ = request.params.get('datetime')
     try:
         query_args['datetime_'] = validate_datetime(
-            self.config['resources'][dataset]['extents'], datetime_)
+            api.config['resources'][dataset]['extents'], datetime_)
     except ValueError as err:
         msg = str(err)
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
@@ -166,7 +154,7 @@ def get_collection_map(self, request: Union[APIRequest, Any],
         data = p.query(**query_args)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
@@ -185,6 +173,4 @@ def get_collection_map(self, request: Union[APIRequest, Any],
         }
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
-            data, self.pretty_print)
-
-
+            data, api.pretty_print)

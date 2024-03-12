@@ -38,8 +38,9 @@ from flask import (Flask, Blueprint, make_response, request,
                    send_from_directory, Response, Request)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
-import pygeoapi.api.processes as processes_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.maps as maps_api
+import pygeoapi.api.processes as processes_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -353,15 +354,9 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.get_collection_map(
-        request, collection_id, style_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return execute_from_flask(
+        maps_api.get_collection_map, request, collection_id, style_id
+    )
 
 
 @BLUEPRINT.route('/processes')
