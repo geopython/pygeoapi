@@ -404,20 +404,24 @@ class APIRequest:
     @classmethod
     def from_flask(cls, request, supported_locales
                    ) -> 'APIRequest':
-        """
-        Factory class similar to with_data, but only for flask requests
-        """
+        """Factory class similar to with_data, but only for flask requests"""
         api_req = cls(request, supported_locales)
         api_req._data = request.data
         return api_req
 
     @classmethod
     async def from_starlette(cls, request, supported_locales) -> 'APIRequest':
-        """
-        Factory class similar to with_data, but only for flask requests
+        """Factory class similar to with_data, but only for starlette requests
         """
         api_req = cls(request, supported_locales)
         api_req._data = await request.body()
+        return api_req
+
+    @classmethod
+    def from_django(cls, request, supported_locales) -> 'APIRequest':
+        """Factory class similar to with_data, but only for django requests"""
+        api_req = cls(request, supported_locales)
+        api_req._data = request.body
         return api_req
 
     @staticmethod

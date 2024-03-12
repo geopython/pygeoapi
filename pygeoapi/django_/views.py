@@ -40,7 +40,8 @@ from typing import Tuple, Dict, Mapping, Optional
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
-from pygeoapi.api import API
+from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.processes as processes_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -368,10 +369,7 @@ def processes(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'describe_processes', process_id)
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(processes_api.describe_processes, request, process_id)
 
 
 def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
@@ -384,11 +382,7 @@ def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
 
     :returns: Django HTTP response
     """
-
-    response_ = _feed_response(request, 'get_jobs', job_id)
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(processes_api.get_jobs, request, job_id)
 
 
 def job_results(request: HttpRequest,
@@ -402,10 +396,7 @@ def job_results(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'get_job_result', job_id)
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(processes_api.get_job_result, request, job_id)
 
 
 def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
@@ -420,6 +411,7 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
     :returns: Django HTTP response
     """
 
+    # TODO: this api method does not exist
     response_ = _feed_response(
         request,
         'get_job_result_resource',
@@ -551,6 +543,7 @@ def admin_config_resource(request: HttpRequest,
                               resource_id)
 
 
+# TODO: remove this when all views have been refactored
 def _feed_response(request: HttpRequest, api_definition: str,
                    *args, **kwargs) -> Tuple[Dict, int, str]:
     """Use pygeoapi api to process the input request"""
@@ -566,8 +559,31 @@ def _feed_response(request: HttpRequest, api_definition: str,
     return api(request, *args, **kwargs)
 
 
+def execute_from_django(api_function, request: HttpRequest, *args
+                        ) -> HttpResponse:
+
+    api_: API | "Admin"
+    if settings.PYGEOAPI_CONFIG['server'].get('admin'):  # noqa
+        from pygeoapi.admin import Admin
+        api_ = Admin(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
+    else:
+        api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
+
+    api_request = APIRequest.from_django(request, api_.locales)
+    content: str | bytes
+    if not api_request.is_valid():
+        headers, status, content = api_.get_format_exception(api_request)
+    else:
+
+        headers, status, content = api_function(api_, api_request, *args)
+        content = apply_gzip(headers, content)
+
+    return _to_django_response(headers, status, content)
+
+
+# TODO: inline this to execute_from_django after refactoring
 def _to_django_response(headers: Mapping, status_code: int,
-                        content: str) -> HttpResponse:
+                        content: str | bytes) -> HttpResponse:
     """Convert API payload to a django response"""
 
     response = HttpResponse(content, status=status_code)
