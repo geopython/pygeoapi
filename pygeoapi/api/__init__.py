@@ -922,6 +922,7 @@ class API:
 
         return headers, HTTPStatus.OK, to_json(conformance, self.pretty_print)
 
+    # TODO: also move to tiles
     @gzip
     @pre_process
     def tilematrixsets(self,

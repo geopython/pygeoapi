@@ -51,6 +51,7 @@ from pygeoapi.api.maps import get_collection_map
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result,
 )
+from pygeoapi.api.tiles import get_collection_tiles
 from pygeoapi.util import (yaml_load, get_crs_from_uri,
                            get_api_rules, get_base_url)
 
@@ -1583,18 +1584,18 @@ def test_get_collection_map(config, api_):
 
 
 def test_get_collection_tiles(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_tiles(req, 'obs')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_tiles(api_, req, 'obs')
     assert code == HTTPStatus.BAD_REQUEST
 
-    rsp_headers, code, response = api_.get_collection_tiles(
-        req, 'naturalearth/lakes')
+    rsp_headers, code, response = get_collection_tiles(
+        api_, req, 'naturalearth/lakes')
     assert code == HTTPStatus.OK
 
     # Language settings should be ignored (return system default)
-    req = mock_request({'lang': 'fr'})
-    rsp_headers, code, response = api_.get_collection_tiles(
-        req, 'naturalearth/lakes')
+    req = mock_api_request({'lang': 'fr'})
+    rsp_headers, code, response = get_collection_tiles(
+        api_, req, 'naturalearth/lakes')
     assert rsp_headers['Content-Language'] == 'en-US'
     content = json.loads(response)
     assert len(content['links']) > 0

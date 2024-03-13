@@ -44,25 +44,25 @@ from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
-
+from pygeoapi.models.provider.base import (TilesMetadataFormat,
+                                           TileMatrixSetEnum)
 from pygeoapi.provider.base import (
-    ProviderConnectionError, ProviderNotFoundError,
+    ProviderGenericError, ProviderTypeError,
 )
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
     render_j2_template,
 )
 
-from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
+from . import (
+    APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML, SYSTEM_LOCALE, F_JSONLD
+)
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@gzip
-@pre_process
-@jsonldify
-def get_collection_tiles(self, request: Union[APIRequest, Any],
+def get_collection_tiles(api: API, request: APIRequest,
                          dataset=None) -> Tuple[dict, int, str]:
     """
     Provide collection tiles
@@ -73,31 +73,29 @@ def get_collection_tiles(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE,
-                                           **self.api_headers)
+                                           **api.api_headers)
     if any([dataset is None,
-            dataset not in self.config['resources'].keys()]):
+            dataset not in api.config['resources'].keys()]):
 
         msg = 'Collection not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Creating collection tiles')
     LOGGER.debug('Loading provider')
     try:
         t = get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'tile')
+                api.config['resources'][dataset]['providers'], 'tile')
         p = load_plugin('provider', t)
     except (KeyError, ProviderTypeError):
         msg = 'Invalid collection tiles'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
@@ -110,24 +108,24 @@ def get_collection_tiles(self, request: Union[APIRequest, Any],
         'type': FORMAT_TYPES[F_JSON],
         'rel': request.get_linkrel(F_JSON),
         'title': 'This document as JSON',
-        'href': f'{self.get_collections_url()}/{dataset}/tiles?f={F_JSON}'
+        'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSON}'
     })
     tiles['links'].append({
         'type': FORMAT_TYPES[F_JSONLD],
         'rel': request.get_linkrel(F_JSONLD),
         'title': 'This document as RDF (JSON-LD)',
-        'href': f'{self.get_collections_url()}/{dataset}/tiles?f={F_JSONLD}'  # noqa
+        'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSONLD}'  # noqa
     })
     tiles['links'].append({
         'type': FORMAT_TYPES[F_HTML],
         'rel': request.get_linkrel(F_HTML),
         'title': 'This document as HTML',
-        'href': f'{self.get_collections_url()}/{dataset}/tiles?f={F_HTML}'
+        'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_HTML}'
     })
 
     tile_services = p.get_tiles_service(
-        baseurl=self.base_url,
-        servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={p.format_type}'  # noqa
+        baseurl=api.base_url,
+        servicepath=f'{api.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={p.format_type}'  # noqa
     )
 
     for service in tile_services['links']:
@@ -147,19 +145,19 @@ def get_collection_tiles(self, request: Union[APIRequest, Any],
             'type': FORMAT_TYPES[F_JSON],
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
             'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})', # noqa
-            'href': f'{self.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            'href': f'{api.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
         })
         tile_matrix['links'].append({
             'type': FORMAT_TYPES[F_JSON],
             'rel': request.get_linkrel(F_JSON),
             'title': f'{dataset} - {matrix.tileMatrixSet} - {F_JSON}',
-            'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
         })
         tile_matrix['links'].append({
             'type': FORMAT_TYPES[F_HTML],
             'rel': request.get_linkrel(F_HTML),
             'title': f'{dataset} - {matrix.tileMatrixSet} - {F_HTML}',
-            'href': f'{self.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
+            'href': f'{api.get_collections_url()}/{dataset}/tiles/{matrix.tileMatrixSet}?f={F_HTML}'  # noqa
         })
 
         tiles['tilesets'].append(tile_matrix)
@@ -167,27 +165,28 @@ def get_collection_tiles(self, request: Union[APIRequest, Any],
     if request.format == F_HTML:  # render
         tiles['id'] = dataset
         tiles['title'] = l10n.translate(
-            self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
+            api.config['resources'][dataset]['title'], SYSTEM_LOCALE)
         tiles['tilesets'] = [
             scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
         tiles['bounds'] = \
-            self.config['resources'][dataset]['extents']['spatial']['bbox']
+            api.config['resources'][dataset]['extents']['spatial']['bbox']
         tiles['minzoom'] = p.options['zoom']['min']
         tiles['maxzoom'] = p.options['zoom']['max']
-        tiles['collections_path'] = self.get_collections_url()
+        tiles['collections_path'] = api.get_collections_url()
         tiles['tile_type'] = p.tile_type
 
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'collections/tiles/index.html', tiles,
                                      request.locale)
 
         return headers, HTTPStatus.OK, content
 
-    return headers, HTTPStatus.OK, to_json(tiles, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(tiles, api.pretty_print)
 
-@pre_process
+
+# TODO: no test for this function?
 def get_collection_tiles_data(
-        self, request: Union[APIRequest, Any],
+        api: API, request: APIRequest,
         dataset=None, matrix_id=None,
         z_idx=None, y_idx=None, x_idx=None) -> Tuple[dict, int, str]:
     """
@@ -205,23 +204,23 @@ def get_collection_tiles_data(
 
     format_ = request.format
     if not format_:
-        return self.get_format_exception(request)
+        return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE,
-                                           **self.api_headers)
+                                           **api.api_headers)
     LOGGER.debug('Processing tiles')
 
-    collections = filter_dict_by_key_value(self.config['resources'],
+    collections = filter_dict_by_key_value(api.config['resources'],
                                            'type', 'collection')
 
     if dataset not in collections.keys():
         msg = 'Collection not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Loading tile provider')
     try:
         t = get_provider_by_type(
-            self.config['resources'][dataset]['providers'], 'tile')
+            api.config['resources'][dataset]['providers'], 'tile')
         p = load_plugin('provider', t)
 
         format_ = p.format_type
@@ -232,7 +231,7 @@ def get_collection_tiles_data(
                               z=z_idx, y=y_idx, x=x_idx, format_=format_)
         if content is None:
             msg = 'identifier not found'
-            return self.get_exception(
+            return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
         else:
             return headers, HTTPStatus.OK, content
@@ -240,20 +239,19 @@ def get_collection_tiles_data(
     # @TODO: figure out if the spec requires to return json errors
     except KeyError:
         msg = 'Invalid collection tiles'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, format_,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-@gzip
-@pre_process
-@jsonldify
+
+# TODO: no test for this function?
 def get_collection_tiles_metadata(
-        self, request: Union[APIRequest, Any],
+    api: API, request: APIRequest,
         dataset=None, matrix_id=None) -> Tuple[dict, int, str]:
     """
     Get collection items tiles
@@ -266,30 +264,30 @@ def get_collection_tiles_metadata(
     """
 
     if not request.is_valid([TilesMetadataFormat.TILEJSON]):
-        return self.get_format_exception(request)
-    headers = request.get_response_headers(**self.api_headers)
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
-            dataset not in self.config['resources'].keys()]):
+            dataset not in api.config['resources'].keys()]):
 
         msg = 'Collection not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Creating collection tiles')
     LOGGER.debug('Loading provider')
     try:
         t = get_provider_by_type(
-            self.config['resources'][dataset]['providers'], 'tile')
+            api.config['resources'][dataset]['providers'], 'tile')
         p = load_plugin('provider', t)
     except KeyError:
         msg = 'Invalid collection tiles'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
@@ -302,23 +300,21 @@ def get_collection_tiles_metadata(
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     tiles_metadata = p.get_metadata(
-        dataset=dataset, server_url=self.base_url,
+        dataset=dataset, server_url=api.base_url,
         layer=p.get_layer(), tileset=matrix_id,
         metadata_format=request._format, title=l10n.translate(
-            self.config['resources'][dataset]['title'],
+            api.config['resources'][dataset]['title'],
             request.locale),
         description=l10n.translate(
-            self.config['resources'][dataset]['description'],
+            api.config['resources'][dataset]['description'],
             request.locale),
         language=prv_locale)
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'collections/tiles/metadata.html',
                                      tiles_metadata, request.locale)
 
         return headers, HTTPStatus.OK, content
     else:
         return headers, HTTPStatus.OK, tiles_metadata
-
-
