@@ -185,9 +185,9 @@ DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 def all_apis():
     # NOTE: this is a function and not a constant to avoid import loops
-    from . import processes
+    from . import processes, environmental_data_retrieval
 
-    return [processes]
+    return [processes, environmental_data_retrieval]
 
 
 def pre_process(func):

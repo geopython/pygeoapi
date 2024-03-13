@@ -48,8 +48,8 @@ from shapely.wkt import loads as shapely_loads
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
-    get_provider_by_type, render_j2_template, to_json,
-    filter_dict_by_key_value,
+    filter_providers_by_type, get_provider_by_type, render_j2_template,
+    to_json, filter_dict_by_key_value,
 )
 
 from . import (
@@ -204,3 +204,119 @@ def get_collection_edr_query(
         content = to_json(data, api.pretty_print)
 
     return headers, HTTPStatus.OK, content
+
+
+def get_oas_30(cfg: dict, locale: str) -> dict:
+    from pygeoapi.openapi import OPENAPI_YAML
+
+    paths = {}
+
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
+
+    for k, v in collections.items():
+        LOGGER.debug('setting up edr endpoints')
+        edr_extension = filter_providers_by_type(
+            collections[k]['providers'], 'edr')
+
+        collection_name_path = f'/collections/{k}'
+
+        if edr_extension:
+            ep = load_plugin('provider', edr_extension)
+
+            edr_query_endpoints = []
+
+            for qt in [qt for qt in ep.get_query_types() if qt != 'locations']:
+                edr_query_endpoints.append({
+                    'path': f'{collection_name_path}/{qt}',
+                    'qt': qt,
+                    'op_id': f'query{qt.capitalize()}{k.capitalize()}'
+                })
+                if ep.instances:
+                    edr_query_endpoints.append({
+                        'path': f'{collection_name_path}/instances/{{instanceId}}/{qt}',  # noqa
+                        'qt': qt,
+                        'op_id': f'query{qt.capitalize()}Instance{k.capitalize()}'  # noqa
+                    })
+
+            for eqe in edr_query_endpoints:
+                if eqe['qt'] == 'cube':
+                    spatial_parameter = 'bbox'
+                else:
+                    spatial_parameter = f"{eqe['qt']}Coords"
+                paths[eqe['path']] = {
+                    'get': {
+                        'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': eqe['op_id'],
+                        'parameters': [
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {
+                                'description': 'Response',
+                                'content': {
+                                    'application/prs.coverage+json': {
+                                        'schema': {
+                                            '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            if 'locations' in ep.get_query_types():
+                paths[f'{collection_name_path}/locations'] = {
+                    'get': {
+                        'summary': f"Get pre-defined locations of {v['description']}",  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': f'queryLOCATIONS{k.capitalize()}',
+                        'parameters': [
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/bbox.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                        }
+                    }
+                }
+                paths[f'{collection_name_path}/locations/{{locId}}'] = {
+                    'get': {
+                        'summary': f"query {v['description']} by location",  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': f'queryLOCATIONSBYID{k.capitalize()}',
+                        'parameters': [
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/locationId.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {
+                                'description': 'Response',
+                                'content': {
+                                    'application/prs.coverage+json': {
+                                        'schema': {
+                                            '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+    return {'tags': [], 'paths': paths}
